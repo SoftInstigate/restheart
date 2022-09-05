@@ -31,10 +31,7 @@ import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 
-import java.lang.reflect.Field;
-
 public class QueryMapping extends FieldMapping implements Batchable {
-
     private String db;
     private String collection;
     private BsonDocument find;
@@ -43,9 +40,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
     private BsonValue skip;
     private DataLoaderSettings dataLoaderSettings;
 
-    private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort,
-            BsonValue limit, BsonValue skip, DataLoaderSettings dataLoaderSettings) {
-
+    private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort, BsonValue limit, BsonValue skip, DataLoaderSettings dataLoaderSettings) {
         super(fieldName);
         this.db = db;
         this.collection = collection;
@@ -68,9 +63,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
     @Override
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
-
-            DataLoaderOptions options = new DataLoaderOptions()
-                    .setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
+            var options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
 
             if (this.dataLoaderSettings.getMax_batch_size() > 0) {
                 options.setMaxBatchSize(this.dataLoaderSettings.getMax_batch_size());
@@ -80,9 +73,9 @@ public class QueryMapping extends FieldMapping implements Batchable {
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
             return new DataLoader<BsonValue, BsonValue>(new QueryBatchLoader(this.db, this.collection), options);
-
+        } else {
+            return null;
         }
-        return null;
     }
 
     public String getDb() {
@@ -113,25 +106,24 @@ public class QueryMapping extends FieldMapping implements Batchable {
         return dataLoaderSettings;
     }
 
-    public BsonDocument interpolateArgs(DataFetchingEnvironment env)
-            throws IllegalAccessException, QueryVariableNotBoundException {
+    public BsonDocument interpolateArgs(DataFetchingEnvironment env) throws IllegalAccessException, QueryVariableNotBoundException {
+        var result = new BsonDocument();
 
-        BsonDocument result = new BsonDocument();
+        var fields = (QueryMapping.class).getDeclaredFields();
+        for (var field: fields) {
+            var value = field.get(this);
 
-        Field[] fields = (QueryMapping.class).getDeclaredFields();
-        for (Field field : fields) {
-            if (field.getType() == BsonValue.class || field.getType() == BsonDocument.class) {
-                BsonValue bsonValue = (BsonValue) field.get(this);
-                if (bsonValue != null && bsonValue.isDocument()) {
-                    result.put(field.getName(), searchOperators((BsonDocument) bsonValue, env));
-                }
+            if(value instanceof BsonDocument bsonDoc) {
+                result.put(field.getName(), searchOperators(bsonDoc, env));
+            } else if (value instanceof BsonValue bsonVal && !bsonVal.isNull()) {
+                result.put(field.getName(), bsonVal);
             }
         }
+
         return result;
     }
 
     public static class Builder {
-
         private String fieldName;
         private String db;
         private String collection;
@@ -141,8 +133,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
         private BsonValue skip;
         private DataLoaderSettings dataLoaderSettings;
 
-        private Builder() {
-        }
+        private Builder() { }
 
         public Builder fieldName(String fieldName) {
             this.fieldName = fieldName;
@@ -185,7 +176,6 @@ public class QueryMapping extends FieldMapping implements Batchable {
         }
 
         public QueryMapping build() {
-
             if (this.db == null) {
                 throwIllegalException("db");
             }
@@ -198,16 +188,11 @@ public class QueryMapping extends FieldMapping implements Batchable {
                 this.dataLoaderSettings = DataLoaderSettings.newBuilder().build();
             }
 
-            return new QueryMapping(this.fieldName, this.db, this.collection, this.find, this.sort, this.limit,
-                    this.skip, this.dataLoaderSettings);
+            return new QueryMapping(this.fieldName, this.db, this.collection, this.find, this.sort, this.limit, this.skip, this.dataLoaderSettings);
         }
 
         private static void throwIllegalException(String varName) {
-
             throw new IllegalStateException(varName + "could not be null!");
-
         }
-
     }
-
 }

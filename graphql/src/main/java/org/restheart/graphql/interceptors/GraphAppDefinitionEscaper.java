@@ -25,16 +25,13 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLService;
-
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
-
 import java.util.Map;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 
 
 @RegisterPlugin(name="graphAppDefinitionEscaper",

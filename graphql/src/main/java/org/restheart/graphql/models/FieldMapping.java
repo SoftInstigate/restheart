@@ -35,7 +35,7 @@ import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
 
-    private final String OPERATORS[] = { "$arg", "$fk" };
+    protected final String OPERATORS[] = { "$arg", "$fk" };
 
     protected final String fieldName;
 
@@ -49,112 +49,82 @@ public abstract class FieldMapping {
 
     public abstract GraphQLDataFetcher getDataFetcher();
 
-    public BsonValue searchOperators(BsonDocument source, DataFetchingEnvironment env)
-            throws QueryVariableNotBoundException {
-
-        for (String operator : this.OPERATORS) {
-
+    public BsonValue searchOperators(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+        for (var operator : this.OPERATORS) {
             if (source.containsKey(operator)) {
+                var valueToInterpolate = source.getString(operator).getValue();
 
-                String valueToInterpolate = source.getString(operator).getValue();
-
-                switch (operator) {
-
-                    case "$arg": {
-
-                        BsonDocument arguments = BsonUtils.toBsonDocument(env.getArguments());
+                return switch (operator) {
+                    case "$arg" -> {
+                        var arguments = BsonUtils.toBsonDocument(env.getArguments());
 
                         if (arguments == null || arguments.get(valueToInterpolate) == null) {
                             throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
                         }
 
-                        return arguments.get(valueToInterpolate);
+                        yield arguments.get(valueToInterpolate);
                     }
-                    case "$fk": {
-
-                        BsonDocument sourceDocument = env.getSource();
-
-                        return getForeignValue(sourceDocument, valueToInterpolate);
-                    }
-                    default:
-                        return Assert.assertShouldNeverHappen();
-                }
+                    case "$fk" -> getForeignValue(env.getSource(), valueToInterpolate);
+                    default -> Assert.assertShouldNeverHappen();
+                };
             }
         }
 
-        BsonDocument result = new BsonDocument();
+        var result = new BsonDocument();
 
-        for (String key : source.keySet()) {
-
+        for (var key : source.keySet()) {
             if (source.get(key).isDocument()) {
-
-                BsonValue value = searchOperators(source.get(key).asDocument(), env);
+                var value = searchOperators(source.get(key).asDocument(), env);
                 result.put(key, value);
-
             } else if (source.get(key).isArray()) {
-
-                BsonArray array = new BsonArray();
-
-                for (BsonValue bsonValue : source.get(key).asArray()) {
-
+                var array = new BsonArray();
+                for (var bsonValue : source.get(key).asArray()) {
                     if (bsonValue.isDocument()) {
-
-                        BsonValue value = searchOperators(bsonValue.asDocument(), env);
+                        var value = searchOperators(bsonValue.asDocument(), env);
                         array.add(value);
 
-                    } else
+                    } else {
                         array.add(bsonValue);
+                    }
                 }
 
                 result.put(key, array);
-
-            } else
+            } else {
                 result.put(key, source.get(key));
-
+            }
         }
 
         return result;
     }
 
     public BsonValue getForeignValue(BsonValue sourceDocument, String path) throws QueryVariableNotBoundException {
-
-        String[] splitPath = path.split(Pattern.quote("."));
-        BsonValue current = sourceDocument;
+        var splitPath = path.split(Pattern.quote("."));
+        var current = sourceDocument;
 
         for (int i = 0; i < splitPath.length; i++) {
-
             if (current.isDocument() && current.asDocument().containsKey(splitPath[i])) {
                 current = current.asDocument().get(splitPath[i]);
-
             } else if (current.isArray()) {
-
                 try {
-
-                    Integer index = Integer.parseInt(splitPath[i]);
+                    var index = Integer.parseInt(splitPath[i]);
                     current = current.asArray().get(index);
-
                 } catch (NumberFormatException nfe) {
-
-                    BsonArray array = new BsonArray();
-
-                    for (BsonValue value : current.asArray()) {
-
-                        String[] copy = Arrays.copyOfRange(splitPath, i, splitPath.length);
+                    var array = new BsonArray();
+                    for (var value : current.asArray()) {
+                        var copy = Arrays.copyOfRange(splitPath, i, splitPath.length);
                         array.add(getForeignValue(value, String.join(".", copy)));
                         current = array;
                     }
 
                     break;
-
                 } catch (IndexOutOfBoundsException ibe) {
                     throw new QueryVariableNotBoundException("index out of bounds in " + splitPath[i - 1] + " array");
                 }
-
-            } else
+            } else {
                 throw new QueryVariableNotBoundException("variable" + splitPath[i] + "not bound");
+            }
         }
 
         return current;
     }
-
 }

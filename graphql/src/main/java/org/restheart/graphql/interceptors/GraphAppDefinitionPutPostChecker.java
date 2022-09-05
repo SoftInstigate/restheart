@@ -27,17 +27,14 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
-
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
-
 import java.util.Map;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 
 
 @RegisterPlugin(name="graphAppDefinitionPutPostChecker",

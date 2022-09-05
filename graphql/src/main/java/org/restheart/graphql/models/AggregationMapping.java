@@ -19,16 +19,13 @@ import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import graphql.schema.DataFetchingEnvironment;
 
 public class AggregationMapping extends FieldMapping implements Batchable {
-
     private BsonArray stages;
     private BsonString db;
     private BsonString collection;
     private BsonBoolean allowDiskUse = new BsonBoolean(false);
     private DataLoaderSettings dataLoaderSettings;
 
-    public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages,
-            BsonBoolean allowDiskUse, DataLoaderSettings settings) {
-
+    public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages, BsonBoolean allowDiskUse, DataLoaderSettings settings) {
         super(fieldName);
         this.stages = stages;
         this.db = db;
@@ -40,15 +37,14 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     @Override
     public GraphQLDataFetcher getDataFetcher() {
         return this.dataLoaderSettings.getBatching()
-                ? new GQLBatchAggregationDataFetcher(this)
-                : new GQLAggregationDataFetcher(this);
+            ? new GQLBatchAggregationDataFetcher(this)
+            : new GQLAggregationDataFetcher(this);
     }
 
     @Override
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
-            DataLoaderOptions options = new DataLoaderOptions()
-                    .setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()));
+            var options = new DataLoaderOptions().setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()));
 
             if (this.dataLoaderSettings.getMax_batch_size() > 0) {
                 options.setMaxBatchSize(this.dataLoaderSettings.getMax_batch_size());
@@ -57,22 +53,17 @@ public class AggregationMapping extends FieldMapping implements Batchable {
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
-            return new DataLoader<BsonValue, BsonValue>(
-                    new AggregationBatchLoader(this.db.getValue(), this.collection.getValue()), options);
-
+            return new DataLoader<BsonValue, BsonValue>(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue()), options);
         }
+
         return null;
     }
 
-    public List<BsonDocument> getResolvedStagesAsList(DataFetchingEnvironment env)
-            throws QueryVariableNotBoundException {
+    public List<BsonDocument> getResolvedStagesAsList(DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+        var resultList = new ArrayList<BsonDocument>();
 
-        List<BsonDocument> resultList = new ArrayList<>();
-
-        for (BsonValue stage : this.stages) {
-
+        for (var stage : this.stages) {
             if (stage.isDocument()) {
-
                 resultList.add(searchOperators(stage.asDocument(), env).asDocument());
             }
         }
@@ -121,7 +112,6 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     public static class Builder {
-
         private String fieldName;
         private BsonArray stages;
         private BsonString db;
@@ -163,7 +153,6 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         }
 
         public AggregationMapping build() {
-
             if (this.dataLoaderSettings == null) {
                 this.dataLoaderSettings = DataLoaderSettings.newBuilder().build();
             }

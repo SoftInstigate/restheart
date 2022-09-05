@@ -38,9 +38,8 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
-
         return CompletableFuture.supplyAsync(() -> {
-            String alias = ((FieldRenaming) this.fieldMapping).getAlias();
+            var alias = ((FieldRenaming) this.fieldMapping).getAlias();
 
             BsonDocument parentDocument = dataFetchingEnvironment.getSource();
             return getValues(parentDocument, alias);
@@ -49,9 +48,8 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
 
     private BsonValue getValues(BsonValue bsonValue, String path) {
-
-        String[] splitPath = path.split(Pattern.quote("."));
-        BsonValue current = bsonValue;
+        var splitPath = path.split(Pattern.quote("."));
+        var current = bsonValue;
 
         for (int i = 0; i < splitPath.length; i++) {
             if (current.isDocument() && current.asDocument().containsKey(splitPath[i])) {
@@ -61,7 +59,7 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
                     int index = Integer.parseInt(splitPath[i]);
                     current = current.asArray().get(index);
                 } catch (NumberFormatException nfe) {
-                    BsonArray array = new BsonArray();
+                    var array = new BsonArray();
                     for (BsonValue value : current.asArray()) {
                         String[] copy = Arrays.copyOfRange(splitPath, i, splitPath.length);
                         array.add(getValues(value, String.join(".", copy)));
@@ -76,8 +74,8 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
                 return null;
             }
         }
-        return current;
 
+        return current;
     }
 }
 

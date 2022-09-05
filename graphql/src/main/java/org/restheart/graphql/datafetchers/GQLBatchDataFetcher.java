@@ -23,7 +23,6 @@ package org.restheart.graphql.datafetchers;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.restheart.graphql.models.QueryMapping;
@@ -38,8 +37,7 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher{
 
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
-
-        QueryMapping queryMapping = (QueryMapping) this.fieldMapping;
+        var queryMapping = (QueryMapping) this.fieldMapping;
 
         DataLoader<BsonValue, BsonValue> dataLoader;
 
@@ -47,18 +45,18 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher{
 
         dataLoader = dataFetchingEnvironment.getDataLoader(key);
 
-        BsonDocument int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+        var int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
 
         return dataLoader.load(int_args, dataFetchingEnvironment).thenApply(
-                results -> {
-                    boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
-                    if (isMultiple){
-                        return results;
-                    }
-                    else{
-                        return results.asArray().size() > 0 ? results.asArray().get(0) : null;
-                    }
+            results -> {
+                boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+                if (isMultiple){
+                    return results;
                 }
+                else{
+                    return results.asArray().size() > 0 ? results.asArray().get(0) : null;
+                }
+            }
         );
     }
 }

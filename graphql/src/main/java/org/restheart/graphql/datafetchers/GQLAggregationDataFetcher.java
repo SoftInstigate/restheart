@@ -49,8 +49,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     @Override
     public Object get(DataFetchingEnvironment environment) throws Exception {
         return CompletableFuture.supplyAsync(() -> {
-
-            AggregationMapping aggregation = ((AggregationMapping) this.fieldMapping);
+            var aggregation = (AggregationMapping) this.fieldMapping;
 
             try {
                 aggregation.getResolvedStagesAsList(environment);
@@ -69,12 +68,12 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 }
 
                 res = mongoClient
-                        .getDatabase(aggregation.getDb().getValue())
-                        .getCollection(aggregation.getCollection().getValue())
-                        .withDocumentClass(BsonDocument.class)
-                        .aggregate(aggregationList)
-                        .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                        .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
+                    .getDatabase(aggregation.getDb().getValue())
+                    .getCollection(aggregation.getCollection().getValue())
+                    .withDocumentClass(BsonDocument.class)
+                    .aggregate(aggregationList)
+                    .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+                    .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
             } catch (QueryVariableNotBoundException e) {
                 logger.error("Aggregation pipeline has failed! {}", e.getMessage());
