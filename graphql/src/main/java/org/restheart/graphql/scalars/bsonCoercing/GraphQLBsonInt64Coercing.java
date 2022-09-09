@@ -27,25 +27,27 @@ import org.bson.BsonInt64;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonInt64Coercing implements Coercing<BsonInt64, BsonInt64> {
+public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
 
 
     @Override
-    public BsonInt64 serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonInt64){
-            return (BsonInt64) dataFetcherResult;
-        } else {
-            throw new CoercingParseValueException("Expected type 'Long' but was '" + typeName(dataFetcherResult) + ".");
+    public Long serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if (dataFetcherResult instanceof BsonInt64 bsonInt64){
+            return bsonInt64.getValue();
+        } else if (dataFetcherResult instanceof Long value) {
+            return value;
+        }else {
+            throw new CoercingParseValueException("Expected types 'Long' or 'BsonInt64' but was '" + typeName(dataFetcherResult) + ".");
         }
     }
 
     @Override
-    public BsonInt64 parseValue(Object input) {
-        return new BsonInt64((Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input));
+    public Long parseValue(Object input) {
+        return (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
     }
 
     @Override
-    public BsonInt64 parseLiteral(Object AST) {
-        return new BsonInt64((Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST));
+    public Long parseLiteral(Object AST) {
+        return (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST);
     }
 }

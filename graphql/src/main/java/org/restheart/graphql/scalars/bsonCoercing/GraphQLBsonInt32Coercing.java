@@ -26,24 +26,26 @@ import org.bson.BsonInt32;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 
-public class GraphQLBsonInt32Coercing implements Coercing<BsonInt32, BsonInt32> {
+public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
 
     @Override
-    public BsonInt32 serialize(Object dataFetcherResult) throws CoercingSerializeException {
+    public Integer serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult instanceof BsonInt32 bsonInt32) {
-            return bsonInt32;
+            return bsonInt32.getValue();
+        } else if (dataFetcherResult instanceof Integer integer) {
+            return integer;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected types 'Integer' or 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'.");
         }
     }
 
     @Override
-    public BsonInt32 parseValue(Object input) {
-        return new BsonInt32((Integer) CoercingUtils.builtInCoercing.get("Int").parseValue(input));
+    public Integer parseValue(Object input) {
+        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseValue(input);
     }
 
     @Override
-    public BsonInt32 parseLiteral(Object AST) {
-        return new BsonInt32((Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(AST));
+    public Integer parseLiteral(Object AST) {
+        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(AST);
     }
 }

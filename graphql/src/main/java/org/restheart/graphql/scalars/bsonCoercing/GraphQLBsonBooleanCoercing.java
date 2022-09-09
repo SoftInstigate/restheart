@@ -25,24 +25,26 @@ import graphql.schema.CoercingSerializeException;
 import org.bson.BsonBoolean;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonBooleanCoercing implements Coercing<BsonBoolean, BsonBoolean> {
+public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
 
     @Override
-    public BsonBoolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
+    public Boolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if (dataFetcherResult instanceof BsonBoolean bsonBoolean) {
-            return bsonBoolean;
-        } else {
-            throw new CoercingSerializeException("Expected type 'BsonBoolean' but was '" + typeName(dataFetcherResult) + "'.");
+            return bsonBoolean.getValue();
+        } else if (dataFetcherResult instanceof Boolean value) {
+            return value;
+        }else {
+            throw new CoercingSerializeException("Expected types 'Boolean' or 'BsonBoolean' but was '" + typeName(dataFetcherResult) + "'.");
         }
     }
 
     @Override
-    public BsonBoolean parseValue(Object input) {
-        return new BsonBoolean((Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseValue(input));
+    public Boolean parseValue(Object input) {
+        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseValue(input);
     }
 
     @Override
-    public BsonBoolean parseLiteral(Object AST) {
-        return new BsonBoolean((Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(AST));
+    public Boolean parseLiteral(Object AST) {
+        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(AST);
     }
 }

@@ -28,25 +28,25 @@ import org.bson.BsonDouble;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonDoubleCoerching implements Coercing<BsonDouble, BsonDouble> {
-
-
+public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
     @Override
-    public BsonDouble serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonDouble bsonDouble){
-            return bsonDouble;
+    public Double serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if(dataFetcherResult instanceof BsonDouble bsonString) {
+            return bsonString.getValue();
+        } else if (dataFetcherResult instanceof Double value) {
+            return value;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonDouble' but was '" + typeName(dataFetcherResult) + "'.");
+            throw new CoercingSerializeException("Expected types 'Double' or 'BsonDouble' but was '" + typeName(dataFetcherResult) + "'.");
         }
     }
 
     @Override
-    public BsonDouble parseValue(Object input) throws CoercingParseValueException {
-        return new BsonDouble((Double) CoercingUtils.builtInCoercing.get("Float").parseValue(input));
+    public Double parseValue(Object input) throws CoercingParseValueException {
+        return (Double) CoercingUtils.builtInCoercing.get("Float").parseValue(input);
     }
 
     @Override
-    public BsonDouble parseLiteral(Object AST) throws CoercingParseLiteralException {
-        return new BsonDouble((Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(AST));
+    public Double parseLiteral(Object AST) throws CoercingParseLiteralException {
+        return (Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(AST);
     }
 }
