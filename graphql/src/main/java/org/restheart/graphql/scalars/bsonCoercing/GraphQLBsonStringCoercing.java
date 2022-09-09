@@ -31,7 +31,7 @@ public class GraphQLBsonStringCoercing implements Coercing<String, String> {
         } else if (dataFetcherResult instanceof String string) {
             return string;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonString' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected types 'String' or 'BsonString' but was '" + typeName(dataFetcherResult) +"'.");
         }
     }
 
