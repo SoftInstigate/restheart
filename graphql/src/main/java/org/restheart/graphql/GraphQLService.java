@@ -61,6 +61,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
     public static final Boolean DEFAULT_VERBOSE = false;
+    public static final int DEFAULT_DEFAULT_LIMIT = 100;
+    public static final int DEFAULT_MAX_LIMIT = 1_000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -68,6 +70,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private String db = DEFAULT_APP_DEF_DB;
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
+    private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
+    private int maxLimit = DEFAULT_MAX_LIMIT;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -82,11 +86,18 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         this.db = argOrDefault(config, "db", DEFAULT_APP_DEF_DB);
         this.collection = argOrDefault(config, "collection", DEFAULT_APP_DEF_COLLECTION);
         this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
+        this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
+
+        this.defaultLimit = argOrDefault(config, "default-limit", 100);
+        this.maxLimit = argOrDefault(config, "max-limit", 1000);
 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
         AppDefinitionLoader.setup(db, collection, mclient);
+        GraphQLAppDeserializer.setDefaultLimit(this.defaultLimit);
+        GraphQLAppDeserializer.setMaxLimit(this.maxLimit);
+        QueryMapping.setMaxLimit(this.maxLimit);
     }
 
     @Override

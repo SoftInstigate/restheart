@@ -55,7 +55,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 aggregation.getResolvedStagesAsList(environment);
             } catch (QueryVariableNotBoundException e) {
                 logger.info("Something went wrong while trying to resolve stages {}", e.getMessage());
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
 
             AggregateIterable<BsonDocument> res = null;

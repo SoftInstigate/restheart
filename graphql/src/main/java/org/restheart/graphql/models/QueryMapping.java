@@ -26,6 +26,7 @@ import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderOptions;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
@@ -39,6 +40,12 @@ public class QueryMapping extends FieldMapping implements Batchable {
     private BsonValue limit;
     private BsonValue skip;
     private DataLoaderSettings dataLoaderSettings;
+
+    private static int maxLimit = GraphQLService.DEFAULT_MAX_LIMIT;
+
+    public static void setMaxLimit(int _maxLimit) {
+        maxLimit = _maxLimit;
+    }
 
     private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort, BsonValue limit, BsonValue skip, DataLoaderSettings dataLoaderSettings) {
         super(fieldName);
@@ -114,7 +121,14 @@ public class QueryMapping extends FieldMapping implements Batchable {
             var value = field.get(this);
 
             if(value instanceof BsonDocument bsonDoc) {
-                result.put(field.getName(), searchOperators(bsonDoc, env));
+                var ivalue = searchOperators(bsonDoc, env);
+
+                // make sure limit does not exceed max-limit
+                if (field.getName().equals("limit") && ivalue.asInt32().getValue() > maxLimit) {
+                    throw new QueryVariableNotBoundException("Query variable cannot be greater than " + maxLimit);
+                }
+
+                result.put(field.getName(), ivalue);
             } else if (value instanceof BsonValue bsonVal && !bsonVal.isNull()) {
                 result.put(field.getName(), bsonVal);
             }

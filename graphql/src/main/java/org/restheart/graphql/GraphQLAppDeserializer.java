@@ -22,6 +22,7 @@ package org.restheart.graphql;
 
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
@@ -31,6 +32,17 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 public class GraphQLAppDeserializer {
+    private static BsonInt32 defaultLimit = new BsonInt32(GraphQLService.DEFAULT_DEFAULT_LIMIT);
+    private static int maxLimit = GraphQLService.DEFAULT_MAX_LIMIT;
+
+    public static void setDefaultLimit(int _defaultLimit) {
+        defaultLimit = new BsonInt32(_defaultLimit);
+    }
+
+    public static void setMaxLimit(int _maxLimit) {
+        maxLimit = _maxLimit;
+    }
+
     public static final GraphQLApp fromBsonDocument(BsonDocument appDef) throws GraphQLIllegalAppDefinitionException {
         AppDescriptor descriptor = null;
         String schema = null;
@@ -207,11 +219,19 @@ public class GraphQLAppDeserializer {
                                 if (fieldMappingDoc.containsKey("limit")) {
                                     if (fieldMappingDoc.get("limit").isDocument()) {
                                         queryMappingBuilder.limit(fieldMappingDoc.getDocument("limit"));
-                                    } else if (fieldMappingDoc.get("limit").isNumber()) {
-                                        queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
+                                    } else if (fieldMappingDoc.get("limit").isInt32()) {
+                                        var ln = fieldMappingDoc.get("limit").asInt32();
+
+                                        if (ln.getValue() > maxLimit) {
+                                            throw new GraphQLIllegalAppDefinitionException("Error with field 'limit' of type '" + type + "', value cannot be grater than " + maxLimit);
+                                        } else {
+                                            queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
+                                        }
                                     } else {
                                         throwIllegalDefinitionException(field, type, "limit", "DOCUMENT", fieldMappingDoc.get("limit"));
                                     }
+                                } else {
+                                    queryMappingBuilder.limit(defaultLimit);
                                 }
 
                                 if (fieldMappingDoc.containsKey("skip")) {
