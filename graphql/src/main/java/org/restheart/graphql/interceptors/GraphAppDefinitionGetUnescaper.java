@@ -37,12 +37,12 @@ import org.restheart.utils.BsonUtils;
 import java.util.Map;
 
 
-@RegisterPlugin(name="graphAppDefinitionPutPostEscaper",
+@RegisterPlugin(name="gaphAppDefinitionGetUnescaper",
         description = "unescapes $ prefixed keys in GraphQL application definitions",
         interceptPoint = RESPONSE,
         enabledByDefault = true
 )
-public class GraphAppDefinitionPutPostEscaper implements MongoInterceptor {
+public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
     private String db = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
