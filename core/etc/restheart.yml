@@ -343,6 +343,10 @@ plugins-args:
     uri: /graphql
     db: restheart
     collection: gql-apps
+    # default-limit is used for queries that don't not specify a limit
+    default-limit: 100
+    # max-limit is the maximum value for a Query limit
+    max-limit: 1000
     verbose: false
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:

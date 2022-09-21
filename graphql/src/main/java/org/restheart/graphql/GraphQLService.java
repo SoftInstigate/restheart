@@ -43,7 +43,10 @@ import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
-import org.restheart.plugins.*;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
@@ -65,6 +68,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
     public static final Boolean DEFAULT_VERBOSE = false;
+    public static final int DEFAULT_DEFAULT_LIMIT = 100;
+    public static final int DEFAULT_MAX_LIMIT = 1_000;
 
 
 
@@ -75,6 +80,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private String db = DEFAULT_APP_DEF_DB;
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
+    private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
+    private int maxLimit = DEFAULT_MAX_LIMIT;
 
     @InjectConfiguration
     public void initConf(Map<String, Object> args) throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
@@ -82,9 +89,15 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         if (args != null) {
             try {
-                this.db = arg(args, "db");
-                this.collection = arg(args, "collection");
-                this.verbose = arg(args, "verbose");
+                this.db = argOrDefault(args, "db", DEFAULT_APP_DEF_DB);
+                this.collection = argOrDefault(args, "collection", DEFAULT_APP_DEF_COLLECTION);
+                this.verbose = argOrDefault(args, "verbose", DEFAULT_VERBOSE);
+                this.defaultLimit = argOrDefault(args, "default-limit", DEFAULT_DEFAULT_LIMIT);
+                this.maxLimit = argOrDefault(args, "max-limit", DEFAULT_MAX_LIMIT);
+
+                GraphQLAppDeserializer.setDefaultLimit(this.defaultLimit);
+                GraphQLAppDeserializer.setMaxLimit(this.maxLimit);
+                QueryMapping.setMaxLimit(this.maxLimit);
             } catch (ConfigurationException ex) {
                 // nothing to do, using default values
             }

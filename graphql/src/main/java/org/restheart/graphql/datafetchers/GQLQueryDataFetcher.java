@@ -26,7 +26,6 @@ import graphql.schema.GraphQLList;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.models.QueryMapping;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -52,8 +51,9 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
             BsonDocument int_args = null;
             try {
                 int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
-            } catch (IllegalAccessException | QueryVariableNotBoundException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                LOGGER.info("Something went wrong while trying to resolve query {}", e.getMessage());
+                throw new RuntimeException(e);
             }
 
             var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();

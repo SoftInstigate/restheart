@@ -21,6 +21,7 @@
 package org.restheart.graphql;
 
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
@@ -29,40 +30,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GraphQLAppDeserializer {
+    private static BsonInt32 defaultLimit = new BsonInt32(GraphQLService.DEFAULT_DEFAULT_LIMIT);
+    private static int maxLimit = GraphQLService.DEFAULT_MAX_LIMIT;
+
+    public static void setDefaultLimit(int _defaultLimit) {
+        defaultLimit = new BsonInt32(_defaultLimit);
+    }
+
+    public static void setMaxLimit(int _maxLimit) {
+        maxLimit = _maxLimit;
+    }
 
     public static final GraphQLApp fromBsonDocument(BsonDocument appDef) throws GraphQLIllegalAppDefinitionException {
-
         AppDescriptor descriptor = null;
         String schema = null;
         Map<String, TypeMapping> mappingsMap = null;
 
         if( appDef.containsKey("descriptor")){
-            if (appDef.get("descriptor").isDocument()){
+            if (appDef.get("descriptor").isDocument()) {
                 descriptor = getAppDescriptor(appDef);
-            }
-            else{
-                throw new GraphQLIllegalAppDefinitionException(
-                        "'Descriptor' field must be a 'DOCUMENT' but was " + appDef.get("descriptor").getBsonType()
-                );
+            } else {
+                throw new GraphQLIllegalAppDefinitionException("'Descriptor' field must be a 'DOCUMENT' but was " + appDef.get("descriptor").getBsonType());
             }
         }
 
         if (appDef.containsKey("schema")){
             if (appDef.get("schema").isString()){
                 schema = appDef.getString("schema").getValue();
-            }
-            else{
-                throw new GraphQLIllegalAppDefinitionException(
-                        "'Schema' field must be a 'STRING' but was " + appDef.get("descriptor").getBsonType()
-                );
+            } else {
+                throw new GraphQLIllegalAppDefinitionException("'Schema' field must be a 'STRING' but was " + appDef.get("descriptor").getBsonType());
             }
         }
 
         if(appDef.containsKey("mappings")){
             if (appDef.get("mappings").isDocument()){
                 mappingsMap = getMappings(BsonUtils.unescapeKeys(appDef.getDocument("mappings")).asDocument());
-            }
-            else{
+            } else{
                 throw new GraphQLIllegalAppDefinitionException(
                         "'Mappings' field must be a 'DOCUMENT' but was " + appDef.get("mappings").getBsonType()
                 );
@@ -81,8 +84,7 @@ public class GraphQLAppDeserializer {
     }
 
     private static AppDescriptor getAppDescriptor(BsonDocument doc) throws GraphQLIllegalAppDefinitionException {
-
-        try{
+        try {
             BsonDocument descriptor = doc.getDocument("descriptor");
 
             AppDescriptor.Builder descBuilder = AppDescriptor.newBuilder();
@@ -92,7 +94,6 @@ public class GraphQLAppDeserializer {
             }
 
             if (descriptor.containsKey("uri")) {
-
                 descBuilder.uri(descriptor.getString("uri").getValue());
             } else if (descriptor.containsKey("name")){
                 descBuilder.uri(descriptor.getString("name").getValue());
@@ -100,8 +101,7 @@ public class GraphQLAppDeserializer {
 
             if (descriptor.containsKey("description")){
                 descBuilder.description(descriptor.getString("description").getValue());
-            }
-            else {
+            } else {
                 descBuilder.description("");
             }
 
@@ -113,31 +113,26 @@ public class GraphQLAppDeserializer {
             }
 
             return descBuilder.build();
-
         } catch (BsonInvalidOperationException | IllegalStateException e){
             throw new GraphQLIllegalAppDefinitionException("Error with GraphQL App Descriptor", e);
         }
     }
 
     private static Map<String, TypeMapping> getMappings(BsonDocument doc) throws GraphQLIllegalAppDefinitionException {
+        var mappingMap = new HashMap<String, TypeMapping>();
 
-        Map<String, TypeMapping> mappingMap = new HashMap<>();
-
-        for (String type: doc.keySet()){
+        for (var type: doc.keySet()){
             if(doc.get(type).isDocument()){
-                Map<String, FieldMapping> typeMappings = new HashMap<>();
+                var typeMappings = new HashMap<String, FieldMapping>();
 
-                BsonDocument typeDoc = doc.getDocument(type);
+                var typeDoc = doc.getDocument(type);
 
-                for (String field: typeDoc.keySet()){
-
-                    BsonValue fieldMapping = typeDoc.get(field);
+                for (var field: typeDoc.keySet()){
+                    var fieldMapping = typeDoc.get(field);
 
                     switch (fieldMapping.getBsonType()){
-                        case STRING:
-                            typeMappings.put(field, new FieldRenaming(field, fieldMapping.asString().getValue()));
-                            break;
-                        case DOCUMENT:{
+                        case STRING ->  typeMappings.put(field, new FieldRenaming(field, fieldMapping.asString().getValue()));
+                        case DOCUMENT -> {
                             BsonDocument fieldMappingDoc = fieldMapping.asDocument();
                             QueryMapping.Builder queryMappingBuilder = QueryMapping.newBuilder();
 
@@ -146,37 +141,27 @@ public class GraphQLAppDeserializer {
                             if (fieldMappingDoc.containsKey("db")){
                                 if(fieldMappingDoc.get("db").isString()){
                                     queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
-                                }
-                                else {
+                                } else {
                                     throwIllegalDefinitionException(field, type, "db", "'STRING'", fieldMappingDoc.get("db"));
-
                                 }
-                            }
-                            else {
-                                throw new NullPointerException(
-                                        "Error with field '" + field + "' of type '" + type + "'. 'db' could not be null."
-                                );
+                            } else {
+                                throw new NullPointerException("Error with field '" + field + "' of type '" + type + "'. 'db' could not be null.");
                             }
 
                             if(fieldMappingDoc.containsKey("collection")){
                                 if(fieldMappingDoc.get("collection").isString()){
                                     queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
-                                }
-                                else {
+                                } else {
                                     throwIllegalDefinitionException(field, type, "collection", "'STRING'", fieldMappingDoc.get("collection"));
                                 }
-                            }
-                            else{
-                                throw new NullPointerException(
-                                        "Error with field '" + field +"' of type '"+ type + "'. 'collection' could not be null."
-                                );
+                            } else {
+                                throw new NullPointerException("Error with field '" + field +"' of type '"+ type + "'. 'collection' could not be null.");
                             }
 
                             if(fieldMappingDoc.containsKey("find")){
                                 if(fieldMappingDoc.get("find").isDocument()){
                                     queryMappingBuilder.find(fieldMappingDoc.getDocument("find"));
-                                }
-                                else {
+                                } else {
                                     throwIllegalDefinitionException(field, type, "find", "DOCUMENT", fieldMappingDoc.get("find"));
                                 }
                             }
@@ -184,23 +169,27 @@ public class GraphQLAppDeserializer {
                             if(fieldMappingDoc.containsKey("sort")){
                                 if(fieldMappingDoc.get("sort").isDocument()){
                                     queryMappingBuilder.sort(fieldMappingDoc.getDocument("sort"));
-
-                                }
-                                else {
+                                } else {
                                     throwIllegalDefinitionException(field, type, "sort", "DOCUMENT", fieldMappingDoc.get("sort"));
                                 }
                             }
 
-                            if(fieldMappingDoc.containsKey("limit")){
-                                if(fieldMappingDoc.get("limit").isDocument()){
+                            if (fieldMappingDoc.containsKey("limit")) {
+                                if (fieldMappingDoc.get("limit").isDocument()) {
                                     queryMappingBuilder.limit(fieldMappingDoc.getDocument("limit"));
-                                }
-                                else if(fieldMappingDoc.get("limit").isNumber()){
-                                    queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
-                                }
-                                else {
+                                } else if (fieldMappingDoc.get("limit").isInt32()) {
+                                    var ln = fieldMappingDoc.get("limit").asInt32();
+
+                                    if (ln.getValue() > maxLimit) {
+                                        throw new GraphQLIllegalAppDefinitionException("Error with field 'limit' of type '" + type + "', value cannot be grater than " + maxLimit);
+                                    } else {
+                                        queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
+                                    }
+                                } else {
                                     throwIllegalDefinitionException(field, type, "limit", "DOCUMENT", fieldMappingDoc.get("limit"));
                                 }
+                            } else {
+                                queryMappingBuilder.limit(defaultLimit);
                             }
 
                             if (fieldMappingDoc.containsKey("skip")){
@@ -236,46 +225,30 @@ public class GraphQLAppDeserializer {
                                 else {
                                     throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT", fieldMappingDoc.get("dataLoader"));
                                 }
-
                             }
-
-
 
                             typeMappings.put(field, queryMappingBuilder.build());
                             break;
                         }
-                        default:
-                            throw  new GraphQLIllegalAppDefinitionException(
-                                    "Error with mappings of type: '" + type
-                                            + "'. A field mapping must be of type 'STRING' but was "
-                                            + fieldMapping.getBsonType());
+                        default -> throw new GraphQLIllegalAppDefinitionException(
+                            "Error with mappings of type: '" + type +
+                            "'. A field mapping must be of type 'STRING' but was " +
+                            fieldMapping.getBsonType());
                     }
 
                 }
-                TypeMapping typeMapping = new ObjectMapping(type, typeMappings);
-                mappingMap.put(type, typeMapping);
-            }
-            else {
-                throw new GraphQLIllegalAppDefinitionException(
-                        "Error with mappings of type: '" + type + "'. Type mappings must be of type 'DOCUMENT' but was "
-                                + doc.get(type).getBsonType()
-                );
-            }
 
+                var typeMapping = new ObjectMapping(type, typeMappings);
+                mappingMap.put(type, typeMapping);
+            } else {
+                throw new GraphQLIllegalAppDefinitionException("Error with mappings of type: '" + type + "'. Type mappings must be of type 'DOCUMENT' but was " + doc.get(type).getBsonType());
+            }
         }
 
         return mappingMap;
-
     }
 
     private static void throwIllegalDefinitionException(String field, String type, String arg ,String typeExpected, BsonValue value) throws GraphQLIllegalAppDefinitionException {
-
-        throw new GraphQLIllegalAppDefinitionException(
-                "Error with field '" + field +"' of type '"+ type +
-                        "'. The field '" + arg + "' must be a '" + typeExpected + "' but was '" + value.getBsonType() + "'."
-        );
-
+        throw new GraphQLIllegalAppDefinitionException("Error with field '" + field +"' of type '"+ type + "'. The field '" + arg + "' must be a '" + typeExpected + "' but was '" + value.getBsonType() + "'.");
     }
-
 }
-
