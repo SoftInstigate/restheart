@@ -331,7 +331,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>16.2</version>
+                <version>18.3</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>

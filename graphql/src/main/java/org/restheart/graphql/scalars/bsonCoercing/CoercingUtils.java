@@ -31,23 +31,20 @@ import static graphql.Scalars.GraphQLString;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLLong;
 
 public class CoercingUtils {
     private static final Map<String, GraphQLScalarType> builtInScalars = Map.ofEntries(
             Map.entry("String", GraphQLString),
             Map.entry("Int", GraphQLInt),
             Map.entry("Float", GraphQLFloat),
-            Map.entry("Boolean", GraphQLBoolean),
-            Map.entry("Long", GraphQLLong)
+            Map.entry("Boolean", GraphQLBoolean)
     );
 
     private static final Map<String, Coercing<?,?>> replacements = Map.ofEntries(
             Map.entry("String", new GraphQLBsonStringCoercing()),
             Map.entry("Int", new GraphQLBsonInt32Coercing()),
             Map.entry("Float", new GraphQLBsonDoubleCoerching()),
-            Map.entry("Boolean", new GraphQLBsonBooleanCoercing()),
-            Map.entry("Long", new GraphQLBsonInt64Coercing())
+            Map.entry("Boolean", new GraphQLBsonBooleanCoercing())
     );
 
     public static final Map<String, Coercing<?,?>> builtInCoercing = new HashMap<>();
