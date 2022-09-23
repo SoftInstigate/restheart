@@ -44,12 +44,12 @@
 
     <modules>
         <module>commons</module>
-        <module>polyglot</module>
-        <module>graphql</module>
-        <module>core</module>
+        <module>mongoclient</module>
         <module>security</module>
         <module>mongodb</module>
-        <module>mongoclient</module>
+        <module>graphql</module>
+        <module>polyglot</module>
+        <module>core</module>
         <module>test-plugins</module>
         <module>examples</module>
     </modules>
