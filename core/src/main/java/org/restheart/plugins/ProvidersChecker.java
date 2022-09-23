@@ -129,9 +129,6 @@ public class ProvidersChecker {
      * @return true if all the plugin dependencies can be resolved
      */
     boolean checkDependencies(PluginDescriptor plugin) {
-        // TODO a provider cannot depend on itself
-        // TODO what if a provider requires a provider??
-
         var ret = true;
 
         // check Field Injections that require Providers
@@ -148,13 +145,10 @@ public class ProvidersChecker {
             var _provider = this.providers.stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
             if (_provider.isEmpty()) {
-                // try {
-                    var name =  ""; // name(loadPluginClass(plugin));
-                    LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", name, providerName);
-                // } catch(ClassNotFoundException cnfe) {
-                //     LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.clazz(), providerName);
-                // }
+                LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.clazz(), providerName);
                 ret = false;
+            } else if(_provider.get().getClassName().equals(plugin.clazz())) {
+                LOGGER.error("Provider {} disabled: it depends on itself via @Inject(\"{}\")", plugin.clazz(), providerName);
             } else {
                 var provider = _provider.get();
 

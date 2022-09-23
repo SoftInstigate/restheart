@@ -179,7 +179,7 @@ public class PluginsFactory {
      * creates the services
      */
     Set<PluginRecord<Service<?, ?>>> services() {
-        if (servicesCache == null) {
+        if (this.servicesCache == null) {
             servicesCache = createPlugins(PluginsScanner.SERVICES, "Service", PLUGINS_CONFS);
         }
 
@@ -194,14 +194,27 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Provider<?>>> providers() {
         if (this.providersCache == null) {
-            this.providersCache = createPlugins(PluginsScanner.PROVIDERS, "Provider", PLUGINS_CONFS);
-            this.providersChecker = new ProvidersChecker(this.providersCache);
+            // ProvidersChecker needs to be initialized with providers
+            // so we instantial them all
+            // afterward, we can check it
 
-            var x = PluginsScanner.PROVIDERS.stream()
+            // other plugins (such as Services) can be checked without being
+            // instantiated first (with PluginDescriptor from PluginsScanner)
+            // TODO. checkDependencies for other plugins
+
+            // instantial all providers
+            Set<PluginRecord<Provider<?>>> providers = createPlugins(PluginsScanner.PROVIDERS, "Provider", PLUGINS_CONFS);
+
+            // ProvidersChecker needs the instantiated providers
+            this.providersChecker = new ProvidersChecker(providers);
+
+            // only register valid plugins (that passed ProvidersChecker.checkDependencies)
+            this.providersCache = PluginsScanner.PROVIDERS.stream()
                 .filter(this.providersChecker::checkDependencies)
-                .collect(Collectors.toList());
-
-            // TODO qui controlliamo le dipendenze reciproche dei provider
+                .map(pd -> providers.stream().filter(p -> p.getClassName().equals(pd.clazz())).findFirst())
+                .filter(p -> p.isPresent())
+                .map(p -> p.get())
+                .collect(Collectors.toSet());
         }
 
         return providersCache;
@@ -241,7 +254,7 @@ public class PluginsFactory {
                 if (enabled) {
                     i = instantiatePlugin(clazz, type, name, confs);
 
-                    var pr = new PluginRecord<>(name, description, secure, enabledByDefault, name, (T) i,
+                    var pr = new PluginRecord<>(name, description, secure, enabledByDefault, clazz.getName(), (T) i,
                             confs != null ? confs.get(name) : null);
 
                     this.INSTANTIATED_PLUGINS_RECORDS.put(i.getClass().getName(), pr);
