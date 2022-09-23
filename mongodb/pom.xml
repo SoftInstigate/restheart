@@ -32,6 +32,10 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-mongoclient-provider</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.mongodb</groupId>
       <artifactId>mongodb-driver-sync</artifactId>
     </dependency>
