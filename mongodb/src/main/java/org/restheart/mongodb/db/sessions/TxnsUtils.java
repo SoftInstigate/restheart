@@ -29,8 +29,8 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.RSOps;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class TxnsUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(TxnsUtils.class);
 
-    private static final MongoClient MCLIENT = MongoClientSingleton.getInstance().getClient();
+    private static final MongoClient MCLIENT = RHMongoClients.mclient();
 
     /**
      * Warn: requires two round trips to server

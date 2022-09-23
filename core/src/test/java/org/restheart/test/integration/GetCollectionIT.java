@@ -37,7 +37,7 @@ import org.bson.Document;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
-import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -463,8 +463,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
     public void testBinaryProperty() throws Exception {
         byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();
 
-        MongoCollection<Document> coll = MongoClientSingleton.getInstance()
-                .getClient().getDatabase(dbName).getCollection(collection1Name);
+        MongoCollection<Document> coll = RHMongoClients.mclient().getDatabase(dbName).getCollection(collection1Name);
 
         Document doc = new Document();
 

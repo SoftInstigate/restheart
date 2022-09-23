@@ -45,6 +45,8 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
+
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.RSOps;
 
@@ -75,9 +77,10 @@ class Collections {
         FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
     }
 
-    private final MongoClient client = MongoClientSingleton.get().client();
+    private final MongoClient client;
 
     private Collections() {
+        this.client = RHMongoClients.mclient();
     }
 
     private static Collections INSTANCE = new Collections();

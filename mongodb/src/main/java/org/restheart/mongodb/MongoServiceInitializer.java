@@ -24,7 +24,6 @@ import java.util.Map;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 
 import org.restheart.Configuration;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.InitPoint;
@@ -58,11 +57,6 @@ public class MongoServiceInitializer implements Initializer {
         if (!this.mongoSrvEnabled) {
             return;
         }
-
-        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
-
-        // force first connection to MongoDb
-        MongoClientSingleton.getInstance();
     }
 
     @Override

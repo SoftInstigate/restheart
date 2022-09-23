@@ -43,7 +43,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.exchange.MongoRequestContentInjector;
 import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
@@ -53,6 +52,7 @@ import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.utils.MongoURLUtils;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -61,6 +61,8 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 /**
  * The Service that handles requests to mongodb resources
@@ -79,6 +81,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private String myURI = null;
 
     private PipelinedHandler pipeline;
+
+    @Inject("mclient")
+    private MongoClient mclient;
 
     /**
      * PathMatcher is used by the root PathHandler to route the call. Here we
@@ -115,12 +120,12 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         // see method javadoc for more information
         resetRelativePath(request);
 
-        if (MongoClientSingleton.isInitialized()) {
+        var mclient = RHMongoClients.mclient();
+
+        if (mclient != null) {
             this.pipeline.handleRequest(request.getExchange());
         } else {
-            final var error = "Service mongo is not initialized. "
-                    + "Make sure that mongoInitializer is enabled "
-                    + "and executed successfully";
+            final var error = "MongoDb is not availabe";
 
             response.setInError(500, error);
             LOGGER.error(error);

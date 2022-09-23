@@ -56,7 +56,6 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var path = exchange.getRequestPath();
 

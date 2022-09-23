@@ -20,11 +20,13 @@
 package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
+
 import java.lang.reflect.Type;
 import java.util.Map;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.ExchangeTypeResolver;
 import org.restheart.plugins.InitPoint;
@@ -99,8 +101,7 @@ public class PluginUtils {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static boolean requiresContent(Interceptor interceptor) {
+    public static boolean requiresContent(Interceptor<? extends Request<?>, ? extends Response<?>> interceptor) {
         var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
@@ -272,8 +273,7 @@ public class PluginUtils {
      * @return the service handling the exchange or null if the request is not
      *         handled by a service
      */
-    @SuppressWarnings("rawtypes")
-    public static Service handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
+    public static Service<?, ?> handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
         var pr = handlingServicePluginRecord(registry, exchange);
 
         return pr == null ? null : pr.getInstance();
@@ -286,8 +286,7 @@ public class PluginUtils {
      * @return the plugin record of the service handling the exchange or null if the request is not
      *         handled by a service
      */
-    @SuppressWarnings("rawtypes")
-    public static PluginRecord<Service> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
+    public static PluginRecord<Service<?, ?>> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
         var pi = Request.getPipelineInfo(exchange);
 
         if (pi != null && pi.getType() == SERVICE) {

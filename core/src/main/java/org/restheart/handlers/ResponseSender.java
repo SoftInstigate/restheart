@@ -57,7 +57,7 @@ public class ResponseSender extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings("rawtypes")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var path = exchange.getRequestPath();
 
@@ -65,8 +65,8 @@ public class ResponseSender extends PipelinedHandler {
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             var srv = pluginsRegistry.getServices().stream()
-                    .filter(s -> s.getName().equals(pi.getName()))
-                    .findAny();
+                .filter(s -> s.getName().equals(pi.getName()))
+                .findAny();
 
             if (srv.isPresent()) {
                 var response = (ServiceResponse) srv.get().getInstance().response().apply(exchange);

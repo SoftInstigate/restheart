@@ -49,6 +49,7 @@ import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.utils.HttpStatus;
@@ -72,7 +73,7 @@ public class Databases {
         FIELDS_TO_RETURN.put("_etag", 1);
     }
 
-    private final MongoClient client = MongoClientSingleton.get().client();
+    private final MongoClient client = RHMongoClients.mclient();
 
     /**
      * delegated object for collection operations

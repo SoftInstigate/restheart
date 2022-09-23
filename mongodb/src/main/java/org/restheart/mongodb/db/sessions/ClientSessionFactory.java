@@ -31,9 +31,10 @@ import org.bson.BsonDocumentWriter;
 import org.bson.UuidRepresentation;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
+import org.restheart.mongodb.RHMongoClients;
+
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class ClientSessionFactory {
         private static final ClientSessionFactory INSTANCE = new ClientSessionFactory();
     }
 
-    protected MongoClient mClient = MongoClientSingleton.getInstance().getClient();
+    protected MongoClient mClient = RHMongoClients.mclient();
 
     /**
      *

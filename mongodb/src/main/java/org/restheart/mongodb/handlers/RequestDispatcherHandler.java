@@ -21,6 +21,7 @@
 package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.restheart.exchange.ExchangeKeys.METHOD;
@@ -393,8 +394,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     }
 
     private static class RequestDispatcherHandlerHolder {
-        private static final RequestDispatcherHandler INSTANCE
-                = new RequestDispatcherHandler();
+        private static final RequestDispatcherHandler INSTANCE = new RequestDispatcherHandler();
 
         private RequestDispatcherHandlerHolder() {
         }

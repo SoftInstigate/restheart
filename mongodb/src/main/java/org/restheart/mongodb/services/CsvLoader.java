@@ -33,7 +33,7 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.BsonFromCsvRequest;
 import org.restheart.exchange.BsonResponse;
-import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
@@ -101,6 +101,13 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
         if (request.isOptions()) {
             handleOptions(request);
         } else {
+            var mclient = RHMongoClients.mclient();
+
+            if (mclient == null) {
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "MongoDb not available");
+                return;
+            }
+
             response.setContentTypeAsJson();
             if (doesApply(request)) {
                 try {
@@ -122,7 +129,7 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
                         var documents = request.getContent();
 
                         if (documents != null && documents.size() > 0) {
-                            var mcoll = MongoClientSingleton.getInstance().getClient().getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+                            var mcoll = RHMongoClients.mclient().getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
 
                             if (params.update && !params.upsert) {
                                 documents.stream()

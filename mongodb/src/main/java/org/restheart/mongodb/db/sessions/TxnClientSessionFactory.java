@@ -36,8 +36,8 @@ import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
 import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
 
 import org.restheart.exchange.MongoRequest;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.RSOps;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,7 +194,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
 
         return new TxnClientSessionImpl(
             new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-            MongoClientSingleton.getInstance().getClient(),
+            RHMongoClients.mclient(),
             mergedOptions,
             SessionsUtils.getOperationExecutor(),
             txnServerStatus);

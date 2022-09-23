@@ -57,9 +57,14 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     @OnInit
     public void init() throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
-        setIdentityManager(registry
-                .getAuthenticator(arg(config, "authenticator"))
-                .getInstance());
+        String authenticatorName = arg(config, "authenticator");
+        var authenticator = registry.getAuthenticator(authenticatorName);
+
+        if (authenticator != null) {
+            setIdentityManager(authenticator.getInstance());
+        } else {
+            throw new ConfigurationException("authenticator " + authenticatorName + " is not available");
+        }
     }
 
     private void setIdentityManager(IdentityManager idm) {

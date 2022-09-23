@@ -98,12 +98,12 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         next(exchange);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"rawtypes","unchecked"})
     private void executeResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         Exchange.setResponseInterceptorsExecuted(exchange);
 
-        List<Interceptor> inteceptors;
+        List<Interceptor<?,?>> inteceptors;
 
         if (handlingService != null) {
             inteceptors = this.pluginsRegistry.getServiceInterceptors(handlingService, InterceptPoint.RESPONSE);
@@ -112,6 +112,8 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         }
 
         inteceptors.stream()
+            .filter(ri -> ri instanceof Interceptor)
+            .map(ri -> (Interceptor) ri)
             .filter(ri -> !this.filterRequiringContent || !requiresContent(ri)).filter(ri -> {
                 try {
                     return ri.resolve(request, response);
@@ -136,7 +138,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
     @SuppressWarnings({"unchecked","rawtypes"})
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
-        List<Interceptor> inteceptors;
+        List<Interceptor<?, ?>> inteceptors;
 
         if (handlingService != null) {
             inteceptors = this.pluginsRegistry.getServiceInterceptors(handlingService, InterceptPoint.RESPONSE_ASYNC);
@@ -147,6 +149,8 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         Exchange.setResponseInterceptorsExecuted(exchange);
 
         inteceptors.stream()
+            .filter(ri -> ri instanceof Interceptor)
+            .map(ri -> (Interceptor) ri)
             .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
             .filter(ri -> {
                 try {

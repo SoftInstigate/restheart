@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.FullDocument;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -38,7 +37,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.restheart.mongodb.db.MongoReactiveClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,9 +148,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
 
     private void restartStream() {
         try {
-            MongoReactiveClientSingleton
-                .getInstance()
-                .getClient()
+            RHMongoClients.mclientReactive()
                 .getDatabase(dbName)
                 .getCollection(collName)
                 .watch(resolvedStages)

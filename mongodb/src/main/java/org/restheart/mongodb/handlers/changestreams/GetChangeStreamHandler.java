@@ -36,7 +36,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.QueryNotFoundException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.MongoReactiveClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
 public class GetChangeStreamHandler extends PipelinedHandler {
-
     private final String CONNECTION_HEADER_KEY = "connection";
     private final String CONNECTION_HEADER_VALUE = "upgrade";
     private final String UPGRADE_HEADER_KEY = "upgrade";
@@ -61,7 +60,6 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
@@ -121,14 +119,13 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     private boolean isWebSocketHandshakeRequest(HttpServerExchange exchange) {
-        
         var chVals = exchange.getRequestHeaders()
             .get(CONNECTION_HEADER_KEY);
 
         var uhVals = exchange.getRequestHeaders()
             .get(UPGRADE_HEADER_KEY);
 
-        return chVals != null && uhVals != null && 
+        return chVals != null && uhVals != null &&
                 Arrays.stream(chVals.toArray())
                     .anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
                 Arrays.stream(uhVals.toArray())
@@ -160,8 +157,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     private boolean startStream(HttpServerExchange exchange) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
-        
-        SessionKey streamKey = new SessionKey(exchange);
+        var streamKey = new SessionKey(exchange);
         var request = MongoRequest.of(exchange);
 
         List<BsonDocument> resolvedStages = getResolvedStagesAsList(request);
@@ -169,16 +165,14 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         if (!ChangeStreamsRegistry.getInstance().containsKey(streamKey)) {
             ChangeStreamsRegistry.getInstance().put(streamKey, new SessionInfo(MongoRequest.of(exchange)));
 
-            MongoReactiveClientSingleton
-                    .getInstance()
-                    .getClient()
+            RHMongoClients.mclientReactive()
                     .getDatabase(request.getDBName())
                     .getCollection(request.getCollectionName())
                     .watch(resolvedStages)
                     .fullDocument(FullDocument.UPDATE_LOOKUP)
-                    .subscribe(new ChangeStreamSubscriber(streamKey, 
-                            resolvedStages, 
-                            request.getDBName(), 
+                    .subscribe(new ChangeStreamSubscriber(streamKey,
+                            resolvedStages,
+                            request.getDBName(),
                             request.getCollectionName()));
 
             return true;

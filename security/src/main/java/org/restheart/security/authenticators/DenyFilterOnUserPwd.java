@@ -109,13 +109,11 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
         if (filters == null || filters.keySet().isEmpty()) {
             return false;
         } else {
-            return filters.keySet().contains(propNamePassword)
-                    || filters
-                            .keySet().stream()
-                            .filter(key -> filters.get(key).isDocument())
-                            .map(key -> filters.get(key).asDocument())
-                            .anyMatch(doc
-                                    -> hasFilterOnPassword(doc));
+            return filters.keySet().contains(propNamePassword) || filters
+                .keySet().stream()
+                .filter(key -> filters.get(key).isDocument())
+                .map(key -> filters.get(key).asDocument())
+                .anyMatch(doc -> hasFilterOnPassword(doc));
         }
     }
 }

@@ -30,7 +30,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
 import org.restheart.mongodb.utils.MongoURLUtils;
@@ -96,7 +96,7 @@ public class PostSessionHandler extends PipelinedHandler {
                     mce.getMessage());
 
             // check if server supports sessions
-            if (!replicaSet(MongoClientSingleton.get().client())) {
+            if (!replicaSet(RHMongoClients.mclient())) {
                 response.setInError(HttpStatus.SC_BAD_GATEWAY, mce.getMessage());
             } else {
                 throw mce;

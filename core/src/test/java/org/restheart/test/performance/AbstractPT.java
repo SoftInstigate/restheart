@@ -28,10 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.HttpHost;
 import org.apache.http.client.fluent.Executor;
-import org.restheart.ConfigurationException;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_URI_KEY;
-import org.restheart.mongodb.db.MongoClientSingleton;
-import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 
 /**
  *
@@ -92,12 +89,6 @@ public abstract class AbstractPT {
                     .append(": ")
                     .append(mongoUri)
                     .append("\n");
-        }
-
-        try {
-            MongoClientSingleton.init(MONGO_URI);
-        } catch (ConfigurationException ex) {
-            System.exit(-1);
         }
 
         httpExecutor = Executor.newInstance();

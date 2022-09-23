@@ -22,14 +22,16 @@ package org.restheart.mongodb.handlers.sessions;
 
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.plugins.Initializer;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 import static org.restheart.mongodb.ConnectionChecker.connected;
@@ -44,10 +46,11 @@ import static org.restheart.mongodb.ConnectionChecker.connected;
 public class TxnsActivator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TxnsActivator.class);
 
+    @Inject("mclient")
+    private MongoClient mclient;
+
     @Override
     public void init() {
-        var mclient = MongoClientSingleton.get().client();
-
         if (!connected(mclient)) {
             LOGGER.error("Cannot enable Transactions: MongoDB not connected.");
         } else {

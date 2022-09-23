@@ -54,6 +54,8 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -351,7 +353,6 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     private void deployService(Path pluginPath) throws IOException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a CommonJs service, RESTHeart is running on Node");
@@ -360,7 +361,7 @@ public class PolyglotDeployer implements Initializer {
         try {
             var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
 
-            var record = new PluginRecord<Service>(srv.getName(),
+            var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.getName(),
                 srv.getDescription(),
                 srv.isSecured(),
                 true,
@@ -379,7 +380,6 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     private void deployNodeService(Path pluginPath) throws IOException {
         if (!isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a node service, RESTHeart is not running on Node");
@@ -397,7 +397,7 @@ public class PolyglotDeployer implements Initializer {
 
                     var srv = srvf.get();
 
-                    var record = new PluginRecord<Service>(srv.getName(), "description", srv.isSecured(), true,
+                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.getName(), "description", srv.isSecured(), true,
                             srv.getClass().getName(), srv, new HashMap<>());
 
                     registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());

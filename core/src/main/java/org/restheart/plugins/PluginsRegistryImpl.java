@@ -103,16 +103,14 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Provider<?>>> providers;
 
-    @SuppressWarnings("rawtypes")
-    private Set<PluginRecord<Service>> services = new LinkedHashSet<>();
+    private Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
     // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
     private boolean servicesInitialized = false;
 
     private Set<PluginRecord<Initializer>> initializers;
 
-    @SuppressWarnings("rawtypes")
-    private Set<PluginRecord<Interceptor>> interceptors;
+    private Set<PluginRecord<Interceptor<?, ?>>> interceptors;
 
     private final Set<Predicate> globalSecurityPredicates = new LinkedHashSet<>();
 
@@ -125,6 +123,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public void instantiateAll() {
         var factory = PluginsFactory.getInstance();
 
+        factory.providers(); // providers must be invoked first
         factory.initializers();
         factory.authMechanisms();
         factory.authorizers();
@@ -132,7 +131,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.authenticators();
         factory.interceptors();
         factory.services();
-        factory.providers();
 
         factory.injectDependencies();
     }
@@ -238,8 +236,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * note, this is cached to speed up requests
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public Set<PluginRecord<Interceptor>> getInterceptors() {
+    public Set<PluginRecord<Interceptor<?, ?>>> getInterceptors() {
         if (this.interceptors == null) {
             this.interceptors = new LinkedHashSet<>();
             this.interceptors.addAll(PluginsFactory.getInstance().interceptors());
@@ -261,8 +258,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public void addInterceptor(PluginRecord<Interceptor> i) {
+    public void addInterceptor(PluginRecord<Interceptor<?, ?>> i) {
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
 
         if (this.interceptors == null) {
@@ -274,19 +270,16 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor>> filter) {
+    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor<?, ?>>> filter) {
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
         return this.interceptors.removeIf(filter);
     }
 
-    @SuppressWarnings("rawtypes")
-    private LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
+    private LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
         .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
 
-    @SuppressWarnings("rawtypes")
-    private List<Interceptor> __interceptors(String serviceName, InterceptPoint interceptPoint) {
-        Optional<PluginRecord<Service>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
+    private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
+        Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
 
         if (_service.isPresent()) {
             // if the request is handled by a service set to not execute interceptors
@@ -328,8 +321,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      *
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public List<Interceptor> getServiceInterceptors(Service<?,?> srv, InterceptPoint interceptPoint) {
+    public List<Interceptor<?, ?>> getServiceInterceptors(Service<?, ?> srv, InterceptPoint interceptPoint) {
         Objects.requireNonNull(srv);
         Objects.requireNonNull(interceptPoint);
 
@@ -346,8 +338,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      *
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint) {
+    public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint) {
         var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<String, InterceptPoint>(null, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
@@ -357,8 +348,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * @return the services
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public Set<PluginRecord<Service>> getServices() {
+    public Set<PluginRecord<Service<?, ?>>> getServices() {
         if (!servicesInitialized) {
             this.services.addAll(PluginsFactory.getInstance().services());
             this.servicesInitialized = true;
@@ -401,8 +391,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return m.getValue();
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void plugService(PluginRecord<Service> srv, final String uri, MATCH_POLICY mp, boolean secured) {
+    @Override
+    public void plugService(PluginRecord<Service<?, ?>> srv, final String uri, MATCH_POLICY mp, boolean secured) {
             SecurityHandler securityHandler;
 
             var mechanisms = getAuthMechanisms();

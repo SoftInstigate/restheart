@@ -43,6 +43,8 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +68,7 @@ public class JSInterceptorFactory {
         this.pluginsArgs = pluginsArgs;
     }
 
-    @SuppressWarnings("rawtypes")
-    public PluginRecord<Interceptor> create(Path pluginPath) throws IOException {
+    public PluginRecord<Interceptor<? , ?>> create(Path pluginPath) throws IOException {
         // find plugin root, i.e the parent dir that contains package.json
         var pluginRoot = pluginPath.getParent();
         while(true) {
@@ -218,13 +219,12 @@ public class JSInterceptorFactory {
                 throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + handleResolveHint);
             }
 
-            AbstractJSInterceptor<?,?> interceptor;
+            AbstractJSInterceptor<? extends Request<?>, ? extends Response<?>> interceptor;
 
             @SuppressWarnings("unchecked")
             var args = this.pluginsArgs != null
                 ? (Map<String, Object>) this.pluginsArgs.getOrDefault(name, new HashMap<String, Object>())
                 : new HashMap<String, Object>();
-
 
             Map<String, String> opts = Maps.newHashMap();
             opts.putAll(contextOptions);
@@ -326,7 +326,7 @@ public class JSInterceptorFactory {
                             "wrong js interceptor, wrong member 'options.pluginClass', " + packageHint);
             }
 
-            return new PluginRecord<Interceptor>(interceptor.getName(),
+            return new PluginRecord<Interceptor<? extends Request<?>, ? extends Response<?>>>(interceptor.getName(),
                 interceptor.getDescription(),
                 false,
                 true,

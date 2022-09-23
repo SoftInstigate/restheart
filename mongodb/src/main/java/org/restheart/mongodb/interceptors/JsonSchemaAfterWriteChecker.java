@@ -26,7 +26,7 @@ import org.bson.BsonDocument;
 import org.json.JSONObject;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
@@ -57,30 +57,36 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         super.handle(request, response);
 
+        var mclient = RHMongoClients.mclient();
+
+        if (mclient == null) {
+            throw new IllegalStateException("mclient not availabe");
+        }
+
         if (request.isInError()) {
-            response.rollback(MongoClientSingleton.get().client());
+            response.rollback(mclient);
         }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
-                && request.getCollectionProps() != null
-                && (request.isPatch() && !request.isBulkDocuments())
-                && request.getCollectionProps() != null
-                && request.getCollectionProps()
-                        .containsKey("jsonSchema")
-                && request.getCollectionProps()
-                        .get("jsonSchema")
-                        .isDocument()
-                && (response.getDbOperationResult() != null
-                && response.getDbOperationResult().getHttpCode() < 300);
+            && request.getCollectionProps() != null
+            && (request.isPatch() && !request.isBulkDocuments())
+            && request.getCollectionProps() != null
+            && request.getCollectionProps()
+                    .containsKey("jsonSchema")
+            && request.getCollectionProps()
+                    .get("jsonSchema")
+                    .isDocument()
+            && (response.getDbOperationResult() != null
+            && response.getDbOperationResult().getHttpCode() < 300);
     }
 
     String documentToCheck(MongoRequest request, MongoResponse response) {
         return response.getDbOperationResult().getNewData() == null
-                ? "{}"
-                : BsonUtils.toJson(response.getDbOperationResult().getNewData(), request.getJsonMode());
+            ? "{}"
+            : BsonUtils.toJson(response.getDbOperationResult().getNewData(), request.getJsonMode());
     }
 
     @Override
@@ -88,8 +94,8 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         var ret = new ArrayList<JSONObject>();
 
         var content = response.getDbOperationResult().getNewData() == null
-                ? new BsonDocument()
-                : response.getDbOperationResult().getNewData();
+            ? new BsonDocument()
+            : response.getDbOperationResult().getNewData();
 
         ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
 

@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-mongoclient-provider
  * %%
  * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.db;
+package org.restheart.mongodb;
 
 import com.mongodb.Block;
 import com.mongodb.ConnectionString;

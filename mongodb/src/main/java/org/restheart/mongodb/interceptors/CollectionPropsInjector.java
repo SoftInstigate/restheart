@@ -21,7 +21,6 @@
 package org.restheart.mongodb.interceptors;
 
 import com.mongodb.MongoException;
-import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
@@ -31,7 +30,6 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
@@ -62,13 +60,9 @@ public class CollectionPropsInjector implements MongoInterceptor {
     private static final String FILE_BUCKET_DOES_NOT_EXIST = "File Bucket '%s' does not exist";
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
-    @Inject("mclient")
-    private MongoClient mclient;
-
     /**
      * Makes sure that dbs is instantiated after MongoClient initialization
      *
-     * @param mclient
      */
     @OnInit
     public void init() {

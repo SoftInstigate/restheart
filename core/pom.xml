@@ -340,6 +340,7 @@
             <configuration>
               <target>
                 <mkdir dir="./target/plugins" />
+                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
                 <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
                 <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
                 <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />

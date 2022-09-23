@@ -108,16 +108,14 @@ public class PluginUtilsTest {
     public void testRequiresContent() {
         var plugin = new TestPlugin();
 
-        assertEquals(true,
-                PluginUtils.requiresContent(plugin));
+        assertEquals(true, PluginUtils.requiresContent(plugin));
     }
 
     @Test
     public void testRequiresContentDefault() {
         var plugin = new TestPluginDefault();
 
-        assertEquals(false,
-                PluginUtils.requiresContent(plugin));
+        assertEquals(false, PluginUtils.requiresContent(plugin));
     }
 
     @RegisterPlugin(name = "testPlugin",
@@ -129,9 +127,7 @@ public class PluginUtilsTest {
             interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
             initPoint = InitPoint.BEFORE_STARTUP,
             requiresContent = true)
-    private static class TestPlugin implements JsonService,
-            JsonInterceptor,
-            Initializer {
+    private static class TestPlugin implements JsonService, JsonInterceptor, Initializer {
         @Override
         public void handle(JsonRequest r, JsonResponse s) throws Exception {
 

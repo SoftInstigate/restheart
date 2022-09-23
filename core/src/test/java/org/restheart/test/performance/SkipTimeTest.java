@@ -28,13 +28,10 @@ import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.restheart.mongodb.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.mongodb.db.Databases;
-import org.restheart.mongodb.db.MongoClientSingleton;
-import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 import java.util.Optional;
@@ -46,14 +43,6 @@ public class SkipTimeTest {
     private static final int REQUESTED_SKIPS = 1500000;
     private static final int POOL_SKIPS = 1400000;
 
-    /**
-     *
-     * @throws Exception
-     */
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        MongoClientSingleton.init(MONGO_URI);
-    }
 
     /**
      *

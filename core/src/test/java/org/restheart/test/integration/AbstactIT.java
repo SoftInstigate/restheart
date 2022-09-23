@@ -23,7 +23,6 @@ package org.restheart.test.integration;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mongodb.ConnectionString;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,7 +41,8 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.Bootstrapper;
-import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.RHMongoClients;
+
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +87,7 @@ public abstract class AbstactIT {
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", MONGO_URI.toString());
-        MongoClientSingleton.init(MONGO_URI);
+        RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI), null);
     }
 
     /**
@@ -189,20 +189,16 @@ public abstract class AbstactIT {
     private static void deleteTestData() {
         ArrayList<String> dbNames = new ArrayList<>();
 
-        MongoClientSingleton.getInstance()
-                .getClient()
-                .listDatabaseNames()
-                .into(dbNames);
+        RHMongoClients.mclient().listDatabaseNames().into(dbNames);
 
         ArrayList<String> deleted = new ArrayList<>();
 
-        dbNames
-                .stream()
-                .filter(db -> db.startsWith(TEST_DB_PREFIX))
-                .forEach(dbToDelete -> {
-                    MongoClientSingleton.getInstance().getClient().getDatabase(dbToDelete).drop();
-                    deleted.add(dbToDelete);
-                });
+        dbNames.stream()
+            .filter(db -> db.startsWith(TEST_DB_PREFIX))
+            .forEach(dbToDelete -> {
+                RHMongoClients.mclient().getDatabase(dbToDelete).drop();
+                deleted.add(dbToDelete);
+            });
 
         LOG.debug("test data deleted");
 

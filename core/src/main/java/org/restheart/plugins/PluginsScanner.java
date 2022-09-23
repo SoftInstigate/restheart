@@ -114,14 +114,14 @@ public class PluginsScanner {
 
     public static List<String> allPluginsClassNames() {
         var ret = new ArrayList<String>();
-        INITIALIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        AUTH_MECHANISMS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        AUTHORIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        TOKEN_MANAGERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        AUTHENTICATORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        INTERCEPTORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        SERVICES.stream().map(p -> p.clazz).forEachOrdered(ret::add);
-        PROVIDERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        INITIALIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        AUTH_MECHANISMS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        AUTHORIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        TOKEN_MANAGERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        AUTHENTICATORS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        INTERCEPTORS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        SERVICES.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        PROVIDERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
 
         return ret;
     }
@@ -224,7 +224,13 @@ public class PluginsScanner {
                     annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
                 }
 
-                ret.add(new FieldInjectionDescriptor(fi.getName(), clazz, annotationParams, fi.hashCode()));
+                try {
+                    var fieldClass = Class.forName(fi.getTypeDescriptor().toString());
+                    ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
+                } catch(ClassNotFoundException cnfe) {
+                    // should not happen
+                    throw new RuntimeException(cnfe);
+                }
             }
         }
 
@@ -340,61 +346,10 @@ public class PluginsScanner {
     }
 }
 
-class PluginDescriptor {
-    final String clazz;
-    final ArrayList<InjectionDescriptor> injections;
+record PluginDescriptor(String clazz, ArrayList<InjectionDescriptor> injections) {}
 
-    PluginDescriptor(String clazz, ArrayList<InjectionDescriptor> injections) {
-        this.clazz = clazz;
-        this.injections = injections;
-    }
+interface InjectionDescriptor {}
 
-    @Override
-    public String toString() {
-        return "{ clazz:" + this.clazz + ", injections: " + this.injections + " }";
-    }
-}
+record MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) implements InjectionDescriptor {}
 
-interface InjectionDescriptor {
-
-}
-
-class MethodInjectionDescriptor implements InjectionDescriptor {
-    final String method;
-    final Class<?> clazz;
-    final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams;
-    final ArrayList<String> methodParams;
-    final int methodHash;
-
-    MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) {
-        this.method = method;
-        this.clazz = clazz;
-        this.annotationParams = annotationParams;
-        this.methodParams = methodParams;
-        this.methodHash = methodHash;
-    }
-
-    @Override
-    public String toString() {
-        return "{ method:" + this.method + ", injection: " + this.clazz + ", annotationParams: " + this.annotationParams + ", methodParams: " + this.methodParams + ", methodHash: " + this.methodHash + " }";
-    }
-}
-
-class FieldInjectionDescriptor implements InjectionDescriptor {
-    final String field;
-    final Class<?> clazz;
-    final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams;
-    final int fieldHash;
-
-    FieldInjectionDescriptor(String field, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash) {
-        this.field = field;
-        this.clazz = clazz;
-        this.annotationParams = annotationParams;
-        this.fieldHash = fieldHash;
-    }
-
-    @Override
-    public String toString() {
-        return "{ field:" + this.field + ", injection: " + this.clazz + ", annotationParams: " + this.annotationParams + ", fieldHash: " + this.fieldHash + " }";
-    }
-}
+record FieldInjectionDescriptor(String field, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash) implements InjectionDescriptor {}

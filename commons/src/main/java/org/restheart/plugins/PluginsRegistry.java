@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
@@ -85,23 +87,19 @@ public interface PluginsRegistry {
     /**
      * @return add the interceptor
      */
-    @SuppressWarnings("rawtypes")
-    public void addInterceptor(PluginRecord<Interceptor> i);
+    public void addInterceptor(PluginRecord<Interceptor<?, ?>> i);
 
     /**
      * @return remove all interceptors that match the filter predicate
      */
-    @SuppressWarnings("rawtypes")
-    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor>> filter);
+    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor<?, ?>>> filter);
 
     /**
      * @return the services
      */
-    @SuppressWarnings("rawtypes")
-    public Set<PluginRecord<Service>> getServices();
+    public Set<PluginRecord<Service<?, ?>>> getServices();
 
-    @SuppressWarnings("rawtypes")
-    public Set<PluginRecord<Interceptor>> getInterceptors();
+    public Set<PluginRecord<Interceptor<?, ?>>> getInterceptors();
 
     /**
      * @return the interceptors of the service srv
@@ -109,16 +107,14 @@ public interface PluginsRegistry {
      * @param interceptPoint
      *
      */
-    @SuppressWarnings("rawtypes")
-    public List<Interceptor> getServiceInterceptors(Service<?,?> srv, InterceptPoint interceptPoint);
+    public List<Interceptor<?, ?>> getServiceInterceptors(Service<?, ?> srv, InterceptPoint interceptPoint);
 
     /**
      * @return the interceptors of the proxy
      * @param interceptPoint
      *
      */
-    @SuppressWarnings("rawtypes")
-    public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint);
+    public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint);
 
     /**
      * global security predicates must all resolve to true to allow the request
@@ -165,8 +161,7 @@ public interface PluginsRegistry {
      * @param mp        The match policy, either exact or prefix
      * @param secured   true to invoke the service only after authentication and authorization succeed
      */
-    @SuppressWarnings({"rawtypes"})
-    public void plugService(PluginRecord<Service> srv, final String uri, MATCH_POLICY mp, boolean secured);
+    public void plugService(PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>> srv, final String uri, MATCH_POLICY mp, boolean secured);
 
     /**
      * @param path

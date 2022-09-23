@@ -26,7 +26,8 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.internal.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
-import org.restheart.mongodb.db.MongoClientSingleton;
+
+import org.restheart.mongodb.RHMongoClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class SessionsUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionsUtils.class);
 
-    private static final MongoClient MCLIENT = MongoClientSingleton.getInstance().getClient();
+    private static final MongoClient MCLIENT = RHMongoClients.mclient();
 
     /**
      *
@@ -79,7 +80,7 @@ public class SessionsUtils {
 
     public static OperationExecutor getOperationExecutor() {
         try {
-            var mclient = MongoClientSingleton.getInstance().getClient();
+            var mclient = RHMongoClients.mclient();
             var getOperationExecutor = mclient.getClass().getDeclaredMethod("getOperationExecutor");
 
             getOperationExecutor.setAccessible(true);

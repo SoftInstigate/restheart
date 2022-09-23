@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.handlers.files;
 
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
@@ -34,8 +35,8 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.db.GridFs;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -73,7 +74,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
      *
      * @param next
      */
-    public GetFileBinaryHandler(PipelinedHandler next) {
+    public GetFileBinaryHandler(MongoClient mclient, PipelinedHandler next) {
         super(next);
     }
 
@@ -95,7 +96,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         LOGGER.trace("GET " + exchange.getRequestURL());
         final var bucket = GridFs.extractBucketName(request.getCollectionName());
 
-        var gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient().getDatabase(request.getDBName()), bucket);
+        var gridFSBucket = GridFSBuckets.create(RHMongoClients.mclient().getDatabase(request.getDBName()), bucket);
 
         Bson filter;
 

@@ -30,7 +30,7 @@ import com.google.common.reflect.TypeToken;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Provider<T> extends Plugin {
+public interface Provider<T> extends ConfigurablePlugin {
     /**
      * @param caller the PluginRecord of the plugin that requires this dependency
      * @return the provided object
@@ -53,5 +53,15 @@ public interface Provider<T> extends Plugin {
         return new TypeToken<T>(getClass()) {
 			private static final long serialVersionUID = 1363463867743712234L;
         }.getType();
+    }
+
+    /**
+     *
+     * @return the Class of the generic parameter T
+     */
+    default Class<? super T> rawType() {
+        return new TypeToken<T>(getClass()) {
+			private static final long serialVersionUID = 1363463867743712234L;
+        }.getRawType();
     }
 }

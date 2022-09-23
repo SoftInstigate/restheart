@@ -35,6 +35,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
@@ -79,14 +80,14 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"rawtypes","unchecked"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Request request;
-        Response response;
+        Request<?> request;
+        Response<?> response;
 
-        var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
+        var handlingService = (Service<ServiceRequest<?>, ServiceResponse<?>>) PluginUtils.handlingService(pluginsRegistry, exchange);
 
-        List<Interceptor> interceptors;
+        List<Interceptor<?, ?>> interceptors;
 
         if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
@@ -98,7 +99,10 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             interceptors = pluginsRegistry.getProxyInterceptors(interceptPoint);
         }
 
-        interceptors.stream().filter(ri -> {
+        interceptors.stream()
+            .filter(ri -> ri instanceof Interceptor)
+            .map(ri -> (Interceptor) ri)
+            .filter(ri -> {
             try {
                 return ri.resolve(request, response);
             } catch (Exception e) {

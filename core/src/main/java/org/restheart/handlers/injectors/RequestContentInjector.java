@@ -26,12 +26,12 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
-
-import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -129,27 +129,29 @@ public class RequestContentInjector extends PipelinedHandler {
                 || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"rawtypes","unchecked"})
     private boolean isContentRequired(HttpServerExchange exchange, InterceptPoint interceptPoint) {
-        Request request;
-        Response response;
+        Request<?> request;
+        Response<?> response;
 
         var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
 
-        List<Interceptor> interceptors;
+        List<Interceptor<?, ?>> interceptors;
 
         if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
             response = ServiceResponse.of(exchange, ServiceResponse.class);
             interceptors = this.pluginsRegistry.getServiceInterceptors(handlingService, interceptPoint);
-
         } else {
             request = ByteArrayProxyRequest.of(exchange);
             response = ByteArrayProxyResponse.of(exchange);
             interceptors = this.pluginsRegistry.getProxyInterceptors(interceptPoint);
         }
 
-        return interceptors.stream().filter(ri -> {
+        return interceptors.stream()
+            .filter(ri -> ri instanceof Interceptor)
+            .map(ri -> (Interceptor) ri)
+            .filter(ri -> {
                 try {
                     return ri.resolve(request, response);
                 } catch (Exception e) {
