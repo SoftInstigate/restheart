@@ -35,65 +35,32 @@ import org.slf4j.LoggerFactory;
 public class ProvidersChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProvidersChecker.class);
 
-    private Set<PluginRecord<Provider<?>>> providers = null;
+    private Set<PluginRecord<Provider<?>>> providerRecords = null;
 
-    ProvidersChecker(Set<PluginRecord<Provider<?>>> provides) {
-        this.providers = provides;
+    ProvidersChecker(Set<PluginRecord<Provider<?>>> providerRecords) {
+        this.providerRecords = providerRecords;
     }
 
     /**
-     * Providers are instantiated to perform type checking (by checkDependencies)
+     * checks if there are cyclies in the providers graph (mutual dependencies)
      */
-    // private Set<PluginRecord<Provider<?>>> instantiateProvidersForChecking(ArrayList<PluginDescriptor> pluginDescriptors, Map<String, Map<String, Object>> confs) {
-    //     var ret = new LinkedHashSet<PluginRecord<Provider<?>>>();
-
-    //     pluginDescriptors.stream().forEachOrdered(plugin -> {
-    //         try {
-    //             var clazz = loadPluginClass(plugin);
-    //             Plugin i;
-
-    //             var name = name(clazz);
-    //             var description = description(clazz);
-    //             var secure = secure(clazz);
-    //             var enabledByDefault = enabledByDefault(clazz);
-    //             var conf = confs != null ? confs.get(name) : null;
-    //             var enabled = PluginRecord.isEnabled(enabledByDefault, conf);
-
-    //             if (enabled) {
-    //                 i = instantiatePlugin(clazz, "Provider", name, conf);
-
-    //                 var pr = new PluginRecord<Provider<?>>(name, description, secure, enabledByDefault, name, (Provider<?>) i, confs != null ? confs.get(name) : null);
-
-    //                 if (pr.isEnabled()) {
-    //                     ret.add(pr);
-    //                 }
-    //             }
-    //         } catch (ClassNotFoundException | ConfigurationException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-    //             // error will be logged later by createPlugins
-    //             LOGGER.trace("Error instantiating Provider {}: {}", plugin.clazz(), getRootException(e).getMessage(), e);
-    //         }
-    //     });
-
-    //     return ret;
-    // }
-
     private void providersGraph() {
         MutableGraph<Provider<?>> providersGraph = GraphBuilder.directed().allowsSelfLoops(false).build();
 
-        PluginsScanner.PROVIDERS.stream()
-            .map(p -> provider(p.clazz()))
+        PluginsScanner.providers().stream()
+            .map(p -> providerRecord(p.clazz()))
             .filter(p -> p != null)
             .map(pd -> pd.getInstance())
             .forEach(providersGraph::addNode);
 
-        for (var pd: PluginsScanner.PROVIDERS) {
+        for (var pd: PluginsScanner.providers()) {
             pd.injections().stream()
                 .filter(i -> i instanceof FieldInjectionDescriptor a)
                 .map(i -> (FieldInjectionDescriptor) i)
                 .forEach(i -> {
-                    var thisProvider = provider(pd.clazz()).getInstance();
+                    var thisProvider = providerRecord(pd.clazz()).getInstance();
                     var otherProviderName = i.annotationParams().get(0).getValue();
-                    var _otherProvider = providers.stream().filter(p -> p.getName().equals(otherProviderName)).findFirst();
+                    var _otherProvider = providerRecords.stream().filter(p -> p.getName().equals(otherProviderName)).findFirst();
 
                     if (_otherProvider.isPresent()) {
                         providersGraph.putEdge(thisProvider, _otherProvider.get().getInstance());
@@ -104,8 +71,8 @@ public class ProvidersChecker {
                 });
         }
 
-        var _aProviderDecriptor = PluginsScanner.PROVIDERS.stream().findAny().get();
-        var aProvider = provider(_aProviderDecriptor.clazz()).getInstance();
+        var _aProviderDecriptor = PluginsScanner.providers().stream().findAny().get();
+        var aProvider = providerRecord(_aProviderDecriptor.clazz()).getInstance();
 
         var reachableNodes = Graphs.reachableNodes(providersGraph, aProvider);
 
@@ -116,8 +83,12 @@ public class ProvidersChecker {
         }
     }
 
-    PluginRecord<Provider<?>> provider(String className) {
-        return this.providers.stream().filter(p -> p.getClassName().equals(className)).findFirst().orElse(null);
+    PluginRecord<Provider<?>> providerRecord(String className) {
+        return this.providerRecords.stream().filter(p -> p.getClassName().equals(className)).findFirst().orElse(null);
+    }
+
+    PluginDescriptor providerDescriptor(String className) {
+        return PluginsScanner.providers().stream().filter(p -> p.clazz().equals(className)).findFirst().orElse(null);
     }
 
     /**
@@ -142,7 +113,7 @@ public class ProvidersChecker {
         for (var injection : injections) {
             var providerName = injection.annotationParams().get(0).getValue();
 
-            var _provider = this.providers.stream().filter(p -> p.getName().equals(providerName)).findFirst();
+            var _provider = this.providerRecords.stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
             if (_provider.isEmpty()) {
                 LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.clazz(), providerName);
@@ -151,6 +122,17 @@ public class ProvidersChecker {
                 LOGGER.error("Provider {} disabled: it depends on itself via @Inject(\"{}\")", plugin.clazz(), providerName);
             } else {
                 var provider = _provider.get();
+
+                // recurisively check the provider
+                if (!checkDependencies(providerDescriptor(provider.getClassName()))) {
+                    LOGGER.error("Plugin {} disabled: the provider for @Inject(\"{}\") is disabled", plugin.clazz(), providerName);
+                    return false;
+                }
+
+                if (!provider.isEnabled()) {
+                    LOGGER.error("Plugin {} disabled: the provider for @Inject(\"{}\") is disabled", plugin.clazz(), providerName);
+                    return false;
+                }
 
                 var providerType = ((Provider<?>)provider.getInstance()).rawType().getName();
                 var fieldType = injection.clazz().getName();

@@ -67,14 +67,14 @@ public class PluginsScanner {
     private static final String SERVICE_CLASS_NAME = Service.class.getName();
     private static final String PROVIDERR_CLASS_NAME = Provider.class.getName();
 
-    static final ArrayList<PluginDescriptor> INITIALIZERS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> AUTH_MECHANISMS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> AUTHORIZERS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> TOKEN_MANAGERS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> AUTHENTICATORS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
-    static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> INITIALIZERS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> AUTH_MECHANISMS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> AUTHORIZERS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> TOKEN_MANAGERS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> AUTHENTICATORS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
+    private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
     public static final ArrayList<MethodInjectionDescriptor> INJECTIONS = new ArrayList<>();
 
@@ -124,6 +124,38 @@ public class PluginsScanner {
         PROVIDERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
 
         return ret;
+    }
+
+    static final ArrayList<PluginDescriptor> providers() {
+        return PROVIDERS;
+    }
+
+    static final ArrayList<PluginDescriptor> initializers() {
+        return INITIALIZERS;
+    }
+
+    static final ArrayList<PluginDescriptor> authMechanisms() {
+        return AUTH_MECHANISMS;
+    }
+
+    static final ArrayList<PluginDescriptor> authorizers() {
+        return AUTHORIZERS;
+    }
+
+    static final ArrayList<PluginDescriptor> tokenManagers() {
+        return TOKEN_MANAGERS;
+    }
+
+    static final ArrayList<PluginDescriptor> authenticators() {
+        return AUTHENTICATORS;
+    }
+
+    static final ArrayList<PluginDescriptor> interceptors() {
+        return INTERCEPTORS;
+    }
+
+    static final ArrayList<PluginDescriptor> services() {
+        return SERVICES;
     }
 
     /**
