@@ -1,7 +1,11 @@
 package org.restheart.plugins;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.MockedStatic;
+
 import static org.mockito.Mockito.mockStatic;
 
 import java.util.AbstractMap;
@@ -12,45 +16,47 @@ import java.util.List;
 import java.util.Set;
 
 public class PluginsTest {
+    private static ProvidersChecker checker;
+    private static List<PluginDescriptor> descriptors;
+
+    private static MockedStatic<PluginsScanner> mockedScanner;
+
+    @BeforeClass
+    public static void before() {
+        descriptors = providerDescriptors();
+        mockedScanner = mockPluginsScanner(descriptors);
+        checker = new ProvidersChecker(providerRecords());
+    }
+
+    @AfterClass
+    public static void after() {
+        if (mockedScanner != null) {
+            mockedScanner.close();
+        }
+    }
+
     @Test
     public void allSatisfiedDependencies() {
-        var descriptors = providerDescriptors();
-
-        // init PluginScanner and ProvidersChecker
-        mockPluginsScanner(descriptors);
-        var checker = new ProvidersChecker(providerRecords());
-
         var pdD_C = descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get();
         Assert.assertTrue("check provider D_C is fine", checker.checkDependencies(pdD_C));
     }
 
     @Test
     public void missingDirectDependency() {
-        var descriptors = providerDescriptors();
-
-        // init PluginScanner and ProvidersChecker
-        mockPluginsScanner(descriptors);
-        var checker = new ProvidersChecker(providerRecords());
-
         var pdB = descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get();
         Assert.assertFalse("check provider B is wrong due to missing direct dependency", checker.checkDependencies(pdB));
     }
 
     @Test
     public void missingTransitiveDependency() {
-        var descriptors = providerDescriptors();
-
-        // init PluginScanner and ProvidersChecker
-        mockPluginsScanner(descriptors);
-        var checker = new ProvidersChecker(providerRecords());
-
         var pdE_B = descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get();
         Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", checker.checkDependencies(pdE_B));
     }
 
-    private void mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
+    private static MockedStatic<PluginsScanner> mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
         var scanner = mockStatic(PluginsScanner.class);
         scanner.when(PluginsScanner::providers).thenReturn(providerDescriptors);
+        return scanner;
     }
 
     /**
@@ -60,7 +66,7 @@ public class PluginsTest {
      * B is invalid, because it depends on a not existing provider
      * @return
      */
-    private List<PluginDescriptor> providerDescriptors() {
+    private static List<PluginDescriptor> providerDescriptors() {
         /*
          * PluginDescriptor
          *  ArrayList<InjectionDescriptor> injections
@@ -104,7 +110,7 @@ public class PluginsTest {
      * A -> C_A -> D_C, B, E->B
      * @return
      */
-    private Set<PluginRecord<Provider<?>>> providerRecords() {
+    private static Set<PluginRecord<Provider<?>>> providerRecords() {
         var providersRecords = new HashSet<PluginRecord<Provider<?>>>();
         providersRecords.add(new PluginRecord<Provider<?>>("a", "A", false, true, ProviderA.class.getName(), new ProviderA(), new HashMap<String, Object>()));
         providersRecords.add(new PluginRecord<Provider<?>>("b", "B", false, true, ProviderB.class.getName(), new ProviderB(), new HashMap<String, Object>()));

@@ -42,6 +42,7 @@ public class ProvidersChecker {
     }
 
     /**
+     * WIP
      * checks if there are cyclies in the providers graph (mutual dependencies)
      */
     private void providersGraph() {
