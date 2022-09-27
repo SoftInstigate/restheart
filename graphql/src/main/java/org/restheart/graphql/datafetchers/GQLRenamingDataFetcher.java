@@ -27,7 +27,6 @@ import org.bson.BsonValue;
 import org.restheart.graphql.models.FieldRenaming;
 
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
@@ -38,12 +37,10 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
-        return CompletableFuture.supplyAsync(() -> {
-            var alias = ((FieldRenaming) this.fieldMapping).getAlias();
+        var alias = ((FieldRenaming) this.fieldMapping).getAlias();
 
-            BsonDocument parentDocument = dataFetchingEnvironment.getSource();
-            return getValues(parentDocument, alias);
-        });
+        BsonDocument parentDocument = dataFetchingEnvironment.getSource();
+        return getValues(parentDocument, alias);
     }
 
 
@@ -60,7 +57,7 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
                     current = current.asArray().get(index);
                 } catch (NumberFormatException nfe) {
                     var array = new BsonArray();
-                    for (BsonValue value : current.asArray()) {
+                    for (var value : current.asArray()) {
                         String[] copy = Arrays.copyOfRange(splitPath, i, splitPath.length);
                         array.add(getValues(value, String.join(".", copy)));
                         current = array;

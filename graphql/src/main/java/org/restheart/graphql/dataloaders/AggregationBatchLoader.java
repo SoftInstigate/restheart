@@ -10,7 +10,6 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Facet;
 
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.dataloader.BatchLoader;
@@ -33,26 +32,22 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
 
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> pipelines) {
-
         return CompletableFuture.supplyAsync(() -> {
+            var res = new ArrayList<BsonValue>();
 
-            List<BsonValue> res = new ArrayList<>();
-
-            List<Facet> listOfFacets = pipelines.stream()
-                    .map(pipeline -> new Facet(
-                            String.valueOf(pipeline.hashCode()),
-                            toBson(pipeline)))
+            var listOfFacets = pipelines.stream()
+                    .map(pipeline -> new Facet(String.valueOf(pipeline.hashCode()), toBson(pipeline)))
                     .toList();
 
             var iterable = mongoClient.getDatabase(this.db)
                     .getCollection(this.collection, BsonValue.class)
                     .aggregate(List.of(Aggregates.facet(listOfFacets)));
 
-            BsonArray aggResult = new BsonArray();
+            var aggResult = new BsonArray();
 
             iterable.into(aggResult);
 
-            BsonDocument resultDoc = aggResult.get(0).asDocument();
+            var resultDoc = aggResult.get(0).asDocument();
 
             pipelines.forEach(query -> {
                 BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
