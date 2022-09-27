@@ -27,7 +27,6 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.QueryMapping;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,47 +44,46 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
-        return CompletableFuture.supplyAsync(() ->{
-            var queryMapping = (QueryMapping) this.fieldMapping;
+        var queryMapping = (QueryMapping) this.fieldMapping;
 
-            BsonDocument int_args = null;
-            try {
-                int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
-            } catch (Exception e) {
-                LOGGER.info("Something went wrong while trying to resolve query {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
+        BsonDocument int_args = null;
 
-            var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
-            var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
-            var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
-            var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
+        try {
+            int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+        } catch (Exception e) {
+            LOGGER.info("Something went wrong while trying to resolve query {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
 
-            LOGGER.debug("Executing query: find {}, sort {}, skip {}, limit {}", _find, _sort, _skip, _limit);
+        var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
+        var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
+        var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
+        var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-            var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
+        LOGGER.debug("Executing query: find {}, sort {}, skip {}, limit {}", _find, _sort, _skip, _limit);
 
-            if (_sort != null) {
-                query = query.sort(_sort);
-            }
+        var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
 
-            if (_skip != null) {
-                query = query.skip(_skip);
-            }
+        if (_sort != null) {
+            query = query.sort(_sort);
+        }
 
-            if (_limit != null) {
-                query = query.limit(_limit);
-            }
+        if (_skip != null) {
+            query = query.skip(_skip);
+        }
 
-            boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+        if (_limit != null) {
+            query = query.limit(_limit);
+        }
 
-            if (isMultiple) {
-                var queryResult = new BsonArray();
-                query.into(queryResult.asArray());
-                return queryResult;
-            } else {
-                return query.first();
-            }
-        });
+        boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+
+        if (isMultiple) {
+            var queryResult = new BsonArray();
+            query.into(queryResult.asArray());
+            return queryResult;
+        } else {
+            return query.first();
+        }
     }
 }
