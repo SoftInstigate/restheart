@@ -46,10 +46,8 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
     }
 
     public QueryBatchLoader(String db, String collection) {
-
         this.db = db;
         this.collection = collection;
-
     }
 
     /**
@@ -72,37 +70,29 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
      *                  ...
      *              ]}
      *
-     * PERFORMANCE: still to test...
-     *
      * @param queries: list of queries to merge by $or operator
      * @return: list of results, one for each query
      */
 
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> queries) {
-
         return CompletableFuture.supplyAsync(() -> {
-
-            List<BsonValue> res = new ArrayList<>();
-
+            var res = new ArrayList<BsonValue>();
             List<Bson> stages = new ArrayList<>();
 
             // if there are at least 2 queries within the batch
             if (queries.size() > 1){
-
-                BsonArray mergedCond = new BsonArray();
-                List<Facet> listOfFacets = new ArrayList<>();
+                var mergedCond = new BsonArray();
+                var listOfFacets = new ArrayList<Facet>();
 
                 // foreach query within the batch...
                 queries.forEach(query -> {
-
                     // add find condition to merged array
                     BsonDocument findClause = query.asDocument().containsKey("find") ? query.asDocument().getDocument("find") : new BsonDocument();
                     mergedCond.add(findClause);
 
                     // create a new sub-pipeline with query stages
                     listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query.asDocument())));
-
                 });
 
                 // 1° stage --> $match with conditions merged by $or operator
@@ -117,29 +107,21 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
                 iterable.into(aggResult);
 
-
-                BsonDocument resultDoc = aggResult.get(0).asDocument();
+                var resultDoc = aggResult.get(0).asDocument();
                 queries.forEach(query -> {
                     BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
                     res.add(queryResult);
                 });
-
-
                 // ... otherwise merging is not needed and sub-pipelines neither
-            }else {
-
-                BsonDocument query = queries.get(0).asDocument();
-
+            } else {
+                var query = queries.get(0).asDocument();
                 stages = getQueryStages(query);
-
                 var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
-
-                BsonArray aggResult = new BsonArray();
+                var aggResult = new BsonArray();
 
                 iterable.into(aggResult);
 
                 res.add(aggResult);
-
             }
 
             return res;
@@ -147,32 +129,29 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
     }
 
-
     private List<Bson> getQueryStages(BsonDocument queryDoc){
+        var stages = new ArrayList<Bson>();
 
-        List<Bson> stages = new ArrayList<>();
+        if (queryDoc.containsKey("find")) {
+            stages.add(Aggregates.match(queryDoc.getDocument("find")));
+        }
 
-        if(queryDoc.containsKey("find")) stages.add(Aggregates.match(queryDoc.getDocument("find")));
+        if (queryDoc.containsKey("sort")) {
+            stages.add(Aggregates.sort(queryDoc.getDocument("sort")));
+        }
 
-        if(queryDoc.containsKey("sort")) stages.add(Aggregates.sort(queryDoc.getDocument("sort")));
-
-        if(queryDoc.containsKey("skip")) {
-            Integer skip = queryDoc.getInt32("skip").getValue();
+        if (queryDoc.containsKey("skip")) {
+            var skip = queryDoc.getInt32("skip").getValue();
             if (skip > 0) stages.add(Aggregates.skip(skip));
         }
 
-        if(queryDoc.containsKey("limit")) {
-            Integer limit = queryDoc.getInt32("limit").getValue();
+        if (queryDoc.containsKey("limit")) {
+            var limit = queryDoc.getInt32("limit").getValue();
             if (limit > 0) {
                 stages.add(Aggregates.limit(limit));
             }
         }
 
-
-
-
-
         return stages;
-
     }
 }
