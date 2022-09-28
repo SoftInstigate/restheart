@@ -25,6 +25,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -91,7 +92,8 @@ public class PluginsFactory {
      */
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
         if (authMechanismsCache == null) {
-            authMechanismsCache = createPlugins(PluginsScanner.authMechanisms(), "Authentication Mechanism", Bootstrapper.getConfiguration().getAuthMechanisms());
+            var validPlugins = PluginsScanner.authMechanisms().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            authMechanismsCache = createPlugins(validPlugins, "Authentication Mechanism", Bootstrapper.getConfiguration().getAuthMechanisms());
         }
 
         return authMechanismsCache;
@@ -105,7 +107,8 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Authenticator>> authenticators() {
         if (authenticatorsCache == null) {
-            authenticatorsCache = createPlugins(PluginsScanner.authenticators(), "Authenticator", Bootstrapper.getConfiguration().getAuthenticators());
+            var validPlugins = PluginsScanner.authenticators().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            authenticatorsCache = createPlugins(validPlugins, "Authenticator", Bootstrapper.getConfiguration().getAuthenticators());
         }
 
         return authenticatorsCache;
@@ -119,7 +122,8 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Authorizer>> authorizers() {
         if (authorizersCache == null) {
-            authorizersCache = createPlugins(PluginsScanner.authorizers(), "Authorizer", Bootstrapper.getConfiguration().getAuthorizers());
+            var validPlugins = PluginsScanner.authorizers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            authorizersCache = createPlugins(validPlugins, "Authorizer", Bootstrapper.getConfiguration().getAuthorizers());
         }
 
         return authorizersCache;
@@ -133,7 +137,8 @@ public class PluginsFactory {
      */
     PluginRecord<TokenManager> tokenManager() {
         if (tokenManagerCache == null) {
-            Set<PluginRecord<TokenManager>> tkms = createPlugins(PluginsScanner.tokenManagers(), "Token Manager", Bootstrapper.getConfiguration().getTokenManagers());
+            var validPlugins = PluginsScanner.tokenManagers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            Set<PluginRecord<TokenManager>> tkms = createPlugins(validPlugins, "Token Manager", Bootstrapper.getConfiguration().getTokenManagers());
 
             if (tkms != null) {
                 var tkm = tkms.stream().filter(t -> t.isEnabled()).findFirst();
@@ -154,7 +159,8 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Initializer>> initializers() {
         if (initializersCache == null) {
-            initializersCache = createPlugins(PluginsScanner.initializers(), "Initializer", PLUGINS_CONFS);
+            var validPlugins = PluginsScanner.initializers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            initializersCache = createPlugins(validPlugins, "Initializer", PLUGINS_CONFS);
         }
 
         return initializersCache;
@@ -167,7 +173,8 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Interceptor<?, ?>>> interceptors() {
         if (interceptorsCache == null) {
-            interceptorsCache = createPlugins(PluginsScanner.interceptors(), "Interceptor", PLUGINS_CONFS);
+            var validPlugins = PluginsScanner.interceptors().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            interceptorsCache = createPlugins(validPlugins, "Interceptor", PLUGINS_CONFS);
         }
 
         return interceptorsCache;
@@ -180,37 +187,31 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Service<?, ?>>> services() {
         if (this.servicesCache == null) {
-            servicesCache = createPlugins(PluginsScanner.services(), "Service", PLUGINS_CONFS);
+            var validPlugins = PluginsScanner.services().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            servicesCache = createPlugins(validPlugins, "Service", PLUGINS_CONFS);
         }
 
         return servicesCache;
     }
 
+    private Set<PluginDescriptor> validProviders = null;
     private Set<PluginRecord<Provider<?>>> providersCache = null;
-    private ProvidersChecker providersChecker = null;
 
     /**
      * creates the providers
      */
     Set<PluginRecord<Provider<?>>> providers() {
         if (this.providersCache == null) {
-            // ProvidersChecker needs to be initialized with providers
-            // so we instantial them all
-            // afterward, we can check it
-
-            // other plugins (such as Services) can be checked without being
-            // instantiated first (with PluginDescriptor from PluginsScanner)
-            // TODO. checkDependencies for other plugins
-
             // instantial all providers
             Set<PluginRecord<Provider<?>>> providers = createPlugins(PluginsScanner.providers(), "Provider", PLUGINS_CONFS);
 
-            // ProvidersChecker needs the instantiated providers
-            this.providersChecker = new ProvidersChecker(providers);
+            // register providers rawTypes (i.e. the class of the provided object)
+            // must be before ProvidersChecker.validProviders()
+            providers.stream().forEach(p -> providersTypes.put(p.getName(), p.getInstance().rawType()));
 
-            // only register valid plugins (that passed ProvidersChecker.checkDependencies)
-            this.providersCache = PluginsScanner.providers().stream()
-                .filter(this.providersChecker::checkDependencies)
+            this.validProviders = ProvidersChecker.validProviders(PluginsScanner.providers());
+            // only register valid plugins (from ProvidersChecker.validProviders())
+            this.providersCache = validProviders.stream()
                 .map(pd -> providers.stream().filter(p -> p.getClassName().equals(pd.clazz())).findFirst())
                 .filter(p -> p.isPresent())
                 .map(p -> p.get())
@@ -220,12 +221,24 @@ public class PluginsFactory {
         return providersCache;
     }
 
+    private static Map<String, Class<?>> providersTypes = new HashMap<>();
+
+    /**
+     * NOTE: this is availabe only after providers instantiation happening in method providers()
+     * @return a Map whose keys are the provider's name and values are the classes of the provided objects
+     */
+    static Map<String, Class<?>> providersTypes() {
+        if (PluginsScanner.providers().size() > 0 && providersTypes.keySet().size() == 0) {
+            throw new IllegalStateException("providersTypes are available only after providers instantiation happening in method providers()");
+        }
+        return providersTypes;
+    }
 
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
     @SuppressWarnings("unchecked")
-    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(ArrayList<PluginDescriptor> pluginDescriptors, String type, Map<String, Map<String, Object>> confs) {
+    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(List<PluginDescriptor> pluginDescriptors, String type, Map<String, Map<String, Object>> confs) {
         var ret = new LinkedHashSet<PluginRecord<T>>();
 
         // sort by priority
@@ -310,7 +323,7 @@ public class PluginsFactory {
         }
     }
 
-    private ArrayList<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
+    private List<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
 
     private HashMap<String, PluginRecord<?>> INSTANTIATED_PLUGINS_RECORDS = new HashMap<>();
 

@@ -38,8 +38,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.AbstractMap;
-
 import org.restheart.Bootstrapper;
 import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.plugins.security.AuthMechanism;
@@ -88,12 +88,11 @@ public class PluginsScanner {
 
         if (NativeImageBuildTimeChecker.isBuildTime()) {
             classGraph = new ClassGraph().disableModuleScanning() // added for GraalVM
-                    .disableDirScanning() // added for GraalVM
-                    .disableNestedJarScanning() // added for GraalVM
-                    .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                    .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory,
-                                                                                 // otherwise build fails
-                    .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+                .disableDirScanning() // added for GraalVM
+                .disableNestedJarScanning() // added for GraalVM
+                .disableRuntimeInvisibleAnnotations() // added for GraalVM
+                .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory, otherwise build fails
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
         } else {
             var rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
@@ -126,42 +125,42 @@ public class PluginsScanner {
         return ret;
     }
 
-    static final ArrayList<PluginDescriptor> providers() {
+    static final List<PluginDescriptor> providers() {
         return PROVIDERS;
     }
 
-    static final ArrayList<PluginDescriptor> initializers() {
+    static final List<PluginDescriptor> initializers() {
         return INITIALIZERS;
     }
 
-    static final ArrayList<PluginDescriptor> authMechanisms() {
+    static final List<PluginDescriptor> authMechanisms() {
         return AUTH_MECHANISMS;
     }
 
-    static final ArrayList<PluginDescriptor> authorizers() {
+    static final List<PluginDescriptor> authorizers() {
         return AUTHORIZERS;
     }
 
-    static final ArrayList<PluginDescriptor> tokenManagers() {
+    static final List<PluginDescriptor> tokenManagers() {
         return TOKEN_MANAGERS;
     }
 
-    static final ArrayList<PluginDescriptor> authenticators() {
+    static final List<PluginDescriptor> authenticators() {
         return AUTHENTICATORS;
     }
 
-    static final ArrayList<PluginDescriptor> interceptors() {
+    static final List<PluginDescriptor> interceptors() {
         return INTERCEPTORS;
     }
 
-    static final ArrayList<PluginDescriptor> services() {
+    static final List<PluginDescriptor> services() {
         return SERVICES;
     }
 
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
-    private static ArrayList<PluginDescriptor> collectPlugins(ScanResult scanResult, String className) {
+    private static List<PluginDescriptor> collectPlugins(ScanResult scanResult, String className) {
         var ret = new ArrayList<PluginDescriptor>();
 
         var registeredPlugins = scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
@@ -182,15 +181,13 @@ public class PluginsScanner {
 
         var plugins = registeredPlugins.intersect(listOfType);
 
-        plugins.stream().forEachOrdered(plugin -> ret.add(new PluginDescriptor(plugin.getName(), collectInjections(plugin))));
-
-        return ret;
+        return plugins.stream().map(c -> descriptor(c)).collect(Collectors.toList());
     }
 
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
-    private static ArrayList<PluginDescriptor> collectProviders(ScanResult scanResult) {
+    private static List<PluginDescriptor> collectProviders(ScanResult scanResult) {
         var ret = new ArrayList<PluginDescriptor>();
 
         var providers = scanResult.getClassesImplementing(PROVIDERR_CLASS_NAME);
@@ -199,9 +196,15 @@ public class PluginsScanner {
             return ret;
         }
 
-        providers.stream().forEachOrdered(provider -> ret.add(new PluginDescriptor(provider.getName(), collectInjections(provider))));
+        return providers.stream().map(c -> descriptor(c)).collect(Collectors.toList());
+    }
 
-        return ret;
+    private static PluginDescriptor descriptor(ClassInfo plugin) {
+        var clazz = plugin.getName();
+        var name = plugin.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
+                .filter(p -> "name".equals(p.getName())).map(p -> p.getValue()).findAny().get().toString();
+        var enabled = isEnabled(name, plugin);
+        return new PluginDescriptor(name, clazz, enabled, collectInjections(plugin));
     }
 
     private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo) {
@@ -211,6 +214,15 @@ public class PluginsScanner {
         ret.addAll(collectMethodInjections(pluginClassInfo, OnInit.class));
 
         return ret;
+    }
+
+    private static boolean isEnabled(String name, ClassInfo plugin) {
+        var isEnabledByDefault = (boolean) plugin.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
+                .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
+
+
+        var confArgs = Bootstrapper.getConfiguration().getPluginsArgs().get(name);
+        return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
     }
 
     private static ArrayList<InjectionDescriptor> collectMethodInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
@@ -298,14 +310,14 @@ public class PluginsScanner {
 
             if (jars != null && jars.length != 0) {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                        .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                        .addClassLoader(new URLClassLoader((jars))).addClassLoader(ClassLoader.getSystemClassLoader())
-                        .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+                    .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
+                    .addClassLoader(new URLClassLoader((jars))).addClassLoader(ClassLoader.getSystemClassLoader())
+                    .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
             } else {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                        .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                        .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().ignoreFieldVisibility().enableMethodInfo().enableFieldInfo()
-                        .initializeLoadedClasses();
+                    .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
+                    .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().ignoreFieldVisibility().enableMethodInfo().enableFieldInfo()
+                    .initializeLoadedClasses();
             }
         }
 
@@ -382,7 +394,7 @@ public class PluginsScanner {
     }
 }
 
-record PluginDescriptor(String clazz, ArrayList<InjectionDescriptor> injections) {}
+record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {}
 
 interface InjectionDescriptor {}
 

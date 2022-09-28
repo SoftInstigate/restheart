@@ -5,27 +5,29 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.MockedStatic;
-
-import static org.mockito.Mockito.mockStatic;
+import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+
+import static org.mockito.Mockito.mockStatic;
 
 public class PluginsTest {
-    private static ProvidersChecker checker;
     private static List<PluginDescriptor> descriptors;
 
     private static MockedStatic<PluginsScanner> mockedScanner;
+    private static MockedStatic<Bootstrapper> mockedBootstrapper;
+    private static MockedStatic<PluginsFactory> mockedPluginsFactory;
 
     @BeforeClass
     public static void before() {
         descriptors = providerDescriptors();
         mockedScanner = mockPluginsScanner(descriptors);
-        checker = new ProvidersChecker(providerRecords());
+        mockedBootstrapper = mockBootstrapper();
+        mockedPluginsFactory = mockPluginsFactory();
     }
 
     @AfterClass
@@ -33,24 +35,53 @@ public class PluginsTest {
         if (mockedScanner != null) {
             mockedScanner.close();
         }
+
+        if (mockedBootstrapper != null) {
+            mockedBootstrapper.close();
+        }
+
+        if (mockedPluginsFactory != null) {
+            mockedPluginsFactory.close();
+        }
     }
 
     @Test
     public void allSatisfiedDependencies() {
         var pdD_C = descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get();
-        Assert.assertTrue("check provider D_C is fine", checker.checkDependencies(pdD_C));
+        var vps = ProvidersChecker.validProviders(PluginsScanner.providers());
+        Assert.assertTrue("check provider D_C is fine", ProvidersChecker.checkDependencies(vps, pdD_C));
     }
 
     @Test
     public void missingDirectDependency() {
         var pdB = descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get();
-        Assert.assertFalse("check provider B is wrong due to missing direct dependency", checker.checkDependencies(pdB));
+        var vps = ProvidersChecker.validProviders(PluginsScanner.providers()); 
+        Assert.assertFalse("check provider B is wrong due to missing direct dependency", ProvidersChecker.checkDependencies(vps, pdB));
     }
 
     @Test
     public void missingTransitiveDependency() {
         var pdE_B = descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get();
-        Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", checker.checkDependencies(pdE_B));
+        var vps = ProvidersChecker.validProviders(PluginsScanner.providers()); 
+        Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", ProvidersChecker.checkDependencies(vps, pdE_B));
+    }
+
+    @Test
+    public void validProviders() {
+        var vps = ProvidersChecker.validProviders(PluginsScanner.providers());
+
+        // valid providers
+        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderA.class.getName())).findAny().get()));
+        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC_A.class.getName())).findAny().get()));
+        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get()));
+        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get()));
+
+        // invalid providers
+        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get()));
+        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderWT.class.getName())).findAny().get()));
+        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderSelf.class.getName())).findAny().get()));
+        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC1.class.getName())).findAny().get()));
+        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC2.class.getName())).findAny().get()));
     }
 
     private static MockedStatic<PluginsScanner> mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
@@ -59,11 +90,37 @@ public class PluginsTest {
         return scanner;
     }
 
+    private static MockedStatic<Bootstrapper> mockBootstrapper() {
+        var bootrapper = mockStatic(Bootstrapper.class);
+        bootrapper.when(Bootstrapper::getConfiguration).thenReturn(Configuration.Builder.build(true));
+        return bootrapper;
+    }
+
+    private static MockedStatic<PluginsFactory> mockPluginsFactory() {
+        var providersTypes = new HashMap<String, Class<?>>();
+        providersTypes.put("a", new ProviderA().rawType());
+        providersTypes.put("b", new ProviderB().rawType());
+        providersTypes.put("c_a", new ProviderC_A().rawType());
+        providersTypes.put("d_c", new ProviderD_C().rawType());
+        providersTypes.put("e_b", new ProviderE_B().rawType());
+        providersTypes.put("wrongType", new ProviderWT().rawType());
+        providersTypes.put("self", new ProviderSelf().rawType());
+        providersTypes.put("c1", new ProviderC1().rawType());
+        providersTypes.put("c2", new ProviderC2().rawType());
+
+        var pluginsFactory = mockStatic(PluginsFactory.class);
+        pluginsFactory.when(PluginsFactory::providersTypes).thenReturn(providersTypes);
+        return pluginsFactory;
+    }
+
     /**
      * * return the following set of provider descriptors
-     * A -> C_A -> D_C, B, E->B
+     * A -> C_A -> D_C, B, E->B, WT->A, SELF->SELF, C1->C2->C1
      *
      * B is invalid, because it depends on a not existing provider
+     * WT is invalid, because the injected field is of the wrong type
+     * SELF is invalid, because it depends on itself
+     * C1 and C2 are invalid, due to circular dependency
      * @return
      */
     private static List<PluginDescriptor> providerDescriptors() {
@@ -77,7 +134,6 @@ public class PluginsTest {
         var apC_A = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apC_A.add(new AbstractMap.SimpleEntry<String, Object>("value", "a"));
         iC_A.add(new FieldInjectionDescriptor("s", String.class, apC_A, 1));
-
 
         var iD_C = new ArrayList<InjectionDescriptor>();
         var apD_C = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
@@ -94,30 +150,39 @@ public class PluginsTest {
         apE_B.add(new AbstractMap.SimpleEntry<String, Object>("value", "b"));
         iE_B.add(new FieldInjectionDescriptor("s", String.class, apE_B, 4));
 
+        var iWT = new ArrayList<InjectionDescriptor>();
+        var apWT = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+        apWT.add(new AbstractMap.SimpleEntry<String, Object>("value", "a"));
+        iWT.add(new FieldInjectionDescriptor("s", Integer.class, apWT, 5));
+
+        var iSelf = new ArrayList<InjectionDescriptor>();
+        var apSelf = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+        apSelf.add(new AbstractMap.SimpleEntry<String, Object>("value", "self"));
+        iSelf.add(new FieldInjectionDescriptor("s", String.class, apSelf, 6));
+
+        var iC1 = new ArrayList<InjectionDescriptor>();
+        var apC1 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+        apC1.add(new AbstractMap.SimpleEntry<String, Object>("value", "c2"));
+        iC1.add(new FieldInjectionDescriptor("s", String.class, apC1, 7));
+
+        var iC2 = new ArrayList<InjectionDescriptor>();
+        var apC2 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+        apC2.add(new AbstractMap.SimpleEntry<String, Object>("value", "c1"));
+        iC2.add(new FieldInjectionDescriptor("s", String.class, apC2, 8));
+
         var providerDescriptors = new ArrayList<PluginDescriptor>();
 
-        providerDescriptors.add(new PluginDescriptor(ProviderA.class.getName(), new ArrayList<InjectionDescriptor>()));
-        providerDescriptors.add(new PluginDescriptor(ProviderB.class.getName(), iB));
-        providerDescriptors.add(new PluginDescriptor(ProviderC_A.class.getName(), iC_A));
-        providerDescriptors.add(new PluginDescriptor(ProviderD_C.class.getName(), iD_C));
-        providerDescriptors.add(new PluginDescriptor(ProviderE_B.class.getName(), iE_B));
+        providerDescriptors.add(new PluginDescriptor("a", ProviderA.class.getName(), true, new ArrayList<InjectionDescriptor>()));
+        providerDescriptors.add(new PluginDescriptor("b", ProviderB.class.getName(), true, iB));
+        providerDescriptors.add(new PluginDescriptor("c_a", ProviderC_A.class.getName(), true, iC_A));
+        providerDescriptors.add(new PluginDescriptor("d_c", ProviderD_C.class.getName(), true, iD_C));
+        providerDescriptors.add(new PluginDescriptor("e_b", ProviderE_B.class.getName(), true, iE_B));
+        providerDescriptors.add(new PluginDescriptor("wrongType", ProviderWT.class.getName(), true, iWT));
+        providerDescriptors.add(new PluginDescriptor("self", ProviderSelf.class.getName(), true, iSelf));
+        providerDescriptors.add(new PluginDescriptor("c1", ProviderC1.class.getName(), true, iC1));
+        providerDescriptors.add(new PluginDescriptor("c2", ProviderC2.class.getName(), true, iC2));
 
         return providerDescriptors;
-    }
-
-    /**
-     * return the following set of provider records
-     * A -> C_A -> D_C, B, E->B
-     * @return
-     */
-    private static Set<PluginRecord<Provider<?>>> providerRecords() {
-        var providersRecords = new HashSet<PluginRecord<Provider<?>>>();
-        providersRecords.add(new PluginRecord<Provider<?>>("a", "A", false, true, ProviderA.class.getName(), new ProviderA(), new HashMap<String, Object>()));
-        providersRecords.add(new PluginRecord<Provider<?>>("b", "B", false, true, ProviderB.class.getName(), new ProviderB(), new HashMap<String, Object>()));
-        providersRecords.add(new PluginRecord<Provider<?>>("c_a", "C_A", false, true, ProviderC_A.class.getName(), new ProviderC_A(), new HashMap<String, Object>()));
-        providersRecords.add(new PluginRecord<Provider<?>>("d_c", "D_C", false, true, ProviderD_C.class.getName(), new ProviderD_C(), new HashMap<String, Object>()));
-        providersRecords.add(new PluginRecord<Provider<?>>("e_b", "E_B", false, true, ProviderE_B.class.getName(), new ProviderE_B(), new HashMap<String, Object>()));
-        return providersRecords;
     }
 }
 
@@ -166,6 +231,50 @@ class ProviderD_C implements Provider<String> {
 // name=e_b
 class ProviderE_B implements Provider<String> {
     @Inject("b")
+    String s;
+
+    @Override
+    public String get(PluginRecord<?> caller) {
+        return s;
+    }
+}
+
+// name=wrongType
+class ProviderWT implements Provider<Integer> {
+    @Inject("a") // a provides a String
+    Integer n;
+
+    @Override
+    public Integer get(PluginRecord<?> caller) {
+        return n;
+    }
+}
+
+// name=self
+class ProviderSelf implements Provider<String> {
+    @Inject("self")
+    String s;
+
+    @Override
+    public String get(PluginRecord<?> caller) {
+        return s;
+    }
+}
+
+// name=c1
+class ProviderC1 implements Provider<String> {
+    @Inject("c2")
+    String s;
+
+    @Override
+    public String get(PluginRecord<?> caller) {
+        return s;
+    }
+}
+
+// name=c2
+class ProviderC2 implements Provider<String> {
+    @Inject("c1")
     String s;
 
     @Override
