@@ -339,7 +339,11 @@ public class PluginsScanner {
             if (pluginsDirectory == null) {
                 return new URL[0];
             } else {
-                checkPluginDirectory(pluginsDirectory);
+                try {
+                    checkPluginDirectory(pluginsDirectory);
+                } catch(IllegalStateException ise) {
+                    return new URL[0];
+                }
             }
 
             var urls = new ArrayList<>();
@@ -366,12 +370,12 @@ public class PluginsScanner {
 
         private void checkPluginDirectory(Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
-                LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
+                LOGGER.warn("Plugin directory {} does not exist", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " does not exist");
             }
 
             if (!Files.isReadable(pluginsDirectory)) {
-                LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
+                LOGGER.warn("Plugin directory {} is not readable", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
             }
         }
