@@ -23,13 +23,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.restheart.exchange.CORSHeaders;
 import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 
 /**
  * Services allow to extend the API adding web services
@@ -39,7 +39,7 @@ import io.undertow.util.HttpString;
  * @see https://restheart.org/docs/plugins/core-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends HandlingPlugin<R, S>, ConfigurablePlugin {
+public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends HandlingPlugin<R, S>, ConfigurablePlugin, CORSHeaders {
         /**
          * handles the request
          *
@@ -102,13 +102,8 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
             var response = Response.of(exchange);
 
             response.getHeaders()
-                .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
-                    "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
-                    "Accept, Accept-Encoding, Authorization, "
-                    + "Content-Length, Content-Type, Host, "
-                    + "If-Match, Origin, X-Requested-With, "
-                    + "User-Agent, No-Auth-Challenge");
+                .put(ACCESS_CONTROL_ALLOW_METHODS, accessControlAllowMethods(request))
+                .put(ACCESS_CONTROL_ALLOW_HEADERS, accessControlAllowHeaders(request));
 
             response.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();

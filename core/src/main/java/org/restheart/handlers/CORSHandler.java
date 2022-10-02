@@ -20,57 +20,39 @@
  */
 package org.restheart.handlers;
 
-import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.Headers;
-import static io.undertow.util.Headers.LOCATION_STRING;
-import static io.undertow.util.Headers.ORIGIN;
-import io.undertow.util.HttpString;
-import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
-import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
+import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
+import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static org.restheart.exchange.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
+
+import org.restheart.exchange.Request;
+import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.utils.PluginUtils;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * The Access-Control-Expose-Headers header indicates which headers are safe to
- * expose to the API of a CORS API specification.
+ * Adds the response CORS headers defined by the Service's accessControl*() methods
  *
  */
 public class CORSHandler extends PipelinedHandler {
-
-    public static final String ALL_ORIGINS = "*";
-
     public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        HeaderMap responseHeaders = exchange.getResponseHeaders();
+        var handlingService = PluginUtils.handlingService(PluginsRegistryImpl.getInstance(), exchange);
+        var request = Request.of(exchange);
+
+        var responseHeaders = exchange.getResponseHeaders();
 
         if (!responseHeaders.contains(ACCESS_CONTROL_ALLOW_ORIGIN)) {
-            if (requestHeaders.contains(ORIGIN)) {
-
-                responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN,
-                        requestHeaders.get(ORIGIN).getFirst());
-            } else {
-                responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, ALL_ORIGINS);
-            }
+            responseHeaders.add(ACCESS_CONTROL_ALLOW_ORIGIN, handlingService.accessControlAllowOrigin(request));
         }
 
         if (!responseHeaders.contains(ACCESS_CONTROL_ALLOW_CREDENTIAL)) {
-            responseHeaders.add(ACCESS_CONTROL_ALLOW_CREDENTIAL, "true");
+            responseHeaders.add(ACCESS_CONTROL_ALLOW_CREDENTIAL, handlingService.accessControlAllowCredentials(request));
         }
 
         if (!responseHeaders.contains(ACCESS_CONTROL_EXPOSE_HEADERS)) {
-            responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS,
-                    LOCATION_STRING + ", " + Headers.ETAG + ", "
-                    + AUTH_TOKEN_HEADER.toString() + ", "
-                    + AUTH_TOKEN_VALID_HEADER.toString() + ", "
-                    + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
-                    + HttpHeaders.X_POWERED_BY);
+            responseHeaders.add(ACCESS_CONTROL_EXPOSE_HEADERS, handlingService.accessControlExposeHeaders(request));
         }
     }
 
@@ -99,14 +81,6 @@ public class CORSHandler extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         injectAccessControlAllowHeaders(exchange);
-
         next(exchange);
-    }
-
-    interface CORSHeaders {
-        HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
-        HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
-        HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");
-        HttpString ACCESS_CONTROL_ALLOW_METHODS = HttpString.tryFromString("Access-Control-Allow-Methods");
     }
 }
