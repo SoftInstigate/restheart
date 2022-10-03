@@ -88,7 +88,7 @@ public class PolyglotDeployer implements Initializer {
     private Map<String, Object> pluginsArgs;
 
     @OnInit
-    private void onInit() {
+    public void onInit() {
         if (!isRunningOnGraalVM()) {
             LOGGER.warn("Not running on GraalVM, polyglot plugins deployer disabled!");
             return;

@@ -34,6 +34,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.utils.CleanerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,9 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     """;
 
     JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
+        // register cleaner
+        CleanerUtils.get().cleaner().register(this, new State(this.ctxs));
+
         this.mclient = mclient;
         this.pluginArgs = pluginArgs;
         this.isService = true;

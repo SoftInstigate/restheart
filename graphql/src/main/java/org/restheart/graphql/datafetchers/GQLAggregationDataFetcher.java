@@ -41,7 +41,6 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         }
     }
 
-
     public GQLAggregationDataFetcher(AggregationMapping aggregationMapping) {
         super(aggregationMapping);
     }
