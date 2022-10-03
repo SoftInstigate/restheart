@@ -723,45 +723,49 @@ public class BsonUtilsTest {
             return true;
         }
 
-        if (left.size() != right.size()) {
+        if (left != null && right != null && left.size() != right.size()) {
             return false;
         }
 
-        boolean ret = true;
+        if (left != null && right != null) {
+            boolean ret = true;
 
-        for (int cont = 0; cont < left.size(); cont++) {
-            Optional<BsonValue> lo = left.get(cont);
-            Optional<BsonValue> ro = right.get(cont);
+            for (int cont = 0; cont < left.size(); cont++) {
+                Optional<BsonValue> lo = left.get(cont);
+                Optional<BsonValue> ro = right.get(cont);
 
-            if (lo == null && ro != null) {
-                ret = false;
-                break;
-            }
-
-            if (lo != null && ro == null) {
-                ret = false;
-                break;
-            }
-
-            if (lo != null && ro != null) {
-                if (lo.isPresent() && !ro.isPresent()) {
+                if (lo == null && ro != null) {
                     ret = false;
                     break;
                 }
 
-                if (!lo.isPresent() && ro.isPresent()) {
+                if (lo != null && ro == null) {
                     ret = false;
                     break;
                 }
 
-                if (lo.isPresent() && ro.isPresent() && !lo.get().equals(ro.get())) {
-                    ret = false;
-                    break;
+                if (lo != null && ro != null) {
+                    if (lo.isPresent() && !ro.isPresent()) {
+                        ret = false;
+                        break;
+                    }
+
+                    if (!lo.isPresent() && ro.isPresent()) {
+                        ret = false;
+                        break;
+                    }
+
+                    if (lo.isPresent() && ro.isPresent() && !lo.get().equals(ro.get())) {
+                        ret = false;
+                        break;
+                    }
                 }
             }
+
+            return ret;
+        } else {
+            return false;
         }
-
-        return ret;
     }
 
     private boolean checkGetPropsFromPath(BsonValue json, String path, String... expected) {

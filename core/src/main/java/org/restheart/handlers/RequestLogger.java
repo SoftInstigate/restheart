@@ -126,7 +126,7 @@ public class RequestLogger extends PipelinedHandler {
 
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
 
-            var pb = request.getPipelineInfo();
+            var pb = request == null ? null :request.getPipelineInfo();
 
             if (pb != null) {
                 sb.append("          servedBy=")

@@ -645,7 +645,7 @@ public class MongoRequest extends BsonRequest {
      *
      * @return the txn id or null if request type is not TRANSACTION
      */
-    public long getTxnId() {
+    public Long getTxnId() {
         return isTxn() ? Long.parseLong(getPathTokenAt(4)) : null;
     }
 
