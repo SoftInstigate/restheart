@@ -3,9 +3,6 @@ package org.restheart.examples;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
-import org.restheart.exchange.ByteArrayRequest;
-import org.restheart.exchange.ByteArrayResponse;
-import org.restheart.plugins.ByteArrayInterceptor;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.ProxyInterceptor;
 
