@@ -49,6 +49,8 @@ public class XPoweredByInjector extends PipelinedHandler {
         super(null);
     }
 
+    private static final HttpString X_POWERED_BY = HttpString.tryFromString(HttpHeaders.X_POWERED_BY);
+
     /**
      *
      * @param exchange
@@ -56,8 +58,7 @@ public class XPoweredByInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.getResponseHeaders().add(HttpString.tryFromString(
-                HttpHeaders.X_POWERED_BY), "restheart.org");
+        exchange.getResponseHeaders().add(X_POWERED_BY, "restheart.org");
 
         next(exchange);
     }

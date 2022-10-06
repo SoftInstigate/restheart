@@ -29,6 +29,7 @@
         <module>form-handler</module>
         <module>protobuffer-contacts</module>
         <module>greeter-service</module>
+        <module>x-powered-by-remover</module>
     </modules>
 
     <dependencyManagement>
