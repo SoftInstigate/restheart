@@ -1,3 +1,3 @@
 # X-Powered-By Remover
 
-Tow response interceptors that remove the `X-Powered-By: restheart.org` header from Service and Proxied resources responses
+Two response interceptors that remove the `X-Powered-By: restheart.org` header from Service and Proxied resources responses.
