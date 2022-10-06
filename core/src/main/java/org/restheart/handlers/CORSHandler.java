@@ -39,6 +39,12 @@ import org.restheart.utils.PluginUtils;
 public class CORSHandler extends PipelinedHandler {
     public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
         var handlingService = PluginUtils.handlingService(PluginsRegistryImpl.getInstance(), exchange);
+
+        if (handlingService == null) {
+            // it must be a proxied or static resource
+            return;
+        }
+
         var request = Request.of(exchange);
 
         var responseHeaders = exchange.getResponseHeaders();
