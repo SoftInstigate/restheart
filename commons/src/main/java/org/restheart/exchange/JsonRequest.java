@@ -51,6 +51,10 @@ public class JsonRequest extends ServiceRequest<JsonElement> {
     }
 
     public void injectContent() throws IOException {
-        setContent(JsonParser.parseString(ChannelReader.readString(wrapped)));
+        if (wrapped.getRequestContentLength() > 0) {
+            setContent(JsonParser.parseString(ChannelReader.readString(wrapped)));
+        } else {
+            setContent(null);
+        }
     }
 }

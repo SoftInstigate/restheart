@@ -178,4 +178,8 @@ public class HttpServerExchange extends AbstractAttachable {
     public StreamSourceChannel getRequestChannel() {
         return null;
     }
+
+    public long getRequestContentLength() {
+        return 0;
+    }
 }

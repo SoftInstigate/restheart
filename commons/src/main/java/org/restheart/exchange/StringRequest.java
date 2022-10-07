@@ -50,6 +50,10 @@ public class StringRequest extends ServiceRequest<String> {
     }
 
     public void injectContent() throws IOException {
-        setContent(ChannelReader.readString(wrapped));
+        if (wrapped.getRequestContentLength() > 0) {
+            setContent(ChannelReader.readString(wrapped));
+        } else {
+            setContent(null);
+        }
     }
 }

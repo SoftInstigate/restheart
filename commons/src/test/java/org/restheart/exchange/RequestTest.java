@@ -53,6 +53,7 @@ public class RequestTest {
         var ex = mock(HttpServerExchange.class);
         var path = "/foo/bar";
         when(ex.getRequestPath()).thenReturn(path);
+        when(ex.getRequestContentLength()).thenReturn(0l);
 
         var req = ByteArrayRequest.init(ex);
 

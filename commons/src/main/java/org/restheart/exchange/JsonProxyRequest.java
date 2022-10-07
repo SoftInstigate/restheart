@@ -55,8 +55,7 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
      * @throws java.io.IOException
      */
     @Override
-    public JsonElement readContent()
-            throws IOException {
+    public JsonElement readContent() throws IOException {
         if (!isContentAvailable()) {
             return null;
         }

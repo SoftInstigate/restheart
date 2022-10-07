@@ -51,7 +51,11 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
     }
 
     public void injectContent() throws IOException {
-        setContent(ChannelReader.readBytes(wrapped));
+        if (wrapped.getRequestContentLength() > 0) {
+            setContent(ChannelReader.readBytes(wrapped));
+        } else {
+            setContent(null);
+        }
     }
 
     public String getContentString() {

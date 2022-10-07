@@ -24,9 +24,9 @@ public class PluginsTest {
 
     @BeforeClass
     public static void before() {
+        mockedBootstrapper = mockBootstrapper();
         descriptors = providerDescriptors();
         mockedScanner = mockPluginsScanner(descriptors);
-        mockedBootstrapper = mockBootstrapper();
         mockedPluginsFactory = mockPluginsFactory();
     }
 
