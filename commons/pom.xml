@@ -72,10 +72,6 @@
         <artifactId>compiler</artifactId>
     </dependency>
     <dependency>
-        <groupId>commons-jxpath</groupId>
-        <artifactId>commons-jxpath</artifactId>
-    </dependency>
-    <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
       </dependency>

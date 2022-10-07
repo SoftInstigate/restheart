@@ -115,7 +115,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
   Scenario: upload GraphQL app definition without enable descriptor field
 
-    * remove appDef.descriptor.enable
+    * remove appDef.descriptor.enabled
     * header Authorization = rhBasicAuth
 
     # create test-graphql db
