@@ -115,8 +115,8 @@ public class ConduitInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // of the response buffering it if any interceptor resolvers the request
-        // and requires the content from the backend
+        // make the response available, if any interceptor
+        // requires it, i.e. requiresResponseContent()==true
         exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory, HttpServerExchange cexchange) -> {
             // restore MDC context
             // MDC context is put in the thread context
