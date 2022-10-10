@@ -428,11 +428,13 @@ core:
   # Useful when RESTHeart is mediated by a reverse proxy or an API gateway to determine the instance's correct URL
   base-url: null
 
-  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-  io-threads: 2
+  # Number of I/O threads created for non-blocking tasks. Suggested value: core*8.
+  # if <= 0, use the number of cores.
+  io-threads: 0
 
-  # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*8
-  worker-threads: 8
+  # Number of threads created for blocking tasks (such as ones involving db access). Suggested value: core*8
+  # if < 0, use the number of cores * 8. With 0 working threads, blocking services won't work.
+  worker-threads: -1
 
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209

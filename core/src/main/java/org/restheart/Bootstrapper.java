@@ -120,6 +120,9 @@ import org.xnio.ssl.XnioSsl;
 
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -128,6 +131,7 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -561,9 +565,19 @@ public final class Bootstrapper {
         // update buffer size in
         Exchange.updateBufferSize(configuration.getBufferSize());
 
+        // io and worker threads
+        // use value in configuration, or auto detect values if io-threds <= 0 and worker-threads < 0
+        var autoConfigIoThreads = configuration.getIoThreads() <= 0;
+        var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.getIoThreads();
+
+        var autoConfigWorkerThreads = configuration.getWorkerThreads() < 0;
+        var workerThreads = autoConfigWorkerThreads ? Runtime.getRuntime().availableProcessors()*8 : configuration.getWorkerThreads();
+
+        LOGGER.info("Available processors: {}, IO threads{}: {}, worker threads{}: {}, ", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads, autoConfigWorkerThreads ? " (auto detected)" : "", workerThreads);
+
         builder = builder
-            .setIoThreads(configuration.getIoThreads())
-            .setWorkerThreads(configuration.getWorkerThreads())
+            .setIoThreads(ioThreads)
+            .setWorkerThreads(workerThreads)
             .setDirectBuffers(configuration.isDirectBuffers())
             .setBufferSize(configuration.getBufferSize())
             .setHandler(HANDLERS);
@@ -641,6 +655,11 @@ public final class Bootstrapper {
             .getRootPathHandler()
             .addPrefixPath("/", new RequestNotManagedHandler());
 
+        PluginsRegistryImpl
+            .getInstance()
+            .getRootPathHandler()
+            .addPrefixPath("/test", test());
+
         LOGGER.debug("Content buffers maximun size is {} bytes", MAX_CONTENT_SIZE);
 
         plugServices();
@@ -650,6 +669,29 @@ public final class Bootstrapper {
         plugStaticResourcesHandlers(configuration);
 
         return getBasePipeline();
+    }
+
+    private static RoutingHandler test() {
+        return new RoutingHandler()
+            .post("/user", new HttpHandler() {
+                @Override
+                public void handleRequest(HttpServerExchange exchange) throws Exception {
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    exchange.getResponseSender().send("");
+                }
+            })
+            .get("/user/{id}", new HttpHandler() {
+                @Override
+                public void handleRequest(HttpServerExchange exchange) throws Exception {
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                    String id = exchange.getQueryParameters().get("id").peekFirst();
+                    if(id == null){
+                        exchange.getResponseSender().send("");
+                    } else {
+                        exchange.getResponseSender().send(id);
+                    }
+                }
+            });
     }
 
     /**
