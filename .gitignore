@@ -4,6 +4,7 @@
 
 ### hidden dir ###
 hidden
+.cache/
 
 ### Code ###
 # Visual Studio Code - https://code.visualstudio.com/
