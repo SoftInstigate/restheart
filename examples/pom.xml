@@ -30,6 +30,7 @@
         <module>protobuffer-contacts</module>
         <module>greeter-service</module>
         <module>x-powered-by-remover</module>
+        <module>freemarker</module>
     </modules>
 
     <dependencyManagement>
