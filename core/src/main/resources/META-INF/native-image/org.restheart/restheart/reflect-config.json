@@ -161,11 +161,11 @@
 ,
 {
   "name":"com.github.benmanes.caffeine.cache.SSMSA",
-  "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.CacheLoader","boolean"] }]}
+  "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.AsyncCacheLoader","boolean"] }]}
 ,
 {
   "name":"com.github.benmanes.caffeine.cache.SSMSW",
-  "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.CacheLoader","boolean"] }]}
+  "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.AsyncCacheLoader","boolean"] }]}
 ,
 {
   "name":"com.github.benmanes.caffeine.cache.StripedBuffer",
@@ -1238,8 +1238,7 @@
 {
   "name":"org.jboss.threads.EnhancedQueueExecutorBase1",
   "fields":[
-    {"name":"tail"}, 
-    {"name":"tailLock"}
+    {"name":"tail"}
   ]}
 ,
 {
