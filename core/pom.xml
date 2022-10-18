@@ -455,6 +455,10 @@
           <groupId>org.restheart</groupId>
           <artifactId>restheart-graphql</artifactId>
         </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongoclient-provider</artifactId>
+        </dependency>
         <!-- uncomment to add test plugins to the native image -->
         <!-- <dependency>
           <groupId>org.restheart</groupId>

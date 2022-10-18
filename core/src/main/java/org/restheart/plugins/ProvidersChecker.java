@@ -29,16 +29,15 @@ import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
+ * NOTE: LOGGER is an argument of the class static methods
+ * because adding a LOGGER field breaks native image compilation
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ProvidersChecker {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProvidersChecker.class);
-
-    private static List<PluginDescriptor> enabledProviders(List<PluginDescriptor> providers) {
+    private static List<PluginDescriptor> enabledProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         return providers.stream()
             .filter(p -> p != null)
             .peek(p ->  { if (!p.enabled()) LOGGER.info("Provider {} disabled", p.name()); })
@@ -46,7 +45,7 @@ public class ProvidersChecker {
             .collect(Collectors.toList());
     }
 
-    private static void removeIfWrongDependency(MutableGraph<PluginDescriptor> providersGraph) {
+    private static void removeIfWrongDependency(Logger LOGGER, MutableGraph<PluginDescriptor> providersGraph) {
         var toRemove = new ArrayList<PluginDescriptor>();
         providersGraph.nodes().forEach(thisProvider -> {
             thisProvider.injections().stream()
@@ -78,7 +77,7 @@ public class ProvidersChecker {
         toRemove.stream().forEach(providersGraph::removeNode);
     }
 
-    private static void removeIfCircularDependency(MutableGraph<PluginDescriptor> providersGraph) {
+    private static void removeIfCircularDependency(Logger LOGGER, MutableGraph<PluginDescriptor> providersGraph) {
         var toRemove = new ArrayList<PluginDescriptor>();
         providersGraph.nodes().stream().forEach(provider -> {
             var reachableNodes = Graphs.reachableNodes(providersGraph, provider);
@@ -96,11 +95,11 @@ public class ProvidersChecker {
      * WIP
      * checks if there are cycles in the providers graph (mutual dependencies)
      */
-    static Set<PluginDescriptor> validProviders(List<PluginDescriptor> providers) {
+    static Set<PluginDescriptor> validProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         MutableGraph<PluginDescriptor> providersGraph = GraphBuilder.directed().allowsSelfLoops(true).build();
 
         // add nodes
-        enabledProviders(providers).stream().forEach(providersGraph::addNode);
+        enabledProviders(LOGGER, providers).stream().forEach(providersGraph::addNode);
 
         // add edges
         for (var thisProvider: providers) {
@@ -120,15 +119,15 @@ public class ProvidersChecker {
         // remove nodes that have disabled dependencies
         // keep removing until it finds wrong providers
         var count = providersGraph.edges().size();
-        removeIfWrongDependency(providersGraph);
+        removeIfWrongDependency(LOGGER, providersGraph);
         // remove nodes with circular dependencies
-        removeIfCircularDependency(providersGraph);
+        removeIfCircularDependency(LOGGER, providersGraph);
         int newCount = providersGraph.edges().size();
         while(newCount < count) {
             count = providersGraph.edges().size();
-            removeIfWrongDependency(providersGraph);
+            removeIfWrongDependency(LOGGER, providersGraph);
             // remove nodes that have circular dependencies
-            removeIfCircularDependency(providersGraph);
+            removeIfCircularDependency(LOGGER, providersGraph);
             newCount = providersGraph.edges().size();
         };
 
@@ -139,7 +138,7 @@ public class ProvidersChecker {
         return PluginsScanner.providers().stream().filter(p -> p.clazz().equals(className)).findFirst().orElse(null);
     }
 
-    static  PluginDescriptor providerDescriptorFromName(String name) {
+    static PluginDescriptor providerDescriptorFromName(String name) {
         return PluginsScanner.providers().stream().filter(p -> p.name().equals(name)).findFirst().orElse(null);
     }
 
@@ -149,7 +148,7 @@ public class ProvidersChecker {
      * @param plugin
      * @return true if all the plugin dependencies can be resolved
      */
-    static boolean checkDependencies(Set<PluginDescriptor> validProviders, PluginDescriptor plugin) {
+    static boolean checkDependencies(Logger LOGGER, Set<PluginDescriptor> validProviders, PluginDescriptor plugin) {
         var ret = true;
 
         // check Field Injections that require Providers

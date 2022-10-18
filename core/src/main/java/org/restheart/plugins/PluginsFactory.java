@@ -92,7 +92,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
         if (authMechanismsCache == null) {
-            var validPlugins = PluginsScanner.authMechanisms().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.authMechanisms().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             authMechanismsCache = createPlugins(validPlugins, "Authentication Mechanism", Bootstrapper.getConfiguration().getAuthMechanisms());
         }
 
@@ -107,7 +107,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Authenticator>> authenticators() {
         if (authenticatorsCache == null) {
-            var validPlugins = PluginsScanner.authenticators().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.authenticators().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             authenticatorsCache = createPlugins(validPlugins, "Authenticator", Bootstrapper.getConfiguration().getAuthenticators());
         }
 
@@ -122,7 +122,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Authorizer>> authorizers() {
         if (authorizersCache == null) {
-            var validPlugins = PluginsScanner.authorizers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.authorizers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             authorizersCache = createPlugins(validPlugins, "Authorizer", Bootstrapper.getConfiguration().getAuthorizers());
         }
 
@@ -137,7 +137,7 @@ public class PluginsFactory {
      */
     PluginRecord<TokenManager> tokenManager() {
         if (tokenManagerCache == null) {
-            var validPlugins = PluginsScanner.tokenManagers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.tokenManagers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             Set<PluginRecord<TokenManager>> tkms = createPlugins(validPlugins, "Token Manager", Bootstrapper.getConfiguration().getTokenManagers());
 
             if (tkms != null) {
@@ -159,7 +159,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Initializer>> initializers() {
         if (initializersCache == null) {
-            var validPlugins = PluginsScanner.initializers().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.initializers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             initializersCache = createPlugins(validPlugins, "Initializer", PLUGINS_CONFS);
         }
 
@@ -173,7 +173,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Interceptor<?, ?>>> interceptors() {
         if (interceptorsCache == null) {
-            var validPlugins = PluginsScanner.interceptors().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.interceptors().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             interceptorsCache = createPlugins(validPlugins, "Interceptor", PLUGINS_CONFS);
         }
 
@@ -187,7 +187,7 @@ public class PluginsFactory {
      */
     Set<PluginRecord<Service<?, ?>>> services() {
         if (this.servicesCache == null) {
-            var validPlugins = PluginsScanner.services().stream().filter(p -> ProvidersChecker.checkDependencies(validProviders, p)).collect(Collectors.toList());
+            var validPlugins = PluginsScanner.services().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
             servicesCache = createPlugins(validPlugins, "Service", PLUGINS_CONFS);
         }
 
@@ -209,7 +209,7 @@ public class PluginsFactory {
             // must be before ProvidersChecker.validProviders()
             providers.stream().forEach(p -> providersTypes.put(p.getName(), p.getInstance().rawType()));
 
-            this.validProviders = ProvidersChecker.validProviders(PluginsScanner.providers());
+            this.validProviders = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
             // only register valid plugins (from ProvidersChecker.validProviders())
             this.providersCache = validProviders.stream()
                 .map(pd -> providers.stream().filter(p -> p.getClassName().equals(pd.clazz())).findFirst())

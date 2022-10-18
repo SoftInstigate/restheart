@@ -7,6 +7,8 @@ import org.junit.Test;
 import org.mockito.MockedStatic;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.List;
 import static org.mockito.Mockito.mockStatic;
 
 public class PluginsTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PluginsFactory.class);
     private static List<PluginDescriptor> descriptors;
 
     private static MockedStatic<PluginsScanner> mockedScanner;
@@ -48,27 +51,27 @@ public class PluginsTest {
     @Test
     public void allSatisfiedDependencies() {
         var pdD_C = descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get();
-        var vps = ProvidersChecker.validProviders(PluginsScanner.providers());
-        Assert.assertTrue("check provider D_C is fine", ProvidersChecker.checkDependencies(vps, pdD_C));
+        var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
+        Assert.assertTrue("check provider D_C is fine", ProvidersChecker.checkDependencies(LOGGER, vps, pdD_C));
     }
 
     @Test
     public void missingDirectDependency() {
         var pdB = descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get();
-        var vps = ProvidersChecker.validProviders(PluginsScanner.providers()); 
-        Assert.assertFalse("check provider B is wrong due to missing direct dependency", ProvidersChecker.checkDependencies(vps, pdB));
+        var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
+        Assert.assertFalse("check provider B is wrong due to missing direct dependency", ProvidersChecker.checkDependencies(LOGGER, vps, pdB));
     }
 
     @Test
     public void missingTransitiveDependency() {
         var pdE_B = descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get();
-        var vps = ProvidersChecker.validProviders(PluginsScanner.providers()); 
-        Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", ProvidersChecker.checkDependencies(vps, pdE_B));
+        var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
+        Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", ProvidersChecker.checkDependencies(LOGGER, vps, pdE_B));
     }
 
     @Test
     public void validProviders() {
-        var vps = ProvidersChecker.validProviders(PluginsScanner.providers());
+        var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
 
         // valid providers
         Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderA.class.getName())).findAny().get()));

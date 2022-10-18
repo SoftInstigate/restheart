@@ -65,7 +65,7 @@ public class PluginsScanner {
     private static final String AUTHENTICATOR_CLASS_NAME = Authenticator.class.getName();
     private static final String INTERCEPTOR_CLASS_NAME = Interceptor.class.getName();
     private static final String SERVICE_CLASS_NAME = Service.class.getName();
-    private static final String PROVIDERR_CLASS_NAME = Provider.class.getName();
+    private static final String PROVIDER_CLASS_NAME = Provider.class.getName();
 
     private static final ArrayList<PluginDescriptor> INITIALIZERS = new ArrayList<>();
     private static final ArrayList<PluginDescriptor> AUTH_MECHANISMS = new ArrayList<>();
@@ -185,12 +185,12 @@ public class PluginsScanner {
     }
 
     /**
-     * @param type the class of the plugin , e.g. Initializer.class
+     *
      */
     private static List<PluginDescriptor> collectProviders(ScanResult scanResult) {
         var ret = new ArrayList<PluginDescriptor>();
 
-        var providers = scanResult.getClassesImplementing(PROVIDERR_CLASS_NAME);
+        var providers = scanResult.getClassesImplementing(PROVIDER_CLASS_NAME);
 
         if (providers == null || providers.isEmpty()) {
             return ret;
@@ -199,12 +199,12 @@ public class PluginsScanner {
         return providers.stream().map(c -> descriptor(c)).collect(Collectors.toList());
     }
 
-    private static PluginDescriptor descriptor(ClassInfo plugin) {
-        var clazz = plugin.getName();
-        var name = plugin.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
+    private static PluginDescriptor descriptor(ClassInfo pluginClassInfo) {
+        var clazz = pluginClassInfo.getName();
+        var name = pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
                 .filter(p -> "name".equals(p.getName())).map(p -> p.getValue()).findAny().get().toString();
-        var enabled = isEnabled(name, plugin);
-        return new PluginDescriptor(name, clazz, enabled, collectInjections(plugin));
+
+        return new PluginDescriptor(name, clazz, isEnabled(name, pluginClassInfo), collectInjections(pluginClassInfo));
     }
 
     private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo) {
@@ -216,13 +216,24 @@ public class PluginsScanner {
         return ret;
     }
 
-    private static boolean isEnabled(String name, ClassInfo plugin) {
-        var isEnabledByDefault = (boolean) plugin.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
+    /**
+     * NOTE:returns true at build time, to force native compilation of
+     * all plugins
+     *
+     * @param name
+     * @param pluginClassInfo
+     * @return true if the plgins is enabled, taking into account enabledByDefault and its configuration
+     */
+    private static boolean isEnabled(String name, ClassInfo pluginClassInfo) {
+        if (NativeImageBuildTimeChecker.isBuildTime()) {
+            return true;
+        } else {
+            var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
                 .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
-
-        var confArgs = Bootstrapper.getConfiguration().getPluginsArgs().get(name);
-        return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
+            var confArgs = Bootstrapper.getConfiguration().getPluginsArgs().get(name);
+            return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
+        }
     }
 
     private static ArrayList<InjectionDescriptor> collectMethodInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
@@ -269,7 +280,7 @@ public class PluginsScanner {
                 }
 
                 try {
-                    var fieldClass = Class.forName(fi.getTypeDescriptor().toString());
+                    var fieldClass = Class.forName(fi.getTypeDescriptor().toString(), false, PluginsScanner.class.getClassLoader());
                     ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
                 } catch(ClassNotFoundException cnfe) {
                     // should not happen
