@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
@@ -65,7 +66,7 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
             final String confFilePath = extractConfigFilePath(arguments);
             is = new FileInputStream(new File(java.net.URLDecoder.decode(confFilePath, "utf-8")));
 
-            final Map<String, Object> conf = (Map<String, Object>) new Yaml(new SafeConstructor()).load(is);
+            final Map<String, Object> conf = (Map<String, Object>) new Yaml(new SafeConstructor(new LoaderOptions())).load(is);
 
             List<Map<String, Object>> confItems = extractConfArgs(conf, type);
             confItems.stream().forEach(consumeConfiguration());

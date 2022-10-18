@@ -44,6 +44,7 @@ import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
@@ -118,7 +119,7 @@ public class MongoServiceConfiguration {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml(new SafeConstructor());
+        Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
 
         Map<String, Object> conf = null;
 

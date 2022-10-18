@@ -66,7 +66,7 @@ public class QParamsWhitelistPredicate implements Predicate {
 
         @Override
         public Set<String> requiredParameters() {
-            return Collections.singleton("whitelist");
+            return Collections.emptySet();
         }
 
         @Override
