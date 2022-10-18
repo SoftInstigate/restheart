@@ -51,6 +51,7 @@ import org.apache.commons.jxpath.JXPathContext;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
@@ -524,7 +525,7 @@ public class Configuration {
 
             if (confFileParams.isEmpty()) {
                 // configuration file is not parametric
-                Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(confReader);
+                Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(confReader);
 
                 return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
             } else {
@@ -543,7 +544,7 @@ public class Configuration {
                         final var writer = new StringWriter();
                         m.execute(writer, p);
 
-                        Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(writer.toString());
+                        Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(writer.toString());
                         return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
                     } else {
                         var unbound = confFileParams.stream()
@@ -578,7 +579,7 @@ public class Configuration {
                         final var writer = new StringWriter();
                         m.execute(writer, p);
 
-                        Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(writer.toString());
+                        Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(writer.toString());
                         return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
                     } catch (FileNotFoundException fnfe) {
                         throw new ConfigurationException("Properties file not found: " + propFilePath, fnfe);
