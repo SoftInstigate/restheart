@@ -21,6 +21,7 @@ package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
 import org.slf4j.Logger;
 
 /**
@@ -55,6 +56,16 @@ public abstract class Exchange<T> {
      *
      */
     public static final String APPLICATION_PDF_TYPE = "application/pdf";
+
+    /**
+     *
+     */
+    public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
+
+    /**
+     *
+     */
+    public static final String MULTIPART = "multipart/form-data";
 
     /**
      *
@@ -158,6 +169,26 @@ public abstract class Exchange<T> {
      */
     public boolean isContentTypeText() {
         return getContentType() != null && getContentType().startsWith("text/");
+    }
+
+    /**
+     * helper method to check if the request content is Json
+     *
+     * @param exchange
+     * @return true if Content-Type request header is application/json
+     */
+    public static boolean isContentTypeJson(HttpServerExchange exchange) {
+        var ct = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        return "application/json".equals(ct) || (ct != null && ct.startsWith("application/json;"));
+    }
+
+    public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
+        var ct = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
+        return ct != null && (ct.startsWith(FORM_URLENCODED)|| ct.startsWith(MULTIPART));
+    }
+
+    public boolean isContentTypeFormOrMultipart() {
+        return isContentTypeFormOrMultipart(wrapped);
     }
 
     /**
