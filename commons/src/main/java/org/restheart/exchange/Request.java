@@ -48,9 +48,6 @@ import org.restheart.exchange.ExchangeKeys.METHOD;
  */
 public abstract class Request<T> extends Exchange<T> {
 
-    public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
-    public static final String MULTIPART = "multipart/form-data";
-
     // other constants
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
@@ -358,25 +355,6 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public void setPipelineInfo(PipelineInfo pipelineInfo) {
         getWrappedExchange().putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
-    }
-
-    /**
-     * helper method to check if the request content is Json
-     *
-     * @param exchange
-     * @return true if Content-Type request header is application/json
-     */
-    public static boolean isContentTypeJson(HttpServerExchange exchange) {
-        return "application/json".equals(getContentType(exchange));
-    }
-
-    public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
-        return getContentType(exchange) != null && (getContentType(exchange).startsWith(FORM_URLENCODED)
-                || getContentType(exchange).startsWith(MULTIPART));
-    }
-
-    public boolean isContentTypeFormOrMultipart() {
-        return isContentTypeFormOrMultipart(wrapped);
     }
 
     /**
