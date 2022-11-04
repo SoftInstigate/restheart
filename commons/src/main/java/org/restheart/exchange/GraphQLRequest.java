@@ -1,35 +1,28 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-graphql
+ * restheart-commons
  * %%
- * Copyright (C) 2020 - 2022 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.graphql.exchange;
+package org.restheart.exchange;
 
-/**
- * TODO move this class to restheart-commons
- */
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.undertow.server.HttpServerExchange;
-
-import org.restheart.exchange.ServiceRequest;
-import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.utils.ChannelReader;
 
 import java.io.IOException;
@@ -41,17 +34,15 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     private static final String VARIABLES_FIELD = "variables";
 
     private final String appUri;
-    private final GraphQLApp appDefinition;
 
 
-    private GraphQLRequest(HttpServerExchange exchange, String appUri, GraphQLApp appDefinition) {
+    private GraphQLRequest(HttpServerExchange exchange, String appUri) {
         super(exchange);
         this.appUri = appUri;
-        this.appDefinition = appDefinition;
     }
 
-    public static GraphQLRequest init(HttpServerExchange exchange, String appUri, GraphQLApp appDefinition) {
-        var ret = new GraphQLRequest(exchange, appUri, appDefinition);
+    public static GraphQLRequest init(HttpServerExchange exchange, String appUri) {
+        var ret = new GraphQLRequest(exchange, appUri);
 
         try {
             if (isContentTypeGraphQL(exchange)){
@@ -111,12 +102,8 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
         }
     }
 
-    public String getGraphQLAppURI(){
+    public String getGraphQLAppURI() {
        return this.appUri;
-    }
-
-    public GraphQLApp getAppDefinition(){
-        return this.appDefinition;
     }
 
     public boolean hasVariables(){
@@ -125,7 +112,6 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
 
     private static boolean isContentTypeGraphQL(HttpServerExchange exchange){
         var contentType = getContentType(exchange);
-
         return GRAPHQL_CONTENT_TYPE.equals(contentType) || (contentType != null && contentType.startsWith(GRAPHQL_CONTENT_TYPE));
     }
 }

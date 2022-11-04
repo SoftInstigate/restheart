@@ -44,8 +44,7 @@ public class GraphQLApp {
     public GraphQLApp() {
     }
 
-    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> mappings,
-            GraphQLSchema executableSchema) {
+    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> mappings, GraphQLSchema executableSchema) {
         this.descriptor = descriptor;
         this.schema = schema;
         this.mappings = mappings;
@@ -148,13 +147,11 @@ public class GraphQLApp {
 
             } catch (SchemaProblem schemaProblem) {
                 var errorMSg = schemaProblem.getMessage() != null
-                        ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
-                        : "Invalid GraphQL schema";
+                    ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
+                    : "Invalid GraphQL schema";
 
                 throw new IllegalArgumentException(errorMSg, schemaProblem);
             }
         }
-
     }
-
 }
