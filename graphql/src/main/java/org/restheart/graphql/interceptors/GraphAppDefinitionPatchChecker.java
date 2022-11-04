@@ -35,7 +35,8 @@ import org.restheart.utils.HttpStatus;
 import java.util.Map;
 import com.mongodb.client.MongoClient;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name="graphAppDefinitionPatchChecker",
         description = "checks GraphQL application definitions on PATCH requests",
@@ -43,6 +44,8 @@ import static org.restheart.plugins.InterceptPoint.RESPONSE;
         enabledByDefault = true
 )
 public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionPatchChecker.class);
+
     private String db = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
@@ -81,8 +84,9 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
         try {
             GraphQLAppDeserializer.fromBsonDocument(appDef);
         } catch(GraphQLIllegalAppDefinitionException e) {
+            LOGGER.debug("Wrong GraphQL App definition", e);
             response.rollback(this.mclient);
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage(), e);
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
         }
     }
 

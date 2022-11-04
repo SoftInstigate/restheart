@@ -35,6 +35,8 @@ import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import java.util.Map;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @RegisterPlugin(name="graphAppDefinitionPutPostChecker",
@@ -43,6 +45,8 @@ import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
         enabledByDefault = true
 )
 public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionPutPostChecker.class);
+
     private String db = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
@@ -76,7 +80,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             try {
                 GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
             } catch(GraphQLIllegalAppDefinitionException e) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage(), e);
+                LOGGER.debug("Wrong GraphQL App definition", e);
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
             }
         } else {
             var index = 0;
@@ -85,7 +90,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
                 try {
                     GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
                 } catch(GraphQLIllegalAppDefinitionException e) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
+                    LOGGER.debug("Wrong GraphQL App definition", e);
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
                     break;
                 }
 
