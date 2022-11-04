@@ -43,31 +43,21 @@ import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
-import org.restheart.security.interceptors.TokenCORSResponseInterceptor;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "rndTokenManager",
                 description = "generates random auth tokens",
                 enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RndTokenManager.class);
-
     private static final SecureRandom RND_GENERATOR = new SecureRandom();
 
     private static Cache<String, PwdCredentialAccount> CACHE = null;
 
     private int ttl = -1;
     private String srvURI = null;
-
-    @Inject("registry")
-    private PluginsRegistry registry;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -79,20 +69,6 @@ public class RndTokenManager implements TokenManager {
         this.srvURI = arg(config, "srv-uri");
 
         CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, ttl * 60 * 1_000);
-
-        // add the auth token header to CORS header Access-Control-Expose-Headers
-        // using helper interceptor tokenCORSResponseInterceptor
-        String[] headers = {AUTH_TOKEN_HEADER.toString(), AUTH_TOKEN_VALID_HEADER.toString(), AUTH_TOKEN_LOCATION_HEADER.toString()};
-
-        var ti = registry.getInterceptors()
-                .stream().filter(i -> "tokenCORSResponseInterceptor".equals(i.getName()))
-                .findFirst();
-
-        if (ti.isPresent()) {
-            ((TokenCORSResponseInterceptor) ti.get().getInstance()).setHeaders(headers);
-        } else {
-            LOGGER.warn("Cound not find tokenCORSResponseInterceptor. Auth token headers are not added to CORS");
-        }
     }
 
     @Override
