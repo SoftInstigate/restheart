@@ -457,11 +457,19 @@ aggregation-time-limit: 0
 # For instance, with default pagesize of 100, a GET with page=50.000 involves 500.000 skips on the db cursor.
 # The eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
 
+# The maximum number of cursors to allocate overall.
 eager-cursor-allocation-pool-size: 100
-eager-cursor-allocation-linear-slice-width: 1000
+# The distance between two cursors linear clusters
+eager-cursor-allocation-linear-slice-width: 100
+# Cursors are preallocated from delta skips before the current request
+# to speed up requests of previous pages.
 eager-cursor-allocation-linear-slice-delta: 100
-eager-cursor-allocation-linear-slice-heights: [4, 2, 1]
-eager-cursor-allocation-random-max-cursors: 20
+# The number of clusters to generate and cursors to allocate
+# e.g. [4, 2, 1]. 0 disables allocation
+eager-cursor-allocation-linear-slice-heights: [0]
+# The maximum number of random cursors. e.g. 20, 0 disables allocation
+eager-cursor-allocation-random-max-cursors: 0
+# The minimum distance between two cursors random clusters
 eager-cursor-allocation-random-slice-min-width: 1000
 
 #### Connetction Options
