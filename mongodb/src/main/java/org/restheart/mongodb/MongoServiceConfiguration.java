@@ -23,7 +23,6 @@ package org.restheart.mongodb;
 import com.mongodb.ConnectionString;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,7 +49,7 @@ public class MongoServiceConfiguration {
     private static MongoServiceConfiguration INSTANCE = null;
 
     /**
-     * undertow connetction options
+     * undertow connection options
      *
      * Seehttp://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
@@ -71,12 +70,8 @@ public class MongoServiceConfiguration {
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
     private final int requestsLimit;
-    private final int eagerPoolSize;
-    private final int eagerLinearSliceWidht;
-    private final int eagerLinearSliceDelta;
-    private final int[] eagerLinearSliceHeights;
-    private final int eagerRndSliceMinWidht;
-    private final int eagerRndMaxCursors;
+    private final int cacheSize;
+    private final int cacheTTL;
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
@@ -175,12 +170,10 @@ public class MongoServiceConfiguration {
         schemaCacheEnabled = asBoolean(conf, SCHEMA_CACHE_ENABLED_KEY, true, silent);
         schemaCacheTtl = asLong(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000, silent);
 
-        eagerPoolSize = asInteger(conf, EAGER_POOL_SIZE, 100, silent);
-        eagerLinearSliceWidht = asInteger(conf, EAGER_LINEAR_SLICE_WIDHT, 1000, silent);
-        eagerLinearSliceDelta = asInteger(conf, EAGER_LINEAR_SLICE_DELTA, 100, silent);
-        eagerLinearSliceHeights = asArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[] { 4, 2, 1 }, silent);
-        eagerRndSliceMinWidht = asInteger(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000, silent);
-        eagerRndMaxCursors = asInteger(conf, EAGER_RND_MAX_CURSORS, 50, silent);
+        var mongoServiceConf = asMap(asMap(conf, PLUGINS_ARGS_KEY, silent), "mongo", silent);
+
+        cacheSize = asInteger(mongoServiceConf, CACHE_SIZE_KEY, 100, silent);
+        cacheTTL = asInteger(mongoServiceConf, CACHE_TTL_KEY, 10_000, silent);
 
         Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, silent);
 
@@ -257,11 +250,8 @@ public class MongoServiceConfiguration {
                 + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", metricsGatheringLevel="
-                + metricsGatheringLevel + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht="
-                + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
-                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht="
-                + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", dbEtagCheckPolicy="
-                + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
+                + metricsGatheringLevel + ", cacheSize=" + cacheSize + ", cacheTTL" + cacheTTL
+                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
                 + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
@@ -319,45 +309,17 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the eagerLinearSliceWidht
+     * @return the cacheSize
      */
-    public int getEagerLinearSliceWidht() {
-        return eagerLinearSliceWidht;
+    public int getCacheSize() {
+        return cacheSize;
     }
 
     /**
-     * @return the eagerLinearSliceDelta
+     * @return the cacheTTL
      */
-    public int getEagerLinearSliceDelta() {
-        return eagerLinearSliceDelta;
-    }
-
-    /**
-     * @return the eagerLinearSliceHeights
-     */
-    public int[] getEagerLinearSliceHeights() {
-        return eagerLinearSliceHeights;
-    }
-
-    /**
-     * @return the eagerRndSliceMinWidht
-     */
-    public int getEagerRndSliceMinWidht() {
-        return eagerRndSliceMinWidht;
-    }
-
-    /**
-     * @return the eagerRndMaxCursors
-     */
-    public int getEagerRndMaxCursors() {
-        return eagerRndMaxCursors;
-    }
-
-    /**
-     * @return the eagerPoolSize
-     */
-    public int getEagerPoolSize() {
-        return eagerPoolSize;
+    public int getCacheTTL() {
+        return cacheTTL;
     }
 
     /**

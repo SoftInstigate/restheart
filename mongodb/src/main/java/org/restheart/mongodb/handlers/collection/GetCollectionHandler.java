@@ -126,7 +126,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                     filter,
                     request.getHintDocument(),
                     request.getProjectionDocument(),
-                    request.getCursorAllocationPolicy());
+                    request.isCache());
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution

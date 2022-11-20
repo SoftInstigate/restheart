@@ -74,7 +74,7 @@ public interface ExchangeKeys {
     /**
      *
      */
-    public static final String EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY = "eager";
+    public static final String CACHE_QPARAM_KEY = "cache";
 
     /**
      *
@@ -664,27 +664,6 @@ public interface ExchangeKeys {
          *
          */
         PJ, // Aliases for SHAL
-    }
-
-    /**
-     *
-     */
-    public enum EAGER_CURSOR_ALLOCATION_POLICY {
-
-        /**
-         *
-         */
-        LINEAR,
-
-        /**
-         *
-         */
-        RANDOM,
-
-        /**
-         *
-         */
-        NONE
     }
 
     /**

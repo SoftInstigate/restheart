@@ -165,36 +165,14 @@ public interface MongoServiceConfigurationKeys {
     public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
 
     /**
-     * the key for the eager-cursor-allocation-pool-size property.
+     * the key for the cache-size property.
      */
-    public static final String EAGER_POOL_SIZE = "eager-cursor-allocation-pool-size";
+    public static final String CACHE_SIZE_KEY = "cache-size";
 
     /**
-     * the key for the eager-cursor-allocation-linear-slice-width property.
+     * the key for the cache-ttl property.
      */
-    public static final String EAGER_LINEAR_SLICE_WIDHT = "eager-cursor-allocation-linear-slice-width";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-delta property.
-     */
-    public static final String EAGER_LINEAR_SLICE_DELTA = "eager-cursor-allocation-linear-slice-delta";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-heights property.
-     */
-    public static final String EAGER_LINEAR_HEIGHTS = "eager-cursor-allocation-linear-slice-heights";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-min-width property.
-     */
-    public static final String EAGER_RND_SLICE_MIN_WIDHT = "eager-cursor-allocation-random-slice-min-width";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-max-cursors
-     * property.
-     */
-    public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
-
+    public static final String CACHE_TTL_KEY = "cache-ttl";
 
     /**
      * the key for the etag-check-policy property.

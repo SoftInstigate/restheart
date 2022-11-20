@@ -41,11 +41,8 @@ import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
-
-import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
@@ -480,7 +477,7 @@ public class Databases {
      * @param filter
      * @param hint
      * @param keys
-     * @param cursorAllocationPolicy
+     * @param useCache
      * @return the documents in the collection as a BsonArray
      */
     public BsonArray getCollectionData(
@@ -494,9 +491,9 @@ public class Databases {
         final BsonDocument filters,
         final BsonDocument hint,
         final BsonDocument keys,
-        final EAGER_CURSOR_ALLOCATION_POLICY eager)
+        final boolean useCache)
         throws JsonParseException {
-        return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, eager);
+        return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
     }
 
     /**

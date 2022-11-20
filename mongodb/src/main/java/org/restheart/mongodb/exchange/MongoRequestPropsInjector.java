@@ -30,8 +30,6 @@ import org.bson.json.JsonParseException;
 import static org.restheart.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
-import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
-import static org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
 import static org.restheart.exchange.ExchangeKeys.FILTER_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import static org.restheart.exchange.ExchangeKeys.HAL_QPARAM_KEY;
@@ -324,27 +322,6 @@ public class MongoRequestPropsInjector {
                 return;
             }
         }
-
-        // get and check eager parameter
-        var __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
-
-        // default value
-        var eager = EAGER_CURSOR_ALLOCATION_POLICY.NONE;
-
-        if (__eager != null && !__eager.isEmpty()) {
-            var _eager = __eager.getFirst();
-
-            if (_eager != null && !_eager.isEmpty()) {
-                try {
-                    eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
-                } catch (IllegalArgumentException iae) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
-                    return;
-                }
-            }
-        }
-
-        request.setCursorAllocationPolicy(eager);
 
         // get and check the doc id type parameter
         var __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_QPARAM_KEY);

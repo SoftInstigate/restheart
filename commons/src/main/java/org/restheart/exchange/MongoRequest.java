@@ -41,7 +41,6 @@ import org.bson.json.JsonParseException;
 import static org.restheart.exchange.ExchangeKeys.*;
 import static org.restheart.utils.BsonUtils.document;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
-import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
@@ -79,7 +78,7 @@ public class MongoRequest extends BsonRequest {
     private boolean count = false;
     private boolean etagCheckRequired = false;
     private WRITE_MODE writeMode = null;
-    private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
+    private boolean cache;
     private Deque<String> filter = null;
     private BsonDocument aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
@@ -162,6 +161,8 @@ public class MongoRequest extends BsonRequest {
         this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
 
         this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
+
+        this.cache = exchange.getQueryParameters().get(CACHE_QPARAM_KEY) != null;
 
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
 
@@ -1002,17 +1003,17 @@ public class MongoRequest extends BsonRequest {
 
     /**
      *
-     * @return the cursorAllocationPolicy
+     * @return the cache
      */
-    public EAGER_CURSOR_ALLOCATION_POLICY getCursorAllocationPolicy() {
-        return cursorAllocationPolicy;
+    public boolean isCache() {
+        return cache;
     }
 
     /**
-     * @param cursorAllocationPolicy the cursorAllocationPolicy to set
+     * @param cache true to use caching
      */
-    public void setCursorAllocationPolicy(EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
-        this.cursorAllocationPolicy = cursorAllocationPolicy;
+    public void setCache(boolean cache) {
+        this.cache = cache;
     }
 
     /**

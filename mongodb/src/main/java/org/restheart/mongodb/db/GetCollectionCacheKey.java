@@ -31,28 +31,30 @@ import org.bson.BsonDocument;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public record CursorPoolEntryKey(
+public record GetCollectionCacheKey(
     Optional<ClientSession> session,
     MongoCollection<BsonDocument> collection,
     BsonDocument sort,
     BsonDocument filter,
     BsonDocument keys,
     BsonDocument hint,
-    int skipped,
+    int from,
+    int to,
     long cursorId) {
 
     /**
      * @param key
      */
-    public static CursorPoolEntryKey clone(CursorPoolEntryKey key) {
-        return new CursorPoolEntryKey(
+    public static GetCollectionCacheKey clone(GetCollectionCacheKey key) {
+        return new GetCollectionCacheKey(
             key.session,
             key.collection,
             key.filter,
             key.keys,
             key.hint,
             key.sort,
-            key.skipped,
+            key.from,
+            key.to,
             key.cursorId);
     }
 
@@ -64,21 +66,24 @@ public record CursorPoolEntryKey(
                     + " - "
                     + (hint == null ? "no hint" : hint.toString())
                     + " - "
-                    + f.format("%10d", skipped);
+                    + f.format("%10d", from)
+                    + " - "
+                    + f.format("%10d", to);
         }
     }
 
     @Override
     public String toString() {
         return String.format(
-            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, skipped=%s, cursorId=%s]",
+            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, from=%s, to=%s, cursorId=%s]",
             session,
             collection.getNamespace(),
             sort,
             filter,
             keys,
             hint,
-            skipped,
+            from,
+            to,
             cursorId);
     }
 }
