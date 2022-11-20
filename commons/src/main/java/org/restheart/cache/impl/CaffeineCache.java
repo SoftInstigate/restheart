@@ -83,6 +83,13 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
     }
 
     @Override
+    public synchronized Optional<V> remove(K key) {
+        var ret = wrapped.getIfPresent(key);
+        wrapped.invalidate(key);
+        return ret;
+    }
+
+    @Override
     public void put(K key, V value) {
         wrapped.put(key, Optional.ofNullable(value));
     }

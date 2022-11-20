@@ -20,11 +20,12 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
+
 import org.bson.BsonDocument;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public record SkippedFindIterable(FindIterable<BsonDocument> findIterable, int alreadySkipped) {}
+public record SkippedCursor(MongoCursor<BsonDocument> cursor, int alreadySkipped) {}

@@ -71,6 +71,13 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
     }
 
     @Override
+    public synchronized Optional<V> remove(K key) {
+        var ret = wrapped.getIfPresent(key);
+        wrapped.invalidate(key);
+        return ret;
+    }
+
+    @Override
     public Optional<V> getLoading(K key) {
         return wrapped.get(key);
     }

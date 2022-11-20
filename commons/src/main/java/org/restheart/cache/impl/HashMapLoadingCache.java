@@ -46,6 +46,11 @@ public class HashMapLoadingCache<K, V> implements org.restheart.cache.LoadingCac
     }
 
     @Override
+    public Optional<V> remove(K key) {
+        return wrapped.remove(key);
+    }
+
+    @Override
     public Optional<V> getLoading(K key) {
         if(wrapped.containsKey(key)) {
             return get(key);

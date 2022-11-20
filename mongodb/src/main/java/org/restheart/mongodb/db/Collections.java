@@ -20,14 +20,18 @@
  */
 package org.restheart.mongodb.db;
 
+import com.google.common.collect.Lists;
 import com.mongodb.MongoCommandException;
+import com.mongodb.MongoCursorNotFoundException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-
+import com.mongodb.client.internal.MongoBatchCursorAdapter;
 import static com.mongodb.client.model.Filters.eq;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +49,9 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-
+import static org.fusesource.jansi.Ansi.Color.YELLOW;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.RSOps;
@@ -204,57 +210,178 @@ class Collections {
         throws JsonParseException {
         var coll = collection(rsOps, dbName, collName);
         var ret = new BsonArray();
-
         int toskip = pagesize * (page - 1);
+        var cachedCursor = CursorPool.getInstance().remove(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip,0), eager);
 
-        SkippedFindIterable _cursor = null;
-
-        if (eager != EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
-            _cursor = CursorPool.getInstance().get(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip,0), eager);
-        }
-
-        // in case there is not cursor in the pool to reuse
-        FindIterable<BsonDocument> cursor;
-
-        if (_cursor == null) {
-            cursor = findIterable(cs, coll, sortBy, filters, hint, keys);
-            cursor.skip(toskip).limit(pagesize);
-
-            StreamSupport.stream(cursor.spliterator(),false).forEachOrdered(c -> ret.add(c));
+        // TODO invalidate cursor on write ?
+        if (cachedCursor == null) {
+            return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, eager);
+        } else if (cachedCursor != null && !cursorHoldsAllRequestedDocs(cachedCursor, page, pagesize)) {
+            LOGGER.debug("found cursor but won't use it since it does not hold all requested docs");
+            return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, eager);
         } else {
-            int alreadySkipped;
+            try {
+                var skippedCursor = cachedCursor.cursor();
+                var alreadySkipped = cachedCursor.alreadySkipped();
+                long startSkipping = 0;
 
-            cursor = _cursor.findIterable();
-            alreadySkipped = _cursor.alreadySkipped();
+                if (LOGGER.isDebugEnabled()) {
+                    startSkipping = System.currentTimeMillis();
+                }
 
-            long startSkipping = 0;
-            int cursorSkips = alreadySkipped;
+                LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
 
-            if (LOGGER.isDebugEnabled()) {
-                startSkipping = System.currentTimeMillis();
-            }
+                var skipped = 0;
+                while (skipped < toskip - alreadySkipped && skippedCursor.available() > 0) {
+                    var next = skippedCursor.tryNext();
+                    if (next == null) {
+                        break;
+                    } else {
+                        skipped++;
+                    }
+                }
 
-            LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("skipping {} docs with next() took {} msecs", skipped, System.currentTimeMillis() - startSkipping);
+                }
 
-            var mc = cursor.iterator();
+                var added = 0;
+                for (int cont = pagesize; cont > 0 && skippedCursor.available() > 0; cont--) {
+                    var next = skippedCursor.tryNext();
+                    if (next == null) {
+                        break;
+                    } else {
+                        ret.add(next);
+                        added++;
+                    }
+                }
 
-            while (toskip > alreadySkipped && mc.hasNext()) {
-                mc.next();
-                alreadySkipped++;
-            }
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("skipping {} times took {} msecs",toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
-            }
-
-            for (int cont = pagesize; cont > 0 && mc.hasNext(); cont--) {
-                ret.add(mc.next());
+                // cache the cursor
+                // TODO avoid to cache the cursor if already existing
+                // GET /coll?page=1 => caches for page 2
+                // GET /coll?page=1 => caches again for page 2
+                if (cursorHoldsAllQueriedDocs(skippedCursor) || skippedCursor.available() > 0) {
+                    var newkey = new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, skipped +  alreadySkipped + added, System.nanoTime());
+                    LOGGER.debug("{} cursor in pool: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
+                    CursorPool.getInstance().put(newkey, skippedCursor);
+                } else {
+                    LOGGER.debug("cached cursor is {}, wont't reuse it", ansi().fg(YELLOW).bold().a("exhausted").reset().toString());
+                }
+            } catch(IllegalStateException | MongoCursorNotFoundException ise) {
+                LOGGER.debug("{} error using cached cursor: it is closed,", ansi().fg(RED).bold().a("warn").reset().toString());
+                return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, eager);
             }
         }
 
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
-        CursorPool.getInstance().populateCache(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip, 0), eager);
+        if (eager != EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
+            CursorPool.getInstance().populateCache(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip, 0), eager);
+        }
+
+        return ret;
+    }
+
+    /*
+     * @return true if the cursor holds all queried documents, i.e. the cursor can be used for any (page, pagesize) paramenters
+     */
+    private boolean cursorHoldsAllQueriedDocs(MongoCursor<?> cursor) {
+        return cursorCount(cursor) < BATCH_SIZE;
+    }
+
+    /*
+     * @param sc the SkippedCursor obtained from the cache
+     * @param the requested page
+     * @param the requested pagesize
+     *
+     * @return if the cursor holds all the requested documents, i.e. can be used to build the response data
+     */
+    private boolean cursorHoldsAllRequestedDocs(SkippedCursor sc, int page, int pagesize) {
+        if (cursorHoldsAllQueriedDocs(sc.cursor())) {
+            return true;
+        } else {
+            int totalskips = pagesize * (page - 1);
+            return cursorPos(sc.cursor()) + totalskips - sc.alreadySkipped() + pagesize <= BATCH_SIZE;
+        }
+    }
+
+    private int cursorPos(MongoCursor<?> cursor) {
+        try {
+            var field = MongoBatchCursorAdapter.class.getDeclaredField("curPos");
+            field.setAccessible(true);
+            return (int) field.get(cursor);
+        } catch(NoSuchFieldException | IllegalAccessException ex) {
+            LOGGER.warn("cannot access field Cursor.curPos ", ex);
+            return BATCH_SIZE;
+        }
+    }
+
+    private int cursorCount(MongoCursor<?> cursor) {
+        try {
+            var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("batchCursor");
+            _batchCursor.setAccessible(true);
+            var batchCursor = _batchCursor.get(cursor);
+
+            var _count = batchCursor.getClass().getDeclaredField("count");
+            _count.setAccessible(true);
+            return (int) _count.get(batchCursor);
+        } catch(NoSuchFieldException | IllegalAccessException ex) {
+            LOGGER.warn("cannot access field Cursor.batchCursor.count ", ex);
+            return 0;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<BsonDocument> curBatch(MongoCursor<?> cursor) {
+        try {
+            var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("batchCursor");
+            _batchCursor.setAccessible(true);
+            var batchCursor = _batchCursor.get(cursor);
+
+            var _curBatch = batchCursor.getClass().getDeclaredField("curBatch");
+            _curBatch.setAccessible(true);
+            return (List<BsonDocument>) _curBatch.get(batchCursor);
+        } catch(NoSuchFieldException | IllegalAccessException ex) {
+            LOGGER.warn("cannot access field Cursor.batchCursor.curBatch ", ex);
+            return Lists.newArrayList();
+        }
+    }
+
+    private BsonArray getCollectionDataFromDb(final Optional<ClientSession> cs,
+        final MongoCollection<BsonDocument> coll,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
+        final int page,
+        final int pagesize,
+        final BsonDocument sortBy,
+        final BsonDocument filters,
+        final BsonDocument hint,
+        final BsonDocument keys,
+        final EAGER_CURSOR_ALLOCATION_POLICY eager) {
+        var ret = new BsonArray();
+        int toskip = pagesize * (page - 1);
+        var cursor = findIterable(cs, coll, sortBy, filters, hint, keys).skip(toskip).cursor();
+
+        int added = 0;
+        while(added < pagesize) {
+            var next = cursor.tryNext();
+            if (next == null) {
+                break;
+            } else {
+                ret.add(next);
+                added++;
+            }
+        }
+
+        // cache the cursor
+        if (cursorHoldsAllQueriedDocs(cursor) || cursor.available() > 0) {
+            var newkey = new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip + added, System.nanoTime());
+            LOGGER.debug("{} cursor in pool: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
+            CursorPool.getInstance().put(newkey, cursor);
+        } else {
+            LOGGER.debug("{} cursor, won't reuse it", ansi().fg(YELLOW).bold().a("exhausted").reset().toString());
+        }
 
         return ret;
     }
@@ -268,7 +395,7 @@ class Collections {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public BsonDocument getCollectionProps(final Optional<ClientSession> cs, 
+    public BsonDocument getCollectionProps(final Optional<ClientSession> cs,
         final Optional<RSOps> rsOps,
         final String dbName,
         final String collName) {

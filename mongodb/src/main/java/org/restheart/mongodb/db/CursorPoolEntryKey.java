@@ -67,4 +67,18 @@ public record CursorPoolEntryKey(
                     + f.format("%10d", skipped);
         }
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, skipped=%s, cursorId=%s]",
+            session,
+            collection.getNamespace(),
+            sort,
+            filter,
+            keys,
+            hint,
+            skipped,
+            cursorId);
+    }
 }

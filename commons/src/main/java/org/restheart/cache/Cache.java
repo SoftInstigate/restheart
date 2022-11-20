@@ -33,6 +33,8 @@ public interface Cache<K,V> {
 
     public Optional<V> get(K key);
 
+    public Optional<V> remove(K key);
+
     public void put(K key, V value);
 
     /**

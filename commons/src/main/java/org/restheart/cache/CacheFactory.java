@@ -43,8 +43,7 @@ public class CacheFactory {
      * @param loader       the cache loader used to obtain new values
      * @return the cache
      */
-    public static <K, V> LoadingCache<K, V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy,
-            long ttl, Function<K, V> loader) {
+    public static <K, V> LoadingCache<K, V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
         return new CaffeineLoadingCache<>(size, expirePolicy, ttl, loader);
     }
 
