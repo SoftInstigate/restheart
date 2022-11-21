@@ -242,13 +242,6 @@ token-manager:
     srv-uri: /tokens
     issuer: restheart.org
 
-## Aggregations variables
-
-# Check if aggregation variables use operators. allowing operators in aggregation variables
-# is risky. requester can inject operators modifying the query
-
-aggregation-check-operators: true
-
 ## Allow unescaped characters in URL
 
 # Starting with Undertow 1.4.23 URLs validation became much stricter.

@@ -226,30 +226,12 @@ token-manager:
     srv-uri: /tokens
     issuer: restheart.org
 
-## Aggregations variables
-
-# Check if aggregation variables use operators. allowing operators in aggregation variables
-# is risky. requester can inject operators modifying the query
-
-aggregation-check-operators: true
-
 ## Allow unescaped characters in URL
 
 # Starting with Undertow 1.4.23 URLs validation became much stricter.
 # However, this is breaking existing clients. Now you can decide which behaviour you prefer
 
 allow-unescaped-characters-in-url: true
-
-## ETag policy
-
-# the following configuration defines the default etag check policy
-# the policy applies for dbs, collections (also applies to file buckets) and documents
-# valid values are REQUIRED, REQUIRED_FOR_DELETE, OPTIONAL
-
-etag-check-policy:
-  db: REQUIRED_FOR_DELETE
-  coll: REQUIRED_FOR_DELETE
-  doc: OPTIONAL
 
 #### Plugins configuration
 
