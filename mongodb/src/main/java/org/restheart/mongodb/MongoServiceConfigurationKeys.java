@@ -165,14 +165,19 @@ public interface MongoServiceConfigurationKeys {
     public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
 
     /**
-     * the key for the cache-size property.
+     * the key for the get-collection-cache-size property.
      */
-    public static final String CACHE_SIZE_KEY = "cache-size";
+    public static final String GET_COLLECTION_CACHE_SIZE_KEY = "get-collection-cache-size";
 
     /**
-     * the key for the cache-ttl property.
+     * the key for the get-collection-cache-ttl property.
      */
-    public static final String CACHE_TTL_KEY = "cache-ttl";
+    public static final String GET_COLLECTION_CACHE_TTL_KEY = "get-collection-cache-ttl";
+
+    /**
+     * the key for the get-collection-cache-docs property.
+     */
+    public static final String GET_COLLECTION_CACHE_DOCS_KEY = "get-collection-cache-docs";
 
     /**
      * the key for the etag-check-policy property.

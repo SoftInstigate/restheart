@@ -70,8 +70,9 @@ public class MongoServiceConfiguration {
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
     private final int requestsLimit;
-    private final int cacheSize;
-    private final int cacheTTL;
+    private final int getCollectionCacheSize;
+    private final int getCollectionCacheTTL;
+    private final int getCollectionCacheDocs;
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
@@ -172,8 +173,9 @@ public class MongoServiceConfiguration {
 
         var mongoServiceConf = asMap(asMap(conf, PLUGINS_ARGS_KEY, silent), "mongo", silent);
 
-        cacheSize = asInteger(mongoServiceConf, CACHE_SIZE_KEY, 100, silent);
-        cacheTTL = asInteger(mongoServiceConf, CACHE_TTL_KEY, 10_000, silent);
+        getCollectionCacheSize = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_SIZE_KEY, 100, silent);
+        getCollectionCacheTTL = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
+        getCollectionCacheDocs = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
 
         Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, silent);
 
@@ -250,7 +252,7 @@ public class MongoServiceConfiguration {
                 + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", metricsGatheringLevel="
-                + metricsGatheringLevel + ", cacheSize=" + cacheSize + ", cacheTTL" + cacheTTL
+                + metricsGatheringLevel + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
                 + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
@@ -309,17 +311,24 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the cacheSize
+     * @return the getCollectionCacheSize
      */
-    public int getCacheSize() {
-        return cacheSize;
+    public int getGetCollectionCacheSize() {
+        return getCollectionCacheSize;
     }
 
     /**
-     * @return the cacheTTL
+     * @return the getCollectionCacheTTL
      */
-    public int getCacheTTL() {
-        return cacheTTL;
+    public int getGetCollectionCacheTTL() {
+        return getCollectionCacheTTL;
+    }
+
+    /**
+     * @return the getCollectionCacheDocs
+     */
+    public int getGetCollectionCacheDocs() {
+        return getCollectionCacheDocs;
     }
 
     /**

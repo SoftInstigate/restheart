@@ -601,6 +601,7 @@ public class Databases {
      * @param filters
      * @param hint
      * @param keys
+     * @param batchSize
      * @return the FindIterable
      */
     public FindIterable<BsonDocument> findIterable(
@@ -611,14 +612,16 @@ public class Databases {
         final BsonDocument sortBy,
         final BsonDocument filters,
         final BsonDocument hint,
-        final BsonDocument keys) {
+        final BsonDocument keys,
+        final int batchSize) {
         return collections.findIterable(
             cs,
             collections.collection(rsOps, dbName, collName),
             sortBy,
             filters,
             hint,
-            keys);
+            keys,
+            batchSize);
     }
 
     /**

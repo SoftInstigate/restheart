@@ -376,14 +376,6 @@ default-pagesize: 100
 # the rule of thumb is not exeeding 1000
 max-pagesize: 1000
 
-# cursor-batch-size sets the mongodb cursor batchSize
-# see https://docs.mongodb.com/manual/reference/method/cursor.batchSize/
-# cursor-batch-size should be smaller or equal to the max-pagesize
-# the rule of thumb is setting cursor-batch-size equal to max-pagesize
-# a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
-# speeds up requests with small pagesize
-cursor-batch-size: 1000
-
 ## Caches
 
 # local-cache allows to cache the db and collection properties to drammatically

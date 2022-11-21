@@ -330,9 +330,10 @@ mongo-rest:
     coll: REQUIRED_FOR_DELETE
     doc: OPTIONAL
 
-  # cache is used with query parameter ?use-cache to speedup GET /coll requests
-  cache-size: 100
-  cache-ttl: 10_000
+  # get collection cache speedups GET /coll?cache requests
+  get-collection-cache-size: 100
+  get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
+  get-collection-cache-docs: 1000 # number of documents to cache for each request
 
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
@@ -346,14 +347,6 @@ mongo-rest:
   # generally, the greater the pagesize, the more json serializan overhead occurs
   # the rule of thumb is not exeeding 1000
   max-pagesize: 1000
-
-  # cursor-batch-size sets the mongodb cursor batchSize
-  # see https://docs.mongodb.com/manual/reference/method/cursor.batchSize/
-  # cursor-batch-size should be smaller or equal to the max-pagesize
-  # the rule of thumb is setting cursor-batch-size equal to max-pagesize
-  # a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
-  # speeds up requests with small pagesize
-  cursor-batch-size: 1000
 
   # local-cache allows to cache the db and collection properties to drammatically
   # improve performaces. Without caching, a GET on a document would requires

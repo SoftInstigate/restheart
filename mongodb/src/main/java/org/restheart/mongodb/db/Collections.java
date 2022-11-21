@@ -67,8 +67,8 @@ import org.slf4j.LoggerFactory;
  */
 class Collections {
 
-    private static final int BATCH_SIZE = MongoServiceConfiguration.get() != null
-        ? MongoServiceConfiguration.get().getCursorBatchSize()
+    private static final int GET_COLLECTION_CACHE_BATCH_SIZE = MongoServiceConfiguration.get() != null
+        ? MongoServiceConfiguration.get().getGetCollectionCacheDocs()
         : DEFAULT_CURSOR_BATCH_SIZE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Collections.class);
@@ -165,14 +165,15 @@ class Collections {
         final BsonDocument sortBy,
         final BsonDocument filters,
         final BsonDocument hint,
-        final BsonDocument keys) throws JsonParseException {
+        final BsonDocument keys,
+        final int batchSize) throws JsonParseException {
         var ret = cs.isPresent()
             ? coll.find(cs.get(), filters)
             : coll.find(filters);
 
         return ret.projection(keys)
             .sort(sortBy)
-            .batchSize(BATCH_SIZE)
+            .batchSize(batchSize)
             .hint(hint)
             .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
@@ -268,7 +269,9 @@ class Collections {
         var ret = new BsonArray();
         int from = pagesize * (page - 1);
 
-        try (var cursor = findIterable(cs, coll, sortBy, filters, hint, keys).skip(from).cursor()) {
+        var batchSize = useCache ? GET_COLLECTION_CACHE_BATCH_SIZE : pagesize;
+
+        try (var cursor = findIterable(cs, coll, sortBy, filters, hint, keys, batchSize).skip(from).cursor()) {
             int added = 0;
             while(added < pagesize) {
                 var next = cursor.tryNext();
@@ -281,7 +284,6 @@ class Collections {
             }
 
             // cache the cursor
-            // TODO avoid adding cursor if already available or invalidate old entries
             if (useCache) {
                 var to = from + cursorCount(cursor);
                 var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, System.nanoTime());

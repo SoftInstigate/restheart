@@ -48,8 +48,8 @@ public class GetCollectionCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionCache.class);
 
-    private static final long CACHE_SIZE = MongoServiceConfiguration.get().getCacheSize();
-    private static final long CACHE_TTL = MongoServiceConfiguration.get().getCacheTTL();
+    private static final long CACHE_SIZE = MongoServiceConfiguration.get().getGetCollectionCacheSize();
+    private static final long CACHE_TTL = MongoServiceConfiguration.get().getGetCollectionCacheTTL();
 
     /**
      *
