@@ -270,8 +270,11 @@ authTokenService:
 roles:
   uri: /roles
 
-# Service that connects to a mongodb instance and provides the MongoClient to other plugins via @InjectMongoClient
-mongo-connection-manager:
+# Providers that connects to a MongoDb instance to provides the MongoClient
+# via @Inject("mclient") or @Inject("mclient-reactive")
+# Both prividers use the same configuration defined by the yaml anchor &mclient
+
+_mclient-config: &mclient
   # Format of the connection string: mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
   # @see https://docs.mongodb.com/manual/reference/connection-string/
   connection-string: mongodb://127.0.0.1
@@ -279,6 +282,11 @@ mongo-connection-manager:
   min-connections: 8
   # The maximum number of connections to keep open to a given mongodb instance
   max-connections: 128
+
+mclient:
+  <<: *mclient
+mclient-reactive:
+  <<: *mclient
 
 # MongoDB REST and Websocket API
 mongo-rest:
@@ -364,8 +372,6 @@ mongo-rest:
   # TTL in milliseconds; specify a value < 0 to never expire cached entries
   schema-cache-ttl: 60000
 
-  # Limit for the maximum number of concurrent requests being served
-  requests-limit: 1000
   # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
   query-time-limit: 0
   # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
@@ -428,6 +434,9 @@ core:
   # Number of threads created for blocking tasks (such as ones involving db access). Suggested value: core*8
   # if < 0, use the number of cores * 8. With 0 working threads, blocking services won't work.
   worker-threads: -1
+
+  # Limit for the maximum number of concurrent requests being served
+  requests-limit: 1000
 
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209

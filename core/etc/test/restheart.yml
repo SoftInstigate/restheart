@@ -186,34 +186,6 @@ token-manager:
 
 mongo-uri: mongodb://127.0.0.1
 
-mongo-mounts:
-    - what: '*'
-      where: /
-    - what: '*'
-      where: /remappedall
-    - what: /testdb
-      where: /remappeddb
-    - what: /testdb/refcoll1
-      where: /remappedrefcoll1
-    - what: /testdb/refcoll2
-      where: /remappedrefcoll2
-    - what: /testdb/refcoll1/doc1
-      where: /remappeddoc1
-    - what: /testdb/refcoll2/doc2
-      where: /remappeddoc2
-
-#### Default representation format https://restheart.org/docs/representation-format/
-
-## STANDARD  root and dbs as an array of children's ids
-##           collection as arrays of document objects and documents as objects
-## HAL       Hypertext Application Language
-## SHAL      Simplified HAL with children as direct elements of _embedded array
-
-## PLAIN_JSON or HAL are aliases for SHAL
-## S is an alias for STANDARD
-
-default-representation-format: HAL
-
 #### Static Web Resources
 
 # Static web resources to bind to the URL specified by the 'where' property.
@@ -248,6 +220,35 @@ plugins-directory: plugins
 plugins-args:
     mongo:
         uri: /
+        mongo-mounts:
+          - what: '*'
+            where: /
+          - what: '*'
+            where: /remappedall
+          - what: /testdb
+            where: /remappeddb
+          - what: /testdb/refcoll1
+            where: /remappedrefcoll1
+          - what: /testdb/refcoll2
+            where: /remappedrefcoll2
+          - what: /testdb/refcoll1/doc1
+            where: /remappeddoc1
+          - what: /testdb/refcoll2/doc2
+            where: /remappeddoc2
+        default-representation-format: HAL
+        etag-check-policy:
+          db: REQUIRED_FOR_DELETE
+          coll: REQUIRED_FOR_DELETE
+          doc: OPTIONAL
+        aggregation-check-operators: true
+        default-pagesize: 100
+        max-pagesize: 1000
+        local-cache-enabled: true
+        local-cache-ttl: 60000
+        schema-cache-enabled: true
+        schema-cache-ttl: 60000
+        query-time-limit: 0
+        aggregation-time-limit: 0
     graphql:
       uri: /graphql
       db: test-graphql
@@ -309,30 +310,12 @@ plugins-args:
     writeResult:
         enabled: true
 
-## Aggregations variables
-
-# Check if aggregation variables use operators. allowing operators in aggregation variables
-# is risky. requester can inject operators modifying the query
-
-aggregation-check-operators: true
-
 ## Allow unescaped characters in URL
 
 # Starting with Undertow 1.4.23 URLs validation became much stricter.
 # However, this is breaking existing clients. Now you can decide which behaviour you prefer
 
 allow-unescaped-characters-in-url: true
-
-## ETag policy
-
-# the following configuration defines the default etag check policy
-# the policy applies for dbs, collections (also applies to file buckets) and documents
-# valid values are REQUIRED, REQUIRED_FOR_DELETE, OPTIONAL
-
-etag-check-policy:
-    db: REQUIRED_FOR_DELETE
-    coll: REQUIRED_FOR_DELETE
-    doc: OPTIONAL
 
 #### Logging
 
@@ -363,36 +346,6 @@ requests-log-trace-headers:
 #  - tracestate        # ^^
 
 #### Performace Settings
-
-## Read Performance
-
-# default-pagesize is the number of documents returned when the pagesize query
-# parameter is not specified
-# see https://restheart.org/docs/read-docs/#paging
-default-pagesize: 100
-
-# max-pagesize sets the maximum allowed value of the pagesize query parameter
-# generally, the greater the pagesize, the more json serializan overhead occurs
-# the rule of thumb is not exeeding 1000
-max-pagesize: 1000
-
-## Caches
-
-# local-cache allows to cache the db and collection properties to drammatically
-# improve performaces. Without caching, a GET on a document would requires
-# two additional queries to retrieve the db and the collection properties.
-# Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
-# In this case a change in a db or collection properties would reflect on other
-# nodes at worst after TTL milliseconds (cache entries time to live).
-# In most of the cases Dbs and collections properties only change at development time.
-
-local-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-local-cache-ttl: 60000
-
-schema-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-schema-cache-ttl: 60000
 
 # In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false

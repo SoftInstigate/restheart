@@ -21,7 +21,6 @@
 package org.restheart.mongodb;
 
 import java.util.Map;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 
 import org.restheart.Configuration;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
@@ -48,11 +47,12 @@ public class MongoServiceInitializer implements Initializer {
 
     @OnInit
     public void onInit() {
-        MongoServiceConfiguration.init(config.toMap());
+        var mongoConfig = config.getPluginsArgs().get("mongo");
+        MongoServiceConfiguration.init(mongoConfig);
 
         TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
 
-        this.mongoSrvEnabled = isMongoEnabled(config.toMap());
+        this.mongoSrvEnabled = isMongoEnabled(mongoConfig);
 
         if (!this.mongoSrvEnabled) {
             return;
@@ -69,21 +69,11 @@ public class MongoServiceInitializer implements Initializer {
         MetadataCachesSingleton.init(MongoServiceConfiguration.get());
     }
 
-    private boolean isMongoEnabled(Map<String, Object> confArgs) {
-        if (confArgs.get(PLUGINS_ARGS_KEY) != null && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {
-            @SuppressWarnings("rawtypes")
-            var pa = (Map) confArgs.get(PLUGINS_ARGS_KEY);
-
-            if (pa.get("mongo") != null && pa.get("mongo") instanceof Map) {
-                @SuppressWarnings("rawtypes")
-                var mc = (Map) pa.get("mongo");
-
-                if (mc.get("enabled") != null && mc.get("enabled") instanceof Boolean) {
-                    return (Boolean) mc.get("enabled");
-                }
-            }
+    private boolean isMongoEnabled(Map<String, Object> mc) {
+        if (mc.get("enabled") != null && mc.get("enabled") instanceof Boolean enabled) {
+            return enabled;
+        } else {
+            return true;
         }
-
-        return true;
     }
 }

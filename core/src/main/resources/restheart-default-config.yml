@@ -74,49 +74,6 @@ instance-name: default
 
 mongo-uri: mongodb://127.0.0.1
 
-#### MongoDb resources
-
-# Use mongo-mounts to expose MongoDb resources binding them to API URIs.
-#
-# The parameter 'what' identifies the MongoDb resource to expose.
-# The format is /db[/coll[/docid]]
-# Use the wildcard '*' to expose all dbs.
-#
-# The parameter 'where' defines the URI to bind the resource to.
-# It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
-# The values of the path templates properties are available:
-# - in the 'what' property (e.g. what: /{foo}_db/coll)
-# - programmatically from MongoRequest.getPathTemplateParamenters() method.
-#
-# It is not possible to mix absolute paths and path templates: 'where' URIs
-# need to be either all absolute paths or all path templates.
-#
-# Examples:
-# The following exposes all MongoDb resources.
-# In this case the URI of a document is /db/coll/docid
-#
-#   - what: "*"
-#     where: /
-#
-# The following binds the URI /database to the db 'db'
-# In this case the URI of a document is /database/coll/docid
-#
-#   - what: /db
-#     where: /database
-#
-# The following binds the URI /api to the collection 'db.coll'
-# In this case the URI of a document is /api/docid
-#
-#   - what: /db/coll
-#     where: /api
-
-mongo-mounts:
-  - what: /restheart
-    where: /
-
-#### Default representation format https://restheart.org/docs/mongodb-rest/representation-format/
-default-representation-format: STANDARD
-
 #### Static Web Resources
 
 # Static web resources to bind to the URL specified by the 'where' property.
@@ -311,12 +268,95 @@ plugins-directory: plugins
 # by @RegisterPlugin( .., secure=false)
 
 plugins-args:
+  # MongoDB REST and Websocket API
   mongo:
+    enabled: true
     uri: /
+
+    # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
+    #
+    # The parameter 'what' identifies the MongoDb resource to expose.
+    # The format is /db[/coll[/docid]]
+    # Use the wildcard '*' to expose all dbs.
+    #
+    # The parameter 'where' defines the URI to bind the resource to.
+    # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
+    # The values of the path templates properties are available:
+    # - in the 'what' property (e.g. what: /{foo}_db/coll)
+    # - programmatically from MongoRequest.getPathTemplateParamenters() method.
+    #
+    # It is not possible to mix absolute paths and path templates: 'where' URIs
+    # need to be either all absolute paths or all path templates.
+    #
+    # Examples:
+    # The following exposes all MongoDb resources.
+    # In this case the URI of a document is /db/coll/docid
+    #
+    #   - what: "*"
+    #     where: /
+    #
+    # The following binds the URI /database to the db 'db'
+    # In this case the URI of a document is /database/coll/docid
+    #
+    #   - what: /db
+    #     where: /database
+    #
+    # The following binds the URI /api to the collection 'db.coll'
+    # In this case the URI of a document is /api/docid
+    #
+    #   - what: /db/coll
+    #     where: /api
+    mongo-mounts:
+      - what: /restheart
+        where: /
+
+    # Default representation format https://restheart.org/docs/mongodb-rest/representation-format/#other-representation-formats
+    default-representation-format: STANDARD
+
+    # Default etag check policy https://restheart.org/docs/mongodb-rest/etag/#etag-policy
+    etag-check-policy:
+      db: REQUIRED_FOR_DELETE
+      coll: REQUIRED_FOR_DELETE
+      doc: OPTIONAL
+
     # get collection cache speedups GET /coll?cache requests
     get-collection-cache-size: 100
     get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
     get-collection-cache-docs: 1000 # number of documents to cache for each request
+
+    # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
+    aggregation-check-operators: true
+
+    # default-pagesize is the number of documents returned when the pagesize query
+    # parameter is not specified
+    # see https://restheart.org/docs/read-docs#paging
+    default-pagesize: 100
+
+    # max-pagesize sets the maximum allowed value of the pagesize query parameter
+    # generally, the greater the pagesize, the more json serializan overhead occurs
+    # the rule of thumb is not exeeding 1000
+    max-pagesize: 1000
+
+    # local-cache allows to cache the db and collection properties to drammatically
+    # improve performaces. Without caching, a GET on a document would requires
+    # two additional queries to retrieve the db and the collection properties.
+    # Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
+    # In this case a change in a db or collection properties would reflect on other
+    # nodes at worst after TTL milliseconds (cache entries time to live).
+    # In most of the cases Dbs and collections properties only change at development time.
+    local-cache-enabled: true
+    # TTL in milliseconds; specify a value < 0 to never expire cached entries
+    local-cache-ttl: 60000
+
+    # cache for JSON Schemas
+    schema-cache-enabled: true
+    # TTL in milliseconds; specify a value < 0 to never expire cached entries
+    schema-cache-ttl: 60000
+
+    # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
+    query-time-limit: 0
+    # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
+    aggregation-time-limit: 0
 
   # Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
   authTokenService:
@@ -398,55 +438,17 @@ io-threads: 0
  # if < 0, use the number of cores * 8. With 0 working threads, blocking services won't work.
 worker-threads: -1
 
+# Limit for the maximum number of concurrent requests being served
+requests-limit: 1000
+
  # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
  # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
 buffer-size: 16364
  # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true
 
-## Read Performance
-
-# default-pagesize is the number of documents returned when the pagesize query
-# parameter is not specified
-# see https://restheart.org/docs/mongodb-rest/read-docs#paging
-default-pagesize: 100
-
-# max-pagesize sets the maximum allowed value of the pagesize query parameter
-# generally, the greater the pagesize, the more json serializan overhead occurs
-# the rule of thumb is not exeeding 1000
-max-pagesize: 1000
-
-# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
+# In order to save bandwitdth, force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
-
-## Caches
-
-# local-cache allows to cache the db and collection properties to drammatically
-# improve performaces. Without caching, a GET on a document would requires
-# two additional queries to retrieve the db and the collection properties.
-# Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
-# In this case a change in a db or collection properties would reflect on other
-# nodes at worst after TTL milliseconds (cache entries time to live).
-# In most of the cases Dbs and collections properties only change at development time.
-
-local-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-local-cache-ttl: 60000
-
-schema-cache-enabled: true
-# TTL in milliseconds; specify a value < 0 to never expire cached entries
-schema-cache-ttl: 60000
-
-## Limits
-
-# Limit for the maximum number of concurrent requests being served
-requests-limit: 1000
-
-# Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
-query-time-limit: 0
-
-# Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
-aggregation-time-limit: 0
 
 #### Connetction Options
 
