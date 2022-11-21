@@ -49,7 +49,7 @@ public class GetCollectionCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionCache.class);
 
     private static final long CACHE_SIZE = MongoServiceConfiguration.get().getCacheSize();
-    private static final long CACHE_TTL = 5 * 60 * 1_000; //TODOMongoServiceConfiguration.get().getCacheTTL();
+    private static final long CACHE_TTL = MongoServiceConfiguration.get().getCacheTTL();
 
     /**
      *
