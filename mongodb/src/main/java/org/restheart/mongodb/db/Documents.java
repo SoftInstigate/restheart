@@ -141,7 +141,7 @@ public class Documents {
         var newDocument = writeResult.getNewData();
 
         if (oldDocument != null && checkEtag) {
-            // check the old etag (in not match restore the old document version)
+            // check the old etag (if not match then restore the old document version)
             return optimisticCheckEtag(
                 cs,
                 mcoll,
@@ -153,6 +153,9 @@ public class Documents {
                 false);
         } else {
             var httpCode = writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : oldDocument == null ? HttpStatus.SC_CREATED : HttpStatus.SC_OK;
+
+            // invalidate the cache entris of this collection
+            GetCollectionCache.getInstance().invalidateAll(dbName, collName);
             return new OperationResult(httpCode, newEtag, oldDocument, newDocument, writeResult.getCause());
         }
     }
@@ -187,13 +190,18 @@ public class Documents {
             .filter(d -> d != null && d.isDocument())
             .forEachOrdered(document -> document.asDocument().put("_etag", newEtag));
 
-        return DbUtils.bulkWriteDocuments(
+        var ret = DbUtils.bulkWriteDocuments(
             cs,
             mcoll,
             documents,
             filter,
             shardKeys,
             writeMode);
+
+        // invalidate the cache entris of this collection
+        GetCollectionCache.getInstance().invalidateAll(dbName, collName);
+
+        return ret;
     }
 
     /**
@@ -233,7 +241,11 @@ public class Documents {
 
         try {
             var result = cs.isPresent() ? mcoll.bulkWrite(cs.get(), patches) : mcoll.bulkWrite(patches);
-            return new BulkOperationResult(HttpStatus.SC_OK, null, result);
+            var ret = new BulkOperationResult(HttpStatus.SC_OK, null, result);
+
+            // invalidate the cache entris of this collection
+            GetCollectionCache.getInstance().invalidateAll(dbName, collName);
+            return ret;
         } catch (MongoBulkWriteException mce) {
             return switch (mce.getCode()) {
                 case BAD_VALUE_KEY_ERROR -> new BulkOperationResult(ResponseHelper.getHttpStatusFromErrorCode(mce.getCode()), null, null);
@@ -284,6 +296,8 @@ public class Documents {
                 requestEtag,
                 HttpStatus.SC_NO_CONTENT, true);
         } else {
+            // invalidate the cache entris of this collection
+            GetCollectionCache.getInstance().invalidateAll(dbName, collName);
             return new OperationResult(HttpStatus.SC_NO_CONTENT, oldDocument);
         }
     }
@@ -350,6 +364,9 @@ public class Documents {
 
         var result = cs.isPresent() ? mcoll.bulkWrite(cs.get(), deletes) : mcoll.bulkWrite(deletes);
 
+        // invalidate the cache entris of this collection
+        GetCollectionCache.getInstance().invalidateAll(dbName, collName);
+
         return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }
 
@@ -406,6 +423,9 @@ public class Documents {
             var query = eq("_id", oldDocument.get("_id"));
 
             var newDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first();
+
+            // invalidate the cache entris of this collection
+            GetCollectionCache.getInstance().invalidateAll(coll);
 
             return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {

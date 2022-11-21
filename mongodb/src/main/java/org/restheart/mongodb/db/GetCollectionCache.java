@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import com.mongodb.client.MongoCollection;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -37,6 +38,7 @@ import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  *
@@ -120,6 +122,19 @@ public class GetCollectionCache {
 
     public synchronized void invalidate(GetCollectionCacheKey key) {
         cache.invalidate(key);
+    }
+
+    public void invalidateAll(String db, String coll) {
+        cache.asMap().keySet().stream()
+            .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
+            .filter(k -> k.collection().getNamespace().getCollectionName().equals(coll))
+            .forEach(k -> cache.invalidate(k));
+    }
+
+    public void invalidateAll(MongoCollection<?> coll) {
+        cache.asMap().keySet().stream()
+            .filter(k -> k.collection().getNamespace().equals(coll.getNamespace()))
+            .forEach(k -> cache.invalidate(k));
     }
 
     private Predicate<? super GetCollectionCacheKey> cacheKeyFilter(GetCollectionCacheKey requested) {

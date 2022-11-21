@@ -208,8 +208,6 @@ class Collections {
         var coll = collection(rsOps, dbName, collName);
         var ret = new BsonArray();
 
-        // TODO invalidate cursor on write 
-
         if (!useCache) {
             return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
         } else {
