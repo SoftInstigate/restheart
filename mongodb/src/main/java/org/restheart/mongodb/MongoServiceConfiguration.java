@@ -171,13 +171,13 @@ public class MongoServiceConfiguration {
         schemaCacheEnabled = asBoolean(conf, SCHEMA_CACHE_ENABLED_KEY, true, silent);
         schemaCacheTtl = asLong(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000, silent);
 
-        var mongoServiceConf = asMap(asMap(conf, PLUGINS_ARGS_KEY, silent), "mongo", silent);
+        var mongoServiceConf = asMap(asMap(conf, PLUGINS_ARGS_KEY, null, silent), "mongo", null, silent);
 
         getCollectionCacheSize = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_SIZE_KEY, 100, silent);
         getCollectionCacheTTL = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
         getCollectionCacheDocs = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
 
-        Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, silent);
+        Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, null, silent);
 
         if (etagCheckPolicies != null) {
             var _dbEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY.name(), silent);
@@ -225,7 +225,7 @@ public class MongoServiceConfiguration {
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
 
-        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, silent);
+        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, null, silent);
 
         cursorBatchSize = asInteger(conf, CURSOR_BATCH_SIZE_KEY, DEFAULT_CURSOR_BATCH_SIZE, silent);
 

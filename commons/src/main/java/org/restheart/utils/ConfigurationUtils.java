@@ -78,6 +78,36 @@ public class ConfigurationUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static <V extends Object> V findOrDefault(final Map<String, Object> conf, final String xpath, final V defaultValue, boolean silent) {
+        var ctx = JXPathContext.newContext(conf);
+        ctx.setLenient(true);
+
+        try {
+            V value = (V) ctx.getValue(xpath);
+
+            if (value == null) {
+                // if default value is null there is no default value actually
+                if (defaultValue != null && !silent) {
+                    LOGGER.warn("Parameter \"{}\" not specified in the configuration file, using its default value \"{}\"", xpath, defaultValue);
+                }
+
+                return defaultValue;
+            } else {
+                if (!silent) {
+                    LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", xpath, value);
+                }
+
+                return value;
+            }
+        } catch (Throwable t) {
+            if (!silent) {
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\", using its default value \"{}\"", xpath, defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
     /**
      *
      * @param conf
@@ -145,13 +175,13 @@ public class ConfigurationUtils {
                 return (Map<String, Map<String, Object>>) o;
             } catch (Throwable t) {
                 if (!silent) {
-                    LOGGER.warn("wrong configuration parameter {}, expecting a map of maps", key, defaultValue);
+                    LOGGER.warn("wrong configuration parameter {}, expecting a map of maps, using its default value {}", key, defaultValue);
                 }
                 return defaultValue;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting a map of maps", key, defaultValue);
+                LOGGER.warn("wrong configuration parameter {}, expecting a map of maps, using its default value {}", key, defaultValue);
             }
             return defaultValue;
         }
@@ -164,10 +194,10 @@ public class ConfigurationUtils {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static Map<String, Object> asMap(final Map<String, Object> conf, final String key, boolean silent) {
+    public static Map<String, Object> asMap(final Map<String, Object> conf, final String key, Map<String, Object> defaultValue, boolean silent) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, null);
+                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
 
             return null;
@@ -175,19 +205,24 @@ public class ConfigurationUtils {
 
         var o = conf.get(key);
 
-        if (o instanceof Map<?, ?> m) {
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof Map<?, ?> m) {
             try {
                 return (Map<String, Object>) o;
             } catch (Throwable t) {
                 if (!silent) {
-                    LOGGER.warn("wrong configuration parameter {}, expecting a map", key);
+                    LOGGER.warn("wrong configuration parameter {}, expecting a map, using its default value {}", key, defaultValue);
                 }
 
                 return null;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting a map", key);
+                LOGGER.warn("wrong configuration parameter {}, expecting a map, using its default value {}", key, defaultValue);
             }
             return null;
         }

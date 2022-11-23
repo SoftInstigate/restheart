@@ -141,7 +141,6 @@ import picocli.CommandLine.Parameters;
 import static org.restheart.utils.ConfigurationUtils.getOrDefault;
 import static org.restheart.utils.BootstrapperUtils.*;
 
-
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -502,7 +501,8 @@ public final class Bootstrapper {
             logErrorAndExit("No configuration found. exiting..", null, false, -1);
         }
 
-        if (!configuration.isHttpsListener() && !configuration.isHttpListener() && !configuration.isAjpListener()) {
+
+        if (!configuration.httpsListener().enabled() && !configuration.httpListener().enabled() && !configuration.ajpListener().enabled()) {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
@@ -531,32 +531,35 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
-        if (configuration.isHttpsListener()) {
-            builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpsHost(), initSSLContext());
-            if (configuration.getHttpsHost().equals("127.0.0.1") || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", configuration.getHttpsPort());
+        var httpsListener = configuration.httpsListener();
+        if (httpsListener.enabled()) {
+            builder.addHttpsListener(httpsListener.port(), httpsListener.host(), initSSLContext());
+            if (httpsListener.host().equals("127.0.0.1") || httpsListener.host().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpsListener.port());
             } else {
-                LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
+                LOGGER.info("HTTPS listener bound at {}:{}", httpsListener.host(), httpsListener.port());
             }
         }
 
-        if (configuration.isHttpListener()) {
-            builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpHost());
+        var httpListener = configuration.httpListener();
+        if (httpListener.enabled()) {
+            builder.addHttpListener(httpListener.port(), httpListener.host());
 
-            if (configuration.getHttpHost().equals("127.0.0.1") || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", configuration.getHttpPort());
+            if (httpListener.host().equals("127.0.0.1") || httpListener.host().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpListener.port());
             } else {
-                LOGGER.info("HTTP listener bound at {}:{}", configuration.getHttpHost(), configuration.getHttpPort());
+                LOGGER.info("HTTP listener bound at {}:{}", httpListener.host(), httpListener.port());
             }
         }
 
-        if (configuration.isAjpListener()) {
-            builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
+        var ajpListener = configuration.ajpListener();
+        if (ajpListener.enabled()) {
+            builder.addAjpListener(ajpListener.port(), ajpListener.host());
 
-            if (configuration.getAjpHost().equals("127.0.0.1") || configuration.getAjpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", configuration.getAjpPort());
+            if (ajpListener.host().equals("127.0.0.1") || ajpListener.host().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", ajpListener.port());
             } else {
-                LOGGER.info("AJP listener bound at {}:{}", configuration.getAjpHost(), configuration.getAjpPort());
+                LOGGER.info("AJP listener bound at {}:{}", ajpListener.host(), ajpListener.port());
             }
         }
 
@@ -604,10 +607,11 @@ public final class Bootstrapper {
 
             var ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            if (configuration.getKeystoreFile() != null && configuration.getKeystorePassword() != null && configuration.getCertPassword() != null) {
-                try (var fis = new FileInputStream(new File(configuration.getKeystoreFile()))) {
-                    ks.load(fis, configuration.getKeystorePassword().toCharArray());
-                    kmf.init(ks, configuration.getCertPassword().toCharArray());
+            var httpsListener = configuration.httpsListener();
+            if (httpsListener.keystorePath() != null && httpsListener.keystorePwd() != null && httpsListener.certificatePwd() != null) {
+                try (var fis = new FileInputStream(new File(httpsListener.keystorePath()))) {
+                    ks.load(fis, httpsListener.keystorePwd().toCharArray());
+                    kmf.init(ks, httpsListener.certificatePwd().toCharArray());
                 }
             } else {
                 logErrorAndExit("Cannot enable the HTTPS listener: the keystore is not configured. Generate a keystore and set the configuration options keystore-file, keystore-password and certpassword. More information at https://restheart.org/docs/security/tls/", null, false, -1);

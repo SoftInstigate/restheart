@@ -82,20 +82,15 @@ public class Configuration {
      */
     private static Path PATH = null;
 
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
+    private static final Listener DEFAULT_HTTP_LISTENER = new Listener(true, "localhost", 8080);
+    private static final TLSListener DEFAULT_HTTPS_LISTENER = new TLSListener(false, "localhost", 4443, null, null, null);
+    private static final Listener DEFAULT_AJP_LISTENER = new Listener(false, "localhost", 8009);
+
+    private final Listener httpListener;
+    private final Listener ajpListener;
+    private final TLSListener httpsListener;
     private final String instanceName;
     private final String pluginsDirectory;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
     private final List<Map<String, Object>> proxies;
     private final List<Map<String, Object>> staticResourcesMounts;
     private final Map<String, Map<String, Object>> pluginsArgs;
@@ -136,22 +131,25 @@ public class Configuration {
 
         ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
 
-        httpsListener = asBoolean(conf, HTTPS_LISTENER_KEY, true, silent);
-        httpsPort = asInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT, silent);
-        httpsHost = asString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST, silent);
+        if (findOrDefault(conf, HTTP_LISTENER_KEY, null, true) != null) {
+            httpListener = new Listener(conf, HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER, silent);
+        } else {
+            httpListener = DEFAULT_HTTP_LISTENER;
+        }
 
-        httpListener = asBoolean(conf, HTTP_LISTENER_KEY, false, silent);
-        httpPort = asInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT, silent);
-        httpHost = asString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST, silent);
+        if (findOrDefault(conf, HTTPS_LISTENER_KEY, null, true) != null) {
+            httpsListener = new TLSListener(conf, HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER, silent);
+        } else {
+            httpsListener = DEFAULT_HTTPS_LISTENER;
+        }
 
-        ajpListener = asBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER, silent);
-        ajpPort = asInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT, silent);
-        ajpHost = asString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST, silent);
+        if (findOrDefault(conf, AJP_LISTENER_KEY, null, true) != null) {
+            ajpListener = new Listener(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER, silent);
+        } else {
+            ajpListener = DEFAULT_AJP_LISTENER;
+        }
 
         instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME, silent);
-        keystoreFile = asString(conf, KEYSTORE_FILE_KEY, null, silent);
-        keystorePassword = asString(conf, KEYSTORE_PASSWORD_KEY, null, silent);
-        certPassword = asString(conf, CERT_PASSWORD_KEY, null, silent);
 
         proxies = asListOfMaps(conf, PROXY_KEY, new ArrayList<>(), silent);
 
@@ -195,7 +193,7 @@ public class Configuration {
         directBuffers = asBoolean(conf, DIRECT_BUFFERS_KEY, true, silent);
         forceGzipEncoding = asBoolean(conf, FORCE_GZIP_ENCODING_KEY, false, silent);
         logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0, silent);
-        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, silent);
+        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, null, silent);
         allowUnescapedCharactersInUrl = asBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true, silent);
     }
 
@@ -234,66 +232,24 @@ public class Configuration {
     }
 
     /**
-     * @return the httpsListener
-     */
-    public boolean isHttpsListener() {
-        return httpsListener;
-    }
-
-    /**
-     * @return the httpsPort
-     */
-    public int getHttpsPort() {
-        return httpsPort;
-    }
-
-    /**
-     * @return the httpsHost
-     */
-    public String getHttpsHost() {
-        return httpsHost;
-    }
-
-    /**
      * @return the httpListener
      */
-    public boolean isHttpListener() {
+    public Listener httpListener() {
         return httpListener;
     }
 
     /**
-     * @return the httpPort
+     * @return the httpsListener
      */
-    public int getHttpPort() {
-        return httpPort;
-    }
-
-    /**
-     * @return the httpHost
-     */
-    public String getHttpHost() {
-        return httpHost;
+    public TLSListener httpsListener() {
+        return httpsListener;
     }
 
     /**
      * @return the ajpListener
      */
-    public boolean isAjpListener() {
+    public Listener ajpListener() {
         return ajpListener;
-    }
-
-    /**
-     * @return the ajpPort
-     */
-    public int getAjpPort() {
-        return ajpPort;
-    }
-
-    /**
-     * @return the ajpHost
-     */
-    public String getAjpHost() {
-        return ajpHost;
     }
 
     /**
@@ -301,27 +257,6 @@ public class Configuration {
      */
     public String getPluginsDirectory() {
         return this.pluginsDirectory;
-    }
-
-    /**
-     * @return the keystoreFile
-     */
-    public String getKeystoreFile() {
-        return keystoreFile;
-    }
-
-    /**
-     * @return the keystorePassword
-     */
-    public String getKeystorePassword() {
-        return keystorePassword;
-    }
-
-    /**
-     * @return the certPassword
-     */
-    public String getCertPassword() {
-        return certPassword;
     }
 
     /**
@@ -648,3 +583,44 @@ public class Configuration {
         }
     }
 }
+
+record Listener(boolean enabled, String host, int port) {
+    public static final String ENABLED_KEY = "enabled";
+    public static final String HOST_KEY = "host";
+    public static final String PORT_KEY = "port";
+
+    public Listener(Map<String, Object> conf, String listenerKey, Listener defaultValue, boolean silent) {
+        this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent));
+    }
+};
+
+record TLSListener(boolean enabled, String host, int port, String keystorePath, String keystorePwd, String certificatePwd) {
+    public static final String ENABLED_KEY = "enabled";
+    public static final String HOST_KEY = "host";
+    public static final String PORT_KEY = "port";
+    public static final String KEYSTORE_PATH_KEY = "keystore-path";
+    public static final String KEYSTOPRE_PWD_KEY = "keystore-password";
+    public static final String CERT_PWD_KEY = "certificate-password";
+
+    public TLSListener(Map<String, Object> conf, String listenerKey, TLSListener defaultValue, boolean silent) {
+        this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" +  HOST_KEY, defaultValue.host(), silent),
+            findOrDefault(conf,"/" + listenerKey + "/" +  PORT_KEY, defaultValue.port(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTORE_PATH_KEY, defaultValue.keystorePath(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTOPRE_PWD_KEY, defaultValue.keystorePwd(), silent),
+            findOrDefault(conf, "/" + listenerKey + "/" + CERT_PWD_KEY, defaultValue.certificatePwd(), silent));
+    }
+
+    @Override
+    public String toString() {
+        return "{enabled: " + enabled + ", " +
+                "host: " + host + ", " +
+                "port: " + port + ", " +
+                "keystorePath: " + keystorePath + ", " +
+                "keystorePwd: "  + (keystorePwd == null ? "null" : "******") + ", " +
+                "certificatePwd:"  + (certificatePwd == null ? "null" : "******") + "}";
+    }
+};
+

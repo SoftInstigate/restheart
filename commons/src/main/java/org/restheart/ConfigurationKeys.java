@@ -24,56 +24,26 @@ package org.restheart;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface ConfigurationKeys {
-
-    /**
-     * default http listener.
-     */
-    public static final boolean DEFAULT_HTTP_LISTENER = true;
-
-    /**
-     * default http port 8080.
-     */
-    public static final int DEFAULT_HTTP_PORT = 8080;
-
-    /**
-     * default http host localhost.
-     */
-    public static final String DEFAULT_HTTP_HOST = "localhost";
-
-    /**
-     * default https listener.
-     */
-    public static final boolean DEFAULT_HTTPS_LISTENER = false;
-
-    /**
-     * default https port 4443.
-     */
-    public static final int DEFAULT_HTTPS_PORT = 4443;
-
-    /**
-     * default https host localhost.
-     */
-    public static final String DEFAULT_HTTPS_HOST = "localhost";
-
-    /**
-     * default http listener.
-     */
-    public static final boolean DEFAULT_AJP_LISTENER = false;
-
-    /**
-     * default ajp host localhost.
-     */
-    public static final String DEFAULT_AJP_HOST = "localhost";
-
-    /**
-     * default ajp port 8009.
-     */
-    public static final int DEFAULT_AJP_PORT = 8009;
-
     /**
      * default instance name
      */
     public static final String DEFAULT_INSTANCE_NAME = "default";
+
+
+    /**
+     * the key for the http-listener property.
+     */
+    public static final String HTTP_LISTENER_KEY = "http-listener";
+
+    /**
+     * the key for the https-listener property.
+     */
+    public static final String HTTPS_LISTENER_KEY = "https-listener";
+
+    /**
+     * the key for the ajp-listener property.
+     */
+    public static final String AJP_LISTENER_KEY = "ajp-listener";
 
     /**
      * the key for the log-file-path property.
@@ -277,66 +247,6 @@ public interface ConfigurationKeys {
      * the key for the auth-db property.
      */
     public static final String MONGO_AUTH_DB_KEY = "auth-db";
-
-    /**
-     * the key for the certpassword property.
-     */
-    public static final String CERT_PASSWORD_KEY = "certpassword";
-
-    /**
-     * the key for the keystore-password property.
-     */
-    public static final String KEYSTORE_PASSWORD_KEY = "keystore-password";
-
-    /**
-     * the key for the keystore-file property.
-     */
-    public static final String KEYSTORE_FILE_KEY = "keystore-file";
-
-    /**
-     * the key for the http-host property.
-     */
-    public static final String HTTP_HOST_KEY = "http-host";
-
-    /**
-     * the key for the http-port property.
-     */
-    public static final String HTTP_PORT_KEY = "http-port";
-
-    /**
-     * the key for http-listener the property.
-     */
-    public static final String HTTP_LISTENER_KEY = "http-listener";
-
-    /**
-     * the key for the https-host property.
-     */
-    public static final String HTTPS_HOST_KEY = "https-host";
-
-    /**
-     * the key for the https-port property.
-     */
-    public static final String HTTPS_PORT_KEY = "https-port";
-
-    /**
-     * the key for the https-listener property.
-     */
-    public static final String HTTPS_LISTENER_KEY = "https-listener";
-
-    /**
-     * the key for the ajp-host property.
-     */
-    public static final String AJP_HOST_KEY = "ajp-host";
-
-    /**
-     * the key for the ajp-port property.
-     */
-    public static final String AJP_PORT_KEY = "ajp-port";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
 
     /**
      * the key for the instance-name property.

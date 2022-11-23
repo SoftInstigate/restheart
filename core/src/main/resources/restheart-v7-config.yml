@@ -17,12 +17,12 @@
  # WARNING: Using the http listener is not secure.
 http-listener:
   enabled: true
-  host: localhosst
+  host: localhost
   port: 8080
 
 https-listener:
   enabled: false
-  host: localhosst
+  host: localhost
   port: 4443
   # The https listener requires setting up a TLS certificate.
   # See https://restheart.org/docs/security/tls/
@@ -32,7 +32,7 @@ https-listener:
 
 ajp-listener:
   enabled: false
-  host: localhosst
+  host: localhost
   port: 8009
 
 #### Logging

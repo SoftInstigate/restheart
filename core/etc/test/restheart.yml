@@ -7,17 +7,10 @@ instance-name: integration-test
 
 #instance-base-url: http://localhost
 
-https-listener: false
-https-host: 0.0.0.0
-https-port: 4443
-
-http-listener: true
-http-host: 0.0.0.0
-http-port: 8080
-
-ajp-listener: false
-ajp-host: localhost
-ajp-port: 8009
+http-listener:
+  enabled: true
+  host: 0.0.0.0
+  port: 8080
 
 ### Proxied resources
 
@@ -37,24 +30,6 @@ proxies:
     proxy-pass: http://127.0.0.1:8080/iecho
   - location: /anything
     proxy-pass: https://httpbin.org/anything
-
-#### SSL Configuration
-
- # Configure the keystore to enable the https listener.
-
- # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
- # and specify the keystore-file,keystore-password and certpassword configuration properties.
- # Two scripts are available to generate the keystore:
- ## 1) generate-self-signed-keystore.sh
- ##    Generate a self signed certificate and import it in the java keystore
- ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/generate-self-signed-keystore.sh
- ## 2) convert-letsencrypt-java-keystore.sh
- ##    Generate the keystore from a https://letsencrypt.org free certificate
- ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/convert-letsencrypt-java-keystore.sh
-
-#keystore-file: /path/to/keystore/file
-#keystore-password: password
-#certpassword: password
 
 ### Security
 

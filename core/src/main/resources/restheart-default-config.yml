@@ -4,28 +4,29 @@
 ---
 #### Listeners
 
+ # Listeners allow to specify the protocol, ip, port and to use.
  # The supported protocols are: http, https and ajp.
 
- # To enable HTTPS, configure a certificate. See https://restheart.org/docs/security/tls/
-https-listener: false
-https-host: localhost
-https-port: 4443
-
- # Import your certificate into the Java keystore to enable the https listener.
- # See https://restheart.org/docs/security/tls/#configure-the-ssl-certificate
-#keystore-file: /path/to/keystore/file
-#keystore-password: password
-#certpassword: password
-
  # WARNING: Using the http listener is not secure.
- # It is recommended to use the https listener or to reverse proxy RESTHeart over HTTPS.
-http-listener: true
-http-host: localhost
-http-port: 8080
+http-listener:
+  enabled: true
+  host: localhost
+  port: 8080
 
-ajp-listener: false
-ajp-host: localhost
-ajp-port: 8009
+https-listener:
+  enabled: false
+  host: localhost
+  port: 4443
+  # The https listener requires setting up a TLS certificate.
+  # See https://restheart.org/docs/security/tls/
+  keystore-path: null
+  keystore-password: null
+  certificate-password: null
+
+ajp-listener:
+  enabled: false
+  host: localhost
+  port: 8009
 
 #### Instance name
 
