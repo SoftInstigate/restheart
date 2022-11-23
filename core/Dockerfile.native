@@ -6,6 +6,6 @@ WORKDIR /opt/restheart
 COPY target/restheart .
 RUN mkdir etc plugins
 
-ENV RHO='/mongo-uri->"mongodb://host.docker.internal";/http-host->"0.0.0.0"'
+ENV RHO='/mongo-uri->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 ENTRYPOINT [ "./restheart" ]
 EXPOSE 8009 8080 4443
