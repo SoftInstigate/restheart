@@ -65,7 +65,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name="jwtAuthenticationMechanism",
-        description = "handle JSON Web Token authentication")
+        description = "handle JSON Web Token authentication",
+        enabledByDefault = false)
 public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugin<DecodedJWT> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);

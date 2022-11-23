@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
 import org.restheart.Bootstrapper;
@@ -231,7 +232,7 @@ public class PluginsScanner {
             var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
                 .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
-            var confArgs = Bootstrapper.getConfiguration().getPluginsArgs().get(name);
+            Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
             return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
         }
     }

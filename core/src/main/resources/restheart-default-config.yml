@@ -102,72 +102,75 @@ static-resources-mounts:
  # successfully authenticates the incoming request or the list of mechanisms is
  # exhausted.
 
-auth-mechanisms:
-  tokenBasicAuthMechanism:
-    enabled: true
-  basicAuthMechanism:
-    enabled: true
-    authenticator: mongoRealmAuthenticator
-  jwtAuthenticationMechanism:
-    enabled: false
-    algorithm: HS256
-    key: secret
-    base64Encoded: false
-    usernameClaim: sub
-    rolesClaim: null
-    fixedRoles:
-    #  - jwt-role
-    issuer: myIssuer
-    audience: myAudience
-  digestAuthMechanism:
-    # digest authentication is disabled by default
-    # because it requires the passwords to be stored in plaintext
-    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
-    enabled: false
-    realm: RESTHeart Realm
-    domain: localhost
-    authenticator: mongoRealmAuthenticator
-  identityAuthMechanism:
-    enabled: false
-    username: admin
-    roles:
-      - admin
-      - user
+tokenBasicAuthMechanism:
+  enabled: true
+
+basicAuthMechanism:
+  enabled: true
+  authenticator: mongoRealmAuthenticator
+
+jwtAuthenticationMechanism:
+  enabled: false
+  algorithm: HS256
+  key: secret
+  base64Encoded: false
+  usernameClaim: sub
+  rolesClaim: null
+  fixedRoles:
+  #  - jwt-role
+  issuer: myIssuer
+  audience: myAudience
+
+digestAuthMechanism:
+  # digest authentication is disabled by default
+  # because it requires the passwords to be stored in plaintext
+  # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+  enabled: false
+  realm: RESTHeart Realm
+  domain: localhost
+  authenticator: mongoRealmAuthenticator
+
+identityAuthMechanism:
+  enabled: false
+  username: admin
+  roles:
+    - admin
+    - user
 
 ## Authenticators
 
  # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
-authenticators:
-  fileRealmAuthenticator:
-    enabled: false
-    conf-file: ./users.yml
-  mongoRealmAuthenticator:
-    enabled: true
-    users-db: restheart
-    users-collection: users
-    prop-id: _id
-    prop-password: password
-    json-path-roles: $.roles
-    bcrypt-hashed-password: true
-    bcrypt-complexity: 12
-    enforce-minimum-password-strenght: false
-    # Integer from 0 to 4
-    # 0 Weak        （guesses < 3^10）
-    # 1 Fair        （guesses < 6^10）
-    # 2 Good        （guesses < 8^10）
-    # 3 Strong      （guesses < 10^10）
-    # 4 Very strong （guesses >= 10^10）
-    minimum-password-strength: 3
-    create-user: true
-    create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
-    # create-user-document.password must be hashed when bcrypt-hashed-password=true
-    # default password is 'secret'
-    # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
-    cache-enabled: false
-    cache-size: 1000
-    cache-ttl: 60000
-    cache-expire-policy: AFTER_WRITE
+fileRealmAuthenticator:
+  enabled: false
+  conf-file: ./users.yml
+
+mongoRealmAuthenticator:
+  enabled: true
+  users-db: restheart
+  users-collection: users
+  prop-id: _id
+  prop-password: password
+  json-path-roles: $.roles
+  bcrypt-hashed-password: true
+  bcrypt-complexity: 12
+  enforce-minimum-password-strenght: false
+  # Integer from 0 to 4
+  # 0 Weak        （guesses < 3^10）
+  # 1 Fair        （guesses < 6^10）
+  # 2 Good        （guesses < 8^10）
+  # 3 Strong      （guesses < 10^10）
+  # 4 Very strong （guesses >= 10^10）
+  minimum-password-strength: 3
+  create-user: true
+  create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
+  # create-user-document.password must be hashed when bcrypt-hashed-password=true
+  # default password is 'secret'
+  # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
+  cache-enabled: false
+  cache-size: 1000
+  cache-ttl: 60000
+  cache-expire-policy: AFTER_WRITE
 
 ## Authorizers
 
@@ -177,35 +180,37 @@ authenticators:
  # called on each authorizers. A secured request is allowed when no `VETOER` denies
  # it and at least one `ALLOWER` allows it.
 
-authorizers:
-  fileAclAuthorizer:
-    enabled: false
-    conf-file: ./acl.yml
-  mongoAclAuthorizer:
-    enabled: true
-    acl-db: restheart
-    acl-collection: acl
-    # clients with root-role can execute any request
-    root-role: admin
-    cache-enabled: true
-    cache-size: 1000
-    cache-ttl: 5000
-    cache-expire-policy: AFTER_WRITE
-  # originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
-  originVetoer:
-    enabled: false
-    whitelist:
-      - https://restheart.org
-      - http://localhost
-  # optional list of paths for whose the Origin header
-    # is not checked. values can be absolute paths
-    # or patterns like /{var}/path/to/resource/*
-    # ignore-paths:
-    #   - /{tenant}/bucket.files/{id}/binary
-    #   - /coll/docid
-  fullAuthorizer:
-    enabled: false
-    authentication-required: true
+fileAclAuthorizer:
+  enabled: false
+  conf-file: ./acl.yml
+
+mongoAclAuthorizer:
+  enabled: true
+  acl-db: restheart
+  acl-collection: acl
+  # clients with root-role can execute any request
+  root-role: admin
+  cache-enabled: true
+  cache-size: 1000
+  cache-ttl: 5000
+  cache-expire-policy: AFTER_WRITE
+
+# originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
+originVetoer:
+  enabled: false
+  whitelist:
+    - https://restheart.org
+    - http://localhost
+# optional list of paths for whose the Origin header
+  # is not checked. values can be absolute paths
+  # or patterns like /{var}/path/to/resource/*
+  # ignore-paths:
+  #   - /{tenant}/bucket.files/{id}/binary
+  #   - /coll/docid
+
+fullAuthorizer:
+  enabled: false
+  authentication-required: true
 
 ## Token Manager
 
@@ -215,17 +220,17 @@ authorizers:
  # The token is returned to the caller via auth-token header when the user
  # autheticates successfully. The token can be used by Authentication Mechanisms.
 
-token-manager:
-  rndTokenManager:
-    enabled: true
-    ttl: 15
-    srv-uri: /tokens
-  jwtTokenManager:
-    enabled: false
-    key: secret
-    ttl: 15
-    srv-uri: /tokens
-    issuer: restheart.org
+rndTokenManager:
+  enabled: true
+  ttl: 15
+  srv-uri: /tokens
+
+jwtTokenManager:
+  enabled: false
+  key: secret
+  ttl: 15
+  srv-uri: /tokens
+  issuer: restheart.org
 
 ## Allow unescaped characters in URL
 
@@ -250,136 +255,140 @@ plugins-directory: plugins
 # The property 'secured' allows overriding the secure attribute of the service defined
 # by @RegisterPlugin( .., secure=false)
 
-plugins-args:
-  # MongoDB REST and Websocket API
-  mongo:
-    enabled: true
-    uri: /
+# MongoDB REST and Websocket API
+mongo:
+  enabled: true
+  uri: /
 
-    # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
-    #
-    # The parameter 'what' identifies the MongoDb resource to expose.
-    # The format is /db[/coll[/docid]]
-    # Use the wildcard '*' to expose all dbs.
-    #
-    # The parameter 'where' defines the URI to bind the resource to.
-    # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
-    # The values of the path templates properties are available:
-    # - in the 'what' property (e.g. what: /{foo}_db/coll)
-    # - programmatically from MongoRequest.getPathTemplateParamenters() method.
-    #
-    # It is not possible to mix absolute paths and path templates: 'where' URIs
-    # need to be either all absolute paths or all path templates.
-    #
-    # Examples:
-    # The following exposes all MongoDb resources.
-    # In this case the URI of a document is /db/coll/docid
-    #
-    #   - what: "*"
-    #     where: /
-    #
-    # The following binds the URI /database to the db 'db'
-    # In this case the URI of a document is /database/coll/docid
-    #
-    #   - what: /db
-    #     where: /database
-    #
-    # The following binds the URI /api to the collection 'db.coll'
-    # In this case the URI of a document is /api/docid
-    #
-    #   - what: /db/coll
-    #     where: /api
-    mongo-mounts:
-      - what: /restheart
-        where: /
+  # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
+  #
+  # The parameter 'what' identifies the MongoDb resource to expose.
+  # The format is /db[/coll[/docid]]
+  # Use the wildcard '*' to expose all dbs.
+  #
+  # The parameter 'where' defines the URI to bind the resource to.
+  # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
+  # The values of the path templates properties are available:
+  # - in the 'what' property (e.g. what: /{foo}_db/coll)
+  # - programmatically from MongoRequest.getPathTemplateParamenters() method.
+  #
+  # It is not possible to mix absolute paths and path templates: 'where' URIs
+  # need to be either all absolute paths or all path templates.
+  #
+  # Examples:
+  # The following exposes all MongoDb resources.
+  # In this case the URI of a document is /db/coll/docid
+  #
+  #   - what: "*"
+  #     where: /
+  #
+  # The following binds the URI /database to the db 'db'
+  # In this case the URI of a document is /database/coll/docid
+  #
+  #   - what: /db
+  #     where: /database
+  #
+  # The following binds the URI /api to the collection 'db.coll'
+  # In this case the URI of a document is /api/docid
+  #
+  #   - what: /db/coll
+  #     where: /api
+  mongo-mounts:
+    - what: /restheart
+      where: /
 
-    # Default representation format https://restheart.org/docs/mongodb-rest/representation-format/#other-representation-formats
-    default-representation-format: STANDARD
+  # Default representation format https://restheart.org/docs/mongodb-rest/representation-format/#other-representation-formats
+  default-representation-format: STANDARD
 
-    # Default etag check policy https://restheart.org/docs/mongodb-rest/etag/#etag-policy
-    etag-check-policy:
-      db: REQUIRED_FOR_DELETE
-      coll: REQUIRED_FOR_DELETE
-      doc: OPTIONAL
+  # Default etag check policy https://restheart.org/docs/mongodb-rest/etag/#etag-policy
+  etag-check-policy:
+    db: REQUIRED_FOR_DELETE
+    coll: REQUIRED_FOR_DELETE
+    doc: OPTIONAL
 
-    # get collection cache speedups GET /coll?cache requests
-    get-collection-cache-size: 100
-    get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
-    get-collection-cache-docs: 1000 # number of documents to cache for each request
+  # get collection cache speedups GET /coll?cache requests
+  get-collection-cache-size: 100
+  get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
+  get-collection-cache-docs: 1000 # number of documents to cache for each request
 
-    # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
-    aggregation-check-operators: true
+  # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
+  aggregation-check-operators: true
 
-    # default-pagesize is the number of documents returned when the pagesize query
-    # parameter is not specified
-    # see https://restheart.org/docs/read-docs#paging
-    default-pagesize: 100
+  # default-pagesize is the number of documents returned when the pagesize query
+  # parameter is not specified
+  # see https://restheart.org/docs/read-docs#paging
+  default-pagesize: 100
 
-    # max-pagesize sets the maximum allowed value of the pagesize query parameter
-    # generally, the greater the pagesize, the more json serializan overhead occurs
-    # the rule of thumb is not exeeding 1000
-    max-pagesize: 1000
+  # max-pagesize sets the maximum allowed value of the pagesize query parameter
+  # generally, the greater the pagesize, the more json serializan overhead occurs
+  # the rule of thumb is not exeeding 1000
+  max-pagesize: 1000
 
-    # local-cache allows to cache the db and collection properties to drammatically
-    # improve performaces. Without caching, a GET on a document would requires
-    # two additional queries to retrieve the db and the collection properties.
-    # Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
-    # In this case a change in a db or collection properties would reflect on other
-    # nodes at worst after TTL milliseconds (cache entries time to live).
-    # In most of the cases Dbs and collections properties only change at development time.
-    local-cache-enabled: true
-    # TTL in milliseconds; specify a value < 0 to never expire cached entries
-    local-cache-ttl: 60000
+  # local-cache allows to cache the db and collection properties to drammatically
+  # improve performaces. Without caching, a GET on a document would requires
+  # two additional queries to retrieve the db and the collection properties.
+  # Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
+  # In this case a change in a db or collection properties would reflect on other
+  # nodes at worst after TTL milliseconds (cache entries time to live).
+  # In most of the cases Dbs and collections properties only change at development time.
+  local-cache-enabled: true
+  # TTL in milliseconds; specify a value < 0 to never expire cached entries
+  local-cache-ttl: 60000
 
-    # cache for JSON Schemas
-    schema-cache-enabled: true
-    # TTL in milliseconds; specify a value < 0 to never expire cached entries
-    schema-cache-ttl: 60000
+  # cache for JSON Schemas
+  schema-cache-enabled: true
+  # TTL in milliseconds; specify a value < 0 to never expire cached entries
+  schema-cache-ttl: 60000
 
-    # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
-    query-time-limit: 0
-    # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
-    aggregation-time-limit: 0
+  # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
+  query-time-limit: 0
+  # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
+  aggregation-time-limit: 0
 
-  # Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
-  authTokenService:
-    uri: /tokens
-  ping:
-    enabled: true
-    msg: Greetings from RESTHeart!
-  roles:
-    uri: /roles
-  graphql:
-    uri: /graphql
-    db: restheart
-    collection: gql-apps
-    # default-limit is used for queries that don't not specify a limit
-    default-limit: 100
-    # max-limit is the maximum value for a Query limit
-    max-limit: 1000
-    verbose: false
-  # a global blacklist for mongodb operators in filter query parameter
-  filterOperatorsBlacklist:
-    blacklist: [ "$where" ]
-    enabled: true
-  # defends from brute force password cracking attacks
-  # by returning `429 Too Many Requests` when more than
-  # `max-failed-attempts` wrong requests
-  # are received in last 10 seconds from the same ip
-  bruteForceAttackGuard:
-    enabled: false
-    # max number of failed attempts in 10 seconds sliding window
-    # before returning 429 Too Many Requests
-    max-failed-attempts: 5
-    # if true, the source ip is obtained from X-Forwarded-For header
-    # this requires that header beeing set by the proxy, dangerous otherwise
-    trust-x-forwarded-for: false
-    # when X-Forwarded-For has multiple values,
-    # take into account the n-th from last element
-    # e.g. with [x.x.x.x, y.y.y.y., z.z.z.z, k.k.k.k]
-    # 0 -> k.k.k.k
-    # 2 -> y.y.y.y
-    x-forwarded-for-value-from-last-element: 0
+# Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
+authTokenService:
+  uri: /tokens
+
+ping:
+  enabled: true
+  msg: Greetings from RESTHeart!
+
+roles:
+  uri: /roles
+
+graphql:
+  uri: /graphql
+  db: restheart
+  collection: gql-apps
+  # default-limit is used for queries that don't not specify a limit
+  default-limit: 100
+  # max-limit is the maximum value for a Query limit
+  max-limit: 1000
+  verbose: false
+
+# a global blacklist for mongodb operators in filter query parameter
+filterOperatorsBlacklist:
+  blacklist: [ "$where" ]
+  enabled: true
+
+# defends from brute force password cracking attacks
+# by returning `429 Too Many Requests` when more than
+# `max-failed-attempts` wrong requests
+# are received in last 10 seconds from the same ip
+bruteForceAttackGuard:
+  enabled: false
+  # max number of failed attempts in 10 seconds sliding window
+  # before returning 429 Too Many Requests
+  max-failed-attempts: 5
+  # if true, the source ip is obtained from X-Forwarded-For header
+  # this requires that header beeing set by the proxy, dangerous otherwise
+  trust-x-forwarded-for: false
+  # when X-Forwarded-For has multiple values,
+  # take into account the n-th from last element
+  # e.g. with [x.x.x.x, y.y.y.y., z.z.z.z, k.k.k.k]
+  # 0 -> k.k.k.k
+  # 2 -> y.y.y.y
+  x-forwarded-for-value-from-last-element: 0
 
 #### Logging
 

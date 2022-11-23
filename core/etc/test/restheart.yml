@@ -46,68 +46,72 @@ proxies:
 
  # See README.md for the list of available Authentication Mechanisms
 
-auth-mechanisms:
-  tokenBasicAuthMechanism:
-    enabled: true
-  basicAuthMechanism:
-    enabled: true
-    authenticator: fileRealmAuthenticator
-  digestAuthMechanism:
-    # digest authentication is disabled by default
-    # because it requires the passwords to be stored in plaintext
-    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
-    # here it is enabled because fileRealmAuthenticator is used with paintext passwords
-    enabled: true
-    realm: RESTHeart Realm
-    domain: localhost
-    authenticator: fileRealmAuthenticator
-  identityAuthMechanism:
-    enabled: false
-    username: admin
-    roles:
-      - admin
-      - user
-  jwtAuthenticationMechanism:
-    algorithm: HS256
-    key: secret
-    base64Encoded: false
-    usernameClaim: sub
-    rolesClaim: roles
-    fixedRoles:
-    #  - admin
-    issuer: myIssuer
-    audience: myAudience
+tokenBasicAuthMechanism:
+  enabled: true
+
+basicAuthMechanism:
+  enabled: true
+  authenticator: fileRealmAuthenticator
+
+digestAuthMechanism:
+  # digest authentication is disabled by default
+  # because it requires the passwords to be stored in plaintext
+  # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+  # here it is enabled because fileRealmAuthenticator is used with paintext passwords
+  enabled: true
+  realm: RESTHeart Realm
+  domain: localhost
+  authenticator: fileRealmAuthenticator
+
+identityAuthMechanism:
+  enabled: false
+  username: admin
+  roles:
+    - admin
+    - user
+
+jwtAuthenticationMechanism:
+  enabled: true
+  algorithm: HS256
+  key: secret
+  base64Encoded: false
+  usernameClaim: sub
+  rolesClaim: roles
+  fixedRoles:
+  #  - admin
+  issuer: myIssuer
+  audience: myAudience
 
 ## Authenticators
 
  # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
-authenticators:
-  fileRealmAuthenticator:
-    enabled: true
-    conf-file: ./users.yml
-  mongoRealmAuthenticator:
-    users-db: restheart-test
-    users-collection: users
-    prop-id: _id
-    prop-password: password
-    json-path-roles: $.roles
-    bcrypt-hashed-password: true
-    bcrypt-complexity: 12
-    enforce-minimum-password-strenght: false
-    # Integer from 0 to 4
-    # 0 Weak        （guesses < 3^10）
-    # 1 Fair        （guesses < 6^10）
-    # 2 Good        （guesses < 8^10）
-    # 3 Strong      （guesses < 10^10）
-    # 4 Very strong （guesses >= 10^10）
-    minimum-password-strength: 3
-    create-user: true
-    create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
-    cache-enabled: false
-    cache-size: 1000
-    cache-ttl: 60000
-    cache-expire-policy: AFTER_WRITE
+fileRealmAuthenticator:
+  enabled: true
+  conf-file: ./users.yml
+
+mongoRealmAuthenticator:
+  users-db: restheart-test
+  users-collection: users
+  prop-id: _id
+  prop-password: password
+  json-path-roles: $.roles
+  bcrypt-hashed-password: true
+  bcrypt-complexity: 12
+  enforce-minimum-password-strenght: false
+  # Integer from 0 to 4
+  # 0 Weak        （guesses < 3^10）
+  # 1 Fair        （guesses < 6^10）
+  # 2 Good        （guesses < 8^10）
+  # 3 Strong      （guesses < 10^10）
+  # 4 Very strong （guesses >= 10^10）
+  minimum-password-strength: 3
+  create-user: true
+  create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
+  cache-enabled: false
+  cache-size: 1000
+  cache-ttl: 60000
+  cache-expire-policy: AFTER_WRITE
 
 ## Authorizers
 
@@ -119,21 +123,22 @@ authenticators:
 
  # See README.md for the list of available Authorizers
 
-authorizers:
-  fileAclAuthorizer:
-    enabled: true
-    conf-file: ./acl.yml
-  mongoAclAuthorizer:
-    acl-db: restheart-test
-    acl-collection: acl
-    root-role: admin
-    cache-enabled: false
-    cache-size: 1000
-    cache-ttl: 5000
-    cache-expire-policy: AFTER_WRITE
-  fullAuthorizer:
-    enabled: false
-    authentication-required: true
+fileAclAuthorizer:
+  enabled: true
+  conf-file: ./acl.yml
+
+mongoAclAuthorizer:
+  acl-db: restheart-test
+  acl-collection: acl
+  root-role: admin
+  cache-enabled: false
+  cache-size: 1000
+  cache-ttl: 5000
+  cache-expire-policy: AFTER_WRITE
+
+fullAuthorizer:
+  enabled: false
+  authentication-required: true
 
 ## Token Manager
 
@@ -145,17 +150,17 @@ authorizers:
 
  # See README.md for the list of available Token Managers.
 
-token-manager:
-  rndTokenManager:
-    enabled: true
+rndTokenManager:
+  enabled: true
+  ttl: 15
+  srv-uri: /tokens
+
+jwtTokenManager:
+    enabled: false
+    key: secret
     ttl: 15
     srv-uri: /tokens
-  jwtTokenManager:
-      enabled: false
-      key: secret
-      ttl: 15
-      srv-uri: /tokens
-      issuer: restheart.org
+    issuer: restheart.org
 
 ## restheart-mongodb configuration
 
@@ -192,98 +197,117 @@ plugins-directory: plugins
 # The property 'secured' allows overriding the secure attribute of the service defined
 # by @RegisterPlugin( .., secure=false)
 
-plugins-args:
-    mongo:
-        uri: /
-        mongo-mounts:
-          - what: '*'
-            where: /
-          - what: '*'
-            where: /remappedall
-          - what: /testdb
-            where: /remappeddb
-          - what: /testdb/refcoll1
-            where: /remappedrefcoll1
-          - what: /testdb/refcoll2
-            where: /remappedrefcoll2
-          - what: /testdb/refcoll1/doc1
-            where: /remappeddoc1
-          - what: /testdb/refcoll2/doc2
-            where: /remappeddoc2
-        default-representation-format: HAL
-        etag-check-policy:
-          db: REQUIRED_FOR_DELETE
-          coll: REQUIRED_FOR_DELETE
-          doc: OPTIONAL
-        aggregation-check-operators: true
-        default-pagesize: 100
-        max-pagesize: 1000
-        local-cache-enabled: true
-        local-cache-ttl: 60000
-        schema-cache-enabled: true
-        schema-cache-ttl: 60000
-        query-time-limit: 0
-        aggregation-time-limit: 0
-    graphql:
-      uri: /graphql
-      db: test-graphql
-      collection: gql-apps
-      verbose: true
-    # a global blacklist for mongodb operators in filter query parameter
-    filterOperatorsBlacklist:
-      blacklist: [ "$where" ]
-      enabled: true
-    # defends from brute force password cracking attacks
-    # by returning `429 Too Many Requests` when more than
-    # `max-failed-attempts` wrong requests
-    # are received in last 10 seconds from the same ip
-    bruteForceAttackGuard:
-      enabled: false
-      # if true, the source ip is obtained from X-Forwarded-For header
-      # this requires that header beeing set by the proxy, dangerous otherwise
-      trust-x-forwarded-for: false
-      # max number of failed attempts in 10 seconds sliding window
-      # before returning 429 Too Many Requests
-      max-failed-attempts: 5
-    testInitializer:
-        enabled: true
-    # Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
-    authTokenService:
-        uri: /tokens
-    ping:
-        msg: 'Ping!'
-    roles:
-        uri: /roles
-    echo:
-        uri: /echo
-    secho:
-        uri: /secho
-        enabled: true
-    iecho:
-        uri: /iecho
-        enabled: true
-    echoRequestInterceptor:
-        enabled: true
-    echoResponseInterceptor:
-        enabled: true
-    echoAsyncResponseInterceptor:
-        enabled: true
-    echoProxyRequestInterceptor:
-        enabled: true
-    echoProxyResponseInterceptor:
-        enabled: true
-    secretHider:
-        enabled: true
-    logMessageInitializer:
-        enabled: false
-        message: Hello World!
-        log-level: INFO
-    addBodyToWriteResponsesInitializer:
-        enabled: false
-    snooper:
-        enabled: true
-    writeResult:
-        enabled: true
+mongo:
+  uri: /
+  mongo-mounts:
+    - what: '*'
+      where: /
+    - what: '*'
+      where: /remappedall
+    - what: /testdb
+      where: /remappeddb
+    - what: /testdb/refcoll1
+      where: /remappedrefcoll1
+    - what: /testdb/refcoll2
+      where: /remappedrefcoll2
+    - what: /testdb/refcoll1/doc1
+      where: /remappeddoc1
+    - what: /testdb/refcoll2/doc2
+      where: /remappeddoc2
+  default-representation-format: HAL
+  etag-check-policy:
+    db: REQUIRED_FOR_DELETE
+    coll: REQUIRED_FOR_DELETE
+    doc: OPTIONAL
+  aggregation-check-operators: true
+  default-pagesize: 100
+  max-pagesize: 1000
+  local-cache-enabled: true
+  local-cache-ttl: 60000
+  schema-cache-enabled: true
+  schema-cache-ttl: 60000
+  query-time-limit: 0
+  aggregation-time-limit: 0
+
+graphql:
+  uri: /graphql
+  db: test-graphql
+  collection: gql-apps
+  verbose: true
+# a global blacklist for mongodb operators in filter query parameter
+
+filterOperatorsBlacklist:
+  blacklist: [ "$where" ]
+  enabled: true
+# defends from brute force password cracking attacks
+# by returning `429 Too Many Requests` when more than
+# `max-failed-attempts` wrong requests
+# are received in last 10 seconds from the same ip
+
+bruteForceAttackGuard:
+  enabled: false
+  # if true, the source ip is obtained from X-Forwarded-For header
+  # this requires that header beeing set by the proxy, dangerous otherwise
+  trust-x-forwarded-for: false
+  # max number of failed attempts in 10 seconds sliding window
+  # before returning 429 Too Many Requests
+  max-failed-attempts: 5
+
+testInitializer:
+    enabled: true
+
+# Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
+authTokenService:
+    uri: /tokens
+
+ping:
+    msg: 'Ping!'
+
+roles:
+    uri: /roles
+
+echo:
+    uri: /echo
+
+secho:
+    uri: /secho
+    enabled: true
+
+iecho:
+    uri: /iecho
+    enabled: true
+
+echoRequestInterceptor:
+    enabled: true
+
+echoResponseInterceptor:
+    enabled: true
+
+echoAsyncResponseInterceptor:
+    enabled: true
+
+echoProxyRequestInterceptor:
+    enabled: true
+
+echoProxyResponseInterceptor:
+    enabled: true
+
+secretHider:
+    enabled: true
+
+logMessageInitializer:
+    enabled: false
+    message: Hello World!
+    log-level: INFO
+
+addBodyToWriteResponsesInitializer:
+    enabled: false
+
+snooper:
+    enabled: true
+
+writeResult:
+    enabled: true
 
 ## Allow unescaped characters in URL
 
@@ -342,64 +366,64 @@ direct-buffers: true
 #### Connection Options
 
 connection-options:
-    # The maximum size of a HTTP header block, in bytes.
-    # If a client sends more data that this as part of the request header then the connection will be closed.
-    # Defaults to 1Mbyte.
-    MAX_HEADER_SIZE: 1048576
+  # The maximum size of a HTTP header block, in bytes.
+  # If a client sends more data that this as part of the request header then the connection will be closed.
+  # Defaults to 1Mbyte.
+  MAX_HEADER_SIZE: 1048576
 
-    # The default maximum size of a request entity.
-    # Defaults to unlimited.
-    MAX_ENTITY_SIZE: -1
+  # The default maximum size of a request entity.
+  # Defaults to unlimited.
+  MAX_ENTITY_SIZE: -1
 
-    #The default maximum size of the HTTP entity body when using the mutiltipart parser.
-    # Generall this will be larger than MAX_ENTITY_SIZE
-    # If this is not specified it will be the same as MAX_ENTITY_SIZE
-    MULTIPART_MAX_ENTITY_SIZE: -1
+  #The default maximum size of the HTTP entity body when using the mutiltipart parser.
+  # Generall this will be larger than MAX_ENTITY_SIZE
+  # If this is not specified it will be the same as MAX_ENTITY_SIZE
+  MULTIPART_MAX_ENTITY_SIZE: -1
 
-    # The idle timeout in milliseconds after which the channel will be closed.
-    # If the underlying channel already has a read or write timeout set
-    # the smaller of the two values will be used for read/write timeouts.
-    # Defaults to unlimited (-1).
-    IDLE_TIMEOUT: -1
+  # The idle timeout in milliseconds after which the channel will be closed.
+  # If the underlying channel already has a read or write timeout set
+  # the smaller of the two values will be used for read/write timeouts.
+  # Defaults to unlimited (-1).
+  IDLE_TIMEOUT: -1
 
-    # The maximum allowed time of reading HTTP request in milliseconds.
-    # -1 or missing value disables this functionality.
-    REQUEST_PARSE_TIMEOUT: -1
+  # The maximum allowed time of reading HTTP request in milliseconds.
+  # -1 or missing value disables this functionality.
+  REQUEST_PARSE_TIMEOUT: -1
 
-    # The amount of time the connection can be idle with no current requests
-    # before it is closed;
-    # Defaults to unlimited (-1).
-    NO_REQUEST_TIMEOUT: -1
+  # The amount of time the connection can be idle with no current requests
+  # before it is closed;
+  # Defaults to unlimited (-1).
+  NO_REQUEST_TIMEOUT: -1
 
-    # The maximum number of query parameters that are permitted in a request.
-    # If a client sends more than this number the connection will be closed.
-    # This limit is necessary to protect against hash based denial of service attacks.
-    # Defaults to 1000.
-    MAX_PARAMETERS: 1000
+  # The maximum number of query parameters that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 1000.
+  MAX_PARAMETERS: 1000
 
-    # The maximum number of headers that are permitted in a request.
-    # If a client sends more than this number the connection will be closed.
-    # This limit is necessary to protect against hash based denial of service attacks.
-    # Defaults to 200.
-    MAX_HEADERS: 200
+  # The maximum number of headers that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 200.
+  MAX_HEADERS: 200
 
-    # The maximum number of cookies that are permitted in a request.
-    # If a client sends more than this number the connection will be closed.
-    # This limit is necessary to protect against hash based denial of service attacks.
-    # Defaults to 200.
-    MAX_COOKIES: 200
+  # The maximum number of cookies that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 200.
+  MAX_COOKIES: 200
 
-    # The charset to use to decode the URL and query parameters.
-    # Defaults to UTF-8.
-    URL_CHARSET: UTF-8
+  # The charset to use to decode the URL and query parameters.
+  # Defaults to UTF-8.
+  URL_CHARSET: UTF-8
 
-    # If this is true then a Connection: keep-alive header will be added to responses,
-    # even when it is not strictly required by the specification.
-    # Defaults to true
-    ALWAYS_SET_KEEP_ALIVE: true
+  # If this is true then a Connection: keep-alive header will be added to responses,
+  # even when it is not strictly required by the specification.
+  # Defaults to true
+  ALWAYS_SET_KEEP_ALIVE: true
 
-    # If this is true then a Date header will be added to all responses.
-    # The HTTP spec says this header should be added to all responses,
-    # unless the server does not have an accurate clock.
-    # Defaults to true
-    ALWAYS_SET_DATE: true
+  # If this is true then a Date header will be added to all responses.
+  # The HTTP spec says this header should be added to all responses,
+  # unless the server does not have an accurate clock.
+  # Defaults to true
+  ALWAYS_SET_DATE: true

@@ -55,6 +55,19 @@ public class ConfigurationUtils {
      * @param silent
      * @return
      */
+    public static <V extends Object> V getOrDefault(Configuration conf, final String key, final V defaultValue, boolean silent) {
+        return getOrDefault(conf.toMap(), key, defaultValue, silent);
+    }
+
+    /**
+     *
+     * @param <V>          return value
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @param silent
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
         if (conf == null || conf.get(key) == null) {

@@ -24,13 +24,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
 import com.mongodb.client.MongoClient;
+
+import org.restheart.Configuration;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
@@ -74,14 +75,14 @@ public class NodeService extends AbstractJSPlugin implements StringService {
     })
     """;
 
-    public static Future<NodeService> get(Path scriptPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
+    public static Future<NodeService> get(Path scriptPath, MongoClient mclient, Configuration conf) throws IOException {
         var executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> new NodeService(scriptPath, mclient, pluginArgs));
+        return executor.submit(() -> new NodeService(scriptPath, mclient, conf));
     }
 
-    private NodeService(Path scriptPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
+    private NodeService(Path scriptPath, MongoClient mclient, Configuration conf) throws IOException {
         this.mclient = mclient;
-        this.pluginArgs = pluginArgs;
+        this.conf = conf;
 
         this.source = Files.readString(scriptPath);
         this.codeHash = this.source.hashCode();
@@ -205,8 +206,8 @@ public class NodeService extends AbstractJSPlugin implements StringService {
             out,
             LOGGER,                  // pass LOGGER to node runtime
             this.mclient,            // pass mclient to node runtime
-            this.pluginArgs == null  // pass pluginArgs to node runtime
-                ? Maps.newHashMap() : this.pluginArgs.get(this.name)
+            this.conf == null        // pass pluginArgs to node runtime
+                ? Maps.newHashMap() : this.conf.getOrDefault(this.name, Maps.newHashMap())
         };
 
         try {

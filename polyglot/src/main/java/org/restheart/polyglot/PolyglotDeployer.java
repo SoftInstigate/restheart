@@ -85,8 +85,6 @@ public class PolyglotDeployer implements Initializer {
     @Inject("rh-config")
     private Configuration config;
 
-    private Map<String, Object> pluginsArgs;
-
     @OnInit
     public void onInit() {
         if (!isRunningOnGraalVM()) {
@@ -96,9 +94,7 @@ public class PolyglotDeployer implements Initializer {
 
         pluginsDirectory = getPluginsDirectory(config.toMap());
 
-        this.pluginsArgs = getPluginsArgs(config.toMap());
-
-        this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config.toMap());
+        this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config);
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
     }
@@ -208,17 +204,6 @@ public class PolyglotDeployer implements Initializer {
             pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
 
             return FileSystems.getDefault().getPath(pluginsDir);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getPluginsArgs(Map<String, Object> args) {
-        var _pluginsArgs = args.getOrDefault(ConfigurationKeys.PLUGINS_ARGS_KEY, null);
-
-        if (_pluginsArgs == null || !(_pluginsArgs instanceof Map)) {
-            return null;
-        } else {
-            return (Map<String, Object>) _pluginsArgs;
         }
     }
 
@@ -359,7 +344,7 @@ public class PolyglotDeployer implements Initializer {
         }
 
         try {
-            var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
+            var srv = new JavaScriptService(pluginPath, this.mclient, this.config);
 
             var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.getName(),
                 srv.getDescription(),
@@ -389,7 +374,7 @@ public class PolyglotDeployer implements Initializer {
         var executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
-                    var srvf = NodeService.get(pluginPath, this.mclient, this.pluginsArgs);
+                    var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
                     while (!srvf.isDone()) {
                         Thread.sleep(300);

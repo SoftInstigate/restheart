@@ -51,16 +51,17 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
     @OnInit
     public void init() {
         try {
-            var pluginsArgs = config.getPluginsArgs();
-            Map<String, Object> graphqlArgs = arg(pluginsArgs, "graphql");
-
-            this.db = arg(graphqlArgs, "db");
-            this.coll = arg(graphqlArgs, "collection");
+            Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
+            if (graphqlArgs != null) {
+                this.db = arg(graphqlArgs, "db");
+                this.coll = arg(graphqlArgs, "collection");
+                this.enabled = true;
+            } else {
+                this.enabled = false;
+            }
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }
-
-        this.enabled = true;
     }
 
     @Override

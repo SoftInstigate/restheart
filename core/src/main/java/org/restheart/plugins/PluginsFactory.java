@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
@@ -39,7 +40,7 @@ import org.restheart.plugins.security.TokenManager;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import static org.restheart.utils.ConfigurationUtils.getOrDefault;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -48,29 +49,10 @@ public class PluginsFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PluginsFactory.class);
 
-    private static final Map<String, Map<String, Object>> PLUGINS_CONFS = consumePluginsConfiguration();
-
     private static final PluginsFactory SINGLETON = new PluginsFactory();
 
     public static PluginsFactory getInstance() {
         return SINGLETON;
-    }
-
-    @SuppressWarnings({"unchecked","rawtypes"})
-    private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
-        var pluginsArgs = Bootstrapper.getConfiguration().getPluginsArgs();
-
-        var confs = new HashMap<String, Map<String, Object>>();
-
-        pluginsArgs.forEach((name, params) -> {
-            if (params instanceof Map) {
-                confs.put(name, (Map) params);
-            } else {
-                confs.put(name, new HashMap<>());
-            }
-        });
-
-        return confs;
     }
 
     private ArrayList<ClassLoader> classLoaders = new ArrayList<>();
@@ -93,7 +75,7 @@ public class PluginsFactory {
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
         if (authMechanismsCache == null) {
             var validPlugins = PluginsScanner.authMechanisms().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            authMechanismsCache = createPlugins(validPlugins, "Authentication Mechanism", Bootstrapper.getConfiguration().getAuthMechanisms());
+            authMechanismsCache = createPlugins(validPlugins, "Authentication Mechanism", Bootstrapper.getConfiguration());
         }
 
         return authMechanismsCache;
@@ -108,7 +90,7 @@ public class PluginsFactory {
     Set<PluginRecord<Authenticator>> authenticators() {
         if (authenticatorsCache == null) {
             var validPlugins = PluginsScanner.authenticators().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            authenticatorsCache = createPlugins(validPlugins, "Authenticator", Bootstrapper.getConfiguration().getAuthenticators());
+            authenticatorsCache = createPlugins(validPlugins, "Authenticator", Bootstrapper.getConfiguration());
         }
 
         return authenticatorsCache;
@@ -123,7 +105,7 @@ public class PluginsFactory {
     Set<PluginRecord<Authorizer>> authorizers() {
         if (authorizersCache == null) {
             var validPlugins = PluginsScanner.authorizers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            authorizersCache = createPlugins(validPlugins, "Authorizer", Bootstrapper.getConfiguration().getAuthorizers());
+            authorizersCache = createPlugins(validPlugins, "Authorizer", Bootstrapper.getConfiguration());
         }
 
         return authorizersCache;
@@ -138,7 +120,7 @@ public class PluginsFactory {
     PluginRecord<TokenManager> tokenManager() {
         if (tokenManagerCache == null) {
             var validPlugins = PluginsScanner.tokenManagers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            Set<PluginRecord<TokenManager>> tkms = createPlugins(validPlugins, "Token Manager", Bootstrapper.getConfiguration().getTokenManagers());
+            Set<PluginRecord<TokenManager>> tkms = createPlugins(validPlugins, "Token Manager", Bootstrapper.getConfiguration());
 
             if (tkms != null) {
                 var tkm = tkms.stream().filter(t -> t.isEnabled()).findFirst();
@@ -160,7 +142,7 @@ public class PluginsFactory {
     Set<PluginRecord<Initializer>> initializers() {
         if (initializersCache == null) {
             var validPlugins = PluginsScanner.initializers().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            initializersCache = createPlugins(validPlugins, "Initializer", PLUGINS_CONFS);
+            initializersCache = createPlugins(validPlugins, "Initializer", Bootstrapper.getConfiguration());
         }
 
         return initializersCache;
@@ -174,7 +156,7 @@ public class PluginsFactory {
     Set<PluginRecord<Interceptor<?, ?>>> interceptors() {
         if (interceptorsCache == null) {
             var validPlugins = PluginsScanner.interceptors().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            interceptorsCache = createPlugins(validPlugins, "Interceptor", PLUGINS_CONFS);
+            interceptorsCache = createPlugins(validPlugins, "Interceptor", Bootstrapper.getConfiguration());
         }
 
         return interceptorsCache;
@@ -188,7 +170,7 @@ public class PluginsFactory {
     Set<PluginRecord<Service<?, ?>>> services() {
         if (this.servicesCache == null) {
             var validPlugins = PluginsScanner.services().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
-            servicesCache = createPlugins(validPlugins, "Service", PLUGINS_CONFS);
+            servicesCache = createPlugins(validPlugins, "Service", Bootstrapper.getConfiguration());
         }
 
         return servicesCache;
@@ -203,7 +185,7 @@ public class PluginsFactory {
     Set<PluginRecord<Provider<?>>> providers() {
         if (this.providersCache == null) {
             // instantial all providers
-            Set<PluginRecord<Provider<?>>> providers = createPlugins(PluginsScanner.providers(), "Provider", PLUGINS_CONFS);
+            Set<PluginRecord<Provider<?>>> providers = createPlugins(PluginsScanner.providers(), "Provider", Bootstrapper.getConfiguration());
 
             // register providers rawTypes (i.e. the class of the provided object)
             // must be before ProvidersChecker.validProviders()
@@ -238,7 +220,7 @@ public class PluginsFactory {
      * @param type the class of the plugin , e.g. Initializer.class
      */
     @SuppressWarnings("unchecked")
-    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(List<PluginDescriptor> pluginDescriptors, String type, Map<String, Map<String, Object>> confs) {
+    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(List<PluginDescriptor> pluginDescriptors, String type, Configuration conf) {
         var ret = new LinkedHashSet<PluginRecord<T>>();
 
         // sort by priority
@@ -262,13 +244,13 @@ public class PluginsFactory {
                 var description = description(clazz);
                 var secure = secure(clazz);
                 var enabledByDefault = enabledByDefault(clazz);
-                var enabled = PluginRecord.isEnabled(enabledByDefault, confs != null ? confs.get(name) : null);
+                Map<String, Object> pluginConf = getOrDefault(conf, name, null, true);
+                var enabled = PluginRecord.isEnabled(enabledByDefault, pluginConf);
 
                 if (enabled) {
-                    i = instantiatePlugin(clazz, type, name, confs);
+                    i = instantiatePlugin(clazz, type, name, conf);
 
-                    var pr = new PluginRecord<>(name, description, secure, enabledByDefault, clazz.getName(), (T) i,
-                            confs != null ? confs.get(name) : null);
+                    var pr = new PluginRecord<>(name, description, secure, enabledByDefault, clazz.getName(), (T) i, pluginConf);
 
                     this.INSTANTIATED_PLUGINS_RECORDS.put(i.getClass().getName(), pr);
 
@@ -314,8 +296,7 @@ public class PluginsFactory {
         throw new ClassNotFoundException("plugin class not found " + plugin.clazz());
     }
 
-    @SuppressWarnings("rawtypes")
-    private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Map confs) throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException, SecurityException, ClassNotFoundException {
+    private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Configuration conf) throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException, SecurityException, ClassNotFoundException {
         try {
             return pc.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException nme) {

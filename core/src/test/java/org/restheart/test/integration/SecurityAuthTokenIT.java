@@ -175,6 +175,11 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
+        if (json == null) {
+            fail("parsing received json");
+            json = new JsonObject(); // just to remove complier warning message (json might be null)
+        }
+
         assertNotNull("check content - auth_token not null", json.get("auth_token"));
         assertNotNull("check content - auth_token_valid_until not null", json.get("auth_token_valid_until"));
 

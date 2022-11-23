@@ -25,6 +25,7 @@ import java.util.Map;
 import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
+import org.restheart.Configuration;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.exchange.JsonProxyResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -37,8 +38,8 @@ public class JsonProxyJSInterceptor extends AbstractJSInterceptor<JsonProxyReque
         Source handleSource,
         Source resolveSource,
         MongoClient mclient,
-        Map<String, Object> pluginArgs,
+        Configuration config,
         Map<String, String> contextOptions) {
-            super(name, pluginClass, description, interceptPoint, handleSource, resolveSource, mclient, pluginArgs, contextOptions);
+            super(name, pluginClass, description, interceptPoint, handleSource, resolveSource, mclient, config, contextOptions);
     }
 }

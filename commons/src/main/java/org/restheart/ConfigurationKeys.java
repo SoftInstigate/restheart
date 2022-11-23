@@ -51,14 +51,6 @@ public interface ConfigurationKeys {
     public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
 
     /**
-     * the key for the services property.
-     *
-     * @deprecated services are now configured in plugins-args section
-     */
-    @Deprecated
-    public static final String SERVICES_KEY = "services";
-
-    /**
      * the key for the args property.
      */
     public static final String ARGS_KEY = "args";
@@ -77,11 +69,6 @@ public interface ConfigurationKeys {
      * the key for the secured property.
      */
     public static final String SERVICE_SECURED_KEY = "secured";
-
-    /**
-     * the key for the local-cache-enabled property.
-     */
-    public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
 
     /**
      * the key for the requests-log-level property.
@@ -147,21 +134,6 @@ public interface ConfigurationKeys {
      * the key for the class property.
      */
     public static final String CLASS_KEY = "class";
-
-    /**
-     * the key for the authorizers property.
-     */
-    public static final String AUTHORIZERS_KEY = "authorizers";
-
-    /**
-     * the key for the authenticators property.
-     */
-    public static final String AUTHENTICATORS_KEY = "authenticators";
-
-    /**
-     * the key for the auth Mechanism.
-     */
-    public static final String AUTH_MECHANISMS_KEY = "auth-mechanisms";
 
     /**
      * the key for the proxies property.
@@ -237,11 +209,6 @@ public interface ConfigurationKeys {
      * the key for the embedded property.
      */
     public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
-
-    /**
-     * the key for the pluging-args property.
-     */
-    public static final String PLUGINS_ARGS_KEY = "plugins-args";
 
     /**
      * the key for the auth-db property.

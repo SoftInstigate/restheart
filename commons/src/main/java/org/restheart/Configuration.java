@@ -39,7 +39,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -48,6 +47,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
+import org.restheart.utils.ConfigurationUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,11 +93,6 @@ public class Configuration {
     private final String pluginsDirectory;
     private final List<Map<String, Object>> proxies;
     private final List<Map<String, Object>> staticResourcesMounts;
-    private final Map<String, Map<String, Object>> pluginsArgs;
-    private final Map<String, Map<String, Object>> authMechanisms;
-    private final Map<String, Map<String, Object>> authenticators;
-    private final Map<String, Map<String, Object>> authorizers;
-    private final Map<String, Map<String, Object>> tokenManagers;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -157,16 +152,6 @@ public class Configuration {
 
         pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null, silent);
 
-        pluginsArgs = asMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>(), silent);
-
-        authMechanisms = asMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>(), silent);
-
-        authenticators = asMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>(), silent);
-
-        authorizers = asMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>(), silent);
-
-        tokenManagers = asMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>(), silent);
-
         logFilePath = asString(conf, LOG_FILE_PATH_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"), silent);
         String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO", silent);
         logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true, silent);
@@ -203,6 +188,10 @@ public class Configuration {
         new Yaml().dump(conf, sw);
 
         return sw.toString();
+    }
+
+    public <V extends Object> V getOrDefault(final String key, final V defaultValue) {
+        return ConfigurationUtils.getOrDefault(this, key, defaultValue, true);
     }
 
     public Map<String, Object> toMap() {
@@ -334,45 +323,10 @@ public class Configuration {
     }
 
     /**
-     * @return the pluginsArgs
-     */
-    public Map<String, Map<String, Object>> getPluginsArgs() {
-        return Collections.unmodifiableMap(pluginsArgs);
-    }
-
-    /**
-     * @return the authMechanisms
-     */
-    public Map<String, Map<String, Object>> getAuthMechanisms() {
-        return Collections.unmodifiableMap(authMechanisms);
-    }
-
-    /**
-     * @return the authenticators
-     */
-    public Map<String, Map<String, Object>> getAuthenticators() {
-        return Collections.unmodifiableMap(authenticators);
-    }
-
-    /**
-     * @return the authorizers
-     */
-    public Map<String, Map<String, Object>> getAuthorizers() {
-        return Collections.unmodifiableMap(authorizers);
-    }
-
-    /**
      * @return the requestsLimit
      */
     public int getRequestsLimit() {
         return requestsLimit;
-    }
-
-    /**
-     * @return the tokenManagers
-     */
-    public Map<String, Map<String, Object>> getTokenManagers() {
-        return Collections.unmodifiableMap(tokenManagers);
     }
 
     /**

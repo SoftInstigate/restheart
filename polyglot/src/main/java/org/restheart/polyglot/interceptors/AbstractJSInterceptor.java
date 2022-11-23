@@ -27,6 +27,7 @@ import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.restheart.Configuration;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
@@ -55,13 +56,12 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         Source handleSource,
         Source resolveSource,
         MongoClient mclient,
-        Map<String, Object> pluginArgs,
+        Configuration config,
         Map<String, String> contextOptions) {
-            super(name, pluginClass, description, null, false, null, interceptPoint, pluginArgs, false, true);
+            super(name, pluginClass, description, null, false, null, interceptPoint, config, false, true);
             this.contextOptions = contextOptions;
             this.mclient = mclient;
-            this.pluginArgs = pluginArgs;
-
+            this.conf = config;
             this.handleSource = handleSource;
             this.resolveSource = resolveSource;
     }

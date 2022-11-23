@@ -23,13 +23,11 @@ package org.restheart.polyglot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-
 import com.mongodb.client.MongoClient;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.restheart.Configuration;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
@@ -71,12 +69,12 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     }
     """;
 
-    JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
+    JavaScriptService(Path pluginPath, MongoClient mclient, Configuration conf) throws IOException {
         // register cleaner
         CleanerUtils.get().cleaner().register(this, new State(this.ctxs));
 
         this.mclient = mclient;
-        this.pluginArgs = pluginArgs;
+        this.conf = conf;
         this.isService = true;
         this.isInterceptor = false;
 
@@ -110,7 +108,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
         try (var ctx = context(engine, contextOptions)) {
 
             // add bindings to contenxt
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+            addBindings(ctx, this.name, conf, LOGGER, this.mclient);
 
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
             var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
@@ -204,7 +202,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             var ctx = context(engine, contextOptions);
             this.ctxs.put(workingThreadName, ctx);
 
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+            addBindings(ctx, this.name, conf, LOGGER, this.mclient);
         }
 
         return this.ctxs.get(workingThreadName);

@@ -47,15 +47,15 @@ public class MongoServiceInitializer implements Initializer {
 
     @OnInit
     public void onInit() {
-        var mongoConfig = config.getPluginsArgs().get("mongo");
-        MongoServiceConfiguration.init(mongoConfig);
+        Map<String, Object> mongoConfig = config.getOrDefault("mongo", null);
+        if (mongoConfig != null) {
+            MongoServiceConfiguration.init(mongoConfig);
 
-        TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
+            TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
 
-        this.mongoSrvEnabled = isMongoEnabled(mongoConfig);
-
-        if (!this.mongoSrvEnabled) {
-            return;
+            this.mongoSrvEnabled = isMongoEnabled(mongoConfig);
+        } else {
+            this.mongoSrvEnabled = false;
         }
     }
 

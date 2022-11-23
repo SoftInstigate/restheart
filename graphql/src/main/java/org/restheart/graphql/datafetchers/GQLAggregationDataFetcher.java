@@ -34,7 +34,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         if(_config.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
             var limit = _config.get(AGGREGATION_TIME_LIMIT_KEY);
             if(limit instanceof Number) {
-                this.aggregationTimeLimit = Long.parseLong(_config.get(AGGREGATION_TIME_LIMIT_KEY).toString());  
+                this.aggregationTimeLimit = Long.parseLong(_config.get(AGGREGATION_TIME_LIMIT_KEY).toString());
             } else {
                 this.aggregationTimeLimit = 0;
             }

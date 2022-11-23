@@ -31,6 +31,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.restheart.Configuration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.utils.CleanerUtils;
@@ -59,7 +60,7 @@ public abstract class AbstractJSPlugin {
     protected boolean isInterceptor;
 
     protected MongoClient mclient;
-    protected Map<String, Object> pluginArgs;
+    protected Configuration conf;
 
     protected AbstractJSPlugin() {
         this.name = null;
@@ -69,7 +70,7 @@ public abstract class AbstractJSPlugin {
         this.secured = false;
         this.matchPolicy = null;
         this.interceptPoint = null;
-        this.pluginArgs = null;
+        this.conf = null;
         this.isService = true;
         this.isInterceptor = false;
 
@@ -84,7 +85,7 @@ public abstract class AbstractJSPlugin {
         boolean secured,
         MATCH_POLICY matchPolicy,
         InterceptPoint interceptPoint,
-        Map<String, Object> pluginArgs,
+        Configuration conf,
         boolean isService,
         boolean isInterceptor) {
         this.name = name;
@@ -94,7 +95,7 @@ public abstract class AbstractJSPlugin {
         this.secured = secured;
         this.matchPolicy = matchPolicy;
         this.interceptPoint = interceptPoint;
-        this.pluginArgs = pluginArgs;
+        this.conf = conf;
         this.isService = isService;
         this.isInterceptor = isInterceptor;
 
@@ -143,7 +144,7 @@ public abstract class AbstractJSPlugin {
 
     public static void addBindings(Context ctx,
         String pluginName,
-        Map<String, Object> pluginsArgs,
+        Configuration conf,
         Logger LOGGER,
         MongoClient mclient) {
         ctx.getBindings("js").putMember("LOGGER", LOGGER);
@@ -152,9 +153,8 @@ public abstract class AbstractJSPlugin {
             ctx.getBindings("js").putMember("mclient", mclient);
         }
 
-        @SuppressWarnings("unchecked")
-        var args = pluginsArgs != null
-            ? (Map<String, Object>) pluginsArgs.getOrDefault(pluginName, new HashMap<String, Object>())
+        var args = conf != null
+            ? conf.getOrDefault(pluginName, new HashMap<String, Object>())
             : new HashMap<String, Object>();
 
         ctx.getBindings("js").putMember("pluginArgs", args);
@@ -177,7 +177,7 @@ public abstract class AbstractJSPlugin {
             var ctx = context(engine, contextOptions);
             this.ctxs.put(workingThreadName, ctx);
 
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+            addBindings(ctx, this.name, this.conf, LOGGER, this.mclient);
         }
 
         return this.ctxs.get(workingThreadName);

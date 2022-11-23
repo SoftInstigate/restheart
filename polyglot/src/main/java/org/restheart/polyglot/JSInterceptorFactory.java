@@ -43,6 +43,7 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
+import org.restheart.Configuration;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.slf4j.Logger;
@@ -61,11 +62,11 @@ public class JSInterceptorFactory {
 
     private final MongoClient mclient;
 
-    private final Map<String, Object> pluginsArgs;
+    private final Configuration config;
 
-    public JSInterceptorFactory(MongoClient mclient, Map<String, Object> pluginsArgs) {
+    public JSInterceptorFactory(MongoClient mclient, Configuration config) {
         this.mclient = mclient;
-        this.pluginsArgs = pluginsArgs;
+        this.config = config;
     }
 
     public PluginRecord<Interceptor<? , ?>> create(Path pluginPath) throws IOException {
@@ -221,10 +222,7 @@ public class JSInterceptorFactory {
 
             AbstractJSInterceptor<? extends Request<?>, ? extends Response<?>> interceptor;
 
-            @SuppressWarnings("unchecked")
-            var args = this.pluginsArgs != null
-                ? (Map<String, Object>) this.pluginsArgs.getOrDefault(name, new HashMap<String, Object>())
-                : new HashMap<String, Object>();
+
 
             Map<String, String> opts = Maps.newHashMap();
             opts.putAll(contextOptions);
@@ -246,7 +244,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "BsonInterceptor":
@@ -258,7 +256,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "ByteArrayInterceptor":
@@ -270,7 +268,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "ByteArrayProxyInterceptor":
@@ -282,7 +280,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "CsvInterceptor":
@@ -294,7 +292,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "JsonInterceptor":
@@ -306,7 +304,7 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 case "MongoInterceptor":
@@ -318,12 +316,11 @@ public class JSInterceptorFactory {
                         handleSource,
                         resolveSource,
                         mclient,
-                        args,
+                        config,
                         opts);
                         break;
                 default:
-                    throw new IllegalArgumentException(
-                            "wrong js interceptor, wrong member 'options.pluginClass', " + packageHint);
+                    throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.pluginClass', " + packageHint);
             }
 
             return new PluginRecord<Interceptor<? extends Request<?>, ? extends Response<?>>>(interceptor.getName(),
