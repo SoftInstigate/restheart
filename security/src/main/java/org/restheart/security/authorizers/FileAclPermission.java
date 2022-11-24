@@ -25,7 +25,8 @@ import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;

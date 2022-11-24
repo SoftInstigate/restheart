@@ -25,7 +25,8 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;

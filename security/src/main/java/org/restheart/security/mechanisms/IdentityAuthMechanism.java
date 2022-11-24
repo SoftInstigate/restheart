@@ -26,8 +26,9 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Map;
-import org.restheart.ConfigurationException;
+
 import org.restheart.security.BaseAccount;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;

@@ -37,8 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.restheart.ConfigurationException;
+
 import org.restheart.security.FileRealmAccount;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;

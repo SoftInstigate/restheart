@@ -34,9 +34,10 @@ import java.util.stream.Collectors;
 import java.util.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.restheart.ConfigurationException;
+
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
@@ -165,7 +166,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      *
      * @param name the name of the authenticator
      * @return the authenticator
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     @Override
     public PluginRecord<Authenticator> getAuthenticator(String name) throws ConfigurationException {

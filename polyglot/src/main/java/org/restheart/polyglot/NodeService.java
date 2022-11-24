@@ -31,7 +31,7 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
 import com.mongodb.client.MongoClient;
 
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;

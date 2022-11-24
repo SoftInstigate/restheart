@@ -20,8 +20,8 @@
  */
 package org.restheart.graphql.interceptors;
 
-import org.restheart.Configuration;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLService;

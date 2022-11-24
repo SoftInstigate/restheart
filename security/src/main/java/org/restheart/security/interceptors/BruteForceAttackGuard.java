@@ -20,7 +20,7 @@
  */
 package org.restheart.security.interceptors;
 
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;

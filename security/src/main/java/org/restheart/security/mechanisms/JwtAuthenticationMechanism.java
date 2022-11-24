@@ -48,7 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.commons.codec.binary.StringUtils;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.security.JwtAccount;
 import org.restheart.plugins.ConsumingPlugin;

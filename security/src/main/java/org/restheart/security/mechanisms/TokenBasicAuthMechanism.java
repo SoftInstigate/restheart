@@ -30,7 +30,8 @@ import static io.undertow.util.Headers.BASIC;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
@@ -75,7 +76,7 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     /**
      *
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     public TokenBasicAuthMechanism() throws ConfigurationException {
         super("RESTHeart Realm", "tokenBasicAuthMechanism", true);

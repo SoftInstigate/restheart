@@ -28,6 +28,8 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
 import static org.junit.Assert.*;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;

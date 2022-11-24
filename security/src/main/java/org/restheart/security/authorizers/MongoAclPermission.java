@@ -26,7 +26,7 @@ import java.util.stream.StreamSupport;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;

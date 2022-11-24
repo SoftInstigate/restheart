@@ -31,7 +31,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.utils.CleanerUtils;

@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.Inject;

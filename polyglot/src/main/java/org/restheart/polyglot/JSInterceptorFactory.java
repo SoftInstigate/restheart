@@ -43,7 +43,7 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.slf4j.Logger;

@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-core
+ * restheart-commons
  * %%
- * Copyright (C) 2014 - 2022 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-
-package org.restheart.utils;
+package org.restheart.configuration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +30,6 @@ import com.google.common.collect.Sets;
 
 import org.apache.commons.jxpath.JXPathContext;
 import org.bson.Document;
-import org.restheart.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Option;
@@ -43,7 +41,7 @@ import io.undertow.Undertow.Builder;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ConfigurationUtils {
+public class Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     /**

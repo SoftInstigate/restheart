@@ -30,14 +30,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.utils.ConfigurationUtils.*;
+import static org.restheart.configuration.Utils.*;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
 
 /**
@@ -117,7 +117,7 @@ public class MongoServiceConfiguration {
      *
      * @param conf   the key-value configuration map
      * @param silent
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.configurationFileMap = conf;
@@ -233,16 +233,14 @@ public class MongoServiceConfiguration {
 
         maxPagesize = asInteger(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE, silent);
 
-        {
-            METRICS_GATHERING_LEVEL mglevel;
-            try {
-                var value = asString(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT", silent);
-                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
-            } catch (IllegalArgumentException iae) {
-                mglevel = METRICS_GATHERING_LEVEL.ROOT;
-            }
-            metricsGatheringLevel = mglevel;
+        METRICS_GATHERING_LEVEL mglevel;
+        try {
+            var value = asString(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT", silent);
+            mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
+        } catch (IllegalArgumentException iae) {
+            mglevel = METRICS_GATHERING_LEVEL.ROOT;
         }
+        metricsGatheringLevel = mglevel;
     }
 
     @Override

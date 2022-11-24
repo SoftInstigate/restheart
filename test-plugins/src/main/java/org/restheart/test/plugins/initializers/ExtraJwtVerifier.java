@@ -22,7 +22,8 @@ package org.restheart.test.plugins.initializers;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;

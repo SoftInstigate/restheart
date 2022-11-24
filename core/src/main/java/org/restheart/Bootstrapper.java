@@ -68,6 +68,10 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import org.fusesource.jansi.AnsiConsole;
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.configuration.Utils;
+import org.restheart.configuration.ProxiedResource;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
@@ -96,7 +100,6 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.utils.ConfigurationUtils;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
@@ -225,7 +228,7 @@ public final class Bootstrapper {
         // we are at runtime. this is used for building native image
         NativeImageBuildTimeChecker.atRuntime();
 
-        if (!configuration.isAnsiConsole()) {
+        if (!configuration.logging().ansiConsole()) {
             AnsiConsole.systemInstall();
         }
 
@@ -581,7 +584,7 @@ public final class Bootstrapper {
 
         LOGGER.debug("Allow unescaped characters in URL: {}", configuration.coreModule().allowUnescapedCharsInUrl());
 
-        ConfigurationUtils.setConnectionOptions(builder, configuration);
+        Utils.setConnectionOptions(builder, configuration);
 
         undertowServer = builder.build();
         undertowServer.start();

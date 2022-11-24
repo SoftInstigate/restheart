@@ -33,9 +33,9 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.bson.BsonDocument;
-import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.security.JwtAccount;

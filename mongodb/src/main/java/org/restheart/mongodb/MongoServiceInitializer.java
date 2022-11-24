@@ -22,7 +22,7 @@ package org.restheart.mongodb;
 
 import java.util.Map;
 
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.InitPoint;

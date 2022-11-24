@@ -34,7 +34,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;

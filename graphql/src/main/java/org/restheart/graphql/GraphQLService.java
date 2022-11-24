@@ -30,7 +30,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.MongoResponse;

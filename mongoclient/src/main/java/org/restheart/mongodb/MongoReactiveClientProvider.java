@@ -20,9 +20,9 @@
  */
 package org.restheart.mongodb;
 
-import org.restheart.Configuration;
+import java.util.Map;
+
 import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
@@ -32,15 +32,10 @@ import com.mongodb.reactivestreams.client.MongoClient;
 
 @RegisterPlugin(name = "mclient-reactive", description = "provides the reactive MongoClient", priority = 12)
 public class MongoReactiveClientProvider implements Provider<MongoClient> {
-    @Inject("rh-config")
-    private Configuration config;
+    @Inject("config")
+    private Map<String, Object> config;
 
-    @OnInit
-    public void init() {
-        String mongoUri = argOrDefault(config.toMap(), "mongo-uri", "mongodb://127.0.0.1");
-
-        var mongoConnetion = new ConnectionString(mongoUri);
-
+    static void init(ConnectionString mongoConnetion) {
         MongoReactiveClientSingleton.init(mongoConnetion);
 
         // force setup

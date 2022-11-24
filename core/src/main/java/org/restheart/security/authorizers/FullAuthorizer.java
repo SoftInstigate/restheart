@@ -59,7 +59,7 @@ public class FullAuthorizer implements Authorizer {
     /**
      * this Authorizer allows any operation to any user
      *
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     public FullAuthorizer() {
         this(false);

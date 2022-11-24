@@ -27,7 +27,7 @@ import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;

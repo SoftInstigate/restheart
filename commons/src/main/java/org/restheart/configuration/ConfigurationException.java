@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart;
+package org.restheart.configuration;
 
 /**
  *

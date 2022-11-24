@@ -21,7 +21,7 @@
 package org.restheart.security.authenticators;
 
 import org.bson.BsonDocument;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;

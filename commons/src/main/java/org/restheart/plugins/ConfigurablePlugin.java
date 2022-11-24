@@ -20,7 +20,8 @@
 package org.restheart.plugins;
 
 import java.util.Map;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 
 /**
  *

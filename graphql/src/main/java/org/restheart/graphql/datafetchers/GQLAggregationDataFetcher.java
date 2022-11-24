@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import com.mongodb.client.AggregateIterable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.plugins.Inject;

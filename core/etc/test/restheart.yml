@@ -3,14 +3,10 @@
 ## See https://restheart.org/docs/setup/#configuration-files
 
 ---
-instance-name: integration-test
-
 http-listener:
   enabled: true
   host: 0.0.0.0
   port: 8080
-
-# Authentication Mechanisms
 
 tokenBasicAuthMechanism:
   enabled: true
@@ -141,6 +137,7 @@ mongo:
   schema-cache-ttl: 60000
   query-time-limit: 0
   aggregation-time-limit: 0
+  metrics-gathering-level: DATABASE
 
 graphql:
   uri: /graphql
@@ -226,25 +223,28 @@ snooper:
 writeResult:
     enabled: true
 
-allow-unescaped-characters-in-url: true
-
 # Logging
-enable-log-file: true
-log-file-path: /var/log/restheart.log
-enable-log-console: true
-log-level: DEBUG
-ansi-console: true
-requests-log-level: 1
-metrics-gathering-level: DATABASE
-requests-log-trace-headers:
+logging:
+  log-level: DEBUG
+  log-to-console: true
+  ansi-console: true
+  log-to-file: false
+  log-file-path: restheart.log
+  requests-log-mode: 1
+  tracing-headers: null
 
-# Performace Settings
-force-gzip-encoding: false
-requests-limit: 1000
-io-threads: 4
-worker-threads: 8
-buffer-size: 16384
-direct-buffers: true
+# base configuration for core module
+core:
+  name: integration-test
+  plugins-directory: plugins
+  base-url: null
+  io-threads: 0
+  worker-threads: -1
+  requests-limit: 1000
+  buffer-size: 16364
+  direct-buffers: true
+  force-gzip-encoding: false
+  allow-unescaped-characters-in-url: true
 
 # Connection Options
 connection-options:

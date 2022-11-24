@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart;
+package org.restheart.configuration;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
@@ -26,8 +26,9 @@ import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.MustacheNotFoundException;
 import com.google.common.collect.Maps;
 
+import static org.restheart.configuration.Utils.*;
+
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -36,7 +37,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,16 +47,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
-import org.restheart.utils.ConfigurationUtils;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-
-import static org.restheart.ConfigurationKeys.*;
-import static org.restheart.utils.ConfigurationUtils.*;
 
 /**
  * Class that holds the configuration.
@@ -86,20 +81,22 @@ public class Configuration {
     private static final TLSListener DEFAULT_HTTPS_LISTENER = new TLSListener(false, "localhost", 4443, null, null, null);
     private static final Listener DEFAULT_AJP_LISTENER = new Listener(false, "localhost", 8009);
 
+    /**
+     * undertow connetction options
+     *
+     * See
+     * http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-optionshttp://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
+     */
+    public static final String CONNECTION_OPTIONS_KEY = "connection-options";
+
     private final Listener httpListener;
     private final Listener ajpListener;
     private final TLSListener httpsListener;
     private final List<ProxiedResource> proxies;
-    private final List<StaticResouce> staticResources;
+    private final List<StaticResource> staticResources;
     private final CoreModule coreModule;
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-    private final List<String> traceHeaders;
+    private final Logging logging;
     private final Map<String, Object> connectionOptions;
-    private final Integer logExchangeDump;
-    private final boolean ansiConsole;
 
     private Map<String, Object> conf;
 
@@ -109,7 +106,7 @@ public class Configuration {
      *
      * @param conf   the key-value configuration map
      * @param silent
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     private Configuration(Map<String, Object> conf, final Path confFilePath, boolean silent) throws ConfigurationException {
         PATH = confFilePath;
@@ -139,29 +136,10 @@ public class Configuration {
 
         proxies = ProxiedResource.build(conf, silent);
 
-        staticResources = StaticResouce.build(conf, silent);
+        staticResources = StaticResource.build(conf, silent);
 
-        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
-        logFilePath = asString(conf, LOG_FILE_PATH_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"), silent);
-        String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO", silent);
-        logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true, silent);
-        logToFile = asBoolean(conf, ENABLE_LOG_FILE_KEY, true, silent);
+        logging = Logging.build(conf, silent);
 
-        Level level;
-        try {
-            level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
-            if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel, "INFO");
-            }
-            level = Level.INFO;
-        }
-
-        logLevel = level;
-
-        traceHeaders = asListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList(), silent);
-
-        logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0, silent);
         connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, null, silent);
     }
 
@@ -174,7 +152,7 @@ public class Configuration {
     }
 
     public <V extends Object> V getOrDefault(final String key, final V defaultValue) {
-        return ConfigurationUtils.getOrDefault(this, key, defaultValue, true);
+        return Utils.getOrDefault(this, key, defaultValue, true);
     }
 
     public Map<String, Object> toMap() {
@@ -183,18 +161,6 @@ public class Configuration {
 
     public CoreModule coreModule() {
         return coreModule;
-    }
-
-    public String pluginsDirectory() {
-        return coreModule().pluginsDirectory();
-    }
-
-    public String instanceName() {
-        return coreModule().name();
-    }
-
-    public boolean forceGzipEncoding() {
-        return coreModule().forceGzipEncoding();
     }
 
     /**
@@ -207,16 +173,8 @@ public class Configuration {
     /**
      * @return the staticResources
      */
-    public List<StaticResouce> getStaticResources() {
+    public List<StaticResource> getStaticResources() {
         return Collections.unmodifiableList(staticResources);
-    }
-
-    /**
-     *
-     * @return true if the Ansi console is enabled
-     */
-    public boolean isAnsiConsole() {
-        return ansiConsole;
     }
 
     /**
@@ -242,50 +200,21 @@ public class Configuration {
 
 
     /**
-     * @return the logFilePath
-     */
-    public String getLogFilePath() {
-        return logFilePath;
-    }
-
-    /**
      * @return the logLevel
      */
     public Level getLogLevel() {
         var logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
             var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            var logger = loggerContext.getLogger("org.restheart.security");
+            var logger = loggerContext.getLogger("org.restheart");
             return logger.getLevel();
         }
 
-        return logLevel;
+        return logging.logLevel();
     }
 
-    /**
-     * @return the logToConsole
-     */
-    public boolean isLogToConsole() {
-        return logToConsole;
-    }
-
-    /**
-     * @return the logToFile
-     */
-    public boolean isLogToFile() {
-        return logToFile;
-    }
-
-    public List<String> getTraceHeaders() {
-        return Collections.unmodifiableList(traceHeaders);
-    }
-
-    /**
-     *
-     * @return the logExchangeDump Boolean
-     */
-    public Integer logExchangeDump() {
-        return logExchangeDump;
+    public Logging logging() {
+        return logging;
     }
 
     /**
@@ -474,191 +403,6 @@ public class Configuration {
                 createParents(ctx, parentPath);
                 ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
             }
-        }
-    }
-}
-
-record Listener(boolean enabled, String host, int port) {
-    public static final String HTTP_LISTENER_KEY = "http-listener";
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
-    public static final String ENABLED_KEY = "enabled";
-    public static final String HOST_KEY = "host";
-    public static final String PORT_KEY = "port";
-
-    public Listener(Map<String, Object> conf, String listenerKey, Listener defaultValue, boolean silent) {
-        this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent));
-    }
-}
-
-record TLSListener(boolean enabled, String host, int port, String keystorePath, String keystorePwd, String certificatePwd) {
-    public static final String HTTPS_LISTENER_KEY = "https-listener";
-    public static final String ENABLED_KEY = "enabled";
-    public static final String HOST_KEY = "host";
-    public static final String PORT_KEY = "port";
-    public static final String KEYSTORE_PATH_KEY = "keystore-path";
-    public static final String KEYSTOPRE_PWD_KEY = "keystore-password";
-    public static final String CERT_PWD_KEY = "certificate-password";
-
-    public TLSListener(Map<String, Object> conf, String listenerKey, TLSListener defaultValue, boolean silent) {
-        this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" +  HOST_KEY, defaultValue.host(), silent),
-            findOrDefault(conf,"/" + listenerKey + "/" +  PORT_KEY, defaultValue.port(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTORE_PATH_KEY, defaultValue.keystorePath(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTOPRE_PWD_KEY, defaultValue.keystorePwd(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + CERT_PWD_KEY, defaultValue.certificatePwd(), silent));
-    }
-
-    @Override
-    public String toString() {
-        return "{enabled: " + enabled + ", " +
-                "host: " + host + ", " +
-                "port: " + port + ", " +
-                "keystorePath: " + keystorePath + ", " +
-                "keystorePwd: "  + (keystorePwd == null ? "null" : "******") + ", " +
-                "certificatePwd:"  + (certificatePwd == null ? "null" : "******") + "}";
-    }
-}
-
-record ProxiedResource (String name,
-    String location,
-    List<String> proxyPass,
-    boolean rewriteHostHeader,
-    int connectionPerThread,
-    int maxQueueSize,
-    int softMaxConnectionsPerThread,
-    int connectionsTTL,
-    int problemServerRetry) {
-    public static final String PROXIED_RESOURCES_KEY = "proxies";
-
-    public static final String PROXY_NAME = "name";
-    public static final String PROXY_LOCATION_KEY = "location";
-    public static final String PROXY_PASS_KEY = "proxy-pass";
-
-    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
-    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
-    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
-    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
-    public static final String PROXY_TTL = "connections-ttl";
-    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
-
-    public ProxiedResource(Map<String, Object> conf, boolean silent) {
-        this(getOrDefault(conf, PROXY_NAME, null, silent),
-            getOrDefault(conf, PROXY_LOCATION_KEY, null, silent),
-            _proxyPass(conf, silent),
-            // following are optional paramenter, so get them always in silent mode
-            getOrDefault(conf, PROXY_REWRITE_HOST_HEADER, true, true),
-            getOrDefault(conf, PROXY_CONNECTIONS_PER_THREAD, 10, true),
-            getOrDefault(conf, PROXY_MAX_QUEUE_SIZE, 0, true),
-            getOrDefault(conf, PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true),
-            getOrDefault(conf, PROXY_TTL, -1, true),
-            getOrDefault(conf, PROXY_PROBLEM_SERVER_RETRY, 10, true));
-    }
-
-    private static List<String> _proxyPass(Map<String, Object> conf, boolean silent) {
-        var _proxyPass = getOrDefault(conf, PROXY_PASS_KEY, null, silent);
-
-        if (_proxyPass == null) {
-            return new ArrayList<String>();
-        } else if (_proxyPass instanceof String s) {
-            var ret = new ArrayList<String>();
-            ret.add(s);
-            return ret;
-        } else if (_proxyPass instanceof List<?> l) {
-            l.stream().filter(p -> !(p instanceof String)).forEach(ip -> Configuration.LOGGER.warn("Invalid proxy-pass {} ", ip));
-            return l.stream().filter(p -> p instanceof String).map(p -> (String) p).collect(Collectors.toList());
-        } else {
-            Configuration.LOGGER.warn("Invalid proxy-pass value {}", _proxyPass);
-            return new ArrayList<String>();
-        }
-    }
-
-    public static List<ProxiedResource> build(Map<String, Object> conf, boolean silent) {
-        var proxies = asListOfMaps(conf, PROXIED_RESOURCES_KEY, null, silent);
-
-        if (proxies != null) {
-            return proxies.stream().map(p -> new ProxiedResource(p, silent)).collect(Collectors.toList());
-        } else {
-            return new ArrayList<>();
-        }
-    }
-}
-
-record StaticResouce(String what, String where, String welcomeFile, boolean embedded) {
-    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources";
-    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
-    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
-    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
-    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
-
-    public StaticResouce(Map<String, Object> conf, boolean silent) {
-        this(getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHAT_KEY, null, silent),
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHERE_KEY, null, silent),
-            // following are optional paramenter, so get them always in silent mode
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "index.html", true),
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, false, true));
-    }
-
-    public static List<StaticResouce> build(Map<String, Object> conf, boolean silent) {
-        var staticResouces = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, null, silent);
-
-        if (staticResouces != null) {
-            return staticResouces.stream().map(p -> new StaticResouce(p, silent)).collect(Collectors.toList());
-        } else {
-            return new ArrayList<>();
-        }
-    }
-}
-
-record CoreModule(String name,
-    String pluginsDirectory,
-    String baseUrl,
-    int ioThreads,
-    int workerThreads,
-    int requestsLimit,
-    int bufferSize,
-    boolean directBuffers,
-    boolean forceGzipEncoding,
-    boolean allowUnescapedCharsInUrl) {
-    public static final String CORE_KEY = "core";
-    public static final String INSTANCE_NAME_KEY = "name";
-    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
-    public static final String BASE_URL_KEY = "base-url";
-    public static final String IO_THREADS_KEY = "io-threads";
-    public static final String WORKER_THREADS_KEY = "worker-threads";
-    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
-    public static final String BUFFER_SIZE_KEY = "buffer-size";
-    public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
-    public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
-    public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
-
-    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", null, 0, -1, 1000, 16364, true, false, true);
-
-    public CoreModule(Map<String, Object> conf, boolean silent) {
-        this(
-            getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_CORE_MODULE.name(), silent),
-            getOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, DEFAULT_CORE_MODULE.pluginsDirectory(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
-            getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
-            getOrDefault(conf, WORKER_THREADS_KEY, DEFAULT_CORE_MODULE.workerThreads(), silent),
-            getOrDefault(conf, REQUESTS_LIMIT_KEY, DEFAULT_CORE_MODULE.requestsLimit(), silent),
-            getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
-            getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
-    }
-
-    public static CoreModule build(Map<String, Object> conf, boolean silent) {
-        var core = asMap(conf, CORE_KEY, null, silent);
-
-        if (core != null) {
-            return new CoreModule(core, silent);
-        } else {
-            return DEFAULT_CORE_MODULE;
         }
     }
 }

@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.restheart.Configuration;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -57,7 +57,7 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
      * @param arguments
      * @param type
      * @throws java.io.FileNotFoundException
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     @SuppressWarnings("unchecked")
     public void init(Map<String, Object> arguments, String type) throws FileNotFoundException, ConfigurationException {

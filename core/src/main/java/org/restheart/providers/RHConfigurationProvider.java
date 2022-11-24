@@ -1,7 +1,7 @@
 package org.restheart.providers;
 
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;

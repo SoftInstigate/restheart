@@ -24,7 +24,8 @@ import io.undertow.server.handlers.PathHandler;
 
 import java.util.List;
 import java.util.Set;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
@@ -55,7 +56,7 @@ public interface PluginsRegistry {
      *
      * @param name the name of the authenticator
      * @return the authenticator
-     * @throws org.restheart.ConfigurationException
+     * @throws org.restheart.configuration.ConfigurationException
      */
     public PluginRecord<Authenticator> getAuthenticator(String name) throws ConfigurationException;
 

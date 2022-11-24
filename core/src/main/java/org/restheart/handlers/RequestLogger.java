@@ -37,7 +37,7 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
@@ -79,8 +79,8 @@ public class RequestLogger extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (configuration.logExchangeDump() > 0 && LOGGER.isInfoEnabled()) {
-            dumpExchange(exchange, configuration.logExchangeDump());
+        if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
+            dumpExchange(exchange, configuration.logging().requestsLogMode());
         }
 
         next(exchange);

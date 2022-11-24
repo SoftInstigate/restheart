@@ -22,6 +22,9 @@ package org.restheart;
 
 import com.sun.akuma.CLibrary;
 import java.nio.file.Path;
+
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
 import org.slf4j.Logger;
@@ -86,7 +89,7 @@ public class Shutdowner {
 
         try {
             conf = FileUtils.getConfiguration(args, true);
-            LOGGER.info("Check log file {}", conf.getLogFilePath());
+            LOGGER.info("Check log file {}", conf.logging().logFilePath());
         } catch (ConfigurationException ex) {
             LOGGER.warn(ex.getMessage());
         }

@@ -51,7 +51,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.handlers.QueryStringRebuilder;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;

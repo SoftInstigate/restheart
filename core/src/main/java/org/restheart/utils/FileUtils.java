@@ -38,8 +38,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import org.restheart.Configuration;
-import org.restheart.ConfigurationException;
+
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

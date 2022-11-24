@@ -20,7 +20,8 @@
  */
 package org.restheart.mongodb;
 
-import org.restheart.Configuration;
+import java.util.Map;
+
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -32,12 +33,12 @@ import com.mongodb.client.MongoClient;
 
 @RegisterPlugin(name = "mclient", description = "provides the MongoClient", priority = 11)
 public class MongoClientProvider implements Provider<MongoClient> {
-    @Inject("rh-config")
-    private Configuration config;
+    @Inject("config")
+    private Map<String, Object> config;
 
     @OnInit
     public void init() {
-        String mongoUri = argOrDefault(config.toMap(), "mongo-uri", "mongodb://127.0.0.1");
+        String mongoUri = argOrDefault(config, "connection-string", "mongodb://127.0.0.1");
 
         var mongoConnetion = new ConnectionString(mongoUri);
 
@@ -45,6 +46,9 @@ public class MongoClientProvider implements Provider<MongoClient> {
 
         // force first connection to MongoDb
         MongoClientSingleton.getInstance().client();
+
+        // init the reactive client
+        MongoReactiveClientProvider.init(mongoConnetion);
     }
 
     @Override

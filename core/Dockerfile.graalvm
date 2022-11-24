@@ -9,6 +9,6 @@ COPY target/plugins/* plugins/
 
 SHELL ["/bin/bash", "-i", "-c"]
 
-ENV RHO='/mongo-uri->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
+ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 ENTRYPOINT [ "/opt/restheart/entrypoint.sh" ]
 EXPOSE 8009 8080 4443

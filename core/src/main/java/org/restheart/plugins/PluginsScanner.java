@@ -338,7 +338,7 @@ public class PluginsScanner {
         }
 
         private Path getPluginsDirectory() {
-            var pluginsDir = Bootstrapper.getConfiguration().pluginsDirectory();
+            var pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
 
             if (pluginsDir == null) {
                 return null;
@@ -386,7 +386,7 @@ public class PluginsScanner {
                 }
             } catch (IOException ex) {
                 LOGGER.error("Cannot read jars in plugins directory {}",
-                        Bootstrapper.getConfiguration().pluginsDirectory(), ex.getMessage());
+                        Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
             }
 
             return urls.isEmpty() ? null : urls.toArray(new URL[urls.size()]);

@@ -25,7 +25,7 @@ import java.util.Map;
 import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;

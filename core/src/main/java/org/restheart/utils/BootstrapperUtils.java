@@ -34,7 +34,7 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +49,9 @@ public class BootstrapperUtils {
 
     public static String getInstanceName(Configuration configuration) {
         return configuration == null ? UNDEFINED
-            : configuration.instanceName() == null
+            : configuration.coreModule().name() == null
             ? UNDEFINED
-            : configuration.instanceName();
+            : configuration.coreModule().name();
     }
 
     /**
@@ -116,13 +116,13 @@ public class BootstrapperUtils {
         LoggingInitializer.setLogLevel(configuration.getLogLevel());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
-            LoggingInitializer.startFileLogging(configuration.getLogFilePath());
+            LoggingInitializer.startFileLogging(configuration.logging().logFilePath());
         } else if (!isForked) {
-            if (!configuration.isLogToConsole()) {
+            if (!configuration.logging().logToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
-            if (configuration.isLogToFile()) {
-                LoggingInitializer.startFileLogging(configuration.getLogFilePath());
+            if (configuration.logging().logToFile()) {
+                LoggingInitializer.startFileLogging(configuration.logging().logFilePath());
             }
         }
     }
@@ -148,12 +148,12 @@ public class BootstrapperUtils {
             return;
         }
 
-        if (configuration.isLogToFile()) {
-            LOGGER.info("Logging to file {} with level {}", configuration.getLogFilePath(), configuration.getLogLevel());
+        if (configuration.logging().logToFile()) {
+            LOGGER.info("Logging to file {} with level {}", configuration.logging().logFilePath(), configuration.getLogLevel());
         }
 
         if (!fork) {
-            if (!configuration.isLogToConsole()) {
+            if (!configuration.logging().logToConsole()) {
                 LOGGER.info("Stop logging to console ");
             } else {
                 LOGGER.info("Logging to console with level {}", configuration.getLogLevel());

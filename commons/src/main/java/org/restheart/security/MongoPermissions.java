@@ -27,7 +27,7 @@ import java.util.Map;
 import com.google.gson.JsonParseException;
 
 import org.bson.BsonDocument;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
 

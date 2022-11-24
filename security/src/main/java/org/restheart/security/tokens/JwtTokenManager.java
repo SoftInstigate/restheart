@@ -20,10 +20,11 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.ConfigurationException;
+
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;

@@ -4,7 +4,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.Inject;
-import org.restheart.Configuration;
+import org.restheart.configuration.Configuration;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import io.undertow.util.HttpString;
@@ -22,7 +22,7 @@ public class InstanceNameInterceptor implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        this.instanceName = config.instanceName();
+        this.instanceName = config.coreModule().name();
     }
 
     @Override

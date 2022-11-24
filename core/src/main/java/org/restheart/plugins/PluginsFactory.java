@@ -20,6 +20,8 @@
  */
 package org.restheart.plugins;
 
+import static org.restheart.configuration.Utils.getOrDefault;
+
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -31,8 +33,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
-import org.restheart.ConfigurationException;
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -40,7 +42,6 @@ import org.restheart.plugins.security.TokenManager;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.restheart.utils.ConfigurationUtils.getOrDefault;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
