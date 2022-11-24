@@ -73,7 +73,7 @@ public class Configuration {
         ? "unknown, not packaged"
         : Configuration.class.getPackage().getImplementationVersion();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     public static final String DEFAULT_ROUTE = "0.0.0.0";
 
@@ -91,8 +91,8 @@ public class Configuration {
     private final TLSListener httpsListener;
     private final String instanceName;
     private final String pluginsDirectory;
-    private final List<Map<String, Object>> proxies;
-    private final List<Map<String, Object>> staticResourcesMounts;
+    private final List<ProxiedResource> proxies;
+    private final List<StaticResouce> staticResources;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -126,29 +126,29 @@ public class Configuration {
 
         ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
 
-        if (findOrDefault(conf, HTTP_LISTENER_KEY, null, true) != null) {
-            httpListener = new Listener(conf, HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER, silent);
+        if (findOrDefault(conf, Listener.HTTP_LISTENER_KEY, null, true) != null) {
+            httpListener = new Listener(conf, Listener.HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER, silent);
         } else {
             httpListener = DEFAULT_HTTP_LISTENER;
         }
 
-        if (findOrDefault(conf, HTTPS_LISTENER_KEY, null, true) != null) {
-            httpsListener = new TLSListener(conf, HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER, silent);
+        if (findOrDefault(conf, TLSListener.HTTPS_LISTENER_KEY, null, true) != null) {
+            httpsListener = new TLSListener(conf, TLSListener.HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER, silent);
         } else {
             httpsListener = DEFAULT_HTTPS_LISTENER;
         }
 
-        if (findOrDefault(conf, AJP_LISTENER_KEY, null, true) != null) {
-            ajpListener = new Listener(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER, silent);
+        if (findOrDefault(conf, Listener.AJP_LISTENER_KEY, null, true) != null) {
+            ajpListener = new Listener(conf, Listener.AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER, silent);
         } else {
             ajpListener = DEFAULT_AJP_LISTENER;
         }
 
         instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME, silent);
 
-        proxies = asListOfMaps(conf, PROXY_KEY, new ArrayList<>(), silent);
+        proxies = ProxiedResource.build(conf, silent);
 
-        staticResourcesMounts = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>(), silent);
+        staticResources = StaticResouce.build(conf, silent);
 
         pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null, silent);
 
@@ -201,15 +201,15 @@ public class Configuration {
     /**
      * @return the proxies
      */
-    public List<Map<String, Object>> getProxies() {
+    public List<ProxiedResource> getProxies() {
         return Collections.unmodifiableList(proxies);
     }
 
     /**
-     * @return the staticResourcesMounts
+     * @return the staticResources
      */
-    public List<Map<String, Object>> getStaticResourcesMounts() {
-        return Collections.unmodifiableList(staticResourcesMounts);
+    public List<StaticResouce> getStaticResources() {
+        return Collections.unmodifiableList(staticResources);
     }
 
     /**
@@ -539,6 +539,8 @@ public class Configuration {
 }
 
 record Listener(boolean enabled, String host, int port) {
+    public static final String HTTP_LISTENER_KEY = "http-listener";
+    public static final String AJP_LISTENER_KEY = "ajp-listener";
     public static final String ENABLED_KEY = "enabled";
     public static final String HOST_KEY = "host";
     public static final String PORT_KEY = "port";
@@ -548,9 +550,10 @@ record Listener(boolean enabled, String host, int port) {
             findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
             findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent));
     }
-};
+}
 
 record TLSListener(boolean enabled, String host, int port, String keystorePath, String keystorePwd, String certificatePwd) {
+    public static final String HTTPS_LISTENER_KEY = "https-listener";
     public static final String ENABLED_KEY = "enabled";
     public static final String HOST_KEY = "host";
     public static final String PORT_KEY = "port";
@@ -576,5 +579,94 @@ record TLSListener(boolean enabled, String host, int port, String keystorePath, 
                 "keystorePwd: "  + (keystorePwd == null ? "null" : "******") + ", " +
                 "certificatePwd:"  + (certificatePwd == null ? "null" : "******") + "}";
     }
-};
+}
 
+record ProxiedResource (String name,
+    String location,
+    List<String> proxyPass,
+    boolean rewriteHostHeader,
+    int connectionPerThread,
+    int maxQueueSize,
+    int softMaxConnectionsPerThread,
+    int connectionsTTL,
+    int problemServerRetry) {
+    public static final String PROXIED_RESOURCES_KEY = "proxies";
+
+    public static final String PROXY_NAME = "name";
+    public static final String PROXY_LOCATION_KEY = "location";
+    public static final String PROXY_PASS_KEY = "proxy-pass";
+
+    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
+    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
+    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
+    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
+    public static final String PROXY_TTL = "connections-ttl";
+    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
+
+    public ProxiedResource(Map<String, Object> conf, boolean silent) {
+        this(getOrDefault(conf, PROXY_NAME, null, silent),
+            getOrDefault(conf, PROXY_LOCATION_KEY, null, silent),
+            _proxyPass(conf, silent),
+            // following are optional paramenter, so get them always in silent mode
+            getOrDefault(conf, PROXY_REWRITE_HOST_HEADER, true, true),
+            getOrDefault(conf, PROXY_CONNECTIONS_PER_THREAD, 10, true),
+            getOrDefault(conf, PROXY_MAX_QUEUE_SIZE, 0, true),
+            getOrDefault(conf, PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true),
+            getOrDefault(conf, PROXY_TTL, -1, true),
+            getOrDefault(conf, PROXY_PROBLEM_SERVER_RETRY, 10, true));
+    }
+
+    private static List<String> _proxyPass(Map<String, Object> conf, boolean silent) {
+        var _proxyPass = getOrDefault(conf, PROXY_PASS_KEY, null, silent);
+
+        if (_proxyPass == null) {
+            return new ArrayList<String>();
+        } else if (_proxyPass instanceof String s) {
+            var ret = new ArrayList<String>();
+            ret.add(s);
+            return ret;
+        } else if (_proxyPass instanceof List<?> l) {
+            l.stream().filter(p -> !(p instanceof String)).forEach(ip -> Configuration.LOGGER.warn("Invalid proxy-pass {} ", ip));
+            return l.stream().filter(p -> p instanceof String).map(p -> (String) p).collect(Collectors.toList());
+        } else {
+            Configuration.LOGGER.warn("Invalid proxy-pass value {}", _proxyPass);
+            return new ArrayList<String>();
+        }
+    }
+
+    public static List<ProxiedResource> build(Map<String, Object> conf, boolean silent) {
+        var proxies = asListOfMaps(conf, PROXIED_RESOURCES_KEY, null, silent);
+
+        if (proxies != null) {
+            return proxies.stream().map(p -> new ProxiedResource(p, silent)).collect(Collectors.toList());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+}
+
+record StaticResouce(String what, String where, String welcomeFile, boolean embedded) {
+    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources";
+    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
+    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
+    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
+    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
+
+    public StaticResouce(Map<String, Object> conf, boolean silent) {
+        this(getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHAT_KEY, null, silent),
+            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHERE_KEY, null, silent),
+            // following are optional paramenter, so get them always in silent mode
+            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "index.html", true),
+            getOrDefault(conf, STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, false, true));
+    }
+
+    public static List<StaticResouce> build(Map<String, Object> conf, boolean silent) {
+        var staticResouces = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, null, silent);
+
+        if (staticResouces != null) {
+            return staticResouces.stream().map(p -> new StaticResouce(p, silent)).collect(Collectors.toList());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+}

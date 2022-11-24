@@ -24,10 +24,6 @@ import static io.undertow.Handlers.resource;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
@@ -65,15 +61,12 @@ import java.security.cert.CertificateException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
@@ -116,8 +109,6 @@ import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
-import org.xnio.ssl.XnioSsl;
-
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
@@ -137,8 +128,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-
-import static org.restheart.utils.ConfigurationUtils.getOrDefault;
 import static org.restheart.utils.BootstrapperUtils.*;
 
 /**
@@ -774,104 +763,64 @@ public final class Bootstrapper {
      */
     private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
-            LOGGER.debug("No {} specified", ConfigurationKeys.PROXY_KEY);
+            LOGGER.debug("No proxy specified");
             return;
         }
 
-        conf.getProxies().stream().forEachOrdered((Map<String, Object> proxies) -> {
-            String location = getOrDefault(proxies, ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
-
-            var _proxyPass = getOrDefault(proxies, ConfigurationKeys.PROXY_PASS_KEY, null, true);
-
-            if (location == null && _proxyPass != null) {
-                LOGGER.warn("Location URI not specified for resource {} ", _proxyPass);
+        conf.getProxies().stream().forEachOrdered((ProxiedResource proxy) -> {
+            if (proxy.location() == null || proxy.proxyPass() == null || proxy.proxyPass().isEmpty()) {
+                LOGGER.warn("Invalid proxies entry: {}", proxy);
                 return;
             }
-
-            if (location == null && _proxyPass == null) {
-                LOGGER.warn("Invalid proxies entry detected");
-                return;
-            }
-
-            // The number of connections to create per thread
-            var connectionsPerThread = getOrDefault(proxies, ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10, true);
-
-            var maxQueueSize = getOrDefault(proxies, ConfigurationKeys.PROXY_MAX_QUEUE_SIZE, 0, true);
-
-            var softMaxConnectionsPerThread = getOrDefault(proxies, ConfigurationKeys.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
-
-            var ttl = getOrDefault(proxies, ConfigurationKeys.PROXY_TTL, -1, true);
-
-            var rewriteHostHeader = getOrDefault(proxies, ConfigurationKeys.PROXY_REWRITE_HOST_HEADER, true, true);
-
-            // Time in seconds between retries for problem server
-            var problemServerRetry = getOrDefault(proxies, ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10, true);
-
-            String name = getOrDefault(proxies, ConfigurationKeys.PROXY_NAME, null, true);
 
             final var xnio = Xnio.getInstance();
 
             final var optionMap = OptionMap.create(Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED, Options.SSL_STARTTLS, true);
 
-            XnioSsl sslProvider = null;
+            var proxyClient = new LoadBalancingProxyClient()
+                .setConnectionsPerThread(proxy.connectionPerThread())
+                .setSoftMaxConnectionsPerThread(proxy.softMaxConnectionsPerThread())
+                .setMaxQueueSize(proxy.maxQueueSize())
+                .setProblemServerRetry(proxy.problemServerRetry())
+                .setTtl(proxy.connectionsTTL());
 
-            try {
-                sslProvider = xnio.getSslProvider(optionMap);
-            } catch (GeneralSecurityException ex) {
-                logErrorAndExit("error configuring ssl", ex, false, -13);
-            }
-
-            try {
-                var proxyClient = new LoadBalancingProxyClient()
-                    .setConnectionsPerThread(connectionsPerThread)
-                    .setSoftMaxConnectionsPerThread(softMaxConnectionsPerThread)
-                    .setMaxQueueSize(maxQueueSize)
-                    .setProblemServerRetry(problemServerRetry)
-                    .setTtl(ttl);
-
-                if (_proxyPass instanceof String __proxyPass) {
-                    proxyClient = proxyClient.addHost(new URI(__proxyPass), sslProvider);
-                } else if (_proxyPass instanceof List<?> __proxyPass) {
-                    for (var proxyPassURL : __proxyPass) {
-                        if (proxyPassURL instanceof String _proxyPassURL) {
-                            proxyClient = proxyClient.addHost(new URI(_proxyPassURL), sslProvider);
-                        } else {
-                            LOGGER.warn("Invalid proxy pass URL {}, location {} not bound ", proxyPassURL, location);
-                        }
-                    }
-                } else {
-                    LOGGER.warn("Invalid proxy pass URL {}, location {} not bound ", _proxyPass);
+            proxy.proxyPass().stream().forEach(pp -> {
+                try {
+                    var uri = new URI(pp);
+                    proxyClient.addHost(uri, xnio.getSslProvider(optionMap));
+                } catch(URISyntaxException t) {
+                    LOGGER.warn("Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
+                } catch (GeneralSecurityException ex) {
+                    logErrorAndExit("error configuring ssl", ex, false, -13);
                 }
+            });
 
-                ProxyHandler proxyHandler = ProxyHandler.builder()
-                    .setRewriteHostHeader(rewriteHostHeader)
-                    .setProxyClient(proxyClient)
-                    .build();
+            var proxyHandler = ProxyHandler.builder()
+                .setRewriteHostHeader(proxy.rewriteHostHeader())
+                .setProxyClient(proxyClient)
+                .build();
 
-                var proxy = pipe(
-                    new PipelineInfoInjector(),
-                    new TracingInstrumentationHandler(),
-                    new RequestLogger(),
-                    new ProxyExchangeBuffersCloser(),
-                    new XPoweredByInjector(),
-                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
-                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-                    new QueryStringRebuilder(),
-                    new SecurityHandler(authMechanisms, authorizers, tokenManager),
-                    new AuthHeadersRemover(),
-                    new XForwardedHeadersInjector(),
-                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
-                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-                    new QueryStringRebuilder(),
-                    new ConduitInjector(),
-                    PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(proxyHandler))); // Must be after ConduitInjector
+            var rhProxy = pipe(
+                new PipelineInfoInjector(),
+                new TracingInstrumentationHandler(),
+                new RequestLogger(),
+                new ProxyExchangeBuffersCloser(),
+                new XPoweredByInjector(),
+                new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
+                new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+                new QueryStringRebuilder(),
+                new SecurityHandler(authMechanisms, authorizers, tokenManager),
+                new AuthHeadersRemover(),
+                new XForwardedHeadersInjector(),
+                new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
+                new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+                new QueryStringRebuilder(),
+                new ConduitInjector(),
+                PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(proxyHandler))); // Must be after ConduitInjector
 
-                PluginsRegistryImpl.getInstance().plugPipeline(location, proxy, new PipelineInfo(PROXY, location, name));
+            PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy, new PipelineInfo(PROXY, proxy.location(), proxy.name()));
 
-                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to proxy resource {}").reset().toString(), location, _proxyPass);
-            } catch (URISyntaxException ex) {
-                LOGGER.warn("Invalid location URI {}, resource {} not bound ", location, _proxyPass);
-            }
+            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to proxy resource {}").reset().toString(), proxy.location(), proxy.proxyPass());
         });
     }
 
@@ -887,81 +836,73 @@ public final class Bootstrapper {
      * @param accessManager
      */
     private static void plugStaticResourcesHandlers(final Configuration conf) {
-        if (conf.getStaticResourcesMounts() == null || conf.getStaticResourcesMounts().isEmpty()) {
-            LOGGER.debug("No {} specified", ConfigurationKeys.STATIC_RESOURCES_MOUNTS_KEY);
+        if (conf.getStaticResources() == null || conf.getStaticResources().isEmpty()) {
+            LOGGER.debug("No static resource specified");
             return;
         }
 
-        conf.getStaticResourcesMounts().stream().forEach(sr -> {
+        conf.getStaticResources().stream().forEach(sr -> {
             try {
-                var path = (String) sr.get(STATIC_RESOURCES_MOUNT_WHAT_KEY);
-                var where = (String) sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY);
-                var welcomeFile = (String) sr.get(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
-
-                var embedded = (Boolean) sr.get(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
-                if (embedded == null) {
-                    embedded = false;
-                }
-
-                if (where == null || !where.startsWith("/")) {
-                    LOGGER.error("Cannot bind static resources to {}. parameter 'where' must start with /", where);
+                if (sr.where() == null || !sr.where().startsWith("/")) {
+                    LOGGER.error("Cannot bind static resources {}. parameter 'where' must start with /", sr);
                     return;
                 }
 
-                if (welcomeFile == null) {
-                    welcomeFile = "index.html";
+                if (sr.what() == null) {
+                    LOGGER.error("Cannot bind static resources to {}. missing parameter 'what'", sr);
+                    return;
                 }
 
                 File file;
 
-                if (embedded) {
-                    if (path.startsWith("/")) {
-                        LOGGER.error("Cannot bind embedded static resources to {}. parameter 'where'"
+                if (sr.embedded()) {
+                    if (sr.what() == null || sr.what().startsWith("/")) {
+                        LOGGER.error("Cannot bind embedded static resources {}. parameter 'where'"
                                 + "cannot start with /. the path is relative to the jar root dir"
-                                + " or classpath directory", where);
+                                + " or classpath directory", sr);
                         return;
                     }
 
                     try {
-                        file = ResourcesExtractor.extract(Bootstrapper.class, path);
+                        file = ResourcesExtractor.extract(Bootstrapper.class, sr.what());
 
-                        if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, path)) {
-                            TMP_EXTRACTED_FILES.put(path, file);
-                            LOGGER.info("Embedded static resources {} extracted in {}", path, file.toString());
+                        if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, sr.what())) {
+                            TMP_EXTRACTED_FILES.put(sr.what(), file);
+                            LOGGER.info("Embedded static resources {} extracted in {}", sr.what(), file.toString());
                         }
                     } catch (URISyntaxException | IOException | IllegalStateException ex) {
-                        LOGGER.error("Error extracting embedded static resource {}", path, ex);
+                        LOGGER.error("Error extracting embedded static resource {}", sr.what(), ex);
                         return;
                     }
-                } else if (!path.startsWith("/")) {
+                } else if (!sr.what().startsWith("/")) {
                     // this is to allow specifying the configuration file path relative
                     // to the jar (also working when running from classes)
                     var location = Bootstrapper.class.getProtectionDomain().getCodeSource().getLocation();
 
                     var locationFile = new File(location.getPath());
 
-                    var _path = Paths.get(locationFile.getParent().concat(File.separator).concat(path));
+                    var _path = Paths.get(locationFile.getParent().concat(File.separator).concat(sr.what()));
 
                     // normalize addresses https://issues.jboss.org/browse/UNDERTOW-742
                     file = _path.normalize().toFile();
                 } else {
-                    file = new File(path);
+                    file = new File(sr.what());
                 }
 
                 if (file.exists()) {
-                    var handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(welcomeFile).setDirectoryListingEnabled(false);
+                    var handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(sr.welcomeFile()).setDirectoryListingEnabled(false);
 
                     var ph = PipelinedHandler.pipe(new PipelineInfoInjector(), new RequestLogger(), PipelinedWrappingHandler.wrap(handler));
 
-                    PluginsRegistryImpl.getInstance().plugPipeline(where, ph, new PipelineInfo(STATIC_RESOURCE, where, path));
+                    PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph, new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
-                    LOGGER.info(ansi().fg(GREEN).a("URI {} bound to static resource {}").reset().toString(), where, file.getAbsolutePath());
+                    LOGGER.info(ansi().fg(GREEN).a("URI {} bound to static resource {}").reset().toString(), sr.where(), file.getAbsolutePath());
                 } else {
-                    LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", where, path);
+                    LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
                 }
 
             } catch (Throwable t) {
-                LOGGER.error("Cannot bind static resources to {}", sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
+                LOGGER.error("Cannot bind static resource", sr, t);
             }
         });
     }

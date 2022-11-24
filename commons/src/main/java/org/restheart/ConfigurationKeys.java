@@ -29,22 +29,6 @@ public interface ConfigurationKeys {
      */
     public static final String DEFAULT_INSTANCE_NAME = "default";
 
-
-    /**
-     * the key for the http-listener property.
-     */
-    public static final String HTTP_LISTENER_KEY = "http-listener";
-
-    /**
-     * the key for the https-listener property.
-     */
-    public static final String HTTPS_LISTENER_KEY = "https-listener";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
-
     /**
      * the key for the log-file-path property.
      */
@@ -136,81 +120,6 @@ public interface ConfigurationKeys {
     public static final String CLASS_KEY = "class";
 
     /**
-     * the key for the proxies property.
-     */
-    public static final String PROXY_KEY = "proxies";
-
-    /**
-     * the key for the location property.
-     */
-    public static final String PROXY_LOCATION_KEY = "location";
-
-    /**
-     * the key for the proxy-pass property.
-     */
-    public static final String PROXY_PASS_KEY = "proxy-pass";
-
-    /**
-     * the key for the proxy name property.
-     */
-    public static final String PROXY_NAME = "name";
-
-    /**
-     * the key for the rewrite-host-header.
-     */
-    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
-
-    /**
-     * the key for the connections-per-thread property.
-     */
-    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
-
-    /**
-     * the key for the max-queue-size property.
-     */
-    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
-
-    /**
-     * the key for the soft-max-connections-per-thread property.
-     */
-    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
-
-    /**
-     * the key for the connections-ttl property.
-     */
-    public static final String PROXY_TTL = "connections-ttl";
-
-    /**
-     * the key for the problem-server-retry property.
-     */
-    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
-
-    /**
-     * the key for the static-resources-mounts property.
-     */
-    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
-
-    /**
-     * the key for the welcome-file property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
-
-    /**
-     * the key for the embedded property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
-
-    /**
      * the key for the auth-db property.
      */
     public static final String MONGO_AUTH_DB_KEY = "auth-db";
@@ -219,11 +128,6 @@ public interface ConfigurationKeys {
      * the key for the instance-name property.
      */
     public static final String INSTANCE_NAME_KEY = "instance-name";
-
-    /**
-     * the key for the tokenManager property.
-     */
-    public static final String TOKEN_MANAGER_KEY = "token-manager";
 
     /**
      * Force http requests logging even if DEBUG is not set

@@ -91,6 +91,10 @@ public class ConfigurationUtils {
         }
     }
 
+    public static <V extends Object> V find(final Map<String, Object> conf, final String xpath, boolean silent) {
+        return findOrDefault(conf, xpath, null, silent);
+    }
+
     @SuppressWarnings("unchecked")
     public static <V extends Object> V findOrDefault(final Map<String, Object> conf, final String xpath, final V defaultValue, boolean silent) {
         var ctx = JXPathContext.newContext(conf);

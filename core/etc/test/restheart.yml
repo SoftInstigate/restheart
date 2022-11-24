@@ -5,46 +5,12 @@
 ---
 instance-name: integration-test
 
-#instance-base-url: http://localhost
-
 http-listener:
   enabled: true
   host: 0.0.0.0
   port: 8080
 
-### Proxied resources
-
- # location (required) The location URI to bound to the HTTP proxied server.
- # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
- # name (optional) The name of the proxy. It is required to identify 'restheart'.
- # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
- # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
- # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
- # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
- # connections-ttl (optional, default -1) Connections Time to Live in seconds.
- # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
-proxies:
-  - location: /pecho
-    proxy-pass: http://127.0.0.1:8080/echo
-  - location: /piecho
-    proxy-pass: http://127.0.0.1:8080/iecho
-  - location: /anything
-    proxy-pass: https://httpbin.org/anything
-
-### Security
-
- # RESTHeart security is pluggable, you can provide you own
- # implementations of Authenticator Mechanisms, Authenticator, Authorizer
- # and Token Manager
-
-## Authentication Mechanisms
-
- # As an in-bound request is received the authenticate method is called on each
- # mechanism in turn until one of the following occurs: A mechanism
- # successfully authenticates the incoming request or the list of mechanisms is
- # exhausted.
-
- # See README.md for the list of available Authentication Mechanisms
+# Authentication Mechanisms
 
 tokenBasicAuthMechanism:
   enabled: true
@@ -54,10 +20,6 @@ basicAuthMechanism:
   authenticator: fileRealmAuthenticator
 
 digestAuthMechanism:
-  # digest authentication is disabled by default
-  # because it requires the passwords to be stored in plaintext
-  # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
-  # here it is enabled because fileRealmAuthenticator is used with paintext passwords
   enabled: true
   realm: RESTHeart Realm
   domain: localhost
@@ -82,9 +44,7 @@ jwtAuthenticationMechanism:
   issuer: myIssuer
   audience: myAudience
 
-## Authenticators
-
- # Authenticators verify user credentials and are used by one or more AuthMachanisms
+# Authenticators
 
 fileRealmAuthenticator:
   enabled: true
@@ -115,14 +75,6 @@ mongoRealmAuthenticator:
 
 ## Authorizers
 
- # Authorizers verify if a request is allowed eforcing the security policy.
-
- # As an in-bound request is received and authenticated the isAllowed() method is
- # called on each authorizers. A secured request is allowed when no `VETOER` denies
- # it and at least one `ALLOWER` allows it.
-
- # See README.md for the list of available Authorizers
-
 fileAclAuthorizer:
   enabled: true
   conf-file: ./acl.yml
@@ -140,15 +92,7 @@ fullAuthorizer:
   enabled: false
   authentication-required: true
 
-## Token Manager
-
- # If a token-manager is configured, RESTHeart will use it to generate
- # and verify auth tokens.
- # If more than one token-manager are defined, the first one will be used
- # The token is returned to the caller via auth-token header when the user
- # autheticates succesfully. The token can be used by Authentication Mechanisms.
-
- # See README.md for the list of available Token Managers.
+# Token Managers
 
 rndTokenManager:
   enabled: true
@@ -162,40 +106,9 @@ jwtTokenManager:
     srv-uri: /tokens
     issuer: restheart.org
 
-## restheart-mongodb configuration
-
 mongo-uri: mongodb://127.0.0.1
 
-#### Static Web Resources
-
-# Static web resources to bind to the URL specified by the 'where' property.
-# The 'what' property is the path of the directory containing the resources.
-# The path is either absolute (starts with /) or relative to the restheart.jar file
-# Set embedded: true, if resources are embedded in the file restheart.jar
-
-static-resources-mounts:
-#  - what: /path/to/resources
-#    where: /static
-#    welcome-file: index.html
-#    embedded: false
-
-#### Plugins configuration
-
-# The directory containing the plugins jars.
-# The path is either absolute (starts with /) or relative to the restheart.jar file
-# Just add the plugins jar to plugins-directory and they will be automatically
-# added to the classpath and registered.
-
 plugins-directory: plugins
-
-# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
-# with the same name of the plugin (as defined in its @RegisterPlugin annotation).
-# The property 'enabled' allows enabling plugins that are not enabled by default,
-# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
-# The property 'uri' optionally sets the uri of Service plugins overwriting its
-# default value if specified with the Service.defaultUri() method.
-# The property 'secured' allows overriding the secure attribute of the service defined
-# by @RegisterPlugin( .., secure=false)
 
 mongo:
   uri: /
@@ -234,29 +147,33 @@ graphql:
   db: test-graphql
   collection: gql-apps
   verbose: true
-# a global blacklist for mongodb operators in filter query parameter
+
+proxies:
+ - location: /pecho
+   proxy-pass: http://127.0.0.1:8080/echo
+ - location: /piecho
+   proxy-pass: http://127.0.0.1:8080/iecho
+ - location: /anything
+   proxy-pass: https://httpbin.org/anything
+
+static-resources-mounts:
+#  - what: /path/to/resources
+#    where: /static
+#    welcome-file: index.html
+#    embedded: false
 
 filterOperatorsBlacklist:
   blacklist: [ "$where" ]
   enabled: true
-# defends from brute force password cracking attacks
-# by returning `429 Too Many Requests` when more than
-# `max-failed-attempts` wrong requests
-# are received in last 10 seconds from the same ip
 
 bruteForceAttackGuard:
   enabled: false
-  # if true, the source ip is obtained from X-Forwarded-For header
-  # this requires that header beeing set by the proxy, dangerous otherwise
   trust-x-forwarded-for: false
-  # max number of failed attempts in 10 seconds sliding window
-  # before returning 429 Too Many Requests
   max-failed-attempts: 5
 
 testInitializer:
     enabled: true
 
-# Service to GET and DELETE (invalidate) the user auth token generated by the TokenManager
 authTokenService:
     uri: /tokens
 
@@ -309,25 +226,9 @@ snooper:
 writeResult:
     enabled: true
 
-## Allow unescaped characters in URL
-
-# Starting with Undertow 1.4.23 URLs validation became much stricter.
-# However, this is breaking existing clients. Now you can decide which behaviour you prefer
-
 allow-unescaped-characters-in-url: true
 
-#### Logging
-
-# enable-log-console: true => log messages to the console (default value: true)
-# enable-log-file: true => log messages to a file (default value: true)
-# log-file-path: to specify the log file path (default value: restheart-security.log in system temporary directory)
-# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
-# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
-# ansi-console: use Ansi console for logging.
-# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
-#      Useful for tracing support in the logs. Leave empty to deactivate this feature.
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
-
+# Logging
 enable-log-file: true
 log-file-path: /var/log/restheart.log
 enable-log-console: true
@@ -336,94 +237,26 @@ ansi-console: true
 requests-log-level: 1
 metrics-gathering-level: DATABASE
 requests-log-trace-headers:
-#  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation
-#  - x-b3-spanid
-#  - x-b3-parentspanid
-#  - x-b3-sampled      # ^^
-#  - uber-trace-id     # jaeger header, see https://www.jaegertracing.io/docs/client-libraries/#trace-span-identity
-#  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
-#  - tracestate        # ^^
 
-#### Performace Settings
-
-# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
+# Performace Settings
 force-gzip-encoding: false
-
-# Limit for the maximum number of concurrent requests being served
 requests-limit: 1000
-
-# Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 4
-
-# Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*8
 worker-threads: 8
-
-# Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384
-# Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
 direct-buffers: true
 
-#### Connection Options
-
+# Connection Options
 connection-options:
-  # The maximum size of a HTTP header block, in bytes.
-  # If a client sends more data that this as part of the request header then the connection will be closed.
-  # Defaults to 1Mbyte.
   MAX_HEADER_SIZE: 1048576
-
-  # The default maximum size of a request entity.
-  # Defaults to unlimited.
   MAX_ENTITY_SIZE: -1
-
-  #The default maximum size of the HTTP entity body when using the mutiltipart parser.
-  # Generall this will be larger than MAX_ENTITY_SIZE
-  # If this is not specified it will be the same as MAX_ENTITY_SIZE
   MULTIPART_MAX_ENTITY_SIZE: -1
-
-  # The idle timeout in milliseconds after which the channel will be closed.
-  # If the underlying channel already has a read or write timeout set
-  # the smaller of the two values will be used for read/write timeouts.
-  # Defaults to unlimited (-1).
   IDLE_TIMEOUT: -1
-
-  # The maximum allowed time of reading HTTP request in milliseconds.
-  # -1 or missing value disables this functionality.
   REQUEST_PARSE_TIMEOUT: -1
-
-  # The amount of time the connection can be idle with no current requests
-  # before it is closed;
-  # Defaults to unlimited (-1).
   NO_REQUEST_TIMEOUT: -1
-
-  # The maximum number of query parameters that are permitted in a request.
-  # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
-  # Defaults to 1000.
   MAX_PARAMETERS: 1000
-
-  # The maximum number of headers that are permitted in a request.
-  # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
-  # Defaults to 200.
   MAX_HEADERS: 200
-
-  # The maximum number of cookies that are permitted in a request.
-  # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
-  # Defaults to 200.
   MAX_COOKIES: 200
-
-  # The charset to use to decode the URL and query parameters.
-  # Defaults to UTF-8.
   URL_CHARSET: UTF-8
-
-  # If this is true then a Connection: keep-alive header will be added to responses,
-  # even when it is not strictly required by the specification.
-  # Defaults to true
   ALWAYS_SET_KEEP_ALIVE: true
-
-  # If this is true then a Date header will be added to all responses.
-  # The HTTP spec says this header should be added to all responses,
-  # unless the server does not have an accurate clock.
-  # Defaults to true
   ALWAYS_SET_DATE: true

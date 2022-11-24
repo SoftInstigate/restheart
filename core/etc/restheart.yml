@@ -46,21 +46,7 @@ instance-name: {{{instance-name}}}
 
  # instance-base-url: https://api.example.io
 
-#### Proxied resources
 
- # location (required) The location URI to bound to the HTTP proxied server.
- # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
- # name (optional) The name of the proxy. It is required to identify 'restheart'.
- # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
- # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
- # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
- # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
- # connections-ttl (optional, default -1) Connections Time to Live in seconds.
- # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
-#proxies:
-#   - location: /anything
-#     proxy-pass: https://httpbin.org/anything
-#     name: anything
 
 #### MongoDB
 
@@ -77,19 +63,6 @@ instance-name: {{{instance-name}}}
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
 mongo-uri: {{{mongo-uri}}}
-
-#### Static Web Resources
-
-# Static web resources to bind to the URL specified by the 'where' property.
-# The 'what' property is the path of the directory containing the resources.
-# The path is either absolute (starts with /) or relative to the restheart.jar file
-# If embedded is true, the resources are either included in the restheart.jar or
-
-static-resources-mounts:
-#  - what: /path/to/resources
-#    where: /static
-#    welcome-file: index.html
-#    embedded: false
 
 #### Security
 
@@ -353,16 +326,6 @@ mongo:
   # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
   aggregation-time-limit: 0
 
-rndTokenService:
-  uri: /tokens
-
-ping:
-  enabled: true
-  msg: Greetings from RESTHeart!
-
-roles:
-  uri: /roles
-
 graphql:
   uri: /graphql
   db: restheart
@@ -372,6 +335,42 @@ graphql:
   # max-limit is the maximum value for a Query limit
   max-limit: 1000
   verbose: false
+
+ # Proxied resources - expose exrernal API with RESTHeart acting as a reverese proxy
+ #  location (required) The location URI to bound to the HTTP proxied server.
+ #  proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ #  name (optional) The name of the proxy. It is required to identify 'restheart'.
+ #  rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
+ #  connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
+ #  soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
+ #  max-queue-size (optional, default 0) Controls the number of connections to create per thread.
+ #  connections-ttl (optional, default -1) Connections Time to Live in seconds.
+ #  problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+proxies:
+#  - location: /anything
+#    proxy-pass: https://httpbin.org/anything
+#    name: anything
+
+# Static Web Resources - serve static files with RESTHeart acting a web server
+#  what (required) is the path of the directory containing the resources, either absolute (starts with /) or relative to the restheart.jar file
+#  where (required) the URL to bind the resources to
+#  welcome-file (optional, default is 'index.html') the name of the welcome file
+#  embedded (optional, default false) true, the resources are included in the restheart.jar (the property what must be relative)
+static-resources-mounts:
+#  - what: /tmp
+#    where: /static
+#    welcome-file: index.html
+#    embedded: false
+
+rndTokenService:
+  uri: /tokens
+
+ping:
+  enabled: true
+  msg: Greetings from RESTHeart!
+
+roles:
+  uri: /roles
 
 # a global blacklist for mongodb operators in filter query parameter
 filterOperatorsBlacklist:

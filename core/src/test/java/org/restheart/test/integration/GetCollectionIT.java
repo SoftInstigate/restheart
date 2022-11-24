@@ -120,7 +120,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
 
         if (json == null) {
             fail("@@@ Failed parsing received json");
-            json = new JsonObject(); // just to remove warning message
+            json = new JsonObject(); // just to remove complier warning message (json might be null)
         }
 
         assertNotNull("check not null _link", json.get("_links"));
