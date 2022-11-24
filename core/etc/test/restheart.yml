@@ -156,7 +156,7 @@ proxies:
  - location: /anything
    proxy-pass: https://httpbin.org/anything
 
-static-resources-mounts:
+static-resources:
 #  - what: /path/to/resources
 #    where: /static
 #    welcome-file: index.html

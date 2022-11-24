@@ -30,11 +30,6 @@ public interface ConfigurationKeys {
     public static final String DEFAULT_INSTANCE_NAME = "default";
 
     /**
-     * the key for the log-file-path property.
-     */
-    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
-
-    /**
      * the key for the args property.
      */
     public static final String ARGS_KEY = "args";
@@ -63,36 +58,6 @@ public interface ConfigurationKeys {
      * the key for the requests-log-tracing-headers property.
      */
     public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
-
-    /**
-     * the key for the force-gzip-encoding property.
-     */
-    public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
-
-    /**
-     * the key for the direct-buffers property.
-     */
-    public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
-
-    /**
-     * the key for the buffer-size property.
-     */
-    public static final String BUFFER_SIZE_KEY = "buffer-size";
-
-    /**
-     * the key for the worker-threads property.
-     */
-    public static final String WORKER_THREADS_KEY = "worker-threads";
-
-    /**
-     * the key for the io-threads property.
-     */
-    public static final String IO_THREADS_KEY = "io-threads";
-
-    /**
-     * the key for the requests-limit property.
-     */
-    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
 
     /**
      * the key for the enable-log-file property.
@@ -125,11 +90,6 @@ public interface ConfigurationKeys {
     public static final String MONGO_AUTH_DB_KEY = "auth-db";
 
     /**
-     * the key for the instance-name property.
-     */
-    public static final String INSTANCE_NAME_KEY = "instance-name";
-
-    /**
      * Force http requests logging even if DEBUG is not set
      */
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
@@ -138,11 +98,6 @@ public interface ConfigurationKeys {
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
-
-    /**
-     * The key to allow unescaped chars in URL
-     */
-    public static final String ALLOW_UNESCAPED_CHARACTERS_IN_URL = "allow-unescaped-characters-in-url";
 
     /**
      * The key to enable plugins

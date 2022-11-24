@@ -46,7 +46,6 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 
 import org.graalvm.polyglot.Source;
 import org.restheart.Configuration;
-import org.restheart.ConfigurationKeys;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -183,8 +182,10 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
+    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
+
     private Path getPluginsDirectory(Map<String, Object> args) {
-        var _pluginsDir = args.getOrDefault(ConfigurationKeys.PLUGINS_DIRECTORY_PATH_KEY, null);
+        var _pluginsDir = args.getOrDefault(PLUGINS_DIRECTORY_PATH_KEY, null);
 
         if (_pluginsDir == null || !(_pluginsDir instanceof String)) {
             return null;

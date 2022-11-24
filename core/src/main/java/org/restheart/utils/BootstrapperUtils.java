@@ -49,9 +49,9 @@ public class BootstrapperUtils {
 
     public static String getInstanceName(Configuration configuration) {
         return configuration == null ? UNDEFINED
-            : configuration.getInstanceName() == null
+            : configuration.instanceName() == null
             ? UNDEFINED
-            : configuration.getInstanceName();
+            : configuration.instanceName();
     }
 
     /**

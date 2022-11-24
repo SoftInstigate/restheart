@@ -345,7 +345,7 @@ proxies:
 #  where (required) the URL to bind the resources to
 #  welcome-file (optional, default is 'index.html') the name of the welcome file
 #  embedded (optional, default false) true, the resources are included in the restheart.jar (the property what must be relative)
-static-resources-mounts:
+static-resources:
 #  - what: /path/to/resources
 #    where: /static
 #    welcome-file: index.html
@@ -452,8 +452,10 @@ core:
   # In order to save bandwitdth, force requests to support the giz encoding (if not, requests will be rejected)
   force-gzip-encoding: false
 
-#### Connection Options
+   # true to allow unescaped characters in URL
+  allow-unescaped-characters-in-url: true
 
+# Connection Options
 connection-options:
   # Enable HTTP/2 support
   # Note: HTTP2 as implemented by major browsers requires the use of TLS

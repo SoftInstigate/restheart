@@ -22,7 +22,7 @@ public class InstanceNameInterceptor implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        this.instanceName = config.getInstanceName();
+        this.instanceName = config.instanceName();
     }
 
     @Override

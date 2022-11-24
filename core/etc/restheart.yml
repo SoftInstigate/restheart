@@ -356,7 +356,7 @@ proxies:
 #  where (required) the URL to bind the resources to
 #  welcome-file (optional, default is 'index.html') the name of the welcome file
 #  embedded (optional, default false) true, the resources are included in the restheart.jar (the property what must be relative)
-static-resources-mounts:
+static-resources:
 #  - what: /tmp
 #    where: /static
 #    welcome-file: index.html

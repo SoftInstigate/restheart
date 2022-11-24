@@ -89,25 +89,17 @@ public class Configuration {
     private final Listener httpListener;
     private final Listener ajpListener;
     private final TLSListener httpsListener;
-    private final String instanceName;
-    private final String pluginsDirectory;
     private final List<ProxiedResource> proxies;
     private final List<StaticResouce> staticResources;
+    private final CoreModule coreModule;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
     private final boolean logToFile;
     private final List<String> traceHeaders;
-    private final int requestsLimit;
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final boolean directBuffers;
-    private final boolean forceGzipEncoding;
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
     private final boolean ansiConsole;
-    private final boolean allowUnescapedCharactersInUrl;
 
     private Map<String, Object> conf;
 
@@ -124,7 +116,8 @@ public class Configuration {
 
         this.conf = conf;
 
-        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
+        this.coreModule = CoreModule.build(conf, silent);
+
 
         if (findOrDefault(conf, Listener.HTTP_LISTENER_KEY, null, true) != null) {
             httpListener = new Listener(conf, Listener.HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER, silent);
@@ -144,14 +137,11 @@ public class Configuration {
             ajpListener = DEFAULT_AJP_LISTENER;
         }
 
-        instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME, silent);
-
         proxies = ProxiedResource.build(conf, silent);
 
         staticResources = StaticResouce.build(conf, silent);
 
-        pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null, silent);
-
+        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
         logFilePath = asString(conf, LOG_FILE_PATH_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"), silent);
         String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO", silent);
         logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true, silent);
@@ -171,15 +161,8 @@ public class Configuration {
 
         traceHeaders = asListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList(), silent);
 
-        requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100, silent);
-        ioThreads = asInteger(conf, IO_THREADS_KEY, 2, silent);
-        workerThreads = asInteger(conf, WORKER_THREADS_KEY, 32, silent);
-        bufferSize = asInteger(conf, BUFFER_SIZE_KEY, 16384, silent);
-        directBuffers = asBoolean(conf, DIRECT_BUFFERS_KEY, true, silent);
-        forceGzipEncoding = asBoolean(conf, FORCE_GZIP_ENCODING_KEY, false, silent);
         logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0, silent);
         connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, null, silent);
-        allowUnescapedCharactersInUrl = asBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true, silent);
     }
 
     @Override
@@ -196,6 +179,22 @@ public class Configuration {
 
     public Map<String, Object> toMap() {
         return Collections.unmodifiableMap(this.conf);
+    }
+
+    public CoreModule coreModule() {
+        return coreModule;
+    }
+
+    public String pluginsDirectory() {
+        return coreModule().pluginsDirectory();
+    }
+
+    public String instanceName() {
+        return coreModule().name();
+    }
+
+    public boolean forceGzipEncoding() {
+        return coreModule().forceGzipEncoding();
     }
 
     /**
@@ -241,12 +240,6 @@ public class Configuration {
         return ajpListener;
     }
 
-    /**
-     * @return the pluginsDirectory
-     */
-    public String getPluginsDirectory() {
-        return this.pluginsDirectory;
-    }
 
     /**
      * @return the logFilePath
@@ -288,48 +281,6 @@ public class Configuration {
     }
 
     /**
-     * @return the ioThreads
-     */
-    public int getIoThreads() {
-        return ioThreads;
-    }
-
-    /**
-     * @return the workerThreads
-     */
-    public int getWorkerThreads() {
-        return workerThreads;
-    }
-
-    /**
-     * @return the bufferSize
-     */
-    public int getBufferSize() {
-        return bufferSize;
-    }
-
-    /**
-     * @return the directBuffers
-     */
-    public boolean isDirectBuffers() {
-        return directBuffers;
-    }
-
-    /**
-     * @return the forceGzipEncoding
-     */
-    public boolean isForceGzipEncoding() {
-        return forceGzipEncoding;
-    }
-
-    /**
-     * @return the requestsLimit
-     */
-    public int getRequestsLimit() {
-        return requestsLimit;
-    }
-
-    /**
      *
      * @return the logExchangeDump Boolean
      */
@@ -342,17 +293,6 @@ public class Configuration {
      */
     public Map<String, Object> getConnectionOptions() {
         return Collections.unmodifiableMap(connectionOptions);
-    }
-
-    /**
-     * @return the instanceName
-     */
-    public String getInstanceName() {
-        return instanceName;
-    }
-
-    public boolean isAllowUnescapedCharactersInUrl() {
-        return allowUnescapedCharactersInUrl;
     }
 
     /**
@@ -667,6 +607,58 @@ record StaticResouce(String what, String where, String welcomeFile, boolean embe
             return staticResouces.stream().map(p -> new StaticResouce(p, silent)).collect(Collectors.toList());
         } else {
             return new ArrayList<>();
+        }
+    }
+}
+
+record CoreModule(String name,
+    String pluginsDirectory,
+    String baseUrl,
+    int ioThreads,
+    int workerThreads,
+    int requestsLimit,
+    int bufferSize,
+    boolean directBuffers,
+    boolean forceGzipEncoding,
+    boolean allowUnescapedCharsInUrl) {
+    public static final String CORE_KEY = "core";
+    public static final String INSTANCE_NAME_KEY = "name";
+    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
+    public static final String BASE_URL_KEY = "base-url";
+    public static final String IO_THREADS_KEY = "io-threads";
+    public static final String WORKER_THREADS_KEY = "worker-threads";
+    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
+    public static final String BUFFER_SIZE_KEY = "buffer-size";
+    public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
+    public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
+    public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
+
+    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", null, 0, -1, 1000, 16364, true, false, true);
+
+    public CoreModule(Map<String, Object> conf, boolean silent) {
+        this(
+            getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_CORE_MODULE.name(), silent),
+            getOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, DEFAULT_CORE_MODULE.pluginsDirectory(), silent),
+            // following is optional, so get it always in silent mode
+            getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
+            getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
+            getOrDefault(conf, WORKER_THREADS_KEY, DEFAULT_CORE_MODULE.workerThreads(), silent),
+            getOrDefault(conf, REQUESTS_LIMIT_KEY, DEFAULT_CORE_MODULE.requestsLimit(), silent),
+            getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
+            getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
+            // following is optional, so get it always in silent mode
+            getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
+            // following is optional, so get it always in silent mode
+            getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
+    }
+
+    public static CoreModule build(Map<String, Object> conf, boolean silent) {
+        var core = asMap(conf, CORE_KEY, null, silent);
+
+        if (core != null) {
+            return new CoreModule(core, silent);
+        } else {
+            return DEFAULT_CORE_MODULE;
         }
     }
 }

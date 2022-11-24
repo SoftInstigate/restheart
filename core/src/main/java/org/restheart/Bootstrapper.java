@@ -555,31 +555,31 @@ public final class Bootstrapper {
         HANDLERS = getPipeline(authMechanisms, authorizers, tokenManager);
 
         // update buffer size in
-        Exchange.updateBufferSize(configuration.getBufferSize());
+        Exchange.updateBufferSize(configuration.coreModule().bufferSize());
 
         // io and worker threads
         // use value in configuration, or auto detect values if io-threds <= 0 and worker-threads < 0
-        var autoConfigIoThreads = configuration.getIoThreads() <= 0;
-        var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.getIoThreads();
+        var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
+        var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
-        var autoConfigWorkerThreads = configuration.getWorkerThreads() < 0;
-        var workerThreads = autoConfigWorkerThreads ? Runtime.getRuntime().availableProcessors()*8 : configuration.getWorkerThreads();
+        var autoConfigWorkerThreads = configuration.coreModule().workerThreads() < 0;
+        var workerThreads = autoConfigWorkerThreads ? Runtime.getRuntime().availableProcessors()*8 : configuration.coreModule().workerThreads();
 
         LOGGER.info("Available processors: {}, IO threads{}: {}, worker threads{}: {}, ", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads, autoConfigWorkerThreads ? " (auto detected)" : "", workerThreads);
 
         builder = builder
             .setIoThreads(ioThreads)
             .setWorkerThreads(workerThreads)
-            .setDirectBuffers(configuration.isDirectBuffers())
-            .setBufferSize(configuration.getBufferSize())
+            .setDirectBuffers(configuration.coreModule().directBuffers())
+            .setBufferSize(configuration.coreModule().bufferSize())
             .setHandler(HANDLERS);
 
         // starting from undertow 1.4.23 URL checks become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
-        builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, configuration.isAllowUnescapedCharactersInUrl());
+        builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, configuration.coreModule().allowUnescapedCharsInUrl());
 
-        LOGGER.debug("Allow unescaped characters in URL: {}", configuration.isAllowUnescapedCharactersInUrl());
+        LOGGER.debug("Allow unescaped characters in URL: {}", configuration.coreModule().allowUnescapedCharsInUrl());
 
         ConfigurationUtils.setConnectionOptions(builder, configuration);
 
@@ -694,7 +694,7 @@ public final class Bootstrapper {
     private static GracefulShutdownHandler getBasePipeline() {
         return new GracefulShutdownHandler(
             new RequestLimitingHandler(
-                new RequestLimit(configuration.getRequestsLimit()),
+                new RequestLimit(configuration.coreModule().requestsLimit()),
                 new AllowedMethodsHandler(
                     new ErrorHandler(
                         new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler())),

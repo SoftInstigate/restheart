@@ -58,7 +58,7 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
                 .addEncodingHandler("gzip", new GzipEncodingProvider(), 60)
                 .addEncodingHandler("deflate", new DeflateEncodingProvider(), 50));
 
-        this.forceCompression = Bootstrapper.getConfiguration().isForceGzipEncoding();
+        this.forceCompression = Bootstrapper.getConfiguration().forceGzipEncoding();
     }
 
     @Override
