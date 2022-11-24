@@ -372,26 +372,6 @@ public class ConfigurationUtils {
             return value;
         }
 
-        value = _valueFromEnv("RESTHEART", confParameter, silent);
-
-        if (value != null) {
-            return value;
-        }
-
-        // legacy variable pattern
-        value = _valueFromEnv("RESTHEART_SECURITY", confParameter, silent);
-
-        if (value != null) {
-            return value;
-        }
-
-        // no prefix
-        value = _valueFromEnv(null, confParameter, silent);
-
-        if (value != null) {
-            return value;
-        }
-
         return null;
     }
 

@@ -448,13 +448,13 @@ core:
   # true to allow unescaped characters in URL
   allow-unescaped-characters-in-url: true
 
-#### Connection Options
-connection-options:
   # true to force requests to support the giz encoding (if not, requests will be rejected)
   force-gzip-encoding: false
 
+#### Connection Options
+connection-options:
+
   # true to enable HTTP2
-  # NEW!
   ENABLE_HTTP2: true
 
   # The maximum size of a HTTP header block, in bytes.
