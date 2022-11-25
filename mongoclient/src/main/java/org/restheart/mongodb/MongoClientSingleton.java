@@ -151,14 +151,14 @@ public class MongoClientSingleton {
             } catch (Throwable t) {
                 LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
                     + "Check that MongoDB is running and "
-                    + "the configuration property 'mongo-uri' "
+                    + "the configuration property '/mclient/connection-string' "
                     + "is set properly");
                 serverVersion = "?";
             }
         } else {
             LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
                 + "Check that MongoDB is running and "
-                + "the configuration property 'mongo-uri' "
+                + "the configuration property '/mclient/connection-string' "
                 + "is set properly");
             serverVersion = "?";
         }
