@@ -5,9 +5,9 @@ services:
     image: softinstigate/restheart-snapshot:latest-native
     environment:
       RHO: >
-          /instance-name->"native";
-          /mongo-uri->"mongodb://mongodb";
-          /http-host->"0.0.0.0";
+          /core/name->"native";
+          /mclient/connection-string->"mongodb://mongodb";
+          /http-listener/host->"0.0.0.0";
     depends_on:
       - mongodb
       - mongodb-init

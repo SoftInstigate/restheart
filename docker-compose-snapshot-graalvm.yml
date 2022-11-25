@@ -5,8 +5,8 @@ services:
     image: softinstigate/restheart-snapshot:latest-graalvm
     environment:
       RHO: >
-          /mongo-uri->"mongodb://mongodb";
-          /http-host->"0.0.0.0";
+          /mclient/connection-string->"mongodb://mongodb";
+          /http-listener/host->"0.0.0.0";
     depends_on:
       - mongodb
       - mongodb-init
