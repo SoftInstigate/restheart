@@ -1404,16 +1404,6 @@
   "name":"org.w3c.dom.Node"
 },
 {
-  "name":"org.xnio._private.Messages_$logger",
-  "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
-},
-{
-  "name":"org.xnio._private.Messages_$logger_it"
-},
-{
-  "name":"org.xnio._private.Messages_$logger_it_IT"
-},
-{
   "name":"org.xnio.management.XnioProviderMXBean",
   "allPublicMethods":true
 },

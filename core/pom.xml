@@ -260,9 +260,7 @@
                 <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
                 <file>../COMM-LICENSE.txt</file>
             </transformer>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                <resource>META-INF/services/io.undertow.predicate.PredicateBuilder</resource>
-              </transformer>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
         </transformers>
         </configuration>
         <executions>
@@ -498,11 +496,11 @@
           <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
         <!-- uncomment to add test plugins to the native image -->
-        <dependency>
+        <!-- <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-test-plugins</artifactId>
           <version>${project.version}</version>
-        </dependency>
+        </dependency> -->
         <dependency>
           <groupId>com.github.jnr</groupId>
           <artifactId>jnr-unixsocket</artifactId>
