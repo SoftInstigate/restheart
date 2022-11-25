@@ -10,20 +10,12 @@ export const options = {
 }
 
 export function handle(req, res) {
-    LOGGER.debug('request content {}', req.getContent() ? req.getContent() : 'empty');
     // just an example of how to use BsonUtils
     exampleBsonUtils();
 
     if (req.isGet()) {
-        const rc = JSON.parse(req.getContent() || '{}');
-
-        let body = {
-            msg: `Hello ${rc.name || 'World'}`
-        }
-
-        res.setContent(JSON.stringify(body));
+        res.setContent(JSON.stringify({ msg: "Hello World!"}));
         res.setContentTypeAsJson();
-
     } else if (req.isOptions()) {
         res.getHeaders()
                 .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
