@@ -25,8 +25,6 @@
 
 package org.restheart.graal;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -37,11 +35,10 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsScanner;
 
-@AutomaticFeature
 /**
  * Automates reflection configuration of plugins for native-image builds
  *
- * @see https://www.graalvm.org/22.2/reference-manual/native-image/dynamic-features/Reflection/#configuration-with-features
+ * @see https://www.graalvm.org/22.3/reference-manual/native-image/dynamic-features/Reflection/#configuration-with-features
  */
 public class PluginsReflectionRegistrationFeature implements Feature {
     public void beforeAnalysis(BeforeAnalysisAccess access) {

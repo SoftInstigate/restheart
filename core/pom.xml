@@ -233,6 +233,12 @@
                 </excludes>
             </filter>
             <filter>
+                <artifact>org.restheart:restheart</artifact>
+                <excludes>
+                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
+                </excludes>
+            </filter>
+            <filter>
                 <artifact>com.graphql-java:graphql-java</artifact>
                 <excludes>
                     <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
@@ -254,6 +260,9 @@
                 <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
                 <file>../COMM-LICENSE.txt</file>
             </transformer>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                <resource>META-INF/services/io.undertow.predicate.PredicateBuilder</resource>
+              </transformer>
         </transformers>
         </configuration>
         <executions>
@@ -497,12 +506,12 @@
         <dependency>
           <groupId>com.github.jnr</groupId>
           <artifactId>jnr-unixsocket</artifactId>
-          <version>0.38.13</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+          <version>0.38.17</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>org.mongodb</groupId>
           <artifactId>mongodb-crypt</artifactId>
-          <version>1.5.2</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+          <version>1.6.1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>org.xerial.snappy</groupId>
