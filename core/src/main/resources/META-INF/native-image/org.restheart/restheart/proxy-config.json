@@ -1,8 +1,11 @@
 [
   {
-    "interfaces":["com.sun.akuma.CLibrary"]}
-  ,
+    "interfaces":["com.sun.akuma.CLibrary"]
+  },
   {
-    "interfaces":["java.util.function.Consumer"]}
-  
+    "interfaces":["java.security.PrivilegedAction"]
+  },
+  {
+    "interfaces":["java.util.function.Consumer"]
+  }
 ]

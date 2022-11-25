@@ -55,6 +55,7 @@ import org.restheart.plugins.Service;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import static org.restheart.configuration.Utils.findOrDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,10 +183,10 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
+    public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
 
     private Path getPluginsDirectory(Map<String, Object> args) {
-        var _pluginsDir = args.getOrDefault(PLUGINS_DIRECTORY_PATH_KEY, null);
+        var _pluginsDir = findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false);
 
         if (_pluginsDir == null || !(_pluginsDir instanceof String)) {
             return null;

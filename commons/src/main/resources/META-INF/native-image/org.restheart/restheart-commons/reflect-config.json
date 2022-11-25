@@ -4408,16 +4408,6 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$EAGER_CURSOR_ALLOCATION_POLICY",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  {
     "name": "org.restheart.exchange.ExchangeKeys$ETAG_CHECK_POLICY",
     "allPublicFields": true,
     "allPublicConstructors": true,

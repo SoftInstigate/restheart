@@ -10,7 +10,7 @@ export const options = {
 }
 
 export function handle(req, res) {
-    LOGGER.debug('request content {}', req.getContent());
+    LOGGER.debug('request content {}', req.getContent() ? req.getContent() : 'empty');
     // just an example of how to use BsonUtils
     exampleBsonUtils();
 

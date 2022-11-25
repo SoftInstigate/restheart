@@ -32,6 +32,39 @@
       "pattern":"\\QMETA-INF/services/org.xnio.XnioProvider\\E"
     }, 
     {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/english_wikipedia.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/female_names.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/male_names.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/passwords.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/surnames.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/dictionaries/us_tv_and_film.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/keyboards/dvorak.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/keyboards/jis.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/keyboards/keypad.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/keyboards/mac_keypad.txt\\E"
+    }, 
+    {
+      "pattern":"\\Qcom/nulabinc/zxcvbn/matchers/keyboards/qwerty.txt\\E"
+    }, 
+    {
       "pattern":"\\Qcom/oracle/truffle/nfi/backend/libffi/LibFFILanguage.class\\E"
     }, 
     {
@@ -60,6 +93,9 @@
     }, 
     {
       "pattern":"\\Qorg/jboss/threads/Version.properties\\E"
+    }, 
+    {
+      "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
     }, 
     {
       "pattern":"\\Qorg/xnio/Version.properties\\E"
