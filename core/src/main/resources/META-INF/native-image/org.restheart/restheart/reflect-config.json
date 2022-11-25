@@ -1,8 +1,5 @@
 [
 {
-  "name":"System"
-},
-{
   "name":"[B"
 },
 {
@@ -390,9 +387,6 @@
   "fields":[{"name":"coercing"}]
 },
 {
-  "name":"groovy.lang.Closure"
-},
-{
   "name":"int[]"
 },
 {
@@ -486,12 +480,6 @@
 {
   "name":"io.undertow.UndertowLogger_$logger",
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
-},
-{
-  "name":"io.undertow.UndertowLogger_$logger_it"
-},
-{
-  "name":"io.undertow.UndertowLogger_$logger_it_IT"
 },
 {
   "name":"io.undertow.UndertowMessages_$bundle",
@@ -1280,9 +1268,6 @@
   "allDeclaredFields":true
 },
 {
-  "name":"org.apache.commons.beanutils.DynaBean"
-},
-{
   "name":"org.apache.commons.jxpath.JXPathContextFactory"
 },
 {
@@ -1296,12 +1281,6 @@
 {
   "name":"org.apache.commons.jxpath.ri.model.dom.DOMPointerFactory",
   "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"org.apache.log4j.LogManager"
-},
-{
-  "name":"org.apache.logging.log4j.Logger"
 },
 {
   "name":"org.apache.tika.metadata.filter.NoOpFilter",
@@ -1366,17 +1345,8 @@
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
-  "name":"org.jboss.threads.Messages_$logger_it"
-},
-{
-  "name":"org.jboss.threads.Messages_$logger_it_IT"
-},
-{
   "name":"org.jboss.threads.management.StandardThreadPoolMXBean",
   "allPublicMethods":true
-},
-{
-  "name":"org.jdom.Document"
 },
 {
   "name":"org.restheart.Bootstrapper$Args",
@@ -1391,9 +1361,6 @@
   "name":"org.restheart.configuration.Configuration"
 },
 {
-  "name":"org.restheart.plugins.PluginsRegistry"
-},
-{
   "name":"org.slf4j.Logger"
 },
 {
@@ -1402,6 +1369,14 @@
 },
 {
   "name":"org.w3c.dom.Node"
+},
+{
+  "name":"org.xnio._private.Messages",
+  "allPublicMethods":true
+},
+{
+  "name":"org.xnio._private.Messages_$logger",
+  "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
   "name":"org.xnio.management.XnioProviderMXBean",
@@ -1420,14 +1395,8 @@
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
-  "name":"org.xnio.nio.Log_$logger_it"
-},
-{
-  "name":"org.xnio.nio.Log_$logger_it_IT"
-},
-{
   "name":"org.xnio.nio.NioTcpServer$1",
-  "allPublicConstructors":true
+  "queryAllPublicConstructors":true
 },
 {
   "name":"org.xnio.nio.NioXnio$3",
