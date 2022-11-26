@@ -42,6 +42,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var options = new DataLoaderOptions().setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()));

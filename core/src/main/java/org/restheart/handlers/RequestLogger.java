@@ -152,7 +152,7 @@ public class RequestLogger extends PipelinedHandler {
             sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE))
                     .append("\n");
 
-            @SuppressWarnings("deprecation")
+            @SuppressWarnings("removal")
             Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
@@ -259,7 +259,7 @@ public class RequestLogger extends PipelinedHandler {
                         sb.append("       contentType=")
                                 .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
 
-                        @SuppressWarnings("deprecation")
+                        @SuppressWarnings("removal")
                         Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                         if (cookies1 != null) {
                             cookies1.values().stream().forEach((cookie) -> {
