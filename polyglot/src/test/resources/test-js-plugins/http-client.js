@@ -22,9 +22,11 @@ export function handle(request, response) {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
+    const uri = URI.create("https://httpbin.org/anything");
+
     const getRequest = HttpRequest.newBuilder()
-        .POST(BodyPublishers.ofString('{"foo": 2, "bar": 1}'))
-        .uri(URI.create("https://httpbin.org/anything"))
+        .POST(BodyPublishers.ofString(`{"foo": 2, "bar": 1, "from": "${uri}"}`))
+        .uri(uri)
         .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
         .build();
 
