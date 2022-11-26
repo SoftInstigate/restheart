@@ -1300,9 +1300,6 @@
   "name":"org.graalvm.polyglot.management.Management"
 },
 {
-  "name":"org.jboss.logmanager.LogManager"
-},
-{
   "name":"org.jboss.threads.EnhancedQueueExecutor",
   "fields":[
     {"name":"activeCount"}, 
