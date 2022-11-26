@@ -100,9 +100,9 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * the configuration map
+     * the configuration 
      */
-    private final Map<String, Object> configurationFileMap;
+    private final Map<String, Object> mongoSrvConfiguration;
 
     /**
      * Creates a new instance of Configuration with defaults values.
@@ -120,7 +120,7 @@ public class MongoServiceConfiguration {
      * @throws org.restheart.configuration.ConfigurationException
      */
     private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
-        this.configurationFileMap = conf;
+        this.mongoSrvConfiguration = conf;
 
         instanceBaseURL = asString(conf, INSTANCE_BASE_URL_KEY, null, silent);
 
@@ -171,11 +171,9 @@ public class MongoServiceConfiguration {
         schemaCacheEnabled = asBoolean(conf, SCHEMA_CACHE_ENABLED_KEY, true, silent);
         schemaCacheTtl = asLong(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000, silent);
 
-        var mongoServiceConf = asMap(asMap(conf, PLUGINS_ARGS_KEY, null, silent), "mongo", null, silent);
-
-        getCollectionCacheSize = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_SIZE_KEY, 100, silent);
-        getCollectionCacheTTL = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
-        getCollectionCacheDocs = asInteger(mongoServiceConf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
+        getCollectionCacheSize = asInteger(conf, GET_COLLECTION_CACHE_SIZE_KEY, 100, silent);
+        getCollectionCacheTTL = asInteger(conf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
+        getCollectionCacheDocs = asInteger(conf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
 
         Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, null, silent);
 
@@ -255,7 +253,7 @@ public class MongoServiceConfiguration {
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
                 + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
-                + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + configurationFileMap
+                + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + mongoSrvConfiguration
                 + '}';
     }
 
@@ -403,7 +401,7 @@ public class MongoServiceConfiguration {
      * @return the configurationFileMap
      */
     public Map<String, Object> getConfigurationFileMap() {
-        return Collections.unmodifiableMap(configurationFileMap);
+        return Collections.unmodifiableMap(mongoSrvConfiguration);
     }
 
     /**
