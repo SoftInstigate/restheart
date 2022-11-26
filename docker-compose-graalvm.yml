@@ -2,11 +2,11 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest-graalvm
+    image: softinstigate/restheart-snapshot:latest-graalvm
     environment:
-      INSTANCE_NAME: graalvm
-      MONGO_URI: mongodb://mongodb
-    command: ["--envFile", "/opt/restheart/etc/default.properties"]
+      RHO: >
+          /mclient/connection-string->"mongodb://mongodb";
+          /http-listener/host->"0.0.0.0";
     depends_on:
       - mongodb
       - mongodb-init

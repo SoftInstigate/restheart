@@ -2,10 +2,12 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest-native
+    image: softinstigate/restheart-snapshot:latest-native
     environment:
-      INSTANCE_NAME: native
-      MONGO_URI: mongodb://mongodb
+      RHO: >
+          /core/name->"native";
+          /mclient/connection-string->"mongodb://mongodb";
+          /http-listener/host->"0.0.0.0";
     depends_on:
       - mongodb
       - mongodb-init

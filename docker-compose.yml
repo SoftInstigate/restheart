@@ -2,10 +2,11 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest
+    image: softinstigate/restheart-snapshot:latest
     environment:
-      MONGO_URI: mongodb://mongodb
-    command: ["--envFile", "/opt/restheart/etc/default.properties"]
+      RHO: >
+          /mclient/connection-string->"mongodb://mongodb";
+          /http-listener/host->"0.0.0.0";
     depends_on:
       - mongodb
       - mongodb-init
