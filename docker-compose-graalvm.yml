@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart-snapshot:latest-graalvm
+    image: softinstigate/restheart:latest-graalvm
     environment:
       RHO: >
           /mclient/connection-string->"mongodb://mongodb";
