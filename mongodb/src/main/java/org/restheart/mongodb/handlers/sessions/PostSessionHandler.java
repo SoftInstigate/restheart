@@ -24,7 +24,6 @@ import com.mongodb.MongoClientException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;
-import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
@@ -83,17 +82,15 @@ public class PostSessionHandler extends PipelinedHandler {
         try {
             UUID sid = Sid.randomUUID(options(request));
 
-            response.getHeaders()
-                    .add(HttpString.tryFromString("Location"),
-                            RepresentationUtils.getReferenceLink(
-                                    MongoURLUtils.getRemappedRequestURL(exchange),
-                                    new BsonString(sid.toString())));
+            response.getHeaders().add(HttpString.tryFromString("Location"),
+                RepresentationUtils.getReferenceLink(
+                        MongoURLUtils.getRemappedRequestURL(exchange),
+                        new BsonString(sid.toString())));
 
             response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_CREATED);
         } catch (MongoClientException mce) {
-            LOGGER.error("Error {}",
-                    mce.getMessage());
+            LOGGER.error("Error {}", mce.getMessage());
 
             // check if server supports sessions
             if (!replicaSet(RHMongoClients.mclient())) {
@@ -110,21 +107,19 @@ public class PostSessionHandler extends PipelinedHandler {
         final BsonValue _content = request.getContent();
 
         // must be an object
-        if (!_content.isDocument()) {
+        if (_content == null || !_content.isDocument()) {
             return new SessionOptions();
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        BsonValue _ops = content.get("ops");
+        var _ops = content.get("ops");
 
         // must be an object, optional
         if (_ops != null
                 && _ops.isDocument()
-                && _ops.asDocument()
-                        .containsKey(SessionOptions.CAUSALLY_CONSISTENT_PROP)
-                && _ops.asDocument().get(SessionOptions.CAUSALLY_CONSISTENT_PROP)
-                        .isBoolean()) {
+                && _ops.asDocument().containsKey(SessionOptions.CAUSALLY_CONSISTENT_PROP)
+                && _ops.asDocument().get(SessionOptions.CAUSALLY_CONSISTENT_PROP).isBoolean()) {
 
             return new SessionOptions(_ops.asDocument()
                     .get(SessionOptions.CAUSALLY_CONSISTENT_PROP)
