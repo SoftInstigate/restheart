@@ -39,10 +39,8 @@ jobs:
       - name: Set the VERSION
         id: vars
         run: |
-          echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
-          echo "::set-output name=MAJOR::$(echo ${steps.vars.outputs.VERSION:0:1})"
-          echo "::set-output name=MINOR::$(echo ${steps.vars.outputs.VERSION:0:3})"
-          echo "VERSION=${{steps.vars.outputs.VERSION}}"
+          echo "{VERSION}={$(echo ${GITHUB_REF:10})}" >> $GITHUB_OUTPUT
+          echo "GITHUB_OUTPUT=$GITHUB_OUTPUT"
 
       - name: Build and Test
         env:
