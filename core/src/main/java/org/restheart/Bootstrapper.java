@@ -145,8 +145,8 @@ public final class Bootstrapper {
 
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
-    private static Path CONFIGURATION_FILE;
-    private static Path PROPERTIES_FILE;
+    private static Path CONFIGURATION_FILE_PATH;
+    private static Path CONF_OVERRIDES_FILE_PATH;
     private static boolean printConfiguration = false;
     private static boolean printConfigurationTemplate = false;
 
@@ -200,16 +200,17 @@ public final class Bootstrapper {
             var confFilePath = (parameters.configPath == null)
                 ? System.getenv("RESTHEART__CONFFILE")
                 : parameters.configPath;
-            CONFIGURATION_FILE = FileUtils.getFileAbsolutePath(confFilePath);
+            CONFIGURATION_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
 
             FileUtils.getFileAbsolutePath(parameters.configPath);
 
             IS_FORKED = parameters.isForked;
-            var propFilePath = (parameters.envFile == null)
-                ? System.getenv("RESTHEART_ENVFILE")
-                : parameters.envFile;
 
-            PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
+            var confOverridesFilePath = parameters.rho == null
+                ? System.getenv("RHO_FILE")
+                : parameters.rho;
+
+            CONF_OVERRIDES_FILE_PATH = FileUtils.getFileAbsolutePath(confOverridesFilePath);
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage(System.out);
@@ -220,7 +221,12 @@ public final class Bootstrapper {
     public static void main(final String[] args) throws ConfigurationException, IOException {
         parseCommandLineParameters(args);
         setJsonpathDefaults();
-        configuration = Configuration.Builder.build(CONFIGURATION_FILE, PROPERTIES_FILE, true);
+        try {
+            configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, true);
+        } catch(ConfigurationException ce) {
+            logErrorAndExit(ce.getMessage(), ce, true, true, -1);
+        }
+
         run();
     }
 
@@ -288,18 +294,18 @@ public final class Bootstrapper {
     private static void startServer(boolean fork) {
         logStartMessages(configuration);
 
-        var pidFilePath = pidFile(CONFIGURATION_FILE, PROPERTIES_FILE);
+        var pidFilePath = pidFile(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH);
         var pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
-            pidFileAlreadyExists = checkPidFile(CONFIGURATION_FILE, PROPERTIES_FILE);
+            pidFileAlreadyExists = checkPidFile(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH);
         }
 
         logLoggingConfiguration(configuration, fork);
 
         // re-read configuration file, to log errors now that logger is initialized
         try {
-            Configuration.Builder.build(CONFIGURATION_FILE, PROPERTIES_FILE, false);
+            Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, false);
         } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
@@ -450,7 +456,7 @@ public final class Bootstrapper {
             }
         }
 
-        var pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE, PROPERTIES_FILE));
+        var pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
@@ -922,23 +928,30 @@ public final class Bootstrapper {
     private static void logErrorAndExit(String message, Throwable t, boolean silent, boolean removePid, int status) {
         if (t == null) {
             LOGGER.error(message);
+        } else if (t instanceof ConfigurationException ce) {
+            if (ce.shoudlPrintStackTrace()) {
+                LOGGER.error(message, t);
+            } else {
+                LOGGER.error(message);
+            }
         } else {
             LOGGER.error(message, t);
         }
+
         stopServer(silent, removePid);
         System.exit(status);
     }
 
     @Command(name="java -jar restheart.jar")
     private static class Args {
-        @Parameters(index = "0", arity = "0..1", paramLabel = "FILE", description = "Main configuration file")
+        @Parameters(index = "0", arity = "0..1", paramLabel = "CONF_FILE", description = "Main configuration file")
         private String configPath = null;
 
         @Option(names = "--fork", description = "Fork the process in background")
         private boolean isForked = false;
 
-        @Option(names = {"-e", "--envFile", "--envfile"}, description = "Environment file name")
-        private String envFile = null;
+        @Option(names = {"-o", "--rho" }, paramLabel = "RHO_FILE", description = "Configuration overrides file")
+        private String rho = null;
 
         @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
         private boolean help = false;

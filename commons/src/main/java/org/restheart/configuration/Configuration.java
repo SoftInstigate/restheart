@@ -21,27 +21,20 @@ package org.restheart.configuration;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.MustacheNotFoundException;
 import com.google.common.collect.Maps;
-
 import static org.restheart.configuration.Utils.*;
-
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -252,19 +245,19 @@ public class Configuration {
          * @param confFile
          * @return return the configuration from confFile and propFile
          */
-        public static Configuration build(Path confFilePath, Path propFilePath, boolean silent) throws ConfigurationException {
+        public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean silent) throws ConfigurationException {
             if (confFilePath == null) {
                 var stream = Configuration.class.getResourceAsStream("/restheart-default-config.yml");
                 try (var confReader = new InputStreamReader(stream)) {
-                    return build(confReader, null, null, silent);
+                    return build(confReader, null, confOverridesFilePath, silent);
                 } catch (IOException ieo) {
                     throw new ConfigurationException("Error reading default configuration file", ieo);
                 }
             } else {
                 try (var confReader = new BufferedReader(new FileReader(confFilePath.toFile()))) {
-                    return build(confReader, confFilePath, propFilePath, silent);
-                } catch (MustacheNotFoundException | FileNotFoundException ex) {
-                    throw new ConfigurationException("Configuration file not found: " + confFilePath);
+                    return build(confReader, confFilePath, confOverridesFilePath, silent);
+                } catch (FileNotFoundException ex) {
+                    throw new ConfigurationException("Configuration file not found: " + confFilePath, ex, false);
                 } catch (IOException ieo) {
                     throw new ConfigurationException("Error reading configuration file " + confFilePath, ieo);
                 }
@@ -276,76 +269,34 @@ public class Configuration {
          * @param confFile
          * @return return the configuration from confFile and propFile
          */
-        private static Configuration build(Reader confReader, Path confFilePath, Path propFilePath, boolean silent) throws ConfigurationException {
-            var m = new DefaultMustacheFactory().compile(confReader, "configuration-file");
+        private static Configuration build(Reader confReader, Path confFilePath, Path confOverridesFilePath, boolean silent) throws ConfigurationException {
+            Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(confReader);
 
-            var confFileParams = Arrays.asList(m.getCodes());
+            if (confOverridesFilePath != null) {
+                try {
+                    var overrides = Files.readAllLines(confOverridesFilePath).stream().collect(Collectors.joining());
 
-            if (confFileParams.isEmpty()) {
-                // configuration file is not parametric
-                Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(confReader);
-
-                return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
-            } else {
-                // configuration is parametric
-                if (propFilePath == null) {
-                    // check if parameters are defined via env vars
-                    var allResolved = confFileParams.stream().filter(c -> c != null && c.getName() != null).map(c -> c.getName()).allMatch(n -> valueFromEnv(n, true) != null);
-
-                    if (allResolved) {
-                        final var p = new Properties();
-                        confFileParams.stream()
-                            .filter(c -> c != null && c.getName() != null)
-                            .map(c -> c.getName())
-                            .forEach(n -> p.put(n, valueFromEnv(n, silent)));
-
-                        final var writer = new StringWriter();
-                        m.execute(writer, p);
-
-                        Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(writer.toString());
-                        return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
-                    } else {
-                        var unbound = confFileParams.stream()
-                            .filter(c -> c != null && c.getName() != null)
-                            .map(c -> c.getName())
-                            .filter(n -> valueFromEnv(n, true) == null)
-                            .collect(Collectors.toList());
-
-                        throw new ConfigurationException("Configuration is parametric but no properties file or environment variables have been specified."
-                                + " Unbound parameters: " + unbound.toString()
-                                + ". You can use -e option to specify the properties file or set them via environment variables"
-                                + ". For more information check https://restheart.org/docs/setup/#configuration-files");
+                    if (!silent) {
+                        LOGGER.info("Overriding configuration from file: {}", confOverridesFilePath);
                     }
-                } else {
-                    try (var propsReader = new InputStreamReader(new FileInputStream(propFilePath.toFile()), "UTF-8")) {
-                        final var p = new Properties();
-                        p.load(propsReader);
 
-                        //  overwrite properties from env vars
-                        //  if Properties has a property called 'foo-bar'
-                        //  and the environment variable RH_FOO_BAR is defined
-                        //  the value of the latter is used
-                        p.replaceAll((k,v) -> {
-                            if (k instanceof String sk) {
-                                var vfe = valueFromEnv(sk, silent);
-                                return vfe != null ? vfe : v;
-                            } else {
-                                return v;
-                            }
-                        });
-
-                        final var writer = new StringWriter();
-                        m.execute(writer, p);
-
-                        Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(writer.toString());
-                        return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
-                    } catch (FileNotFoundException fnfe) {
-                        throw new ConfigurationException("Properties file not found: " + propFilePath, fnfe);
-                    } catch (IOException ieo) {
-                        throw new ConfigurationException("Error reading configuration file " + propFilePath, ieo);
-                    }
+                    confMap = overrideConfiguration(confMap, overrides(overrides, true, silent), silent);
+                } catch (IOException ioe) {
+                    throw new ConfigurationException("Configuration overrides file not found: " + confOverridesFilePath, ioe, false);
                 }
             }
+
+            // overrides with RHO env var
+            if (System.getenv().containsKey("RHO")) {
+                if (!silent) {
+                    LOGGER.info("Overriding configuration from environment variable RHO");
+                }
+
+                // overrides from RHO env var
+                confMap = overrideConfiguration(confMap, overrides(System.getenv().get("RHO"), true, silent), silent);
+            }
+
+            return new Configuration(confMap, confFilePath, silent);
         }
     }
 
@@ -354,33 +305,21 @@ public class Configuration {
      * @param confMap
      * @return
      */
-    private static Map<String, Object> overrideConfiguration(Map<String, Object> confMap, final boolean silent) {
-        final var PROP_NAME = "RHO";
-
+    private static Map<String, Object> overrideConfiguration(Map<String, Object> confMap, List<RhOverride> overrides, final boolean silent) {
         var ctx = JXPathContext.newContext(confMap);
         ctx.setLenient(true);
 
-        if (System.getenv().containsKey(PROP_NAME)) {
-            var overrides = overrides(System.getenv().get(PROP_NAME), silent, silent);
-
+        overrides.stream().forEachOrdered(o -> {
             if (!silent) {
-                LOGGER.info("Overriding configuration parameters from RHO environment variable:");
+                LOGGER.info("\t{} -> {}", o.path(), o.value());
             }
 
-            overrides.stream().forEachOrdered(o -> {
-                if (!silent) {
-                    LOGGER.info("\t{} -> {}", o.path(), o.value());
-                }
-
-                try {
-                    createPathAndSetValue(ctx, o.path(), o.value());
-                } catch(Throwable ise) {
-                    LOGGER.error("Wrong configuration override {}, {}", o, ise.getMessage());
-                }
-            });
-        } else {
-            return confMap;
-        }
+            try {
+                createPathAndSetValue(ctx, o.path(), o.value());
+            } catch(Throwable ise) {
+                LOGGER.error("Wrong configuration override {}, {}", o, ise.getMessage());
+            }
+        });
 
         return confMap;
     }

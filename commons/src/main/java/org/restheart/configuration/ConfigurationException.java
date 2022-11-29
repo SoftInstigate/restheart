@@ -25,16 +25,29 @@ package org.restheart.configuration;
  */
 public class ConfigurationException extends IllegalArgumentException {
     private static final long serialVersionUID = 1685800316196830205L;
+    private final boolean shoudlPrintStackTrace;
 
     public ConfigurationException() {
         super();
+        this.shoudlPrintStackTrace = false;
     }
 
     public ConfigurationException(String message) {
         super(message);
+        this.shoudlPrintStackTrace = false;
     }
 
     public ConfigurationException(String message, Throwable cause) {
         super(message, cause);
+        this.shoudlPrintStackTrace = true;
+    }
+
+    public ConfigurationException(String message, Throwable cause, boolean shoudlPrintStackTrace) {
+        super(message, cause);
+        this.shoudlPrintStackTrace = shoudlPrintStackTrace;
+    }
+
+    public boolean shoudlPrintStackTrace() {
+        return shoudlPrintStackTrace;
     }
 }

@@ -102,8 +102,8 @@ public class BootstrapperUtils {
         return false;
     }
 
-    public static Path pidFile(Path confFilePath, Path propFilePath) {
-        return FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(confFilePath, propFilePath));
+    public static Path pidFile(Path confFilePath, Path confOverridesFilePath) {
+        return FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(confFilePath, confOverridesFilePath));
     }
 
     /**
