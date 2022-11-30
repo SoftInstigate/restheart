@@ -22,6 +22,7 @@ package org.restheart.configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import static org.restheart.configuration.Utils.getOrDefault;
 import static org.restheart.configuration.Utils.asMap;
 import ch.qos.logback.classic.Level;
@@ -31,6 +32,7 @@ public record Logging(Level logLevel,
     String logFilePath,
     boolean logToConsole,
     boolean ansiConsole,
+    List<String> packages,
     int requestsLogMode,
     List<String> tracingHeaders) {
     public static final String LOGGING_KEY = "logging";
@@ -41,8 +43,11 @@ public record Logging(Level logLevel,
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
     public static final String REQUESTS_LOG_MODE = "requests-log-mode";
     public static final String TRACING_HEADERS_KEY = "tracing-headers";
+    public static final String PACKAGES_KEY = "packages";
 
-    private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true, true, 1, new ArrayList<>());
+    private static final List<String> DEFAULT_PACKAGES = List.of("org.restheart", "com.restheart");
+
+    private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true,true, DEFAULT_PACKAGES, 1, new ArrayList<>());
 
     public Logging(Map<String, Object> conf, boolean silent) {
         this(
@@ -51,6 +56,8 @@ public record Logging(Level logLevel,
             getOrDefault(conf, LOG_FILE_PATH_KEY, DEFAULT_LOGGING.logFilePath(), silent),
             getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, DEFAULT_LOGGING.logToConsole(), silent),
             getOrDefault(conf, ANSI_CONSOLE_KEY, DEFAULT_LOGGING.ansiConsole(), silent),
+            // following is optional, so get it always in silent mode
+            getOrDefault(conf, PACKAGES_KEY, DEFAULT_LOGGING.packages(), true),
             getOrDefault(conf, REQUESTS_LOG_MODE, DEFAULT_LOGGING.requestsLogMode(), silent),
             // following is optional, so get it always in silent mode
             getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true));

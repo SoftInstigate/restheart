@@ -113,7 +113,7 @@ public class BootstrapperUtils {
      * @param d
      */
     public static void initLogging(Configuration configuration, final RESTHeartDaemon d, boolean isForked) {
-        LoggingInitializer.setLogLevel(configuration.getLogLevel());
+        LoggingInitializer.setLogLevel(configuration.logging().packages(), configuration.getLogLevel());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration.logging().logFilePath());

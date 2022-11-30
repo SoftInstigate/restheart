@@ -31,6 +31,9 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
+
+import java.util.List;
+
 import org.slf4j.LoggerFactory;
 
 /**
@@ -46,25 +49,18 @@ public class LoggingInitializer {
      *
      * @param level
      */
-    public static void setLogLevel(Level level) {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger orgLogger = loggerContext.getLogger("org.restheart");
-        Logger comLogger = loggerContext.getLogger("com.restheart");
+    public static void setLogLevel(List<String> packages, Level level) {
+        var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        var logbackConfigurationFile = System.getProperty("logback.configurationFile");
 
-        String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            orgLogger.info("Loglevel was set via logback configuration file with level {}", orgLogger.getLevel());
-            level = comLogger.getLevel();
-        }
-
-        orgLogger.setLevel(level);
-
-        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            comLogger.info("Loglevel was set via logback configuration file with level {}", comLogger.getLevel());
-            level = comLogger.getLevel();
-        }
-
-        comLogger.setLevel(level);
+        packages.stream().forEachOrdered(pack -> {
+            var logger = loggerContext.getLogger(pack);
+            if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
+                logger.info("Loglevel was set via logback configuration file with level {}", logger.getLevel());
+            } else {
+                logger.setLevel(level);
+            }
+        });
     }
 
     /**

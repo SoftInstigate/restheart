@@ -230,6 +230,7 @@ logging:
   ansi-console: true
   log-to-file: false
   log-file-path: restheart.log
+  packages: [ "org.restheart", "com.restheart" ]
   requests-log-mode: 1
   tracing-headers: null
 
