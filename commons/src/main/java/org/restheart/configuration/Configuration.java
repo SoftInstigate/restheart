@@ -22,6 +22,12 @@ package org.restheart.configuration;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+
 import static org.restheart.configuration.Utils.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -274,7 +280,32 @@ public class Configuration {
 
             if (confOverridesFilePath != null) {
                 try {
-                    var overrides = Files.readAllLines(confOverridesFilePath).stream().collect(Collectors.joining());
+                    String overrides;
+
+                    if (confOverridesFilePath.toString().toLowerCase().endsWith(".yml")
+                        || confOverridesFilePath.toString().toLowerCase().endsWith(".yaml")) {
+                        // YML format
+                        try {
+                            overrides = fromYmlToRho(Files.newBufferedReader(confOverridesFilePath));
+                        } catch(JsonParseException jpe) {
+                            throw new ConfigurationException("Wrong configuration override YML file: " + jpe.getLocalizedMessage(), jpe, false);
+                        }
+                    } else if (confOverridesFilePath.toString().toLowerCase().endsWith(".json")
+                        || confOverridesFilePath.toString().toLowerCase().endsWith(".jsonc")) {
+                        // JSON format
+                        try {
+                            overrides = fromJsonToRho(Files.newBufferedReader(confOverridesFilePath));
+                        } catch(JsonParseException jpe) {
+                            throw new ConfigurationException("Wrong configuration override JSON file: " + jpe.getLocalizedMessage(), jpe, false);
+                        }
+                    } else if (confOverridesFilePath.toString().toLowerCase().endsWith(".conf")) {
+                        // RHO format
+                        overrides = Files.readAllLines(confOverridesFilePath).stream()
+                            .filter(row -> !row.trim().startsWith("#")) // ingore comments lines
+                            .collect(Collectors.joining());
+                    } else {
+                        throw new ConfigurationException("Configuration override file must have .json, .jsonc, .yml, .yaml or .conf extension: " + confOverridesFilePath);
+                    }
 
                     if (!silent) {
                         LOGGER.info("Overriding configuration from file: {}", confOverridesFilePath);
@@ -282,7 +313,7 @@ public class Configuration {
 
                     confMap = overrideConfiguration(confMap, overrides(overrides, true, silent), silent);
                 } catch (IOException ioe) {
-                    throw new ConfigurationException("Configuration overrides file not found: " + confOverridesFilePath, ioe, false);
+                    throw new ConfigurationException("Configuration override file not found: " + confOverridesFilePath, ioe, false);
                 }
             }
 
@@ -300,6 +331,40 @@ public class Configuration {
         }
     }
 
+    // converst a JSON configuration override file into the RHO syntax
+    // { "/logging/log-level": "INFO", "/core/name": "foo" } => /logging/log-level->"INFO";/core/name->"foo";
+    private static String fromJsonToRho(Reader jsonReader) throws JsonParseException {
+        var gson = new GsonBuilder().setLenient().create(); // lenient allows JSON with comments
+        var _json = gson.fromJson(jsonReader, JsonObject.class);
+
+        if (_json == null || !_json.isJsonObject()) {
+            throw new JsonParseException("json is not an object");
+        }
+
+        var obj = _json.getAsJsonObject();
+
+        return obj.entrySet().stream()
+            .map(e -> e.getKey() + "->" + e.getValue().toString())
+            .collect(Collectors.joining(";"));
+    }
+
+    // converst a YMM configuration override file into the RHO syntax
+    // /logging/log-level: "INFO"
+    // /core/name: "foo" => /logging/log-level->"INFO";/core/name->"foo";
+    private static String fromYmlToRho(Reader yml) throws JsonParseException {
+        Map<String, Object> _yml = new Yaml(new SafeConstructor(new LoaderOptions())).load(yml);
+
+        if (_yml == null) {
+            throw new JsonParseException("json is not an object");
+        }
+
+        final var gson = new Gson();
+
+        return _yml.entrySet().stream()
+            .map(e -> e.getKey() + "->" + gson.toJson(e.getValue()).toString())
+            .collect(Collectors.joining(";"));
+    }
+
     /**
      *
      * @param confMap
@@ -314,10 +379,14 @@ public class Configuration {
                 LOGGER.info("\t{} -> {}", o.path(), o.value());
             }
 
-            try {
-                createPathAndSetValue(ctx, o.path(), o.value());
-            } catch(Throwable ise) {
-                LOGGER.error("Wrong configuration override {}, {}", o, ise.getMessage());
+            if (!o.path().startsWith("/")) {
+                LOGGER.error("Wrong configuration override {}, path must start with /", o.raw());
+            } else {
+                try {
+                    createPathAndSetValue(ctx, o.path(), o.value());
+                } catch(Throwable ise) {
+                    LOGGER.error("Wrong configuration override {}, {}", o.raw(), ise.getMessage());
+                }
             }
         });
 

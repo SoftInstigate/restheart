@@ -1,0 +1,32 @@
+// Example configuration override file in JSON with Comments format
+
+{
+    // The instance name, logged at startup
+    "/core/name": "default",
+
+    // HTTP Listener
+    "/http-listener": {
+        "enabled": true,
+        // Set to 0.0.0.0 to allow remote systems to connect to this server
+        "host": "localhost",
+        "port": 8080
+    },
+
+    // MongoDB connection string - see https://docs.mongodb.com/manual/reference/connection-string/.
+    "/mclient/connection-string": "mongodb://127.0.0.1",
+
+    // MongoDb resources exposed by the Mongo REST API
+    "/mongo/mongo-mounts": [ { "what": "/restheart", "where": "/" } ],
+
+    // Logging
+    "/logging": {
+        "log-level": "INFO",
+        "log-to-console": true,
+        "ansi-console": true,
+        "log-to-file": false,
+        "log-file-path": "restheart.org", // with --fork use an absoulte path of a writable file
+        "packages": [ "org.restheart", "com.restheart" ], // only messages form these packages are logged
+        "requests-log-mode": 1,
+        "tracing-headers": []
+    }
+}

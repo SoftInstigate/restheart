@@ -1,0 +1,101 @@
+# RESTHeart configuration ovverrides for Integration Tests.
+
+---
+/http-listener/host: 0.0.0.0
+
+/basicAuthMechanism/authenticator: fileRealmAuthenticator
+
+/digestAuthMechanism/authenticator: fileRealmAuthenticator
+
+/jwtAuthenticationMechanism/enabled: true
+/jwtAuthenticationMechanism/rolesClaim: roles
+
+/fileRealmAuthenticator:
+  enabled: true
+  conf-file: ../../etc/test-users.yml # path is relative to core/target/restheart/plugins
+
+/mongoRealmAuthenticator/users-db: restheart-test
+
+/fileAclAuthorizer:
+  enabled: true
+  conf-file: ../../etc/test-acl.yml # path is relative to core/target/restheart/plugins
+
+/mongoAclAuthorizer/acl-db: restheart-test
+
+/mongo/mongo-mounts:
+  - what: '*'
+    where: /
+  - what: '*'
+    where: /remappedall
+  - what: /testdb
+    where: /remappeddb
+  - what: /testdb/refcoll1
+    where: /remappedrefcoll1
+  - what: /testdb/refcoll2
+    where: /remappedrefcoll2
+  - what: /testdb/refcoll1/doc1
+    where: /remappeddoc1
+  - what: /testdb/refcoll2/doc2
+    where: /remappeddoc2
+
+/mongo/default-representation-format: HAL
+
+/mongo/metrics-gathering-level: DATABASE
+
+/graphql/db: test-graphql
+/graphql/verbose: true
+
+/proxies:
+ - location: /pecho
+   proxy-pass: http://127.0.0.1:8080/echo
+ - location: /piecho
+   proxy-pass: http://127.0.0.1:8080/iecho
+ - location: /anything
+   proxy-pass: https://httpbin.org/anything
+
+/testInitializer/enabled: true
+
+/authTokenService/uri: /tokens
+
+/ping/msg: 'Ping!'
+
+/roles/uri: /roles
+
+/echo/uri: /echo
+
+/secho:
+  uri: /secho
+  enabled: true
+
+/iecho:
+  uri: /iecho
+  enabled: true
+
+/echoRequestInterceptor/enabled: true
+
+/echoResponseInterceptor/enabled: true
+
+/echoAsyncResponseInterceptor/enabled: true
+
+/echoProxyRequestInterceptor/enabled: true
+
+/echoProxyResponseInterceptor/enabled: true
+
+/secretHider/enabled: true
+
+/logMessageInitializer:
+  enabled: false
+  message: Hello World!
+  log-level: INFO
+
+/addBodyToWriteResponsesInitializer:
+  enabled: false
+
+/snooper:
+  enabled: true
+
+/writeResult:
+  enabled: true
+
+/logging/log-level: DEBUG
+/core/name: integration-test

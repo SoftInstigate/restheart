@@ -1,4 +1,5 @@
-## configuration file for simpleFileAuthenticator
+## example configuration file for fileRealmAuthenticator
+
 ---
 users:
     - userid: user

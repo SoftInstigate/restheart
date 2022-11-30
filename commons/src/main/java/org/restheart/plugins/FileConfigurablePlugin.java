@@ -71,11 +71,12 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
             List<Map<String, Object>> confItems = extractConfArgs(conf, type);
             confItems.stream().forEach(consumeConfiguration());
         } catch (FileNotFoundException ex) {
-            LOGGER.error("*** cannot find the file {} " + "specified in the configuration.",
-                    extractConfigFilePath(arguments));
+            LOGGER.error("*** cannot find the file {} " + "specified in the configuration.", extractConfigFilePath(arguments));
 
-            LOGGER.error("*** note that the path must be either absolute or "
-                    + "relative to the directory containing the file restheart-security.jar");
+            LOGGER.error("*** note that the path must be either "
+              + "absolute "
+              + "or relative to the restheart configuration file (if specified) "
+              + "or relative to the plugins directory (if using the default configuration)");
             throw ex;
         } catch (UnsupportedEncodingException uee) {
             throw new RuntimeException(uee);
@@ -92,7 +93,7 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
 
     /**
      * extract the absolute path of the argument 'conf-file'
-     * it can be either an absolute path or relative the the restheart configuration file
+     * it can be either an absolute path or relative the restheart configuration file
      * @param arguments
      * @return
      * @throws IllegalArgumentException

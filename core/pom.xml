@@ -414,7 +414,8 @@
                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                 <exec dir="${basedir}" executable="bin/start.sh">
-                  <arg value="etc/test/restheart.yml" />
+                  <arg value="-o" />
+                  <arg value="etc/test-conf-overrides.yml" />
                   <arg value="--fork" />
                 </exec>
               </target>
