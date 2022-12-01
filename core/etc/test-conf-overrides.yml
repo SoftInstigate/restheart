@@ -21,6 +21,7 @@
   conf-file: ../../etc/test-acl.yml # path is relative to core/target/restheart/plugins
 
 /mongoAclAuthorizer/acl-db: restheart-test
+/mongoAclAuthorizer/cache-enabled: false
 
 /mongo/mongo-mounts:
   - what: '*'
