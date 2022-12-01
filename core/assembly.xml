@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-RESTHeart - the Web API for MongoDB
+RESTHeart
+
 Copyright (C) SoftInstigate Srl
 
 This program is free software: you can redistribute it and/or modify
@@ -28,12 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}</directory>
+            <directory>${project.basedir}/..</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>*LICENSE.txt</include>
-                <include>etc/*.yml</include>
-                <include>etc/*.properties</include>
+                <include>LICENSE.txt</include>
+                <include>COMM-LICENSE.txt</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -43,10 +43,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <include>restheart.jar</include>
                 <include>plugins/*.jar</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.build.directory}/site</directory>
-            <outputDirectory>docs</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>
