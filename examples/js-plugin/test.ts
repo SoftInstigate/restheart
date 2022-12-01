@@ -10,12 +10,11 @@ export const options: Options = {
     name: "helloWorldTS",
     description: "Test typescript",
     uri: "/helloTS",
-    secured: false, 
+    secured: false,
     matchPolicy: "EXACT"
 }
 
 export function handle (request: any, response: any): void {
-    // LOGGER.debug('request {}', request.getContent());
     const rc = JSON.parse(request.getContent() || '{}');
 
     let body = {msg: `Hello ${rc.name || 'typescript'}`}

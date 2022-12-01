@@ -14,16 +14,16 @@
   "author": "",
   "license": "ISC",
   "rh:services": [
-    "hello.js",
-    "./sub/hello.js",
-    "require-module-service.js",
-    "mclient-service.js",
-    "http-client.js",
-    "test.js"
+    "hello.mjs",
+    "./sub/hello.mjs",
+    "require-module-service.mjs",
+    "mclient-service.mjs",
+    "http-client.mjs",
+    "test.mjs"
   ],
   "rh:interceptors": [
-    "hello-interceptor.js",
-    "mongo-get-doc-interceptor.js",
-    "mongo-post-coll-interceptor.js"
+    "hello-interceptor.mjs",
+    "mongo-get-doc-interceptor.mjs",
+    "mongo-post-coll-interceptor.mjs"
   ]
 }
