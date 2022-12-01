@@ -49,7 +49,7 @@ jobs:
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
+        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
 
       - name: Set up QEMU
         if: ${{ matrix.deploy }}
