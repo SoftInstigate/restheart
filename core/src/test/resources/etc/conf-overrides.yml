@@ -12,13 +12,13 @@
 
 /fileRealmAuthenticator:
   enabled: true
-  conf-file: ../../etc/test-users.yml # path is relative to core/target/restheart/plugins
+  conf-file: ../src/test/resources/etc/users.yml # path is relative to core/target/restheart/plugins
 
 /mongoRealmAuthenticator/users-db: restheart-test
 
 /fileAclAuthorizer:
   enabled: true
-  conf-file: ../../etc/test-acl.yml # path is relative to core/target/restheart/plugins
+  conf-file: ../src/test/resources/etc/acl.yml # path is relative to core/target/restheart/plugins
 
 /mongoAclAuthorizer/acl-db: restheart-test
 /mongoAclAuthorizer/cache-enabled: false

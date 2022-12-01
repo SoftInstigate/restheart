@@ -415,7 +415,7 @@
                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                 <exec dir="${basedir}" executable="bin/start.sh">
                   <arg value="-o" />
-                  <arg value="etc/test-conf-overrides.yml" />
+                  <arg value="core/src/test/resources/etc/conf-overrides.yml" />
                   <arg value="--fork" />
                 </exec>
               </target>
