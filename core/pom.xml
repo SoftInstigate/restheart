@@ -415,7 +415,7 @@
                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                 <exec dir="${basedir}" executable="bin/start.sh">
                   <arg value="-o" />
-                  <arg value="core/src/test/resources/etc/conf-overrides.yml" />
+                  <arg value="src/test/resources/etc/conf-overrides.yml" />
                   <arg value="--fork" />
                 </exec>
               </target>
@@ -433,7 +433,6 @@
                 <delete file="./target/plugins/restheart-test-plugins.jar" />
                 <echo>***** Stopping RESTHeart process...</echo>
                 <exec dir="${basedir}" executable="bin/stop.sh">
-                  <arg value="etc/test/restheart.yml" />
                 </exec>
               </target>
             </configuration>

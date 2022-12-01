@@ -1,4 +1,4 @@
-## example configuration file for fileAclAuthorizer
+## Example configuration file for fileAclAuthorizer
 
 permissions:
     # admin role can do everything
