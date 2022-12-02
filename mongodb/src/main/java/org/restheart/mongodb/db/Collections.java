@@ -215,17 +215,30 @@ class Collections {
             var from = pagesize * (page - 1);
             var to = from + pagesize;
 
-            var match = GetCollectionCache.getInstance().find(new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, 0));
+            var match = GetCollectionCache.getInstance().find(new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, 0, false));
 
             if (match == null) {
                 return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
             } else {
-                var offset = match.getKey().from();
-                ret.addAll(match.getValue().subList(from - offset, from - offset + pagesize));
-                return ret;
+                var maxToIndex = match.getKey().to() - match.getKey().from();
+                var fromIndex = from - match.getKey().from();
+
+                if (fromIndex >= maxToIndex) {
+                    return ret;
+                } else {
+                    var toIndex = Math.min(fromIndex + pagesize, maxToIndex);
+                    ret.addAll(match.getValue().subList(fromIndex, toIndex));
+                    return ret;
+                }
             }
         }
     }
+
+    // match from=40.900, to=41.080
+    // from 41.000 -> to 41.100
+    // fromIndex = 41.000-40.900=100
+    // toIndex = min(100+100, 41.080-40.900) => 180
+    // => subList(100,180)
 
     private int cursorCount(MongoCursor<?> cursor) {
         try {
@@ -247,7 +260,8 @@ class Collections {
         try {
             var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("curBatch");
             _batchCursor.setAccessible(true);
-            return (List<BsonDocument>) _batchCursor.get(cursor);
+            var ret = (List<BsonDocument>) _batchCursor.get(cursor);
+            return ret == null ? Lists.newArrayList() : ret;
         } catch(NoSuchFieldException | IllegalAccessException ex) {
             LOGGER.warn("cannot access field Cursor.curBatch ", ex);
             return Lists.newArrayList();
@@ -285,8 +299,10 @@ class Collections {
 
             // cache the cursor
             if (useCache) {
-                var to = from + cursorCount(cursor);
-                var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, System.nanoTime());
+                var count = cursorCount(cursor);
+                var to = from + count;
+                var exhausted = count < GET_COLLECTION_CACHE_BATCH_SIZE;
+                var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, System.nanoTime(), exhausted);
                 LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
                 GetCollectionCache.getInstance().put(newkey, cursorDocs(cursor));
             }

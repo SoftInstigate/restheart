@@ -143,8 +143,8 @@ public class GetCollectionCache {
             && Objects.equals(cached.filter(), requested.filter())
             && Objects.equals(cached.sort(), requested.sort())
             && Objects.equals(cached.keys(), requested.keys())
-            && cached.from() <= requested.from()
-            && cached.to() >= requested.to();
+            && ((cached.from() <= requested.from() && cached.to() >= requested.to())
+                || (cached.exhausted() && cached.from() <= requested.from()));
     }
 
     private TreeMap<String, Long> getCacheSizes() {

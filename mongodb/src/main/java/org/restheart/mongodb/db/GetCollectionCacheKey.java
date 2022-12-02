@@ -40,7 +40,8 @@ public record GetCollectionCacheKey(
     BsonDocument hint,
     int from,
     int to,
-    long cursorId) {
+    long cursorId,
+    boolean exhausted) {
 
     /**
      * @param key
@@ -55,7 +56,8 @@ public record GetCollectionCacheKey(
             key.sort,
             key.from,
             key.to,
-            key.cursorId);
+            key.cursorId,
+            key.exhausted);
     }
 
     String getCacheStatsGroup() {
@@ -75,7 +77,7 @@ public record GetCollectionCacheKey(
     @Override
     public String toString() {
         return String.format(
-            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, from=%s, to=%s, cursorId=%s]",
+            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, from=%s, to=%s, cursorId=%s, exhausted=%s]",
             session,
             collection.getNamespace(),
             sort,
@@ -84,6 +86,7 @@ public record GetCollectionCacheKey(
             hint,
             from,
             to,
-            cursorId);
+            cursorId,
+            exhausted);
     }
 }
