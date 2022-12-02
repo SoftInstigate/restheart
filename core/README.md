@@ -1,7 +1,3 @@
 # RESTHeart Core
 
-This module provides RESTHeart's fundamental capabilities: An HTTP server via Undertow and a bootstrapper able to read the configuration and start the main process.
-
-<hr />
-
-_Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
+This module is the foundation of the platform, the runtime process responsible for handling the core services, parsing the configuration, registering the plugins, enforce the security policy, resolve dependency injections with the available `Providers`, route requests to the correct `Services`, executing `Interceptors` and `Initializers`.
