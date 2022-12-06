@@ -110,7 +110,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         var graphQLApp = gqlApp(appURI(request.getExchange()));
 
-        var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.getMappings());
+        var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.objectsMappings());
 
         if (request.getQuery() == null) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");

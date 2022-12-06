@@ -1,0 +1,30 @@
+{
+  "_id": "simple-union",
+  "descriptor": {
+    "name": "simple-union",
+    "description": "GraphQL App using Union",
+    "enabled": true,
+    "uri": "union.interface.enum"
+  },
+  "schema": "enum Status { ACTIVE, ARCHIVED } enum Stars { X, XX, XXX, XXXX } enum Level { ENTRY, MEDIUM, ADVANCED } type Course{ _id: ObjectId, title: String, level: Level, status: Status, likes : Stars } type Query{ AllCourses: [Course] }",
+  "mappings":{
+    "Stars": {
+        "X": {"$oid": "638f67dc29ad17735b16e3d7" },
+        "XX": true,
+        "XXX": "three"
+    },
+    "Level": {
+        "ENTRY": 0,
+        "MEDIUM": 1,
+        "ADVANCED": 2
+    },
+    "Query": {
+      "AllCourses":{
+        "db": "restheart",
+        "collection": "courses",
+        "find":{},
+        "sort": { "_id": -1 }
+      }
+    }
+  }
+}
