@@ -6,8 +6,11 @@
     "enabled": true,
     "uri": "union.interface.enum"
   },
-  "schema": "enum Status { ACTIVE, ARCHIVED } enum Stars { X, XX, XXX, XXXX } enum Level { ENTRY, MEDIUM, ADVANCED } type Course{ _id: ObjectId, title: String, level: Level, status: Status, likes : Stars } type Query{ AllCourses: [Course] }",
+  "schema": "enum Status { ACTIVE, ARCHIVED } enum Stars { X, XX, XXX, XXXX } enum Level { ENTRY, MEDIUM, ADVANCED } type Course { _id: ObjectId, title: String, theLevel: Level, status: Status, likes : Stars } type Query{ AllCourses: [Course] }",
   "mappings":{
+    "Course": {
+        "theLevel": "level"
+    },
     "Stars": {
         "X": {"$oid": "638f67dc29ad17735b16e3d7" },
         "XX": true,
