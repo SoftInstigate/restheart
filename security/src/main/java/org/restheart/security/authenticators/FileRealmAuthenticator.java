@@ -30,6 +30,7 @@ import java.io.FileNotFoundException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,7 +69,16 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
 
     @OnInit
     public void init() throws FileNotFoundException, ConfigurationException {
-        init(config, "users");
+        if (config.containsKey("conf-file") && config.get("conf-file") != null) {
+            // init from conf-file
+            init(config, "users");
+        } else if (config.containsKey("users") && config.get("users") != null) {
+            // init from users list property
+            List<Map<String, Object>> users = argOrDefault(config, "users", new ArrayList<>());
+            users.stream().forEach(consumeConfiguration());
+        } else {
+            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'users' paramenter");
+        }
     }
 
     @Override
@@ -84,8 +94,7 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
                 List _roles = arg(u, "roles");
 
                 if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
-                    throw new IllegalArgumentException(
-                            "wrong configuration file format. a roles entry is wrong. they all must be strings");
+                    throw new IllegalArgumentException("wrong configuration file format. a roles entry is wrong. they all must be strings");
                 }
 
                 Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);

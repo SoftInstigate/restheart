@@ -26,8 +26,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-
 import static org.restheart.configuration.Utils.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -242,8 +240,8 @@ public class Configuration {
          *
          * @return the default configuration
          */
-        public static Configuration build(boolean silent) {
-            return build(null, null, silent);
+        public static Configuration build(boolean standaloneConfiguration, boolean silent) {
+            return build(null, null, standaloneConfiguration, silent);
         }
 
         /**
@@ -251,9 +249,10 @@ public class Configuration {
          * @param confFile
          * @return return the configuration from confFile and propFile
          */
-        public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean silent) throws ConfigurationException {
+        public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean standaloneConfiguration, boolean silent) throws ConfigurationException {
             if (confFilePath == null) {
-                var stream = Configuration.class.getResourceAsStream("/restheart-default-config.yml");
+                var defaultConfFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml" : "/restheart-default-config.yml";
+                var stream = Configuration.class.getResourceAsStream(defaultConfFilePath);
                 try (var confReader = new InputStreamReader(stream)) {
                     return build(confReader, null, confOverridesFilePath, silent);
                 } catch (IOException ieo) {

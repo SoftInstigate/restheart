@@ -76,7 +76,7 @@ public class FileUtils {
     }
 
     public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
-        return Configuration.Builder.build(getConfigurationFilePath(args), getPropertiesFilePath(args), silent);
+        return Configuration.Builder.build(getConfigurationFilePath(args), getOverrideFilePath(args), false, silent);
     }
 
     public static Path getConfigurationFilePath(String[] args) {
@@ -91,11 +91,11 @@ public class FileUtils {
         return null;
     }
 
-    public static Path getPropertiesFilePath(String[] args) {
+    public static Path getOverrideFilePath(String[] args) {
         if (args != null) {
             var _args = Arrays.asList(args);
 
-            var opt = _args.indexOf("-e");
+            var opt = _args.indexOf("-o");
 
             return opt < 0
                     ? null

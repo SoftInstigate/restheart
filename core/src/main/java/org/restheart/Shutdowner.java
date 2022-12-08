@@ -60,18 +60,17 @@ public class Shutdowner {
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
             LOGGER.info("Shutting down RESTHeart instance run without configuration file");
-        } else if (FileUtils.getPropertiesFilePath(args) == null) {
-            LOGGER.info("Shutting down RESTHeart instance run with configuration file {}",
-                    FileUtils.getConfigurationFilePath(args));
+        } else if (FileUtils.getOverrideFilePath(args) == null) {
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args));
         } else {
-            LOGGER.info("Shutting down RESTHeart instance run with configuration file {} and property file {}",
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {} and override file {}",
                     FileUtils.getConfigurationFilePath(args),
-                    FileUtils.getPropertiesFilePath(args));
+                    FileUtils.getOverrideFilePath(args));
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(
                 FileUtils.getConfigurationFilePath(args),
-                FileUtils.getPropertiesFilePath(args)));
+                FileUtils.getOverrideFilePath(args)));
 
         int pid = FileUtils.getPidFromFile(pidFilePath);
 

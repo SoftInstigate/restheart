@@ -36,7 +36,7 @@ tokenBasicAuthMechanism:
 # see https://restheart.org/docs/security/authentication#basic-authentication
 basicAuthMechanism:
   enabled: true
-  authenticator: mongoRealmAuthenticator
+  authenticator: fileRealmAuthenticator
 
 # JSON Web Token Authentication
 # see https://restheart.org/docs/security/authentication#jwt-authentication
@@ -61,7 +61,7 @@ digestAuthMechanism:
   enabled: false
   realm: RESTHeart Realm
   domain: localhost
-  authenticator: mongoRealmAuthenticator
+  authenticator: fileRealmAuthenticator
 
 # For development purposes. Always authenticate the request with the given user
 # see https://restheart.org/docs/security/authentication#identity-authentication
@@ -75,13 +75,17 @@ identityAuthMechanism:
 # fileRealmAuthenticator defines users credentials and roles in a simple yml file.
 # see https://restheart.org/docs/security/authentication#file-realm-authenticator
 fileRealmAuthenticator:
-  enabled: false
-  conf-file: ./users.yml
+  enabled: true
+  #conf-file: ./users.yml
+  users:
+    - userid: admin
+      password: null
+      roles: [admin]
 
 # mongoRealAuthenticator authenticates users defined in a MongoDB collection.
 # see https://restheart.org/docs/security/authentication#mongo-realm-authenticator
 mongoRealmAuthenticator:
-  enabled: true
+  enabled: false
   users-db: restheart
   users-collection: users
   prop-id: _id
@@ -110,13 +114,17 @@ mongoRealmAuthenticator:
 # fileAclAuthorizer authorizes requests according to the Access Control List  defined in a YAML file.
 # see https://restheart.org/docs/security/authorization#file-acl-authorizer
 fileAclAuthorizer:
-  enabled: false
-  conf-file: ./acl.yml
+  enabled: true
+  #conf-file: ./acl.yml
+  permissions:
+    - role: admin
+      predicate: path-prefix('/')
+      priority: 0
 
 # mongoAclAuthorizer authorizes requests according to the Access Control List defined in a MongoDB collection.
 # see https://restheart.org/docs/security/authorization#mongo-acl-authorizer
 mongoAclAuthorizer:
-  enabled: true
+  enabled: false
   acl-db: restheart
   acl-collection: acl
   # clients with root-role can execute any request
@@ -172,13 +180,14 @@ jwtTokenManager:
 
 # Provider the MongoClient via @Inject('mclient') and @Inject('mclient-reactive')
 mclient:
+  enabled: false
   # see https://docs.mongodb.com/manual/reference/connection-string/
   connection-string: mongodb://127.0.0.1
 
 # MongoDB REST and Websocket API
 # see https://restheart.org/docs/tutorial
 mongo:
-  enabled: true
+  enabled: false
   uri: /
 
   # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
@@ -270,9 +279,23 @@ mongo:
   # OFF => no gathering, ROOT => gathering at root level, DATABASE => at db level, COLLECTION => at collection level
   metrics-gathering-level: "OFF"
 
+changeStreamActivator:
+  enabled: false
+
+txnsActivator:
+  enabled: false
+
+graphAppDefinitionPatchChecker:
+  enabled: false
+
+# TODO remove dependency from mclient
+polyglotDeployer:
+  enabled: false
+
 # MongoDB GraphQL API
 # see https://restheart.org/docs/mongodb-graphql/
 graphql:
+  enabled: false
   uri: /graphql
   db: restheart
   collection: gql-apps
@@ -376,7 +399,7 @@ logging:
 # base configuration for core module
 core:
   # The name of this instance. Displayed in log, also allows to implement instance specific custom code
-  name: default
+  name: default-no-mongodb
 
   # The directory containing the plugins jars.
   # The path is either absolute (starts with /) or relative to the restheart.jar file

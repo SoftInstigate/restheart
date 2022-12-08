@@ -102,6 +102,9 @@
     }, 
     {
       "pattern":"\\Qrestheart-default-config.yml\\E"
+    },
+    {
+        "pattern":"\\Qrestheart-default-config-no-mongodb.yml\\E"
     }
   ]},
   "bundles":[]
