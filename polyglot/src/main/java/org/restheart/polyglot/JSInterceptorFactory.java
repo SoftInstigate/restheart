@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.collect.Maps;
 import com.mongodb.client.MongoClient;
@@ -60,11 +61,11 @@ public class JSInterceptorFactory {
 
     private Engine engine = Engine.create();
 
-    private final MongoClient mclient;
+    private final Optional<MongoClient> mclient;
 
     private final Configuration config;
 
-    public JSInterceptorFactory(MongoClient mclient, Configuration config) {
+    public JSInterceptorFactory(Optional<MongoClient> mclient, Configuration config) {
         this.mclient = mclient;
         this.config = config;
     }

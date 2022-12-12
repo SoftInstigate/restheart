@@ -288,8 +288,7 @@ txnsActivator:
 graphAppDefinitionPatchChecker:
   enabled: false
 
-# TODO remove dependency from mclient
-polyglotDeployer:
+mongoClients:
   enabled: false
 
 # MongoDB GraphQL API

@@ -22,6 +22,7 @@ package org.restheart.polyglot;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.collect.Maps;
 import com.mongodb.client.MongoClient;
@@ -59,7 +60,7 @@ public abstract class AbstractJSPlugin {
     protected boolean isService;
     protected boolean isInterceptor;
 
-    protected MongoClient mclient;
+    protected Optional<MongoClient> mclient;
     protected Configuration conf;
 
     protected AbstractJSPlugin() {
@@ -146,11 +147,11 @@ public abstract class AbstractJSPlugin {
         String pluginName,
         Configuration conf,
         Logger LOGGER,
-        MongoClient mclient) {
+        Optional<MongoClient> mclient) {
         ctx.getBindings("js").putMember("LOGGER", LOGGER);
 
-        if (mclient != null) {
-            ctx.getBindings("js").putMember("mclient", mclient);
+        if (mclient.isPresent()) {
+            ctx.getBindings("js").putMember("mclient", mclient.get());
         }
 
         var args = conf != null
