@@ -93,7 +93,7 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
                 String _password = arg(u, "password");
 
                 if (_password == null) {
-                    LOGGER.warn("User {} has a null password, disabling it", userid);
+                    LOGGER.warn("User {} has a null password, disabling it. You can set it with following env variable RHO=\"/fileRealmAuthenticator/users[userid='admin']/password->'secret'\"", userid);
                     return;
                 }
 
