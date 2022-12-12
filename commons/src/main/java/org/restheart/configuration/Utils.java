@@ -24,16 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
+import java.util.stream.Collectors;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.jxpath.JXPathContext;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Option;
-
 import io.undertow.UndertowOptions;
 import io.undertow.Undertow.Builder;
 
@@ -552,6 +550,12 @@ public class Utils {
 
                 try {
                     var value = Document.parse(e).get("e");
+
+                    // turn Document into a Map<String, Object>
+                    if (value instanceof Document dv) {
+                        value = dv.entrySet().stream().collect(Collectors.toMap(_e -> _e.getKey(), _e -> _e.getValue()));
+                    }
+
                     overrides.add(new RhOverride(path, value, assignment));
                 } catch (Exception ex) {
                     if (!lenient) {

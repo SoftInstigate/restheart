@@ -36,6 +36,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.jxpath.JXPathContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -142,8 +144,15 @@ public class Configuration {
 
     @Override
     public String toString() {
+        var dumpOpts = new DumperOptions();
+        dumpOpts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        dumpOpts.setPrettyFlow(true);
+        dumpOpts.setIndent(2);
+        dumpOpts.setCanonical(false);
+        dumpOpts.setExplicitStart(true);
+
         var sw = new StringWriter();
-        new Yaml().dump(conf, sw);
+        new Yaml(dumpOpts).dump(conf, sw);
 
         return sw.toString();
     }
@@ -398,17 +407,23 @@ public class Configuration {
     }
 
     private static void createParents(JXPathContext ctx, String path) {
-        if (path.lastIndexOf("/") == 0) {
-            // root
-            if (ctx.getValue(path) == null) {
-                ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
+        var parentPath = path.substring(0, path.lastIndexOf("/"));
+
+        if (!parentPath.equals("")) {
+            createParents(ctx, parentPath);
+        }
+
+        var array = path.trim().endsWith("]");
+
+        if (array) {
+            // /a/b[2] -> /a/b
+            var arrayPath = path.substring(0, path.lastIndexOf("["));
+            if (ctx.getValue(arrayPath) == null) {
+                ctx.createPathAndSetValue(arrayPath, new ArrayList<>());
             }
         } else {
-            var parentPath = path.substring(0, path.lastIndexOf("/"));
-
-            if (ctx.getValue(parentPath) == null) {
-                createParents(ctx, parentPath);
-                ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
+            if (ctx.getValue(path) == null) {
+                ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
             }
         }
     }

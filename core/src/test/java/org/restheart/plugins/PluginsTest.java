@@ -95,7 +95,7 @@ public class PluginsTest {
 
     private static MockedStatic<Bootstrapper> mockBootstrapper() {
         var bootrapper = mockStatic(Bootstrapper.class);
-        bootrapper.when(Bootstrapper::getConfiguration).thenReturn(Configuration.Builder.build(true));
+        bootrapper.when(Bootstrapper::getConfiguration).thenReturn(Configuration.Builder.build(true, true));
         return bootrapper;
     }
 
