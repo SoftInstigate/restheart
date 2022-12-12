@@ -384,7 +384,11 @@ public class Configuration {
 
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
-                LOGGER.info("\t{} -> {}", o.path(), o.value());
+                if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")) {
+                    LOGGER.info("\t{} -> {}", o.path(), "**********");
+                } else {
+                    LOGGER.info("\t{} -> {}", o.path(), o.value());
+                }
             }
 
             if (!o.path().startsWith("/")) {
