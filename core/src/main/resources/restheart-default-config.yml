@@ -76,7 +76,11 @@ identityAuthMechanism:
 # see https://restheart.org/docs/security/authentication#file-realm-authenticator
 fileRealmAuthenticator:
   enabled: false
-  conf-file: ./users.yml
+  #conf-file: ./users.yml
+  users:
+    - userid: admin
+      password: null
+      roles: [admin]
 
 # mongoRealAuthenticator authenticates users defined in a MongoDB collection.
 # see https://restheart.org/docs/security/authentication#mongo-realm-authenticator
@@ -111,7 +115,11 @@ mongoRealmAuthenticator:
 # see https://restheart.org/docs/security/authorization#file-acl-authorizer
 fileAclAuthorizer:
   enabled: false
-  conf-file: ./acl.yml
+  #conf-file: ./acl.yml
+  permissions:
+    - role: admin
+      predicate: path-prefix('/')
+      priority: 0
 
 # mongoAclAuthorizer authorizes requests according to the Access Control List defined in a MongoDB collection.
 # see https://restheart.org/docs/security/authorization#mongo-acl-authorizer
