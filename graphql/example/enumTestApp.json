@@ -1,10 +1,10 @@
 {
-  "_id": "simple-union",
+  "_id": "test-enum",
   "descriptor": {
-    "name": "simple-union",
-    "description": "GraphQL App using Union",
+    "name": "test-enum",
+    "description": "GraphQL App using Enum",
     "enabled": true,
-    "uri": "union.interface.enum"
+    "uri": "test-enum"
   },
   "schema": "enum Status { ACTIVE, ARCHIVED } enum Stars { X, XX, XXX, XXXX } enum Level { ENTRY, MEDIUM, ADVANCED } type Course { _id: ObjectId, title: String, theLevel: Level, status: Status, likes : Stars } type Query{ AllCourses: [Course] }",
   "mappings":{
