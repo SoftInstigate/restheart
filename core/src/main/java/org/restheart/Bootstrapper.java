@@ -149,6 +149,7 @@ public final class Bootstrapper {
     private static Path CONF_OVERRIDES_FILE_PATH;
     private static boolean printConfiguration = false;
     private static boolean printConfigurationTemplate = false;
+    private static boolean standaloneConfiguration = false;
 
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
@@ -196,9 +197,10 @@ public final class Bootstrapper {
             // print configuration options
             printConfiguration = parameters.printConfiguration;
             printConfigurationTemplate = parameters.printConfigurationTemplate;
+            standaloneConfiguration = parameters.standalone;
 
             var confFilePath = (parameters.configPath == null)
-                ? System.getenv("RESTHEART__CONFFILE")
+                ? System.getenv("RESTHEART_CONF_FILE")
                 : parameters.configPath;
             CONFIGURATION_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
 
@@ -222,7 +224,7 @@ public final class Bootstrapper {
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
-            configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, true);
+            configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration, true);
         } catch(ConfigurationException ce) {
             logErrorAndExit(ce.getMessage(), ce, true, true, -1);
         }
@@ -305,7 +307,7 @@ public final class Bootstrapper {
 
         // re-read configuration file, to log errors now that logger is initialized
         try {
-            Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, false);
+            Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration, false);
         } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
@@ -319,10 +321,11 @@ public final class Bootstrapper {
 
         // if -t, just print the configuration to sterr and exit
         if (printConfigurationTemplate) {
-            try (var confFileStream = Configuration.class.getResourceAsStream("/restheart-default-config.yml")) {
+            var confFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml" : "/restheart-default-config.yml";
+
+            try (var confFileStream = Configuration.class.getResourceAsStream(confFilePath)) {
                 var content = new BufferedReader(new InputStreamReader(confFileStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
                 LOGGER.info("Printing configuration template and exiting");
-
                 System.err.println(content);
                 System.exit(0);
             } catch(IOException ioe) {
@@ -964,5 +967,8 @@ public final class Bootstrapper {
 
         @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
         boolean versionRequested;
+
+        @Option(names = { "-s", "--standalone" }, description = "Use an alternate configuration that disables all plugins depending from MongoDb")
+        boolean standalone;
     }
 }

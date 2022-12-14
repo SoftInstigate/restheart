@@ -26,8 +26,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-
 import static org.restheart.configuration.Utils.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -38,6 +36,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.jxpath.JXPathContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -144,8 +144,15 @@ public class Configuration {
 
     @Override
     public String toString() {
+        var dumpOpts = new DumperOptions();
+        dumpOpts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        dumpOpts.setPrettyFlow(true);
+        dumpOpts.setIndent(2);
+        dumpOpts.setCanonical(false);
+        dumpOpts.setExplicitStart(true);
+
         var sw = new StringWriter();
-        new Yaml().dump(conf, sw);
+        new Yaml(dumpOpts).dump(conf, sw);
 
         return sw.toString();
     }
@@ -242,8 +249,8 @@ public class Configuration {
          *
          * @return the default configuration
          */
-        public static Configuration build(boolean silent) {
-            return build(null, null, silent);
+        public static Configuration build(boolean standaloneConfiguration, boolean silent) {
+            return build(null, null, standaloneConfiguration, silent);
         }
 
         /**
@@ -251,9 +258,10 @@ public class Configuration {
          * @param confFile
          * @return return the configuration from confFile and propFile
          */
-        public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean silent) throws ConfigurationException {
+        public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean standaloneConfiguration, boolean silent) throws ConfigurationException {
             if (confFilePath == null) {
-                var stream = Configuration.class.getResourceAsStream("/restheart-default-config.yml");
+                var defaultConfFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml" : "/restheart-default-config.yml";
+                var stream = Configuration.class.getResourceAsStream(defaultConfFilePath);
                 try (var confReader = new InputStreamReader(stream)) {
                     return build(confReader, null, confOverridesFilePath, silent);
                 } catch (IOException ieo) {
@@ -376,7 +384,11 @@ public class Configuration {
 
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
-                LOGGER.info("\t{} -> {}", o.path(), o.value());
+                if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")) {
+                    LOGGER.info("\t{} -> {}", o.path(), "**********");
+                } else {
+                    LOGGER.info("\t{} -> {}", o.path(), o.value());
+                }
             }
 
             if (!o.path().startsWith("/")) {
@@ -399,17 +411,23 @@ public class Configuration {
     }
 
     private static void createParents(JXPathContext ctx, String path) {
-        if (path.lastIndexOf("/") == 0) {
-            // root
-            if (ctx.getValue(path) == null) {
-                ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
+        var parentPath = path.substring(0, path.lastIndexOf("/"));
+
+        if (!parentPath.equals("")) {
+            createParents(ctx, parentPath);
+        }
+
+        var array = path.trim().endsWith("]");
+
+        if (array) {
+            // /a/b[2] -> /a/b
+            var arrayPath = path.substring(0, path.lastIndexOf("["));
+            if (ctx.getValue(arrayPath) == null) {
+                ctx.createPathAndSetValue(arrayPath, new ArrayList<>());
             }
         } else {
-            var parentPath = path.substring(0, path.lastIndexOf("/"));
-
-            if (ctx.getValue(parentPath) == null) {
-                createParents(ctx, parentPath);
-                ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
+            if (ctx.getValue(path) == null) {
+                ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
             }
         }
     }

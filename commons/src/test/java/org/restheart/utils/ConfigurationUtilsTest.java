@@ -41,8 +41,8 @@ public class ConfigurationUtilsTest {
         Assert.assertEquals(os.size(), 1);
 
         var o = os.get(0);
-        Assert.assertEquals(o.path(), "/a/b/c");
-        Assert.assertEquals(o.value(), 1);
+        Assert.assertEquals("/a/b/c", o.path());
+        Assert.assertEquals(1, o.value());
     }
 
     @Test

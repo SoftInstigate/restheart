@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -75,12 +76,12 @@ public class NodeService extends AbstractJSPlugin implements StringService {
     })
     """;
 
-    public static Future<NodeService> get(Path scriptPath, MongoClient mclient, Configuration conf) throws IOException {
+    public static Future<NodeService> get(Path scriptPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
         var executor = Executors.newSingleThreadExecutor();
         return executor.submit(() -> new NodeService(scriptPath, mclient, conf));
     }
 
-    private NodeService(Path scriptPath, MongoClient mclient, Configuration conf) throws IOException {
+    private NodeService(Path scriptPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
         this.mclient = mclient;
         this.conf = conf;
 

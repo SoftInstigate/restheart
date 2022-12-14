@@ -41,7 +41,6 @@ import org.restheart.plugins.security.AuthMechanism;
                 description = "handles the basic authentication scheme",
                 enabledByDefault = false)
 public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthenticationMechanism implements AuthMechanism {
-
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
@@ -59,12 +58,17 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public void init() throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
         String authenticatorName = arg(config, "authenticator");
-        var authenticator = registry.getAuthenticator(authenticatorName);
 
-        if (authenticator != null) {
-            setIdentityManager(authenticator.getInstance());
-        } else {
-            throw new ConfigurationException("authenticator " + authenticatorName + " is not available");
+        try {
+            var authenticator = registry.getAuthenticator(authenticatorName);
+
+            if (authenticator != null) {
+                setIdentityManager(authenticator.getInstance());
+            } else {
+                throw new ConfigurationException("authenticator " + authenticatorName + " is not available");
+            }
+        } catch(ConfigurationException ce) {
+            throw new ConfigurationException("authenticator " + authenticatorName + " is not available. check configuration option /basicAuthMechanism/authenticator");
         }
     }
 

@@ -33,8 +33,8 @@ native-image arguments are defined in file `core/src/main/resources/META-INF/nat
 
 ```bash
 $ cd core
-$ docker build -f Dockerfile.native . -t softinstigate/restheart:7.0.0-native -t softinstigate/restheart:latest-native
-$ docker push softinstigate/restheart:7.0.0-native
+$ docker build -f Dockerfile.native . -t softinstigate/restheart:7.2.0-native -t softinstigate/restheart:latest-native
+$ docker push softinstigate/restheart:7.2.0-native
 $ docker push softinstigate/restheart:latest-native
 ```
 

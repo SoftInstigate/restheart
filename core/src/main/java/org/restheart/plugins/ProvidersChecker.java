@@ -22,12 +22,17 @@ package org.restheart.plugins;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
+
+import static org.restheart.configuration.Utils.getOrDefault;
+
+import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
 
 /**
@@ -40,9 +45,17 @@ public class ProvidersChecker {
     private static List<PluginDescriptor> enabledProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         return providers.stream()
             .filter(p -> p != null)
-            .peek(p ->  { if (!p.enabled()) LOGGER.info("Provider {} disabled", p.name()); })
-            .filter(p -> p.enabled())
+            .peek(p ->  { if (!enabled(p)) LOGGER.info("Provider {} disabled", p.name()); })
+            .filter(p -> enabled(p))
             .collect(Collectors.toList());
+    }
+
+    /*
+     * @return true if the plugin is actually enabled, taking into account enabledByDefault and configuration
+     */
+    private static boolean enabled(PluginDescriptor plugin) {
+        Map<String, Object> pluginConf = getOrDefault(Bootstrapper.getConfiguration(), plugin.name(), null, true);
+        return PluginRecord.isEnabled(plugin.enabled(), pluginConf);
     }
 
     private static void removeIfWrongDependency(Logger LOGGER, MutableGraph<PluginDescriptor> providersGraph) {
@@ -58,7 +71,7 @@ public class ProvidersChecker {
                     if (otherProvider == null) {
                         LOGGER.error("Provider {} disabled: no provider found for @Inject(\"{}\")", thisProvider.name(), otherProviderName);
                         toRemove.add(thisProvider);
-                    } else if (!otherProvider.enabled()) {
+                    } else if (!enabled(otherProvider)) {
                         LOGGER.error("Provider {} disabled: the provider for @Inject(\"{}\") is disabled", thisProvider.name(), otherProvider.name());
                         toRemove.add(thisProvider);
                     } else {
@@ -149,6 +162,11 @@ public class ProvidersChecker {
      * @return true if all the plugin dependencies can be resolved
      */
     static boolean checkDependencies(Logger LOGGER, Set<PluginDescriptor> validProviders, PluginDescriptor plugin) {
+        // don't check disabled plugins
+        if (!enabled(plugin)) {
+            return true;
+        }
+
         var ret = true;
 
         // check Field Injections that require Providers
@@ -172,7 +190,7 @@ public class ProvidersChecker {
             } else {
                 var provider = _provider.get();
 
-                if (!provider.enabled()) {
+                if (!enabled(provider)) {
                     LOGGER.error("Plugin {} disabled: the provider for @Inject(\"{}\") is disabled", plugin.name(), providerName);
                     return false;
                 }

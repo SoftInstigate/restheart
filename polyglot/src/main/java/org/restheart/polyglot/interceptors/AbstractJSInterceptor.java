@@ -21,6 +21,7 @@
 package org.restheart.polyglot.interceptors;
 
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.collect.Maps;
 import com.mongodb.client.MongoClient;
@@ -55,7 +56,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         InterceptPoint interceptPoint,
         Source handleSource,
         Source resolveSource,
-        MongoClient mclient,
+        Optional<MongoClient> mclient,
         Configuration config,
         Map<String, String> contextOptions) {
             super(name, pluginClass, description, null, false, null, interceptPoint, config, false, true);

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -74,7 +75,16 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
     @OnInit
     public void init() throws FileNotFoundException, ConfigurationException {
-        init(config, "permissions");
+        if (config.containsKey("conf-file") && config.get("conf-file") != null) {
+            // init from conf-file
+            init(config, "permissions");
+        } else if (config.containsKey("permissions") && config.get("permissions") != null) {
+            // init from permissions list property
+            List<Map<String, Object>> _permissions = argOrDefault(config, "permissions", new ArrayList<>());
+            _permissions.stream().forEach(consumeConfiguration());
+        } else {
+            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'permissions' paramenter");
+        }
 
         // reverse oreder, the first permission in the acl.yml must be on top
         var list = new ArrayList<FileAclPermission>(this.permissions);

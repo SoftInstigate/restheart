@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -76,14 +77,13 @@ public class PolyglotDeployer implements Initializer {
 
     private JSInterceptorFactory jsInterceptorFactory;
 
-    @Inject("mclient")
-    private MongoClient mclient;
-
     @Inject("registry")
     private PluginsRegistry registry;
 
     @Inject("rh-config")
     private Configuration config;
+
+    private Optional<MongoClient> mclient;
 
     @OnInit
     public void onInit() {
@@ -94,9 +94,20 @@ public class PolyglotDeployer implements Initializer {
 
         pluginsDirectory = getPluginsDirectory(config.toMap());
 
+        this.mclient = mongoClient(registry);
+
         this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config);
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
+    }
+
+    private Optional<MongoClient> mongoClient(PluginsRegistry registry) {
+         return registry.getProviders().stream()
+            .filter(pd -> pd.isEnabled())
+            .map(pd -> pd.getInstance())
+            .filter(p -> MongoClient.class.getName().equals(p.rawType().getName()))
+            .map(p -> (MongoClient) p.get(null))
+            .findFirst();
     }
 
 

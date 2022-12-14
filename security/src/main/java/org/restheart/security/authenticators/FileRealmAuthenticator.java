@@ -30,6 +30,7 @@ import java.io.FileNotFoundException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,6 +47,8 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.LambdaUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -60,6 +63,7 @@ import org.restheart.utils.LambdaUtils;
         description = "authenticates clients credentials defined in a configuration file",
         enabledByDefault = false)
 public class FileRealmAuthenticator extends FileConfigurablePlugin implements Authenticator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileRealmAuthenticator.class);
 
     private final Map<String, FileRealmAccount> accounts = new HashMap<>();
 
@@ -68,7 +72,16 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
 
     @OnInit
     public void init() throws FileNotFoundException, ConfigurationException {
-        init(config, "users");
+        if (config.containsKey("conf-file") && config.get("conf-file") != null) {
+            // init from conf-file
+            init(config, "users");
+        } else if (config.containsKey("users") && config.get("users") != null) {
+            // init from users list property
+            List<Map<String, Object>> users = argOrDefault(config, "users", new ArrayList<>());
+            users.stream().forEach(consumeConfiguration());
+        } else {
+            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'users' paramenter");
+        }
     }
 
     @Override
@@ -78,14 +91,19 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
             try {
                 String userid = arg(u, "userid");
                 String _password = arg(u, "password");
+
+                if (_password == null) {
+                    LOGGER.warn("User {} has a null password, disabling it. You can set it with the environment variable RHO=\"/fileRealmAuthenticator/users[userid='admin']/password->'secret'\"", userid);
+                    return;
+                }
+
                 char[] password = ((String) _password).toCharArray();
 
                 @SuppressWarnings("rawtypes")
                 List _roles = arg(u, "roles");
 
                 if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
-                    throw new IllegalArgumentException(
-                            "wrong configuration file format. a roles entry is wrong. they all must be strings");
+                    throw new IllegalArgumentException("wrong configuration. a roles entry is wrong. they all must be strings");
                 }
 
                 Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);

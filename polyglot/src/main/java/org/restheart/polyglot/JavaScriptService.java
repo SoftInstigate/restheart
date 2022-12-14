@@ -23,6 +23,8 @@ package org.restheart.polyglot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
+
 import com.mongodb.client.MongoClient;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -69,7 +71,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     }
     """;
 
-    JavaScriptService(Path pluginPath, MongoClient mclient, Configuration conf) throws IOException {
+    JavaScriptService(Path pluginPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
         // register cleaner
         CleanerUtils.get().cleaner().register(this, new State(this.ctxs));
 

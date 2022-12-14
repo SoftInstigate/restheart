@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>7.0.1-SNAPSHOT</version>
+    <version>7.2.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.restheart</groupId>
@@ -401,13 +401,17 @@
               <target>
                 <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
                 <echo>***** Initializing MongoDB cluster...</echo>
+                <!-- mongo shell command is mongo for v <=5.x then mongosh -->
+                <condition property="mongoshellcmd" value="mongo" else="mongosh">
+                  <matches string="${mongodb.version}" pattern="^[1-5].*"/>
+                </condition>
                 <exec executable="docker">
                   <arg value="run" />
                   <arg value="--rm" />
                   <arg value="--net" />
                   <arg value="host" />
                   <arg value="mongo:${mongodb.version}" />
-                  <arg value="mongo" />
+                  <arg value="${mongoshellcmd}" />
                   <arg value="--eval" />
                   <arg value="rs.initiate()" />
                 </exec>

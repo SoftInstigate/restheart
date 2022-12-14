@@ -128,13 +128,11 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
     }
 
     @SuppressWarnings("unchecked")
-    List<Map<String, Object>> extractConfArgs(final Map<String, Object> conf, String type)
-            throws IllegalArgumentException {
+    List<Map<String, Object>> extractConfArgs(final Map<String, Object> conf, String type) throws IllegalArgumentException {
         Object args = conf.get(type);
 
         if (args == null || !(args instanceof List)) {
-            throw new IllegalArgumentException(
-                    "wrong configuration file format. missing mandatory '" + type + "' section.");
+            throw new IllegalArgumentException("wrong configuration file format. missing mandatory '" + type + "' section.");
         }
 
         List<Map<String, Object>> users = (List<Map<String, Object>>) args;

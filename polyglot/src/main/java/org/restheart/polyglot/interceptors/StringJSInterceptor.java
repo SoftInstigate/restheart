@@ -21,6 +21,7 @@
 package org.restheart.polyglot.interceptors;
 
 import java.util.Map;
+import java.util.Optional;
 
 import com.mongodb.client.MongoClient;
 
@@ -37,7 +38,7 @@ public class StringJSInterceptor extends AbstractJSInterceptor<StringRequest, St
         InterceptPoint interceptPoint,
         Source handleSource,
         Source resolveSource,
-        MongoClient mclient,
+        Optional<MongoClient> mclient,
         Configuration config,
         Map<String, String> contextOptions) {
             super(name, pluginClass, description, interceptPoint, handleSource, resolveSource, mclient, config, contextOptions);
