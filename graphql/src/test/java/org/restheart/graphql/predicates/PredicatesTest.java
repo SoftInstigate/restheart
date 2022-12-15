@@ -1,8 +1,6 @@
 package org.restheart.graphql.predicates;
 
 import org.junit.Test;
-import org.restheart.graphql.GraphQLService;
-import org.restheart.utils.DocInExchange;
 
 import io.undertow.predicate.Predicates;
 import static org.junit.Assert.assertFalse;

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
-import org.restheart.utils.DocInExchange;
+
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;

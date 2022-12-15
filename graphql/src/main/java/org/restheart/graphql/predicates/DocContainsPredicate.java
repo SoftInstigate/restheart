@@ -24,8 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.restheart.utils.DocInExchange;
-
 import com.google.common.collect.Sets;
 
 import io.undertow.predicate.Predicate;

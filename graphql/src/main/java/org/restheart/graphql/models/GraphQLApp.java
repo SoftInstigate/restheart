@@ -32,11 +32,8 @@ import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
 import io.undertow.predicate.Predicate;
 import org.bson.BsonDocument;
-import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
+import org.restheart.graphql.predicates.DocInExchange;
 import org.restheart.graphql.scalars.BsonScalars;
-import org.restheart.utils.BsonUtils;
-import org.restheart.utils.DocInExchange;
-import org.restheart.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -172,7 +169,6 @@ public class GraphQLApp {
                             if (match.isPresent()) {
                                 return env.getSchema().getObjectType(match.get().getKey());
                             } else {
-                                // LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("cannot resolve type for document with _id: " + BsonUtils.toJson(doc.get("_id"))));
                                 return null;
                             }
                         }
