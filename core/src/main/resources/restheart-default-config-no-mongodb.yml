@@ -298,7 +298,7 @@ graphql:
   uri: /graphql
   db: restheart
   collection: gql-apps
-  # app definitions are cached. this sets the time to live
+  # app definitions are cached. this sets the time to live in msecs
   app-def-cache-ttl: 10_000
   # default-limit is used for queries that don't not specify a limit
   default-limit: 100
