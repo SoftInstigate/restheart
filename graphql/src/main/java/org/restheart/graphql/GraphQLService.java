@@ -91,6 +91,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         this.defaultLimit = argOrDefault(config, "default-limit", 100);
         this.maxLimit = argOrDefault(config, "max-limit", 1000);
 
+        AppDefinitionLoadingCache.setTTL(argOrDefault(config, "app-def-cache-ttl", 1_000));
+
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
