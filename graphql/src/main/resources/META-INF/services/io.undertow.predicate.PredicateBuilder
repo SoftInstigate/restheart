@@ -1,0 +1,2 @@
+org.restheart.graphql.predicates.DocContainsPredicate$Builder
+org.restheart.graphql.predicates.DocFieldEqPredicate$Builder

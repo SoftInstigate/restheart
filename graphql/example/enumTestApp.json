@@ -25,7 +25,7 @@
       "AllCourses":{
         "db": "restheart",
         "collection": "courses",
-        "find":{},
+        "find": { "external": null },
         "sort": { "_id": -1 }
       }
     }

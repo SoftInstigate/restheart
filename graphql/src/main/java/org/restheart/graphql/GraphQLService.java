@@ -117,7 +117,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             return;
         }
 
-        ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput()
+        var inputBuilder = ExecutionInput.newExecutionInput()
             .query(request.getQuery())
             .dataLoaderRegistry(dataLoaderRegistry);
 
@@ -126,7 +126,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
 
-        DataLoaderDispatcherInstrumentationOptions dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions.newOptions();
+        var dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions.newOptions();
 
         if (this.verbose) {
             dispatcherInstrumentationOptions = dispatcherInstrumentationOptions.includeStatistics(true);

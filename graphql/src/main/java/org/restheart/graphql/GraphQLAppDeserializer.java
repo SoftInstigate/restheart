@@ -27,6 +27,7 @@ import org.bson.BsonInvalidOperationException;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.utils.LambdaUtils;
+import org.restheart.exchange.Request;
 import org.restheart.graphql.models.*;
 import org.restheart.graphql.scalars.BsonScalars;
 import org.restheart.utils.BsonUtils;
@@ -34,14 +35,18 @@ import org.restheart.utils.BsonUtils;
 import graphql.language.EnumTypeDefinition;
 import graphql.language.InterfaceTypeDefinition;
 import graphql.language.ObjectTypeDefinition;
+import graphql.language.Type;
+import graphql.language.TypeName;
 import graphql.language.UnionTypeDefinition;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
+import io.undertow.predicate.PredicateParser;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +71,7 @@ public class GraphQLAppDeserializer {
         TypeDefinitionRegistry typeDefinitionRegistry;
         Map<String, TypeMapping> objectsMappings = null;
         Map<String, Map<String, Object>> enumsMappings = null;
+        Map<String, Map<String, io.undertow.predicate.Predicate>> unionMappings = null;
 
         if (appDef.containsKey("descriptor")) {
             if (appDef.get("descriptor").isDocument()) {
@@ -99,6 +105,7 @@ public class GraphQLAppDeserializer {
                 var mappings = appDef.getDocument("mappings");
                 objectsMappings = objectsMappings(BsonUtils.unescapeKeys(mappings).asDocument(), typeDefinitionRegistry);
                 enumsMappings = enumsMappings(mappings, typeDefinitionRegistry);
+                unionMappings = unionMappings(mappings, typeDefinitionRegistry);
             } else {
                 throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be a 'DOCUMENT' but was " + appDef.get("mappings").getBsonType());
             }
@@ -108,6 +115,7 @@ public class GraphQLAppDeserializer {
             return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema)
                 .objectsMappings(objectsMappings)
                 .enumsMappings(enumsMappings)
+                .unionMappings(unionMappings)
                 .build();
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
@@ -179,25 +187,6 @@ public class GraphQLAppDeserializer {
             .forEach(e -> ret.put(e.getKey(), enumValuesMappings(e.getKey(), (EnumTypeDefinition) e.getValue(), new BsonDocument())));
         // end - enums
 
-        // TODO to move to own method
-        // interfaces
-        doc.keySet().stream().filter(key -> isInterface(key, typeDefinitionRegistry)).forEach(enumKey -> {
-            LOGGER.debug("********************************************************************");
-            LOGGER.warn("NOT YET IMPLEMENTED");
-            LOGGER.debug("found interface in schema with key: {}", enumKey);
-            LOGGER.debug("with the following mappping: {}", BsonUtils.toJson(doc.get(enumKey)));
-            LOGGER.debug("********************************************************************");
-        });
-
-        // unions
-        doc.keySet().stream().filter(key -> isUnion(key, typeDefinitionRegistry)).forEach(enumKey -> {
-            LOGGER.debug("********************************************************************");
-            LOGGER.warn("NOT YET IMPLEMENTED");
-            LOGGER.debug("found union in schema with key: {}", enumKey);
-            LOGGER.debug("with the following mappping: {}", BsonUtils.toJson(doc.get(enumKey)));
-            LOGGER.debug("********************************************************************");
-        });
-
         return ret;
     }
 
@@ -220,6 +209,122 @@ public class GraphQLAppDeserializer {
             .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, doc.getDocument(type)))));
 
         return ret;
+    }
+
+    /**
+     *
+     * @param doc
+     * @param typeDefinitionRegistry
+     * @return the map key, typeResolver predicate
+     * @throws GraphQLIllegalAppDefinitionException
+     */
+    private static Map<String, Map<String, io.undertow.predicate.Predicate>> unionMappings(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
+        var ret = new HashMap<String, Map<String, io.undertow.predicate.Predicate>>();
+
+        // check that all union mappings are documents
+        var _wrongMappingNoDoc = doc.keySet().stream()
+            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> !doc.get(key).isDocument())
+            .findFirst();
+
+        if (_wrongMappingNoDoc.isPresent()) {
+            var wrongMapping = _wrongMappingNoDoc.get();
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union '" + wrongMapping + "': mappings must be of type 'DOCUMENT' but was " + doc.get(wrongMapping).getBsonType());
+        }
+
+        // check that all union mappings have a $typeResolver field
+        var _wrongMappingMissingTypeResolver = doc.keySet().stream()
+            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> !doc.get(key).asDocument().containsKey("_$typeResolver"))
+            .findFirst();
+
+        if (_wrongMappingMissingTypeResolver.isPresent()) {
+            var wrongMapping = _wrongMappingMissingTypeResolver.get();
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union '" + wrongMapping + "': it does not define $typeResolver");
+        }
+
+        // check that all union mappings have a valid $typeResolver predicate
+        var _wrongMappingTypeResolverNotDoc = doc.keySet().stream()
+            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> !doc.get(key).asDocument().get("_$typeResolver").isDocument())
+            .findFirst();
+
+        if (_wrongMappingTypeResolverNotDoc.isPresent()) {
+            var wrongMapping = _wrongMappingTypeResolverNotDoc.get();
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union '" + wrongMapping + "': the $typeResolver is not an Object");
+        }
+
+        // check the predicates of all unions
+        doc.keySet().stream()
+            .filter(type -> isUnion(type, typeDefinitionRegistry))
+            .flatMap(type -> doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream())
+            .forEach(e -> {
+                try {
+                    typeResolverPredicate(e.getValue());
+                } catch(Throwable t) {
+                    LambdaUtils.throwsSneakyException(t);
+                }
+            });
+
+        // check that the $typeResolver object, maps all the members of the union
+        typeDefinitionRegistry.types().entrySet().stream()
+            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+            .forEach(e -> {
+                var unionName = e.getKey();
+                var unionTypeDef = (UnionTypeDefinition) e.getValue();
+
+                var memberNames = unionTypeDef.getMemberTypes().stream()
+                    //Note that members of a union type need to be concrete object type
+                    .filter(type -> type instanceof TypeName)
+                    .map(type -> (TypeName) type)
+                    .map(m -> m.getName()).collect(Collectors.toList());
+
+                var mappedMemberNames = doc.get(unionName).asDocument().get("_$typeResolver").asDocument().keySet();
+
+                if (!mappedMemberNames.containsAll(memberNames)) {
+                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("$typeResolver for union " + unionName + " does not map all union members"));
+                }
+            });
+
+
+        // all checks done, create the ret
+        doc.keySet().stream()
+            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .forEach(type -> {
+                var trm = new HashMap<String, io.undertow.predicate.Predicate>();
+
+                doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream()
+                    .forEach(e -> {
+                        try {
+                            trm.put(e.getKey(), typeResolverPredicate(e.getValue()));
+                        } catch(Throwable t) {
+                            // should never happen, already checked
+                            LambdaUtils.throwsSneakyException(t);
+                        }
+                    });
+
+                ret.put(type, trm);
+            });
+
+        return ret;
+    }
+
+    private static io.undertow.predicate.Predicate typeResolverPredicate(BsonValue predicate) throws GraphQLIllegalAppDefinitionException {
+        if (predicate == null || predicate.isNull()) {
+            throw new GraphQLIllegalAppDefinitionException("null $typeResolver predicate");
+        }
+
+        if (!predicate.isString()) {
+            throw new GraphQLIllegalAppDefinitionException("$typeResolver predicate is not a String: " + BsonUtils.toJson(predicate));
+        }
+
+        var p = predicate.asString().getValue();
+
+        try {
+            return PredicateParser.parse(p, GraphQLAppDeserializer.class.getClassLoader());
+        } catch(Throwable t) {
+            throw new GraphQLIllegalAppDefinitionException("error parsing $typeResolver predicate: " + p, t);
+        }
     }
 
     private static HashMap<String, Object> enumValuesMappings(String enumKey, EnumTypeDefinition typeDef, BsonDocument enumDoc) {

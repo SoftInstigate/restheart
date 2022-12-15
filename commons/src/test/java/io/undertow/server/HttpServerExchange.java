@@ -52,6 +52,9 @@ public class HttpServerExchange extends AbstractAttachable {
     public HttpServerExchange() {
     }
 
+    public HttpServerExchange(ServerConnection conn) {
+    }
+
     public HttpServerExchange endExchange() {
         return this;
     }

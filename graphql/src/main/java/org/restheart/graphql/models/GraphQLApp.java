@@ -20,6 +20,9 @@
  */
 package org.restheart.graphql.models;
 
+import graphql.TypeResolutionEnvironment;
+import graphql.language.InterfaceTypeDefinition;
+import graphql.language.UnionTypeDefinition;
 import graphql.schema.*;
 import graphql.schema.idl.MapEnumValuesProvider;
 import graphql.schema.idl.RuntimeWiring;
@@ -27,7 +30,13 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
+import io.undertow.predicate.Predicate;
+import org.bson.BsonDocument;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.scalars.BsonScalars;
+import org.restheart.utils.BsonUtils;
+import org.restheart.utils.DocInExchange;
+import org.restheart.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -91,6 +100,7 @@ public class GraphQLApp {
         private String schema;
         private Map<String, TypeMapping> objectsMappings;
         private Map<String, Map<String, Object>> enumsMappings;
+        private Map<String, Map<String, Predicate>> unionMappings;
 
         private Builder() {
         }
@@ -107,6 +117,11 @@ public class GraphQLApp {
 
         public Builder objectsMappings(Map<String, TypeMapping> mappings) {
             this.objectsMappings = mappings;
+            return this;
+        }
+
+        public Builder unionMappings(Map<String, Map<String, Predicate>> mappings) {
+            this.unionMappings = mappings;
             return this;
         }
 
@@ -137,6 +152,40 @@ public class GraphQLApp {
 
                 var RWBuilder = RuntimeWiring.newRuntimeWiring();
                 var bsonScalars = BsonScalars.getBsonScalars();
+
+                // Unions
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
+                    LOGGER.debug("Union: {} -> {}", e.getKey(),  e.getValue());
+
+                    var unionMapping = this.unionMappings.get(e.getKey());
+
+                    LOGGER.debug("\tmapping: {}", unionMapping);
+
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
+                        @Override
+                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+                            var doc = (BsonDocument) env.getObject();
+                            var match = unionMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
+                                .findFirst();
+
+                            if (match.isPresent()) {
+                                return env.getSchema().getObjectType(match.get().getKey());
+                            } else {
+                                // LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("cannot resolve type for document with _id: " + BsonUtils.toJson(doc.get("_id"))));
+                                return null;
+                            }
+                        }
+                    }).build());
+                });
+
+                // Interfaces
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(enumKey -> {
+                    LOGGER.debug("********************************************************************");
+                    LOGGER.warn("NOT YET IMPLEMENTED");
+                    LOGGER.debug("found interface in schema with key: {}", enumKey);
+                    LOGGER.debug("********************************************************************");
+                });
 
                 // -------------------------------------- interface
                 // typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e -> LOGGER.debug("Interface: " + e.getKey() + " -> " + e.getValue()));
