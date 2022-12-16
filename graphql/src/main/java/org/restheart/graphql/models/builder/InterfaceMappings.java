@@ -110,8 +110,7 @@ class InterfacesMappings extends Mappings {
                 }
             });
 
-        // check that $typeResolver maps all the objects implementing the interface
-        // TODO not sure this works! to be tested
+        // check that $typeResolver maps all the objects implementing the interfaces
         typeDefinitionRegistry.types().entrySet().stream()
             .filter(e -> e.getValue() instanceof InterfaceTypeDefinition)
             .forEach(e -> {
