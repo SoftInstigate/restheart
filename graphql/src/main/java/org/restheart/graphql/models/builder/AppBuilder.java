@@ -38,13 +38,14 @@ public class AppBuilder extends Mappings {
         TypeDefinitionRegistry typeDefinitionRegistry;
         Map<String, TypeMapping> objectsMappings = null;
         Map<String, Map<String, Object>> enumsMappings = null;
-        Map<String, Map<String, io.undertow.predicate.Predicate>> unionMappings = null;
+        Map<String, Map<String, io.undertow.predicate.Predicate>> unionsMappings = null;
+        Map<String, Map<String, io.undertow.predicate.Predicate>> interfacesMappings = null;
 
         if (appDef.containsKey("descriptor")) {
             if (appDef.get("descriptor").isDocument()) {
                 descriptor = descriptor(appDef);
             } else {
-                throw new GraphQLIllegalAppDefinitionException("'Descriptor' field must be a 'DOCUMENT' but was " + appDef.get("descriptor").getBsonType());
+                throw new GraphQLIllegalAppDefinitionException("'Descriptor' field must be an Object but was " + appDef.get("descriptor").getBsonType());
             }
         }
 
@@ -52,7 +53,7 @@ public class AppBuilder extends Mappings {
             if (appDef.get("schema").isString()) {
                 schema = appDef.getString("schema").getValue();
             } else {
-                throw new GraphQLIllegalAppDefinitionException("'Schema' field must be a 'STRING' but was " + appDef.get("descriptor").getBsonType());
+                throw new GraphQLIllegalAppDefinitionException("'Schema' field must be a String but was " + appDef.get("descriptor").getBsonType());
             }
         }
 
@@ -72,9 +73,10 @@ public class AppBuilder extends Mappings {
                 var mappings = appDef.getDocument("mappings");
                 objectsMappings = ObjectsMappings.get(BsonUtils.unescapeKeys(mappings).asDocument(), typeDefinitionRegistry);
                 enumsMappings = EnumMappings.get(mappings, typeDefinitionRegistry);
-                unionMappings = UnionsMappings.get(mappings, typeDefinitionRegistry);
+                unionsMappings = UnionsMappings.get(mappings, typeDefinitionRegistry);
+                interfacesMappings = InterfacesMappings.get(mappings, typeDefinitionRegistry);
             } else {
-                throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be a 'DOCUMENT' but was " + appDef.get("mappings").getBsonType());
+                throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be an Object but was " + appDef.get("mappings").getBsonType());
             }
         }
 
@@ -82,7 +84,8 @@ public class AppBuilder extends Mappings {
             return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema)
                 .objectsMappings(objectsMappings)
                 .enumsMappings(enumsMappings)
-                .unionMappings(unionMappings)
+                .unionMappings(unionsMappings)
+                .interfacesMappings(interfacesMappings)
                 .build();
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);

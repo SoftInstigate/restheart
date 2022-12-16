@@ -43,7 +43,7 @@ public class GraphQLApp {
 
     private AppDescriptor descriptor;
     private String schema;
-    private Map<String, TypeMapping> mappings;
+    private Map<String, TypeMapping> objectsMappings;
     private GraphQLSchema executableSchema;
 
     public static Builder newBuilder() {
@@ -53,10 +53,10 @@ public class GraphQLApp {
     public GraphQLApp() {
     }
 
-    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> mappings, GraphQLSchema executableSchema) {
+    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> objectsMappings, GraphQLSchema executableSchema) {
         this.descriptor = descriptor;
         this.schema = schema;
-        this.mappings = mappings;
+        this.objectsMappings = objectsMappings;
         this.executableSchema = executableSchema;
     }
 
@@ -77,11 +77,11 @@ public class GraphQLApp {
     }
 
     public Map<String, TypeMapping> objectsMappings() {
-        return mappings;
+        return objectsMappings;
     }
 
-    public void setMappings(Map<String, TypeMapping> mappings) {
-        this.mappings = mappings;
+    public void setObjectsMappings(Map<String, TypeMapping> mappings) {
+        this.objectsMappings = mappings;
     }
 
     public GraphQLSchema getExecutableSchema() {
@@ -98,6 +98,7 @@ public class GraphQLApp {
         private Map<String, TypeMapping> objectsMappings;
         private Map<String, Map<String, Object>> enumsMappings;
         private Map<String, Map<String, Predicate>> unionMappings;
+        private Map<String, Map<String, Predicate>> interfacesMappings;
 
         private Builder() {
         }
@@ -127,6 +128,11 @@ public class GraphQLApp {
             return this;
         }
 
+        public Builder interfacesMappings(Map<String, Map<String, Predicate>> mappings) {
+            this.interfacesMappings = mappings;
+            return this;
+        }
+
         public GraphQLApp build() throws IllegalStateException {
             if (this.descriptor == null) {
                 throw new IllegalStateException("app descriptor must be not null!");
@@ -152,11 +158,7 @@ public class GraphQLApp {
 
                 // Unions
                 typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
-                    LOGGER.debug("Union: {} -> {}", e.getKey(),  e.getValue());
-
                     var unionMapping = this.unionMappings.get(e.getKey());
-
-                    LOGGER.debug("\tmapping: {}", unionMapping);
 
                     RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
                         @Override
@@ -176,31 +178,29 @@ public class GraphQLApp {
                 });
 
                 // Interfaces
-                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(enumKey -> {
-                    LOGGER.debug("********************************************************************");
-                    LOGGER.warn("NOT YET IMPLEMENTED");
-                    LOGGER.debug("found interface in schema with key: {}", enumKey);
-                    LOGGER.debug("********************************************************************");
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e ->{
+                    LOGGER.debug("Interface: {} -> {}", e.getKey(),  e.getValue());
+
+                    var interfaceMapping = this.interfacesMappings.get(e.getKey());
+
+                    LOGGER.debug("\tmapping: {}", interfaceMapping);
+
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
+                        @Override
+                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+                            var doc = (BsonDocument) env.getObject();
+                            var match = interfaceMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
+                                .findFirst();
+
+                            if (match.isPresent()) {
+                                return env.getSchema().getObjectType(match.get().getKey());
+                            } else {
+                                return null;
+                            }
+                        }
+                    }).build());
                 });
-
-                // -------------------------------------- interface
-                // typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e -> LOGGER.debug("Interface: " + e.getKey() + " -> " + e.getValue()));
-
-                // RWBuilder.type(TypeRuntimeWiring.newTypeWiring("IMovie").typeResolver(new TypeResolver() {
-                //     @Override
-                //     public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-                //         var doc = (BsonDocument) env.getObject();
-                //         // need to have a criteria (in the mapping) to undestand which GraphQL type doc is.
-                //         // maybe a json path expression that matches the BsonDocument
-                //         // see https://softinstigate.atlassian.net/browse/ESRH-74
-                //         if (doc.containsKey("plot")) {
-                //             return env.getSchema().getObjectType("Movie");
-                //         } else {
-                //             throw new IllegalArgumentException("Could not resolve IMovie interface actual type for " + doc.toJson());
-                //         }
-                //     }
-                // }).build());
-                // --------------------------------------
 
                 // Enums
                 this.enumsMappings.entrySet().forEach(em -> RWBuilder.type(TypeRuntimeWiring.newTypeWiring(em.getKey())

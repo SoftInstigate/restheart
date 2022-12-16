@@ -67,7 +67,7 @@ class ObjectsMappings extends Mappings {
 
         if (_wrongObjectMapping.isPresent()) {
             var wrongObjectMapping = _wrongObjectMapping.get();
-            throw new GraphQLIllegalAppDefinitionException("Error with mappings of type: '" + wrongObjectMapping + "'. Type mappings must be of type 'DOCUMENT' but was " + doc.get(wrongObjectMapping).getBsonType());
+            throw new GraphQLIllegalAppDefinitionException("Error with mappings of type: " + wrongObjectMapping + ". Type mappings must be of type Object but was " + doc.get(wrongObjectMapping).getBsonType());
         }
 
         doc.keySet().stream()
@@ -99,18 +99,18 @@ class ObjectsMappings extends Mappings {
                     // These are common to both Aggregation and Query mapping.
                     if (fieldMappingDoc.containsKey("db")) {
                         if (!fieldMappingDoc.get("db").isString()) {
-                            throwIllegalDefinitionException(field, type, "db", "'STRING'", fieldMappingDoc.get("db"));
+                            throwIllegalDefinitionException(field, type, "db", "String", fieldMappingDoc.get("db"));
                         }
                     } else {
-                        throw new NullPointerException("Error with field '" + field + "' of type '" + type + "'. 'db' could not be null.");
+                        throw new NullPointerException("Error with field " + field + " of type " + type + ". db could not be null.");
                     }
 
                     if (fieldMappingDoc.containsKey("collection")) {
                         if (!fieldMappingDoc.get("collection").isString()) {
-                            throwIllegalDefinitionException(field, type, "db", "'STRING'", fieldMappingDoc.get("collection"));
+                            throwIllegalDefinitionException(field, type, "db", "String", fieldMappingDoc.get("collection"));
                         }
                     } else {
-                        throw new NullPointerException("Error with field '" + field + "' of type '" + type + "'. 'collection' could not be null.");
+                        throw new NullPointerException("Error with field " + field + " of type " + type + ". collection could not be null.");
                     }
 
                     // if "stages" key is present -> Aggregation Mapping
@@ -147,7 +147,7 @@ class ObjectsMappings extends Mappings {
 
                                     aggregationBuilder.dataLoaderSettings(dataLoaderBuilder.build());
                                 } else {
-                                    throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT", fieldMappingDoc.get("dataLoader"));
+                                    throwIllegalDefinitionException(field, type, "dataLoader", "Object", fieldMappingDoc.get("dataLoader"));
                                 }
                             }
 
@@ -156,7 +156,7 @@ class ObjectsMappings extends Mappings {
                             break;
 
                         } else {
-                            throwIllegalDefinitionException(field, type, "db", "'ARRAY'", fieldMappingDoc.get("stages"));
+                            throwIllegalDefinitionException(field, type, "db", "ARRAY", fieldMappingDoc.get("stages"));
                         }
                     } else {
                         var queryMappingBuilder = QueryMapping.newBuilder();
@@ -170,7 +170,7 @@ class ObjectsMappings extends Mappings {
                             if (fieldMappingDoc.get("find").isDocument()) {
                                 queryMappingBuilder.find(fieldMappingDoc.getDocument("find"));
                             } else {
-                                throwIllegalDefinitionException(field, type, "find", "DOCUMENT", fieldMappingDoc.get("find"));
+                                throwIllegalDefinitionException(field, type, "find", "Object", fieldMappingDoc.get("find"));
                             }
                         }
 
@@ -178,7 +178,7 @@ class ObjectsMappings extends Mappings {
                             if (fieldMappingDoc.get("sort").isDocument()) {
                                 queryMappingBuilder.sort(fieldMappingDoc.getDocument("sort"));
                             } else {
-                                throwIllegalDefinitionException(field, type, "sort", "DOCUMENT", fieldMappingDoc.get("sort"));
+                                throwIllegalDefinitionException(field, type, "sort", "Object", fieldMappingDoc.get("sort"));
                             }
                         }
 
@@ -189,12 +189,12 @@ class ObjectsMappings extends Mappings {
                                 var ln = fieldMappingDoc.get("limit").asInt32();
 
                                 if (ln.getValue() > maxLimit) {
-                                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with field 'limit' of type '" + type + "', value cannot be grater than " + maxLimit));
+                                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with field 'limit' of type " + type + ", value cannot be grater than " + maxLimit));
                                 } else {
                                     queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
                                 }
                             } else {
-                                throwIllegalDefinitionException(field, type, "limit", "DOCUMENT", fieldMappingDoc.get("limit"));
+                                throwIllegalDefinitionException(field, type, "limit", "Object", fieldMappingDoc.get("limit"));
                             }
                         } else {
                             queryMappingBuilder.limit(defaultLimit);
@@ -206,7 +206,7 @@ class ObjectsMappings extends Mappings {
                             } else if (fieldMappingDoc.get("skip").isNumber()) {
                                 queryMappingBuilder.skip(fieldMappingDoc.getNumber("skip"));
                             } else {
-                                throwIllegalDefinitionException(field, type, "skip", "DOCUMENT", fieldMappingDoc.get("skip"));
+                                throwIllegalDefinitionException(field, type, "skip", "Object", fieldMappingDoc.get("skip"));
                             }
                         }
 
@@ -229,7 +229,7 @@ class ObjectsMappings extends Mappings {
 
                                 queryMappingBuilder.DataLoaderSettings(dataLoaderBuilder.build());
                             } else {
-                                throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT", fieldMappingDoc.get("dataLoader"));
+                                throwIllegalDefinitionException(field, type, "dataLoader", "Object", fieldMappingDoc.get("dataLoader"));
                             }
                         }
 
@@ -240,7 +240,7 @@ class ObjectsMappings extends Mappings {
 
                     break;
                 }
-                default -> LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with mappings of type: '" + type + "'. A field mapping must be of type 'STRING' but was " + fieldMapping.getBsonType()));
+                default -> LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with mappings of type: " + type + ". A field mapping must be of type String but was " + fieldMapping.getBsonType()));
             }
         }
 

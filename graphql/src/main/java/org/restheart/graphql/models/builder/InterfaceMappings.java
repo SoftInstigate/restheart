@@ -23,85 +23,84 @@ package org.restheart.graphql.models.builder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.bson.BsonDocument;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.utils.LambdaUtils;
-
+import graphql.language.InterfaceTypeDefinition;
+import graphql.language.ObjectTypeDefinition;
 import graphql.language.TypeName;
-import graphql.language.UnionTypeDefinition;
 import graphql.schema.idl.TypeDefinitionRegistry;
 
-class UnionsMappings extends Mappings {
+class InterfacesMappings extends Mappings {
     /**
      *
      * @param doc
      * @param typeDefinitionRegistry
-     * @return the unions mappings
+     * @return the interfaces typeResolvers
      * @throws GraphQLIllegalAppDefinitionException
      */
-     static Map<String, Map<String, io.undertow.predicate.Predicate>> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
+    static Map<String, Map<String, io.undertow.predicate.Predicate>> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
         var ret = new HashMap<String, Map<String, io.undertow.predicate.Predicate>>();
 
-        // check that all union have a mapping with a $typeResolver
-         // check that the $typeResolver object, maps all the members of the union
-        var _unionWithMissingMapping = typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+        // check that all interfaces have a mapping with a $typeResolver
+         // check that the $typeResolver object, maps all the members of the interface
+        var _interfaceWithMissingMapping = typeDefinitionRegistry.types().entrySet().stream()
+            .filter(e -> e.getValue() instanceof InterfaceTypeDefinition)
             .filter(e -> !doc.containsKey(e.getKey()) || !doc.get(e.getKey()).isDocument())
             .findFirst();
 
-        if (_unionWithMissingMapping.isPresent()) {
-            var unionWithMissingMapping = _unionWithMissingMapping.get().getKey();
-            throw new GraphQLIllegalAppDefinitionException("Missing mappings for union " + unionWithMissingMapping);
+        if (_interfaceWithMissingMapping.isPresent()) {
+            var interfaceWithMissingMapping = _interfaceWithMissingMapping.get().getKey();
+            throw new GraphQLIllegalAppDefinitionException("Missing mappings for interface " + interfaceWithMissingMapping);
         }
 
-        var _unionWithMissingTypeResolver = typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+        var _interfaceWithMissingTypeResolver = typeDefinitionRegistry.types().entrySet().stream()
+            .filter(e -> e.getValue() instanceof InterfaceTypeDefinition)
             .filter(e -> !doc.get(e.getKey()).asDocument().containsKey("_$typeResolver"))
             .findFirst();
 
-        if (_unionWithMissingTypeResolver.isPresent()) {
-            var unionWithMissingTypeResolver = _unionWithMissingTypeResolver.get().getKey();
-            throw new GraphQLIllegalAppDefinitionException("Missing $typeResolver for union " + unionWithMissingTypeResolver);
+        if (_interfaceWithMissingTypeResolver.isPresent()) {
+            var interfaceWithMissingTypeResolver = _interfaceWithMissingTypeResolver.get().getKey();
+            throw new GraphQLIllegalAppDefinitionException("Missing $typeResolver for interface " + interfaceWithMissingTypeResolver);
         }
 
 
-        // check that all union mappings are documents
+        // check that all interface mappings are documents
         var _wrongMappingNoDoc = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> isInterface(key, typeDefinitionRegistry))
             .filter(key -> !doc.get(key).isDocument())
             .findFirst();
 
         if (_wrongMappingNoDoc.isPresent()) {
             var wrongMapping = _wrongMappingNoDoc.get();
-            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union " + wrongMapping + ": mappings must be of type DOCUMENT but was " + doc.get(wrongMapping).getBsonType());
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for interface " + wrongMapping + ": mappings must be an Object but was " + doc.get(wrongMapping).getBsonType());
         }
 
-        // check that all union mappings have a $typeResolver field
+        // check that all interface mappings have a $typeResolver field
         var _wrongMappingMissingTypeResolver = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> isInterface(key, typeDefinitionRegistry))
             .filter(key -> !doc.get(key).asDocument().containsKey("_$typeResolver"))
             .findFirst();
 
         if (_wrongMappingMissingTypeResolver.isPresent()) {
             var wrongMapping = _wrongMappingMissingTypeResolver.get();
-            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union " + wrongMapping + ": it does not define $typeResolver");
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for interface " + wrongMapping + ": it does not define $typeResolver");
         }
 
-        // check that all union mappings have a valid $typeResolver predicate
+        // check that all interface mappings have a valid $typeResolver predicate
         var _wrongMappingTypeResolverNotDoc = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> isInterface(key, typeDefinitionRegistry))
             .filter(key -> !doc.get(key).asDocument().get("_$typeResolver").isDocument())
             .findFirst();
 
         if (_wrongMappingTypeResolverNotDoc.isPresent()) {
             var wrongMapping = _wrongMappingTypeResolverNotDoc.get();
-            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for union " + wrongMapping + ": the $typeResolver is not an Object");
+            throw new GraphQLIllegalAppDefinitionException("Wrong mappings for interface " + wrongMapping + ": the $typeResolver is not an Object");
         }
 
-        // check the predicates of all unions
+        // check the predicates of all interfaces
         doc.keySet().stream()
-            .filter(type -> isUnion(type, typeDefinitionRegistry))
+            .filter(type -> isInterface(type, typeDefinitionRegistry))
             .flatMap(type -> doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream())
             .forEach(e -> {
                 try {
@@ -111,30 +110,31 @@ class UnionsMappings extends Mappings {
                 }
             });
 
-        // check that the $typeResolver object, maps all the members of the union
+        // check that $typeResolver maps all the objects implementing the interface
+        // TODO not sure this works! to be tested
         typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+            .filter(e -> e.getValue() instanceof InterfaceTypeDefinition)
             .forEach(e -> {
-                var unionName = e.getKey();
-                var unionTypeDef = (UnionTypeDefinition) e.getValue();
+                var interfaceName = e.getKey();
 
-                var memberNames = unionTypeDef.getMemberTypes().stream()
-                    //Note that members of a union type need to be concrete object type
-                    .filter(type -> type instanceof TypeName)
-                    .map(type -> (TypeName) type)
-                    .map(m -> m.getName()).collect(Collectors.toList());
+                var objectsImplementing = typeDefinitionRegistry.types().entrySet().stream()
+                    .filter(t -> t.getValue() instanceof ObjectTypeDefinition)
+                    .map(t -> (ObjectTypeDefinition) t.getValue())
+                    .filter(t -> t.getImplements().stream().map(_t -> ((TypeName)_t).getName()).collect(Collectors.toList()).contains(interfaceName))
+                    .map(t -> t.getName())
+                    .collect(Collectors.toList());
+;
+                var mappedObjectsNames = doc.get(interfaceName).asDocument().get("_$typeResolver").asDocument().keySet();
 
-                var mappedMemberNames = doc.get(unionName).asDocument().get("_$typeResolver").asDocument().keySet();
-
-                if (!mappedMemberNames.containsAll(memberNames)) {
-                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("$typeResolver for union " + unionName + " does not map all union members"));
+                if (!mappedObjectsNames.containsAll(objectsImplementing)) {
+                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("$typeResolver for interface " + interfaceName + " does not map all objects implementing it"));
                 }
             });
 
 
         // all checks done, create the ret
         doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
+            .filter(key -> isInterface(key, typeDefinitionRegistry))
             .forEach(type -> {
                 var trm = new HashMap<String, io.undertow.predicate.Predicate>();
 

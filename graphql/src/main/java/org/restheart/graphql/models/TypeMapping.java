@@ -26,7 +26,6 @@ import graphql.schema.idl.TypeRuntimeWiring;
 import java.util.Map;
 
 public abstract class TypeMapping {
-
     protected final String typeName;
     protected final Map<String, FieldMapping> fieldMappingMap;
 
