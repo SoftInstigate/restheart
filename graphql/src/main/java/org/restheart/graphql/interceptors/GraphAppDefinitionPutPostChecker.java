@@ -24,9 +24,9 @@ import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
+import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
@@ -79,7 +79,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             var appDef = content.asDocument();
 
             try {
-                GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
+                AppBuilder.build(BsonUtils.unflatten(appDef).asDocument());
             } catch(GraphQLIllegalAppDefinitionException e) {
                 LOGGER.debug("Wrong GraphQL App definition", e);
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
@@ -89,7 +89,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
             for (var appDef: content.asArray()) {
                 try {
-                    GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
+                    AppBuilder.build(BsonUtils.unflatten(appDef).asDocument());
                 } catch(GraphQLIllegalAppDefinitionException e) {
                     LOGGER.debug("Wrong GraphQL App definition", e);
                     response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);

@@ -22,9 +22,10 @@ package org.restheart.graphql.cache;
 
 import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
-import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.*;
+import org.restheart.graphql.models.builder.AppBuilder;
+
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 
@@ -58,7 +59,7 @@ public class AppDefinitionLoader {
         var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
 
         if (appDefinition != null) {
-            return GraphQLAppDeserializer.fromBsonDocument(appDefinition);
+            return AppBuilder.build(appDefinition);
         } else {
             return null;
         }

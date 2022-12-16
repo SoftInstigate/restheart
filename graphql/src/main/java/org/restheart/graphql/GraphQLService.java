@@ -44,6 +44,7 @@ import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
+import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
@@ -97,8 +98,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
         AppDefinitionLoader.setup(db, collection, mclient);
-        GraphQLAppDeserializer.setDefaultLimit(this.defaultLimit);
-        GraphQLAppDeserializer.setMaxLimit(this.maxLimit);
+        AppBuilder.setDefaultLimit(this.defaultLimit);
+        AppBuilder.setMaxLimit(this.maxLimit);
         QueryMapping.setMaxLimit(this.maxLimit);
     }
 
