@@ -1,0 +1,62 @@
+[
+    {
+        "_id": {
+            "$oid": "638e119a2d91516248b4781a"
+        },
+        "level": 2,
+        "likes": "XXXX",
+        "status": "ACTIVE",
+        "title": "RESTHeart Core Plugins development"
+    },
+    {
+        "_id": {
+            "$oid": "638e11872d91516248b47817"
+        },
+        "level": 1,
+        "likes": {
+            "$oid": "638f67dc29ad17735b16e3d7"
+        },
+        "status": "ACTIVE",
+        "title": "RESTHeart Security"
+    },
+    {
+        "_id": {
+            "$oid": "638e117f2d91516248b47814"
+        },
+        "level": 1,
+        "likes": "XXXX",
+        "status": "ACTIVE",
+        "title": "RESTHeart REST API"
+    },
+    {
+        "_id": {
+            "$oid": "638e11742d91516248b47811"
+        },
+        "level": 0,
+        "likes": true,
+        "status": "ARCHIVED",
+        "title": "RESTHeart Overview"
+    },
+    {
+        "_id": {
+            "$oid": "638e11742d91516248b47812"
+        },
+        "level": 0,
+        "likes": true,
+        "status": "ACTIVE",
+        "title": "MongoDB for Administrators",
+        "external": true,
+        "deliveredBy": "MongoDB"
+    },
+    {
+        "_id": {
+            "$oid": "638e11742d91516248b47813"
+        },
+        "level": 0,
+        "likes": true,
+        "status": "ACTIVE",
+        "title": "MongoDB for Developers",
+        "external": true,
+        "deliveredBy": "MongoDB"
+    }
+]
