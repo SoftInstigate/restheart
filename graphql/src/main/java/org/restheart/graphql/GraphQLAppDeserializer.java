@@ -221,6 +221,29 @@ public class GraphQLAppDeserializer {
     private static Map<String, Map<String, io.undertow.predicate.Predicate>> unionMappings(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
         var ret = new HashMap<String, Map<String, io.undertow.predicate.Predicate>>();
 
+        // check that all union have a mapping with a $typeResolver
+         // check that the $typeResolver object, maps all the members of the union
+        var _unionWithMissingMapping = typeDefinitionRegistry.types().entrySet().stream()
+            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+            .filter(e -> !doc.containsKey(e.getKey()) || !doc.get(e.getKey()).isDocument())
+            .findFirst();
+
+        if (_unionWithMissingMapping.isPresent()) {
+            var unionWithMissingMapping = _unionWithMissingMapping.get().getKey();
+            throw new GraphQLIllegalAppDefinitionException("Missing mappings for union '" + unionWithMissingMapping);
+        }
+
+        var _unionWithMissingTypeResolver = typeDefinitionRegistry.types().entrySet().stream()
+            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+            .filter(e -> !doc.get(e.getKey()).asDocument().containsKey("_$typeResolver"))
+            .findFirst();
+
+        if (_unionWithMissingTypeResolver.isPresent()) {
+            var unionWithMissingTypeResolver = _unionWithMissingTypeResolver.get().getKey();
+            throw new GraphQLIllegalAppDefinitionException("Missing $typeResolver for union '" + unionWithMissingTypeResolver);
+        }
+
+
         // check that all union mappings are documents
         var _wrongMappingNoDoc = doc.keySet().stream()
             .filter(key -> isUnion(key, typeDefinitionRegistry))
