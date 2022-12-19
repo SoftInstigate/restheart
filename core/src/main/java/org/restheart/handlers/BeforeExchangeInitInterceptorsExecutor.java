@@ -81,6 +81,11 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        if (this.wildCardInterceptors.isEmpty()) {
+            next(exchange);
+            return;
+        }
+
         var request = UninitializedRequest.of(exchange);
         var response = UninitializedResponse.of(exchange);
 
