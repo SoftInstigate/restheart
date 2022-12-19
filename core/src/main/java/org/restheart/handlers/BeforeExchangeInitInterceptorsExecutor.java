@@ -22,12 +22,14 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.WildcardInterceptor;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
@@ -82,26 +84,38 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         var request = UninitializedRequest.of(exchange);
         var response = UninitializedResponse.of(exchange);
 
-        this.wildCardInterceptors.stream().filter(ri -> {
-            try {
-                return ri.resolve(request, response);
-            } catch (Exception e) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
+        var handlingPlugin = PluginUtils.handlingService(pluginsRegistry, exchange);
 
-                return false;
-            }})
-            .forEachOrdered(ri -> {
+        if (handlingPlugin instanceof Service<?,?> handlingService) {
+            // if the request is handled by a service set to not execute interceptors
+            // at this interceptPoint, skip interceptors execution
+            var vip = PluginUtils.dontIntercept(handlingService);
+            if (!Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals)) {
+                next(exchange);
+                return;
+            }
+        } else {
+            this.wildCardInterceptors.stream().filter(ri -> {
                 try {
-                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT);
-                    ri.handle(request, null);
-                } catch (Exception ex) {
-                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
+                    return ri.resolve(request, response);
+                } catch (Exception e) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
 
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(ex);
-                }
-            });
+                    return false;
+                }})
+                .forEachOrdered(ri -> {
+                    try {
+                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT);
+                        ri.handle(request, null);
+                    } catch (Exception ex) {
+                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
 
-        next(exchange);
+                        Exchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyException(ex);
+                    }
+                });
+
+            next(exchange);
+        }
     }
 }
