@@ -44,11 +44,13 @@ import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
+import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -91,12 +93,14 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         this.defaultLimit = argOrDefault(config, "default-limit", 100);
         this.maxLimit = argOrDefault(config, "max-limit", 1000);
 
+        AppDefinitionLoadingCache.setTTL(argOrDefault(config, "app-def-cache-ttl", 1_000));
+
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
         AppDefinitionLoader.setup(db, collection, mclient);
-        GraphQLAppDeserializer.setDefaultLimit(this.defaultLimit);
-        GraphQLAppDeserializer.setMaxLimit(this.maxLimit);
+        AppBuilder.setDefaultLimit(this.defaultLimit);
+        AppBuilder.setMaxLimit(this.maxLimit);
         QueryMapping.setMaxLimit(this.maxLimit);
     }
 
@@ -110,14 +114,14 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         var graphQLApp = gqlApp(appURI(request.getExchange()));
 
-        var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.getMappings());
+        var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.objectsMappings());
 
         if (request.getQuery() == null) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
             return;
         }
 
-        ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput()
+        var inputBuilder = ExecutionInput.newExecutionInput()
             .query(request.getQuery())
             .dataLoaderRegistry(dataLoaderRegistry);
 
@@ -126,7 +130,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
 
-        DataLoaderDispatcherInstrumentationOptions dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions.newOptions();
+        var dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions.newOptions();
 
         if (this.verbose) {
             dispatcherInstrumentationOptions = dispatcherInstrumentationOptions.includeStatistics(true);

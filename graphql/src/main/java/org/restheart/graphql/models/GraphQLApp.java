@@ -20,21 +20,30 @@
  */
 package org.restheart.graphql.models;
 
+import graphql.TypeResolutionEnvironment;
+import graphql.language.InterfaceTypeDefinition;
+import graphql.language.UnionTypeDefinition;
 import graphql.schema.*;
+import graphql.schema.idl.MapEnumValuesProvider;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
-import graphql.schema.idl.TypeDefinitionRegistry;
+import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
+import io.undertow.predicate.Predicate;
+import org.bson.BsonDocument;
+import org.restheart.graphql.predicates.DocInExchange;
 import org.restheart.graphql.scalars.BsonScalars;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class GraphQLApp {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLApp.class);
 
     private AppDescriptor descriptor;
     private String schema;
-    private Map<String, TypeMapping> mappings;
+    private Map<String, TypeMapping> objectsMappings;
     private GraphQLSchema executableSchema;
 
     public static Builder newBuilder() {
@@ -44,10 +53,10 @@ public class GraphQLApp {
     public GraphQLApp() {
     }
 
-    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> mappings, GraphQLSchema executableSchema) {
+    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> objectsMappings, GraphQLSchema executableSchema) {
         this.descriptor = descriptor;
         this.schema = schema;
-        this.mappings = mappings;
+        this.objectsMappings = objectsMappings;
         this.executableSchema = executableSchema;
     }
 
@@ -67,12 +76,12 @@ public class GraphQLApp {
         this.schema = schema;
     }
 
-    public Map<String, TypeMapping> getMappings() {
-        return mappings;
+    public Map<String, TypeMapping> objectsMappings() {
+        return objectsMappings;
     }
 
-    public void setMappings(Map<String, TypeMapping> mappings) {
-        this.mappings = mappings;
+    public void setObjectsMappings(Map<String, TypeMapping> mappings) {
+        this.objectsMappings = mappings;
     }
 
     public GraphQLSchema getExecutableSchema() {
@@ -86,7 +95,10 @@ public class GraphQLApp {
     public static class Builder {
         private AppDescriptor descriptor;
         private String schema;
-        private Map<String, TypeMapping> mappings;
+        private Map<String, TypeMapping> objectsMappings;
+        private Map<String, Map<String, Object>> enumsMappings;
+        private Map<String, Map<String, Predicate>> unionMappings;
+        private Map<String, Map<String, Predicate>> interfacesMappings;
 
         private Builder() {
         }
@@ -101,13 +113,27 @@ public class GraphQLApp {
             return this;
         }
 
-        public Builder mappings(Map<String, TypeMapping> mappings) {
-            this.mappings = mappings;
+        public Builder objectsMappings(Map<String, TypeMapping> mappings) {
+            this.objectsMappings = mappings;
+            return this;
+        }
+
+        public Builder unionMappings(Map<String, Map<String, Predicate>> mappings) {
+            this.unionMappings = mappings;
+            return this;
+        }
+
+        public Builder enumsMappings(Map<String, Map<String, Object>> mappings) {
+            this.enumsMappings = mappings;
+            return this;
+        }
+
+        public Builder interfacesMappings(Map<String, Map<String, Predicate>> mappings) {
+            this.interfacesMappings = mappings;
             return this;
         }
 
         public GraphQLApp build() throws IllegalStateException {
-
             if (this.descriptor == null) {
                 throw new IllegalStateException("app descriptor must be not null!");
             }
@@ -116,35 +142,80 @@ public class GraphQLApp {
                 throw new IllegalStateException("app schema must be not null");
             }
 
-            if (this.mappings == null) {
+            if (this.objectsMappings == null) {
                 throw new IllegalStateException("app mappings must be not null");
-            } else if (!this.mappings.containsKey("Query")) {
+            } else if (!this.objectsMappings.containsKey("Query")) {
                 throw new IllegalStateException("mappings for type Query are mandatory");
             }
 
-            String schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
+            var schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
 
             try {
+                var typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);
 
-                TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);
+                var RWBuilder = RuntimeWiring.newRuntimeWiring();
+                var bsonScalars = BsonScalars.getBsonScalars();
 
-                RuntimeWiring.Builder RWBuilder = RuntimeWiring.newRuntimeWiring();
-                Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
+                // Unions
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
+                    var unionMapping = this.unionMappings.get(e.getKey());
 
-                bsonScalars.forEach(((s, graphQLScalarType) -> {
-                    RWBuilder.scalar(graphQLScalarType);
-                }));
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
+                        @Override
+                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+                            var doc = (BsonDocument) env.getObject();
+                            var match = unionMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
+                                .findFirst();
 
-                this.mappings.forEach(((type, typeMapping) -> RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
+                            if (match.isPresent()) {
+                                return env.getSchema().getObjectType(match.get().getKey());
+                            } else {
+                                return null;
+                            }
+                        }
+                    }).build());
+                });
 
-                RuntimeWiring runtimeWiring = RWBuilder.build();
+                // Interfaces
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e ->{
+                    LOGGER.debug("Interface: {} -> {}", e.getKey(),  e.getValue());
 
-                SchemaGenerator schemaGenerator = new SchemaGenerator();
+                    var interfaceMapping = this.interfacesMappings.get(e.getKey());
 
-                GraphQLSchema execSchema = schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
+                    LOGGER.debug("\tmapping: {}", interfaceMapping);
 
-                return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
+                        @Override
+                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
+                            var doc = (BsonDocument) env.getObject();
+                            var match = interfaceMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
+                                .findFirst();
 
+                            if (match.isPresent()) {
+                                return env.getSchema().getObjectType(match.get().getKey());
+                            } else {
+                                return null;
+                            }
+                        }
+                    }).build());
+                });
+
+                // Enums
+                this.enumsMappings.entrySet().forEach(em -> RWBuilder.type(TypeRuntimeWiring.newTypeWiring(em.getKey())
+                    .enumValues(new MapEnumValuesProvider(em.getValue()))));
+
+                bsonScalars.forEach(((s, graphQLScalarType) -> RWBuilder.scalar(graphQLScalarType)));
+                this.objectsMappings.forEach(((type, typeMapping) -> RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
+
+                var runtimeWiring = RWBuilder.build();
+
+                var schemaGenerator = new SchemaGenerator();
+
+                var execSchema = schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
+
+                return new GraphQLApp(this.descriptor, this.schema, this.objectsMappings, execSchema);
             } catch (SchemaProblem schemaProblem) {
                 var errorMSg = schemaProblem.getMessage() != null
                     ? "Invalid GraphQL schema: " + schemaProblem.getMessage()

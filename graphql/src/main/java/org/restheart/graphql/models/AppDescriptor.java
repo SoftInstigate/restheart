@@ -21,7 +21,6 @@
 package org.restheart.graphql.models;
 
 public class AppDescriptor {
-
     private String appName;
     private Boolean enabled;
     private String description;
@@ -34,10 +33,9 @@ public class AppDescriptor {
         this.uri = uri;
     }
 
-    public static Builder newBuilder(){
+    public static Builder newBuilder() {
         return new Builder();
     }
-
 
     public String getAppName() {
         return appName;
@@ -71,40 +69,38 @@ public class AppDescriptor {
         this.uri = uri;
     }
 
-
-    public static class Builder{
+    public static class Builder {
 
         private String appName;
         private Boolean enabled;
         private String description;
         private String uri;
 
-        private Builder(){ }
+        private Builder() {
+        }
 
-        public Builder appName(String appName){
+        public Builder appName(String appName) {
             this.appName = appName;
             return this;
         }
 
-
-        public Builder enabled(Boolean enabled){
+        public Builder enabled(Boolean enabled) {
             this.enabled = enabled;
             return this;
         }
 
-        public Builder description(String description){
+        public Builder description(String description) {
             this.description = description;
             return this;
         }
 
-        public Builder uri(String uri){
+        public Builder uri(String uri) {
             this.uri = uri;
             return this;
         }
 
-        public AppDescriptor build(){
-
-            if (appName == null && uri == null){
+        public AppDescriptor build() {
+            if (appName == null && uri == null) {
                 throw new IllegalStateException("At least one of 'name' and 'uri' must be not null!");
             }
 

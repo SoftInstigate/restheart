@@ -31,14 +31,14 @@ import org.restheart.utils.LambdaUtils;
 public class AppDefinitionLoadingCache {
 
     private static AppDefinitionLoadingCache instance = null;
-    private static long ttl= 100_000;
+    private static long TTL = 100_000;
     private static final long MAX_CACHE_SIZE = 1_000;
 
     private LoadingCache<String, GraphQLApp> appLoadingCache;
 
     private AppDefinitionLoadingCache(){
         this.appLoadingCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
-            Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, key -> {
+            Cache.EXPIRE_POLICY.AFTER_WRITE, TTL, key -> {
                 try {
                     return AppDefinitionLoader.loadAppDefinition(key);
                 } catch (GraphQLIllegalAppDefinitionException e) {
@@ -46,6 +46,10 @@ public class AppDefinitionLoadingCache {
                     return null;
                 }
             });
+    }
+
+    public static void setTTL(long ttl) {
+        TTL = ttl;
     }
 
     public static AppDefinitionLoadingCache getInstance(){
