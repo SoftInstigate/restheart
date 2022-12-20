@@ -10,8 +10,8 @@
     "mappings":{
       "Course": {
           "$typeResolver": {
-            "InternalCourse": "not doc-contains(external)",
-            "ExternalCourse": "doc-field-eq(field=external, value=true)"
+            "InternalCourse": "not field-exists(sub.external)",
+            "ExternalCourse": "field-eq(field=sub.external, value=true)"
         }
       },
       "Level": {

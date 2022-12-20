@@ -21,6 +21,9 @@
 package org.restheart.utils;
 
 import com.google.common.collect.Sets;
+import com.google.gson.JsonElement;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClientSettings;
 
 import java.time.Instant;
@@ -256,6 +259,22 @@ public class BsonUtils {
             throw new IllegalArgumentException("wrong json. it must be an object");
         } else {
             return _getPropsFromPath(root, pathTokens, pathTokens.length);
+        }
+    }
+
+    public static Optional<BsonValue> get(BsonDocument doc, String jsonPath) {
+        var raw = toJson(doc);
+
+        try {
+            JsonElement val = JsonPath.read(raw, jsonPath);
+
+            if (val == null) {
+                return Optional.empty();
+            } else {
+                return Optional.of(parse(val.toString()));
+            }
+        } catch(PathNotFoundException pnfe) {
+            return Optional.empty();
         }
     }
 

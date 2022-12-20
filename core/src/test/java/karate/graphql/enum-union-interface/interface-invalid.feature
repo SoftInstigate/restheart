@@ -42,7 +42,7 @@ Scenario: incomplete mapping should fail
         "mappings": {
             "Course": {
                 "$typeResolver": {
-                    "InternalCourse": "not doc-contains(external)"
+                    "InternalCourse": "not field-exists(external)"
                 }
             }
         }
@@ -62,8 +62,8 @@ Scenario: mapping with invalid predicate
         "mappings": {
             "Course": {
                 "$typeResolver": {
-                    "InternalCourse": "foo(bar) and not doc-contains(external)",
-                    "ExternalCourse": "doc-field-eq(field=external, value=true)"
+                    "InternalCourse": "foo(bar) and not field-exists(sub.external)",
+                    "ExternalCourse": "field-eq(field=external, value=true)"
                 }
             }
         }

@@ -24,36 +24,37 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.bson.BsonDocument;
+import org.restheart.utils.BsonUtils;
+
 import com.google.common.collect.Sets;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
-import io.undertow.server.HttpServerExchange;
 
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class DocContainsPredicate implements Predicate, GQLPredicate {
+public class FieldExists implements PredicateOverDocument {
     private final Set<String> fields;
 
-    public DocContainsPredicate(String[] fields) {
+    public FieldExists(String[] fields) {
         if (fields == null || fields.length < 1) {
-            throw new IllegalArgumentException("doc-contains predicate must specify a list of fields");
+            throw new IllegalArgumentException("field-exists predicate must specify a list of fields");
         }
 
         this.fields = Sets.newHashSet(fields);
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        var doc = DocInExchange.doc(exchange);
-        return doc != null && this.fields.stream().allMatch(doc.keySet()::contains);
+    public boolean resolve(BsonDocument doc) {
+        return this.fields.stream().allMatch(f -> BsonUtils.get(doc, f).isPresent());
     }
 
     public static class Builder implements PredicateBuilder {
         @Override
         public String name() {
-            return "doc-contains";
+            return "field-exists";
         }
 
         @Override
@@ -73,7 +74,7 @@ public class DocContainsPredicate implements Predicate, GQLPredicate {
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new DocContainsPredicate((String[]) config.get("fields"));
+            return new FieldExists((String[]) config.get("fields"));
         }
     }
 }

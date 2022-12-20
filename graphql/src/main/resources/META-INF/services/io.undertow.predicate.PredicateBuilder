@@ -1,2 +1,2 @@
-org.restheart.graphql.predicates.DocContainsPredicate$Builder
-org.restheart.graphql.predicates.DocFieldEqPredicate$Builder
+org.restheart.graphql.predicates.FieldEqPredicate$Builder
+org.restheart.graphql.predicates.FieldExists$Builder

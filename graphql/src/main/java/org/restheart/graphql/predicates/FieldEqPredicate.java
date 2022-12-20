@@ -24,23 +24,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
-import io.undertow.server.HttpServerExchange;
 
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class DocFieldEqPredicate implements Predicate, GQLPredicate {
+public class FieldEqPredicate implements PredicateOverDocument {
     private final String key;
     private final BsonValue value;
 
-    public DocFieldEqPredicate(String key, String value) {
+    public FieldEqPredicate(String key, String value) {
         if (key == null || value == null) {
-            throw new IllegalArgumentException("doc-field-eq predicate must specify the field and the value");
+            throw new IllegalArgumentException("field-eq predicate must specify the field and the value");
         }
 
         this.key = key;
@@ -48,16 +49,20 @@ public class DocFieldEqPredicate implements Predicate, GQLPredicate {
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        var doc = DocInExchange.doc(exchange);
-        //TODO allow dot notation
-        return doc != null && doc.containsKey(key) && doc.get(key).equals(this.value);
+    public boolean resolve(BsonDocument doc) {
+        var _v = BsonUtils.get(doc, key);
+
+        if (_v.isPresent()) {
+            return this.value.equals(_v.get());
+        } else {
+            return false;
+        }
     }
 
     public static class Builder implements PredicateBuilder {
         @Override
         public String name() {
-            return "doc-field-eq";
+            return "field-eq";
         }
 
         @Override
@@ -78,12 +83,12 @@ public class DocFieldEqPredicate implements Predicate, GQLPredicate {
 
         @Override
         public String defaultParameter() {
-            return "key";
+            return "field";
         }
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new DocFieldEqPredicate((String) config.get("field"), (String) config.get("value"));
+            return new FieldEqPredicate((String) config.get("field"), (String) config.get("value"));
         }
     }
 }

@@ -45,7 +45,7 @@
         "likes": true,
         "status": "ACTIVE",
         "title": "MongoDB for Administrators",
-        "external": true,
+        "sub": { "external": true },
         "deliveredBy": "MongoDB"
     },
     {
@@ -56,7 +56,7 @@
         "likes": true,
         "status": "ACTIVE",
         "title": "MongoDB for Developers",
-        "external": true,
+        "sub": { "external": true },
         "deliveredBy": "MongoDB"
     }
 ]
