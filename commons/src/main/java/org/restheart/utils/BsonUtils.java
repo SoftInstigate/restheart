@@ -21,11 +21,7 @@
 package org.restheart.utils;
 
 import com.google.common.collect.Sets;
-import com.google.gson.JsonElement;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClientSettings;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.apache.commons.jxpath.JXPathContext;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
@@ -262,18 +260,31 @@ public class BsonUtils {
         }
     }
 
-    public static Optional<BsonValue> get(BsonDocument doc, String jsonPath) {
-        var raw = toJson(doc);
+    /**
+     *
+     * @param doc
+     * @param path the path of the field, can use the dot notation
+     * @return
+     */
+    public static Optional<BsonValue> get(BsonDocument doc, String path) {
+        final String xpath;
+        if (path == null) {
+            return Optional.empty();
+        } else if (path.startsWith("$")) {
+            xpath = path.replaceFirst("\\$", "").replaceAll("\\.", "/");
+        } else if (path.contains(".")) {
+            xpath = "/".concat(path.replaceAll("\\.", "/"));
+        } else if (doc.containsKey(path)) {
+            return Optional.of(doc.get(path));
+        } else {
+            return Optional.empty();
+        }
+
+        var ctx = JXPathContext.newContext(doc);
 
         try {
-            JsonElement val = JsonPath.read(raw, jsonPath);
-
-            if (val == null) {
-                return Optional.empty();
-            } else {
-                return Optional.of(parse(val.toString()));
-            }
-        } catch(PathNotFoundException pnfe) {
+            return Optional.of((BsonValue) ctx.getValue(xpath));
+        } catch(Throwable t) {
             return Optional.empty();
         }
     }

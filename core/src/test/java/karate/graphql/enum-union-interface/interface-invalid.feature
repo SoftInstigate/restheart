@@ -74,4 +74,4 @@ Scenario: mapping with invalid predicate
     And request content
     When method PATCH
     Then status 400
-    And match $.message == "Wrong GraphQL App definition: error parsing $typeResolver predicate: foo(bar) and not doc-contains(external)"
+    And match $.message == "Wrong GraphQL App definition: error parsing $typeResolver predicate: foo(bar) and not field-exists(sub.external)"

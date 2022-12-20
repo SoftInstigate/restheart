@@ -29,6 +29,7 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
+import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -45,6 +46,9 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 
@@ -963,5 +967,40 @@ public class BsonUtilsTest {
 
         var empty2 = "      ";
         Assert.assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty2));
+    }
+
+    @Test
+    public void testXPathGet() {
+        var doc = BsonUtils.parse("""
+        {
+            "int": 1,
+            "null": null,
+            "string": "string",
+            "boolean": false,
+            "doc": {
+                "foo": 1,
+                "bar": "x"
+            },
+            "array": [
+                { idx: 0 }, { idx: 1 }
+            ]
+        }
+        """).asDocument();
+
+        assertEquals(BsonUtils.get(doc, "null").get(), BsonNull.VALUE);
+
+        assertEquals(BsonUtils.get(doc, "int").get(), new BsonInt32(1));
+        assertEquals(BsonUtils.get(doc, "string").get(), new BsonString("string"));
+        assertEquals(BsonUtils.get(doc, "boolean").get(), BsonBoolean.FALSE);
+        assertEquals(BsonUtils.get(doc, "doc").get(), document().put("foo", 1).put("bar", "x").get());
+        assertEquals(BsonUtils.get(doc, "doc.foo").get(), new BsonInt32(1));
+        assertEquals(BsonUtils.get(doc, "doc.bar").get(), new BsonString("x"));
+        assertEquals(BsonUtils.get(doc, "array").get(), array().add(
+            document().put("idx", 0),
+            document().put("idx", 1)).get());
+        assertEquals(BsonUtils.get(doc, "array[1].idx").get(), new BsonInt32(0));
+        assertEquals(BsonUtils.get(doc, "array[2].idx").get(), new BsonInt32(1));
+        
+        assertFalse("", BsonUtils.get(doc, "not.exists").isPresent());
     }
 }
