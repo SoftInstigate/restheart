@@ -29,7 +29,6 @@ import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
-import org.restheart.plugins.Service;
 import org.restheart.plugins.WildcardInterceptor;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
@@ -91,10 +90,10 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
         var handlingPlugin = PluginUtils.handlingService(pluginsRegistry, exchange);
 
-        if (handlingPlugin instanceof Service<?,?> handlingService) {
-            // if the request is handled by a service set to not execute interceptors
+        if (handlingPlugin != null) {
+            // if the request is handled by a service set to not execute intrceptors
             // at this interceptPoint, skip interceptors execution
-            var vip = PluginUtils.dontIntercept(handlingService);
+            var vip = PluginUtils.dontIntercept(handlingPlugin);
             if (!Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals)) {
                 next(exchange);
                 return;
