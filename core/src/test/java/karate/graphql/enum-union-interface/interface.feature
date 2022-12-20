@@ -1,4 +1,4 @@
-Feature: Test interface for GraphQL
+Feature: Test GraphQL interface
 
 Background:
     * url graphQLBaseURL

@@ -1,4 +1,4 @@
-Feature: Test enum for GraphQL
+Feature: Test GraphQL enum
 
 Background:
     * url graphQLBaseURL

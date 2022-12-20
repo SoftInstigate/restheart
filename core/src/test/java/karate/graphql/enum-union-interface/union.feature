@@ -1,4 +1,4 @@
-Feature: Test union for GraphQL
+Feature: Test GraphQL union
 
 Background:
     * url graphQLBaseURL
