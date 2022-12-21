@@ -51,8 +51,8 @@ public class PredicatesTest {
 
     @Test
     public void testDocFieldEq() {
-        var fooEqOne = "field-eq(field=$.sub.foo, value=1)";
-        var barEqObj = "field-eq(field=$.bar, value='{\"a\":1}')";
+        var fooEqOne = "field-eq(field=sub.foo, value=1)";
+        var barEqObj = "field-eq(field=bar, value='{\"a\":1}')";
 
         var fooDoc = document().put("sub", document().put("foo", 1)).get();
         var barDoc = document().put("bar", document().put("a", 1)).get();

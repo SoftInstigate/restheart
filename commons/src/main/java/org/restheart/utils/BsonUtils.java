@@ -267,17 +267,12 @@ public class BsonUtils {
      * @return
      */
     public static Optional<BsonValue> get(BsonDocument doc, String path) {
-        final String xpath;
+        final String xpath = dotNotationToXPath(path);
+
         if (path == null) {
             return Optional.empty();
-        } else if (path.startsWith("$")) {
-            xpath = path.replaceFirst("\\$", "").replaceAll("\\.", "/");
-        } else if (path.contains(".")) {
-            xpath = "/".concat(path.replaceAll("\\.", "/"));
         } else if (doc.containsKey(path)) {
             return Optional.of(doc.get(path));
-        } else {
-            return Optional.empty();
         }
 
         var ctx = JXPathContext.newContext(doc);
@@ -286,6 +281,46 @@ public class BsonUtils {
             return Optional.of((BsonValue) ctx.getValue(xpath));
         } catch(Throwable t) {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * converts the dot notation syntax to xpath
+     * a.b.c -> /a/b/c
+     * a[1].c -> /a[2]/c (xpath indexes are 1-based!)
+     * @param xpath
+     * @return
+     */
+    private static String dotNotationToXPath(String dn) {
+        if (dn == null) {
+            return null;
+        }
+
+        // replace all dots (.) with / excluding dots inside brachetes as in ['a.b']
+        dn = dn.replaceAll("\\.(?!.*'\\])", "/");
+
+        // replace all [' and '] with /
+        dn = dn.replaceAll("\\['", "/");
+        dn = dn.replaceAll("'\\]", "/");
+        // remove tailing /
+        if (dn.endsWith("/")) {
+            dn = dn.substring(0, dn.length() - 1);
+        }
+
+        // replace all array indexes [n] with[n+1]
+        dn = Pattern.compile("\\[(?<idx>\\d*)\\]").matcher(dn)
+            .replaceAll(mr ->inc(mr.group()));
+
+        // // add leading /
+        return "/".concat(dn);
+    }
+
+    private static String inc(String n) {
+        var _n = n.replaceAll("\\[", "").replaceAll("\\]", "");
+        try {
+            return "[" + (Integer.parseInt(_n) + 1) + "]";
+        } catch(NumberFormatException nfe) {
+            return n;
         }
     }
 

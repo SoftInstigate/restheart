@@ -987,20 +987,19 @@ public class BsonUtilsTest {
         }
         """).asDocument();
 
-        assertEquals(BsonUtils.get(doc, "null").get(), BsonNull.VALUE);
+        assertEquals(BsonNull.VALUE, BsonUtils.get(doc, "null").get());
 
-        assertEquals(BsonUtils.get(doc, "int").get(), new BsonInt32(1));
-        assertEquals(BsonUtils.get(doc, "string").get(), new BsonString("string"));
-        assertEquals(BsonUtils.get(doc, "boolean").get(), BsonBoolean.FALSE);
-        assertEquals(BsonUtils.get(doc, "doc").get(), document().put("foo", 1).put("bar", "x").get());
-        assertEquals(BsonUtils.get(doc, "doc.foo").get(), new BsonInt32(1));
-        assertEquals(BsonUtils.get(doc, "doc.bar").get(), new BsonString("x"));
-        assertEquals(BsonUtils.get(doc, "array").get(), array().add(
-            document().put("idx", 0),
-            document().put("idx", 1)).get());
-        assertEquals(BsonUtils.get(doc, "array[1].idx").get(), new BsonInt32(0));
-        assertEquals(BsonUtils.get(doc, "array[2].idx").get(), new BsonInt32(1));
-        
-        assertFalse("", BsonUtils.get(doc, "not.exists").isPresent());
+        assertEquals(new BsonInt32(1), BsonUtils.get(doc, "int").get());
+        assertEquals(new BsonString("string"), BsonUtils.get(doc, "string").get());
+        assertEquals(BsonBoolean.FALSE, BsonUtils.get(doc, "boolean").get());
+        assertEquals(document().put("foo", 1).put("bar", "x").get(), BsonUtils.get(doc, "doc").get());
+        assertEquals(new BsonInt32(1), BsonUtils.get(doc, "doc.foo").get());
+        assertEquals(new BsonInt32(1), BsonUtils.get(doc, "doc['foo']").get());
+        assertEquals(new BsonString("x"), BsonUtils.get(doc, "doc.bar").get());
+        assertEquals(array().add(document().put("idx", 0), document().put("idx", 1)).get(), BsonUtils.get(doc, "array").get());
+        assertEquals(new BsonInt32(0), BsonUtils.get(doc, "array[0].idx").get());
+        assertEquals(new BsonInt32(1), BsonUtils.get(doc, "array[1].idx").get());
+        assertFalse(BsonUtils.get(doc, "array[100].idx").isPresent());
+        assertFalse(BsonUtils.get(doc, "not.exists").isPresent());
     }
 }
