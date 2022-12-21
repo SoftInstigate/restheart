@@ -50,7 +50,6 @@ import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;

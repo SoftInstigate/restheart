@@ -23,9 +23,9 @@
     },
     "Query": {
       "AllCourses":{
-        "db": "restheart",
+        "db": "test-graphql",
         "collection": "courses",
-        "find": { "external": null },
+        "find": { "sub.external": null },
         "sort": { "_id": -1 }
       }
     }

@@ -210,6 +210,7 @@ public abstract class AbstactIT {
                         .queryString("db", db)
                         .asJson();
 
+                LOG.debug("deleted test db {}", db);
                 LOG.debug("invalidating cache for {}, response {}", db, resp.getStatus());
             } catch (UnirestException ex) {
                 LOG.warn("error invalidating cache for delete db {}: {}", db, ex.getMessage());

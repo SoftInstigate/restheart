@@ -16,8 +16,8 @@ Background:
 
     * def admin = basic({username: 'admin', password: 'secret'})
 
-    * def setupData = callonce read('setup-test-data.feature')
-    * def setupData = callonce read('setup-interface.feature')
+    * callonce read('setup-test-data.feature')
+    * callonce read('setup-interface.feature')
 
 Scenario: query involving interface should succeed
 

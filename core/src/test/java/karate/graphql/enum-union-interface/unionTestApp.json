@@ -21,19 +21,19 @@
       },
       "Query": {
         "AllInteranalCourses":{
-          "db": "restheart",
+          "db": "test-graphql",
           "collection": "courses",
-          "find": { "external": null },
+          "find": { "sub" : { "external": null } },
           "sort": { "_id": -1 }
         },
         "AllExternalCourses":{
-          "db": "restheart",
+          "db": "test-graphql",
           "collection": "courses",
-          "find": { "external": true },
+          "find": { "sub": { "external": true } },
           "sort": { "_id": -1 }
         },
         "AllCourses":{
-          "db": "restheart",
+          "db": "test-graphql",
           "collection": "courses",
           "find": { },
           "sort": { "_id": -1 }

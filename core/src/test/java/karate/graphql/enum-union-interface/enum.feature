@@ -16,8 +16,8 @@ Background:
 
     * def admin = basic({username: 'admin', password: 'secret'})
 
-    * def setupData = callonce read('setup-test-data.feature')
-    * def setupData = callonce read('setup-enum.feature')
+    * callonce read('setup-test-data.feature')
+    * callonce read('setup-enum.feature')
 
 Scenario: query involving enum should succeed
 
