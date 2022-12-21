@@ -33,4 +33,5 @@ Scenario: Create test data
     * header Authorization = admin
     Given path '/test-graphql/courses'
     And request read('test-data.json')
+    And param wm = "upsert"
     When method POST
