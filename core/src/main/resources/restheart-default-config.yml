@@ -363,7 +363,7 @@ bruteForceAttackGuard:
 # - log-to-file: true => log messages to a file (default value: false)
 # - log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # - packages: only messages form these packages are logged, e.g. [ "org.restheart", "com.restheart", "io.undertow", "org.mongodb" ]
-# - full-stacktrace: true to log the full stackstrace of exceptions
+# - full-stacktrace: true to log the full stacktrace of exceptions
 # - requests-log-mode: 0 => no log, 1 => light log, 2 => detailed dump (use 2 only for development, it can log credentials)
 # - tracing-headers (default, empty = no tracing): add tracing HTTP headers (Use with %X{header-name} in logback.xml); see https://restheart.org/docs/auditing
 
