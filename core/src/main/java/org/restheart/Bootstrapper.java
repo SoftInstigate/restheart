@@ -138,7 +138,6 @@ import static org.restheart.utils.BootstrapperUtils.*;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public final class Bootstrapper {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
 
     private static boolean IS_FORKED;

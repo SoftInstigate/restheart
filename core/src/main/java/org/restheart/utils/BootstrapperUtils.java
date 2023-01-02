@@ -113,16 +113,17 @@ public class BootstrapperUtils {
      * @param d
      */
     public static void initLogging(Configuration configuration, final RESTHeartDaemon d, boolean isForked) {
-        LoggingInitializer.setLogLevel(configuration.logging().packages(), configuration.getLogLevel());
+        LoggingInitializer.setLogLevel(configuration.logging().packages(), configuration.logging().logLevel());
+        LoggingInitializer.applyFullstacktraceOption(configuration.logging().fullStacktrace());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
-            LoggingInitializer.startFileLogging(configuration.logging().logFilePath());
+            LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace());
         } else if (!isForked) {
             if (!configuration.logging().logToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
             if (configuration.logging().logToFile()) {
-                LoggingInitializer.startFileLogging(configuration.logging().logFilePath());
+                LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace());
             }
         }
     }

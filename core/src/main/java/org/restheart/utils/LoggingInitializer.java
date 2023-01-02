@@ -27,13 +27,12 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
-
 import java.util.List;
-
 import org.slf4j.LoggerFactory;
 
 /**
@@ -64,6 +63,52 @@ public class LoggingInitializer {
     }
 
     /**
+     * used to change the log pattern for console appender
+     * @param fullStacktrace
+     */
+    public static void applyFullstacktraceOption(boolean fullStacktrace) {
+        // short stack trace is default, nothing to do
+        if (!fullStacktrace) {
+            return;
+        }
+
+        // logback configured with file, nothing to do
+        var logbackConfigurationFile = System.getProperty("logback.configurationFile");
+        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
+            return;
+        }
+
+        var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        var rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        var _ca = rootLogger.getAppender("STDOUT");
+
+        if (_ca instanceof ConsoleAppender<?> ca) {
+            var _e = ca.getEncoder();
+            if (_e != null) {
+                _e.stop();
+            }
+
+            _ca.stop();
+            rootLogger.detachAppender(_ca);
+
+            var newAppender = new ConsoleAppender<ILoggingEvent>();
+            newAppender.setContext(loggerContext);
+
+            PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+            encoder.setContext(loggerContext);
+
+            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+            encoder.start();
+
+            newAppender.setEncoder(encoder);
+            newAppender.setName("STDOUT");
+            newAppender.start();
+
+            rootLogger.addAppender(newAppender);
+        }
+    }
+
+    /**
      *
      */
     public static void stopConsoleLogging() {
@@ -79,7 +124,7 @@ public class LoggingInitializer {
      *
      * @param logFilePath
      */
-    public static void startFileLogging(String logFilePath) {
+    public static void startFileLogging(String logFilePath, boolean fullStacktrace) {
         Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
         LoggerContext loggerContext = rootLogger.getLoggerContext();
@@ -100,7 +145,12 @@ public class LoggingInitializer {
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
-        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n");
+
+        if (fullStacktrace) {
+            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+        }  else {
+            encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{short}");
+        }
         encoder.start();
 
         rfAppender.setEncoder(encoder);

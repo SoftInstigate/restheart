@@ -33,6 +33,7 @@ public record Logging(Level logLevel,
     boolean logToConsole,
     boolean ansiConsole,
     List<String> packages,
+    boolean fullStacktrace,
     int requestsLogMode,
     List<String> tracingHeaders) {
     public static final String LOGGING_KEY = "logging";
@@ -44,10 +45,11 @@ public record Logging(Level logLevel,
     public static final String REQUESTS_LOG_MODE = "requests-log-mode";
     public static final String TRACING_HEADERS_KEY = "tracing-headers";
     public static final String PACKAGES_KEY = "packages";
+    public static final String PRINT_FULL_STACKTRACE = "full-stacktrace";
 
     private static final List<String> DEFAULT_PACKAGES = List.of("org.restheart", "com.restheart");
 
-    private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true,true, DEFAULT_PACKAGES, 1, new ArrayList<>());
+    private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true,true, DEFAULT_PACKAGES, false, 1, new ArrayList<>());
 
     public Logging(Map<String, Object> conf, boolean silent) {
         this(
@@ -58,6 +60,7 @@ public record Logging(Level logLevel,
             getOrDefault(conf, ANSI_CONSOLE_KEY, DEFAULT_LOGGING.ansiConsole(), silent),
             // following is optional, so get it always in silent mode
             getOrDefault(conf, PACKAGES_KEY, DEFAULT_LOGGING.packages(), true),
+            getOrDefault(conf, PRINT_FULL_STACKTRACE, DEFAULT_LOGGING.fullStacktrace(), true),
             getOrDefault(conf, REQUESTS_LOG_MODE, DEFAULT_LOGGING.requestsLogMode(), silent),
             // following is optional, so get it always in silent mode
             getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true));
