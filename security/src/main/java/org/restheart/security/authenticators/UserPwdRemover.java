@@ -21,8 +21,10 @@
 package org.restheart.security.authenticators;
 
 import com.google.gson.JsonElement;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -88,7 +90,7 @@ public class UserPwdRemover implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        DocumentContext dc = JsonPath.parse(response.readContent());
+        DocumentContext dc = JsonPath.using(Configuration.defaultConfiguration()).parse(response.readContent());
 
         JsonElement content = dc.json();
 
@@ -98,24 +100,36 @@ public class UserPwdRemover implements MongoInterceptor {
 
         if (content.isJsonArray()) {
             // GET collection as array of documents (rep=PJ + 'np' qparam)
-            dc.delete("$.[*].".concat(this.propNamePassword));
-        } else if (content.isJsonObject()
-                && content.getAsJsonObject().keySet().contains("_embedded")) {
+            try {
+                dc.delete("$.[*].".concat(this.propNamePassword));
+            } catch(PathNotFoundException pnfe) {
+                //nothing to do
+            }
+        } else if (content.isJsonObject() && content.getAsJsonObject().keySet().contains("_embedded")) {
             if (content.getAsJsonObject().get("_embedded").isJsonArray()) {
                 //  GET collection as a compact HAL document
-                dc.delete("$._embedded.*.".concat(this.propNamePassword));
+                try {
+                    dc.delete("$._embedded.*.".concat(this.propNamePassword));
+                } catch(PathNotFoundException pnfe) {
+                    //nothing to do
+                }
             } else if (content.getAsJsonObject().get("_embedded").isJsonObject()
-                    && content.getAsJsonObject()
-                            .get("_embedded").getAsJsonObject().keySet().contains("rh:doc")
-                    && content.getAsJsonObject()
-                            .get("_embedded").getAsJsonObject().get("rh:doc").isJsonArray()) {
+                    && content.getAsJsonObject().get("_embedded").getAsJsonObject().keySet().contains("rh:doc")
+                    && content.getAsJsonObject().get("_embedded").getAsJsonObject().get("rh:doc").isJsonArray()) {
                 //  GET collection as a full HAL document
-                dc.delete("$._embedded.['rh:doc'].*.".concat(this.propNamePassword));
+                try {
+                    dc.delete("$._embedded.['rh:doc'].*.".concat(this.propNamePassword));
+                } catch(PathNotFoundException pnfe) {
+                    //nothing to do
+                }
             }
-
         } else if (content.isJsonObject()) {
             // GET document
-            dc.delete("$.".concat(this.propNamePassword));
+            try {
+                dc.delete("$.".concat(this.propNamePassword));
+            } catch(PathNotFoundException pnfe) {
+                //nothing to do
+            }
         }
 
         response.setContent(BsonUtils.parse(content.toString()));
@@ -124,9 +138,11 @@ public class UserPwdRemover implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-                && request.isGet()
-                && this.usersDb.equalsIgnoreCase(request.getDBName())
-                && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-                && response.getContent() != null;
+            && request.isGet()
+            && this.usersDb.equalsIgnoreCase(request.getDBName())
+            && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
+            && !request.isCollectionSize()
+            && !request.isCollectionMeta()
+            && response.getContent() != null;
     }
 }
