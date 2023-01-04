@@ -355,7 +355,7 @@ public class GridFs {
                         requestEtag,
                         HttpStatus.SC_OK);
                 } else {
-                    var query = eq("_id", documentId);
+                    var query = eq("_id", documentId.get());
 
                     var newDocument = cs.isPresent()
                         ? mcoll.find(cs.get(), query).first()
