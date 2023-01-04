@@ -331,7 +331,7 @@ public class GridFs {
                         requestEtag,
                         HttpStatus.SC_OK);
                 } else if (oldDocument != null) {  // update
-                    var query = eq("_id", documentId);
+                    var query = eq("_id", documentId.get());
                     var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
                     return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
                 } else { // Attempted an insert of a new doc.
