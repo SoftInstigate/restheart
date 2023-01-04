@@ -62,10 +62,12 @@ public class BsonRequestPredicatesTest {
     @Test
     public void testJsonRequestWhitelistBson() {
         var predicate = PredicateParser.parse("bson-request-whitelist(a, c, us.d, d.n)", MongoUtils.class.getClassLoader());
+        var predicateEmpty = PredicateParser.parse("bson-request-whitelist()", MongoUtils.class.getClassLoader());
 
         var exchangeOK1 = exchangeWithBsonContent("{ 'a': {'b': 1}, 'c': true, '$unset': {'us.d': true} }");
         var exchangeOK2 = exchangeWithBsonContent("{ 'd.n': true }");
         var exchangeOK3 = exchangeWithBsonContent("{ 'd.n.foo': true }");
+        var exchangeEmpty = exchangeWithBsonContent("{}");
 
         Assert.assertTrue("check positive predicate", predicate.resolve(exchangeOK1));
         Assert.assertTrue("check positive predicate", predicate.resolve(exchangeOK2));
@@ -80,6 +82,11 @@ public class BsonRequestPredicatesTest {
         Assert.assertFalse("check negative predicate 2", predicate.resolve(exchangeKO2));
         Assert.assertFalse("check negative predicate 2", predicate.resolve(exchangeKO3));
         Assert.assertFalse("check negative predicate 2", predicate.resolve(exchangeKO4));
+
+        Assert.assertFalse("check negative predicate 2", predicateEmpty.resolve(exchangeKO1));
+        Assert.assertTrue("check negative predicate 2", predicateEmpty.resolve(exchangeEmpty));
+
+
     }
 
     @Test
