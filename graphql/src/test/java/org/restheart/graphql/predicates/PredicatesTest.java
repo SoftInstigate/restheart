@@ -52,16 +52,23 @@ public class PredicatesTest {
     @Test
     public void testDocFieldEq() {
         var fooEqOne = "field-eq(field=sub.foo, value=1)";
+        // string equality requires value='"a string"' or value="'a string'"
+        var fooEqString = "field-eq(field=sub.string, value='\"a string\"')";
         var barEqObj = "field-eq(field=bar, value='{\"a\":1}')";
 
-        var fooDoc = document().put("sub", document().put("foo", 1)).get();
+        var fooDoc = document().put("sub", document()
+            .put("foo", 1)
+            .put("string", "a string")).get();
+
         var barDoc = document().put("bar", document().put("a", 1)).get();
 
         var _fooEqOne = Predicates.parse(fooEqOne);
         var _barEqObj = Predicates.parse(barEqObj);
+        var _fooEqString = Predicates.parse(fooEqString);
 
         assertTrue(_barEqObj.resolve(DocInExchange.exchange(barDoc)));
         assertTrue(_fooEqOne.resolve(DocInExchange.exchange(fooDoc)));
+        assertTrue(_fooEqString.resolve(DocInExchange.exchange(fooDoc)));
 
         assertFalse(_barEqObj.resolve(DocInExchange.exchange(fooDoc)));
         assertFalse(_fooEqOne.resolve(DocInExchange.exchange(barDoc)));
