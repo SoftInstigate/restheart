@@ -23,13 +23,17 @@ package org.restheart.graphql.scalars.bsonCoercing;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonBoolean;
+import org.bson.BsonNull;
+
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
 
     @Override
     public Boolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonBoolean bsonBoolean) {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if (dataFetcherResult instanceof BsonBoolean bsonBoolean) {
             return bsonBoolean.getValue();
         } else if (dataFetcherResult instanceof Boolean value) {
             return value;

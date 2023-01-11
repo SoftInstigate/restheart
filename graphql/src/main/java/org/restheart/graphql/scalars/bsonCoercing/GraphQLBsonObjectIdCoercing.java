@@ -24,6 +24,8 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 
@@ -33,6 +35,10 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
 
     @Override
     public ObjectId serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        }
+
         var possibleObjID = convertImpl(dataFetcherResult);
         if (possibleObjID == null){
             throw new CoercingSerializeException("Expected type 'ObjectId' but was '" + typeName(dataFetcherResult) +"'.");

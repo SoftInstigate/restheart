@@ -20,13 +20,17 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 import graphql.schema.*;
+
+import org.bson.BsonNull;
 import org.bson.BsonString;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonStringCoercing implements Coercing<String, String> {
     @Override
     public String serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonString bsonString) {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if(dataFetcherResult instanceof BsonString bsonString) {
             return bsonString.getValue();
         } else if (dataFetcherResult instanceof String string) {
             return string;

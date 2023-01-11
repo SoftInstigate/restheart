@@ -28,6 +28,7 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDecimal128;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
 
@@ -36,6 +37,10 @@ import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, Decimal128> {
     @Override
     public Decimal128 serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        }
+
         var possibleDecimal = convertImpl(dataFetcherResult);
         if (possibleDecimal == null){
             throw new CoercingSerializeException("Expected type 'Decimal128' but was '" + typeName(dataFetcherResult) +"'.");

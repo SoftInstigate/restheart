@@ -22,6 +22,7 @@ package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.schema.*;
 import org.bson.BsonInt32;
+import org.bson.BsonNull;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
@@ -30,7 +31,9 @@ public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
 
     @Override
     public Integer serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonInt32 bsonInt32) {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if(dataFetcherResult instanceof BsonInt32 bsonInt32) {
             return bsonInt32.getValue();
         } else if (dataFetcherResult instanceof Integer integer) {
             return integer;

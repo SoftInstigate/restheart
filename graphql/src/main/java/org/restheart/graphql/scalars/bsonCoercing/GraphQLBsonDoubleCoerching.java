@@ -25,13 +25,16 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDouble;
+import org.bson.BsonNull;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
     @Override
     public Double serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonDouble bsonString) {
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if(dataFetcherResult instanceof BsonDouble bsonString) {
             return bsonString.getValue();
         } else if (dataFetcherResult instanceof Double value) {
             return value;

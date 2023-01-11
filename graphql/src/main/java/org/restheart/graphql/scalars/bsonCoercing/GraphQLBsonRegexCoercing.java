@@ -25,6 +25,8 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+
+import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
@@ -32,7 +34,9 @@ import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override
     public BsonRegularExpression serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonRegularExpression bsonRegularExpression){
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if (dataFetcherResult instanceof BsonRegularExpression bsonRegularExpression){
             return bsonRegularExpression;
         } else {
             throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(dataFetcherResult) +"'.");

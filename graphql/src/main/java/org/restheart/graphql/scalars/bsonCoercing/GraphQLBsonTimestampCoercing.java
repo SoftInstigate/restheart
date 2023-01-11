@@ -24,6 +24,8 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+
+import org.bson.BsonNull;
 import org.bson.BsonTimestamp;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
@@ -31,7 +33,9 @@ public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, Bso
 
     @Override
     public BsonTimestamp serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonTimestamp bsonTimestamp){
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if (dataFetcherResult instanceof BsonTimestamp bsonTimestamp){
             return bsonTimestamp;
         } else {
             throw new CoercingSerializeException("Expected type 'BsonTimestamp' but was '" + typeName(dataFetcherResult) +"'.");

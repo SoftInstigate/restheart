@@ -24,6 +24,7 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonInt64;
+import org.bson.BsonNull;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
@@ -32,7 +33,9 @@ public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
 
     @Override
     public Long serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonInt64 bsonInt64){
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if (dataFetcherResult instanceof BsonInt64 bsonInt64) {
             return bsonInt64.getValue();
         } else if (dataFetcherResult instanceof Long value) {
             return value;

@@ -26,6 +26,7 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDateTime;
+import org.bson.BsonNull;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,7 +37,9 @@ import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime>  {
     @Override
     public BsonDateTime serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if (dataFetcherResult instanceof BsonDateTime bsonDateTime){
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if (dataFetcherResult instanceof BsonDateTime bsonDateTime){
             return bsonDateTime;
         } else {
             throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(dataFetcherResult) +"'.");

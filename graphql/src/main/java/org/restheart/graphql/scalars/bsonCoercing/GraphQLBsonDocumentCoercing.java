@@ -36,7 +36,9 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
 
     @Override
     public BsonDocument serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonDocument){
+        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+            return null;
+        } else if(dataFetcherResult instanceof BsonDocument){
             return (BsonDocument) dataFetcherResult;
         } else {
             throw new CoercingSerializeException("Expected type 'BsonDocument' but was '" + typeName(dataFetcherResult) +"'.");
