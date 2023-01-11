@@ -118,7 +118,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.enforceMinimumPasswordStrenght = argOrDefault(config, "enforce-minimum-password-strenght", false);
+        this.enforceMinimumPasswordStrenght = argOrDefault(config, "enforce-minimum-password-strength", false);
         this.minimumPasswordStrength = argOrDefault(config, "minimum-password-strength", 3);
 
         this.bcryptHashedPassword = arg(config, "bcrypt-hashed-password");

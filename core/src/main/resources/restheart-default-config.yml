@@ -93,7 +93,7 @@ mongoRealmAuthenticator:
   json-path-roles: $.roles
   bcrypt-hashed-password: true
   bcrypt-complexity: 12
-  enforce-minimum-password-strenght: false
+  enforce-minimum-password-strength: false
   # Integer from 0 to 4
   # 0 Weak        （guesses < 3^10）
   # 1 Fair        （guesses < 6^10）
