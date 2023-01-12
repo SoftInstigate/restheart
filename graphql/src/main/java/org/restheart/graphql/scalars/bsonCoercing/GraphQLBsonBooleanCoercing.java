@@ -24,11 +24,10 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonBoolean;
 import org.bson.BsonNull;
-
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
-
     @Override
     public Boolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {

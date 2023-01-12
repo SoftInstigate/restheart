@@ -34,6 +34,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -63,6 +64,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -90,6 +92,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 201
@@ -136,9 +139,10 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
-    Then assert responseStatus == 201
+    Then assert responseStatus == 201 || responseStatus == 200
 
     * call confDestroyer
 
@@ -165,9 +169,10 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
-    Then assert responseStatus == 201
+    Then assert responseStatus == 201 || responseStatus == 200
 
     * call confDestroyer
 
@@ -179,6 +184,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # create test-graphql db
     Given path '/test-graphql'
+    And param wm = "upsert"
     And request {}
     When method PUT
     Then assert responseStatus == 201 || responseStatus == 200
@@ -195,6 +201,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -226,6 +233,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -255,6 +263,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -287,6 +296,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400
@@ -318,6 +328,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 400

@@ -29,8 +29,8 @@ import org.bson.BsonNull;
 import org.bson.BsonTimestamp;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, BsonTimestamp> {
-
     @Override
     public BsonTimestamp serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {

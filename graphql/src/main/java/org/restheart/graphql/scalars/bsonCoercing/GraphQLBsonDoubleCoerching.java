@@ -29,6 +29,7 @@ import org.bson.BsonNull;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
     @Override
     public Double serialize(Object dataFetcherResult) throws CoercingSerializeException {

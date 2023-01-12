@@ -31,8 +31,8 @@ import org.bson.types.ObjectId;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
-
     @Override
     public ObjectId serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {

@@ -25,6 +25,7 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonStringCoercing implements Coercing<String, String> {
     @Override
     public String serialize(Object dataFetcherResult) throws CoercingSerializeException {

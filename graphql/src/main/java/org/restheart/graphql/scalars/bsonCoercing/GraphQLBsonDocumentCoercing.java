@@ -32,8 +32,8 @@ import java.util.*;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonDocument> {
-
     @Override
     public BsonDocument serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {

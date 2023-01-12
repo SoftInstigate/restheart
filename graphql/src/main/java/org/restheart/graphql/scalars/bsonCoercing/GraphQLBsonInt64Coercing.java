@@ -28,9 +28,8 @@ import org.bson.BsonNull;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
-
-
     @Override
     public Long serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {

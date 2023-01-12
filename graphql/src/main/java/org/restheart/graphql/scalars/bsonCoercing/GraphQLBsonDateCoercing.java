@@ -34,6 +34,7 @@ import java.time.format.DateTimeParseException;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime>  {
     @Override
     public BsonDateTime serialize(Object dataFetcherResult) throws CoercingSerializeException {

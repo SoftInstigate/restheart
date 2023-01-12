@@ -24,7 +24,9 @@ import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderOptions;
+import org.dataloader.stats.SimpleStatisticsCollector;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
@@ -68,7 +70,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    // @SuppressWarnings("deprecation")
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
@@ -80,7 +82,9 @@ public class QueryMapping extends FieldMapping implements Batchable {
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
-            return new DataLoader<BsonValue, BsonValue>(new QueryBatchLoader(this.db, this.collection), options);
+            options.setStatisticsCollector(() -> new SimpleStatisticsCollector());
+
+            return DataLoaderFactory.newDataLoader(new QueryBatchLoader(this.db, this.collection), options);
         } else {
             return null;
         }

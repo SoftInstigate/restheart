@@ -31,6 +31,7 @@ import org.bson.BsonRegularExpression;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override
     public BsonRegularExpression serialize(Object dataFetcherResult) throws CoercingSerializeException {

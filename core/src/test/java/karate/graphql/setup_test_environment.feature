@@ -33,6 +33,7 @@ Feature: Utils feature to upload GraphQL test App Definition and test data
 
     # upload GraphQL app definition
     Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
     And request appDef
     When method POST
     Then assert responseStatus == 201 || responseStatus == 200

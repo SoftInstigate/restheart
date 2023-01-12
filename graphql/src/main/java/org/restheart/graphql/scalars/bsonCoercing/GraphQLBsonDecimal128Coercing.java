@@ -34,6 +34,7 @@ import org.bson.types.Decimal128;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
+@SuppressWarnings("deprecation")
 public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, Decimal128> {
     @Override
     public Decimal128 serialize(Object dataFetcherResult) throws CoercingSerializeException {
