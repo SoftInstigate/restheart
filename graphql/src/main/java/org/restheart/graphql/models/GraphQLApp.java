@@ -31,12 +31,14 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
 import io.undertow.predicate.Predicate;
-import org.bson.BsonDocument;
-import org.restheart.graphql.predicates.DocInExchange;
+import org.bson.BsonValue;
+import org.restheart.graphql.predicates.ExchangeWithBsonValue;
 import org.restheart.graphql.scalars.BsonScalars;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Map.Entry;
 
 public class GraphQLApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLApp.class);
@@ -163,10 +165,17 @@ public class GraphQLApp {
                     RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
                         @Override
                         public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-                            var doc = (BsonDocument) env.getObject();
-                            var match = unionMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
-                                .findFirst();
+                            var obj = env.getObject();
+                            final Optional<Entry<String, Predicate>> match;
+                            if (obj instanceof BsonValue value) {
+                                match = unionMapping.entrySet().stream()
+                                    .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                    .findFirst();
+                            } else {
+                                // predicates can only resolve on BsonValues
+                                LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                                return null;
+                            }
 
                             if (match.isPresent()) {
                                 return env.getSchema().getObjectType(match.get().getKey());
@@ -188,10 +197,17 @@ public class GraphQLApp {
                     RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
                         @Override
                         public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-                            var doc = (BsonDocument) env.getObject();
-                            var match = interfaceMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(DocInExchange.exchange(doc)))
-                                .findFirst();
+                            var obj = env.getObject();
+                            final Optional<Entry<String, Predicate>> match;
+                            if (obj instanceof BsonValue value) {
+                                match = interfaceMapping.entrySet().stream()
+                                    .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                    .findFirst();
+                            } else {
+                                // predicates can resolve on BsonValues
+                                LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                                return null;
+                            }
 
                             if (match.isPresent()) {
                                 return env.getSchema().getObjectType(match.get().getKey());

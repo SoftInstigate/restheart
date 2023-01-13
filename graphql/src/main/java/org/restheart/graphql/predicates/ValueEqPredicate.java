@@ -20,66 +20,62 @@
  */
 package org.restheart.graphql.predicates;
 
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
-
-import com.google.common.collect.Sets;
-
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class FieldExists implements PredicateOverBsonValue {
-    private final Set<String> fields;
+public class ValueEqPredicate implements PredicateOverBsonValue {
+    private final BsonValue value;
 
-    public FieldExists(String[] fields) {
-        if (fields == null || fields.length < 1) {
-            throw new IllegalArgumentException("field-exists predicate must specify a list of fields");
+    public ValueEqPredicate(String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("velue-eq predicate must specify the value");
         }
 
-        this.fields = Sets.newHashSet(fields);
+        this.value = BsonUtils.parse(value);
     }
 
     @Override
     public boolean resolve(BsonValue value) {
-        if (value instanceof BsonDocument doc) {
-            return this.fields.stream().allMatch(f -> BsonUtils.get(doc, f).isPresent());
-        } else {
-            return false;
-        }
+        return this.value.equals(value);
     }
 
     public static class Builder implements PredicateBuilder {
         @Override
         public String name() {
-            return "field-exists";
+            return "value-eq";
         }
 
         @Override
         public Map<String, Class<?>> parameters() {
-            return Collections.<String, Class<?>>singletonMap("fields", String[].class);
+            var params = new HashMap<String, Class<?>>();
+            params.put("value", String.class);
+            return params;
         }
 
         @Override
         public Set<String> requiredParameters() {
-            return Collections.singleton("fields");
+            var params = new HashSet<String>();
+            params.add("value");
+            return params;
         }
 
         @Override
         public String defaultParameter() {
-            return "fields";
+            return "value";
         }
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new FieldExists((String[]) config.get("fields"));
+            return new ValueEqPredicate((String) config.get("value"));
         }
     }
 }

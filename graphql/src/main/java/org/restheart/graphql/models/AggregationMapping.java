@@ -9,6 +9,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderOptions;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GQLAggregationDataFetcher;
@@ -53,7 +54,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
-            return new DataLoader<BsonValue, BsonValue>(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue()), options);
+            return DataLoaderFactory.newDataLoader(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue()), options);
         }
 
         return null;

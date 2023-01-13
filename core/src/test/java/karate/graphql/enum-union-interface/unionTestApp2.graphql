@@ -1,0 +1,43 @@
+type Status1 { status1: String }
+type Status2 { status2: String }
+
+union Status = Status1 | Status2
+
+type Course {
+    _id: ObjectId,
+    title: String,
+    status: Status
+}
+
+type Query { AllCourses: [Course], AllStatus: [Status] }
+
+the query AllCourses selects a *field* whose type is a union => the predicate applies to the field's value (in this case a BsonString)
+
+{
+    AllCourses {
+        title
+        status {
+            __typename
+            ... on Status1 {
+                status1
+            }
+            ... on Status2 {
+                status2
+            }
+        }
+    }
+}
+
+the query AllStatus selects *documents* whose type is a union => the predicate applies to BsonDocument
+
+{
+    AllStatus {
+        __typename
+        ... on Status1 {
+            status1
+        }
+        ... on Status2 {
+            status2
+        }
+    }
+}

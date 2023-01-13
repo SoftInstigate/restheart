@@ -1,14 +1,13 @@
 package org.restheart.graphql.predicates;
 
-import org.bson.BsonDocument;
-
+import org.bson.BsonValue;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
-public interface PredicateOverDocument extends Predicate {
+public interface PredicateOverBsonValue extends Predicate {
     default boolean resolve(HttpServerExchange exchage) {
-        return resolve(DocInExchange.doc(exchage));
+        return resolve(ExchangeWithBsonValue.value(exchage));
     }
 
-   boolean resolve(BsonDocument doc);
+   boolean resolve(BsonValue doc);
 }

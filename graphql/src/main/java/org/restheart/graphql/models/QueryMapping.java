@@ -70,7 +70,6 @@ public class QueryMapping extends FieldMapping implements Batchable {
     }
 
     @Override
-    // @SuppressWarnings("deprecation")
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));

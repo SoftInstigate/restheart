@@ -1,2 +1,3 @@
+org.restheart.graphql.predicates.ValueEqPredicate$Builder
 org.restheart.graphql.predicates.FieldEqPredicate$Builder
 org.restheart.graphql.predicates.FieldExists$Builder

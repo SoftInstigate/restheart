@@ -139,16 +139,22 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema()).instrumentation(dispatcherInstrumentation).build();
 
-        var result = this.gql.execute(inputBuilder.build());
+        try {
+            var result = this.gql.execute(inputBuilder.build());
 
-        if (this.verbose) {
-            logDataLoadersStatistics(dataLoaderRegistry);
-        }
+            if (this.verbose) {
+                logDataLoadersStatistics(dataLoaderRegistry);
+            }
 
-        if (!result.getErrors().isEmpty()) {
-            response.setInError(400, "Bad Request");
+            if (!result.getErrors().isEmpty()) {
+                response.setInError(400, "Bad Request");
+            }
+            response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
+        } catch(Throwable t) {
+            var gee = new GraphQLAppExecutionException("error executing query", t);
+            response.setInError(500, gee.getMessage(), gee);
+            throw gee;
         }
-        response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
     }
 
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {

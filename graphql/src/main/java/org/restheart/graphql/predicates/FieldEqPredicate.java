@@ -35,7 +35,7 @@ import io.undertow.predicate.PredicateBuilder;
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class FieldEqPredicate implements PredicateOverDocument {
+public class FieldEqPredicate implements PredicateOverBsonValue {
     private final String key;
     private final BsonValue value;
 
@@ -49,11 +49,15 @@ public class FieldEqPredicate implements PredicateOverDocument {
     }
 
     @Override
-    public boolean resolve(BsonDocument doc) {
-        var _v = BsonUtils.get(doc, key);
+    public boolean resolve(BsonValue value) {
+        if (value instanceof BsonDocument doc) {
+            var _v = BsonUtils.get(doc, key);
 
-        if (_v.isPresent()) {
-            return this.value.equals(_v.get());
+            if (_v.isPresent()) {
+                return this.value.equals(_v.get());
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
