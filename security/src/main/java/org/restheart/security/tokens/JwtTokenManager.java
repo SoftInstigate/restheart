@@ -31,6 +31,8 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAccount;
+import org.restheart.security.FileRealmAccount;
+import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -180,6 +182,13 @@ public class JwtTokenManager implements TokenManager {
             .withIssuer(issuer)
             .withArrayClaim("roles", account.getRoles().toArray(new String[account.getRoles().size()]))
             .sign(algo);
+
+        // TODO add other account properties
+        // if (account instanceof MongoRealmAccount mra) {
+        //     mra.getAccountDocument();
+        // } else if (account instanceof FileRealmAccount fra) {
+        //     fra.getAccountProperties();
+        // }
 
         return new Token(raw.toCharArray(), expires, account.getRoles().toArray(new String[0]));
     }

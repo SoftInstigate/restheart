@@ -51,7 +51,7 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                 .flatMap(x -> Optional.ofNullable(x.peekFirst()))
                 .ifPresent(value -> {
                     // saves the MDC Context
-                    // SeeResponse.getMDCContext() javadoc
+                    // see response.getMDCContext() javadoc
                     MDC.put(traceIdHeader, value);
                     ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
                     exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);

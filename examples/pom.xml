@@ -31,6 +31,7 @@
         <module>greeter-service</module>
         <module>x-powered-by-remover</module>
         <module>freemarker</module>
+        <module>custom-logging-field</module>
     </modules>
 
     <dependencyManagement>
