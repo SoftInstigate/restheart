@@ -8,24 +8,34 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.WildcardInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "customLoggingFieldInteceptor",
     interceptPoint = InterceptPoint.RESPONSE,
     description = "add a custom logging filed to log messages")
 public class CustomLoggingFieldInteceptor implements WildcardInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomLoggingFieldInteceptor.class);
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
-        // the MDC Context can be initialized by other plugins
+        // The MDC context is put in the thread context and
+        // a thread switch in the request handling pipeline loses the MDC context.
+
+        // RESTHeart allows to attach it to the request
         var mdcCtx = response.getMDCContext();
 
-        // it migth be initialized by other plugins
+        // attach the MDC context to the response if not done by other plugins
         if (mdcCtx == null) {
-            var _mdcCtx = MDC.getCopyOfContextMap() == null ? new HashMap<String, String>(): MDC.getCopyOfContextMap();
-            response.setMDCContext(_mdcCtx);
-            mdcCtx = _mdcCtx;
+            mdcCtx = MDC.getCopyOfContextMap() == null ? new HashMap<String, String>(): MDC.getCopyOfContextMap();
+            response.setMDCContext(mdcCtx);
         }
 
-        mdcCtx.put("foo", "bar");
+        mdcCtx.put("timestamp", "" + System.currentTimeMillis());
+
+        // restore the MDC context
+        MDC.setContextMap(mdcCtx);
+
+        LOGGER.info("This log message includes the timestamp variable from the MDC context");
     }
 
     @Override
