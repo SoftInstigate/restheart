@@ -165,8 +165,8 @@ public abstract class Response<T> extends Exchange<T> {
     }
 
     /**
-     * Logging MDC Context is bind to the thread context. In case of a thread switch
-     * it must be restored from this exchange attachment using MDC.setContextMap()
+     * Logging MDC Context is bound to the thread. In case of a thread switch
+     * it must be restored from response.getMDCContext() with MDC.setContextMap()
      *
      * @return the MDC Context
      */
