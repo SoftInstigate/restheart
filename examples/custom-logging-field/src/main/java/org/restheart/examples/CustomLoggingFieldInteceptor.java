@@ -12,8 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "customLoggingFieldInteceptor",
-    interceptPoint = InterceptPoint.RESPONSE,
-    description = "add a custom logging filed to log messages")
+    interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
+    description = "add a custom logging filed to log messages",
+    priority = Integer.MIN_VALUE)
 public class CustomLoggingFieldInteceptor implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomLoggingFieldInteceptor.class);
     @Override
