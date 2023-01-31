@@ -121,7 +121,7 @@ public abstract class FieldMapping {
                     throw new QueryVariableNotBoundException("index out of bounds in " + splitPath[i - 1] + " array");
                 }
             } else {
-                throw new QueryVariableNotBoundException("variable" + splitPath[i] + "not bound");
+                throw new QueryVariableNotBoundException("variable " + splitPath[i] + " not bound");
             }
         }
 
