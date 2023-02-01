@@ -1,5 +1,8 @@
 [
 {
+  "name":"System"
+},
+{
   "name":"[B"
 },
 {
@@ -22,6 +25,9 @@
 },
 {
   "name":"[Lio.undertow.attribute.ExchangeAttribute;"
+},
+{
+  "name":"[Ljava.lang.Object;"
 },
 {
   "name":"[Ljava.lang.String;"
@@ -387,6 +393,9 @@
   "fields":[{"name":"coercing"}]
 },
 {
+  "name":"groovy.lang.Closure"
+},
+{
   "name":"int[]"
 },
 {
@@ -482,8 +491,20 @@
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
+  "name":"io.undertow.UndertowLogger_$logger_it"
+},
+{
+  "name":"io.undertow.UndertowLogger_$logger_it_IT"
+},
+{
   "name":"io.undertow.UndertowMessages_$bundle",
   "fields":[{"name":"INSTANCE"}]
+},
+{
+  "name":"io.undertow.UndertowMessages_$bundle_it"
+},
+{
+  "name":"io.undertow.UndertowMessages_$bundle_it_IT"
 },
 {
   "name":"io.undertow.attribute.ExchangeAttribute[]"
@@ -964,6 +985,10 @@
   "methods":[{"name":"<init>","parameterTypes":["int"] }]
 },
 {
+  "name":"java.util.LinkedHashMap",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"java.util.Map",
   "methods":[{"name":"get","parameterTypes":["java.lang.Object"] }]
 },
@@ -1268,6 +1293,12 @@
   "allDeclaredFields":true
 },
 {
+  "name":"org.apache.commons.beanutils.DynaBean"
+},
+{
+  "name":"org.apache.commons.jxpath.JXPathBeanInfo"
+},
+{
   "name":"org.apache.commons.jxpath.JXPathContextFactory"
 },
 {
@@ -1283,8 +1314,17 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"org.apache.log4j.LogManager"
+},
+{
+  "name":"org.apache.logging.log4j.Logger"
+},
+{
   "name":"org.apache.tika.metadata.filter.NoOpFilter",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bson.BsonBooleanXBeanInfo"
 },
 {
   "name":"org.bson.codecs.record.RecordCodecProvider"
@@ -1298,6 +1338,9 @@
 },
 {
   "name":"org.graalvm.polyglot.management.Management"
+},
+{
+  "name":"org.jboss.logmanager.LogManager"
 },
 {
   "name":"org.jboss.threads.EnhancedQueueExecutor",
@@ -1342,8 +1385,17 @@
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
+  "name":"org.jboss.threads.Messages_$logger_it"
+},
+{
+  "name":"org.jboss.threads.Messages_$logger_it_IT"
+},
+{
   "name":"org.jboss.threads.management.StandardThreadPoolMXBean",
   "allPublicMethods":true
+},
+{
+  "name":"org.jdom.Document"
 },
 {
   "name":"org.restheart.Bootstrapper$Args",
@@ -1376,6 +1428,12 @@
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
 {
+  "name":"org.xnio._private.Messages_$logger_it"
+},
+{
+  "name":"org.xnio._private.Messages_$logger_it_IT"
+},
+{
   "name":"org.xnio.management.XnioProviderMXBean",
   "allPublicMethods":true
 },
@@ -1390,6 +1448,12 @@
 {
   "name":"org.xnio.nio.Log_$logger",
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
+},
+{
+  "name":"org.xnio.nio.Log_$logger_it"
+},
+{
+  "name":"org.xnio.nio.Log_$logger_it_IT"
 },
 {
   "name":"org.xnio.nio.NioTcpServer$1",

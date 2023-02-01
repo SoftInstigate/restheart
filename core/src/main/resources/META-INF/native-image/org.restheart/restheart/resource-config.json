@@ -95,17 +95,33 @@
       "pattern":"\\Qorg/jboss/threads/Version.properties\\E"
     }, 
     {
+      "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+    }, 
+    {
       "pattern":"\\Qorg/xnio/Version.properties\\E"
     }, 
     {
       "pattern":"\\Qorg/xnio/nio/Version.properties\\E"
     }, 
     {
-      "pattern":"\\Qrestheart-default-config.yml\\E"
-    },
+      "pattern":"\\Qrestheart-default-config-no-mongodb.yml\\E"
+    }, 
     {
-        "pattern":"\\Qrestheart-default-config-no-mongodb.yml\\E"
+      "pattern":"\\Qrestheart-default-config.yml\\E"
     }
   ]},
-  "bundles":[]
+  "bundles":[
+    {
+      "name":"i18n.Parsing",
+      "locales":[""]
+    }, 
+    {
+      "name":"i18n.Scalars",
+      "locales":[""]
+    }, 
+    {
+      "name":"i18n.Validation",
+      "locales":[""]
+    }
+  ]
 }
