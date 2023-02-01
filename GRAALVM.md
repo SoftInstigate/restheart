@@ -53,7 +53,7 @@ Start RESTHeart with test configuration and the `native-image-agent`
 ```bash
 $ ./mvnw clean package
 $ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
-$ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar core/etc/test/restheart.yml
+$ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
 ```
 
 Execute tests, this makes the `native-image-agent` collecting all needed configuration
