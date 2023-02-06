@@ -25,8 +25,8 @@ import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.tika.Tika;
 import org.bson.BsonDocument;
@@ -140,7 +140,7 @@ public class MongoRequestContentInjector {
         return null;
     }
 
-    private static void injectContentTypeFromFile( final BsonDocument content, final File file) throws IOException {
+    private static void injectContentTypeFromFile( final BsonDocument content, final InputStream file) throws IOException {
         if (content.get(CONTENT_TYPE) == null && file != null) {
             final var contentType = detectMediaType(file);
             if (contentType != null) {
@@ -199,7 +199,7 @@ public class MongoRequestContentInjector {
      * @return the content-type as a String
      * @throws IOException
      */
-    public static String detectMediaType(File file) throws IOException {
+    public static String detectMediaType(InputStream file) throws IOException {
         return new Tika().detect(file);
     }
 
@@ -376,12 +376,19 @@ public class MongoRequestContentInjector {
             return null;
         }
 
-        final var path = formData.getFirst(fileField).getFileItem().getFile();
-
-        request.setFilePath(path);
+        final InputStream fileInputStream;
 
         try {
-            injectContentTypeFromFile(content.asDocument(), path.toFile());
+            fileInputStream = formData.getFirst(fileField).getFileItem().getInputStream();
+            request.setFileInputStream(fileInputStream);
+        } catch(IOException ioe) {
+            response.addWarning("error getting binary field from request");
+            LOGGER.warn("error getting binary field from request", ioe);
+            return null;
+        }
+
+        try {
+            injectContentTypeFromFile(content.asDocument(), fileInputStream);
         } catch (IOException ioe) {
             response.addWarning("error detecting content type");
             LOGGER.warn("error detecting content type of file", ioe);
