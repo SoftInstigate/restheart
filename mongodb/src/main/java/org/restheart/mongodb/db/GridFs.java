@@ -29,13 +29,10 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
@@ -81,7 +78,7 @@ public class GridFs {
      * @param dbName the database name
      * @param bucketName
      * @param metadata
-     * @param filePath
+     * @param fileInputStream
      * @return the OperationResult
      * @throws IOException
      * @throws DuplicateKeyException
@@ -91,7 +88,7 @@ public class GridFs {
         final String dbName,
         final String bucketName,
         final BsonDocument metadata,
-        final Path filePath)
+        final InputStream fileInputStream)
         throws IOException, DuplicateKeyException {
         final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
@@ -104,11 +101,11 @@ public class GridFs {
         var etag = new ObjectId();
         metadata.put("_etag", new BsonObjectId(etag));
 
-        try (InputStream sourceStream = new FileInputStream(filePath.toFile())) {
+        try (fileInputStream) {
             if (metadata.get("_id") == null) {
                 var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
-                var _id = gridFSBucket.uploadFromStream(filename, sourceStream, options);
+                var _id = gridFSBucket.uploadFromStream(filename, fileInputStream, options);
 
                 return new OperationResult(SC_CREATED, new BsonObjectId(etag), new BsonObjectId(_id));
             } else {
@@ -116,7 +113,7 @@ public class GridFs {
 
                 var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
-                gridFSBucket.uploadFromStream(_id, filename, sourceStream, options);
+                gridFSBucket.uploadFromStream(_id, filename, fileInputStream, options);
 
                 return new OperationResult(SC_CREATED, new BsonObjectId(etag), _id);
             }
@@ -129,7 +126,7 @@ public class GridFs {
      * @param dbName the database name
      * @param bucketName
      * @param metadata
-     * @param filePath
+     * @param fileInputStream
      * @param fileId
      * @param filter
      * @param requestEtag
@@ -142,7 +139,7 @@ public class GridFs {
         final String dbName,
         final String bucketName,
         final BsonDocument metadata,
-        final Path filePath,
+        final InputStream fileInputStream,
         final BsonValue fileId,
         final BsonDocument filter,
         final String requestEtag,
@@ -156,7 +153,7 @@ public class GridFs {
         final boolean fileExisted = !fileDidntExist;
 
         if (deleteOperationWasSuccessful || fileDidntExist) {
-            var creationResult = createFile(rsOps, dbName, bucketName, metadata, filePath);
+            var creationResult = createFile(rsOps, dbName, bucketName, metadata, fileInputStream);
 
             //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
             final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();

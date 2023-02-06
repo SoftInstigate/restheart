@@ -87,7 +87,7 @@ public class FileMetadataHandler extends PipelinedHandler {
             return;
         }
 
-        if (request.getFilePath() != null) {
+        if (request.getFileInputStream() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
             if (request.isPatch()) {
                 response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "only metadata is allowed, not binary data");

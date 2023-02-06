@@ -90,13 +90,13 @@ public class PutFileHandler extends PipelinedHandler {
         OperationResult result;
 
         try {
-            if (request.getFilePath() != null) {
+            if (request.getFileInputStream() != null) {
                 result = gridFs.upsertFile(
                     request.rsOps(),
                     request.getDBName(),
                     request.getCollectionName(),
                     metadata,
-                    request.getFilePath(),
+                    request.getFileInputStream(),
                     id,
                     request.getFiltersDocument(),
                     request.getETag(),

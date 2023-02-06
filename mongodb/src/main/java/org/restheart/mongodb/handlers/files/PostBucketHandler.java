@@ -85,13 +85,13 @@ public class PostBucketHandler extends PipelinedHandler {
         OperationResult result;
 
         try {
-            if (request.getFilePath() != null) {
+            if (request.getFileInputStream() != null) {
                 result = gridFs.createFile(
                     request.rsOps(),
                     request.getDBName(),
                     request.getCollectionName(),
                     metadata,
-                    request.getFilePath());
+                    request.getFileInputStream());
             } else {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "POST file request is in a bad format");
                 next(exchange);
