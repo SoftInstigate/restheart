@@ -20,6 +20,12 @@
         },
         {
             "path": "security"
+        },
+        {
+            "path": "mongoclient"
+        },
+        {
+            "path": "examples"
         }
     ],
     "settings": {
@@ -30,17 +36,25 @@
             "**/target",
             "**/bin",
             "**/archetype-resources"
-        ]
+        ],
+        "java.compile.nullAnalysis.mode": "disabled"
     },
     "launch": {
         "version": "0.2.0",
         "configurations": [
             {
                 "type": "java",
-                "name": "Attach to Remote Program",
+                "name": "Attach to port 4000",
                 "request": "attach",
                 "hostName": "localhost",
                 "port": 4000
+            },
+            {
+                "type": "java",
+                "name": "Attach to port 9080",
+                "request": "attach",
+                "hostName": "localhost",
+                "port": 9080
             }
         ]
     }
