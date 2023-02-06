@@ -22,9 +22,10 @@ package org.restheart.exchange;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
+
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
@@ -71,7 +72,7 @@ public class MongoRequest extends BsonRequest {
     private BsonDocument dbProps;
     private BsonDocument collectionProps;
 
-    private Path filePath;
+    private InputStream fileInputStream;
 
     private int page = 1;
     private int pagesize = 100;
@@ -1072,17 +1073,18 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * @return the filePath
+     * 
+     * @return the fileInputStream in case of a file resouces the fileInputStream, null othewise
      */
-    public Path getFilePath() {
-        return filePath;
+    public InputStream getFileInputStream() {
+        return fileInputStream;
     }
 
     /**
-     * @param filePath the filePath to set
+     * @param fileInputStream the fileInputStream to set
      */
-    public void setFilePath(Path filePath) {
-        this.filePath = filePath;
+    public void setFileInputStream(InputStream fileInputStream) {
+        this.fileInputStream = fileInputStream;
     }
 
     /**

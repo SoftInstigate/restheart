@@ -55,14 +55,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      * @param interceptPoint
      */
     public BeforeExchangeInitInterceptorsExecutor() {
-        super(null);
-        this.wildCardInterceptors = pluginsRegistry.getInterceptors().stream()
-            .filter(pr -> pr.isEnabled())
-            .map(pr -> pr.getInstance())
-            .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
-            .filter(i -> i instanceof WildcardInterceptor)
-            .map(i -> (WildcardInterceptor) i)
-            .collect(Collectors.toCollection(ArrayList::new));
+        this(null);
     }
 
     /**
@@ -71,6 +64,13 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      */
     public BeforeExchangeInitInterceptorsExecutor(PipelinedHandler next) {
         super(next);
+        this.wildCardInterceptors = pluginsRegistry.getInterceptors().stream()
+            .filter(pr -> pr.isEnabled())
+            .map(pr -> pr.getInstance())
+            .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
+            .filter(i -> i instanceof WildcardInterceptor)
+            .map(i -> (WildcardInterceptor) i)
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
@@ -94,32 +94,32 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             // if the request is handled by a service set to not execute intrceptors
             // at this interceptPoint, skip interceptors execution
             var vip = PluginUtils.dontIntercept(handlingPlugin);
-            if (!Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals)) {
+            if (Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals)) {
                 next(exchange);
                 return;
             }
-        } else {
-            this.wildCardInterceptors.stream().filter(ri -> {
-                try {
-                    return ri.resolve(request, response);
-                } catch (Exception e) {
-                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
-
-                    return false;
-                }})
-                .forEachOrdered(ri -> {
-                    try {
-                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT);
-                        ri.handle(request, null);
-                    } catch (Exception ex) {
-                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
-
-                        Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyException(ex);
-                    }
-                });
-
-            next(exchange);
         }
+
+        this.wildCardInterceptors.stream().filter(ri -> {
+            try {
+                return ri.resolve(request, response);
+            } catch (Exception e) {
+                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
+
+                return false;
+            }})
+            .forEachOrdered(ri -> {
+                try {
+                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT);
+                    ri.handle(request, response);
+                } catch (Exception ex) {
+                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
+
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(ex);
+                }
+            });
+
+        next(exchange);
     }
 }
