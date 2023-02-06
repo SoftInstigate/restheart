@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2022 SoftInstigate
+ * Copyright (C) 2014 - 2023 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
