@@ -114,9 +114,6 @@ import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -125,7 +122,6 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
-import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -659,11 +655,6 @@ public final class Bootstrapper {
             .getRootPathHandler()
             .addPrefixPath("/", new RequestNotManagedHandler());
 
-        PluginsRegistryImpl
-            .getInstance()
-            .getRootPathHandler()
-            .addPrefixPath("/test", test());
-
         LOGGER.debug("Content buffers maximun size is {} bytes", MAX_CONTENT_SIZE);
 
         plugServices();
@@ -673,29 +664,6 @@ public final class Bootstrapper {
         plugStaticResourcesHandlers(configuration);
 
         return getBasePipeline();
-    }
-
-    private static RoutingHandler test() {
-        return new RoutingHandler()
-            .post("/user", new HttpHandler() {
-                @Override
-                public void handleRequest(HttpServerExchange exchange) throws Exception {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-                    exchange.getResponseSender().send("");
-                }
-            })
-            .get("/user/{id}", new HttpHandler() {
-                @Override
-                public void handleRequest(HttpServerExchange exchange) throws Exception {
-                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-                    String id = exchange.getQueryParameters().get("id").peekFirst();
-                    if(id == null){
-                        exchange.getResponseSender().send("");
-                    } else {
-                        exchange.getResponseSender().send(id);
-                    }
-                }
-            });
     }
 
     /**
