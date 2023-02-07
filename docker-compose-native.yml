@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest-native
+    image: softinstigate/restheart:7.2-native
     environment:
       RHO: >
           /core/name->"native";

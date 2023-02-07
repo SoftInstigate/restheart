@@ -1,6 +1,6 @@
 # Protocol Buffer Interceptors
 
-> NOTE: this example requires RESTHeart 7.0.0-SNAPSHOT
+> NOTE: this example requires RESTHeart 7.2
 
 This example includes two interceptors that allow to use the `MongoService`
 with [Protocol Buffer](https://developers.google.com/protocol-buffers) over HTTP.
