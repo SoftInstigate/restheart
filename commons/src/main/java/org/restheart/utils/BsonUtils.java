@@ -1037,97 +1037,185 @@ public class BsonUtils {
         }
 
         public DocumentBuilder put(String key, BsonValue value) {
-            Objects.nonNull(key);
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
             Objects.nonNull(value);
-            doc.put(key, value);
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, value);
+            }
+
             return this;
         }
 
         public DocumentBuilder putAll(BsonDocument other) {
-            Objects.nonNull(other);
-            doc.putAll(other);
+            if (other != null) {
+                doc.putAll(other);
+            }
             return this;
         }
 
         public DocumentBuilder put(String key, Integer value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonInt32(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonInt32(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, Long value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonInt64(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonInt64(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, Float value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonDouble(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonDouble(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, Decimal128 value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonDecimal128(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonDecimal128(value));
+            }
+
+
             return this;
         }
 
-        public DocumentBuilder put(String key, boolean value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonBoolean(value));
+        public DocumentBuilder put(String key, Boolean value) {
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonBoolean(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, String value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonString(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonString(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, Instant value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonDateTime(value.getEpochSecond()));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonDateTime(value.getEpochSecond()));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, Date value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonDateTime(value.getTime()));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonDateTime(value.getTime()));
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, ObjectId value) {
-            Objects.nonNull(key);
-            Objects.nonNull(value);
-            doc.put(key, new BsonObjectId(value));
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (value == null) {
+                putNull(key);
+            } else {
+                doc.put(key, new BsonObjectId(value));
+            }
+
             return this;
         }
 
         public DocumentBuilder putNull(String key) {
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
             doc.put(key, BsonNull.VALUE);
             return this;
         }
 
         public DocumentBuilder put(String key, DocumentBuilder builder) {
-            Objects.nonNull(key);
-            Objects.nonNull(builder);
-            doc.put(key, builder.get());
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (builder != null) {
+                doc.put(key, builder.get());
+            }
+
             return this;
         }
 
         public DocumentBuilder put(String key, ArrayBuilder builder) {
-            Objects.nonNull(key);
-            Objects.nonNull(builder);
-            doc.put(key, builder.get());
+            if (key == null) {
+                throw new IllegalArgumentException("argument key cannot be null");
+            }
+
+            if (builder != null) {
+                doc.put(key, builder.get());
+            }
+
             return this;
         }
 
@@ -1176,62 +1264,52 @@ public class BsonUtils {
         }
 
         public ArrayBuilder add(BsonValue... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).forEach(array::add);
+            Arrays.stream(values).map(value -> value == null ? BsonNull.VALUE : value).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(String... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonString(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonString(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Integer... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonInt32(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonInt32(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Long... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonInt64(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonInt64(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Float... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonDouble(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDouble(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Decimal128... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonDecimal128(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDecimal128(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Boolean... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonBoolean(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonBoolean(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Instant... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonDateTime(v.getEpochSecond())).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDateTime(v.getEpochSecond())).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(Date... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonDateTime(v.getTime())).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDateTime(v.getTime())).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(ObjectId... values) {
-            Objects.nonNull(values);
-            Arrays.stream(values).map(v -> new BsonObjectId(v)).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonObjectId(v)).forEach(array::add);
             return this;
         }
 
@@ -1241,14 +1319,12 @@ public class BsonUtils {
         }
 
         public ArrayBuilder add(DocumentBuilder... builders) {
-            Objects.nonNull(builders);
-            Arrays.stream(builders).map(DocumentBuilder::get).forEach(array::add);
+            Arrays.stream(builders).filter(b -> b != null).map(DocumentBuilder::get).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(ArrayBuilder... builders) {
-            Objects.nonNull(builders);
-            Arrays.stream(builders).map(ArrayBuilder::get).forEach(array::add);
+            Arrays.stream(builders).filter(b -> b != null).map(ArrayBuilder::get).forEach(array::add);
             return this;
         }
 
