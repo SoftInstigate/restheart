@@ -22,7 +22,6 @@ package org.restheart.configuration;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -366,7 +365,7 @@ public class Configuration {
             throw new JsonParseException("json is not an object");
         }
 
-        final var gson = new Gson();
+        final var gson = new GsonBuilder().serializeNulls().create();
 
         return _yml.entrySet().stream()
             .map(e -> e.getKey() + "->" + gson.toJson(e.getValue()).toString())

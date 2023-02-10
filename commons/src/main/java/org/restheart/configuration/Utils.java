@@ -20,11 +20,11 @@
 package org.restheart.configuration;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.jxpath.JXPathContext;
@@ -553,7 +553,11 @@ public class Utils {
 
                     // turn Document into a Map<String, Object>
                     if (value instanceof Document dv) {
-                        value = dv.entrySet().stream().collect(Collectors.toMap(_e -> _e.getKey(), _e -> _e.getValue()));
+                        value = dv.entrySet().stream()
+                            .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
+                            // the following throws an exception due to a known bug
+                            // see https://stackoverflow.com/questions/24630963/nullpointerexception-in-collectors-tomap-with-null-entry-values
+                            // .collect(Collectors.toMap(_e -> _e.getKey(), _e -> _e.getValue()));
                     }
 
                     overrides.add(new RhOverride(path, value, assignment));
