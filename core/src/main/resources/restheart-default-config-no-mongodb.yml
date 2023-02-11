@@ -306,6 +306,12 @@ graphql:
   max-limit: 1000
   verbose: false
 
+cacheInvalidator:
+  enabled: false
+
+csvLoader:
+  enabled: false
+
 # Proxied resources - expose exrernal API with RESTHeart acting as a reverese proxy
 # see https://restheart.org/docs/proxy
 # options:#
