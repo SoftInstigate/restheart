@@ -34,8 +34,6 @@ import org.restheart.utils.HttpStatus;
  */
 @RegisterPlugin(name = "cacheInvalidator", description = "Invalidates the MongoService db and collection metadata cache", defaultURI = "/ic")
 public class CacheInvalidator implements ByteArrayService {
-    private static MetadataCachesSingleton CACHE = MetadataCachesSingleton.getInstance();
-
     /**
      *
      * @throws Exception
@@ -63,9 +61,9 @@ public class CacheInvalidator implements ByteArrayService {
         if (db == null) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "the db query paramter is mandatory");
         } else if (coll == null) {
-            CACHE.invalidateDb(db);
+            MetadataCachesSingleton.getInstance().invalidateDb(db);
         } else {
-            CACHE.invalidateCollection(db, coll);
+            MetadataCachesSingleton.getInstance().invalidateCollection(db, coll);
         }
 
         response.setStatusCode(HttpStatus.SC_OK);
