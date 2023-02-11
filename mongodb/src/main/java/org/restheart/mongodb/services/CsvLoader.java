@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.services;
 
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayDeque;
@@ -34,13 +35,14 @@ import org.bson.json.JsonParseException;
 import org.restheart.exchange.BsonFromCsvRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.mongodb.RHMongoClients;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 
 /**
- * service to upload a csv file in a collection
+ * service to upload a csv file in a MongoDb collection
  *
  * query parameters:<br>
  * - db=&lt;db_name&gt; *required<br>
@@ -58,10 +60,7 @@ import org.restheart.utils.BsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @SuppressWarnings("unchecked")
-@RegisterPlugin(name = "csvLoader",
-        description = "Uploads a csv file in a collection",
-        secure = true,
-        defaultURI = "/csv")
+@RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a MongoDb collection", secure = true, defaultURI = "/csv")
 public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
     /**
      *
@@ -80,15 +79,14 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
 
     private static final String ERROR_NO_ID = "id must be set when update=true";
 
-    // private static final String ERROR_CONTENT_TYPE = "Content-Type request header must be 'text/csv'";
-
     private static final String ERROR_WRONG_METHOD = "Only POST method is supported";
-
-    // private static final String ERROR_PARSING_DATA = "Error parsing CSV, see logs for more information";
 
     private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false);
 
     private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true);
+
+    @Inject("mclient")
+    MongoClient mclient;
 
     /**
      *
@@ -100,93 +98,85 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
 
         if (request.isOptions()) {
             handleOptions(request);
-        } else {
-            var mclient = RHMongoClients.mclient();
+            return;
+        }
 
-            if (mclient == null) {
-                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "MongoDb not available");
+        if (!request.isPost()) {
+            response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, ERROR_WRONG_METHOD);
+            return;
+        }
+
+        response.setContentTypeAsJson();
+
+        try {
+            var params = new CsvRequestParams(exchange);
+
+            if (params.db == null) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "db qparam is mandatory");
                 return;
             }
 
-            response.setContentTypeAsJson();
-            if (doesApply(request)) {
-                try {
-                    var params = new CsvRequestParams(exchange);
-
-                    if (params.db == null) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "db qparam is mandatory");
-                        return;
-                    }
-
-                    if (params.coll == null) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "coll qparam is mandatory");
-                        return;
-                    }
-
-                    if (params.update && params.idIdx < 0) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_NO_ID);
-                    } else {
-                        var documents = request.getContent();
-
-                        if (documents != null && documents.size() > 0) {
-                            var mcoll = RHMongoClients.mclient().getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
-
-                            if (params.update && !params.upsert) {
-                                documents.stream()
-                                        .map(doc -> doc.asDocument())
-                                        // add props specified via keys and values qparams
-                                        .map(doc -> addProps(params, doc))
-                                        .forEach(doc -> {
-                                            var updateQuery = new BsonDocument("_id", doc.remove("_id"));
-
-                                            // for upate import, take _filter property into account
-                                            // for instance, a filter allows to use $ positional array operator
-                                            var _filter = doc.remove(FILTER_PROPERTY);
-
-                                            if (_filter != null && _filter.isDocument()) {
-                                                updateQuery.putAll(_filter.asDocument());
-                                            }
-                                            if (params.upsert) {
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
-                                            } else {
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_NO_UPSERT_OPS);
-                                            }
-                                        });
-                            } else if (params.update && params.upsert) {
-                                documents.stream()
-                                        .map(doc -> doc.asDocument())
-                                        // add props specified via keys and values qparams
-                                        .map(doc -> addProps(params, doc))
-                                        .forEach(doc -> {
-                                            var updateQuery = new BsonDocument("_id", doc.remove("_id"));
-
-                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
-                                        });
-                            } else {
-                                var docList = documents.stream()
-                                        .map(doc -> doc.asDocument())
-                                        // add props specified via keys and values qparams
-                                        .map(doc -> addProps(params, doc))
-                                        .collect(Collectors.toList());
-
-                                mcoll.insertMany(docList);
-                            }
-                            response.setStatusCode(HttpStatus.SC_OK);
-                        } else {
-                            response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
-                        }
-                    }
-                } catch (IllegalArgumentException iae) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_QPARAM);
-                }
-            } else {
-                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, ERROR_WRONG_METHOD);
+            if (params.coll == null) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "coll qparam is mandatory");
+                return;
             }
-        }
-    }
 
-    private boolean doesApply(BsonFromCsvRequest request) {
-        return request.isPost();
+            if (params.update && params.idIdx < 0) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_NO_ID);
+            } else {
+                var documents = request.getContent();
+
+                if (documents != null && documents.size() > 0) {
+                    var mcoll = RHMongoClients.mclient().getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+
+                    if (params.update && !params.upsert) {
+                        documents.stream()
+                            .map(doc -> doc.asDocument())
+                            // add props specified via keys and values qparams
+                            .map(doc -> addProps(params, doc))
+                            .forEach(doc -> {
+                                var updateQuery = new BsonDocument("_id", doc.remove("_id"));
+
+                                // for upate import, take _filter property into account
+                                // for instance, a filter allows to use $ positional array operator
+                                var _filter = doc.remove(FILTER_PROPERTY);
+
+                                if (_filter != null && _filter.isDocument()) {
+                                    updateQuery.putAll(_filter.asDocument());
+                                }
+                                if (params.upsert) {
+                                    mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
+                                } else {
+                                    mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_NO_UPSERT_OPS);
+                                }
+                            });
+                    } else if (params.update && params.upsert) {
+                        documents.stream()
+                            .map(doc -> doc.asDocument())
+                            // add props specified via keys and values qparams
+                            .map(doc -> addProps(params, doc))
+                            .forEach(doc -> {
+                                var updateQuery = new BsonDocument("_id", doc.remove("_id"));
+
+                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
+                            });
+                    } else {
+                        var docList = documents.stream()
+                            .map(doc -> doc.asDocument())
+                            // add props specified via keys and values qparams
+                            .map(doc -> addProps(params, doc))
+                            .collect(Collectors.toList());
+
+                        mcoll.insertMany(docList);
+                    }
+                    response.setStatusCode(HttpStatus.SC_OK);
+                } else {
+                    response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
+                }
+            }
+        } catch (IllegalArgumentException iae) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_QPARAM);
+        }
     }
 
     private BsonDocument addProps(CsvRequestParams params, BsonDocument doc) {
