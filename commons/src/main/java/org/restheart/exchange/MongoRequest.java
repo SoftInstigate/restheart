@@ -398,6 +398,8 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.FILE;
             } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
+            } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+                type = TYPE.AGGREGATION;
             } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 type = TYPE.FILE;
             } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
