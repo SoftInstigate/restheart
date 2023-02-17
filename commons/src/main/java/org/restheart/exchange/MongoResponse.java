@@ -20,6 +20,7 @@
 package org.restheart.exchange;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;
@@ -46,6 +47,7 @@ import org.bson.BsonValue;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  *
@@ -219,6 +221,22 @@ public class MongoResponse extends BsonResponse {
             if (t.getMessage() != null) {
                 if (t instanceof JsonParseException) {
                     rep.put("exception message", new BsonString("invalid json"));
+                } else if (t instanceof MongoCommandException mce) {
+                    var errorDoc = document().put("code", mce.getResponse().get("code"))
+                        .put("codeName", mce.getResponse().get("codeName"));
+
+                    var errmsg = mce.getResponse().get("errmsg");
+
+                    // the erromsg in some cases can contain input data
+                    // that can be huge or contain sensitive information
+                    // let truncate errmsg at 100chars
+                    if (errmsg != null && errmsg.isString()) {
+                        var _errmsg = errmsg.asString().getValue();
+                        _errmsg = _errmsg.length() <= 100 ? _errmsg: _errmsg.substring(0, 100) + "...";
+                        errorDoc.put("errmsg", _errmsg);
+                    }
+
+                    rep.put("exception message", errorDoc.get());
                 } else {
                     rep.put("exception message", new BsonString(avoidEscapedChars(t.getMessage())));
                 }

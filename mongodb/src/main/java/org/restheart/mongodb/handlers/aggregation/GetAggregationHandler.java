@@ -30,6 +30,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
+import org.bson.BsonString;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
@@ -118,7 +119,7 @@ public class GetAggregationHandler extends PipelinedHandler {
             injectAvars(request, avars);
 
             switch (query.getType()) {
-                case MAP_REDUCE:
+                case MAP_REDUCE -> {
                     MapReduceIterable<BsonDocument> mrOutput;
                     var mapReduce = (MapReduce) query;
                     try {
@@ -135,21 +136,21 @@ public class GetAggregationHandler extends PipelinedHandler {
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                         }
+
+                        mrOutput.into(_data);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
                         response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ex);
+                        LOGGER.error("error executing mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing mapReduce: " + qvnbe.getMessage());
+                        LOGGER.error("error executing mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
                         next(exchange);
                         return;
                     }
-                    // ***** get data
-                    for (BsonDocument obj : mrOutput) {
-                        _data.add(obj);
-                    }
-                    break;
-                case AGGREGATION_PIPELINE:
+                }
+                case AGGREGATION_PIPELINE -> {
                     AggregateIterable<BsonDocument> agrOutput;
                     var pipeline = (AggregationPipeline) query;
                     try {
@@ -166,24 +167,31 @@ public class GetAggregationHandler extends PipelinedHandler {
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         }
-                    } catch (MongoCommandException | InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggregation pipeline", ex);
+
+                        agrOutput.into(_data);
+                    } catch (MongoCommandException mce) {
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggregation", mce);
+                        LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, mongoCommandExceptionError(mce));
+                        next(exchange);
+                        return;
+                    } catch(InvalidMetadataException ex) {
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "invalid aggregation", ex);
+                        LOGGER.error("invalid aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggregation pipeline: " + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggregation", qvnbe);
+                        LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
                         next(exchange);
                         return;
                     }
-                    // ***** get data
-                    for (BsonDocument obj : agrOutput) {
-                        _data.add(obj);
-                    }
-                    break;
-                default:
-                    response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+                }
+                default -> {
+                    response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown pipeline type");
+                    LOGGER.error("error executing pipeline: unknown type {} for /{}/{}/_aggrs/{}", query.getType(), request.getDBName(), request.getCollectionName(), queryUri);
                     next(exchange);
                     return;
+                }
             }
         }
 
@@ -282,6 +290,23 @@ public class GetAggregationHandler extends PipelinedHandler {
             }
         } else {
             avars.put("@user", BsonNull.VALUE);
+        }
+    }
+
+    public static String mongoCommandExceptionError(MongoCommandException mce) {
+        var mongoErrorResponse = mce.getResponse();
+        var errorCode = mongoErrorResponse.getNumber("code", new BsonInt32(-1)).intValue();
+        var errorCodeName = mongoErrorResponse.getString("codeName", new BsonString("")).getValue();
+        var errorMessage = mongoErrorResponse.getString("errmsg", new BsonString("")).getValue();
+
+        if (!errorMessage.isEmpty()) {
+            errorMessage = errorMessage.length() <= 100 ? errorMessage: errorMessage.substring(0, 100) + "...";
+        }
+
+        if (errorCodeName.isEmpty()) {
+            return Integer.toString(errorCode);
+        } else {
+            return String.format("error code: %d, codeName: %s, message: %s", errorCode, errorCodeName, errorMessage);
         }
     }
 }
