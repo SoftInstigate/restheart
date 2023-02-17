@@ -31,8 +31,6 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAccount;
-import org.restheart.security.FileRealmAccount;
-import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
