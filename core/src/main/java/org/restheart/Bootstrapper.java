@@ -76,6 +76,7 @@ import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.graal.NativeImageBuildTimeChecker;
+import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.PipelinedHandler;
@@ -784,6 +785,7 @@ public final class Bootstrapper {
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
                 new ProxyExchangeBuffersCloser(),
+                new BeforeExchangeInitInterceptorsExecutor(),
                 new XPoweredByInjector(),
                 new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
                 new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),

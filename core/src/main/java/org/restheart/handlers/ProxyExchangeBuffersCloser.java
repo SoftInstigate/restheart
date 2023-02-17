@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * this closes the  a request 
+ * this closes the request
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ProxyExchangeBuffersCloser extends PipelinedHandler {
