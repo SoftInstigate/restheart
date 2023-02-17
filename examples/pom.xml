@@ -32,6 +32,7 @@
         <module>x-powered-by-remover</module>
         <module>freemarker</module>
         <module>custom-logging-field</module>
+        <module>x-headers-to-qparams</module>
     </modules>
 
     <dependencyManagement>
