@@ -138,9 +138,14 @@ public class GetAggregationHandler extends PipelinedHandler {
                         }
 
                         mrOutput.into(_data);
-                    } catch (MongoCommandException | InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ex);
+                    } catch (MongoCommandException ex) {
+                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "error executing mapReduce", ex);
                         LOGGER.error("error executing mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
+                        next(exchange);
+                        return;
+                    } catch(InvalidMetadataException ex) {
+                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
+                        LOGGER.error("invalid mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
@@ -170,12 +175,12 @@ public class GetAggregationHandler extends PipelinedHandler {
 
                         agrOutput.into(_data);
                     } catch (MongoCommandException mce) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggregation", mce);
+                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "error executing aggregation", mce);
                         LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, mongoCommandExceptionError(mce));
                         next(exchange);
                         return;
                     } catch(InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "invalid aggregation", ex);
+                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
                         LOGGER.error("invalid aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
                         next(exchange);
                         return;
@@ -187,7 +192,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     }
                 }
                 default -> {
-                    response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown pipeline type");
+                    response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown pipeline type");
                     LOGGER.error("error executing pipeline: unknown type {} for /{}/{}/_aggrs/{}", query.getType(), request.getDBName(), request.getCollectionName(), queryUri);
                     next(exchange);
                     return;
