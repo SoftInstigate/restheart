@@ -107,7 +107,7 @@ public class GetAggregationHandler extends PipelinedHandler {
         var query = _query.get();
 
         if (null == query.getType()) {
-            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+            response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown query type");
             next(exchange);
             return;
         } else {
@@ -144,12 +144,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         next(exchange);
                         return;
                     } catch(InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
+                        response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid mapReduce", ex);
                         LOGGER.error("invalid mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing mapReduce: " + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute mapReduce: " + qvnbe.getMessage());
                         LOGGER.error("error executing mapReduce /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
                         next(exchange);
                         return;
@@ -185,7 +185,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggregation", qvnbe);
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute aggregation", qvnbe);
                         LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
                         next(exchange);
                         return;
