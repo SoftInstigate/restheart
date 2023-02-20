@@ -394,60 +394,60 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     @Override
     public void plugService(PluginRecord<Service<?, ?>> srv, final String uri, MATCH_POLICY mp, boolean secured) {
-            SecurityHandler securityHandler;
+        SecurityHandler securityHandler;
 
-            var mechanisms = getAuthMechanisms();
-            var authorizers = getAuthorizers();
-            var tokenManager = getTokenManager();
+        var mechanisms = getAuthMechanisms();
+        var authorizers = getAuthorizers();
+        var tokenManager = getTokenManager();
 
-            if (secured) {
-                securityHandler = new SecurityHandler(mechanisms, authorizers, tokenManager);
-            } else {
-                var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
+        if (secured) {
+            securityHandler = new SecurityHandler(mechanisms, authorizers, tokenManager);
+        } else {
+            var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
-                var _fauthorizer = new PluginRecord<Authorizer>(
-                    "fullAuthorizer",
-                    "authorize any operation to any user",
-                    false, // secure, only applies to services
-                    true,
-                    FullAuthorizer.class.getName(),
-                    new FullAuthorizer(false),
-                    null
-                );
-
-                _fauthorizers.add(_fauthorizer);
-
-                securityHandler = new SecurityHandler(mechanisms, _fauthorizers, tokenManager);
-            }
-
-            var blockingSrv = PluginUtils.blocking(srv.getInstance());
-
-            var _srv = pipe(new PipelineInfoInjector(),
-                // if service is blocking (i.e. @RegisterPlugin(blocking=true))
-                // add WorkingThreadsPoolDispatcher to the pipe
-                blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
-                new TracingInstrumentationHandler(),
-                new RequestLogger(),
-                new BeforeExchangeInitInterceptorsExecutor(),
-                new ServiceExchangeInitializer(),
-                new CORSHandler(),
-                new XPoweredByInjector(),
-                new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-                new QueryStringRebuilder(),
-                securityHandler,
-                new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-                new QueryStringRebuilder(),
-                PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
-                new ResponseInterceptorsExecutor(),
-                new ResponseSender()
+            var _fauthorizer = new PluginRecord<Authorizer>(
+                "fullAuthorizer",
+                "authorize any operation to any user",
+                false, // secure, only applies to services
+                true,
+                FullAuthorizer.class.getName(),
+                new FullAuthorizer(false),
+                null
             );
 
-            plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
+            _fauthorizers.add(_fauthorizer);
 
-            this.services.add(srv);
+            securityHandler = new SecurityHandler(mechanisms, _fauthorizers, tokenManager);
+        }
 
-            // service list changed, invalidate cache
-            this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        var blockingSrv = PluginUtils.blocking(srv.getInstance());
+
+        var _srv = pipe(new PipelineInfoInjector(),
+            // if service is blocking (i.e. @RegisterPlugin(blocking=true))
+            // add WorkingThreadsPoolDispatcher to the pipe
+            blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
+            new TracingInstrumentationHandler(),
+            new RequestLogger(),
+            new BeforeExchangeInitInterceptorsExecutor(),
+            new ServiceExchangeInitializer(),
+            new CORSHandler(),
+            new XPoweredByInjector(),
+            new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+            new QueryStringRebuilder(),
+            securityHandler,
+            new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+            new QueryStringRebuilder(),
+            PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
+            new ResponseInterceptorsExecutor(),
+            new ResponseSender()
+        );
+
+        plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
+
+        this.services.add(srv);
+
+        // service list changed, invalidate cache
+        this.SRV_INTERCEPTORS_CACHE.invalidateAll();
     }
 
     /**
