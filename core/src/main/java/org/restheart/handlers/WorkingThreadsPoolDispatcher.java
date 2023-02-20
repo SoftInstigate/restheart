@@ -38,7 +38,7 @@ import io.undertow.server.handlers.BlockingHandler;
  *
  */
 public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
-    private final BlockingHandler blockingHandler = new BlockingHandler(this);
+    private BlockingHandler blockingHandler = new BlockingHandler(new ErrorHandler(this));
 
     /**
      * Creates a new instance of PipelineInfoInjector
