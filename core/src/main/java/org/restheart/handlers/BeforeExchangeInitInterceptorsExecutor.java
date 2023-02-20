@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
+import org.restheart.plugins.InterceptorException;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.WildcardInterceptor;
@@ -103,9 +104,11 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         this.wildCardInterceptors.stream().filter(ri -> {
             try {
                 return ri.resolve(request, response);
-            } catch (Exception e) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
+            } catch (Exception ex) {
+                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
 
+                Exchange.setInError(exchange);
+                LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
                 return false;
             }})
             .forEachOrdered(ri -> {
@@ -116,7 +119,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
                     LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
 
                     Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(ex);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
                 }
             });
 

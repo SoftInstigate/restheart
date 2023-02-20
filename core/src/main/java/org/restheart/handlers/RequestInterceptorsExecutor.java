@@ -33,6 +33,7 @@ import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.InterceptorException;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.Service;
@@ -105,9 +106,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             .filter(ri -> {
             try {
                 return ri.resolve(request, response);
-            } catch (Exception e) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
+            } catch (Exception ex) {
+                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
 
+                Exchange.setInError(exchange);
+                LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
                 return false;
             }})
             .forEachOrdered(ri -> {
@@ -119,7 +122,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                     LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
 
                     Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(ex);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
                 }
             });
 

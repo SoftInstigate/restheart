@@ -155,7 +155,7 @@ public class RequestContentInjector extends PipelinedHandler {
                 try {
                     return ri.resolve(request, response);
                 } catch (Exception e) {
-                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {} to check if the content is required; assuming requiresContent=false", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
                     return false;
                 }
             })
