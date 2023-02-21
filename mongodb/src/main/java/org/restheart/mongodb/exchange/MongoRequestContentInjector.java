@@ -158,8 +158,6 @@ public class MongoRequestContentInjector {
      * BsonDocument
      */
     protected static BsonDocument extractMetadata(final FormData formData) throws JsonParseException {
-        var metadata = new BsonDocument();
-
         final String metadataString;
 
         metadataString = formData.getFirst(FILE_METADATA) != null
@@ -169,10 +167,18 @@ public class MongoRequestContentInjector {
                 : null;
 
         if (metadataString != null) {
-            metadata = BsonDocument.parse(metadataString);
-        }
+            var parsed = BsonUtils.parse(metadataString);
 
-        return metadata;
+            if (parsed == null) {
+                return new BsonDocument();
+            } else if (parsed.isDocument()) {
+                return parsed.asDocument();
+            } else {
+                throw new JsonParseException("metadata is not a valid JSON object");
+            }
+        } else {
+            return new BsonDocument();
+        }
     }
 
     /**
