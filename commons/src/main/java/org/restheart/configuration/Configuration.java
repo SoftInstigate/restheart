@@ -385,7 +385,7 @@ public class Configuration {
         // this logs the overrides trying to mask sensite data
         // sensitive data is any key containins "password", "pwd" or "secret"
         // it also hides the password in MongoDB connection string
-        // works also in case the value is a Json object, checking the root keys
+        // works also if the value is a Json object, checking the root keys (does not hide nested properties)
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
                 if (o.value() instanceof HashMap<?, ?> mapValue) {
