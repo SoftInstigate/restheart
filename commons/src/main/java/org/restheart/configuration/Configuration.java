@@ -37,12 +37,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+import com.mongodb.ConnectionString;
 import org.apache.commons.jxpath.JXPathContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -381,10 +382,48 @@ public class Configuration {
         var ctx = JXPathContext.newContext(confMap);
         ctx.setLenient(true);
 
+        // this logs the overrides trying to mask sensite data
+        // sensitive data is any key containins "password", "pwd" or "secret"
+        // it also hides the password in MongoDB connection string
+        // works also in case the value is a Json object, checking the root keys
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
-                if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")) {
+                if (o.value() instanceof HashMap<?, ?> mapValue) {
+                    var maskedValue = new HashMap<String, Object>();
+                    mapValue.keySet().stream()
+                        .filter(k -> k instanceof String)
+                        .map(k -> (String) k)
+                        .forEach(k -> {
+                            if (k.contains("password") || k.contains("pwd") || k.contains("secret")) {
+                                maskedValue.put(k, "**********");
+                            } else if (k.contains("connection-string")) {
+                                try {
+                                    var svalue = mapValue.get(k).toString();
+                                    var cs = new ConnectionString(svalue);
+                                    var _pwd = cs.getPassword();
+                                    if (_pwd != null) {
+                                        var pwd = new String(_pwd);
+                                        maskedValue.put(k, svalue.replaceFirst(pwd, "**********"));
+                                    }
+                                } catch(Throwable t) {
+                                    maskedValue.put(k, mapValue);
+                                }
+                            }
+                        });
+                    LOGGER.info("\t{} -> {}", o.path(), maskedValue);
+                } else if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")) {
                     LOGGER.info("\t{} -> {}", o.path(), "**********");
+                } else if (o.path().endsWith("connection-string") && o.value() instanceof String svalue) {
+                    try {
+                        var cs = new ConnectionString(svalue);
+                        var _pwd = cs.getPassword();
+                        if (_pwd != null) {
+                            var pwd = new String(_pwd);
+                            LOGGER.info("\t{} -> {}", o.path(), svalue.replaceFirst(pwd, "**********"));
+                        }
+                    } catch(Throwable t) {
+                        LOGGER.info("\t{} -> {}", o.path(), o.value());
+                    }
                 } else {
                     LOGGER.info("\t{} -> {}", o.path(), o.value());
                 }
