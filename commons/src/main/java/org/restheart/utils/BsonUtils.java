@@ -605,7 +605,7 @@ public class BsonUtils {
 
     /**
      * @param json
-     * @return either a BsonDocument or a BsonArray from the json string
+     * @return either a BsonDocument or a BsonArray from the json string orr null if argument is an blank String
      * @throws JsonParseException
      */
     public static BsonValue parse(String json) throws JsonParseException {
