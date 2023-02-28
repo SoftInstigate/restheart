@@ -62,7 +62,7 @@ public abstract class AbstractAggregationOperation {
             return null;
         }
 
-        ArrayList<AbstractAggregationOperation> ret = new ArrayList<>();
+        var ret = new ArrayList<AbstractAggregationOperation>();
 
         var _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
 
@@ -134,8 +134,8 @@ public abstract class AbstractAggregationOperation {
             });
         } else if (aVars.isArray()) {
             aVars.asArray().getValues().stream()
-                    .filter(el -> (el.isDocument() || el.isArray()))
-                    .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);
+                .filter(el -> (el.isDocument() || el.isArray()))
+                .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);
         }
     }
 
@@ -194,12 +194,13 @@ public abstract class AbstractAggregationOperation {
     /**
      * @param obj
      * @param aVars RequestContext.getAggregationVars()
-     * @return the json object where the variables ({"_$var": "var") are
+     * @return the json object where the variables <code>{"_$var": "name" }</code>
+     * or <code>{"_$var": [ "name", "defaultValue" ] }</code> are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.exchange.InvalidMetadataException
      * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
-    protected BsonValue bindAggregationVariables( BsonValue obj, BsonDocument aVars) throws InvalidMetadataException, QueryVariableNotBoundException {
+    protected BsonValue bindAggregationVariables(BsonValue obj, BsonDocument aVars) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (obj == null) {
             return null;
         }
@@ -208,30 +209,43 @@ public abstract class AbstractAggregationOperation {
             var _obj = obj.asDocument();
 
             if (_obj.size() == 1 && _obj.get("$var") != null) {
-                BsonValue varName = _obj.get("$var");
+                var v = _obj.get("$var");
 
-                if (!(varName.isString())) {
-                    throw new InvalidMetadataException("wrong variable name " + varName.toString());
+                if (v.isArray() && v.asArray().size() == 2) { // case {"$var": [ "name", "value" ] }
+                    var _name = v.asArray().get(0);
+                    var defaultValue = v.asArray().get(1);
+
+                    if (!_name.isString()) {
+                        throw new InvalidMetadataException("wrong variable name " + v.toString());
+                    }
+
+                    var name = _name.asString().getValue();
+
+                    return aVars == null || aVars.get(name) == null
+                        ? defaultValue
+                        : aVars.get(_name.asString().getValue());
+                } else if (v.isString()) { // case { "$var": "name" }
+                    if (aVars == null || aVars.get(v.asString().getValue()) == null) {
+                        throw new QueryVariableNotBoundException("variable " + v.asString().getValue() + " not bound");
+                    }
+
+                    return aVars.get(v.asString().getValue());
+                } else {
+                    throw new InvalidMetadataException("wrong variable name " + v.toString());
                 }
-
-                if (aVars == null || aVars.get(varName.asString().getValue()) == null) {
-                    throw new QueryVariableNotBoundException("variable " + varName.asString().getValue() + " not bound");
-                }
-
-                return aVars.get(varName.asString().getValue());
             } else {
-                BsonDocument ret = new BsonDocument();
+                var ret = new BsonDocument();
 
-                for (String key : _obj.keySet()) {
+                for (var key : _obj.keySet()) {
                     ret.put(key, bindAggregationVariables(_obj.get(key), aVars));
                 }
 
                 return ret;
             }
         } else if (obj.isArray()) {
-            BsonArray ret = new BsonArray();
+            var ret = new BsonArray();
 
-            for (BsonValue el : obj.asArray().getValues()) {
+            for (var el : obj.asArray().getValues()) {
                 if (el.isDocument()) {
                     ret.add(bindAggregationVariables(el, aVars));
                 } else if (el.isArray()) {
@@ -242,7 +256,6 @@ public abstract class AbstractAggregationOperation {
             }
 
             return ret;
-
         } else {
             return obj;
         }

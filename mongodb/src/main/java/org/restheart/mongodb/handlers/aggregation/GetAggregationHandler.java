@@ -219,8 +219,7 @@ public class GetAggregationHandler extends PipelinedHandler {
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            response.setInError(
-                    HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
+            response.setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange);
         }
     }

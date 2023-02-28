@@ -22,13 +22,14 @@ package org.restheart.mongodb.handlers.aggregation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.LambdaUtils;
 
 /**
  * represents a map reduce.
@@ -38,12 +39,12 @@ import org.restheart.utils.BsonUtils;
 public class AggregationPipeline extends AbstractAggregationOperation {
 
     /**
-     *
+     * the stages property name
      */
     public static final String STAGES_ELEMENT_NAME = "stages";
 
     /**
-     *
+     * the allowDiskUse property name
      */
     public static final String ALLOW_DISK_USER_ELEMENT_NAME = "allowDiskUse";
 
@@ -51,66 +52,47 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     private final BsonBoolean allowDiskUse;
 
     /**
-     * @param properties the json properties object. It must include the
-     * following properties:
-     * <ul>
-     * <li><code>stages</code></li>
-     * </ul>
-     * <strong>Note</strong> that the dollar prefixed operators in the stages
-     * must be underscore escaped, e.g. "_$exits"
-     * <p>
-     * Example:      <code>
+     * Constructor from aggregation definition in collection metadata
      *
-     * aggrs: [
-     * {
-     *   "type":"pipeline",
-     *   "uri":"test_ap",
-     *   "allowDiskUse": false,
-     *   "stages":
-     *     [
-     *       {"_$match": { "name": { "_$exists": true}}},
-     *       {"_$group": { "_id": "$name", "avg_age": {"_$avg": "$age"} }}
-     *     ]
-     * }]
-     * </code>
+     *
+     * @param properties the json object defining the aggregation; it must include the
+     * array {@code stages}. Note: dollar prefixed operators in the stages
+     * must be underscore escaped, e.g. "_$exits". Example:
+     *
+     * <pre>
+    {
+        "type": "pipeline",
+        "uri": "test_ap",
+        "allowDiskUse": false,
+        "stages": [ { "_$match": { "name": { "_$exists": true } } } ]
+    }
+     </pre>
+     *
      * @throws org.restheart.exchange.InvalidMetadataException
      */
-    public AggregationPipeline(BsonDocument properties)
-            throws InvalidMetadataException {
+    public AggregationPipeline(BsonDocument properties) throws InvalidMetadataException {
         super(properties);
 
-        BsonValue _stages = properties.get(STAGES_ELEMENT_NAME);
+        var _stages = properties.get(STAGES_ELEMENT_NAME);
 
         if (_stages == null || !_stages.isArray()) {
-            throw new InvalidMetadataException("query /" + getUri()
-                    + "has invalid '" + STAGES_ELEMENT_NAME
-                    + "': " + _stages
-                    + "; must be an array of stage objects");
+            throw new InvalidMetadataException("query /" + getUri() + "has invalid '" + STAGES_ELEMENT_NAME + "': " + _stages + "; must be an array of stage objects");
         }
 
         // chekcs that the _stages array elements are all documents
-        if (_stages.asArray().stream()
-                .anyMatch(s -> !s.isDocument())) {
-            throw new InvalidMetadataException("query /" + getUri()
-                    + "has invalid '" + STAGES_ELEMENT_NAME
-                    + "': " + _stages
-                    + "; must be an array of stage objects");
+        if (_stages.asArray().stream().anyMatch(s -> !s.isDocument())) {
+            throw new InvalidMetadataException("query /" + getUri() + "has invalid '" + STAGES_ELEMENT_NAME + "': " + _stages + "; must be an array of stage objects");
         }
 
         this.stages = _stages.asArray();
 
-        BsonValue _allowDiskUse = properties.get(ALLOW_DISK_USER_ELEMENT_NAME);
+        var _allowDiskUse = properties.get(ALLOW_DISK_USER_ELEMENT_NAME);
 
         if (_allowDiskUse != null && !_allowDiskUse.isBoolean()) {
-            throw new InvalidMetadataException("query /" + getUri()
-                    + "has invalid '" + ALLOW_DISK_USER_ELEMENT_NAME
-                    + "': " + _allowDiskUse
-                    + "; must be boolean");
+            throw new InvalidMetadataException("query /" + getUri() + "has invalid '" + ALLOW_DISK_USER_ELEMENT_NAME + "': " + _allowDiskUse + "; must be boolean");
         }
 
-        this.allowDiskUse = _allowDiskUse != null
-                ? _allowDiskUse.asBoolean()
-                : BsonBoolean.FALSE;
+        this.allowDiskUse = _allowDiskUse != null ? _allowDiskUse.asBoolean() : BsonBoolean.FALSE;
     }
 
     /**
@@ -120,26 +102,97 @@ public class AggregationPipeline extends AbstractAggregationOperation {
         return stages;
     }
 
+    public BsonArray removeOptionalNotBoundStages(BsonDocument avars) {
+        return stages;
+    }
+
+    /**
+     * @param stage
+     * @return true if stage is optional
+     * @throws InvalidMetadataException
+     */
+    private static boolean optional(BsonDocument stage) {
+        return stage.containsKey("$ifvar");
+    }
+
+    /**
+     * @param stage
+     * @return true if optional stage is valid
+     * @throws InvalidMetadataException
+     */
+    private static void checkIfVar(BsonDocument stage) throws InvalidMetadataException {
+        if (stage.containsKey("$ifvar")) {
+            var ifvar = stage.get("$ifvar");
+
+            if (!(ifvar.isArray() && (ifvar.asArray().size() == 2 || ifvar.asArray().size() == 3) &&
+                (ifvar.asArray().get(0).isString() ||
+                (ifvar.asArray().get(0).isArray() && ifvar.asArray().get(0).asArray().stream().allMatch(e -> e.isString())) ||
+                (ifvar.asArray().get(1).isDocument()) ||
+                (ifvar.asArray().size() > 2 && ifvar.asArray().get(2).isDocument())))) {
+                    throw new InvalidMetadataException("Invalid optional stage: " + BsonUtils.toJson(stage));
+            }
+        }
+    }
+
+    private static boolean stageApplies(BsonDocument stage, BsonDocument avars) {
+        var vars = stage.get("$ifvar").asArray().get(0);
+
+        if (vars.isString()) {
+            return avars.containsKey(vars.asString().getValue());
+        } else {
+            return vars.asArray().stream().map(s -> s.asString().getValue()).allMatch(avars::containsKey);
+        }
+    }
+
+    private static BsonDocument elseStage(BsonDocument stage) {
+        return stage.get("$ifvar").asArray().size() > 2
+            ? stage.get("$ifvar").asArray().get(2).asDocument()
+            : null;
+    }
+
     /**
      * @param avars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.exchange.InvalidMetadataException
      * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
-    public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars)
-            throws InvalidMetadataException, QueryVariableNotBoundException {
-        BsonArray replacedStages = bindAggregationVariables(
-            BsonUtils.unescapeKeys(stages), avars)
-                .asArray();
+    public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars) throws InvalidMetadataException, QueryVariableNotBoundException {
+        var stagesWithUnescapedOperators = BsonUtils.unescapeKeys(stages).asArray();
 
-        List<BsonDocument> ret = new ArrayList<>();
+        // check optional stages
+        stagesWithUnescapedOperators.stream()
+            .map(s -> s.asDocument())
+            .filter(stage -> optional(stage)).forEach(optionalStage -> {
+                try {
+                    checkIfVar(optionalStage);
+                } catch(InvalidMetadataException ime) {
+                    LambdaUtils.throwsSneakyException(ime);
+                }
+            });
 
-        replacedStages.stream().filter((stage) -> (stage.isDocument()))
-                .forEach((stage) -> {
-                    ret.add(stage.asDocument());
-                });
+        var stagesWithoutUnboudOptionalStages = stagesWithUnescapedOperators.stream()
+            .map(s -> s.asDocument())
+            .map(stage -> _stage(stage, avars))
+            .filter(stage -> stage != null)
+            .collect(Collectors.toCollection(BsonArray::new));
+
+        var resolvedStages = bindAggregationVariables(stagesWithoutUnboudOptionalStages, avars).asArray();
+
+        var ret = new ArrayList<BsonDocument>();
+
+        resolvedStages.stream().filter(stage -> stage.isDocument()).map(stage -> stage.asDocument()).forEach(ret::add);
 
         return ret;
+    }
+
+    private static BsonDocument _stage(BsonDocument stage, BsonDocument avars) {
+        if (!optional(stage)) {
+            return stage;
+        } else if (stageApplies(stage, avars)){
+            return stage.get("$ifvar").asArray().get(1).asDocument();
+        } else {
+            return elseStage(stage); // null, if no else stage specified
+        }
     }
 
     /**
