@@ -35,6 +35,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.utils.RequestHelper;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -96,17 +97,33 @@ public class FileMetadataHandler extends PipelinedHandler {
             return;
         }
 
+        if (!_content.isDocument()) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content must be a JSON object");
+            next(exchange);
+            return;
+        }
+
+        var content = _content.asDocument();
+
+        if (BsonUtils.containsUpdateOperators(content, true)) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content cannot contain update operators");
+            next(exchange);
+            return;
+        }
+
         // Ensure the passed content whether already within a metadata/properties document or just plain
         // is wrapped in a metadata document.
-        var content = _content.asDocument();
-        if (content.containsKey(PROPERTIES)) {
+        if (content.containsKey(FILE_METADATA)) {
+            content = new BsonDocument(FILE_METADATA, content.get(FILE_METADATA));
+        } else if (content.containsKey(PROPERTIES)) {
             content = new BsonDocument(FILE_METADATA, content.get(PROPERTIES));
         } else if (!content.containsKey(FILE_METADATA)) {
             content = new BsonDocument(FILE_METADATA, content);
         }
 
-        // Remove any _id field from the metadata.
         final var _metadata = content.get(FILE_METADATA).asDocument();
+
+        // Remove any _id field from the metadata.
         _metadata.remove(_ID);
 
         // Update main document filename to match metadata
@@ -117,13 +134,15 @@ public class FileMetadataHandler extends PipelinedHandler {
 
         var id = request.getDocumentId();
 
-        if (content.get(_ID) == null) {
-            content.put(_ID, id);
-        } else if (!content.get(_ID).equals(id)) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
-            next(exchange);
-            return;
+        if (content.containsKey(_ID)) {
+            if (!content.get(_ID).equals(id)) {
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
+                next(exchange);
+                return;
+            }
+            content.remove(_ID);
         }
+
 
         var result = gridFs.updateFileMetadata(
             Optional.ofNullable(request.getClientSession()),
@@ -131,7 +150,7 @@ public class FileMetadataHandler extends PipelinedHandler {
             request.getDBName(),
             request.getCollectionName(),
             request.getMethod(),
-            Optional.of(request.getDocumentId()),
+            Optional.of(id),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),
             content,

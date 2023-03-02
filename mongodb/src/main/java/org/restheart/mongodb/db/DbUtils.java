@@ -130,36 +130,6 @@ public class DbUtils {
     private static final Bson IMPOSSIBLE_CONDITION = exists("_id", false);
 
     /**
-     *
-     * @param cs the client session
-     * @param coll
-     * @param method the request method
-     * @param documentId use Optional.empty() to specify no documentId (null is _id: null)
-     * @param filter
-     * @param shardKeys
-     * @param data
-     * @return the old document
-     */
-    public static OperationResult updateFileMetadata(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final METHOD method,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument data) {
-        return writeDocument(
-            cs,
-            method,
-            WRITE_MODE.UPDATE,
-            coll,
-            documentId,
-            filter,
-            shardKeys,
-            data);
-    }
-
-    /**
      * Writes a mongo document
      *
      * The MongoDB write operation depends on the request method and on the write mode as follows:
@@ -504,7 +474,7 @@ public class DbUtils {
             BsonDocument set;
 
             if (flatten) {
-                set = BsonUtils.flatten(ret, false);
+                set = BsonUtils.flatten(data, false);
             } else {
                 set = new BsonDocument();
                 keys.stream().forEach(key -> set.append(key, data.get(key)));

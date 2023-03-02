@@ -58,8 +58,7 @@ public class PutFileHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 

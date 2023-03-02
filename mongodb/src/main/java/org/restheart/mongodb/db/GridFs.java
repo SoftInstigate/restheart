@@ -41,9 +41,9 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.METHOD;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.RSOps;
 import org.restheart.utils.HttpStatus;
-
 import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
 
@@ -298,20 +298,23 @@ public class GridFs {
         final boolean checkEtag) {
         var mcoll = collections.collection(rsOps, dbName, collName);
 
-        // genereate new etag
+        // genereate new _etag
         var newEtag = new BsonObjectId();
 
         final BsonDocument content = DbUtils.validContent(newContent);
-        content.get("metadata", new BsonDocument()).asDocument().put("_etag", newEtag);
 
-        var updateResult = DbUtils.updateFileMetadata(
-            cs,
-            mcoll,
-            method,
-            documentId,
-            filter,
-            shardKeys,
-            content);
+        // add new _etag
+        content.get("metadata").asDocument().put("_etag", newEtag);
+
+        var updateResult = DbUtils.writeDocument(
+                cs,
+                METHOD.PATCH, // need to always use PATCH to use $set update operator
+                WRITE_MODE.UPDATE,
+                mcoll,
+                documentId,
+                filter,
+                shardKeys,
+                DbUtils.getUpdateDocument(content, method == METHOD.PATCH)); // if PATCH, then flatten content to update only passed properties
 
         var oldDocument = updateResult.getOldData();
 
