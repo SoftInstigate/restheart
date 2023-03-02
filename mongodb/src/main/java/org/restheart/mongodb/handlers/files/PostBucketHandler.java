@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.files;
 
-import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.restheart.exchange.MongoRequest;
@@ -31,8 +30,6 @@ import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -40,7 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PostBucketHandler extends PipelinedHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
     private final GridFs gridFs = GridFs.get();
 
     /**
@@ -84,24 +80,15 @@ public class PostBucketHandler extends PipelinedHandler {
 
         OperationResult result;
 
-        try {
-            if (request.getFileInputStream() != null) {
-                result = gridFs.createFile(
-                    request.rsOps(),
-                    request.getDBName(),
-                    request.getCollectionName(),
-                    metadata,
-                    request.getFileInputStream());
-            } else {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "POST file request is in a bad format");
-                next(exchange);
-                return;
-            }
-        } catch (DuplicateKeyException t) {
-            // update not supported
-            String errMsg = "file resource update is not yet implemented";
-            LOGGER.error(errMsg, t);
-            response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
+        if (request.getFileInputStream() != null) {
+            result = gridFs.createFile(
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                metadata,
+                request.getFileInputStream());
+        } else {
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "POST file request is in a bad format");
             next(exchange);
             return;
         }

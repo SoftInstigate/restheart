@@ -140,16 +140,24 @@ public class GridFs {
         final String bucketName,
         final BsonDocument metadata,
         final InputStream fileInputStream,
-        final BsonValue fileId,
         final BsonDocument filter,
         final String requestEtag,
         final boolean checkEtag) throws IOException {
 
-        var deletionResult = deleteFile(rsOps, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
+        final BsonValue id;
+        final OperationResult deletionResult;
+
+        if (metadata.containsKey("_id")) {
+            id = metadata.get("_id");
+            deletionResult = deleteFile(rsOps, dbName, bucketName, id, filter, requestEtag, checkEtag);
+        } else {
+            id = new BsonObjectId();
+            deletionResult = null;
+        }
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
-        final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
-        final boolean fileDidntExist = deletionResult.getHttpCode() == SC_NOT_FOUND;
+        final boolean deleteOperationWasSuccessful = deletionResult == null ? true: deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
+        final boolean fileDidntExist = deletionResult == null ? true : deletionResult.getHttpCode() == SC_NOT_FOUND;
         final boolean fileExisted = !fileDidntExist;
 
         if (deleteOperationWasSuccessful || fileDidntExist) {

@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.files;
 
-import com.mongodb.MongoException;
 import com.mongodb.MongoWriteException;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoRequest;
@@ -78,7 +77,7 @@ public class PutFileHandler extends PipelinedHandler {
 
         var id = request.getDocumentId();
 
-        if (metadata.get("_id") != null && metadata.get("_id").equals(id)) {
+        if (metadata.get("_id") != null && !metadata.get("_id").equals(id)) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             next(exchange);
             return;
@@ -96,7 +95,6 @@ public class PutFileHandler extends PipelinedHandler {
                     request.getCollectionName(),
                     metadata,
                     request.getFileInputStream(),
-                    id,
                     request.getFiltersDocument(),
                     request.getETag(),
                     request.isETagCheckRequired());
@@ -107,11 +105,10 @@ public class PutFileHandler extends PipelinedHandler {
                 return;
             }
         } catch (MongoWriteException t) {
-            if (((MongoException) t).getCode() == 11000) {
-                // update not supported
-                String errMsg = "file resource update is not yet implemented";
+            if (t.getCode() == 11000) {
+                var errMsg = "error updating the file, the file bucket might have orphaned chunks";
                 LOGGER.error(errMsg, t);
-                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, errMsg);
                 next(exchange);
                 return;
             }
