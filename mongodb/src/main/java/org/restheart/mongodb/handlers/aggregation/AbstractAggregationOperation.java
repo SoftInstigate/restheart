@@ -88,24 +88,23 @@ public abstract class AbstractAggregationOperation {
     }
 
     private static AbstractAggregationOperation getQuery(BsonDocument query) throws InvalidMetadataException {
-        var _type = query.get(TYPE_ELEMENT_NAME);
-
         if (!query.containsKey(TYPE_ELEMENT_NAME)) {
-            throw new InvalidMetadataException("query does not have '" + TYPE_ELEMENT_NAME + "' property");
-        }
-
-        if (!_type.isString()) {
-            throw new InvalidMetadataException("query property '" + TYPE_ELEMENT_NAME + "' must be a String: " + _type.toString());
-        }
-
-        var type = _type.asString().getValue();
-
-        if (MAP_REDUCE_ALIASES.contains(type)) {
-            return new MapReduce(query);
-        } else if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
             return new AggregationPipeline(query);
         } else {
-            throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "': " + type);
+            var _type = query.get(TYPE_ELEMENT_NAME);
+            if (!_type.isString()) {
+                throw new InvalidMetadataException("query property '" + TYPE_ELEMENT_NAME + "' must be a String: " + _type.toString());
+            }
+
+            var type = _type.asString().getValue();
+
+            if (MAP_REDUCE_ALIASES.contains(type)) {
+                return new MapReduce(query);
+            } else if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
+                return new AggregationPipeline(query);
+            } else {
+                throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "': " + type);
+            }
         }
     }
 
@@ -151,23 +150,23 @@ public abstract class AbstractAggregationOperation {
         var _uri = properties.get(URI_ELEMENT_NAME);
 
         if (!properties.containsKey(TYPE_ELEMENT_NAME)) {
-            throw new InvalidMetadataException( "query does not have '" + TYPE_ELEMENT_NAME + "' property");
-        }
-
-        var _type = properties.get(TYPE_ELEMENT_NAME);
-
-        if (!_type.isString()) {
-            throw new InvalidMetadataException("query property not have '" + TYPE_ELEMENT_NAME + "' is not a String: " + _type.toString());
-        }
-
-        var stype = _type.asString().getValue();
-
-        if (MAP_REDUCE_ALIASES.contains(stype)) {
-            this.type = TYPE.MAP_REDUCE;
-        } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
             this.type = TYPE.AGGREGATION_PIPELINE;
         } else {
-            throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "' property: " + stype);
+            var _type = properties.get(TYPE_ELEMENT_NAME);
+
+            if (!_type.isString()) {
+                throw new InvalidMetadataException("query property not have '" + TYPE_ELEMENT_NAME + "' is not a String: " + _type.toString());
+            }
+
+            var stype = _type.asString().getValue();
+
+            if (MAP_REDUCE_ALIASES.contains(stype)) {
+                this.type = TYPE.MAP_REDUCE;
+            } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
+                this.type = TYPE.AGGREGATION_PIPELINE;
+            } else {
+                throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "' property: " + stype);
+            }
         }
 
         if (!properties.containsKey(URI_ELEMENT_NAME)) {
