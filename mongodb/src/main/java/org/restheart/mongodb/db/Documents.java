@@ -42,9 +42,8 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-
 import static org.restheart.mongodb.db.DbUtils.BAD_VALUE_KEY_ERROR;
-
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -115,7 +114,7 @@ public class Documents {
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument newContent,
+        final BsonValue newContent,
         final String requestEtag,
         final boolean checkEtag) {
         var mcoll = collections.collection(rsOps, dbName, collName);
@@ -123,19 +122,41 @@ public class Documents {
         // genereate new etag
         var newEtag = new BsonObjectId();
 
-        final var content = DbUtils.validContent(newContent);
+        final OperationResult writeResult;
 
-        content.put("_etag", newEtag);
+        if (newContent.isDocument()) {
+            // the content is a document or an update operator expression
+            var newContentDoc = newContent.asDocument();
 
-        var writeResult = DbUtils.writeDocument(
-            cs,
-            method,
-            writeMode,
-            mcoll,
-            documentId,
-            filter,
-            shardKeys,
-            content);
+            final var content = DbUtils.validContent(newContentDoc);
+
+            content.put("_etag", newEtag);
+
+            writeResult = DbUtils.writeDocument(
+                cs,
+                method,
+                writeMode,
+                mcoll,
+                documentId,
+                filter,
+                shardKeys,
+                content);
+        } else {
+            // the content is an aggregation update array
+            var newContentPipeline = newContent.asArray();
+
+            newContentPipeline.add(document().put("$set", document().put("_etag", newEtag)).get());
+
+            writeResult = DbUtils.writeDocument(
+                cs,
+                method,
+                writeMode,
+                mcoll,
+                documentId,
+                filter,
+                shardKeys,
+                newContentPipeline);
+        }
 
         var oldDocument = writeResult.getOldData();
         var newDocument = writeResult.getNewData();

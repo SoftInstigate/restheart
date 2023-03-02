@@ -252,8 +252,9 @@ public class MongoRequestContentInjector {
         if (content == null) {
             content = new BsonDocument();
         } else if (content.isArray()) {
-            if (!request.isCollection() || !request.isPost()) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request data can be an array only for POST to collection resources (bulk post)");
+            if (!(request.isCollection() && request.isPost()) &&
+                !(request.isDocument() && request.isPatch())) {
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content must be a Json object");
                 return;
             }
 

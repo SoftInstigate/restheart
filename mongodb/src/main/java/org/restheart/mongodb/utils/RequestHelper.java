@@ -114,6 +114,38 @@ public class RequestHelper {
 
     /**
      *
+     * @param content
+     * @param exchange
+     * @return true if content is not acceptable. In this case it also invoke
+     *         response.setInError() on the exchange and the caller must invoke
+     *         next() and return
+     * @throws Exception
+     */
+    public static boolean isNotAcceptableContentForPatch(BsonValue content, HttpServerExchange exchange) throws Exception {
+        // cannot proceed with no data
+        if (content == null) {
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            return true;
+        }
+        // can only proceed with an object or an array
+        if (!content.isDocument() && !content.isArray() ) {
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object or array");
+            return true;
+        }
+        if (content.isDocument() && content.asDocument().isEmpty()) {
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            return true;
+        }
+
+        if (content.isArray() && content.asArray().isEmpty()) {
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     *
      * Warn side effect: invokes
      * MongoResponse.of(exchange).setDbOperationResult(result)
      *

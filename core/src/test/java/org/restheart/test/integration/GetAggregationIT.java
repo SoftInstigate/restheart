@@ -61,7 +61,6 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
-                + "\"type\":\"aggregation\","
                 + "\"uri\":\"" + uri + "\","
                 + "\"stages\":"
                 + "["
@@ -86,7 +85,6 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         String aggregationsMetadata = "{\"aggrs\": ["
                 + "{"
-                + "\"type\":\"aggregation\","
                 + "\"uri\":\"" + uri + "\","
                 + "\"stages\":"
                 + "["

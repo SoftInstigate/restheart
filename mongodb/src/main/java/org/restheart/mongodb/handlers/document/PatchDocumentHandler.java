@@ -66,21 +66,22 @@ public class PatchDocumentHandler extends PipelinedHandler {
 
         var _content = request.getContent();
 
-        if (RequestHelper.isNotAcceptableContent(_content, exchange)) {
+        if (RequestHelper.isNotAcceptableContentForPatch(_content, exchange)) {
             next(exchange);
             return;
         }
 
-        var content = _content.asDocument();
+        if (_content.isDocument()) {
+            var content = _content.asDocument();
+            var id = request.getDocumentId();
 
-        var id = request.getDocumentId();
-
-        if (content.get("_id") == null) {
-            content.put("_id", id);
-        } else if (!content.get("_id").equals(id)) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
-            next(exchange);
-            return;
+            if (content.get("_id") == null) {
+                content.put("_id", id);
+            } else if (!content.get("_id").equals(id)) {
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
+                next(exchange);
+                return;
+            }
         }
 
         var result = documents.writeDocument(
@@ -93,7 +94,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),
-            content,
+            _content,
             request.getETag(),
             request.isETagCheckRequired());
 

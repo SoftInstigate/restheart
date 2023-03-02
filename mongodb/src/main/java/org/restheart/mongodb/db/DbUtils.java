@@ -151,7 +151,7 @@ public class DbUtils {
         return writeDocument(
             cs,
             method,
-            WRITE_MODE.UPSERT,
+            WRITE_MODE.UPDATE,
             coll,
             documentId,
             filter,
@@ -199,7 +199,7 @@ public class DbUtils {
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument data) {
+        final BsonValue data) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);
@@ -237,22 +237,32 @@ public class DbUtils {
             case INSERT -> switch(method) {
                 case PATCH -> {
                     try {
-                        var newDocument = cs.isPresent()
-                            ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_NOT_UPSERT_OPS)
-                            : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_UPSERT_OPS);
-                        yield new OperationResult(-1, null, newDocument);
+                        if (data.isArray()) {
+                            List<Bson> updateAggregation = data.asArray().stream().map(d -> (Bson) d).collect(Collectors.toList());
+                            var newDocument = cs.isPresent()
+                                ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, updateAggregation, FAU_UPSERT_OPS)
+                                : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, updateAggregation, FAU_UPSERT_OPS);
+                            yield new OperationResult(-1, oldDocument, newDocument);
+                        } else {
+                            var dataDoc = data.asDocument();
+                            var newDocument = cs.isPresent()
+                                ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, getUpdateDocument(dataDoc, false), FAU_UPSERT_OPS)
+                                : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, getUpdateDocument(dataDoc, false), FAU_UPSERT_OPS);
+                            yield new OperationResult(-1, oldDocument, newDocument);
+                        }
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
                     }
                 }
 
                 case POST, PUT -> {
+                    var dataDoc = data.asDocument(); // for PUT and POST data is a document
                     try {
-                        resolveCurrentDateOperator(data);
+                        resolveCurrentDateOperator(dataDoc.asDocument());
 
                         var insertedId = cs.isPresent()
-                            ? coll.insertOne(cs.get(), data).getInsertedId()
-                            : coll.insertOne(data).getInsertedId();
+                            ? coll.insertOne(cs.get(), dataDoc).getInsertedId()
+                            : coll.insertOne(dataDoc).getInsertedId();
 
                         var insertedQuery = eq("_id", insertedId);
 
@@ -276,16 +286,27 @@ public class DbUtils {
                 case PATCH -> {
                     try {
                         final var ops = writeMode == WRITE_MODE.UPSERT ? FOU_AFTER_UPSERT_OPS : FOU_AFTER_NOT_UPSERT_OPS;
-                        var newDocument = cs.isPresent()
-                            ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, false), ops)
-                            : coll.findOneAndUpdate(query, getUpdateDocument(data, false), ops);
-                        yield new OperationResult(-1, oldDocument, newDocument);
+
+                        if (data.isArray()) {
+                            List<Bson> updateAggregation = data.asArray().stream().map(d -> (Bson) d).collect(Collectors.toList());
+                            var newDocument = cs.isPresent()
+                                ? coll.findOneAndUpdate(cs.get(), query, updateAggregation, ops)
+                                : coll.findOneAndUpdate(query, updateAggregation, ops);
+                            yield new OperationResult(-1, oldDocument, newDocument);
+                        } else {
+                            var dataDoc = data.asDocument();
+                            var newDocument = cs.isPresent()
+                                ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(dataDoc, false), ops)
+                                : coll.findOneAndUpdate(query, getUpdateDocument(dataDoc, false), ops);
+                            yield new OperationResult(-1, oldDocument, newDocument);
+                        }
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
                     }
                 }
 
                 case PUT, POST -> {
+                    var dataDoc = data.asDocument(); // for PUT and POST data is a document
                     try {
                         if (filter.isPresent() && !filter.get().isEmpty()) {
                             query = and(query, filter.get());
@@ -293,8 +314,8 @@ public class DbUtils {
 
                         final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
                         var newDocument = cs.isPresent()
-                            ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
-                            : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
+                            ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(dataDoc), ops)
+                            : coll.findOneAndReplace(query, getReplaceDocument(dataDoc), ops);
                         yield new OperationResult(-1, oldDocument, newDocument);
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
