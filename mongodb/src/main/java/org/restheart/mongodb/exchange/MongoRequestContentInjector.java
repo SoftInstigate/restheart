@@ -68,7 +68,7 @@ public class MongoRequestContentInjector {
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: " + Exchange.JSON_MEDIA_TYPE + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
 
-    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: " + Exchange.APP_FORM_URLENCODED_TYPE + " or " + Exchange.MULTIPART_FORM_DATA_TYPE;
+    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: " + Exchange.FORM_URLENCODED + " or " + Exchange.MULTIPART;
 
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return (contentTypes == null
@@ -80,8 +80,7 @@ public class MongoRequestContentInjector {
     private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
         return contentTypes != null
                 && !contentTypes.isEmpty()
-                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Exchange.APP_FORM_URLENCODED_TYPE)
-                || ct.startsWith(Exchange.MULTIPART_FORM_DATA_TYPE));
+                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Exchange.FORM_URLENCODED) || ct.startsWith(Exchange.MULTIPART));
     }
 
     /**
@@ -372,7 +371,7 @@ public class MongoRequestContentInjector {
         try {
             content = extractMetadata(formData);
         } catch (JsonParseException | IllegalArgumentException ex) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'properties' field is not a valid JSON", ex);
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'metadata' field is not a valid JSON object", ex);
             return null;
         }
 

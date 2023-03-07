@@ -67,8 +67,8 @@ public class PutFileHandler extends PipelinedHandler {
         }
 
         // must be an object
-        if (!request.getContent().isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+        if (request.getContent() == null || !request.getContent().isDocument()) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "metadata must be a JSON object");
             next(exchange);
             return;
         }
@@ -77,7 +77,7 @@ public class PutFileHandler extends PipelinedHandler {
 
         var id = request.getDocumentId();
 
-        if (metadata.get("_id") != null && !metadata.get("_id").equals(id)) {
+        if (metadata.containsKey("_id") && !metadata.get("_id").equals(id)) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             next(exchange);
             return;
