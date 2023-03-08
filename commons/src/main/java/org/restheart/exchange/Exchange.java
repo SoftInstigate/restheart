@@ -50,11 +50,6 @@ public abstract class Exchange<T> {
     /**
      *
      */
-    public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
-
-    /**
-     *
-     */
     public static final String APPLICATION_PDF_TYPE = "application/pdf";
 
     /**
@@ -66,11 +61,6 @@ public abstract class Exchange<T> {
      *
      */
     public static final String MULTIPART = "multipart/form-data";
-
-    /**
-     *
-     */
-    public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
     protected static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
 

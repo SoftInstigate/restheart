@@ -124,8 +124,7 @@ public class TxnsUtils {
      */
     private static long getTxnNumFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED) + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_STARTED);
 
             if (start >= 0 && end >= 0) {
@@ -135,8 +134,7 @@ public class TxnsUtils {
                 return Long.parseLong(numStr);
             }
         } else if (mqe.getErrorCode() == 251 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_ABORTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_ABORTED.length();
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_ABORTED) + TXT_NUM_ERROR_MSG_PREFIX_ABORTED.length();
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_ABORTED);
 
             if (start >= 0 && end >= 0) {
@@ -146,8 +144,7 @@ public class TxnsUtils {
                 return Long.parseLong(numStr);
             }
 
-            start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_NONE)
-                    + TXT_NUM_ERROR_MSG_PREFIX_NONE.length();
+            start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_NONE) + TXT_NUM_ERROR_MSG_PREFIX_NONE.length();
             end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_NONE);
 
             if (start >= 0 && end >= 0) {
@@ -157,8 +154,7 @@ public class TxnsUtils {
                 return Long.parseLong(numStr);
             }
         } else if (mqe.getErrorCode() == 256 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_COMMITTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_COMMITTED.length();
+            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_COMMITTED) + TXT_NUM_ERROR_MSG_PREFIX_COMMITTED.length();
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED);
 
             if (start >= 0 && end >= 0) {
@@ -176,18 +172,38 @@ public class TxnsUtils {
         throw mqe;
     }
 
+    private static final String TXN = "txnNumber";
     /**
-     * from MongoDB 5, the error message contains the string 'with txnNumber '
-     * @param s
+     * errorMsg can be the transaction number or:
+     * - from MongoDb 6:   with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }
+     * - from MongoDB 5:   with { txnNumber: 10 }
+     * - from MongoDB < 5: with txnNumber 10
+     * @param errorMsg
      * @return
      */
-    private static String removeWithTxnNumber(String s) {
-        return s == null ? null :
-            s.contains("{")
-            // MongoDB 6 returns with { thxNumber: 1 }
-            ? s.replaceAll("with \\{ txnNumber:", "").replaceAll("\\}", "").trim()
-            // MongoDB <6 returns with thxNumber 1
-            : s.replaceAll("with txnNumber", "").trim();
+    static String removeWithTxnNumber(String errorMsg) {
+        if (errorMsg == null) {
+            throw new IllegalArgumentException("argument s cannot be null");
+        }
+
+        if (errorMsg.contains(TXN)) {
+            var t = errorMsg.substring(errorMsg.lastIndexOf(TXN) + TXN.length()).trim();
+
+            if (t.indexOf(":") >= 0) {
+                t = t.substring(t.indexOf(":")+1);
+            }
+
+            var closingBracket = t.indexOf("}");
+            var comma = t.indexOf(",");
+
+            if (closingBracket > 0 || comma > 0) {
+                return t.substring(0, comma > 0 ? comma : closingBracket).trim();
+            } else {
+                return t;
+            }
+        } else {
+            return errorMsg;
+        }
     }
 
     /**
@@ -198,23 +214,18 @@ public class TxnsUtils {
      */
     private static Txn.TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
         if (mqe.getErrorCode() == 251) {
-            if (mqe.getErrorMessage().contains(
-                    "does not match any in-progress transactions")) {
+            if (mqe.getErrorMessage().contains("does not match any in-progress transactions")) {
                 return Txn.TransactionStatus.NONE;
-            } else if (mqe.getErrorMessage().contains(
-                    "has been aborted")) {
+            } else if (mqe.getErrorMessage().contains("has been aborted")) {
                 return Txn.TransactionStatus.ABORTED;
             }
         } else if (mqe.getErrorCode() == 256) {
-            if (mqe.getErrorMessage().contains(
-                    "has been committed")) {
+            if (mqe.getErrorMessage().contains("has been committed")) {
                 return Txn.TransactionStatus.COMMITTED;
             }
         }
 
-        LOGGER.trace("***** query error not handled {}: {}",
-                mqe.getErrorCode(),
-                mqe.getErrorMessage());
+        LOGGER.trace("***** query error not handled {}: {}", mqe.getErrorCode(), mqe.getErrorMessage());
 
         throw mqe;
     }

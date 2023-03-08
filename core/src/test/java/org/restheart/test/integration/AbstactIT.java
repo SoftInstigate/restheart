@@ -84,6 +84,9 @@ public abstract class AbstactIT {
      */
     public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
+    // this to test with FerretDb
+    //public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN");
+
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", MONGO_URI.toString());
