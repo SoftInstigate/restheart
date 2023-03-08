@@ -73,7 +73,7 @@ public class BsonRequestWhitelistPredicate implements Predicate {
             return docArArrayOfDocs.asArray().stream().filter(BsonValue::isDocument).map(BsonValue::asDocument)
                 .allMatch(doc -> areAllKeysWhitelisted(whitelist, doc));
         } else {
-            throw new IllegalArgumentException("");
+            throw new IllegalArgumentException("bson-request-whitelist predicate cannot be invoked on JSON type " + docArArrayOfDocs.getBsonType().toString());
         }
     }
 
