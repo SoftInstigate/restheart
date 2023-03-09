@@ -229,7 +229,7 @@ public class MongoRequestContentInjector {
             return;
         }
 
-        if (request.isGet() || request.isOptions() || request.isDelete() || request.getExchange().getRequestContentLength() <= 0) {
+        if (request.isGet() || request.isOptions() || request.isDelete()) {
             return;
         }
 
