@@ -25,7 +25,7 @@ public class FreemarkerPlugin implements StringService {
     public void handle(final StringRequest request, final StringResponse response) throws Exception {
         switch (request.getMethod()) {
             case GET -> {
-                String user = request.getQueryParameterOfDefault("user", "Big Joe");
+                String user = request.getQueryParameterOrDefault("user", "Big Joe");
                 final Map<String, Object> model = new HashMap<>();
                 model.put("user", user);
                 final String html = processTemplate(model, "index.html");

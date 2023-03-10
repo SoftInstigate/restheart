@@ -55,8 +55,8 @@ public class CacheInvalidator implements ByteArrayService {
             return;
         }
 
-        var db = request.getQueryParameterOfDefault("db", null);
-        var coll = request.getQueryParameterOfDefault("coll", null);
+        var db = request.getQueryParameterOrDefault("db", null);
+        var coll = request.getQueryParameterOrDefault("coll", null);
 
         if (db == null) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "the db query paramter is mandatory");

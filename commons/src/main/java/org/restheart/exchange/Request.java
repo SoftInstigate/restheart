@@ -129,13 +129,26 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     *
-     * @return a the first value of the query paramter of defaultValue if not present
+     * @return the value of the query parameter or defaultValue if not present
+     * @deprecated use {@link org.restheart.exchange.Request#getQueryParameterOrDefault} instead
+     * This method contains a typo in the name and will be removed in a future release
      */
+    @Deprecated
     public String getQueryParameterOfDefault(String name, String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
             ?  wrapped.getQueryParameters().get(name).getFirst()
             : defaultValue;
+    }
+
+    /**
+     * @param name the name of the query parameter
+     * @param defaultValue the default value to return if the query parameter is not present
+     * @return the value of the query parameter or defaultValue if not present
+     */
+    public String getQueryParameterOrDefault(String name, String defaultValue) {
+        return wrapped.getQueryParameters().containsKey(name)
+                ? wrapped.getQueryParameters().get(name).getFirst()
+                : defaultValue;
     }
 
     /**
