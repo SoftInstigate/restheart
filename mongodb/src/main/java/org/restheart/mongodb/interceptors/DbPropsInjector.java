@@ -129,6 +129,7 @@ public class DbPropsInjector implements MongoInterceptor {
             && request.isHandledBy("mongo")
             && !(request.isInError()
             || request.isSessions()
+            || request.isSession()
             || request.isTxn()
             || request.isTxns()
             || request.isRoot()

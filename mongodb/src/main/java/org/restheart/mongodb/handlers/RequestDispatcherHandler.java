@@ -62,6 +62,7 @@ import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import org.restheart.mongodb.handlers.root.GetRootHandler;
 import org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.mongodb.handlers.schema.JsonSchemaTransformer;
+import org.restheart.mongodb.handlers.sessions.DeleteSessionHandler;
 import org.restheart.mongodb.handlers.sessions.PostSessionHandler;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -323,6 +324,9 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         // *** Sessions handlers
         putHandler(TYPE.SESSIONS, METHOD.POST, new PostSessionHandler());
+
+        // *** Session handlers
+        putHandler(TYPE.SESSION, METHOD.DELETE, new DeleteSessionHandler());
 
         // *** SCHEMA handlers
         putHandler(TYPE.SCHEMA_STORE, METHOD.GET,
