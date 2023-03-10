@@ -22,25 +22,26 @@ package org.restheart.mongodb.handlers.sessions;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonInt64;
-import org.bson.BsonNull;
-import org.bson.BsonString;
+import org.bson.BsonBinary;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
-import org.restheart.mongodb.db.sessions.TxnsUtils;
+import org.restheart.mongodb.RHMongoClients;
 import org.restheart.utils.HttpStatus;
+import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.utils.BsonUtils.array;
+
+import com.mongodb.client.MongoClient;
 
 /**
  *
- * commits the transaction of the session
+ * kills a session
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetTxnHandler extends PipelinedHandler {
+public class DeleteSessionHandler extends PipelinedHandler {
+    private static final MongoClient mclient = RHMongoClients.mclient();
+
     /**
      *
      * @param exchange
@@ -56,39 +57,24 @@ public class GetTxnHandler extends PipelinedHandler {
             return;
         }
 
-        String _sid = request.getSid();
-
-        UUID sid;
+        final UUID sid;
 
         try {
-            sid = UUID.fromString(_sid);
+            sid = UUID.fromString(request.getPathParam("/_sessions/{sid}", "sid"));
         } catch (IllegalArgumentException iae) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
             next(exchange);
             return;
         }
 
-        var txn = TxnsUtils.getTxnServerStatus(sid, request.rsOps());
-
-        if (txn.getStatus() == NONE) {
-            response.setContent(new BsonDocument("currentTxn", new BsonNull()));
-        } else {
-            var currentTxn = new BsonDocument();
-
-            var resp = new BsonDocument("currentTxn", currentTxn);
-
-            currentTxn.append("id",
-                    txn.getTxnId() > Integer.MAX_VALUE
-                    ? new BsonInt64(txn.getTxnId())
-                    : new BsonInt32((int) txn.getTxnId()));
-
-            currentTxn.append("status", new BsonString(txn.getStatus().name()));
-
-            response.setContent(resp);
+        try {
+            var killCmd = document().put("killSessions", array().add(document().put("id", new BsonBinary(sid)))).get();
+            mclient.getDatabase("admin").runCommand(killCmd);
+        } catch(Throwable t) {
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error killing session");
+            next(exchange);
+            return;
         }
-
-        response.setContentTypeAsJson();
-        response.setStatusCode(HttpStatus.SC_OK);
 
         next(exchange);
     }

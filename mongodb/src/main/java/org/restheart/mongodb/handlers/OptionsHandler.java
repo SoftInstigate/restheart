@@ -178,6 +178,12 @@ public class OptionsHandler extends PipelinedHandler {
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
 
+                case SESSION:
+                    response.getHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "DELETE")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+
                 case TRANSACTIONS:
                     response.getHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, POST")

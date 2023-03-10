@@ -134,7 +134,9 @@ public class CollectionPropsInjector implements MongoInterceptor {
                 || request.isMetrics()
                 || request.isDbSize()
                 || request.isTxn()
-                || request.isTxns());
+                || request.isTxns()
+                || request.isSessions()
+                || request.isSession());
     }
 
     /**

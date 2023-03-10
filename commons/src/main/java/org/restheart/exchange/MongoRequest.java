@@ -1343,10 +1343,19 @@ public class MongoRequest extends BsonRequest {
     /**
      * helper method to check request resource type
      *
-     * @return true if type is TYPE.TRANSACTIONS
+     * @return true if type is TYPE.SESSIONS
      */
     public boolean isSessions() {
         return getType() == TYPE.SESSIONS;
+    }
+
+     /**
+     * helper method to check request resource type
+     *
+     * @return true if type is TYPE.SESSION
+     */
+    public boolean isSession() {
+        return getType() == TYPE.SESSION;
     }
 
     /**
