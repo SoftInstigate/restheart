@@ -14,8 +14,8 @@ export function handle(request, response) {
     // pluginArgs comes from configuration file plugins-args.jsMClient
     LOGGER.debug("pluginArgs {}", pluginArgs);
 
-    const limit = parseInt(request.getQueryParameterOfDefault("limit", "100"));
-    const skip = parseInt(request.getQueryParameterOfDefault("skip", "0"));
+    const limit = parseInt(request.getQueryParameterOrDefault("limit", "100"));
+    const skip = parseInt(request.getQueryParameterOrDefault("skip", "0"));
 
     if (isNaN(skip)) {
         response.setInError(400, 'wrong skip qparam');
@@ -27,7 +27,7 @@ export function handle(request, response) {
         return;
     }
 
-    const _filter = request.getQueryParameterOfDefault("filter", "{}");
+    const _filter = request.getQueryParameterOrDefault("filter", "{}");
 
     let filter;
 

@@ -67,7 +67,7 @@ public class AllowWriteMode extends BaseAllowInitializer implements Initializer 
         var mr = (MongoRequest) _request;
 
         return !mr.isWriteDocument()
-        || (mr.getQueryParameterOfDefault(ExchangeKeys.WRITE_MODE_QPARAM_KEY, null) == null
-            && mr.getQueryParameterOfDefault(ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY, null) == null);
+        || (mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_QPARAM_KEY, null) == null
+            && mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY, null) == null);
     };
 }

@@ -46,6 +46,6 @@ public class CsvRepresentationTransformer implements MongoInterceptor {
         return request.isGet()
             && request.isCollection()
             && response.getContent() != null
-            && request.getQueryParameterOfDefault("csv", null) != null;
+            && request.getQueryParameterOrDefault("csv", null) != null;
     }
 }
