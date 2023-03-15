@@ -62,10 +62,10 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 $ ./mvnw clean package
 ```
 
-You can then run it with (make sure to have mongod running):
+You can then run it with (make sure to have mongod running on `localhost:27017`):
 
 ```bash
-$ java -jar core/target/restheart.jar core/etc/restheart.yml -e core/etc/default.properties
+$ java -jar core/target/restheart.jar
 ```
 
 ## Automatic snapshot builds
