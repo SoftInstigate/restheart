@@ -152,7 +152,8 @@ public class ResponseHelper {
             // 56, 40353 FieldPath must not end with a '.'
             // 40352 FieldPath cannot be constructed with empty string
             // 51091 Regular expression is invalid: unmatched parentheses
-            case 56, 40353, 40352, 51091, 40323  -> HttpStatus.SC_BAD_REQUEST;
+            // 51108 Invalid flag in regex options
+            case 56, 40353, 40352, 51091, 51108, 40323  -> HttpStatus.SC_BAD_REQUEST;
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> HttpStatus.SC_BAD_REQUEST;
             // 15974 Illegal key in $sort specification
@@ -173,14 +174,15 @@ public class ResponseHelper {
 
         return switch(code) {
             // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
-            case 2, 51091-> {
+            // Query failed with error code 51108 with name 'Location51108' and error message 'invalid flag in regex options: z' on server 127.0.0.1:27017'
+            case 2, 51091, 51108 -> {
                 var msg = me.getMessage();
 
-                var b = msg.indexOf("error message '");
+                var b = msg.indexOf(": '");
                 var e = msg.indexOf("' on server");
 
                 if (b >= 0 && e >= 0) {
-                    yield "Invalid filter: " + msg.substring(b+15, e);
+                    yield "Invalid filter: " + msg.substring(b+3, e).trim();
                 } else {
                     yield msg;
                 }
