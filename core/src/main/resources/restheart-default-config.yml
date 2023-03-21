@@ -396,6 +396,16 @@ core:
   # added to the classpath and registered.
   plugins-directory: plugins
 
+  # Limit the scanning of classes annotated with @RegisterPlugin
+  # to the specified packages. It can speedup the boot time
+  # in case of huge plugin jars. It is usually not required.
+  # Use an empty array to not limit scanning.
+  # Alsways add the package org.restheart to the list
+  plugins-packages: []
+
+  # Set to true for verbose logging of jar scanning for plugins
+  plugins-scanning-verbose: false
+
   # Optionally define the base url of this instance
   # Useful when RESTHeart is mediated by a reverse proxy or an API gateway to determine the instance's correct URL
   base-url: null

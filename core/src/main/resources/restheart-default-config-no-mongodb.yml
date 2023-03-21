@@ -414,7 +414,17 @@ core:
   # The path is either absolute (starts with /) or relative to the restheart.jar file
   # Just add the plugins jar to plugins-directory and they will be automatically
   # added to the classpath and registered.
+  # Alsways add the package org.restheart to the list
   plugins-directory: plugins
+
+  # Set to true for verbose logging of jar scanning for plugins
+  plugins-scanning-verbose: false
+
+  # Limit the scanning of classes annotated with @RegisterPlugin
+  # to the specified packages. It can speedup the boot time
+  # in case of huge plugin jars. It is usually not required.
+  # Use an empty array to not limit scanning.
+  plugins-packages: []
 
   # Optionally define the base url of this instance
   # Useful when RESTHeart is mediated by a reverse proxy or an API gateway to determine the instance's correct URL

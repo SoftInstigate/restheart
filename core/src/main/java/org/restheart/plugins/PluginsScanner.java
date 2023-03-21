@@ -25,12 +25,10 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,14 +91,21 @@ public class PluginsScanner {
                 .disableNestedJarScanning() // added for GraalVM
                 .disableRuntimeInvisibleAnnotations() // added for GraalVM
                 .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory, otherwise build fails
-                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses()
+                .verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
         } else {
             var rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
             jars = rtcg.jars;
+            classGraph = classGraph.verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
         }
 
-        try (var scanResult = classGraph.scan(8)) {
+        var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
+        if (!Bootstrapper.getConfiguration().coreModule().pluginsPackages().isEmpty()) {
+            classGraph = classGraph.acceptPackages(pluginsPackages.toArray(new String[0]));
+        }
+
+        try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
             INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
             AUTH_MECHANISMS.addAll(collectPlugins(scanResult, AUTHMECHANISM_CLASS_NAME));
             AUTHORIZERS.addAll(collectPlugins(scanResult, AUTHORIZER_CLASS_NAME));
@@ -223,7 +228,7 @@ public class PluginsScanner {
      *
      * @param name
      * @param pluginClassInfo
-     * @return true if the plgins is enabled, taking into account enabledByDefault and its configuration
+     * @return true if the plugin is enabled, taking into account enabledByDefault and its configuration
      */
     private static boolean isEnabled(String name, ClassInfo pluginClassInfo) {
         if (NativeImageBuildTimeChecker.isBuildTime()) {
@@ -271,7 +276,7 @@ public class PluginsScanner {
 
         for (var fi : fil) {
             if (fi.hasAnnotation(clazz.getName())) {
-                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
+                var annotationParams = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
                 for (var p : fi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
                     var value = p.getValue();
                     if (value instanceof AnnotationEnumValue) {
@@ -349,9 +354,9 @@ public class PluginsScanner {
             } else {
                 // this is to allow specifying the plugins directory path
                 // relative to the jar (also working when running from classes)
-                URL location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
+                var location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
 
-                File locationFile = new File(location.getPath());
+                var locationFile = new File(location.getPath());
 
                 pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
 
@@ -360,6 +365,10 @@ public class PluginsScanner {
         }
 
         private URL[] findPluginsJars(Path pluginsDirectory) {
+            var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
+            if (pluginsPackages.size() > 0) {
+                LOGGER.info("Limiting the scanning of plugins to packages {}", pluginsPackages);
+            }
             if (pluginsDirectory == null) {
                 return new URL[0];
             } else {
@@ -372,7 +381,7 @@ public class PluginsScanner {
 
             var urls = new ArrayList<>();
 
-            try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory, "*.jar")) {
+            try (var directoryStream = Files.newDirectoryStream(pluginsDirectory, "*.jar")) {
                 for (Path path : directoryStream) {
                     var jar = path.toUri().toURL();
 
@@ -385,8 +394,7 @@ public class PluginsScanner {
                     LOGGER.info("Found plugin jar {}", jar);
                 }
             } catch (IOException ex) {
-                LOGGER.error("Cannot read jars in plugins directory {}",
-                        Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
+                LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
             }
 
             return urls.isEmpty() ? null : urls.toArray(new URL[urls.size()]);
@@ -407,7 +415,6 @@ public class PluginsScanner {
 }
 
 record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {}
-
 interface InjectionDescriptor {}
 
 record MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) implements InjectionDescriptor {}

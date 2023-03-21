@@ -21,10 +21,15 @@ package org.restheart.configuration;
 
 import static org.restheart.configuration.Utils.getOrDefault;
 import static org.restheart.configuration.Utils.asMap;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public record CoreModule(String name,
         String pluginsDirectory,
+        List<String> pluginsPackages,
+        boolean pluginsScanningVerbose,
         String baseUrl,
         int ioThreads,
         int workerThreads,
@@ -37,6 +42,8 @@ public record CoreModule(String name,
     public static final String CORE_KEY = "core";
     public static final String INSTANCE_NAME_KEY = "name";
     public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
+    public static final String PLUGINS_PACKAGES_KEY = "plugins-packages";
+    public static final String PLUGINS_SCANNING_VERBOSE_KEY = "plugins-scanning-verbose";
     public static final String BASE_URL_KEY = "base-url";
     public static final String IO_THREADS_KEY = "io-threads";
     public static final String WORKER_THREADS_KEY = "worker-threads";
@@ -46,13 +53,15 @@ public record CoreModule(String name,
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
     public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
 
-    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", null, 0, -1, 1000, 16364, true, false, true);
+    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, -1, 1000, 16364, true, false, true);
 
     public CoreModule(Map<String, Object> conf, boolean silent) {
         this(
                 getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_CORE_MODULE.name(), silent),
                 getOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, DEFAULT_CORE_MODULE.pluginsDirectory(), silent),
                 // following is optional, so get it always in silent mode
+                getOrDefault(conf, PLUGINS_PACKAGES_KEY, DEFAULT_CORE_MODULE.pluginsPackages(), true),
+                getOrDefault(conf, PLUGINS_SCANNING_VERBOSE_KEY, false, true),
                 getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
                 getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
                 getOrDefault(conf, WORKER_THREADS_KEY, DEFAULT_CORE_MODULE.workerThreads(), silent),
