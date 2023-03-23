@@ -48,12 +48,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
         BsonDocument int_args = null;
 
-        try {
-            int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
-        } catch (Exception e) {
-            LOGGER.info("Something went wrong while trying to resolve query {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
+        int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
 
         var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
         var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;

@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
@@ -97,7 +98,7 @@ public abstract class FieldMapping {
         return result;
     }
 
-    public BsonValue getForeignValue(BsonValue sourceDocument, String path) throws QueryVariableNotBoundException {
+    public BsonValue getForeignValue(BsonValue sourceDocument, String path) {
         var splitPath = path.split(Pattern.quote("."));
         var current = sourceDocument;
 
@@ -118,10 +119,14 @@ public abstract class FieldMapping {
 
                     break;
                 } catch (IndexOutOfBoundsException ibe) {
-                    throw new QueryVariableNotBoundException("index out of bounds in " + splitPath[i - 1] + " array");
+                    // return null
+                    // if the field is non-nullable, an error will be reported
+                    return BsonNull.VALUE;
                 }
             } else {
-                throw new QueryVariableNotBoundException("variable " + splitPath[i] + " not bound");
+                // return null
+                // if the field is non-nullable, an error will be reported
+                return BsonNull.VALUE;
             }
         }
 
