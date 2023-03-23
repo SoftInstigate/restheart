@@ -84,6 +84,7 @@ public class PluginsScanner {
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
     static {
         ClassGraph classGraph;
+        RuntimeClassGraph rtcg = null;
 
         if (NativeImageBuildTimeChecker.isBuildTime()) {
             classGraph = new ClassGraph().disableModuleScanning() // added for GraalVM
@@ -91,18 +92,20 @@ public class PluginsScanner {
                 .disableNestedJarScanning() // added for GraalVM
                 .disableRuntimeInvisibleAnnotations() // added for GraalVM
                 .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory, otherwise build fails
-                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses()
-                .verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
         } else {
-            var rtcg = new RuntimeClassGraph();
+            rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
             jars = rtcg.jars;
+            // apply plugins-scanning-verbose configuration option
             classGraph = classGraph.verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
-        }
+            // apply plugins-packages configuration option
+            var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
+            if (!Bootstrapper.getConfiguration().coreModule().pluginsPackages().isEmpty()) {
+                classGraph = classGraph.acceptPackages(pluginsPackages.toArray(new String[0]));
+            }
 
-        var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
-        if (!Bootstrapper.getConfiguration().coreModule().pluginsPackages().isEmpty()) {
-            classGraph = classGraph.acceptPackages(pluginsPackages.toArray(new String[0]));
+            rtcg.logStartScan();
         }
 
         try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
@@ -114,6 +117,10 @@ public class PluginsScanner {
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
             PROVIDERS.addAll(collectProviders(scanResult));
+        }
+
+        if (rtcg != null) {
+            rtcg.logEndScan();
         }
     }
 
@@ -328,7 +335,7 @@ public class PluginsScanner {
             if (jars != null && jars.length != 0) {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
                     .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                    .addClassLoader(new URLClassLoader((jars))).addClassLoader(ClassLoader.getSystemClassLoader())
+                    .addClassLoader(new URLClassLoader(jars)).addClassLoader(ClassLoader.getSystemClassLoader())
                     .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
             } else {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
@@ -336,6 +343,19 @@ public class PluginsScanner {
                     .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().ignoreFieldVisibility().enableMethodInfo().enableFieldInfo()
                     .initializeLoadedClasses();
             }
+        }
+
+        private long starScanTime = 0;
+        private long endScanTime = 0;
+
+        public void logStartScan() {
+            LOGGER.info("Scanning jars for plugins started");
+            this.starScanTime = System.currentTimeMillis();
+        }
+
+        public void logEndScan() {
+            this.endScanTime = System.currentTimeMillis();
+            LOGGER.info("Scanning jars for plugins completed in {} msec", endScanTime-starScanTime);
         }
 
         public ClassGraph get() {
