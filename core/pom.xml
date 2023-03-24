@@ -330,6 +330,7 @@
           <skip>${skipITs}</skip>
           <showLogs>false</showLogs>
           <removeVolumes>true</removeVolumes>
+          <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
           <images>
             <image>
               <name>mongo:${mongodb.version}</name>
