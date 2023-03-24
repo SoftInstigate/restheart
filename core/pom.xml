@@ -329,6 +329,7 @@
         <configuration>
           <skip>${skipITs}</skip>
           <showLogs>false</showLogs>
+          <removeVolumes>true</removeVolumes>
           <images>
             <image>
               <name>mongo:${mongodb.version}</name>
