@@ -152,7 +152,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         // insert the Location handler for new documents
         // note, next handlers might change the status code
         if (result.getHttpCode() == HttpStatus.SC_CREATED) {
-            response.getHeaders().add(HttpString.tryFromString("Location"), RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewData().get("_id")));
+            response.getHeaders().add(HttpString.tryFromString("Location"), RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewId()));
         }
 
         next(exchange);
