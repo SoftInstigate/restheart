@@ -261,10 +261,7 @@ public class RepresentationUtils {
      */
     public static String getReferenceLink(String parentUrl, Object docId) {
         if (parentUrl == null) {
-            LOGGER.error("error creating URI, null arguments: "
-                    + "parentUrl = {}, docId = {}",
-                    parentUrl,
-                    docId);
+            LOGGER.error("error creating URI, null arguments: parentUrl = {}, docId = {}", parentUrl, docId);
             return "";
         }
 
