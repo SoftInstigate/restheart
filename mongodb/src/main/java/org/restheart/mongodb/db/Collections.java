@@ -30,10 +30,12 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.internal.MongoBatchCursorAdapter;
 import static com.mongodb.client.model.Filters.eq;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -261,7 +263,7 @@ class Collections {
             var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("curBatch");
             _batchCursor.setAccessible(true);
             var ret = (List<BsonDocument>) _batchCursor.get(cursor);
-            return ret == null ? Lists.newArrayList() : ret;
+            return ret;
         } catch(NoSuchFieldException | IllegalAccessException ex) {
             LOGGER.warn("cannot access field Cursor.curBatch ", ex);
             return Lists.newArrayList();
@@ -304,7 +306,21 @@ class Collections {
                 var exhausted = count < GET_COLLECTION_CACHE_BATCH_SIZE;
                 var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, System.nanoTime(), exhausted);
                 LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
-                GetCollectionCache.getInstance().put(newkey, cursorDocs(cursor));
+
+                var cursorDocs = cursorDocs(cursor);
+                if (cursorDocs == null && !exhausted) {
+                    // this should never happen
+                    LOGGER.debug("cannot cache data, cursor does not contain documents and it is not exhausted");
+                } else if (cursorDocs == null) {
+                    // cursorDocs(cursor) returns null when the cursor is exhausted
+                    // add to _cursorDocs all docs in ret
+                    var _cursorDocs = ret.getValues().stream().map(v -> (BsonDocument) v).collect(Collectors.toList());
+                    // add to _cursorDocs all remaining documents in the batch
+                    cursor.forEachRemaining(doc -> _cursorDocs.add(doc));
+                    GetCollectionCache.getInstance().put(newkey, _cursorDocs);
+                } else {
+                    GetCollectionCache.getInstance().put(newkey, cursorDocs(cursor));
+                }
             }
         }
 
