@@ -36,6 +36,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import static org.restheart.utils.BsonUtils.document;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -45,6 +47,8 @@ import static org.restheart.utils.BsonUtils.document;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BsonFromCsvRequest.class);
+
     /**
      *
      */

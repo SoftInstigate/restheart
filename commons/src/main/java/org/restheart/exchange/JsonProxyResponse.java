@@ -33,19 +33,13 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.restheart.utils.BuffersUtils;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonProxyResponse extends ProxyResponse<JsonElement> {
-    static {
-        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
-    }
-
     protected JsonProxyResponse(HttpServerExchange exchange) {
         super(exchange);
     }

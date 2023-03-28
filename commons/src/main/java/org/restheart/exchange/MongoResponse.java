@@ -31,8 +31,6 @@ import org.bson.json.JsonParseException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.BsonUtils;
-import org.slf4j.LoggerFactory;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -44,7 +42,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.restheart.utils.BsonUtils.document;
@@ -58,10 +55,6 @@ import static org.restheart.utils.BsonUtils.document;
  */
 public class MongoResponse extends BsonResponse {
     private final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions().upsert(false);
-
-    static {
-        LOGGER = LoggerFactory.getLogger(MongoResponse.class);
-    }
 
     private OperationResult dbOperationResult;
 
