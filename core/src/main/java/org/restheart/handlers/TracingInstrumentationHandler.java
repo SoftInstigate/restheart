@@ -31,37 +31,44 @@ import org.restheart.exchange.ByteArrayProxyResponse;
 import org.slf4j.MDC;
 public class TracingInstrumentationHandler extends PipelinedHandler {
     private final List<String> traceHeaders;
+    final private boolean emptyTraceHeaders;
 
     public TracingInstrumentationHandler() {
         var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
         this.traceHeaders = _th == null ? new ArrayList<>() : _th;
+        this.emptyTraceHeaders = this.traceHeaders.isEmpty();
     }
 
     public TracingInstrumentationHandler(final PipelinedHandler next) {
         super(next);
         var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
         this.traceHeaders = _th == null ? new ArrayList<>() : _th;
+        this.emptyTraceHeaders = this.traceHeaders.isEmpty();
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        this.traceHeaders
-            .forEach((traceIdHeader) -> {Optional.ofNullable(exchange.getRequestHeaders()
-                .get(traceIdHeader))
-                .flatMap(x -> Optional.ofNullable(x.peekFirst()))
-                .ifPresent(value -> {
-                    // saves the MDC Context
-                    // see response.getMDCContext() javadoc
-                    MDC.put(traceIdHeader, value);
-                    ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
-                    exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);
-                });
-            });
-
-        if (!exchange.isResponseComplete() && getNext() != null) {
+        if (emptyTraceHeaders) {
             next(exchange);
-        }
+        } else {
+            this.traceHeaders
+                .forEach((traceIdHeader) -> {Optional.ofNullable(exchange.getRequestHeaders()
+                    .get(traceIdHeader))
+                    .flatMap(x -> Optional.ofNullable(x.peekFirst()))
+                    .ifPresent(value -> {
+                        // saves the MDC Context
+                        // see response.getMDCContext() javadoc
+                        MDC.put(traceIdHeader, value);
+                        ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
+                        exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);
+                    });
+                });
 
-        Bootstrapper.getConfiguration().logging().tracingHeaders().forEach((traceIdHeader) -> MDC.remove(traceIdHeader));
+            if (!exchange.isResponseComplete() && getNext() != null) {
+                next(exchange);
+            }
+
+            this.traceHeaders.forEach((traceIdHeader) -> MDC.remove(traceIdHeader));
+        }
     }
 }
