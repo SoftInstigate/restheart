@@ -29,19 +29,13 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.restheart.utils.BuffersUtils;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonProxyRequest extends ProxyRequest<JsonElement> {
-    static {
-        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
-    }
-
     protected JsonProxyRequest(HttpServerExchange exchange) {
         super(exchange);
     }

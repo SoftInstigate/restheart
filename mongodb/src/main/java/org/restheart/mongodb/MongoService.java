@@ -44,7 +44,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
-import org.restheart.mongodb.exchange.MongoRequestContentInjector;
+
 import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -56,7 +56,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.utils.MongoServiceAttachments;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -231,21 +230,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         return e -> {
             MongoResponse.init(e);
 
-            // MongoRequestPropsInjector and MongoRequestContentInjector requires
+            // MongoRequestPropsInjector requires
             // that both MongoRequest and MongoResponse are initialized
-            // so we need to inject the content of both here
+            // so we need to inject propertis here
 
             MongoRequestPropsInjector.inject(e);
-
-            // the MongoRequest content can have been already attached to the exchange
-            // with MongoServiceAttachments.attacheBsonContent()
-            // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
-            var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(e);
-            if (attacheBsonContent == null) {
-                MongoRequestContentInjector.inject(e);
-            } else {
-                MongoRequest.of(e).setContent(attacheBsonContent);
-            }
         };
     }
 

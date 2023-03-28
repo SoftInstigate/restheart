@@ -56,8 +56,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * initialize the MongoRequest
-
- Assumes that the MongoRequest and MongoRequest are already initialized
+ * Assumes that the MongoRequest and MongoRequest are already initialized
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

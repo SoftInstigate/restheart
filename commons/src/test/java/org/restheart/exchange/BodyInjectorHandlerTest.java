@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.exchange;
+package org.restheart.exchange;
 
 import io.undertow.server.handlers.form.FormData;
 import org.bson.BsonDocument;
@@ -46,8 +46,7 @@ public class BodyInjectorHandlerTest {
      */
     @Test
     public void test_extractProperties() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        final String jsonString
-                = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
+        final String jsonString = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
         FormData formData = new FormData(1);
 
         formData.add("properties", jsonString);

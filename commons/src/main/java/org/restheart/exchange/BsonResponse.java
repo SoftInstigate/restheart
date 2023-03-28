@@ -20,7 +20,6 @@
 package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
-
 import org.bson.BsonValue;
 import static org.restheart.utils.BsonUtils.ArrayBuilder;
 import static org.restheart.utils.BsonUtils.DocumentBuilder;

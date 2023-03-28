@@ -22,7 +22,6 @@ package org.restheart.exchange;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
-import org.slf4j.Logger;
 
 /**
  *
@@ -35,7 +34,6 @@ import org.slf4j.Logger;
  */
 public abstract class Exchange<T> {
 
-    protected static Logger LOGGER;
 
     /**
      * Supported content type HAL

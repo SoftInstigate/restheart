@@ -25,25 +25,18 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-
 import org.restheart.utils.BuffersUtils;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
-    static {
-        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
-    }
-
     protected ByteArrayProxyResponse(HttpServerExchange exchange) {
         super(exchange);
     }
