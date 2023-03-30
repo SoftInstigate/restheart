@@ -234,16 +234,11 @@ public class DbUtils {
                             ? coll.insertOne(cs.get(), dataDoc).getInsertedId()
                             : coll.insertOne(dataDoc).getInsertedId();
 
-                        var insertedQuery = eq("_id", insertedId);
-
-                        if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
-                            insertedQuery = and(insertedQuery, shardKeys.get());
+                        if (insertedId != null) {
+                            dataDoc.put("_id", insertedId);
                         }
 
-                        var newDocument = cs.isPresent()
-                            ? coll.find(cs.get(), insertedQuery).first()
-                            : coll.find(insertedQuery).first();
-                        yield new OperationResult(-1, null, newDocument);
+                        yield new OperationResult(-1, null, dataDoc);
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
                     }
