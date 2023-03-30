@@ -23,6 +23,8 @@ package org.restheart.security.handlers;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
@@ -98,7 +100,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
             exchange.setStatusCode(HttpStatus.SC_TOO_MANY_REQUESTS);
-            exchange.endExchange();
+            fastEndExchange(exchange);
         } else if (sc.authenticate() && (!sc.isAuthenticationRequired() || sc.isAuthenticated())) {
             // 1 authentication is always attempted
             // 2 requests fails if and only if authentication fails
@@ -116,8 +118,26 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             updateFailedAuthMetrics(exchange);
             // set status code and end exchange
             exchange.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
-            exchange.endExchange();
+            fastEndExchange(exchange);
         }
+    }
+
+    /**
+     * shutdowns the request channel and ends the exchange
+     *
+     * Closing the request channel prevents delays when handling requests
+     * with large data payloads.
+     *
+     * @param exchange
+     * @throws IOException
+     */
+    private void fastEndExchange(HttpServerExchange exchange) throws IOException {
+        var requestChannel = exchange.getRequestChannel();
+        if (requestChannel != null) {
+            requestChannel.shutdownReads();
+        }
+
+        exchange.endExchange();
     }
 
     /**
