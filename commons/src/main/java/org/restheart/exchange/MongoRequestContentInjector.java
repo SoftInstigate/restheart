@@ -61,8 +61,6 @@ public class MongoRequestContentInjector {
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: " + Exchange.JSON_MEDIA_TYPE + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
 
-    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: " + Exchange.FORM_URLENCODED + " or " + Exchange.MULTIPART;
-
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return (contentTypes == null
                 || contentTypes.isEmpty())
@@ -319,11 +317,6 @@ public class MongoRequestContentInjector {
 
     private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
         BsonValue content = null;
-
-        if (!((request.isPost() && request.isFilesBucket()) || (request.isPut() && request.isFile()))) {
-            response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
-            return null;
-        }
 
         var parser = FORM_PARSER.createParser(exchange);
 
