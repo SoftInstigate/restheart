@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>7.3.3-SNAPSHOT</version>
+    <version>7.3.4-SNAPSHOT</version>
   </parent>
 
   <groupId>org.restheart</groupId>
@@ -329,6 +329,8 @@
         <configuration>
           <skip>${skipITs}</skip>
           <showLogs>false</showLogs>
+          <removeVolumes>true</removeVolumes>
+          <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
           <images>
             <image>
               <name>mongo:${mongodb.version}</name>
@@ -403,7 +405,7 @@
                 <echo>***** Initializing MongoDB cluster...</echo>
                 <!-- mongo shell command is mongo for v <=5.x then mongosh -->
                 <condition property="mongoshellcmd" value="mongo" else="mongosh">
-                  <matches string="${mongodb.version}" pattern="^[1-5].*"/>
+                  <matches string="${mongodb.version}" pattern="^[1-5].*" />
                 </condition>
                 <exec executable="docker">
                   <arg value="run" />
@@ -422,6 +424,10 @@
                   <arg value="${basedir}/src/test/resources/etc/conf-overrides.yml" />
                   <arg value="--fork" />
                 </exec>
+                <echo>***** Waiting RESTHeart process to start...</echo>
+                <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
+                  <http url="http://localhost:8080/ping" />
+                </waitfor>
               </target>
             </configuration>
             <goals>

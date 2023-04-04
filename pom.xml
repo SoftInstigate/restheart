@@ -5,7 +5,7 @@
 
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>7.3.3-SNAPSHOT</version>
+    <version>7.3.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>RESTHeart - Low code platform for cloud-native HTTP microservices.</description>
@@ -416,7 +416,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.1</version>
                     <executions>
                         <execution>
                             <id>enforce-versions</id>
@@ -453,17 +453,17 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.4.2</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.2.2</version>
+                    <version>3.3.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.1</version>
+                    <version>3.11.0</version>
                     <configuration>
                         <debug>true</debug>
                         <compilerArgument>-Xlint:unchecked</compilerArgument>
@@ -473,7 +473,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>3.0.0</version>
                     <configuration>
                         <skipTests>${skipUTs}</skipTests>
                         <excludes>
@@ -484,7 +484,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>3.0.0</version>
                     <configuration>
                         <skipTests>${skipTests}</skipTests>
                         <skipITs>${skipITs}</skipITs>
@@ -509,12 +509,12 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.40.2</version>
+                    <version>0.42.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.0-M6</version>
+                    <version>3.0.0</version>
                     <configuration>
                         <tagNameFormat>@{project.version}</tagNameFormat>
                     </configuration>
@@ -565,7 +565,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.4.1</version>
+                        <version>3.5.0</version>
                         <configuration>
                             <doclint>none</doclint>
                             <failOnError>false</failOnError>
