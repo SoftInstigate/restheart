@@ -23,6 +23,7 @@ package org.restheart.security.handlers;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -122,6 +123,8 @@ public class AuthenticationCallHandler extends PipelinedHandler {
         }
     }
 
+    private static final HttpString TRANSFER_ENCODING = HttpString.tryFromString("Transfer-Encoding");
+
     /**
      * shutdowns the request channel and ends the exchange
      *
@@ -133,8 +136,19 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      */
     private void fastEndExchange(HttpServerExchange exchange) throws IOException {
         var requestChannel = exchange.getRequestChannel();
-        if (requestChannel != null) {
-            requestChannel.shutdownReads();
+        var econding = exchange.getRequestHeaders().get(TRANSFER_ENCODING);
+
+        // shutdown channel only if Transfer-Encoding is not chunked
+        // otherwise we get error
+        // java.io.IOException: UT000029: Channel was closed mid chunk, if you have attempted to write chunked data you cannot shutdown the channel until after it has all been written
+        if (econding == null || !econding.getFirst().startsWith("chunked")) {
+            if (requestChannel != null) {
+                try {
+                    requestChannel.shutdownReads();
+                } catch(IOException ie) {
+                    LOGGER.debug("ingoring error shutting down reads", ie);
+                }
+            }
         }
 
         exchange.endExchange();
