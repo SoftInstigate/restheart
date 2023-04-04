@@ -3951,10 +3951,24 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  
-
-
-
+  {
+    "name":"com.mongodb.client.internal.MongoBatchCursorAdapter",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
+  },
+  {
+    "name": "com.mongodb.internal.operation.BatchCursor",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
+  },
+  {
+    "name": "com.mongodb.internal.operation.QueryBatchCursor",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
+  },
   {
     "name": "org.apache.commons.logging.LogFactory",
     "allPublicFields": true,
