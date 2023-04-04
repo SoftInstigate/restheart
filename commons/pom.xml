@@ -75,10 +75,6 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
     </dependency>
-    <dependency>
-        <groupId>org.apache.tika</groupId>
-        <artifactId>tika-core</artifactId>
-    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>junit</groupId>

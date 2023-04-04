@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-commons
  * %%
  * Copyright (C) 2014 - 2023 SoftInstigate
  * %%
@@ -28,9 +28,7 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.tika.Tika;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 
@@ -59,10 +57,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoRequestContentInjector {
-
     static final Logger LOGGER = LoggerFactory.getLogger(MongoRequestContentInjector.class);
-
-    private static final String CONTENT_TYPE = "contentType";
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: " + Exchange.JSON_MEDIA_TYPE + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
 
@@ -137,15 +132,6 @@ public class MongoRequestContentInjector {
         return null;
     }
 
-    private static void injectContentTypeFromFile( final BsonDocument content, final InputStream file) throws IOException {
-        if (content.get(CONTENT_TYPE) == null && file != null) {
-            final var contentType = detectMediaType(file);
-            if (contentType != null) {
-                content.append(CONTENT_TYPE, new BsonString(contentType));
-            }
-        }
-    }
-
     /**
      * Search the request for a field named 'metadata' (or 'properties') which
      * must contain valid JSON
@@ -193,17 +179,6 @@ public class MongoRequestContentInjector {
             }
         }
         return fileField;
-    }
-
-    /**
-     * Detect the file's mediatype
-     *
-     * @param file input file
-     * @return the content-type as a String
-     * @throws IOException
-     */
-    public static String detectMediaType(InputStream file) throws IOException {
-        return new Tika().detect(file);
     }
 
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
@@ -388,14 +363,6 @@ public class MongoRequestContentInjector {
         } catch(IOException ioe) {
             response.addWarning("error getting binary field from request");
             LOGGER.warn("error getting binary field from request", ioe);
-            return null;
-        }
-
-        try {
-            injectContentTypeFromFile(content.asDocument(), fileInputStream);
-        } catch (IOException ioe) {
-            response.addWarning("error detecting content type");
-            LOGGER.warn("error detecting content type of file", ioe);
             return null;
         }
 
