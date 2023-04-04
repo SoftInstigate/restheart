@@ -28,7 +28,11 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Deque;
+import java.util.stream.StreamSupport;
+
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 
@@ -44,6 +48,7 @@ import static org.restheart.exchange.ExchangeKeys._ID;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,7 +321,51 @@ public class MongoRequestContentInjector {
     }
 
     private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+        if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
+             return injectMultiparForFiles(exchange, request, response);
+        }
+
+        var parser = FORM_PARSER.createParser(exchange);
+
+        if (parser == null) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
+            return null;
+        }
+
+        FormData formData;
+
+        try {
+            formData = parser.parseBlocking();
+        } catch (IOException ioe) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
+            return null;
+        }
+
+        var ret = new BsonDocument();
+
+        StreamSupport.stream(formData.spliterator(), false)
+            .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
+            .filter(part -> !part.getValue().isEmpty())
+            .map(part -> new Pair<String, FormData.FormValue>(part.getKey(), part.getValue().getFirst()))
+            .filter(part -> !part.getValue().isFileItem())
+            .forEach(part -> {
+                try {
+                    ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
+                } catch(JsonParseException jpe) {
+                    ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
+                }
+            });
+
+        return ret;
+    }
+
+    private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
         BsonValue content = null;
+
+        // if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
+        //     // don't inject multipart content if it isn't a GridFs write request
+        //     return null;
+        // }
 
         var parser = FORM_PARSER.createParser(exchange);
 
