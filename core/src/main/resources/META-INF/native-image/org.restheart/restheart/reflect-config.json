@@ -238,6 +238,13 @@
   "name":"com.mongodb.client.MongoClient"
 },
 {
+  "name":"com.mongodb.client.internal.MongoClientImpl",
+  "methods":[
+    {"name":"getCluster","parameterTypes":[] }, 
+    {"name":"getOperationExecutor","parameterTypes":[] }
+  ]
+},
+{
   "name":"com.mongodb.client.model.changestream.ChangeStreamDocument",
   "allDeclaredFields":true,
   "allDeclaredMethods":true,
@@ -552,7 +559,11 @@
 },
 {
   "name":"java.lang.Class",
-  "methods":[{"name":"getModule","parameterTypes":[] }]
+  "methods":[
+    {"name":"getModule","parameterTypes":[] }, 
+    {"name":"getRecordComponents","parameterTypes":[] }, 
+    {"name":"isRecord","parameterTypes":[] }
+  ]
 },
 {
   "name":"java.lang.ClassLoader",
@@ -794,6 +805,13 @@
   ]
 },
 {
+  "name":"java.lang.reflect.RecordComponent",
+  "methods":[
+    {"name":"getName","parameterTypes":[] }, 
+    {"name":"getType","parameterTypes":[] }
+  ]
+},
+{
   "name":"java.math.BigDecimal"
 },
 {
@@ -953,7 +971,10 @@
 },
 {
   "name":"java.util.ArrayList",
-  "methods":[{"name":"<init>","parameterTypes":["int"] }]
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":["int"] }
+  ]
 },
 {
   "name":"java.util.Date"

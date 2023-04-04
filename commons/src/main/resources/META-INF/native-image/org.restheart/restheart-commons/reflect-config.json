@@ -3492,15 +3492,6 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.BaseWriteOperation",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
   { "name": "com.mongodb.internal.operation.BatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
@@ -3574,15 +3565,6 @@
     "allDeclaredClasses": true
   },
   { "name": "com.mongodb.internal.operation.CreateViewOperation",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  { "name": "com.mongodb.internal.operation.DeleteOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3682,15 +3664,6 @@
     "allDeclaredClasses": true
   },
   { "name": "com.mongodb.internal.operation.IndexHelper",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  { "name": "com.mongodb.internal.operation.InsertOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3826,15 +3799,6 @@
     "allDeclaredClasses": true
   },
   { "name": "com.mongodb.internal.operation.TransactionOperation",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  { "name": "com.mongodb.internal.operation.UpdateOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
