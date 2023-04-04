@@ -519,7 +519,7 @@
         <dependency>
           <groupId>org.mongodb</groupId>
           <artifactId>mongodb-crypt</artifactId>
-          <version>1.6.1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+          <version>1.7.1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>org.xerial.snappy</groupId>
