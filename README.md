@@ -38,9 +38,10 @@ Ther internal architecture is based on [plugins](https://restheart.org/docs/plug
 
 To [extend the default behavior](https://restheart.org/docs/plugins/overview/) you can implement the following Java interfaces:
 
-- __Service__ - to develop custom business logic and web services.
-- __Interceptor__ - to intercept and modify requests and responses _on the fly_, at different stages of the HTTP lifecycle.
-- __Initializer__ - to execute any kind of initialization logic once, at system startup time.
+- __Service__ - extend the API adding Web Services.
+- __Interceptor__ - snoop and modify requests and responses at different stages of the request lifecycle.
+- __Initializer__ - execute initialization logic at startup time.
+- __Providers__ - implement the Dependency Injection mechanism to provide objects to other plugins via the @Inject annotation.
 
 The [GraphQL](https://restheart.org/docs/graphql/) default plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications.
 
