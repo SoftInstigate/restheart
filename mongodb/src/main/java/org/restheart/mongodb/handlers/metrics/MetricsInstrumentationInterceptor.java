@@ -46,7 +46,7 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
     @VisibleForTesting
     static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
         return dbOrCollectionName != null
-                && !dbOrCollectionName.trim().isEmpty()
+                && !dbOrCollectionName.strip().isEmpty()
                 && !dbOrCollectionName.equalsIgnoreCase(_METRICS);
     }
 

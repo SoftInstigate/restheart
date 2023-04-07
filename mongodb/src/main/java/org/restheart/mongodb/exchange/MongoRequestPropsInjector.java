@@ -92,7 +92,7 @@ public class MongoRequestPropsInjector {
 
             if (_rep != null && !_rep.isEmpty()) {
                 try {
-                    rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
+                    rep = REPRESENTATION_FORMAT.valueOf(_rep.strip().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     response.addWarning("illegal rep parameter " + _rep + " (must be STANDARD, NESTED or HAL; S is an alias for STANDARD; PLAIN_JSON, PJ are aliases for NESTED)");
                 }
@@ -191,11 +191,11 @@ public class MongoRequestPropsInjector {
                 return;
             }
 
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_last_updated_on") || s.trim().equals("+_last_updated_on") || s.trim().equals("-_last_updated_on"))) {
+            if (sort_by.stream().anyMatch(s -> s.strip().equals("_last_updated_on") || s.strip().equals("+_last_updated_on") || s.strip().equals("-_last_updated_on"))) {
                 response.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
             }
 
-            if (sort_by.stream().anyMatch(s -> s.trim().equals("_created_on") || s.trim().equals("_created_on") || s.trim().equals("_created_on"))) {
+            if (sort_by.stream().anyMatch(s -> s.strip().equals("_created_on") || s.strip().equals("_created_on") || s.strip().equals("_created_on"))) {
                 response.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
             }
 
@@ -333,7 +333,7 @@ public class MongoRequestPropsInjector {
 
             if (_docIdType != null && !_docIdType.isEmpty()) {
                 try {
-                    docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
+                    docIdType = DOC_ID_TYPE.valueOf(_docIdType.strip().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_QPARAM_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
                     return;
@@ -366,7 +366,7 @@ public class MongoRequestPropsInjector {
             String _halMode = __halMode.getFirst();
 
             try {
-                request.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
+                request.setHalMode(HAL_MODE.valueOf(_halMode.strip().toUpperCase()));
             } catch (IllegalArgumentException iae) {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
                 return;

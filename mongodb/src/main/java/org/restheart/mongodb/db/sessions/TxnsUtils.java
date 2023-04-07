@@ -128,7 +128,7 @@ public class TxnsUtils {
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_STARTED);
 
             if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                String numStr = mqe.getErrorMessage().substring(start, end).strip();
                 numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
@@ -138,7 +138,7 @@ public class TxnsUtils {
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_ABORTED);
 
             if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                String numStr = mqe.getErrorMessage().substring(start, end).strip();
                 numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
@@ -148,7 +148,7 @@ public class TxnsUtils {
             end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_NONE);
 
             if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                String numStr = mqe.getErrorMessage().substring(start, end).strip();
                 numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
@@ -158,7 +158,7 @@ public class TxnsUtils {
             int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED);
 
             if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                String numStr = mqe.getErrorMessage().substring(start, end).strip();
                 numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
@@ -187,7 +187,7 @@ public class TxnsUtils {
         }
 
         if (errorMsg.contains(TXN)) {
-            var t = errorMsg.substring(errorMsg.lastIndexOf(TXN) + TXN.length()).trim();
+            var t = errorMsg.substring(errorMsg.lastIndexOf(TXN) + TXN.length()).strip();
 
             if (t.indexOf(":") >= 0) {
                 t = t.substring(t.indexOf(":")+1);
@@ -197,7 +197,7 @@ public class TxnsUtils {
             var comma = t.indexOf(",");
 
             if (closingBracket > 0 || comma > 0) {
-                return t.substring(0, comma > 0 ? comma : closingBracket).trim();
+                return t.substring(0, comma > 0 ? comma : closingBracket).strip();
             } else {
                 return t;
             }

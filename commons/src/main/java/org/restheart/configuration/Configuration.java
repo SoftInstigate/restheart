@@ -309,7 +309,7 @@ public class Configuration {
                     } else if (confOverridesFilePath.toString().toLowerCase().endsWith(".conf")) {
                         // RHO format
                         overrides = Files.readAllLines(confOverridesFilePath).stream()
-                            .filter(row -> !row.trim().startsWith("#")) // ingore comments lines
+                            .filter(row -> !row.strip().startsWith("#")) // ingore comments lines
                             .collect(Collectors.joining());
                     } else {
                         throw new ConfigurationException("Configuration override file must have .json, .jsonc, .yml, .yaml or .conf extension: " + confOverridesFilePath);
@@ -455,7 +455,7 @@ public class Configuration {
             createParents(ctx, parentPath);
         }
 
-        var array = path.trim().endsWith("]");
+        var array = path.strip().endsWith("]");
 
         if (array) {
             // /a/b[2] -> /a/b

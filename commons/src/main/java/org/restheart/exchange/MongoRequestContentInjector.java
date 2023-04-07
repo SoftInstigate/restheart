@@ -349,6 +349,8 @@ public class MongoRequestContentInjector {
             .map(part -> new Pair<String, FormData.FormValue>(part.getKey(), part.getValue().getFirst()))
             .filter(part -> !part.getValue().isFileItem())
             .forEach(part -> {
+                var value = part.getValue().getValue();
+
                 try {
                     ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
                 } catch(JsonParseException jpe) {
@@ -361,11 +363,6 @@ public class MongoRequestContentInjector {
 
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
         BsonValue content = null;
-
-        // if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
-        //     // don't inject multipart content if it isn't a GridFs write request
-        //     return null;
-        // }
 
         var parser = FORM_PARSER.createParser(exchange);
 

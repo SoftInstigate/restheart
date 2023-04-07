@@ -44,7 +44,7 @@ public class URLUtils {
             return null;
         }
 
-        s = s.trim();
+        s = s.strip();
 
         if (s.length() < 2) {
             return s;

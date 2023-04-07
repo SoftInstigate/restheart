@@ -573,7 +573,7 @@ public class BsonUtils {
             return false;
         }
 
-        return switch (type.toLowerCase().trim()) {
+        return switch (type.toLowerCase().strip()) {
             case "null" -> !o.isPresent();
             case "notnull" -> o.isPresent();
             case "object" -> o.get().isDocument();

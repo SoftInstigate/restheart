@@ -58,7 +58,7 @@ public class OriginVetoer implements Authorizer {
             List<String> _whitelist = arg(config, "whitelist");
             this.whitelist = _whitelist.stream()
                 .filter(item -> item != null)
-                .map(item -> item.trim())
+                .map(item -> item.strip())
                 .map(item -> item.toLowerCase())
                 .map(item -> removeTrailingSlashes(item))
                 .map(item -> item.concat("/"))
@@ -74,7 +74,7 @@ public class OriginVetoer implements Authorizer {
             List<String> _ingoreList = arg(config, "ignore-paths");
             _ingoreList.stream()
                 .filter(item -> item != null)
-                .map(item -> item.trim())
+                .map(item -> item.strip())
                 .map(item -> item.toLowerCase())
                 .map(item -> PathTemplate.create(item))
                 .forEach(item -> this.ignoreLists.add(item, true));
