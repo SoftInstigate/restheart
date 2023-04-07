@@ -32,6 +32,7 @@ import java.util.Deque;
 import java.util.stream.StreamSupport;
 
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
@@ -342,6 +343,7 @@ public class MongoRequestContentInjector {
         }
 
         var ret = new BsonDocument();
+        boolean errored[] = {false};
 
         StreamSupport.stream(formData.spliterator(), false)
             .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
@@ -349,16 +351,28 @@ public class MongoRequestContentInjector {
             .map(part -> new Pair<String, FormData.FormValue>(part.getKey(), part.getValue().getFirst()))
             .filter(part -> !part.getValue().isFileItem())
             .forEach(part -> {
-                var value = part.getValue().getValue();
-
                 try {
-                    ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
+                    var value = part.getValue().getValue();
+
+                    if (value == null) {
+                        ret.put(part.getKey(), BsonNull.VALUE);
+                    } else if (value.isBlank()) {
+                        ret.put(part.getKey(), new BsonString(value));
+                    } else {
+                        ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
+                    }
                 } catch(JsonParseException jpe) {
-                    ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
+                    var strippedValue = part.getValue().getValue().strip();
+                    if (strippedValue.startsWith("{") || strippedValue.startsWith("[")) {
+                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + jpe.getMessage(), jpe);
+                        errored[0] = true;
+                    } else {
+                        ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
+                    }
                 }
             });
 
-        return ret;
+        return errored[0] ? null : ret;
     }
 
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
