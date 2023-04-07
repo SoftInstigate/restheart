@@ -182,7 +182,7 @@ public class ResponseHelper {
                 var e = msg.indexOf("' on server");
 
                 if (b >= 0 && e >= 0) {
-                    yield "Invalid filter: " + msg.substring(b+3, e).trim();
+                    yield "Invalid filter: " + msg.substring(b+3, e).strip();
                 } else {
                     yield msg;
                 }

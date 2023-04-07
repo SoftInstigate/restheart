@@ -267,7 +267,7 @@ public class MetricsHandler extends PipelinedHandler {
                     sb.append(generateResponse(registry, null, null, timestamp));
                 }
 
-                return sb.toString().trim();
+                return sb.toString().strip();
             }
 
             public String generateResponse(MetricRegistry registry, String databaseName, String collectionName, long timestamp) {
@@ -423,7 +423,7 @@ public class MetricsHandler extends PipelinedHandler {
                 double qValue = 1.0;
                 String specialization = null;
                 for (int i = 1; i < entries.size(); i++) {
-                    String element = entries.get(i).trim();
+                    String element = entries.get(i).strip();
                     if (element.startsWith("q=")) {
                         try {
                             qValue = Double.parseDouble(element.substring(2));

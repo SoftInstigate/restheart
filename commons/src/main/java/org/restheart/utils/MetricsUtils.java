@@ -77,7 +77,7 @@ public class MetricsUtils {
         if (xff == null) {
             return null;
         } else {
-            xff = xff.trim();
+            xff = xff.strip();
 
             if (xff.startsWith("[")) {
                 xff = xff.substring(1);
@@ -91,12 +91,12 @@ public class MetricsUtils {
 
             if (elements.length >= rindex) {
                 if (rindex >= elements.length) {
-                    return elements[0].trim();
+                    return elements[0].strip();
                 } else {
-                    return elements[elements.length - 1 - rindex].trim();
+                    return elements[elements.length - 1 - rindex].strip();
                 }
             } else {
-                return elements[elements.length - 1].trim();
+                return elements[elements.length - 1].strip();
             }
         }
     }

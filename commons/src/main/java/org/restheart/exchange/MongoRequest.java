@@ -868,7 +868,7 @@ public class MongoRequest extends BsonRequest {
         } else {
             var ret = new BsonDocument();
             hint.stream().forEach(s -> {
-                var _s = s.trim(); // the + sign is decoded into a space, in case remove it
+                var _s = s.strip(); // the + sign is decoded into a space, in case remove it
 
                 // manage the case where hint is a json object
                 try {

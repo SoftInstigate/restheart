@@ -125,7 +125,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
 
                             if (_v != null) {
                                 // quote empty string
-                                if ("".equals(_v.trim())) {
+                                if ("".equals(_v.strip())) {
                                     _v = "\"".concat(_v).concat("\"");
                                 }
 
@@ -144,7 +144,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                             var _v = vals.get(idx);
 
                             // quote empty string
-                            if ("".equals(_v.trim())) {
+                            if ("".equals(_v.strip())) {
                                 _v = "\"".concat(_v).concat("\"");
                             }
 
