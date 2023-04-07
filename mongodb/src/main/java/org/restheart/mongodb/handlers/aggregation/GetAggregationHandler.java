@@ -161,19 +161,31 @@ public class GetAggregationHandler extends PipelinedHandler {
                     try {
                         var clientSession = request.getClientSession();
 
+                        var stages = pipeline.getResolvedStagesAsList(avars);
+
                         if (clientSession == null) {
                             agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
-                                .aggregate(pipeline.getResolvedStagesAsList(avars))
+                                .aggregate(stages)
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         } else {
                             agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
-                                .aggregate(clientSession, pipeline.getResolvedStagesAsList(avars))
+                                .aggregate(clientSession, stages)
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         }
 
-                        agrOutput.into(_data);
+                        // when the last stage of the aggregation is $merge or $out
+                        // execute the aggregation with AggregateIterable.toCollection()
+                        // otherwise the entire view will be retuned, this can be the whole
+                        // collection in the worst case
+                        var isMergeOrOutSuffixed = stages.get(stages.size()-1).keySet().stream().filter(k -> "$merge".equals(k) || "_$merge".equals(k) || "$out".equals(k) ||"_$out".equals(k)).findAny().isPresent();
+
+                        if (isMergeOrOutSuffixed) {
+                            agrOutput.toCollection();
+                        } else {
+                            agrOutput.into(_data);
+                        }
                     } catch (MongoCommandException mce) {
                         response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "error executing aggregation", mce);
                         LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, mongoCommandExceptionError(mce));
