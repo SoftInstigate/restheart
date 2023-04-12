@@ -202,10 +202,6 @@ public class MongoRequestContentInjector {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
-        if (request.isInError()) {
-            return;
-        }
-
         if (request.isGet() || request.isOptions() || request.isDelete()) {
             return;
         }
