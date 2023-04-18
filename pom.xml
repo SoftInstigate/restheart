@@ -410,7 +410,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>3.3.0</version>
                     <executions>
                         <execution>
                             <id>enforce-versions</id>
@@ -420,7 +420,7 @@
                             <configuration>
                                 <rules>
                                     <requireMavenVersion>
-                                        <version>3.6</version>
+                                        <version>3.8</version>
                                     </requireMavenVersion>
                                     <requireReleaseDeps>
                                         <message>No Snapshots Allowed!</message>
@@ -503,7 +503,7 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.42.0</version>
+                    <version>0.42.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
