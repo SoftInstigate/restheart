@@ -19,56 +19,58 @@
  */
 package org.restheart.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.restheart.configuration.Utils.overrides;
 
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ConfigurationUtilsTest {
     @Test
     public void testEmpty() {
         var os = overrides("   ");
 
-        Assert.assertEquals(os.size(), 0);
+        assertEquals(os.size(), 0);
     }
 
     @Test
     public void testOne() {
         var os = overrides("/a/b/c->1");
 
-        Assert.assertEquals(os.size(), 1);
+        assertEquals(os.size(), 1);
 
         var o = os.get(0);
-        Assert.assertEquals("/a/b/c", o.path());
-        Assert.assertEquals(1, o.value());
+        assertEquals(o.path(), "/a/b/c");
+        assertEquals(1, o.value());
     }
 
     @Test
     public void testNoOperator() {
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("/a/b/c"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("/a/b/c"));
     }
 
     @Test
     public void testNoPath() {
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("->1"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("->1"));
     }
 
     @Test
     public void testWrongPath() {
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("/@@@@->1"));
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("/---->1"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("/@@@@->1"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("/---->1"));
     }
 
     @Test
     public void testWrongValue() {
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("/a->[1,2"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("/a->[1,2"));
     }
 
     @Test
     public void testPathNotAbsolute() {
-        Assert.assertThrows("", IllegalArgumentException.class, () -> overrides("a->[1,2"));
+        assertThrows(IllegalArgumentException.class, () -> overrides("a->[1,2"));
     }
 
     @Test
@@ -77,21 +79,21 @@ public class ConfigurationUtilsTest {
 
         var os = overrides(rho);
 
-        Assert.assertEquals(os.size(), 4);
+        assertEquals(os.size(), 4);
     }
 
     @Test
     public void testMap() {
         var o = overrides("/a->{'a': 1, 'b': 2}").get(0);
 
-        Assert.assertTrue(o.value() instanceof Map<?, ?>);
+        assertTrue(o.value() instanceof Map<?, ?>);
     }
 
     @Test
     public void testList() {
         var o = overrides("/a->[1,2,3]").get(0);
 
-        Assert.assertTrue(o.value() instanceof List<?>);
+        assertTrue(o.value() instanceof List<?>);
     }
 
     @Test
@@ -100,9 +102,9 @@ public class ConfigurationUtilsTest {
 
         System.out.println("*********** " + o.value());
 
-        Assert.assertTrue(o.value() instanceof String);
+        assertTrue(o.value() instanceof String);
         if (o.value() instanceof String v) {
-            Assert.assertTrue(v.endsWith(";"));
+            assertTrue(v.endsWith(";"));
         }
     }
 
@@ -110,9 +112,9 @@ public class ConfigurationUtilsTest {
     public void testStringSingleQuoteWithEscaped() {
         var o = overrides("/a->'ciao;';/b->'eccolo \\'qui;\\''").get(0);
 
-        Assert.assertTrue(o.value() instanceof String);
+        assertTrue(o.value() instanceof String);
         if (o.value() instanceof String v) {
-            Assert.assertTrue(v.endsWith(";"));
+            assertTrue(v.endsWith(";"));
         }
     }
 
@@ -120,20 +122,20 @@ public class ConfigurationUtilsTest {
     public void testStringDoubleQuote() {
         var o = overrides("/a->\"ciao\";/b->\"eccolo;\"").get(0);
 
-        Assert.assertTrue(o.value() instanceof String);
+        assertTrue(o.value() instanceof String);
     }
 
     @Test
     public void testStringDoubleQuoteWithEscaped() {
         var o = overrides("/a->\"ciao\";/b->\"eccolo \\\"qui;\\\" \"").get(0);
 
-        Assert.assertTrue(o.value() instanceof String);
+        assertTrue(o.value() instanceof String);
     }
 
     @Test
     public void testInt() {
         var o = overrides("/a->0").get(0);
 
-        Assert.assertTrue(o.value() instanceof Integer);
+        assertTrue(o.value() instanceof Integer);
     }
 }

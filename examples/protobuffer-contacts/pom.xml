@@ -36,11 +36,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-          </dependency>
+        </dependency>
         <dependency>
             <groupId>io.github.gaplotech</groupId>
             <artifactId>kotlin-protobuf-bson-codec</artifactId>

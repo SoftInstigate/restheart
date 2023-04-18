@@ -20,9 +20,13 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -30,10 +34,12 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
 
 /**
  *
@@ -93,13 +99,13 @@ public class GetDocumentIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -109,27 +115,34 @@ public class GetDocumentIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check json not null", json);
-        assertNotNull("check not null _etag property", json.get("_etag"));
+        assertNotNull(json, "check json not null");
+        assertNotNull(json.get("_etag"), "check not null _etag property");
 
-        assertNotNull("check not null _id property", json.get("_id"));
-        assertEquals("check _id value", document1Id, json.get("_id").asString());
-        assertNotNull("check not null a", json.get("a"));
-        assertEquals("check a value", 1, json.get("a").asInt());
-        assertNotNull("check not null mtm links", json.get("_links").asObject().get("mtm"));
-        assertNotNull("check not null mto links", json.get("_links").asObject().get("mto"));
-        assertNotNull("check not null otm links", json.get("_links").asObject().get("otm"));
-        assertNotNull("check not null oto links", json.get("_links").asObject().get("oto"));
+        assertNotNull(json.get("_id"), "check not null _id property");
+        assertEquals(document1Id, json.get("_id").asString(), "check _id value");
+        assertNotNull(json.get("a"), "check not null a");
+        assertEquals(1, json.get("a").asInt(), "check a value");
+        assertNotNull(json.get("_links").asObject().get("mtm"), "check not null mtm links");
+        assertNotNull(json.get("_links").asObject().get("mto"), "check not null mto links");
+        assertNotNull(json.get("_links").asObject().get("otm"), "check not null otm links");
+        assertNotNull(json.get("_links").asObject().get("oto"), "check not null oto links");
 
-        assertTrue("check mtm link", json.get("_links").asObject().get("mtm").asObject().get("href").asString().endsWith("?filter={'_id':{'$in':['doc2']}}"));
-        assertTrue("check mto link", json.get("_links").asObject().get("mto").asObject().get("href").asString().endsWith("/doc2"));
-        assertTrue("check otm link", json.get("_links").asObject().get("otm").asObject().get("href").asString().endsWith("?filter={'_id':{'$in':['doc2']}}"));
-        assertTrue("check oto link", json.get("_links").asObject().get("oto").asObject().get("href").asString().endsWith("/doc2"));
+        assertTrue(json.get("_links").asObject().get("mtm").asObject().get("href").asString()
+                .endsWith("?filter={'_id':{'$in':['doc2']}}"), "check mtm link");
+        assertTrue(json.get("_links").asObject().get("mto").asObject().get("href").asString().endsWith("/doc2"),
+                "check mto link");
+        assertTrue(json.get("_links").asObject().get("otm").asObject().get("href").asString()
+                .endsWith("?filter={'_id':{'$in':['doc2']}}"), "check otm link");
+        assertTrue(json.get("_links").asObject().get("oto").asObject().get("href").asString().endsWith("/doc2"),
+                "check oto link");
 
         String mtm = json.get("_links").asObject().get("mtm").asObject().get("href").asString();
-        // String mto = json.get("_links").asObject().get("mto").asObject().get("href").asString();
-        // String otm = json.get("_links").asObject().get("otm").asObject().get("href").asString();
-        // String oto = json.get("_links").asObject().get("oto").asObject().get("href").asString();
+        // String mto =
+        // json.get("_links").asObject().get("mto").asObject().get("href").asString();
+        // String otm =
+        // json.get("_links").asObject().get("otm").asObject().get("href").asString();
+        // String oto =
+        // json.get("_links").asObject().get("oto").asObject().get("href").asString();
 
         URIBuilder ub = new URIBuilder();
 
@@ -172,22 +185,26 @@ public class GetDocumentIT extends HttpClientAbstactIT {
 
         Response respMtm = adminExecutor.execute(Request.Get(_mtm));
         HttpResponse httpRespMtm = respMtm.returnResponse();
-        assertNotNull("check not null get mtm response", httpRespMtm);
-        assertEquals("check get mtm response status code", HttpStatus.SC_OK, httpRespMtm.getStatusLine().getStatusCode());
+        assertNotNull(httpRespMtm, "check not null get mtm response");
+        assertEquals(HttpStatus.SC_OK,
+                httpRespMtm.getStatusLine().getStatusCode(), "check get mtm response status code");
 
         Response respMto = adminExecutor.execute(Request.Get(_mto));
         HttpResponse httpRespMto = respMto.returnResponse();
-        assertNotNull("check not null get mto response", httpRespMto);
-        assertEquals("check get mto response status code", HttpStatus.SC_OK, httpRespMto.getStatusLine().getStatusCode());
+        assertNotNull(httpRespMto, "check not null get mto response");
+        assertEquals(HttpStatus.SC_OK,
+                httpRespMto.getStatusLine().getStatusCode(), "check get mto response status code");
 
         Response respOtm = adminExecutor.execute(Request.Get(_otm));
         HttpResponse httpRespOtm = respOtm.returnResponse();
-        assertNotNull("check not null get otm response", httpRespOtm);
-        assertEquals("check get otm response status code", HttpStatus.SC_OK, httpRespOtm.getStatusLine().getStatusCode());
+        assertNotNull(httpRespOtm, "check not null get otm response");
+        assertEquals(HttpStatus.SC_OK,
+                httpRespOtm.getStatusLine().getStatusCode(), "check get otm response status code");
 
         Response respOto = adminExecutor.execute(Request.Get(_oto));
         HttpResponse httpRespOto = respOto.returnResponse();
-        assertNotNull("check not null get oto response", httpRespOto);
-        assertEquals("check get oto response status code", HttpStatus.SC_OK, httpRespOto.getStatusLine().getStatusCode());
+        assertNotNull(httpRespOto, "check not null get oto response");
+        assertEquals(HttpStatus.SC_OK,
+                httpRespOto.getStatusLine().getStatusCode(), "check get oto response status code");
     }
 }

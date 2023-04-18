@@ -20,26 +20,31 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.Unirest;
-import io.undertow.util.Headers;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
+
 import java.net.URI;
+
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
-import org.junit.Assert;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.mashape.unirest.http.Unirest;
+
+import io.undertow.util.Headers;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -77,8 +82,9 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[]{
-                    new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY, DOC_ID_TYPE.NUMBER.name())
+                new NameValuePair[] {
+                        new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY,
+                                DOC_ID_TYPE.NUMBER.name())
                 });
 
         // *** POST tmpcoll
@@ -89,13 +95,13 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
         Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
 
-        assertNotNull("check loocation header", headers);
-        assertTrue("check loocation header", headers.length > 0);
+        assertNotNull(headers, "check loocation header");
+        assertTrue(headers.length > 0, "check loocation header");
 
         Header locationH = headers[0];
         String location = locationH.getValue();
 
-        assertTrue("check location header value", location.endsWith("/100?id_type=NUMBER"));
+        assertTrue(location.endsWith("/100?id_type=NUMBER"), "check location header value");
 
         URI createdDocUri = URI.create(location);
 
@@ -103,10 +109,10 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
-        assertTrue("check created doc content", content.get("_id").asInt() == 100);
-        assertNotNull("check created doc content", content.get("_etag"));
-        assertNotNull("check created doc content", content.get("a"));
-        assertTrue("check created doc content", content.get("a").asInt() == 1);
+        assertTrue(content.get("_id").asInt() == 100, "check created doc content");
+        assertNotNull(content.get("_etag"), "check created doc content");
+        assertNotNull(content.get("a"), "check created doc content");
+        assertTrue(content.get("a").asInt() == 1, "check created doc content");
     }
 
     /**
@@ -128,8 +134,9 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[]{
-                    new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY, DOC_ID_TYPE.STRING.name())
+                new NameValuePair[] {
+                        new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY,
+                                DOC_ID_TYPE.STRING.name())
                 });
 
         // *** POST tmpcoll
@@ -140,71 +147,72 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
         Header[] headers = httpResp.getHeaders(Headers.LOCATION_STRING);
 
-        assertNotNull("check loocation header", headers);
-        assertTrue("check loocation header", headers.length > 0);
+        assertNotNull(headers, "check loocation header");
+        assertTrue(headers.length > 0, "check loocation header");
 
         Header locationH = headers[0];
         String location = locationH.getValue();
 
-        //assertTrue("check location header value", location.endsWith("/54c965cbc2e64568e235b711?id_type=STRING"));
+        // assertTrue(// location.endsWith("/54c965cbc2e64568e235b711?id_type=STRING"),
+        // "check location header value");
         URI createdDocUri = URI.create(location);
 
         Response resp4 = adminExecutor.execute(Request.Get(createdDocUri)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(resp4.returnContent().asString()).asObject();
-        assertTrue("check created doc content", content.get("_id").asObject().get("$oid").asString()
-                .equals("54c965cbc2e64568e235b711"));
-        assertNotNull("check created doc content", content.get("_etag"));
-        assertNotNull("check created doc content", content.get("a"));
-        assertTrue("check created doc content", content.get("a").asInt() == 1);
+        assertTrue(content.get("_id").asObject().get("$oid").asString()
+                .equals("54c965cbc2e64568e235b711"), "check created doc content");
+        assertNotNull(content.get("_etag"), "check created doc content");
+        assertNotNull(content.get("a"), "check created doc content");
+        assertTrue(content.get("a").asInt() == 1, "check created doc content");
 
         // *** filter - case 1 - with string id should not find it
         URI collectionTmpUriSearch = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("filter", "{'_id':'54c965cbc2e64568e235b711'}")
+                new NameValuePair[] {
+                        new BasicNameValuePair("filter", "{'_id':'54c965cbc2e64568e235b711'}")
                 });
 
         Response resp5 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(resp5.returnContent().asString()).asObject();
-        assertTrue("check created doc content", content.get("_returned").asInt() == 0);
+        assertTrue(content.get("_returned").asInt() == 0, "check created doc content");
 
         // *** filter - case 1 - with oid id should find it
         collectionTmpUriSearch = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("filter", "{'_id':{'$oid':'54c965cbc2e64568e235b711'}}")
+                new NameValuePair[] {
+                        new BasicNameValuePair("filter",
+                                "{'_id':{'$oid':'54c965cbc2e64568e235b711'}}")
                 });
 
         Response resp6 = adminExecutor.execute(Request.Get(collectionTmpUriSearch)
                 .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(resp6.returnContent().asString()).asObject();
-        assertTrue("check created doc content", content.get("_returned").asInt() == 1);
+        assertTrue(content.get("_returned").asInt() == 1, "check created doc content");
     }
 
     /**
      *
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     public void createTestData() throws Exception {
         // create test db
         resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create db " + DB,
-                org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB);
 
         // create parent collection
         resp = Unirest.put(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection ".concat(DB.concat("/").concat(COLL)),
-                org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection ".concat(DB.concat("/").concat(COLL)));
     }
 
     /**
@@ -221,8 +229,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 .body(body)
                 .asString();
 
-        Assert.assertEquals("create doc with complex id ",
-                org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create doc with complex id ");
 
         resp = Unirest.get(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -234,11 +241,12 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
         JsonValue rbody = Json.parse(resp.getBody());
 
-        Assert.assertTrue("check doc",
+        assertTrue(
                 rbody != null
-                && rbody.isObject()
-                && rbody.asObject().get("_size") != null
-                && rbody.asObject().get("_size").isNumber()
-                && rbody.asObject().get("_size").asInt() == 1);
+                        && rbody.isObject()
+                        && rbody.asObject().get("_size") != null
+                        && rbody.asObject().get("_size").isNumber()
+                        && rbody.asObject().get("_size").asInt() == 1,
+                "check doc");
     }
 }

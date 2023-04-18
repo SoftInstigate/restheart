@@ -20,14 +20,16 @@
  */
 package org.restheart.test.integration;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.net.URISyntaxException;
 
 import org.apache.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -53,14 +55,14 @@ public class ETagIT extends AbstactIT {
      *
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     public void createTestData() throws Exception {
         // create test db
         resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create db " + DB, HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB);
 
         // create test db with required policy
         resp = Unirest.put(url(DB_REQUIRED))
@@ -69,21 +71,23 @@ public class ETagIT extends AbstactIT {
                 .body("{'etagDocPolicy': 'required'}")
                 .asString();
 
-        Assert.assertEquals("create db " + DB_REQUIRED, HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB_REQUIRED);
 
         // create collection
         resp = Unirest.put(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection " + DB.concat("/").concat(COLL));
 
         // create collection
         resp = Unirest.put(url(DB_REQUIRED, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection " + DB.concat("/").concat(COLL));
 
         // create documents
         resp = Unirest.put(url(DB, COLL, "docid"))
@@ -96,7 +100,8 @@ public class ETagIT extends AbstactIT {
                 .queryString("wm", "upsert")
                 .asString();
 
-        Assert.assertEquals("create document " + DB_REQUIRED.concat("/").concat(COLL).concat("/docid"), HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create document " + DB_REQUIRED.concat("/").concat(COLL).concat("/docid"));
 
         // create collection with required etag
         resp = Unirest.put(url(DB, COLL_REQUIRED))
@@ -105,7 +110,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'etagDocPolicy': 'required'}")
                 .asString();
 
-        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection " + DB.concat("/").concat(COLL));
 
         // create document
         resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
@@ -113,7 +119,8 @@ public class ETagIT extends AbstactIT {
                 .queryString("wm", "upsert")
                 .asString();
 
-        Assert.assertEquals("create document " + DB.concat("/").concat(COLL).concat("/docid"), HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create document " + DB.concat("/").concat(COLL).concat("/docid"));
     }
 
     /**
@@ -135,7 +142,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED,
+                resp.getStatus(), "check response status of create test data");
     }
 
     /**
@@ -151,7 +159,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of data with missing etag", HttpStatus.SC_CONFLICT, resp.getStatus());
+        assertEquals(HttpStatus.SC_CONFLICT,
+                resp.getStatus(), "check response status of data with missing etag");
 
         resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -161,7 +170,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of update data with wrong etag", HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus());
+        assertEquals(HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus(),
+                "check response status of update data with wrong etag");
 
         String etag = resp.getHeaders().get("ETag").get(0);
 
@@ -174,7 +184,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of update data with correct etag", HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of update data with correct etag");
 
         // now use the DB_REQUIRED
         resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
@@ -184,7 +195,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_CONFLICT, resp.getStatus());
+        assertEquals(HttpStatus.SC_CONFLICT,
+                resp.getStatus(), "check response status of create test data");
 
         resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -194,7 +206,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of update data without etag", HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus());
+        assertEquals(HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus(),
+                "check response status of update data without etag");
 
         etag = resp.getHeaders().get("ETag").get(0);
 
@@ -207,7 +220,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of update data with correct etag", HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of update data with correct etag");
     }
 
     /**
@@ -233,7 +247,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_CONFLICT, resp.getStatus());
+        assertEquals(HttpStatus.SC_CONFLICT,
+                resp.getStatus(), "check response status of create test data");
 
         resp = Unirest.put(url(DB, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -244,7 +259,8 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus());
+        assertEquals(HttpStatus.SC_PRECONDITION_FAILED,
+                resp.getStatus(), "check response status of create test data");
 
         String etag = resp.getHeaders().get("ETag").get(0);
 
@@ -257,6 +273,6 @@ public class ETagIT extends AbstactIT {
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(HttpStatus.SC_OK, resp.getStatus(), "check response status of create test data");
     }
 }

@@ -21,16 +21,12 @@ package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.JsonProxyRequest;
 import org.slf4j.Logger;
@@ -44,30 +40,29 @@ public class JsonRequestTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonRequestTest.class);
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
     }
 
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
-
+//    @Rule
+//    public TestRule watcher = new TestWatcher() {
+//        @Override
+//        protected void starting(Description description) {
+//            LOG.info("executing test {}", description.toString());
+//        }
+//    };
     public JsonRequestTest() {
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
     }
 

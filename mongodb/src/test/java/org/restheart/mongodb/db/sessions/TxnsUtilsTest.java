@@ -20,8 +20,9 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -31,28 +32,24 @@ public class TxnsUtilsTest {
     @Test
     public void testNoWithTxnNumber() {
         var msg = "10";
-
-        Assert.assertEquals("10", TxnsUtils.removeWithTxnNumber(msg));
+        assertEquals(TxnsUtils.removeWithTxnNumber(msg), "10");
     }
 
     @Test
     public void testRemoveWithTxnNumber() {
         var msg = "with txnNumber 10";
-
-        Assert.assertEquals("10", TxnsUtils.removeWithTxnNumber(msg));
+        assertEquals(TxnsUtils.removeWithTxnNumber(msg), "10");
     }
 
     @Test
     public void testRemoveWithTxnNumber6() {
         var msg = "with { txnNumber: 10 }";
-
-        Assert.assertEquals("10", TxnsUtils.removeWithTxnNumber(msg));
+        assertEquals(TxnsUtils.removeWithTxnNumber(msg), "10");
     }
 
     @Test
     public void testRemoveWithtxnNumberAndRetryCounter() {
         var msg = "with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }";
-
-        Assert.assertEquals("10", TxnsUtils.removeWithTxnNumber(msg));
+        assertEquals(TxnsUtils.removeWithTxnNumber(msg), "10");
     }
 }

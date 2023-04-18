@@ -20,12 +20,15 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
-import io.undertow.util.Headers;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
+
 import java.io.IOException;
 import java.net.URI;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -34,11 +37,15 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
-import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+
+import io.undertow.util.Headers;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -144,8 +151,9 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         Response resp;
 
         URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/"
-                + _AGGREGATIONS + "/" + uri, new NameValuePair[]{
-                    new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
+                + _AGGREGATIONS + "/" + uri,
+                new NameValuePair[] {
+                        new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
                 });
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
@@ -157,13 +165,13 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -173,38 +181,33 @@ public class GetAggregationIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check not null json response", json);
-        assertNotNull("check not null _embedded", json.get("_embedded"));
-        assertTrue("check _embedded", json.get("_embedded").isObject());
+        assertNotNull(json, "check not null json response");
+        assertNotNull(json.get("_embedded"), "check not null _embedded");
+        assertTrue(json.get("_embedded").isObject(), "check _embedded");
 
-        assertNotNull("", json.get("_embedded").asObject().get("rh:result"));
-        assertTrue("check _embedded[\"rh:results\"]",
-                json.get("_embedded").asObject().get("rh:result").isArray());
+        assertNotNull(json.get("_embedded").asObject().get("rh:result"), "");
+        assertTrue(json.get("_embedded").asObject().get("rh:result").isArray(),
+                "check _embedded[\"rh:results\"]");
 
-        JsonArray results
-                = json.get("_embedded").asObject().get("rh:result").asArray();
+        JsonArray results = json.get("_embedded").asObject().get("rh:result").asArray();
 
-        assertTrue("check we have 2 results", results.size() == 1);
+        assertTrue(results.size() == 1, "check we have 2 results");
 
         results.values().stream().map((v) -> {
-            assertNotNull("check not null _id property",
-                    v.asObject().get("_id"));
+            assertNotNull(v.asObject().get("_id"), "check not null _id property");
             return v;
         }).map((v) -> {
-            assertTrue("check results _id property is string",
-                    v.asObject().get("_id").isString());
+            assertTrue(v.asObject().get("_id").isString(), "check results _id property is string");
             return v;
         }).map((v) -> {
-            assertTrue("check results _id property is a",
-                    v.asObject().get("_id").asString().equals("a"));
+            assertTrue(v.asObject().get("_id").asString().equals("a"), "check results _id property is a");
             return v;
         }).map((v) -> {
-            assertNotNull("check not null value property",
-                    v.asObject().get("value"));
+            assertNotNull(
+                    v.asObject().get("value"), "check not null value property");
             return v;
         }).forEach((v) -> {
-            assertTrue("check results value property is number",
-                    v.asObject().get("value").isNumber());
+            assertTrue(v.asObject().get("value").isNumber(), "check results value property is number");
         });
     }
 
@@ -242,13 +245,14 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_BAD_REQUEST, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_BAD_REQUEST, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
     }
 
     private void createTmpCollection() throws Exception {
-        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp db", resp, HttpStatus.SC_CREATED);
 
         resp = adminExecutor.execute(Request.Put(collectionTmpUri)
@@ -264,17 +268,17 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         String etag = getEtag(collectionTmpUri);
 
         // post some data
-        String[] data = new String[]{
-            "{\"name\":\"a\",\"age\":10}",
-            "{\"name\":\"a\",\"age\":20}",
-            "{\"name\":\"a\",\"age\":30}",
-            "{\"name\":\"b\",\"age\":40}",
-            "{\"name\":\"b\",\"age\":50}",
-            "{\"name\":\"b\",\"age\":60}",
-            "{\"obj\":{\"name\":\"x\",\"age\":10}}",
-            "{\"obj\":{\"name\":\"x\",\"age\":20}}",
-            "{\"obj\":{\"name\":\"y\",\"age\":10}}",
-            "{\"obj\":{\"name\":\"y\",\"age\":20}}"
+        String[] data = new String[] {
+                "{\"name\":\"a\",\"age\":10}",
+                "{\"name\":\"a\",\"age\":20}",
+                "{\"name\":\"a\",\"age\":30}",
+                "{\"name\":\"b\",\"age\":40}",
+                "{\"name\":\"b\",\"age\":50}",
+                "{\"name\":\"b\",\"age\":60}",
+                "{\"obj\":{\"name\":\"x\",\"age\":10}}",
+                "{\"obj\":{\"name\":\"x\",\"age\":20}}",
+                "{\"obj\":{\"name\":\"y\",\"age\":10}}",
+                "{\"obj\":{\"name\":\"y\",\"age\":20}}"
         };
 
         for (String datum : data) {
@@ -313,13 +317,13 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -329,35 +333,32 @@ public class GetAggregationIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check not null json response", json);
-        assertNotNull("check not null _embedded", json.get("_embedded"));
-        assertTrue("check _embedded", json.get("_embedded").isObject());
+        assertNotNull(json, "check not null json response");
+        assertNotNull(json.get("_embedded"), "check not null _embedded");
+        assertTrue(json.get("_embedded").isObject(), "check _embedded");
 
-        assertNotNull("", json.get("_embedded").asObject().get("rh:result"));
+        assertNotNull(json.get("_embedded").asObject().get("rh:result"), "");
 
-        assertTrue("check _embedded[\"rh:result\"]",
-                json.get("_embedded").asObject().get("rh:result").isArray());
+        assertTrue(json.get("_embedded").asObject().get("rh:result").isArray(),
+                "check _embedded[\"rh:result\"]");
 
-        JsonArray results
-                = json.get("_embedded").asObject().get("rh:result").asArray();
+        JsonArray results = json.get("_embedded").asObject().get("rh:result").asArray();
 
-        assertTrue("check we have 2 results", results.size() == 2);
+        assertTrue(results.size() == 2, "check we have 2 results");
 
         results.values().stream().map((v) -> {
-            assertNotNull("check not null _id property",
-                    v.asObject().get("_id"));
+            assertNotNull(
+                    v.asObject().get("_id"), "check not null _id property");
             return v;
         }).map((v) -> {
-            assertTrue("check results _id property is string",
-                    v.asObject().get("_id").isString());
+            assertTrue(v.asObject().get("_id").isString(), "check results _id property is string");
             return v;
         }).map((v) -> {
-            assertNotNull("check not null value property",
-                    v.asObject().get("value"));
+            assertNotNull(
+                    v.asObject().get("value"), "check not null value property");
             return v;
         }).forEach((v) -> {
-            assertTrue("check results value property is number",
-                    v.asObject().get("value").isNumber());
+            assertTrue(v.asObject().get("value").isNumber(), "check results value property is number");
         });
     }
 
@@ -371,13 +372,13 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -387,18 +388,15 @@ public class GetAggregationIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check not null json", json);
+        assertNotNull(json, "check not null json");
 
-        assertNotNull("check not null _etag", json.get("_etag"));
-        assertTrue("check _etag is object", json.get("_etag").isObject());
+        assertNotNull(json.get("_etag"), "check not null _etag");
+        assertTrue(json.get("_etag").isObject(), "check _etag is object");
 
-        assertNotNull("check not null _etag.$oid", json.get("_etag")
-                .asObject().get("$oid"));
+        assertNotNull(json.get("_etag").asObject().get("$oid"), "check not null _etag.$oid");
 
-        assertNotNull("check _etag.$oid is string", json.get("_etag")
-                .asObject().get("$oid").isString());
+        assertNotNull(json.get("_etag").asObject().get("$oid").isString(), "check _etag.$oid is string");
 
-        return json.get("_etag")
-                .asObject().get("$oid").asString();
+        return json.get("_etag").asObject().get("$oid").asString();
     }
 }

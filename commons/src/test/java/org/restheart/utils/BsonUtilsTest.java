@@ -20,6 +20,13 @@
 
 package org.restheart.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,23 +41,13 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.restheart.utils.BsonUtils.array;
-import static org.restheart.utils.BsonUtils.document;
 
 /**
  *
@@ -63,27 +60,16 @@ public class BsonUtilsTest {
     /**
      *
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
     }
 
     /**
      *
      */
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
     }
-
-    /**
-     *
-     */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
 
     /**
      *
@@ -94,14 +80,14 @@ public class BsonUtilsTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void setUp() {
     }
 
     /**
      *
      */
-    @After
+    @AfterEach
     public void tearDown() {
     }
 
@@ -113,7 +99,7 @@ public class BsonUtilsTest {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
         String minified = "{'_id':{'$in':[1,20.0,'id']}}";
 
-        Assert.assertEquals(minified, BsonUtils.minify(json));
+        assertEquals(minified, BsonUtils.minify(json));
     }
 
     /**
@@ -136,71 +122,75 @@ public class BsonUtilsTest {
         BsonDocument json5 = BsonDocument.parse(_json5);
         BsonDocument json6 = BsonDocument.parse(_json6);
 
-        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2", "[{f1:1,f2:2}]", null));
-        Assert.assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2.[*].f1", "1"));
+        assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2", "[{f1:1,f2:2}]", null));
+        assertTrue(checkGetPropsFromPath(json6, "$.a1.[*].a2.[*].f1", "1"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a", "[]"));
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]"));
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*].*"));
+        assertTrue(checkGetPropsFromPath(json5, "$.a", "[]"));
+        assertTrue(checkGetPropsFromPath(json5, "$.a.[*]"));
+        assertTrue(checkGetPropsFromPath(json5, "$.a.[*].*"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.notexists", (String[]) null));
+        assertTrue(checkGetPropsFromPath(json1, "$.notexists", (String[]) null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.f", "null"));
+        assertTrue(checkGetPropsFromPath(json1, "$.f", "null"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$", _json1));
-        Assert.assertTrue(checkType(json1, "$", "object"));
-        Assert.assertFalse(checkType(json1, "$", "number"));
+        assertTrue(checkGetPropsFromPath(json1, "$", _json1));
+        assertTrue(checkType(json1, "$", "object"));
+        assertFalse(checkType(json1, "$", "number"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.f", "null"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}", "null"));
+        assertTrue(
+                checkGetPropsFromPath(json1, "$.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}"));
+        assertTrue(checkGetPropsFromPath(json1, "$.f", "null"));
+        assertTrue(checkGetPropsFromPath(json1, "$.*",
+                "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}", "null"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.b", "1"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*.*", "1", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}", null));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.b", "1"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}"));
+        assertTrue(
+                checkGetPropsFromPath(json1, "$.*.*", "1", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}", null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}}, f: null}"));
-        Assert.assertTrue(checkType(json1, "$.a", "object"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a",
+                "{b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}}, f: null}"));
+        assertTrue(checkType(json1, "$.a", "object"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.b", "1"));
-        Assert.assertTrue(checkType(json1, "$.a.b", "number"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.b", "1"));
+        assertTrue(checkType(json1, "$.a.b", "number"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}"));
-        Assert.assertTrue(checkType(json1, "$.a.c", "object"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.c", "{d:{\"$oid\": \"550c6e62c2e62b5640673e93\"},e:3}"));
+        assertTrue(checkType(json1, "$.a.c", "object"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.c.d", "{\"$oid\": \"550c6e62c2e62b5640673e93\"}"));
-        Assert.assertTrue(checkType(json1, "$.a.c.d", "objectid"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.c.d", "{\"$oid\": \"550c6e62c2e62b5640673e93\"}"));
+        assertTrue(checkType(json1, "$.a.c.d", "objectid"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a", "[{b:1}, {b:2,c:3}, {d:4, c: null}, true]"));
-        Assert.assertTrue(checkType(json2, "$.a", "array"));
+        assertTrue(checkGetPropsFromPath(json2, "$.a", "[{b:1}, {b:2,c:3}, {d:4, c: null}, true]"));
+        assertTrue(checkType(json2, "$.a", "array"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{b:1}", "{b:2,c:3}", "{d:4, c: null}", "true"));
-        Assert.assertFalse(checkType(json2, "$.a.[*]", "object"));
+        assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{b:1}", "{b:2,c:3}", "{d:4, c: null}", "true"));
+        assertFalse(checkType(json2, "$.a.[*]", "object"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c", null, "3", "null", null));
+        assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c", null, "3", "null", null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*"));
+        assertTrue(checkGetPropsFromPath(json2, "$.a.[*].c.*"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{b:1}, {b:2}, {b:3}]"));
-        Assert.assertTrue(checkType(json3, "$.a", "array"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a", "[{b:1}, {b:2}, {b:3}]"));
+        assertTrue(checkType(json3, "$.a", "array"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{b:1}", "{b:2}", "{b:3}"));
-        Assert.assertTrue(checkType(json3, "$.a.[*]", "object"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{b:1}", "{b:2}", "{b:3}"));
+        assertTrue(checkType(json3, "$.a.[*]", "object"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].b", "1", "2", "3"));
-        Assert.assertTrue(checkType(json3, "$.a.[*].b", "number"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a.[*].b", "1", "2", "3"));
+        assertTrue(checkType(json3, "$.a.[*].b", "number"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$", "{a: [[{b:1}], [{b:2}], [{b:3}]]}"));
-        Assert.assertTrue(checkType(json4, "$", "object"));
+        assertTrue(checkGetPropsFromPath(json4, "$", "{a: [[{b:1}], [{b:2}], [{b:3}]]}"));
+        assertTrue(checkType(json4, "$", "object"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a", "[[{b:1}], [{b:2}], [{b:3}]]"));
-        Assert.assertTrue(checkType(json4, "$.a", "array"));
+        assertTrue(checkGetPropsFromPath(json4, "$.a", "[[{b:1}], [{b:2}], [{b:3}]]"));
+        assertTrue(checkType(json4, "$.a", "array"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*]", "[{b:1}]", "[{b:2}]", "[{b:3}]"));
-        Assert.assertTrue(checkType(json4, "$.a.[*]", "array"));
+        assertTrue(checkGetPropsFromPath(json4, "$.a.[*]", "[{b:1}]", "[{b:2}]", "[{b:3}]"));
+        assertTrue(checkType(json4, "$.a.[*]", "array"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].[*].b", "1", "2", "3"));
-        Assert.assertTrue(checkType(json4, "$.a.[*].[*].b", "number"));
+        assertTrue(checkGetPropsFromPath(json4, "$.a.[*].[*].b", "1", "2", "3"));
+        assertTrue(checkType(json4, "$.a.[*].[*].b", "number"));
 
     }
 
@@ -222,29 +212,31 @@ public class BsonUtilsTest {
         BsonDocument json4 = BsonDocument.parse(_json4);
         BsonDocument json5 = BsonDocument.parse(_json5);
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a", "[]"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*]"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.a.[*].f"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a", "[]"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.[*]"));
+        assertTrue(checkGetPropsFromPath(json1, "$.a.[*].f"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a", "[{}]"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{}"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.a.[*].f", (String) null));
+        assertTrue(checkGetPropsFromPath(json2, "$.a", "[{}]"));
+        assertTrue(checkGetPropsFromPath(json2, "$.a.[*]", "{}"));
+        assertTrue(checkGetPropsFromPath(json2, "$.a.[*].f", (String) null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a", "[{f: 1}]"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{f: 1}"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.a.[*].f", "1"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a", "[{f: 1}]"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a.[*]", "{f: 1}"));
+        assertTrue(checkGetPropsFromPath(json3, "$.a.[*].f", "1"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
+        assertTrue(checkGetPropsFromPath(json4, "$.a.[*].e", "1", "2", "3"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.*", "{e: 1}", "{e: 2}", "{e: 3}"));
+        assertTrue(checkGetPropsFromPath(json5, "$.a.*", "{e: 1}", "{e: 2}", "{e: 3}"));
 
-        // justification of the following: even if "a! is an object, it has all numeric values
-        // on mongodb you can use the dot notation on arrays and do the following on RESTHeart
+        // justification of the following: even if "a! is an object, it has all numeric
+        // values
+        // on mongodb you can use the dot notation on arrays and do the following on
+        // RESTHeart
         // PATCH /db/coll/doc {"a.1", {"e": 1000}}
         // the content turns internally to {"a": {"1": {"e":1000}}}
-        Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
+        assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
 
     /**
@@ -261,22 +253,22 @@ public class BsonUtilsTest {
         BsonDocument json2 = BsonDocument.parse(_json2);
         BsonDocument json3 = BsonDocument.parse(_json3);
 
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o", "{}"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.*", "{}"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o.*"));
-        Assert.assertTrue(checkGetPropsFromPath(json1, "$.o.*.f"));
+        assertTrue(checkGetPropsFromPath(json1, "$.o", "{}"));
+        assertTrue(checkGetPropsFromPath(json1, "$.*", "{}"));
+        assertTrue(checkGetPropsFromPath(json1, "$.o.*"));
+        assertTrue(checkGetPropsFromPath(json1, "$.o.*.f"));
 
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o", "{o: {}}"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.*", "{o: {}}"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.o", "{}"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.*", "{}"));
-        Assert.assertTrue(checkGetPropsFromPath(json2, "$.o.*.f", (String) null));
+        assertTrue(checkGetPropsFromPath(json2, "$.o", "{o: {}}"));
+        assertTrue(checkGetPropsFromPath(json2, "$.*", "{o: {}}"));
+        assertTrue(checkGetPropsFromPath(json2, "$.o.o", "{}"));
+        assertTrue(checkGetPropsFromPath(json2, "$.o.*", "{}"));
+        assertTrue(checkGetPropsFromPath(json2, "$.o.*.f", (String) null));
 
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o", "{o: {f: 1}}"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.*", "{o: {f: 1}}"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.o", "{f: 1}"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*", "{f: 1}"));
-        Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*.f", "1"));
+        assertTrue(checkGetPropsFromPath(json3, "$.o", "{o: {f: 1}}"));
+        assertTrue(checkGetPropsFromPath(json3, "$.*", "{o: {f: 1}}"));
+        assertTrue(checkGetPropsFromPath(json3, "$.o.o", "{f: 1}"));
+        assertTrue(checkGetPropsFromPath(json3, "$.o.*", "{f: 1}"));
+        assertTrue(checkGetPropsFromPath(json3, "$.o.*.f", "1"));
     }
 
     /**
@@ -610,16 +602,19 @@ public class BsonUtilsTest {
         LOG.debug("$.items.*.items.*.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
         LOG.debug("$.items.*.items.*.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
         LOG.debug("$.items.*.items.*.values" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        LOG.debug("$.items.*.items.*.values.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        LOG.debug("$.items.*.items.*.values.*.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        LOG.debug("$.items.*.items.*.values.*.svalue" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+        LOG.debug(
+                "$.items.*.items.*.values.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        LOG.debug("$.items.*.items.*.values.*.descr" + " -> "
+                + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        LOG.debug("$.items.*.items.*.values.*.svalue" + " -> "
+                + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
 
         String path = "$.items.*.*";
 
         try {
-            Assert.assertTrue(BsonUtils.countPropsFromPath(json, path) == 4);
+            assertTrue(BsonUtils.countPropsFromPath(json, path) == 4);
         } catch (IllegalArgumentException ex) {
-            Assert.fail(ex.toString());
+            fail(ex.toString());
         }
     }
 
@@ -634,7 +629,7 @@ public class BsonUtilsTest {
 
         String actual = BsonUtils.toJson(bson);
 
-        Assert.assertEquals(object, actual);
+        assertEquals(object, actual);
     }
 
     /**
@@ -648,7 +643,7 @@ public class BsonUtilsTest {
 
         String actual = BsonUtils.toJson(bson);
 
-        Assert.assertEquals(BsonUtils.minify(array), actual);
+        assertEquals(BsonUtils.minify(array), actual);
     }
 
     /**
@@ -663,8 +658,8 @@ public class BsonUtilsTest {
                         .concat(id.toString())
                         .concat("'}"));
 
-        Assert.assertTrue(parsed.isObjectId());
-        Assert.assertEquals(parsed.asObjectId().getValue(), id);
+        assertTrue(parsed.isObjectId());
+        assertEquals(parsed.asObjectId().getValue(), id);
     }
 
     /**
@@ -674,8 +669,8 @@ public class BsonUtilsTest {
     public void testParseFloat() {
         BsonValue parsed = BsonUtils.parse("3.1415");
 
-        Assert.assertTrue(parsed.isNumber());
-        Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
+        assertTrue(parsed.isNumber());
+        assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
     }
 
     /**
@@ -685,8 +680,8 @@ public class BsonUtilsTest {
     public void testParseString() {
         BsonValue parsed = BsonUtils.parse("'hello'");
 
-        Assert.assertTrue(parsed.isString());
-        Assert.assertEquals(parsed.asString(), new BsonString("hello"));
+        assertTrue(parsed.isString());
+        assertEquals(parsed.asString(), new BsonString("hello"));
     }
 
     /**
@@ -696,8 +691,8 @@ public class BsonUtilsTest {
     public void testParseEmptyString() {
         BsonValue parsed = BsonUtils.parse("''");
 
-        Assert.assertTrue(parsed.isString());
-        Assert.assertEquals(parsed.asString(), new BsonString(""));
+        assertTrue(parsed.isString());
+        assertEquals(parsed.asString(), new BsonString(""));
     }
 
     /**
@@ -711,7 +706,7 @@ public class BsonUtilsTest {
 
         String actual = BsonUtils.toJson(bson);
 
-        Assert.assertEquals(BsonUtils.minify(arrayOfObjs), actual);
+        assertEquals(BsonUtils.minify(arrayOfObjs), actual);
     }
 
     private boolean eq(List<Optional<BsonValue>> left, List<Optional<BsonValue>> right) {
@@ -778,7 +773,7 @@ public class BsonUtilsTest {
         try {
             gots = BsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
-            Assert.fail(ex.toString());
+            fail(ex.toString());
             return false;
         }
 
@@ -813,7 +808,7 @@ public class BsonUtilsTest {
         try {
             gots = BsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
-            Assert.fail(ex.toString());
+            fail(ex.toString());
             return false;
         }
 
@@ -850,21 +845,21 @@ public class BsonUtilsTest {
 
         BsonDocument flatten = BsonUtils.flatten(root, false).asDocument();
 
-        Assert.assertTrue(flatten.size() == 3);
-        Assert.assertTrue(flatten.containsKey("child1.grandchild1.a"));
-        Assert.assertTrue(flatten.containsKey("child1.grandchild1.b"));
-        Assert.assertTrue(flatten.containsKey("child2.grandchild2.a"));
+        assertTrue(flatten.size() == 3);
+        assertTrue(flatten.containsKey("child1.grandchild1.a"));
+        assertTrue(flatten.containsKey("child1.grandchild1.b"));
+        assertTrue(flatten.containsKey("child2.grandchild2.a"));
 
         BsonValue unflatten = BsonUtils.unflatten(flatten);
 
-        Assert.assertTrue(unflatten.isDocument());
-        Assert.assertTrue(unflatten.asDocument().containsKey("child1"));
-        Assert.assertTrue(unflatten.asDocument().containsKey("child2"));
+        assertTrue(unflatten.isDocument());
+        assertTrue(unflatten.asDocument().containsKey("child1"));
+        assertTrue(unflatten.asDocument().containsKey("child2"));
 
-        Assert.assertTrue(unflatten.asDocument().get("child1").isDocument());
-        Assert.assertTrue(unflatten.asDocument().get("child2").isDocument());
-        Assert.assertTrue(unflatten.asDocument().get("child1").asDocument().containsKey("grandchild1"));
-        Assert.assertTrue(unflatten.asDocument().get("child2").asDocument().containsKey("grandchild2"));
+        assertTrue(unflatten.asDocument().get("child1").isDocument());
+        assertTrue(unflatten.asDocument().get("child2").isDocument());
+        assertTrue(unflatten.asDocument().get("child1").asDocument().containsKey("grandchild1"));
+        assertTrue(unflatten.asDocument().get("child2").asDocument().containsKey("grandchild2"));
     }
 
     /**
@@ -880,14 +875,14 @@ public class BsonUtilsTest {
 
         long l = 1111111115887391606l;
 
-        var json2 = "[{'n':2084824280},{'n':"+l+"}]";
+        var json2 = "[{'n':2084824280},{'n':" + l + "}]";
 
         var parsed2 = BsonUtils.parse(json2);
 
         System.out.println(BsonUtils.toJson(parsed2));
         System.out.println(parsed2);
 
-        var json3 = "[{'n':2084824280},{'d':{'$date':"+ System.currentTimeMillis()+"}}]";
+        var json3 = "[{'n':2084824280},{'d':{'$date':" + System.currentTimeMillis() + "}}]";
 
         var parsed3 = BsonUtils.parse(json3);
 
@@ -900,9 +895,9 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseLong2() {
-        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':"+4294967296l+"}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':" + 4294967296l + "}")));
 
-        var ls = BsonUtils.toJson(BsonUtils.parse("{'n':"+(5999999999l)+"}"));
+        var ls = BsonUtils.toJson(BsonUtils.parse("{'n':" + (5999999999l) + "}"));
 
         System.out.println(ls);
 
@@ -914,7 +909,7 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseInt() {
-        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':"+10+"}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':" + 10 + "}")));
     }
 
     /**
@@ -922,18 +917,19 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseDouble() {
-        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse(
+                "{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
     }
 
     @Test
     public void testDocumentArrayBuilder() {
         var uriOrNameCondBuilder = array()
-            .add(document().put("APP_URI_FIELD", "appURI"))
-            .add(document().put("APP_NAME_FIELD", "appURI"));
+                .add(document().put("APP_URI_FIELD", "appURI"))
+                .add(document().put("APP_NAME_FIELD", "appURI"));
 
         var conditionsBuilder = array()
-            .add(document().put("$or", uriOrNameCondBuilder))
-            .add(document().put("APP_ENABLED_FIELD", true));
+                .add(document().put("$or", uriOrNameCondBuilder))
+                .add(document().put("APP_ENABLED_FIELD", true));
 
         var findArgBuilder = document().put("$and", conditionsBuilder);
 
@@ -943,49 +939,50 @@ public class BsonUtilsTest {
         uriOrNameCond.add(new BsonDocument("APP_NAME_FIELD", new BsonString("appURI")));
         conditions.add(new BsonDocument("$or", uriOrNameCond));
         conditions.add(new BsonDocument("APP_ENABLED_FIELD", new BsonBoolean(true)));
-        var findArg = new BsonDocument("$and",conditions);
+        var findArg = new BsonDocument("$and", conditions);
 
-        Assert.assertTrue("checking array with docs created with builder equal to what created with constructors", findArgBuilder.get().toJson().equals(findArg.toJson()));
+        assertTrue(findArgBuilder.get().toJson().equals(findArg.toJson()),
+                "checking array with docs created with builder equal to what created with constructors");
     }
 
     @Test
     public void testFirstNonWhitespace() {
         var s1 = "{ 'a': 1, 'b': 2, 'c': 3 }";
-        Assert.assertEquals('{', BsonUtils.firstNonWhitespace(s1));
+        assertEquals('{', BsonUtils.firstNonWhitespace(s1));
 
         var s2 = "      { 'a': 1, 'b': 2, 'c': 3 }";
-        Assert.assertEquals('{', BsonUtils.firstNonWhitespace(s2));
+        assertEquals('{', BsonUtils.firstNonWhitespace(s2));
 
         var s3 = "[ 1,2,3 ]";
-        Assert.assertEquals('[', BsonUtils.firstNonWhitespace(s3));
+        assertEquals('[', BsonUtils.firstNonWhitespace(s3));
 
         var s4 = "      [ 1,2,3 ]";
-        Assert.assertEquals('[', BsonUtils.firstNonWhitespace(s4));
+        assertEquals('[', BsonUtils.firstNonWhitespace(s4));
 
         var empty = "";
-        Assert.assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty));
+        assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty));
 
         var empty2 = "      ";
-        Assert.assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty2));
+        assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty2));
     }
 
     @Test
     public void testXPathGet() {
         var doc = BsonUtils.parse("""
-        {
-            "int": 1,
-            "null": null,
-            "string": "string",
-            "boolean": false,
-            "doc": {
-                "foo": 1,
-                "bar": "x"
-            },
-            "array": [
-                { idx: 0 }, { idx: 1 }
-            ]
-        }
-        """).asDocument();
+                {
+                    "int": 1,
+                    "null": null,
+                    "string": "string",
+                    "boolean": false,
+                    "doc": {
+                        "foo": 1,
+                        "bar": "x"
+                    },
+                    "array": [
+                        { idx: 0 }, { idx: 1 }
+                    ]
+                }
+                """).asDocument();
 
         assertEquals(BsonNull.VALUE, BsonUtils.get(doc, "null").get());
 
@@ -996,7 +993,8 @@ public class BsonUtilsTest {
         assertEquals(new BsonInt32(1), BsonUtils.get(doc, "doc.foo").get());
         assertEquals(new BsonInt32(1), BsonUtils.get(doc, "doc['foo']").get());
         assertEquals(new BsonString("x"), BsonUtils.get(doc, "doc.bar").get());
-        assertEquals(array().add(document().put("idx", 0), document().put("idx", 1)).get(), BsonUtils.get(doc, "array").get());
+        assertEquals(array().add(document().put("idx", 0), document().put("idx", 1)).get(),
+                BsonUtils.get(doc, "array").get());
         assertEquals(new BsonInt32(0), BsonUtils.get(doc, "array[0].idx").get());
         assertEquals(new BsonInt32(1), BsonUtils.get(doc, "array[1].idx").get());
         assertFalse(BsonUtils.get(doc, "array[100].idx").isPresent());

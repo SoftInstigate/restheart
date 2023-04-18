@@ -20,16 +20,17 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
 
@@ -60,9 +61,9 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
         assertTrue(content.contains("\"version\": \"3.0.0\""));
@@ -84,9 +85,9 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", "text/plain; version=0.0.4", entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals("text/plain; version=0.0.4", entity.getContentType().getValue(), "check content type");
     }
 
     /**
@@ -104,9 +105,10 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        //configuration says: it is not activated for collections, so it should return 404, default restheart answer
-        assertEquals("check status code", HttpStatus.SC_NOT_FOUND, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", "application/json", entity.getContentType().getValue());
+        // configuration says: it is not activated for collections, so it should return
+        // 404, default restheart answer
+        assertEquals(HttpStatus.SC_NOT_FOUND, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals("application/json", entity.getContentType().getValue(), "check content type");
     }
 }

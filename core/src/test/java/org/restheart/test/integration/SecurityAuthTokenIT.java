@@ -20,11 +20,14 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import io.undertow.util.HttpString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
 import java.security.Principal;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,10 +37,14 @@ import org.apache.http.auth.Credentials;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -69,23 +76,28 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check authorized");
 
         Header[] _authToken = httpResp.getHeaders(AUTH_TOKEN_HEADER.toString());
         Header[] _authTokenValid = httpResp.getHeaders(AUTH_TOKEN_VALID_HEADER.toString());
         Header[] _authTokenLocation = httpResp.getHeaders(AUTH_TOKEN_LOCATION_HEADER.toString());
 
-        assertNotNull("check not null auth token header", _authToken);
-        assertNotNull("check not null auth token valid header", _authTokenValid);
-        assertNotNull("check not null auth token location header", _authTokenLocation);
+        assertNotNull(_authToken, "check not null auth token header");
+        assertNotNull(_authTokenValid, "check not null auth token valid header");
+        assertNotNull(_authTokenLocation, "check not null auth token location header");
 
-        assertTrue("check not empty array auth token header array ", _authToken.length == 1);
-        assertTrue("check not empty array auth token valid header array", _authTokenValid.length == 1);
-        assertTrue("check not empty array auth token location header array", _authTokenLocation.length == 1);
+        assertTrue(_authToken.length == 1, "check not empty array auth token header array ");
+        assertTrue(_authTokenValid.length == 1, "check not empty array auth token valid header array");
+        assertTrue(_authTokenLocation.length == 1, "check not empty array auth token location header array");
 
-        assertTrue("check not empty array auth token header value not null or empty", _authToken[0] != null && _authToken[0].getValue() != null && !_authToken[0].getValue().isEmpty());
-        assertTrue("check not empty array auth token valid value not null or empty", _authTokenValid[0] != null && _authTokenValid[0].getValue() != null && !_authTokenValid[0].getValue().isEmpty());
-        assertTrue("check not empty array auth token location  not null or empty", _authTokenLocation[0] != null && _authTokenLocation[0].getValue() != null && !_authTokenLocation[0].getValue().isEmpty());
+        assertTrue(_authToken[0] != null && _authToken[0].getValue() != null && !_authToken[0].getValue().isEmpty(),
+                "check not empty array auth token header value not null or empty");
+        assertTrue(_authTokenValid[0] != null && _authTokenValid[0].getValue() != null
+                && !_authTokenValid[0].getValue().isEmpty(),
+                "check not empty array auth token valid value not null or empty");
+        assertTrue(_authTokenLocation[0] != null && _authTokenLocation[0].getValue() != null
+                && !_authTokenLocation[0].getValue().isEmpty(),
+                "check not empty array auth token location  not null or empty");
 
         Response resp2 = unauthExecutor
                 .authPreemptive(HTTP_HOST)
@@ -98,7 +110,7 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine2 = httpResp2.getStatusLine();
         assertNotNull(statusLine2);
 
-        assertEquals("check authorized via auth token", HttpStatus.SC_OK, statusLine2.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine2.getStatusCode(), "check authorized via auth token");
     }
 
     /**
@@ -115,19 +127,19 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check authorized");
 
         Header[] _authToken = httpResp.getHeaders(AUTH_TOKEN_HEADER.toString());
         Header[] _authTokenValid = httpResp.getHeaders(AUTH_TOKEN_VALID_HEADER.toString());
         Header[] _authTokenLocation = httpResp.getHeaders(AUTH_TOKEN_LOCATION_HEADER.toString());
 
-        assertNotNull("check not null auth token header", _authToken);
-        assertNotNull("check not null auth token valid header", _authTokenValid);
-        assertNotNull("check not null auth token location header", _authTokenLocation);
+        assertNotNull(_authToken, "check not null auth token header");
+        assertNotNull(_authTokenValid, "check not null auth token valid header");
+        assertNotNull(_authTokenLocation, "check not null auth token location header");
 
-        assertTrue("check not empty array auth token header array ", _authToken.length == 1);
-        assertTrue("check not empty array auth token valid header", _authTokenValid.length == 1);
-        assertTrue("check not empty array auth token location header", _authTokenLocation.length == 1);
+        assertTrue(_authToken.length == 1, "check not empty array auth token header array ");
+        assertTrue(_authTokenValid.length == 1, "check not empty array auth token valid header");
+        assertTrue(_authTokenLocation.length == 1, "check not empty array auth token location header");
 
         String locationURI = _authTokenLocation[0].getValue();
 
@@ -156,16 +168,15 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
         Header[] _authTokenValid2 = httpResp2.getHeaders(AUTH_TOKEN_VALID_HEADER.toString());
 
-        assertEquals("check auth token resource URI", HttpStatus.SC_OK, statusLine2.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine2.getStatusCode(), "check auth token resource URI");
 
-        assertNotNull("content type not null", entity.getContentType());
-        assertTrue("check content type",
-                entity.getContentType().getValue().equals(Exchange.HAL_JSON_MEDIA_TYPE)
-                || entity.getContentType().getValue().equals(Exchange.JSON_MEDIA_TYPE));
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertTrue(entity.getContentType().getValue().equals(Exchange.HAL_JSON_MEDIA_TYPE)
+                || entity.getContentType().getValue().equals(Exchange.JSON_MEDIA_TYPE), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("check content of auth token resource", content);
+        assertNotNull(content, "check content of auth token resource");
 
         JsonObject json = null;
 
@@ -180,11 +191,12 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
             json = new JsonObject(); // just to remove complier warning message (json might be null)
         }
 
-        assertNotNull("check content - auth_token not null", json.get("auth_token"));
-        assertNotNull("check content - auth_token_valid_until not null", json.get("auth_token_valid_until"));
+        assertNotNull(json.get("auth_token"), "check content - auth_token not null");
+        assertNotNull(json.get("auth_token_valid_until"), "check content - auth_token_valid_until not null");
 
-        assertTrue("check content - auth_token not empty", !json.get("auth_token").asString().isEmpty());
-        assertTrue("check content - auth_token_valid_until not empty", !json.get("auth_token_valid_until").asString().isEmpty());
+        assertTrue(!json.get("auth_token").asString().isEmpty(), "check content - auth_token not empty");
+        assertTrue(!json.get("auth_token_valid_until").asString().isEmpty(),
+                "check content - auth_token_valid_until not empty");
 
         assertEquals(json.get("auth_token").asString(), _authToken[0].getValue());
         assertEquals(json.get("auth_token_valid_until").asString(), _authTokenValid2[0].getValue());
@@ -204,19 +216,19 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check authorized");
 
         Header[] _authToken = httpResp.getHeaders(AUTH_TOKEN_HEADER.toString());
         Header[] _authTokenValid = httpResp.getHeaders(AUTH_TOKEN_VALID_HEADER.toString());
         Header[] _authTokenLocation = httpResp.getHeaders(AUTH_TOKEN_LOCATION_HEADER.toString());
 
-        assertNotNull("check not null auth token header", _authToken);
-        assertNotNull("check not null auth token valid header", _authTokenValid);
-        assertNotNull("check not null auth token location header", _authTokenLocation);
+        assertNotNull(_authToken, "check not null auth token header");
+        assertNotNull(_authTokenValid, "check not null auth token valid header");
+        assertNotNull(_authTokenLocation, "check not null auth token location header");
 
-        assertTrue("check not empty array auth token header array ", _authToken.length == 1);
-        assertTrue("check not empty array auth token valid header", _authTokenValid.length == 1);
-        assertTrue("check not empty array auth token location header", _authTokenLocation.length == 1);
+        assertTrue(_authToken.length == 1, "check not empty array auth token header array ");
+        assertTrue(_authTokenValid.length == 1, "check not empty array auth token valid header");
+        assertTrue(_authTokenLocation.length == 1, "check not empty array auth token location header");
 
         String locationURI = _authTokenLocation[0].getValue();
 
@@ -240,7 +252,7 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine2 = httpResp2.getStatusLine();
         assertNotNull(statusLine2);
 
-        assertEquals("check auth token resource URI", HttpStatus.SC_NO_CONTENT, statusLine2.getStatusCode());
+        assertEquals(HttpStatus.SC_NO_CONTENT, statusLine2.getStatusCode(), "check auth token resource URI");
 
         Response resp3 = unauthExecutor.auth(new Credentials() {
             @Override
@@ -260,6 +272,6 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         StatusLine statusLine3 = httpResp3.getStatusLine();
         assertNotNull(statusLine3);
 
-        assertEquals("check auth token resource URI", HttpStatus.SC_UNAUTHORIZED, statusLine3.getStatusCode());
+        assertEquals(HttpStatus.SC_UNAUTHORIZED, statusLine3.getStatusCode(), "check auth token resource URI");
     }
 }

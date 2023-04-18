@@ -108,8 +108,8 @@
       <artifactId>graphql-java</artifactId>
     </dependency>
     <dependency>
-        <groupId>com.nulab-inc</groupId>
-        <artifactId>zxcvbn</artifactId>
+      <groupId>com.nulab-inc</groupId>
+      <artifactId>zxcvbn</artifactId>
     </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
@@ -130,7 +130,12 @@
     </dependency>
     <dependency>
       <groupId>com.intuit.karate</groupId>
-      <artifactId>karate-junit4</artifactId>
+      <artifactId>karate-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -144,14 +149,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>com.mashape.unirest</groupId>
-        <artifactId>unirest-java</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-inline</artifactId>
-        <scope>test</scope>
+      <groupId>com.mashape.unirest</groupId>
+      <artifactId>unirest-java</artifactId>
+      <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->
   </dependencies>
@@ -227,41 +227,41 @@
               </excludes>
             </filter>
             <filter>
-                <artifact>org.restheart:restheart-commons</artifact>
-                <excludes>
-                    <exclude>org/restheart/utils/package-info.class</exclude>
-                </excludes>
+              <artifact>org.restheart:restheart-commons</artifact>
+              <excludes>
+                <exclude>org/restheart/utils/package-info.class</exclude>
+              </excludes>
             </filter>
             <filter>
-                <artifact>org.restheart:restheart</artifact>
-                <excludes>
-                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
-                </excludes>
+              <artifact>org.restheart:restheart</artifact>
+              <excludes>
+                <exclude>org/restheart/security/authorizers/package-info.class</exclude>
+              </excludes>
             </filter>
             <filter>
-                <artifact>com.graphql-java:graphql-java</artifact>
-                <excludes>
-                    <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
-                    <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
-                </excludes>
+              <artifact>com.graphql-java:graphql-java</artifact>
+              <excludes>
+                <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
+                <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
+              </excludes>
             </filter>
           </filters>
           <transformers>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
             <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                <addHeader>false</addHeader>
+              <addHeader>false</addHeader>
             </transformer>
             <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                <resource>META-INF/RESTHEART-LICENSE.txt</resource>
-                <file>../LICENSE.txt</file>
+              <resource>META-INF/RESTHEART-LICENSE.txt</resource>
+              <file>../LICENSE.txt</file>
             </transformer>
             <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
-                <file>../COMM-LICENSE.txt</file>
+              <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
+              <file>../COMM-LICENSE.txt</file>
             </transformer>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
-        </transformers>
+          </transformers>
         </configuration>
         <executions>
           <execution>
@@ -341,9 +341,9 @@
                 </ports>
                 <!-- remove showLogs=false above to get logs -->
                 <log>
-                    <prefix>[mongodb]</prefix>
-                    <enabled>true</enabled>
-                    <color>yellow</color>
+                  <prefix>[mongodb]</prefix>
+                  <enabled>true</enabled>
+                  <color>yellow</color>
                 </log>
                 <wait>
                   <http>

@@ -20,10 +20,14 @@
  */
 package org.restheart.test.integration;
 
-import io.undertow.util.Headers;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -34,10 +38,11 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.*;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.util.Headers;
 
 /**
  *
@@ -54,7 +59,7 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
      *
      * @throws Exception
      */
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom()
                 .disableContentCompression().build())
@@ -89,12 +94,10 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
 
         Header h = httpResp.getFirstHeader("Content-Encoding");
 
-        assertNotNull("check accept encoding header not null", h);
-        assertEquals("check accept encoding header value",
-                Headers.GZIP.toString(), h.getValue());
+        assertNotNull(h, "check accept encoding header not null");
+        assertEquals(Headers.GZIP.toString(), h.getValue(), "check accept encoding header value");
 
-        assertEquals("check status code", HttpStatus.SC_OK,
-                statusLine.getStatusCode());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
 
         try {
             GZIPInputStream gzipis = new GZIPInputStream(

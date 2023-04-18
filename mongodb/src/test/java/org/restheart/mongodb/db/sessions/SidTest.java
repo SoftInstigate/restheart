@@ -20,24 +20,15 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SidTest {
-
-    /**
-     *
-     */
-    public SidTest() {
-    }
-
-    /**
-     *
-     */
     @Test
     public void testSessionOptionCase1() {
         for (int cont = 0; cont < 10; cont++) {
@@ -45,13 +36,10 @@ public class SidTest {
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);
 
-            Assert.assertEquals(so, so2);
+            assertEquals(so, so2);
         }
     }
 
-    /**
-     *
-     */
     @Test
     public void testSessionOptionCase2() {
         for (int cont = 0; cont < 10; cont++) {
@@ -59,7 +47,7 @@ public class SidTest {
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);
 
-            Assert.assertEquals(so, so2);
+            assertEquals(so, so2);
         }
     }
 }

@@ -19,21 +19,17 @@
  */
 package org.restheart.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MetricsUtilsTest {
     @Test
     public void testLast() {
         assertEquals("two", MetricsUtils.xffValue("[one, two, last]", 1));
-
         assertEquals("one", MetricsUtils.xffValue("[one, two, last]", 2));
-
         assertEquals("one", MetricsUtils.xffValue("     [one, two, last]    ", 3));
-
         assertEquals("last", MetricsUtils.xffValue("[last]", 0));
-
         assertEquals("last", MetricsUtils.xffValue("last", 2));
     }
 }

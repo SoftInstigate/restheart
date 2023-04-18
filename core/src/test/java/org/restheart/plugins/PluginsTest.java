@@ -1,21 +1,22 @@
 package org.restheart.plugins;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.MockedStatic;
-import org.restheart.Bootstrapper;
-import org.restheart.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.mockito.Mockito.mockStatic;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.restheart.Bootstrapper;
+import org.restheart.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PluginsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(PluginsFactory.class);
@@ -25,7 +26,7 @@ public class PluginsTest {
     private static MockedStatic<Bootstrapper> mockedBootstrapper;
     private static MockedStatic<PluginsFactory> mockedPluginsFactory;
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         mockedBootstrapper = mockBootstrapper();
         descriptors = providerDescriptors();
@@ -33,7 +34,7 @@ public class PluginsTest {
         mockedPluginsFactory = mockPluginsFactory();
     }
 
-    @AfterClass
+    @AfterAll
     public static void after() {
         if (mockedScanner != null) {
             mockedScanner.close();
@@ -52,21 +53,23 @@ public class PluginsTest {
     public void allSatisfiedDependencies() {
         var pdD_C = descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get();
         var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
-        Assert.assertTrue("check provider D_C is fine", ProvidersChecker.checkDependencies(LOGGER, vps, pdD_C));
+        assertTrue(ProvidersChecker.checkDependencies(LOGGER, vps, pdD_C), "check provider D_C is fine");
     }
 
     @Test
     public void missingDirectDependency() {
         var pdB = descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get();
         var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
-        Assert.assertFalse("check provider B is wrong due to missing direct dependency", ProvidersChecker.checkDependencies(LOGGER, vps, pdB));
+        assertFalse(ProvidersChecker.checkDependencies(LOGGER, vps, pdB),
+                "check provider B is wrong due to missing direct dependency");
     }
 
     @Test
     public void missingTransitiveDependency() {
         var pdE_B = descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get();
         var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
-        Assert.assertFalse("check provider E_B is wrong (missing transitive dependency)", ProvidersChecker.checkDependencies(LOGGER, vps, pdE_B));
+        assertFalse(ProvidersChecker.checkDependencies(LOGGER, vps, pdE_B),
+                "check provider E_B is wrong (missing transitive dependency)");
     }
 
     @Test
@@ -74,17 +77,26 @@ public class PluginsTest {
         var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
 
         // valid providers
-        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderA.class.getName())).findAny().get()));
-        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC_A.class.getName())).findAny().get()));
-        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get()));
-        Assert.assertTrue(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get()));
+        assertTrue(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderA.class.getName())).findAny().get()));
+        assertTrue(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderC_A.class.getName())).findAny().get()));
+        assertTrue(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderD_C.class.getName())).findAny().get()));
+        assertTrue(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderE_B.class.getName())).findAny().get()));
 
         // invalid providers
-        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get()));
-        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderWT.class.getName())).findAny().get()));
-        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderSelf.class.getName())).findAny().get()));
-        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC1.class.getName())).findAny().get()));
-        Assert.assertFalse(vps.contains(descriptors.stream().filter(d -> d.clazz().equals(ProviderC2.class.getName())).findAny().get()));
+        assertFalse(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderB.class.getName())).findAny().get()));
+        assertFalse(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderWT.class.getName())).findAny().get()));
+        assertFalse(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderSelf.class.getName())).findAny().get()));
+        assertFalse(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderC1.class.getName())).findAny().get()));
+        assertFalse(vps.contains(
+                descriptors.stream().filter(d -> d.clazz().equals(ProviderC2.class.getName())).findAny().get()));
     }
 
     private static MockedStatic<PluginsScanner> mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
@@ -124,13 +136,14 @@ public class PluginsTest {
      * WT is invalid, because the injected field is of the wrong type
      * SELF is invalid, because it depends on itself
      * C1 and C2 are invalid, due to circular dependency
+     * 
      * @return
      */
     private static List<PluginDescriptor> providerDescriptors() {
         /*
          * PluginDescriptor
-         *  ArrayList<InjectionDescriptor> injections
-         *      ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams
+         * ArrayList<InjectionDescriptor> injections
+         * ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams
          */
 
         var iC_A = new ArrayList<InjectionDescriptor>();
@@ -175,7 +188,9 @@ public class PluginsTest {
 
         var providerDescriptors = new ArrayList<PluginDescriptor>();
 
-        providerDescriptors.add(new PluginDescriptor("a", ProviderA.class.getName(), true, new ArrayList<InjectionDescriptor>()));
+        providerDescriptors
+                .add(new PluginDescriptor("a", ProviderA.class.getName(), true,
+                        new ArrayList<InjectionDescriptor>()));
         providerDescriptors.add(new PluginDescriptor("b", ProviderB.class.getName(), true, iB));
         providerDescriptors.add(new PluginDescriptor("c_a", ProviderC_A.class.getName(), true, iC_A));
         providerDescriptors.add(new PluginDescriptor("d_c", ProviderD_C.class.getName(), true, iD_C));

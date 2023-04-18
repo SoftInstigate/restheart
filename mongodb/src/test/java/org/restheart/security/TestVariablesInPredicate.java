@@ -20,9 +20,11 @@
  */
 package org.restheart.security;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.bson.BsonDocument;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import io.undertow.predicate.PredicateParser;
 import io.undertow.server.HttpServerExchange;
@@ -33,8 +35,8 @@ public class TestVariablesInPredicate {
         var raw = "path-template('/{tenant}/coll') and equals(@user.tenant, ${tenant})";
         var interpolated = AclVarsInterpolator.interpolatePredicate(raw, "@user.", testUser());
 
-        //System.out.println("raw predicate " + raw);
-        //System.out.println("interpolated predicate " + interpolated);
+        // System.out.println("raw predicate " + raw);
+        // System.out.println("interpolated predicate " + interpolated);
 
         var p = PredicateParser.parse(interpolated, this.getClass().getClassLoader());
 
@@ -43,14 +45,14 @@ public class TestVariablesInPredicate {
         exchange.setRelativePath("/softinstigate/coll");
         var result = p.resolve(exchange);
 
-        Assert.assertTrue("predicate must resolve path /softinstigate/coll", result);
+        assertTrue(result, "predicate must resolve path /softinstigate/coll");
 
         var exchange2 = new HttpServerExchange();
         exchange2.setRequestPath("http://127.0.0.1/foo/coll");
         exchange2.setRelativePath("/foo/coll");
         var result2 = p.resolve(exchange2);
 
-        Assert.assertFalse("predicate must not resolve path /foo/coll", result2);
+        assertFalse(result2, "predicate must not resolve path /foo/coll");
     }
 
     private BsonDocument testUser() {

@@ -20,8 +20,10 @@
  */
 package org.restheart.security.predicates;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 import org.restheart.security.utils.MongoUtils;
 
 import io.undertow.predicate.PredicateParser;
@@ -36,14 +38,14 @@ public class QParamsPredicatesTest {
 
         var exchange = exchangeWithQParams("foo", "bar");
 
-        Assert.assertTrue("check positive predicate", predicateT.resolve(exchange));
-        Assert.assertFalse("check negative predicate", predicateF.resolve(exchange));
+        assertTrue(predicateT.resolve(exchange), "check positive predicate");
+        assertFalse(predicateF.resolve(exchange), "check negative predicate");
 
         var predicate0 = PredicateParser.parse("qparams-size(0)", MongoUtils.class.getClassLoader());
 
         var exchangeNQP = exchangeWithQParams();
-        Assert.assertTrue("check positive predicate", predicate0.resolve(exchangeNQP));
-        Assert.assertFalse("check positive predicate", predicate0.resolve(exchange));
+        assertTrue(predicate0.resolve(exchangeNQP), "check positive predicate");
+        assertFalse(predicate0.resolve(exchange), "check positive predicate");
     }
 
     @Test
@@ -55,10 +57,10 @@ public class QParamsPredicatesTest {
 
         var exchange = exchangeWithQParams("foo", "bar");
 
-        Assert.assertTrue("check positive predicate", predicateT1.resolve(exchange));
-        Assert.assertTrue("check positive predicate", predicateT2.resolve(exchange));
-        Assert.assertFalse("check negative predicate", predicateF1.resolve(exchange));
-        Assert.assertFalse("check negative predicate", predicateF2.resolve(exchange));
+        assertTrue(predicateT1.resolve(exchange), "check positive predicate");
+        assertTrue(predicateT2.resolve(exchange), "check positive predicate");
+        assertFalse(predicateF1.resolve(exchange), "check negative predicate");
+        assertFalse(predicateF2.resolve(exchange), "check negative predicate");
     }
 
     @Test
@@ -71,12 +73,12 @@ public class QParamsPredicatesTest {
         var exchangeF1 = exchangeWithQParams("other");
         var exchangeF2 = exchangeWithQParams("foo", "other");
 
-        Assert.assertTrue("check positive predicate", predicate.resolve(exchangeT1));
-        Assert.assertTrue("check positive predicate", predicate.resolve(exchangeT2));
-        Assert.assertFalse("check negative predicate", predicate.resolve(exchangeF1));
-        Assert.assertFalse("check negative predicate", predicate.resolve(exchangeF2));
+        assertTrue(predicate.resolve(exchangeT1), "check positive predicate");
+        assertTrue(predicate.resolve(exchangeT2), "check positive predicate");
+        assertFalse(predicate.resolve(exchangeF1), "check negative predicate");
+        assertFalse(predicate.resolve(exchangeF2), "check negative predicate");
 
-        Assert.assertFalse("check negative predicate", predicateNOQP.resolve(exchangeF1));
+        assertFalse(predicateNOQP.resolve(exchangeF1), "check negative predicate");
     }
 
     @Test
@@ -88,17 +90,17 @@ public class QParamsPredicatesTest {
         var exchangeF1 = exchangeWithQParams("other", "foo");
         var exchangeF2 = exchangeWithQParams("foo");
 
-        Assert.assertTrue("check positive predicate", predicate.resolve(exchangeT1));
-        Assert.assertTrue("check positive predicate", predicate.resolve(exchangeT2));
-        Assert.assertFalse("check negative predicate", predicate.resolve(exchangeF1));
-        Assert.assertFalse("check negative predicate", predicate.resolve(exchangeF2));
+        assertTrue(predicate.resolve(exchangeT1), "check positive predicate");
+        assertTrue(predicate.resolve(exchangeT2), "check positive predicate");
+        assertFalse(predicate.resolve(exchangeF1), "check negative predicate");
+        assertFalse(predicate.resolve(exchangeF2), "check negative predicate");
     }
 
-    private HttpServerExchange exchangeWithQParams(String ...qparams) {
+    private HttpServerExchange exchangeWithQParams(String... qparams) {
         var exchange = new HttpServerExchange();
         exchange.setRequestMethod(HttpString.tryFromString("GET"));
 
-        for (var qparam: qparams) {
+        for (var qparam : qparams) {
             exchange.addQueryParam(qparam, "foo");
         }
 
@@ -107,7 +109,8 @@ public class QParamsPredicatesTest {
         if (qparams == null || qparams.length == 0) {
             queryString = "";
         } else if (qparams.length == 1) {
-            queryString = "?".concat(qparams[0]).concat("=foo");;
+            queryString = "?".concat(qparams[0]).concat("=foo");
+            ;
         } else {
             queryString = "?".concat(qparams[0]).concat("=foo");
 
@@ -123,4 +126,3 @@ public class QParamsPredicatesTest {
         return exchange;
     }
 }
-

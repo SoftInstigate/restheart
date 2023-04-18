@@ -20,20 +20,24 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.restheart.exchange.Exchange;
+import org.restheart.utils.HttpStatus;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+
 import io.undertow.util.Headers;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.fluent.Response;
-import org.junit.Assert;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
-import org.restheart.exchange.Exchange;
-import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -62,70 +66,83 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         Response resp;
 
         // *** PUT tmpdb
-        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put db", resp, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
-        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put coll1", resp, HttpStatus.SC_CREATED);
 
         // *** PUT tmpdoc
-        resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", resp, HttpStatus.SC_CREATED);
 
         // try to patch without body
-        resp = adminExecutor.execute(Request.Patch(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Patch(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
+                Exchange.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without data", resp, HttpStatus.SC_NOT_ACCEPTABLE);
 
         // try to patch without etag forcing checkEtag
-        resp = adminExecutor.execute(Request.Patch(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Patch(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
 
         // try to patch without etag no checkEtag
-        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check patch tmp doc without etag", resp, HttpStatus.SC_OK);
 
         // try to patch with wrong etag
-        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
+                .addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check patch tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
-        resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
+                Exchange.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 
         // try to patch with correct etag
-        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
+        resp = adminExecutor.execute(Request.Patch(documentTmpUri).bodyString("{b:2}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
+                .addHeader(Headers.IF_MATCH_STRING, etag));
         check("check patch tmp doc with correct etag", resp, HttpStatus.SC_OK);
 
-        resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
+                Exchange.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(resp.returnContent().asString()).asObject();
-        assertNotNull("check patched content", content.get("a"));
-        assertNotNull("check patched content", content.get("b"));
-        assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
+        assertNotNull(content.get("a"), "check patched content");
+        assertNotNull(content.get("b"), "check patched content");
+        assertTrue(content.get("a").asInt() == 1 && content.get("b").asInt() == 2, "check patched content");
     }
 
     /**
      *
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     public void createTestData() throws Exception {
         // create test db
         resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create db " + DB, org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB);
 
         // create collection
         resp = Unirest.put(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection " + DB.concat("/").concat(COLL));
     }
 
     /**
@@ -141,7 +158,8 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ 'array': [] }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED,
+                resp.getStatus(), "check response status of create test data");
 
         resp = Unirest.patch(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -149,51 +167,59 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ 'doc.number': 1, 'array.0': {'string': 'ciao'} }")
                 .asString();
 
-        Assert.assertEquals("check response status of update test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of update test data");
 
         resp = Unirest.get(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of get test data");
 
         JsonValue rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("check data to be a json object",
+        assertTrue(
                 rbody != null
-                && rbody.isObject());
+                        && rbody.isObject(),
+                "check data to be a json object");
 
         JsonValue doc = rbody.asObject().get("doc");
 
-        Assert.assertTrue("check data to have the 'doc' json object",
+        assertTrue(
                 doc != null
-                && doc.isObject());
+                        && doc.isObject(),
+                "check data to have the 'doc' json object");
 
         JsonValue number = doc.asObject().get("number");
 
-        Assert.assertTrue("check doc to have the 'number' property",
+        assertTrue(
                 number != null
-                && number.isNumber()
-                && number.asInt() == 1);
+                        && number.isNumber()
+                        && number.asInt() == 1,
+                "check doc to have the 'number' property");
 
         JsonValue array = rbody.asObject().get("array");
 
-        Assert.assertTrue("check data to have the 'array' json array",
+        assertTrue(
                 array != null
-                && array.isArray());
+                        && array.isArray(),
+                "check data to have the 'array' json array");
 
         JsonValue element = array.asArray().get(0);
 
-        Assert.assertTrue("check array to have an object element",
+        assertTrue(
                 element != null
-                && element.isObject());
+                        && element.isObject(),
+                "check array to have an object element");
 
         JsonValue string = element.asObject().get("string");
 
-        Assert.assertTrue("check the array element to have the 'string' property",
+        assertTrue(
                 string != null
-                && string.isString()
-                && string.asString().equals("ciao"));
+                        && string.isString()
+                        && string.asString().equals("ciao"),
+                "check the array element to have the 'string' property");
     }
 
     /**
@@ -209,7 +235,8 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED,
+                resp.getStatus(), "check response status of create test data");
 
         resp = Unirest.patch(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -217,52 +244,60 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 }, '$currentDate': {'timestamp': true } }")
                 .asString();
 
-        Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of patch test data");
 
         resp = Unirest.get(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of get test data");
 
         JsonValue rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("check data to be a json object",
+        assertTrue(
                 rbody != null
-                && rbody.isObject());
+                        && rbody.isObject(),
+                "check data to be a json object");
 
         JsonValue array = rbody.asObject().get("array");
 
-        Assert.assertTrue("check data to have the 'array' array with one element",
+        assertTrue(
                 array != null
-                && array.isArray()
-                && array.asArray().size() == 1);
+                        && array.isArray()
+                        && array.asArray().size() == 1,
+                "check data to have the 'array' array with one element");
 
         JsonValue element = array.asArray().get(0);
 
-        Assert.assertTrue("check array element to be the string 'a'",
+        assertTrue(
                 element != null
-                && element.isString()
-                && element.asString().equals("a"));
+                        && element.isString()
+                        && element.asString().equals("a"),
+                "check array element to be the string 'a'");
 
         JsonValue count = rbody.asObject().get("count");
 
-        Assert.assertTrue("check count property to be 100",
+        assertTrue(
                 count != null
-                && count.isNumber()
-                && count.asInt() == 100);
+                        && count.isNumber()
+                        && count.asInt() == 100,
+                "check count property to be 100");
 
         JsonValue timestamp = rbody.asObject().get("timestamp");
 
-        Assert.assertTrue("check timestamp to be an object",
+        assertTrue(
                 timestamp != null
-                && timestamp.isObject());
+                        && timestamp.isObject(),
+                "check timestamp to be an object");
 
         JsonValue $date = timestamp.asObject().get("$date");
 
-        Assert.assertTrue("check $date to be numeric",
+        assertTrue(
                 $date != null
-                && $date.isNumber());
+                        && $date.isNumber(),
+                "check $date to be numeric");
     }
 
     /**
@@ -282,7 +317,8 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ '$addToSet':{ 'addresses':{ 'addressType' : 'N', 'line2':'line 2' } } }")
                 .asString();
 
-        Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED,
+                resp.getStatus(), "check response status of patch test data");
 
         resp = Unirest.patch(url(DB, COLL, "issue232"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -290,6 +326,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .body("{ '$addToSet':{ 'addresses':{ 'addressType' : 'N', 'line2':'line 2' } } }")
                 .asString();
 
-        Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK,
+                resp.getStatus(), "check response status of patch test data");
     }
 }

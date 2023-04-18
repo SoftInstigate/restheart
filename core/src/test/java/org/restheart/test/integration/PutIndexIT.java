@@ -20,21 +20,24 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import io.undertow.util.Headers;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+
+import io.undertow.util.Headers;
 
 /**
  *
@@ -57,20 +60,27 @@ public class PutIndexIT extends HttpClientAbstactIT {
         Response resp;
 
         // *** PUT tmpdb
-        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put db", resp, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
-        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put coll1", resp, HttpStatus.SC_CREATED);
 
         // *** PUT wrong index
-        //resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
-        //check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
-        resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        // resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}",
+        // halCT).addHeader(Headers.CONTENT_TYPE_STRING,
+        // Representation.HAL_JSON_MEDIA_TYPE));
+        // check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        resp = adminExecutor
+                .execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT)
+                        .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put correct index", resp, HttpStatus.SC_CREATED);
 
-        resp = adminExecutor.execute(Request.Get(indexesTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(
+                Request.Get(indexesTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
@@ -79,13 +89,13 @@ public class PutIndexIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -95,10 +105,10 @@ public class PutIndexIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check json not null", json);
-        assertNotNull("check not null _returned property", json.get("_returned"));
-        assertNotNull("check not null _size property", json.get("_size"));
-        assertEquals("check _size value to be 2", 2, json.get("_size").asInt());
-        assertEquals("check _returned value to be 2", 2, json.get("_returned").asInt());
+        assertNotNull(json, "check json not null");
+        assertNotNull(json.get("_returned"), "check not null _returned property");
+        assertNotNull(json.get("_size"), "check not null _size property");
+        assertEquals(2, json.get("_size").asInt(), "check _size value to be 2");
+        assertEquals(2, json.get("_returned").asInt(), "check _returned value to be 2");
     }
 }

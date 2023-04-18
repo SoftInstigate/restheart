@@ -20,33 +20,16 @@
 
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.junit.jupiter.api.Test;
+
+import io.undertow.server.HttpServerExchange;
 
 public class RequestTest {
-    private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
-
-    /**
-     *
-     */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
 
     @Test
     public void testGetPath() {
@@ -59,11 +42,11 @@ public class RequestTest {
 
         assertEquals(path, req.getPath());
         var params = req.getPathParams("/{one}/{two}");
-        assertEquals("foo", params.get("one"));
-        assertEquals("bar", params.get("two"));
+        assertEquals(params.get("one"), "foo");
+        assertEquals(params.get("two"), "bar");
 
         var params2 = req.getPathParams("/{one}/*");
-        assertEquals("foo", params2.get("one"));
+        assertEquals(params2.get("one"), "foo");
 
         var params3 = req.getPathParams("/{one}/{two}/*");
         assertNull(params3.get("one"));

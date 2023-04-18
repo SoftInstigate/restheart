@@ -1,11 +1,12 @@
 package org.restheart.graphql.predicates;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.restheart.utils.BsonUtils.document;
+
+import org.junit.jupiter.api.Test;
 
 import io.undertow.predicate.Predicates;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.restheart.utils.BsonUtils.document;
 
 public class PredicatesTest {
 
@@ -35,8 +36,8 @@ public class PredicatesTest {
         var fooDoc = document().put("sub", document().put("foo", 1)).get();
         var barDoc = document().put("bar", 1).get();
         var fooAndBarDoc = document()
-            .put("bar", 1)
-            .put("sub", document().put("foo", 1)).get();
+                .put("bar", 1)
+                .put("sub", document().put("foo", 1)).get();
 
         var _fooOrBar = Predicates.parse(fooOrBar);
         var _fooAndBar = Predicates.parse(fooAndBar);
@@ -57,8 +58,8 @@ public class PredicatesTest {
         var barEqObj = "field-eq(field=bar, value='{\"a\":1}')";
 
         var fooDoc = document().put("sub", document()
-            .put("foo", 1)
-            .put("string", "a string")).get();
+                .put("foo", 1)
+                .put("string", "a string")).get();
 
         var barDoc = document().put("bar", document().put("a", 1)).get();
 

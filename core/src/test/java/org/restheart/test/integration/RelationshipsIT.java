@@ -20,14 +20,17 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonValue;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
-import org.apache.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -50,15 +53,14 @@ public class RelationshipsIT extends AbstactIT {
      *
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     public void createTestData() throws Exception {
         // create test db
         resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create db " + DB,
-                HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB);
 
         String body = "{'rels': ["
                 + "{ "
@@ -76,16 +78,16 @@ public class RelationshipsIT extends AbstactIT {
                 .body(body)
                 .asString();
 
-        Assert.assertEquals("create collection ".concat(DB.concat("/").concat(COLL_PARENT)),
-                HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection ".concat(DB.concat("/").concat(COLL_PARENT)));
 
         // create children collection
         resp = Unirest.put(url(DB, COLL_CHILDREN))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection ".concat(DB.concat("/").concat(COLL_CHILDREN)),
-                HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection ".concat(DB.concat("/").concat(COLL_CHILDREN)));
 
         // create 10 test children docs
         for (int i = 0; i < 10; i++) {
@@ -95,7 +97,7 @@ public class RelationshipsIT extends AbstactIT {
                     .body("{'_id': " + i + "}")
                     .asString();
 
-            Assert.assertEquals("create doc " + i, HttpStatus.SC_CREATED, resp.getStatus());
+            assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create doc " + i);
         }
 
         // creat 1 parent document
@@ -106,7 +108,7 @@ public class RelationshipsIT extends AbstactIT {
                 .body("{'children': [0,1,2,3,4,5,6,7,8,9]}")
                 .asString();
 
-        Assert.assertEquals("create parent doc", HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create parent doc");
     }
 
     /**
@@ -121,18 +123,21 @@ public class RelationshipsIT extends AbstactIT {
 
         JsonValue rbody = Json.parse(resp.getBody());
 
-        Assert.assertTrue("check _links",
-                rbody != null
+        assertTrue(rbody != null
                 && rbody.isObject()
                 && rbody.asObject().get("_links") != null
                 && rbody.asObject().get("_links").isObject()
                 && rbody.asObject().get("_links").asObject().get("children") != null
                 && rbody.asObject().get("_links").asObject().get("children").isObject()
-                && rbody.asObject().get("_links").asObject().get("children").asObject().get("href") != null
-                && rbody.asObject().get("_links").asObject().get("children").asObject().get("href").isString());
+                && rbody.asObject().get("_links").asObject().get("children").asObject()
+                        .get("href") != null
+                && rbody.asObject().get("_links").asObject().get("children").asObject()
+                        .get("href").isString(),
+                "check _links");
 
-        String childrenUrl = rbody.asObject().get("_links").asObject().get("children").asObject().get("href").asString();
+        String childrenUrl = rbody.asObject().get("_links").asObject().get("children").asObject().get("href")
+                .asString();
 
-        Assert.assertTrue("check href", childrenUrl.endsWith("filter={'_id':{'$in':[0,1,2,3,4,5,6,7,8,9]}}"));
+        assertTrue(childrenUrl.endsWith("filter={'_id':{'$in':[0,1,2,3,4,5,6,7,8,9]}}"), "check href");
     }
 }

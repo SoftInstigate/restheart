@@ -20,6 +20,9 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,11 +45,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.types.ObjectId;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
@@ -59,314 +60,69 @@ import org.restheart.mongodb.db.Documents;
  */
 public abstract class HttpClientAbstactIT extends AbstactIT {
 
-    /**
-     *
-     */
     protected static final String HTTP = "http";
-
-    /**
-     *
-     */
     protected static Executor adminExecutor = null;
-
-    /**
-     *
-     */
     protected static Executor user1Executor = null;
-
-    /**
-     *
-     */
     protected static Executor user2Executor = null;
-
-    /**
-     *
-     */
     protected static Executor unauthExecutor = null;
-
-    /**
-     *
-     */
     protected static URI rootUri;
-
-    /**
-     *
-     */
     protected static URI rootUriRemapped;
-
-    /**
-     *
-     */
     protected static URI dbUri;
-
-    /**
-     *
-     */
     protected static URI dbUriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI dbUriRemappedDb;
-
-    /**
-     *
-     */
     protected static final String dbName = TEST_DB_PREFIX + "db";
-
-    /**
-     *
-     */
     protected static URI dbTmpUri;
-
-    /**
-     *
-     */
     protected static final String dbTmpName = TEST_DB_PREFIX + "mytmpdb";
-
-    /**
-     *
-     */
     protected static URI dbTmpUri2;
-
-    /**
-     *
-     */
     protected static final String dbTmpName2 = TEST_DB_PREFIX + "tmpdb2";
-
-    /**
-     *
-     */
     protected static URI dbTmpUri3;
-
-    /**
-     *
-     */
     protected static final String dbTmpName3 = TEST_DB_PREFIX + "tmpdb3";
-
-    /**
-     *
-     */
     protected static URI collection1Uri;
-
-    /**
-     *
-     */
     protected static URI collection1UriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI collection1UriRemappedDb;
-
-    /**
-     *
-     */
     protected static URI collection1UriRemappedCollection;
-
-    /**
-     *
-     */
     protected static final String collection1Name = "refcoll1";
-
-    /**
-     *
-     */
     protected static URI collection2Uri;
-
-    /**
-     *
-     */
     protected static URI collection2UriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI collection2UriRemappedDb;
-
-    /**
-     *
-     */
     protected static URI collection2UriRemappedCollection;
-
-    /**
-     *
-     */
     protected static final String collection2Name = "refcoll2";
-
-    /**
-     *
-     */
     protected static URI collectionTmpUri;
-
-    /**
-     *
-     */
     protected static final String collectionTmpName = "tmpcoll";
-
-    /**
-     *
-     */
     protected static URI collectionTmpUserUri2;
-
-    /**
-     *
-     */
     protected static URI collectionTmpUserUri3;
-
-    /**
-     *
-     */
     protected static final String collectionTmpUserName2 = "user2";
-
-    /**
-     *
-     */
     protected static URI docsCollectionUri;
-
-    /**
-     *
-     */
     protected static URI docsCollectionUriPaging;
-
-    /**
-     *
-     */
     protected static URI docsCollectionUriCountAndPaging;
-
-    /**
-     *
-     */
     protected static URI docsCollectionUriSort;
-
-    /**
-     *
-     */
     protected static URI docsCollectionUriFilter;
-
-    /**
-     *
-     */
     protected static final String docsCollectionName = "bandleaders";
-
-    /**
-     *
-     */
     protected static URI indexesUri;
-
-    /**
-     *
-     */
     protected static URI indexesUriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI indexesUriRemappedDb;
-
-    /**
-     *
-     */
     protected static URI document1Uri;
-
-    /**
-     *
-     */
     protected static URI dbUriPaging;
-
-    /**
-     *
-     */
     protected static URI document1UriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI document1UriRemappedDb;
-
-    /**
-     *
-     */
     protected static URI document1UriRemappedCollection;
-
-    /**
-     *
-     */
     protected static URI document1UriRemappedDocument;
-
-    /**
-     *
-     */
     protected static URI document2Uri;
-
-    /**
-     *
-     */
     protected static URI document2UriRemappedAll;
-
-    /**
-     *
-     */
     protected static URI document2UriRemappedDb;
-
-    /**
-     *
-     */
     protected static URI document2UriRemappedCollection;
-
-    /**
-     *
-     */
     protected static URI document2UriRemappedDocument;
-
-    /**
-     *
-     */
     protected static URI documentTmpUri;
-
-    /**
-     *
-     */
     protected static URI indexesTmpUri;
-
-    /**
-     *
-     */
     protected static URI indexTmpUri;
-
-    /**
-     *
-     */
     protected static URI metricsUri;
-
-    /**
-     *
-     */
     protected static URI metricsUnknownCollectionUri;
-
-    /**
-     *
-     */
     protected static final String document1Id = "doc1";
-
-    /**
-     *
-     */
     protected static final String document2Id = "doc2";
-
-    /**
-     *
-     */
     protected static final String documentTmpId = "tmpdoc";
 
-    /**
-     *
-     */
     protected static final String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
 
-    /**
-     *
-     */
     protected static final String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"otm\" },"
@@ -374,9 +130,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mtm\" }"
             + "]}";
 
-    /**
-     *
-     */
     protected static final String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"otm\" },"
@@ -384,90 +137,37 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
 
-    /**
-     *
-     */
     protected static final ContentType halCT = ContentType.create(Exchange.HAL_JSON_MEDIA_TYPE);
-
-    /**
-     *
-     */
     protected static String docsCollectionPropsStrings = "{}";
-
-    /**
-     *
-     */
     protected static final String collTmpPropsString = "{ \"a\":1 }";
-
-    /**
-     *
-     */
     protected static final String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
-
-    /**
-     *
-     */
     protected static final String document2PropsString = "{ \"a\": 2 }";
-
-    /**
-     *
-     */
     protected static BsonDocument dbProps = BsonDocument.parse(HttpClientAbstactIT.dbPropsString);
-
-    /**
-     *
-     */
     protected static BsonDocument coll1Props = BsonDocument.parse(HttpClientAbstactIT.coll1PropsString);
-
-    /**
-     *
-     */
     protected static BsonDocument coll2Props = BsonDocument.parse(HttpClientAbstactIT.coll2PropsString);
-
-    /**
-     *
-     */
     protected static BsonDocument collTmpProps = BsonDocument.parse(HttpClientAbstactIT.collTmpPropsString);
-
-    /**
-     *
-     */
-    protected static BsonDocument docsCollectionProps = BsonDocument.parse(HttpClientAbstactIT.docsCollectionPropsStrings);
-
-    /**
-     *
-     */
+    protected static BsonDocument docsCollectionProps = BsonDocument
+            .parse(HttpClientAbstactIT.docsCollectionPropsStrings);
     protected static BsonDocument document1Props = BsonDocument.parse(HttpClientAbstactIT.document1PropsString);
-
-    /**
-     *
-     */
     protected static BsonDocument document2Props = BsonDocument.parse(HttpClientAbstactIT.document2PropsString);
-
-    /**
-     *
-     */
     protected static final String[] docsPropsStrings = {
-        "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
-        "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
-        "{ \"ranking\": 3, \"name\": \"Leonard\", \"surname\": \"Cohen\", \"band\": \"Leonard Cohen\"}",
-        "{ \"ranking\": 4, \"name\": \"Tom\", \"surname\": \"Yorke\", \"band\": \"Radiohead\"}",
-        "{ \"ranking\": 5, \"name\": \"Roger\", \"surname\": \"Waters\", \"band\": \"Pink Floyd\"}",
-        "{ \"ranking\": 6, \"name\": \"Morrissey\", \"surname\": null, \"band\": \"The Smiths\"}",
-        "{ \"ranking\": 7, \"name\": \"Mark\", \"surname\": \"Knopfler\", \"band\": \"Dire Straits\"}",
-        "{ \"ranking\": 8, \"name\": \"Ramone\", \"surname\": \"Ramone\", \"band\": \"Ramones\"}",
-        "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
-        "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}",};
+            "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
+            "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
+            "{ \"ranking\": 3, \"name\": \"Leonard\", \"surname\": \"Cohen\", \"band\": \"Leonard Cohen\"}",
+            "{ \"ranking\": 4, \"name\": \"Tom\", \"surname\": \"Yorke\", \"band\": \"Radiohead\"}",
+            "{ \"ranking\": 5, \"name\": \"Roger\", \"surname\": \"Waters\", \"band\": \"Pink Floyd\"}",
+            "{ \"ranking\": 6, \"name\": \"Morrissey\", \"surname\": null, \"band\": \"The Smiths\"}",
+            "{ \"ranking\": 7, \"name\": \"Mark\", \"surname\": \"Knopfler\", \"band\": \"Dire Straits\"}",
+            "{ \"ranking\": 8, \"name\": \"Ramone\", \"surname\": \"Ramone\", \"band\": \"Ramones\"}",
+            "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
+            "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}", };
     // { keys: {a:1, b:-1} }
 
-    /**
-     *
-     */
     protected static final String[] docsCollectionIndexesStrings = {
-        "{ \"name\": 1 }",
-        "{ \"surname\": 1 }",
-        "{ \"band\": 1 }",
-        "{ \"ranking\": 1 }"
+            "{ \"name\": 1 }",
+            "{ \"surname\": 1 }",
+            "{ \"band\": 1 }",
+            "{ \"ranking\": 1 }"
     };
     private static final String _INDEXES = "/_indexes";
     private static final String REMAPPEDDOC1 = "/remappeddoc1";
@@ -481,7 +181,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      *
      * @throws URISyntaxException
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws URISyntaxException {
 
         createURIs();
@@ -492,188 +192,197 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         clientBuilder.setRetryHandler(new DefaultHttpRequestRetryHandler(5, false));
         CloseableHttpClient httpClient = clientBuilder.build();
 
-        adminExecutor = Executor.newInstance(httpClient).authPreemptive(HTTP_HOST).auth(host, "admin", "secret");
+        adminExecutor = Executor.newInstance(httpClient).authPreemptive(HTTP_HOST).auth(host, "admin",
+                "secret");
         user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "secret");
         user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "secret");
         unauthExecutor = Executor.newInstance();
     }
 
-    /**
-     *
-     */
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
     }
 
     private static void createURIs() throws URISyntaxException {
-        rootUri = buildURI("/", new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        rootUri = buildURI("/", new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
-        rootUriRemapped = buildURI(REMAPPEDALL, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        rootUriRemapped = buildURI(REMAPPEDALL, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        dbUri = buildURI("/" + dbName, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        dbUri = buildURI("/" + dbName, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
         dbUriPaging = buildURI("/" + dbName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("pagesize", "1"),
-                    new BasicNameValuePair("hal", "f")
+                new NameValuePair[] {
+                        new BasicNameValuePair("pagesize", "1"),
+                        new BasicNameValuePair("hal", "f")
                 });
 
-        dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
-        dbUriRemappedDb = buildURI(REMAPPEDDB, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        dbUriRemappedDb = buildURI(REMAPPEDDB, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
         dbTmpUri = buildURI("/" + dbTmpName);
 
-        dbTmpUri2 = buildURI("/" + dbTmpName2, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        dbTmpUri2 = buildURI("/" + dbTmpName2, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
-        dbTmpUri3 = buildURI("/" + dbTmpName3, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        collection1Uri = buildURI("/" + dbName + "/" + collection1Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-        collection1UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-        collection1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-        collection1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        dbTmpUri3 = buildURI("/" + dbTmpName3, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        collection2Uri = buildURI("/" + dbName + "/" + collection2Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collection1Uri = buildURI("/" + dbName + "/" + collection1Name, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
+        });
+        collection1UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+        collection1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
+        });
+        collection1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        collection2UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection2Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collection2Uri = buildURI("/" + dbName + "/" + collection2Name, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        collection2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collection2UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection2Name,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        collection2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
-        collection2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collection2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f"),
-            new BasicNameValuePair("wm", "upsert"),
+        collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f"),
+                new BasicNameValuePair("wm", "upsert"),
         });
 
-        collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        collectionTmpUserUri3 = buildURI("/" + dbTmpName3 + "/" + collectionTmpUserName2, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        collectionTmpUserUri3 = buildURI("/" + dbTmpName3 + "/" + collectionTmpUserName2, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        docsCollectionUri = buildURI("/" + dbName + "/" + docsCollectionName, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        docsCollectionUri = buildURI("/" + dbName + "/" + docsCollectionName, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
         docsCollectionUriPaging = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("pagesize", "2"),
-                    new BasicNameValuePair("hal", "f")
+                new NameValuePair[] {
+                        new BasicNameValuePair("pagesize", "2"),
+                        new BasicNameValuePair("hal", "f")
                 });
 
         docsCollectionUriCountAndPaging = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("count", null),
-                    new BasicNameValuePair("page", "2"),
-                    new BasicNameValuePair("pagesize", "2"),
-                    new BasicNameValuePair("hal", "f")
+                new NameValuePair[] {
+                        new BasicNameValuePair("count", null),
+                        new BasicNameValuePair("page", "2"),
+                        new BasicNameValuePair("pagesize", "2"),
+                        new BasicNameValuePair("hal", "f")
                 });
 
         docsCollectionUriSort = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("sort_by", "surname"),
-                    new BasicNameValuePair("hal", "f")
+                new NameValuePair[] {
+                        new BasicNameValuePair("sort_by", "surname"),
+                        new BasicNameValuePair("hal", "f")
                 });
 
         docsCollectionUriFilter = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[]{
-                    new BasicNameValuePair("filter", "{'name':{'$regex':'.*k$'}}"),
-                    new BasicNameValuePair("sort_by", "name"),
-                    new BasicNameValuePair("count", null),
-                    new BasicNameValuePair("hal", "f")
+                new NameValuePair[] {
+                        new BasicNameValuePair("filter", "{'name':{'$regex':'.*k$'}}"),
+                        new BasicNameValuePair("sort_by", "name"),
+                        new BasicNameValuePair("count", null),
+                        new BasicNameValuePair("hal", "f")
                 });
 
-        indexesUri = buildURI("/" + dbName + "/" + docsCollectionName + _INDEXES, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        indexesUri = buildURI("/" + dbName + "/" + docsCollectionName + _INDEXES, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        indexesUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + docsCollectionName + _INDEXES, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        indexesUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + docsCollectionName + _INDEXES,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        indexesUriRemappedDb = buildURI(REMAPPEDDB + "/" + docsCollectionName + _INDEXES, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
+        });
+        indexesTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        indexesUriRemappedDb = buildURI(REMAPPEDDB + "/" + docsCollectionName + _INDEXES, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-        indexesTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        indexTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES + "/new-index",
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        documentTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f"),
+                        new BasicNameValuePair("wm", "upsert")
+                });
+
+        document1Uri = buildURI("/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        indexTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES + "/new-index", new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        document1UriRemappedAll = buildURI(
+                REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document1Id,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        document1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name + "/" + document1Id,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        document1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1 + "/" + document1Id, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        documentTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f"),
-            new BasicNameValuePair("wm", "upsert")
+        document1UriRemappedDocument = buildURI(REMAPPEDDOC1, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        document1Uri = buildURI("/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        document2Uri = buildURI("/" + dbName + "/" + collection2Name + "/" + document2Id, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        document1UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        document2UriRemappedAll = buildURI(
+                REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document2Id,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        document2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name + "/" + document2Id,
+                new NameValuePair[] {
+                        new BasicNameValuePair("hal", "f")
+                });
+
+        document2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2 + "/" + document2Id, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
 
-        document1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name + "/" + document1Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1 + "/" + document1Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document1UriRemappedDocument = buildURI(REMAPPEDDOC1, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document2Uri = buildURI("/" + dbName + "/" + collection2Name + "/" + document2Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document2UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document2Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name + "/" + document2Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2 + "/" + document2Id, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
-        });
-
-        document2UriRemappedDocument = buildURI(REMAPPEDDOC2, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+        document2UriRemappedDocument = buildURI(REMAPPEDDOC2, new NameValuePair[] {
+                new BasicNameValuePair("hal", "f")
         });
         metricsUri = buildURI("/_metrics");
         metricsUnknownCollectionUri = buildURI("/someunknowndb/unknowncollection/_metrics");
@@ -688,8 +397,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      */
     protected static URI buildURI(String path, NameValuePair[] parameters) throws URISyntaxException {
         return createURIBuilder(path)
-            .addParameters(Arrays.asList(parameters))
-            .build();
+                .addParameters(Arrays.asList(parameters))
+                .build();
     }
 
     /**
@@ -704,10 +413,10 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
 
     private static URIBuilder createURIBuilder(String path) {
         return new URIBuilder()
-            .setScheme(HTTP)
-            .setHost(HTTP_HOST.getHostName())
-            .setPort(HTTP_HOST.getPort())
-            .setPath(path);
+                .setScheme(HTTP)
+                .setHost(HTTP_HOST.getHostName())
+                .setPort(HTTP_HOST.getPort())
+                .setPath(path);
     }
 
     /**
@@ -722,18 +431,13 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 .addParameter("hal", "f")
                 .build();
     }
+
     private final Databases dbs = Databases.get();
 
-    /**
-     *
-     */
     public HttpClientAbstactIT() {
     }
 
-    /**
-     *
-     */
-    @Before
+    @BeforeEach
     @Override
     public void setUp() {
         createTestData();
@@ -752,27 +456,46 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         assertNotNull(httpResp);
         var statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
-        assertEquals(message, expectedCode, statusLine.getStatusCode());
+        assertEquals(expectedCode, statusLine.getStatusCode(), message);
         return httpResp;
     }
 
     private void createTestData() {
-        dbs.upsertDB(Optional.empty(), Optional.empty(), dbName, METHOD.PUT, false, dbProps, new ObjectId().toString(), false);
+        dbs.upsertDB(Optional.empty(), Optional.empty(), dbName, METHOD.PUT, false, dbProps,
+                new ObjectId().toString(),
+                false);
 
-        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, false, coll1Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, false, coll2Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, false, docsCollectionProps, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, false,
+                coll1Props,
+                new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, false,
+                coll2Props,
+                new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, false,
+                docsCollectionProps, new ObjectId().toString(), false);
 
         for (var index : docsCollectionIndexesStrings) {
-            dbs.createIndex(Optional.empty(), Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
+            dbs.createIndex(Optional.empty(), Optional.empty(), dbName, docsCollectionName,
+                    BsonDocument.parse(index),
+                    Optional.empty());
         }
 
         final var documentDAO = Documents.get();
-        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
-        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT,
+                WRITE_MODE.UPSERT, Optional.of(new BsonString(document1Id)), Optional.empty(),
+                Optional.empty(),
+                document1Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT,
+                WRITE_MODE.UPSERT, Optional.of(new BsonString(document2Id)), Optional.empty(),
+                Optional.empty(),
+                document2Props, new ObjectId().toString(), false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
+            documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, docsCollectionName,
+                    METHOD.PUT,
+                    WRITE_MODE.UPSERT, Optional.of(new BsonObjectId(new ObjectId())),
+                    Optional.empty(),
+                    Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
         }
         LOG.debug("test data created");
     }

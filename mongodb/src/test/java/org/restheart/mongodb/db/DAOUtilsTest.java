@@ -20,16 +20,15 @@
  */
 package org.restheart.mongodb.db;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.Test;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -37,18 +36,19 @@ import org.slf4j.LoggerFactory;
  */
 public class DAOUtilsTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DAOUtilsTest.class);
+    // private static final Logger LOG =
+    // LoggerFactory.getLogger(DAOUtilsTest.class);
 
     /**
      *
      */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
+    // @Rule
+    // public TestRule watcher = new TestWatcher() {
+    // @Override
+    // protected void starting(Description description) {
+    // LOG.info("executing test {}", description.toString());
+    // }
+    // };
 
     /**
      *

@@ -20,10 +20,12 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.handlers.form.FormData;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.bson.BsonDocument;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import io.undertow.server.handlers.form.FormData;
 
 /**
  *
@@ -39,13 +41,15 @@ public class BodyInjectorHandlerTest {
 
     /**
      * If formData contains a PROPERTIES part, then must be valid JSON
+     * 
      * @throws SecurityException
      * @throws NoSuchFieldException
      * @throws IllegalAccessException
      * @throws IllegalArgumentException
      */
     @Test
-    public void test_extractProperties() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    public void test_extractProperties()
+            throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         final String jsonString = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
         FormData formData = new FormData(1);
 

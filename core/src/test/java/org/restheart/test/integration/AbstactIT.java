@@ -20,9 +20,8 @@
  */
 package org.restheart.test.integration;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.ConnectionString;
+import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,21 +30,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.http.HttpHost;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.restheart.Bootstrapper;
 import org.restheart.mongodb.RHMongoClients;
-
-import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
+import com.mongodb.ConnectionString;
 
 /**
  *
@@ -85,7 +83,8 @@ public abstract class AbstactIT {
     public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
     // this to test with FerretDb
-    //public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN");
+    // public static final ConnectionString MONGO_URI = new
+    // ConnectionString("mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN");
 
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
@@ -97,14 +96,14 @@ public abstract class AbstactIT {
      *
      * @throws URISyntaxException
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws URISyntaxException {
     }
 
     /**
      *
      */
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
         deleteTestData();
     }
@@ -119,7 +118,7 @@ public abstract class AbstactIT {
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
         StringBuilder result = new StringBuilder();
 
-        //Get file from resources folder
+        // Get file from resources folder
         ClassLoader classLoader = Bootstrapper.class.getClassLoader();
 
         URI uri = classLoader.getResource(resourcePath).toURI();
@@ -166,25 +165,14 @@ public abstract class AbstactIT {
     /**
      *
      */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
-
-    /**
-     *
-     */
-    @Before
+    @BeforeEach
     public void setUp() {
     }
 
     /**
      *
      */
-    @After
+    @AfterEach
     public void tearDown() {
         deleteTestData();
     }
@@ -197,11 +185,11 @@ public abstract class AbstactIT {
         ArrayList<String> deleted = new ArrayList<>();
 
         dbNames.stream()
-            .filter(db -> db.startsWith(TEST_DB_PREFIX))
-            .forEach(dbToDelete -> {
-                RHMongoClients.mclient().getDatabase(dbToDelete).drop();
-                deleted.add(dbToDelete);
-            });
+                .filter(db -> db.startsWith(TEST_DB_PREFIX))
+                .forEach(dbToDelete -> {
+                    RHMongoClients.mclient().getDatabase(dbToDelete).drop();
+                    deleted.add(dbToDelete);
+                });
 
         LOG.debug("test data deleted");
 

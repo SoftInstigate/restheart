@@ -20,10 +20,14 @@
  */
 package org.restheart.mongodb.handlers.metrics;
 
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 import org.restheart.mongodb.handlers.metrics.MetricsHandler.ResponseType;
 import org.restheart.mongodb.handlers.metrics.MetricsHandler.ResponseType.AcceptHeaderEntry;
+
 public class ResponseTypeTest {
 
     /**
@@ -37,20 +41,21 @@ public class ResponseTypeTest {
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/*")));
         assertTrue(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("*/*")));
         assertTrue(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9")));
-        assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9; extraparameter=foobar")));
+        assertFalse(ResponseType.JSON
+                .isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9; extraparameter=foobar")));
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/plain")));
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version=0.0.4")));
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version=0.0.4; q=1.0")));
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version= 0.0.3")));
         assertFalse(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version= 0.0.5")));
 
-
         assertFalse(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("application/json")));
         assertFalse(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("application/*")));
         assertTrue(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("text/*")));
         assertTrue(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("*/*")));
         assertFalse(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9")));
-        assertFalse(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9; extraparameter=foobar")));
+        assertFalse(ResponseType.PROMETHEUS
+                .isAcceptableFor(AcceptHeaderEntry.of("application/json; q=0.9; extraparameter=foobar")));
         assertTrue(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("text/plain")));
         assertTrue(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version=0.0.4")));
         assertTrue(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version=0.0.4; q=1.0")));
@@ -64,8 +69,8 @@ public class ResponseTypeTest {
      */
     @Test
     public void testCalculateMediaRange() throws Exception {
-        assertEquals("application/*", ResponseType.calculateMediaRange("application/json"));
-        assertEquals("text/*", ResponseType.calculateMediaRange("text/plain"));
+        assertEquals(ResponseType.calculateMediaRange("application/json"), "application/*");
+        assertEquals(ResponseType.calculateMediaRange("text/plain"), "text/*");
     }
 
     /**

@@ -20,21 +20,28 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
 
 /**
  *
@@ -90,13 +97,13 @@ public class GetDBIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -106,46 +113,51 @@ public class GetDBIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check json not null", json);
+        assertNotNull(json, "check json not null");
 
-        assertNotNull("check not null _link", json.get("_links"));
-        assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));
+        assertNotNull(json.get("_links"), "check not null _link");
+        assertTrue((json.get("_links") instanceof JsonObject), "check _link to be a json object");
 
-        assertNotNull("check not null _returned property", json.get("_returned"));
-        assertNotNull("check not null _size value", json.get("_size"));
-        assertNotNull("check not null _total_pages", json.get("_total_pages"));
+        assertNotNull(json.get("_returned"), "check not null _returned property");
+        assertNotNull(json.get("_size"), "check not null _size value");
+        assertNotNull(json.get("_total_pages"), "check not null _total_pages");
 
-        assertEquals("check _returned value to be 1", 1, json.get("_returned").asInt());
-        assertEquals("check _size value to be 3", 3, json.get("_size").asInt());
-        assertEquals("check _total_pages value to be 2", 3, json.get("_total_pages").asInt());
+        assertEquals(1, json.get("_returned").asInt(), "check _returned value to be 1");
+        assertEquals(3, json.get("_size").asInt(), "check _size value to be 3");
+        assertEquals(3, json.get("_total_pages").asInt(), "check _total_pages value to be 2");
 
         JsonObject links = (JsonObject) json.get("_links");
 
-        assertNotNull("check not null self", links.get("self"));
-        assertNotNull("check not null rh:root", links.get("rh:root"));
-        assertNotNull("check not null rh:paging", links.get("rh:paging"));
-        assertNotNull("check not null next", links.get("next"));
-        assertNotNull("check not null first", links.get("first"));
-        assertNotNull("check not null last", links.get("last"));
-        assertNull("check null previous", links.get("previous"));
+        assertNotNull(links.get("self"), "check not null self");
+        assertNotNull(links.get("rh:root"), "check not null rh:root");
+        assertNotNull(links.get("rh:paging"), "check not null rh:paging");
+        assertNotNull(links.get("next"), "check not null next");
+        assertNotNull(links.get("first"), "check not null first");
+        assertNotNull(links.get("last"), "check not null last");
+        assertNull(links.get("previous"), "check null previous");
 
-        Response respSelf = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("self").asObject().get("href").asString())));
+        Response respSelf = adminExecutor
+                .execute(Request.Get(dbUriPaging.resolve(links.get("self").asObject().get("href").asString())));
         HttpResponse httpRespSelf = respSelf.returnResponse();
         assertNotNull(httpRespSelf);
 
-        Response respRoot = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("rh:root").asObject().get("href").asString())));
+        Response respRoot = adminExecutor
+                .execute(Request.Get(dbUriPaging.resolve(links.get("rh:root").asObject().get("href").asString())));
         HttpResponse httpRespRoot = respRoot.returnResponse();
         assertNotNull(httpRespRoot);
 
-        Response respNext = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("next").asObject().get("href").asString())));
+        Response respNext = adminExecutor
+                .execute(Request.Get(dbUriPaging.resolve(links.get("next").asObject().get("href").asString())));
         HttpResponse httpRespNext = respNext.returnResponse();
         assertNotNull(httpRespNext);
 
-        Response respFirst = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("first").asObject().get("href").asString())));
+        Response respFirst = adminExecutor
+                .execute(Request.Get(dbUriPaging.resolve(links.get("first").asObject().get("href").asString())));
         HttpResponse respRespFirst = respFirst.returnResponse();
         assertNotNull(respRespFirst);
 
-        Response respLast = adminExecutor.execute(Request.Get(dbUriPaging.resolve(links.get("last").asObject().get("href").asString())));
+        Response respLast = adminExecutor
+                .execute(Request.Get(dbUriPaging.resolve(links.get("last").asObject().get("href").asString())));
         HttpResponse httpRespLast = respLast.returnResponse();
         assertNotNull(httpRespLast);
     }
@@ -160,13 +172,13 @@ public class GetDBIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -176,48 +188,51 @@ public class GetDBIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check json not null", json);
-        assertNotNull("check not null _type property", json.get("_type"));
-        assertNotNull("check not null _etag property", json.get("_etag"));
-        assertNotNull("check not null _returned property", json.get("_returned"));
-        assertNotNull("check not null _size property", json.get("_size"));
-        assertNotNull("check not null _total_pages property", json.get("_total_pages"));
+        assertNotNull(json, "check json not null");
+        assertNotNull(json.get("_type"), "check not null _type property");
+        assertNotNull(json.get("_etag"), "check not null _etag property");
+        assertNotNull(json.get("_returned"), "check not null _returned property");
+        assertNotNull(json.get("_size"), "check not null _size property");
+        assertNotNull(json.get("_total_pages"), "check not null _total_pages property");
 
-        assertNotNull("check not null _embedded", json.get("_embedded"));
+        assertNotNull(json.get("_embedded"), "check not null _embedded");
 
-        assertTrue("check _embedded to be a json object", (json.get("_embedded") instanceof JsonObject));
+        assertTrue((json.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         JsonObject embedded = (JsonObject) json.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:coll", embedded.get("rh:coll"));
+        assertNotNull(embedded.get("rh:coll"), "check not null _embedded.rh:coll");
 
-        assertTrue("check _embedded.rh:coll to be a json array", (embedded.get("rh:coll") instanceof JsonArray));
+        assertTrue((embedded.get("rh:coll") instanceof JsonArray), "check _embedded.rh:coll to be a json array");
 
         JsonArray rhcoll = (JsonArray) embedded.get("rh:coll");
 
-        assertNotNull("check not null _embedded.rh:coll[0]", rhcoll.get(0));
+        assertNotNull(rhcoll.get(0), "check not null _embedded.rh:coll[0]");
 
-        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhcoll.get(0) instanceof JsonObject));
+        assertTrue((rhcoll.get(0) instanceof JsonObject), "check _embedded.rh:coll[0] to be a json object");
 
         JsonObject rhcoll0 = (JsonObject) rhcoll.get(0);
 
-        assertNotNull("check not null _embedded.rh:coll[0]._id", rhcoll0.get("_id"));
+        assertNotNull(rhcoll0.get("_id"), "check not null _embedded.rh:coll[0]._id");
 
-        assertNotNull("check not null _embedded.rh:coll[0]._links", rhcoll0.get("_links"));
+        assertNotNull(rhcoll0.get("_links"), "check not null _embedded.rh:coll[0]._links");
 
-        assertTrue("check _embedded.rh:coll[0]._links to be a json object", (rhcoll0.get("_links") instanceof JsonObject));
+        assertTrue((rhcoll0.get("_links") instanceof JsonObject),
+                "check _embedded.rh:coll[0]._links to be a json object");
 
         JsonObject rhcoll0Links = (JsonObject) rhcoll0.get("_links");
 
-        assertNotNull("check not null _embedded.rh:coll[0]._links.self", rhcoll0Links.get("self"));
+        assertNotNull(rhcoll0Links.get("self"), "check not null _embedded.rh:coll[0]._links.self");
 
-        assertTrue("check _embedded.rh:coll[0]._links.self  to be a json object", (rhcoll0Links.get("self") instanceof JsonObject));
+        assertTrue((rhcoll0Links.get("self") instanceof JsonObject),
+                "check _embedded.rh:coll[0]._links.self  to be a json object");
 
         JsonObject rhdb0LinksSelf = (JsonObject) rhcoll0Links.get("self");
 
-        assertNotNull("check not null _embedded.rh:coll[0]._links.self.href", rhdb0LinksSelf.get("href"));
+        assertNotNull(rhdb0LinksSelf.get("href"), "check not null _embedded.rh:coll[0]._links.self.href");
 
-        assertTrue("check _embedded.rh:coll[0]._links.self.href to be a string", (rhdb0LinksSelf.get("href").isString()));
+        assertTrue((rhdb0LinksSelf.get("href").isString()),
+                "check _embedded.rh:coll[0]._links.self.href to be a string");
 
         try {
             new URI(rhdb0LinksSelf.get("href").asString());
@@ -225,13 +240,13 @@ public class GetDBIT extends HttpClientAbstactIT {
             fail("check _embedded.rh:coll[0]._links.self.href to be a valid URI");
         }
 
-        assertNotNull("check not null _link", json.get("_links"));
-        assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));
+        assertNotNull(json.get("_links"), "check not null _link");
+        assertTrue((json.get("_links") instanceof JsonObject), "check _link to be a json object");
 
         JsonObject links = (JsonObject) json.get("_links");
 
-        assertNotNull("check not null self", links.get("self"));
-        assertNotNull("check not null rh:root", links.get("rh:root"));
-        assertNotNull("check not null rh:paging", links.get("rh:paging"));
+        assertNotNull(links.get("self"), "check not null self");
+        assertNotNull(links.get("rh:root"), "check not null rh:root");
+        assertNotNull(links.get("rh:paging"), "check not null rh:paging");
     }
 }

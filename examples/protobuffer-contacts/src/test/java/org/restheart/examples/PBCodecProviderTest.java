@@ -1,9 +1,7 @@
 package org.restheart.examples;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-import com.mongodb.MongoClientSettings;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentReader;
 import org.bson.BsonDocumentWriter;
@@ -11,20 +9,25 @@ import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.restheart.utils.BsonUtils;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.mongodb.MongoClientSettings;
+
 import io.github.gaplotech.PBBsonReader;
 import io.github.gaplotech.PBBsonWriter;
 import io.github.gaplotech.PBCodecProvider;
 
-import static org.junit.Assert.assertEquals;
-
+@Disabled
 public class PBCodecProviderTest {
-    private CodecRegistry registry = CodecRegistries.fromRegistries(CodecRegistries.fromProviders(new PBCodecProvider()), MongoClientSettings.getDefaultCodecRegistry());
+    private CodecRegistry registry = CodecRegistries.fromRegistries(
+            CodecRegistries.fromProviders(new PBCodecProvider()), MongoClientSettings.getDefaultCodecRegistry());
 
     @Test
-    @Ignore
     /**
      * converts a message to Bson using PBCodecProvider
      *
@@ -41,7 +44,6 @@ public class PBCodecProviderTest {
     }
 
     @Test
-    @Ignore
     /**
      * converts a message to Bson using PBBsonWriter
      */
@@ -49,9 +51,9 @@ public class PBCodecProviderTest {
         var bson = new BsonDocument();
 
         var bsonWriter = new PBBsonWriter(
-             true,
-             true,
-             new BsonDocumentWriter(bson));
+                true,
+                true,
+                new BsonDocumentWriter(bson));
 
         bsonWriter.write(message());
 
@@ -61,7 +63,6 @@ public class PBCodecProviderTest {
     }
 
     @Test
-    @Ignore
     /**
      * converts a message to Bson using JsonFormat.printer()
      */
@@ -75,14 +76,13 @@ public class PBCodecProviderTest {
     }
 
     @Test
-    @Ignore
     /**
      * converts a Bson to ContactPostRequest using JsonFormat.parser()
      */
     public void testJsonFormatReader() throws InvalidProtocolBufferException {
         var bson = BsonUtils.parse("""
-            {"name": "name", "email": "email", "phone": "phone"}
-            """).asDocument();
+                {"name": "name", "email": "email", "phone": "phone"}
+                """).asDocument();
 
         var json = BsonUtils.toJson(bson);
 
@@ -92,13 +92,12 @@ public class PBCodecProviderTest {
 
         var request = _request.build();
 
-        assertEquals("name", request.getName());
-        assertEquals("phone", request.getPhone());
-        assertEquals("email", request.getEmail());
+        assertEquals(request.getName(), "name");
+        assertEquals(request.getPhone(), "phone");
+        assertEquals(request.getEmail(), "email");
     }
 
     @Test
-    @Ignore
     /**
      * Convert a bson to ContactPostRequest using PBBsonReader
      *
@@ -106,25 +105,25 @@ public class PBCodecProviderTest {
      */
     public void testPBBsonReader() {
         var bson = BsonUtils.parse("""
-            {"name": "name", "email": "email", "phone": "phone"}
-            """).asDocument();
+                {"name": "name", "email": "email", "phone": "phone"}
+                """).asDocument();
 
         try (var bsonDocumentReader = new BsonDocumentReader(bson)) {
             var reader = new PBBsonReader(bsonDocumentReader);
 
             var request = reader.read(ContactPostRequest.class);
 
-            assertEquals("name", request.getName());
-            assertEquals("phone", request.getPhone());
-            assertEquals("email", request.getEmail());
+            assertEquals(request.getName(), "name");
+            assertEquals(request.getPhone(), "phone");
+            assertEquals(request.getEmail(), "email");
         }
     }
 
     private Message message() {
         return ContactPostRequest.newBuilder()
-            .setName("name")
-            .setEmail("email")
-            .setPhone("phone")
-            .build();
+                .setName("name")
+                .setEmail("email")
+                .setPhone("phone")
+                .build();
     }
 }

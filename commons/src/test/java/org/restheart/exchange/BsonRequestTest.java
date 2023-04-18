@@ -20,22 +20,20 @@
 
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -48,27 +46,28 @@ public class BsonRequestTest {
     /**
      *
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
     }
 
     /**
      *
      */
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
     }
 
     /**
      *
+     * 
+     * public TestRule watcher = new TestWatcher() {
+     * 
+     * @Override
+     *           protected void starting(Description description) {
+     *           LOG.info("executing test {}", description.toString());
+     *           }
+     *           };
      */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
 
     /**
      *
@@ -79,14 +78,14 @@ public class BsonRequestTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void setUp() {
     }
 
     /**
      *
      */
-    @After
+    @AfterEach
     public void tearDown() {
     }
 
@@ -154,49 +153,49 @@ public class BsonRequestTest {
         String whereUri = "/";
 
         MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/mycollection");
 
         whatUri = "*";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/");
 
         whatUri = "*";
         whereUri = "/data";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/");
 
         whatUri = "/data";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/data", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/data");
 
         whatUri = "/db/coll";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/coll", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
 
         whatUri = "/db/coll/doc";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/coll/doc", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/coll/doc");
 
         whatUri = "/db/coll/";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/coll", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
 
         whatUri = "/db/coll////";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/coll", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
     }
 
     /**
@@ -212,24 +211,24 @@ public class BsonRequestTest {
         String whereUri = "/";
 
         MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection/x", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/mycollection/x");
 
         whatUri = "*";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/x", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/x");
 
         whatUri = "db";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/x", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/x");
 
         whatUri = "db/coll";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals("/db/coll/x", request.getUnmappedRequestUri());
+        assertEquals( request.getUnmappedRequestUri(), "/db/coll/x");
     }
 }

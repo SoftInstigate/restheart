@@ -20,14 +20,12 @@
  */
 package org.restheart.mongodb.db;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.InputStream;
+
 import org.apache.tika.Tika;
-import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +45,13 @@ public class GridFsTest {
     /**
      *
      */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
+    // @Rule
+    // public TestRule watcher = new TestWatcher() {
+    // @Override
+    // protected void starting(Description description) {
+    // LOG.info("executing test {}", description.toString());
+    // }
+    // };
 
     /**
      *
@@ -69,20 +67,20 @@ public class GridFsTest {
     public void testDetectMediatype() throws Exception {
         InputStream is = GridFsTest.class.getResourceAsStream("/" + FILENAME);
         Tika tika = new Tika();
-        assertEquals("application/pdf", tika.detect(is));
+        assertEquals(tika.detect(is), "application/pdf");
     }
 
     @Test
     public void testExtractBucket() {
-        assertEquals("mybucket", GridFs.extractBucketName("mybucket.files"));
+        assertEquals(GridFs.extractBucketName("mybucket.files"), "mybucket");
     }
 
-     /**
-     *
-     */
+    /**
+    *
+    */
     @Test
     public void testExtractBucketWithDots() {
-        assertEquals("mybucket.foo", GridFs.extractBucketName("mybucket.foo.files"));
-        assertEquals("mybucket.foo.bar", GridFs.extractBucketName("mybucket.foo.bar.files"));
+        assertEquals(GridFs.extractBucketName("mybucket.foo.files"), "mybucket.foo");
+        assertEquals(GridFs.extractBucketName("mybucket.foo.bar.files"), "mybucket.foo.bar");
     }
 }

@@ -20,29 +20,24 @@
  */
 package org.restheart.utils;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -55,47 +50,13 @@ public class URLUtilsTest {
     /**
      *
      */
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    /**
-     *
-     */
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    /**
-     *
-     */
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            LOG.info("executing test {}", description.toString());
-        }
-    };
-
-    /**
-     *
-     */
-    public URLUtilsTest() {
-    }
-
-    /**
-     *
-     */
-    @Before
-    public void setUp() {
-    }
-
-    /**
-     *
-     */
-    @After
-    public void tearDown() {
-    }
+    // @Rule
+    // public TestRule watcher = new TestWatcher() {
+    // @Override
+    // protected void starting(Description description) {
+    // LOG.info("executing test {}", description.toString());
+    // }
+    // };
 
     /**
      *
@@ -155,7 +116,8 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
         try {
-            result = MongoURLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("54d13711c2e692941728e1d3"));
+            result = MongoURLUtils.getUriWithDocId(context, "dbName", "collName",
+                    new BsonString("54d13711c2e692941728e1d3"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -183,10 +145,10 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterMany() {
-        BsonValue[] ids = new BsonValue[]{
-            new BsonInt32(1),
-            new BsonDouble(20.0d),
-            new BsonString("id")};
+        BsonValue[] ids = new BsonValue[] {
+                new BsonInt32(1),
+                new BsonDouble(20.0d),
+                new BsonString("id") };
 
         var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
@@ -204,9 +166,9 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyIdsWithSpaces() {
-        BsonValue[] ids = new BsonValue[]{
-            new BsonString("Three Imaginary Boys"),
-            new BsonString("Seventeen Seconds")
+        BsonValue[] ids = new BsonValue[] {
+                new BsonString("Three Imaginary Boys"),
+                new BsonString("Seventeen Seconds")
         };
         var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
@@ -224,10 +186,10 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyString() {
-        BsonValue[] ids = new BsonValue[]{
-            new BsonInt32(1),
-            new BsonDouble(20.0d),
-            new BsonString("id")};
+        BsonValue[] ids = new BsonValue[] {
+                new BsonInt32(1),
+                new BsonDouble(20.0d),
+                new BsonString("id") };
 
         var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
@@ -249,7 +211,8 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':'id'}";
         String result;
         try {
-            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonString("id"));
+            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField",
+                    new BsonString("id"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -265,7 +228,8 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':123}";
         String result;
         try {
-            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonInt32(123));
+            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField",
+                    new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -298,7 +262,8 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
         String result;
         try {
-            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonString("ids"));
+            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField",
+                    new BsonString("ids"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -314,7 +279,8 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
         String result;
         try {
-            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonInt32(123));
+            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField",
+                    new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -328,7 +294,8 @@ public class URLUtilsTest {
     public void testGetUriWithFilterManyInverseObjectId() {
         var context = prepareRequest();
         BsonObjectId id = new BsonObjectId(new ObjectId());
-        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.getValue().toString() + "'}}}}";
+        String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'"
+                + id.getValue().toString() + "'}}}}";
         String result;
         try {
             result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", id);

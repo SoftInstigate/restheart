@@ -19,9 +19,10 @@
  */
 package org.restheart.utils;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.InitPoint;
@@ -50,7 +51,7 @@ public class PluginUtilsTest {
     public void testDontIntercept() {
         var plugin = new TestPlugin();
 
-        InterceptPoint[] expected = {InterceptPoint.REQUEST_AFTER_AUTH, InterceptPoint.RESPONSE};
+        InterceptPoint[] expected = { InterceptPoint.REQUEST_AFTER_AUTH, InterceptPoint.RESPONSE };
 
         assertArrayEquals(expected,
                 PluginUtils.dontIntercept(plugin));
@@ -60,16 +61,14 @@ public class PluginUtilsTest {
     public void testDefaultUri() {
         var plugin = new TestPlugin();
 
-        assertEquals("/test",
-                PluginUtils.defaultURI(plugin));
+        assertEquals(PluginUtils.defaultURI(plugin), "/test");
     }
 
     @Test
     public void testDefaultUriDefault() {
         var plugin = new TestPluginDefault();
 
-        assertEquals("/testDefaultPlugin",
-                PluginUtils.defaultURI(plugin));
+        assertEquals(PluginUtils.defaultURI(plugin), "/testDefaultPlugin");
     }
 
     @Test
@@ -118,15 +117,9 @@ public class PluginUtilsTest {
         assertEquals(false, PluginUtils.requiresContent(plugin));
     }
 
-    @RegisterPlugin(name = "testPlugin",
-            description = "test description",
-            defaultURI = "/test",
-            dontIntercept = {InterceptPoint.REQUEST_AFTER_AUTH, InterceptPoint.RESPONSE},
-            priority = 100,
-            enabledByDefault = false,
-            interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
-            initPoint = InitPoint.BEFORE_STARTUP,
-            requiresContent = true)
+    @RegisterPlugin(name = "testPlugin", description = "test description", defaultURI = "/test", dontIntercept = {
+            InterceptPoint.REQUEST_AFTER_AUTH,
+            InterceptPoint.RESPONSE }, priority = 100, enabledByDefault = false, interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH, initPoint = InitPoint.BEFORE_STARTUP, requiresContent = true)
     private static class TestPlugin implements JsonService, JsonInterceptor, Initializer {
         @Override
         public void handle(JsonRequest r, JsonResponse s) throws Exception {
@@ -144,8 +137,7 @@ public class PluginUtilsTest {
         }
     }
 
-    @RegisterPlugin(name = "testDefaultPlugin",
-            description = "test description")
+    @RegisterPlugin(name = "testDefaultPlugin", description = "test description")
     private static class TestPluginDefault implements JsonService,
             JsonInterceptor, Initializer {
         @Override

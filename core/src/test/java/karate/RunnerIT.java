@@ -20,15 +20,17 @@
  */
 package karate;
 
-import static org.junit.Assert.assertEquals;
-import com.intuit.karate.Runner;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.restheart.test.integration.AbstactIT;
+
+import com.intuit.karate.Runner;
 
 /**
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove 'ignore' tag from streams.feature
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RunnerIT extends AbstactIT {

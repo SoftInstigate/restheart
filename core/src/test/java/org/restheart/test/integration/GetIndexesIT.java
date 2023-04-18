@@ -20,36 +20,35 @@
  */
 package org.restheart.test.integration;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.Unirest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import org.junit.Assert;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
+
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
+import com.mashape.unirest.http.Unirest;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetIndexesIT extends HttpClientAbstactIT {
-
-    /**
-     *
-     */
-    public GetIndexesIT() {
-    }
 
     /**
      *
@@ -89,13 +88,13 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
-        assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
+        assertNotNull(entity.getContentType(), "content type not null");
+        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
 
         String content = EntityUtils.toString(entity);
 
-        assertNotNull("", content);
+        assertNotNull(content, "");
 
         JsonObject json = null;
 
@@ -105,38 +104,39 @@ public class GetIndexesIT extends HttpClientAbstactIT {
             fail("parsing received json");
         }
 
-        assertNotNull("check json not null", json);
-        assertNotNull("check not null _returned property", json.get("_returned"));
-        assertNotNull("check not null _size property", json.get("_size"));
-        assertEquals("check _size value to be 5", 5, json.get("_size").asInt());
-        assertEquals("check _returned value to be 5", 5, json.get("_returned").asInt());
+        assertNotNull(json, "check json not null");
+        assertNotNull(json.get("_returned"), "check not null _returned property");
+        assertNotNull(json.get("_size"), "check not null _size property");
+        assertEquals(5, json.get("_size").asInt(), "check _size value to be 5");
+        assertEquals(5, json.get("_returned").asInt(), "check _returned value to be 5");
 
-        assertNotNull("check not null _link", json.get("_links"));
-        assertTrue("check _link to be a json object", (json.get("_links") instanceof JsonObject));
+        assertNotNull(json.get("_links"), "check not null _link");
+        assertTrue((json.get("_links") instanceof JsonObject), "check _link to be a json object");
 
         JsonObject links = (JsonObject) json.get("_links");
 
-        assertNotNull("check not null self", links.get("self"));
-        assertNotNull("check not null rh:coll", links.get("rh:coll"));
+        assertNotNull(links.get("self"), "check not null self");
+        assertNotNull(links.get("rh:coll"), "check not null rh:coll");
 
-        assertTrue("check _embedded to be a json object", (json.get("_embedded") instanceof JsonObject));
+        assertTrue((json.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         JsonObject embedded = (JsonObject) json.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:index", embedded.get("rh:index"));
+        assertNotNull(embedded.get("rh:index"), "check not null _embedded.rh:index");
 
-        assertTrue("check _embedded.rh:index to be a json array", (embedded.get("rh:index") instanceof JsonArray));
+        assertTrue((embedded.get("rh:index") instanceof JsonArray),
+                "check _embedded.rh:index to be a json array");
 
         JsonArray rhindex = (JsonArray) embedded.get("rh:index");
 
-        assertNotNull("check not null _embedded.rh:index[0]", rhindex.get(0));
+        assertNotNull(rhindex.get(0), "check not null _embedded.rh:index[0]");
 
-        assertTrue("check _embedded.rh:index[0] to be a json object", (rhindex.get(0) instanceof JsonObject));
+        assertTrue((rhindex.get(0) instanceof JsonObject), "check _embedded.rh:index[0] to be a json object");
 
         JsonObject rhindex0 = (JsonObject) rhindex.get(0);
 
-        assertNotNull("check not null _embedded.rh:index[0]._id", rhindex0.get("_id"));
-        assertNotNull("check not null _embedded.rh:index[0].key", rhindex0.get("key"));
+        assertNotNull(rhindex0.get("_id"), "check not null _embedded.rh:index[0]._id");
+        assertNotNull(rhindex0.get("key"), "check not null _embedded.rh:index[0].key");
     }
 
     private final String DB = TEST_DB_PREFIX + "-indexes-db";
@@ -146,7 +146,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
      *
      * @throws Exception
      */
-    @Before
+    @BeforeEach
     @SuppressWarnings("rawtypes")
     public void createTestData() throws Exception {
         // create test db
@@ -154,14 +154,15 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create db " + DB, org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB);
 
         // create collection
         resp = Unirest.put(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(),
+                "create collection " + DB.concat("/").concat(COLL));
 
         // create indexes
         resp = Unirest.put(url(DB, COLL, "_indexes", TEST_DB_PREFIX + "_idx_pos"))
@@ -170,7 +171,8 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .body("{'keys': {'a':1}}")
                 .asString();
 
-        Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_pos"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(),
+                "create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_pos"));
 
         resp = Unirest.put(url(DB, COLL, "_indexes", TEST_DB_PREFIX + "_idx_neg"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -178,7 +180,8 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .body("{'keys':{'a':-1}}")
                 .asString();
 
-        Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_neg"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(),
+                "create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_neg"));
 
         // create docs
         resp = Unirest.put(url(DB, COLL, "one"))
@@ -188,7 +191,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .body("{'a':1}")
                 .asString();
 
-        Assert.assertEquals("create doc one", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create doc one");
 
         resp = Unirest.put(url(DB, COLL, "two"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -197,7 +200,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .body("{'a':2}")
                 .asString();
 
-        Assert.assertEquals("create doc two", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_CREATED, resp.getStatus(), "create doc two");
     }
 
     /**
@@ -213,36 +216,36 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK, resp.getStatus(), "test get collection");
 
         JsonValue _rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        assertTrue(_rbody != null && _rbody.isObject(), "response body is a document");
 
         JsonObject rbody = _rbody.asObject();
 
-        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+        assertNotNull(rbody.get("_embedded"), "check not null _embedded");
 
-        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+        assertTrue((rbody.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         JsonObject embedded = (JsonObject) rbody.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+        assertNotNull(embedded.get("rh:doc"), "check not null _embedded.rh:doc");
 
-        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+        assertTrue((embedded.get("rh:doc") instanceof JsonArray), "check _embedded.rh:doc to be a json array");
 
         JsonArray rhdoc = (JsonArray) embedded.get("rh:doc");
 
-        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+        assertNotNull(rhdoc.get(0), "check not null _embedded.rh:doc[0]");
 
-        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+        assertTrue((rhdoc.get(0) instanceof JsonObject), "check _embedded.rh:coll[0] to be a json object");
 
         JsonObject doc = (JsonObject) rhdoc.get(0);
 
         JsonValue a = doc.get("a");
 
-        Assert.assertTrue("doc prop a is a number", a.isNumber());
-        Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
+        assertTrue(a.isNumber(), "doc prop a is a number");
+        assertTrue(a.asInt() == 1, "doc prop a equals 1");
 
         resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "-a")
@@ -250,36 +253,36 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK, resp.getStatus(), "test get collection");
 
         _rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        assertTrue(_rbody != null && _rbody.isObject(), "response body is a document");
 
         rbody = _rbody.asObject();
 
-        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+        assertNotNull(rbody.get("_embedded"), "check not null _embedded");
 
-        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+        assertTrue((rbody.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         embedded = (JsonObject) rbody.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+        assertNotNull(embedded.get("rh:doc"), "check not null _embedded.rh:doc");
 
-        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+        assertTrue((embedded.get("rh:doc") instanceof JsonArray), "check _embedded.rh:doc to be a json array");
 
         rhdoc = (JsonArray) embedded.get("rh:doc");
 
-        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+        assertNotNull(rhdoc.get(0), "check not null _embedded.rh:doc[0]");
 
-        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+        assertTrue((rhdoc.get(0) instanceof JsonObject), "check _embedded.rh:coll[0] to be a json object");
 
         doc = (JsonObject) rhdoc.get(0);
 
         a = doc.get("a");
 
-        Assert.assertTrue("doc prop a is a number", a.isNumber());
-        Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
+        assertTrue(a.isNumber(), "doc prop a is a number");
+        assertTrue(a.asInt() == 2, "doc prop a equals 2");
     }
 
     /**
@@ -295,36 +298,36 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK, resp.getStatus(), "test get collection");
 
         JsonValue _rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        assertTrue(_rbody != null && _rbody.isObject(), "response body is a document");
 
         JsonObject rbody = _rbody.asObject();
 
-        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+        assertNotNull(rbody.get("_embedded"), "check not null _embedded");
 
-        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+        assertTrue((rbody.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         JsonObject embedded = (JsonObject) rbody.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+        assertNotNull(embedded.get("rh:doc"), "check not null _embedded.rh:doc");
 
-        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+        assertTrue((embedded.get("rh:doc") instanceof JsonArray), "check _embedded.rh:doc to be a json array");
 
         JsonArray rhdoc = (JsonArray) embedded.get("rh:doc");
 
-        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+        assertNotNull(rhdoc.get(0), "check not null _embedded.rh:doc[0]");
 
-        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+        assertTrue((rhdoc.get(0) instanceof JsonObject), "check _embedded.rh:coll[0] to be a json object");
 
         JsonObject doc = (JsonObject) rhdoc.get(0);
 
         JsonValue a = doc.get("a");
 
-        Assert.assertTrue("doc prop a is a number", a.isNumber());
-        Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
+        assertTrue(a.isNumber(), "doc prop a is a number");
+        assertTrue(a.asInt() == 1, "doc prop a equals 1");
 
         resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "{'a':-1}")
@@ -332,35 +335,35 @@ public class GetIndexesIT extends HttpClientAbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
-        Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
+        assertEquals(org.apache.http.HttpStatus.SC_OK, resp.getStatus(), "test get collection");
 
         _rbody = Json.parse(resp.getBody().toString());
 
-        Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
+        assertTrue(_rbody != null && _rbody.isObject(), "response body is a document");
 
         rbody = _rbody.asObject();
 
-        assertNotNull("check not null _embedded", rbody.get("_embedded"));
+        assertNotNull(rbody.get("_embedded"), "check not null _embedded");
 
-        assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
+        assertTrue((rbody.get("_embedded") instanceof JsonObject), "check _embedded to be a json object");
 
         embedded = (JsonObject) rbody.get("_embedded");
 
-        assertNotNull("check not null _embedded.rh:doc", embedded.get("rh:doc"));
+        assertNotNull(embedded.get("rh:doc"), "check not null _embedded.rh:doc");
 
-        assertTrue("check _embedded.rh:doc to be a json array", (embedded.get("rh:doc") instanceof JsonArray));
+        assertTrue((embedded.get("rh:doc") instanceof JsonArray), "check _embedded.rh:doc to be a json array");
 
         rhdoc = (JsonArray) embedded.get("rh:doc");
 
-        assertNotNull("check not null _embedded.rh:doc[0]", rhdoc.get(0));
+        assertNotNull(rhdoc.get(0), "check not null _embedded.rh:doc[0]");
 
-        assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
+        assertTrue((rhdoc.get(0) instanceof JsonObject), "check _embedded.rh:coll[0] to be a json object");
 
         doc = (JsonObject) rhdoc.get(0);
 
         a = doc.get("a");
 
-        Assert.assertTrue("doc prop a is a number", a.isNumber());
-        Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
+        assertTrue(a.isNumber(), "doc prop a is a number");
+        assertTrue(a.asInt() == 2, "doc prop a equals 2");
     }
 }
