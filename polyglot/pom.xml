@@ -60,6 +60,7 @@
             <configuration>
               <licenseName>agpl_v3</licenseName>
               <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+              <emptyLineAfterHeader>true</emptyLineAfterHeader>
               <skipUpdateLicense>${skipUpdateLicense}</skipUpdateLicense>
               <processStartTag>========================LICENSE_START=================================</processStartTag>
               <processEndTag>=========================LICENSE_END==================================</processEndTag>

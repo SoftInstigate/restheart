@@ -134,6 +134,7 @@
             <configuration>
               <licenseName>apache_v2</licenseName>
               <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+              <emptyLineAfterHeader>true</emptyLineAfterHeader>
               <skipUpdateLicense>${skipUpdateLicense}</skipUpdateLicense>
               <processStartTag>========================LICENSE_START=================================</processStartTag>
               <processEndTag>=========================LICENSE_END==================================</processEndTag>
