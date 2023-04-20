@@ -22,8 +22,8 @@ package org.restheart.examples;
 
 import java.io.IOException;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import kong.unirest.Unirest;
+import kong.unirest.UnirestException;
 
 public class CreateContact {
     public static void main(String[] args) throws Exception  {
@@ -47,12 +47,12 @@ public class CreateContact {
         var resp = Unirest.post("http://localhost:8080/proto")
                 .header("Content-Type", "application/protobuf")
                 .body(body.toByteArray())
-                .asBinary();
+                .asBytes();
 
         System.out.println("response status: " + resp.getStatus());
 
         try {
-            var reply = ContactPostReply.parseFrom(resp.getBody().readAllBytes());
+            var reply = ContactPostReply.parseFrom(resp.getBody());
             System.out.println("id of new contact: " + reply.getId());
         } catch(InvalidProtocolBufferException e) {
             System.out.println("error parsing response: " + e.getMessage());

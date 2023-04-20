@@ -40,10 +40,10 @@ import org.restheart.Bootstrapper;
 import org.restheart.mongodb.RHMongoClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mongodb.ConnectionString;
+
+import kong.unirest.Unirest;
+import kong.unirest.UnirestException;
 
 /**
  *

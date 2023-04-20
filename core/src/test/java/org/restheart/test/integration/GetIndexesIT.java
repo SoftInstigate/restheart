@@ -42,7 +42,7 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.Unirest;
 
 /**
  *
@@ -150,7 +150,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     @SuppressWarnings("rawtypes")
     public void createTestData() throws Exception {
         // create test db
-        com.mashape.unirest.http.HttpResponse resp = Unirest.put(url(DB))
+        kong.unirest.HttpResponse resp = Unirest.put(url(DB))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
@@ -210,7 +210,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     @Test
     @SuppressWarnings("rawtypes")
     public void testGetHintStringFormat() throws Exception {
-        com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
+        kong.unirest.HttpResponse resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "a")
                 .queryString("sort", "{}")
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -292,7 +292,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     @Test
     @SuppressWarnings("rawtypes")
     public void testGetHintObjectFormat() throws Exception {
-        com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
+        kong.unirest.HttpResponse resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "{'a':1}")
                 .queryString("sort", "{}")
                 .basicAuth(ADMIN_ID, ADMIN_PWD)

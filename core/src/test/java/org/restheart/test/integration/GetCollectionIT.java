@@ -44,7 +44,7 @@ import org.restheart.utils.HttpStatus;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.Unirest;
 import com.mongodb.client.MongoCollection;
 
 /**
@@ -508,7 +508,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
 
         String url = documentUri.toString();
 
-        com.mashape.unirest.http.HttpResponse<String> resp = Unirest.get(url)
+        kong.unirest.HttpResponse<String> resp = Unirest.get(url)
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
