@@ -48,9 +48,9 @@
                 <version>3.21.4</version>
             </dependency>
             <dependency>
-                <groupId>com.mashape.unirest</groupId>
+                <groupId>com.konghq</groupId>
                 <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
+                <version>3.14.1</version>
             </dependency>
             <dependency>
                 <groupId>com.sun.mail</groupId>

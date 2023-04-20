@@ -31,9 +31,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.mashape.unirest</groupId>
+            <groupId>com.konghq</groupId>
             <artifactId>unirest-java</artifactId>
-            <scope>test</scope>
+            <version>3.14.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

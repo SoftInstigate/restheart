@@ -149,7 +149,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.mashape.unirest</groupId>
+      <groupId>com.konghq</groupId>
       <artifactId>unirest-java</artifactId>
       <scope>test</scope>
     </dependency>
@@ -467,7 +467,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
-            <version>3.1.2</version>
             <executions>
               <execution>
                 <phase>package</phase>
@@ -515,22 +514,18 @@
         <dependency>
           <groupId>com.github.jnr</groupId>
           <artifactId>jnr-unixsocket</artifactId>
-          <version>0.38.17</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>org.mongodb</groupId>
           <artifactId>mongodb-crypt</artifactId>
-          <version>1.7.1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>org.xerial.snappy</groupId>
           <artifactId>snappy-java</artifactId>
-          <version>1.1.8.4</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
         </dependency>
         <dependency>
           <groupId>com.github.luben</groupId>
           <artifactId>zstd-jni</artifactId>
-          <version>1.5.1-1</version>
         </dependency>
       </dependencies>
       <build>
@@ -538,7 +533,6 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.9.9</version>
             <extensions>true</extensions>
             <executions>
               <execution>

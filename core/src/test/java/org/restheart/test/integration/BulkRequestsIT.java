@@ -22,8 +22,8 @@ package org.restheart.test.integration;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

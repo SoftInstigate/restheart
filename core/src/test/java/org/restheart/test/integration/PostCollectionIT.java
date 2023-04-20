@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.Unirest;
 
 import io.undertow.util.Headers;
 
@@ -52,7 +52,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
     private final String COLL = "coll";
 
     @SuppressWarnings("rawtypes")
-    private com.mashape.unirest.http.HttpResponse resp;
+    private kong.unirest.HttpResponse resp;
 
     /**
      *

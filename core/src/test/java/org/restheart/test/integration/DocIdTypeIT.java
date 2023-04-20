@@ -42,7 +42,7 @@ import org.restheart.utils.HttpStatus;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.Unirest;
 
 import io.undertow.util.Headers;
 
@@ -54,7 +54,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
     private final String DB = TEST_DB_PREFIX + "-id-db";
     private final String COLL = "coll";
 
-    com.mashape.unirest.http.HttpResponse<String> resp;
+    kong.unirest.HttpResponse<String> resp;
 
     /**
      *

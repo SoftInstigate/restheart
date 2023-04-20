@@ -212,6 +212,26 @@
                 <version>4.9.1</version>
             </dependency>
             <dependency>
+                <groupId>com.github.jnr</groupId>
+                <artifactId>jnr-unixsocket</artifactId>
+                <version>0.38.17</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-crypt</artifactId>
+                <version>1.7.3</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+            </dependency>
+                <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>1.1.8.4</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>1.5.1-1</version>
+            </dependency>
+            <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
                 <version>2.3.5.Final</version>
@@ -269,7 +289,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.4.6</version>
+                <version>1.4.7</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -309,7 +329,7 @@
             <dependency>
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
-                <version>4.7.2</version>
+                <version>4.7.3</version>
             </dependency>
             <dependency>
                 <groupId>io.github.classgraph</groupId>
@@ -394,10 +414,9 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.mashape.unirest</groupId>
+                <groupId>com.konghq</groupId>
                 <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
-                <scope>test</scope>
+                <version>3.14.1</version>
             </dependency>
             <!-- END Test dependencies -->
         </dependencies>
@@ -517,6 +536,16 @@
                     <configuration>
                         <tagNameFormat>@{project.version}</tagNameFormat>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>0.9.21</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.5.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>
