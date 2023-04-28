@@ -19,18 +19,23 @@
  */
 package org.restheart.security;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.bson.BsonDocument;
+import org.restheart.utils.BsonUtils;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * Account implementation used by MongoRealmAuthenticator
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class MongoRealmAccount extends PwdCredentialAccount {
+public class MongoRealmAccount extends PwdCredentialAccount implements WithProperties<BsonDocument> {
     private static final long serialVersionUID = -5840534832968478775L;
 
-    private final BsonDocument accountDocument;
+    private final BsonDocument properties;
 
     /**
      *
@@ -39,21 +44,33 @@ public class MongoRealmAccount extends PwdCredentialAccount {
      * @param roles
      * @param accountDocument
      */
-    public MongoRealmAccount(final String name, final char[] password, final Set<String> roles, BsonDocument accountDocument) {
+    public MongoRealmAccount(final String name, final char[] password, final Set<String> roles, BsonDocument properties) {
         super(name, password, roles);
 
         if (password == null) {
             throw new IllegalArgumentException("argument password cannot be null");
         }
 
-        this.accountDocument = accountDocument;
+        this.properties = properties;
     }
 
-    /**
-     *
-     * @return accountDocument
-     */
-    public BsonDocument getAccountDocument() {
-        return accountDocument;
+    @Override
+    public BsonDocument properties() {
+        return properties;
+    }
+
+    private static Gson GSON = new GsonBuilder().serializeNulls().create();
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, ? super Object> propertiesAsMap() {
+        if (properties == null) {
+            return null;
+        }
+
+        // we use GSON rather than BsonUtils.bsonToDocument()
+        // to preserve the BSON strict representation format
+        // as in d: { "$date": 123.0 }; using Document it will turn it to d: 0
+        return GSON.fromJson(BsonUtils.toJson(properties), HashMap.class);
     }
 }

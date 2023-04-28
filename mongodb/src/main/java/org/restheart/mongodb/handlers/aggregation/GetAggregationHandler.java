@@ -40,10 +40,9 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Databases;
 import org.restheart.security.AclVarsInterpolator;
-import org.restheart.security.FileRealmAccount;
-import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoPermissions;
 import org.restheart.security.MongoRealmAccount;
+import org.restheart.security.WithProperties;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
@@ -284,26 +283,16 @@ public class GetAggregationHandler extends PipelinedHandler {
         // add @user to avars
         var account = request.getAuthenticatedAccount();
 
-        if (account != null && account instanceof MongoRealmAccount maccount) {
-            var ba = maccount.getAccountDocument();
-
+        if (account == null) {
+            avars.put("@user", BsonNull.VALUE);
+        } else if (account instanceof MongoRealmAccount maccount) {
+            var ba = maccount.properties();
             avars.put("@user", ba);
             ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
-        } else if (account != null && account instanceof FileRealmAccount faccount) {
-            var ba = BsonUtils.toBsonDocument(faccount.getAccountProperties());
-
+        } else if (account instanceof WithProperties<?> accountWithProperties) {
+            var ba = BsonUtils.toBsonDocument(accountWithProperties.propertiesAsMap());
             avars.put("@user", ba);
             ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
-        } else if (account != null && account instanceof JwtAccount jwtAccount) {
-            var bva = BsonUtils.parse(jwtAccount.getJwtPayload());
-
-            if (bva instanceof BsonDocument bda) {
-                avars.put("@user", bda);
-                bda.keySet().forEach(k -> avars.put("@user.".concat(k), bda.get(k)));
-            } else {
-                LOGGER.warn("jwt payload is not a json object, returning null account document");
-                avars.put("@user", BsonNull.VALUE);
-            }
         } else {
             avars.put("@user", BsonNull.VALUE);
         }

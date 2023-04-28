@@ -28,10 +28,10 @@ import java.util.Set;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class FileRealmAccount extends PwdCredentialAccount {
+public class FileRealmAccount extends PwdCredentialAccount implements WithProperties<Map<String, ? super Object>> {
     private static final long serialVersionUID = -5840534832968478775L;
 
-    private final Map<String, Object> accountProperties;
+    private final Map<String, ? super Object> properties;
 
     /**
      *
@@ -40,21 +40,23 @@ public class FileRealmAccount extends PwdCredentialAccount {
      * @param roles
      * @param accountDocument
      */
-    public FileRealmAccount(final String name, final char[] password, final Set<String> roles, Map<String, Object> accountProperties) {
+    public FileRealmAccount(final String name, final char[] password, final Set<String> roles, Map<String, ? super Object> properties) {
         super(name, password, roles);
 
         if (password == null) {
             throw new IllegalArgumentException("argument password cannot be null");
         }
 
-        this.accountProperties = accountProperties;
+        this.properties = properties;
     }
 
-    /**
-     *
-     * @return  accountProperties
-     */
-    public Map<String, Object> getAccountProperties() {
-        return accountProperties;
+    @Override
+    public Map<String, ? super Object> properties() {
+        return this.properties;
+    }
+
+    @Override
+    public Map<String, ? super Object> propertiesAsMap() {
+        return this.properties;
     }
 }

@@ -123,11 +123,11 @@ public class RndTokenManager implements TokenManager {
         PwdCredentialAccount ret;
 
         if (account instanceof MongoRealmAccount maccount) {
-            ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.getAccountDocument());
+            ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.properties());
         } else if (account instanceof FileRealmAccount faccount) {
-            ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.getAccountProperties());
+            ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.properties());
         } else if (account instanceof JwtAccount jwtAccount) {
-            var accountDocument = BsonUtils.parse(jwtAccount.getJwtPayload());
+            var accountDocument = BsonUtils.parse(jwtAccount.properties());
             if (accountDocument instanceof BsonDocument bad) {
                 ret = new MongoRealmAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
             } else {

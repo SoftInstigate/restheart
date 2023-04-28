@@ -133,11 +133,16 @@ public class AclVarsInterpolator {
             return new BsonDateTime(Instant.now().getEpochSecond() * 1000);
         } else if (value.equals("@user")) {
             if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
-                return maccount.getAccountDocument();
+                return maccount.properties();
             } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
-                return toBson(faccount.getAccountProperties());
+                return toBson(faccount.properties());
             } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
-                return BsonUtils.parse(jwtAccount.getJwtPayload());
+                var jwt = jwtAccount.propertiesAsMap();
+                // remove jwt specific fields, only using user properties
+                jwt.remove("exp");
+                jwt.remove("iss");
+                jwt.remove("sub");
+                return toBson(jwt);
             } else {
                 return BsonNull.VALUE;
             }
@@ -198,52 +203,8 @@ public class AclVarsInterpolator {
                 return BsonNull.VALUE;
             }
         } else if (value.startsWith("@user.") && value.length() > 5) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
-                var accountDoc = maccount.getAccountDocument();
-                var prop = value.substring(6);
-
-                if (prop.contains(".")) {
-                    try {
-                        var v = JsonPath.read(accountDoc.toJson(), "$.".concat(prop));
-
-                        return BsonUtils.parse(v.toString());
-                    } catch (Throwable pnfe) {
-                        return BsonNull.VALUE;
-                    }
-                } else {
-                    if (accountDoc.containsKey(prop)) {
-                        return accountDoc.get(prop);
-                    } else {
-                        return BsonNull.VALUE;
-                    }
-                }
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
-                return fromProperties(faccount.getAccountProperties(), value.substring(6));
-            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
-                var jwpPayload = BsonUtils.parse(jwtAccount.getJwtPayload());
-
-                if (jwpPayload instanceof BsonDocument bsonPayload) {
-                    var prop = value.substring(6);
-
-                    if (prop.contains(".")) {
-                        try {
-                            var v = JsonPath.read(bsonPayload.toJson(), "$.".concat(prop));
-
-                            return BsonUtils.parse(v.toString());
-                        } catch (Throwable pnfe) {
-                            return BsonNull.VALUE;
-                        }
-                    } else {
-                        if (bsonPayload.containsKey(prop)) {
-                            return bsonPayload.get(prop);
-                        } else {
-                            return BsonNull.VALUE;
-                        }
-                    }
-                } else {
-                    LOGGER.warn("jwt payload is not a json object, returning null user property {}", value.substring(6));
-                    return BsonNull.VALUE;
-                }
+            if (request.getAuthenticatedAccount() instanceof WithProperties<?> accountWithProperties) {
+                return fromProperties(accountWithProperties.propertiesAsMap(), value.substring(6));
             } else {
                 return BsonNull.VALUE;
             }
@@ -278,19 +239,12 @@ public class AclVarsInterpolator {
 
     private static BsonDocument getAccountDocument(Request<?> request) {
         if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
-            return maccount.getAccountDocument();
+            return maccount.properties();
         } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
-            return toBson(faccount.getAccountProperties()).asDocument();
+            return toBson(faccount.properties()).asDocument();
         } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
-            var payload = BsonUtils.parse(jwtAccount.getJwtPayload());
-
-            if (payload instanceof BsonDocument bsonPayload) {
-                return bsonPayload;
-            } else {
-                LOGGER.warn("jwt payload is not a json object, returning null account document");
-                return null;
-            }
-        }else {
+            return toBson(jwtAccount.propertiesAsMap()).asDocument();
+        } else {
             return null;
         }
     }
@@ -416,7 +370,7 @@ public class AclVarsInterpolator {
     }
 
     @SuppressWarnings("unchecked")
-    private static BsonValue fromProperties(Map<String, Object> properties, String key) {
+    private static BsonValue fromProperties(Map<String, ? super Object> properties, String key) {
         if (key.contains(".")) {
             var first = key.substring(0, key.indexOf("."));
             var last = key.substring(key.indexOf(".") + 1);
@@ -439,8 +393,7 @@ public class AclVarsInterpolator {
                         if (elementAtIdx instanceof Map<?, ?>) {
                             return fromProperties((Map<String, Object>) elementAtIdx, afterNext);
                         } else {
-                            LOGGER.warn("Key {} at {} matches an array but selected element is not an object", key,
-                                    first);
+                            LOGGER.warn("Key {} at {} matches an array but selected element is not an object", key, first);
                             return BsonNull.VALUE;
                         }
                     } catch (Throwable t) {

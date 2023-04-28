@@ -19,44 +19,53 @@
  */
 package org.restheart.security;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * Jwt Account
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JwtAccount extends BaseAccount {
+public class JwtAccount extends BaseAccount implements WithProperties<String> {
     /**
      *
      */
     private static final long serialVersionUID = -2405615782892727187L;
-    final private String jwtPayload;
+    final private String properties;
 
     /**
      *
      * @param name
      * @param roles
-     * @param jwtPayload
+     * @param properties
      */
-    public JwtAccount(final String name, final Set<String> roles, String jwtPayload) {
+    public JwtAccount(final String name, final Set<String> roles, String properties) {
         super(name, roles);
-        this.jwtPayload = jwtPayload;
-    }
-
-    /**
-     *
-     * @return the jwtPayload
-     */
-    public String getJwtPayload() {
-        return jwtPayload;
+        this.properties = properties;
     }
 
     @Override
     public String toString() {
-        return super.toString()
-                .concat(" jwt=")
-                .concat(jwtPayload);
+        return super.toString().concat(" jwt=").concat(properties);
+    }
+
+    /**
+     * @return the jwt payload as string
+     */
+    @Override
+    public String properties() {
+        return properties;
+    }
+
+    private static Gson GSON = new GsonBuilder().serializeNulls().create();
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, ? super Object> propertiesAsMap() {
+        return GSON.fromJson(properties, HashMap.class);
     }
 }
