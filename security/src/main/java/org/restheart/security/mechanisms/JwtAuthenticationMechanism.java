@@ -78,7 +78,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     private String rolesClaim;
     private List<String> fixedRoles;
     private String issuer;
-    private String audience;
+    private String[] audience;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -89,11 +89,14 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         base64Encoded = arg(config, "base64Encoded");
         algorithm = arg(config, "algorithm");
         key = arg(config, "key");
+        if ("secret".equals(key)) {
+            LOGGER.warn("You should really update the JWT key!");
+        }
         usernameClaim = arg(config, "usernameClaim");
         rolesClaim = argOrDefault(config, "rolesClaim", null);
         fixedRoles = argOrDefault(config, "fixedRoles", null);
         issuer = arg(config, "issuer");
-        audience = arg(config, "audience");
+        audience = argOrDefault(config, "audience", null);
 
         Algorithm _algorithm;
 
@@ -106,11 +109,11 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         Verification v = JWT.require(_algorithm);
 
         if (audience != null) {
-            v.withAudience(audience);
+            v = v.withAudience(audience);
         }
 
         if (issuer != null) {
-            v.withIssuer(issuer);
+            v = v.withIssuer(issuer);
         }
 
         if (rolesClaim != null && fixedRoles != null) {

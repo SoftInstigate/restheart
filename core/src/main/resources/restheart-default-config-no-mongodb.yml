@@ -49,8 +49,8 @@ jwtAuthenticationMechanism:
   rolesClaim: null
   fixedRoles:
   #  - jwt-role
-  issuer: myIssuer
-  audience: myAudience
+  issuer: restheart.org
+  audience: null
 
 # Digest Authentication
 # see https://restheart.org/docs/security/authentication#digest-authentication
@@ -177,6 +177,11 @@ jwtTokenManager:
   ttl: 15
   srv-uri: /tokens
   issuer: restheart.org
+  audience: null
+  # additional JWT claims from accounts properties
+  account-properties-claims:
+    # - foo # property name
+    # - /nested/property # xpath expr for nested properties
 
 # Provider the MongoClient via @Inject('mclient') and @Inject('mclient-reactive')
 mclient:

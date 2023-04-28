@@ -394,7 +394,7 @@ public class Configuration {
                         .filter(k -> k instanceof String)
                         .map(k -> (String) k)
                         .forEach(k -> {
-                            if (k.contains("password") || k.contains("pwd") || k.contains("secret")) {
+                            if (k.contains("password") || k.contains("pwd") || k.contains("secret") || k.contains("key")) {
                                 maskedValue.put(k, "**********");
                             } else if (k.contains("connection-string")) {
                                 try {
@@ -411,7 +411,7 @@ public class Configuration {
                             }
                         });
                     LOGGER.info("\t{} -> {}", o.path(), maskedValue);
-                } else if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")) {
+                } else if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret") || o.path().contains("key")) {
                     LOGGER.info("\t{} -> {}", o.path(), "**********");
                 } else if (o.path().endsWith("connection-string") && o.value() instanceof String svalue) {
                     try {

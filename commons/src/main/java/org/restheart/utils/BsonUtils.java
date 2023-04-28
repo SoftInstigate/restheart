@@ -748,14 +748,12 @@ public class BsonUtils {
      * @param map
      * @return
      */
-    public static BsonDocument toBsonDocument(Map<String, Object> map) {
+    public static BsonDocument toBsonDocument(Map<String, ? super Object> map) {
         if (map == null) {
             return null;
         }
 
-        var d = new Document(map);
-
-        return d.toBsonDocument(BsonDocument.class, DEFAULT_CODEC_REGISTRY);
+        return new Document(map).toBsonDocument(BsonDocument.class, DEFAULT_CODEC_REGISTRY);
     }
 
     private static final String _UPDATE_OPERATORS[] = {

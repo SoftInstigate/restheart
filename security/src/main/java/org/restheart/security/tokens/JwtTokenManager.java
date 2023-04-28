@@ -32,35 +32,40 @@
 package org.restheart.security.tokens;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.JWTCreator.Builder;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.impl.NullClaim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
-
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
+import org.restheart.configuration.Utils;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAccount;
+import org.restheart.security.FileRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
+import org.restheart.security.WithProperties;
+import org.restheart.utils.Pair;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -79,16 +84,18 @@ public class JwtTokenManager implements TokenManager {
     private LoadingCache<ComparableAccount, Token> jwtCache;
 
     private JWTVerifier verifier;
-    private JWTCreator.Builder creator;
     private Algorithm algo;
 
     private String srvURI = "/tokens";
     private int ttl = 15;
-    private String issuer = "restheart.com";
+    private String issuer = "restheart.org";
+    private String[] audience;
 
     private static final int MAX_CACHE_SIZE = 1000;
 
     private boolean enabled = false;
+
+    private List<String> accountPropertiesClaims;
 
     @Inject("config")
     Map<String, Object> config;
@@ -105,22 +112,34 @@ public class JwtTokenManager implements TokenManager {
             throw new ConfigurationException("TTL minimum value is 1 minute");
         }
 
+        String key = arg(config, "key");
+
+        if ("secret".equals(key)) {
+            LOGGER.warn("You should really update the JWT key!");
+        }
+
         this.algo = Algorithm.HMAC256((String) argValue(config, "key"));
-        this.issuer = argValue(config, "issuer");
+        this.issuer = arg(config, "issuer");
 
         jwtCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
             Cache.EXPIRE_POLICY.AFTER_WRITE,
             ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
             account -> newToken(account.wrapped));
 
+        audience = argOrDefault(config, "audience", null);
+
         try {
-            this.verifier = JWT.require(algo).withIssuer(issuer).build();
-            this.creator = JWT.create().withIssuer(issuer);
+            this.verifier = audience != null
+                ? JWT.require(algo).withIssuer(issuer).withAudience(audience).build()
+                : JWT.require(algo).withIssuer(issuer).build();
+
         } catch (Throwable t) {
             this.enabled = false;
             LOGGER.error("error", t);
             throw new ConfigurationException("error ");
         }
+
+        this.accountPropertiesClaims = argOrDefault(config, "account-properties-claims", null);
     }
 
     @Override
@@ -133,26 +152,35 @@ public class JwtTokenManager implements TokenManager {
         if (!enabled) { return null; }
 
         if (id != null && credential instanceof PasswordCredential) {
-            char[] token = ((PasswordCredential) credential).getPassword();
+            char[] rawToken = ((PasswordCredential) credential).getPassword();
 
             var ca = new ComparableAccount(new BaseAccount(id, null));
 
             // first check if the very same token is in the cache
-            if (this.jwtCache.get(ca) != null && this.jwtCache.get(ca).isPresent() && Arrays.equals(token, this.jwtCache.get(ca).get().raw)) {
+            if (this.jwtCache.get(ca) != null && this.jwtCache.get(ca).isPresent() && Arrays.equals(rawToken, this.jwtCache.get(ca).get().raw())) {
                 LOGGER.debug("jwt token in cache");
-                return new PwdCredentialAccount(id, token, Sets.newHashSet(this.jwtCache.get(ca).get().roles));
+                var cached = this.jwtCache.get(ca).get();
+                var roles = Sets.newHashSet(this.jwtCache.get(ca).get().roles());
+                if (cached.properties() == null) {
+                    return new PwdCredentialAccount(id, rawToken, roles);
+                } else {
+                    return new FileRealmAccount(id, rawToken, roles, cached.properties());
+                }
             } else {
                 LOGGER.trace("jwt token not in cache, let's verify it");
                 // if the token is not in the cache, verify it
                 try {
-                    var decoded = this.verifier.verify(new String(token));
+                    var decoded = this.verifier.verify(new String(rawToken));
 
                     if (id.equals(decoded.getSubject())) {
                         var roles = decoded.getClaim("roles").asArray(String.class);
 
-                        LOGGER.trace("******************** valid token from user {}", id);
-
-                        return new PwdCredentialAccount(id, token, Sets.newHashSet(roles));
+                        var token = Token.fromJWT(decoded);
+                        if (token.properties() == null) {
+                            return new PwdCredentialAccount(id, rawToken, Sets.newHashSet(token.roles()));
+                        } else {
+                            return new FileRealmAccount(id, rawToken, Sets.newHashSet(roles), token.properties());
+                        }
                     } else {
                         LOGGER.warn("invalid token from user {}, not matching id in token, was {}", id, decoded.getSubject());
                         return null;
@@ -186,7 +214,7 @@ public class JwtTokenManager implements TokenManager {
 
         PwdCredentialAccount newTokenAccount = new PwdCredentialAccount(
             account.getPrincipal().getName(),
-            token.raw,
+            token.raw(),
             Sets.newTreeSet(account.getRoles()));
 
         return newTokenAccount.getCredentials();
@@ -195,21 +223,110 @@ public class JwtTokenManager implements TokenManager {
     private Token newToken(Account account) {
         var expires = Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES));
 
-        var raw= this.creator
+        var creator = audience != null
+            ? JWT.create().withIssuer(issuer).withAudience(audience)
+            : JWT.create().withIssuer(issuer);
+
+        var _builder = creator
             .withSubject(account.getPrincipal().getName())
             .withExpiresAt(expires)
             .withIssuer(issuer)
-            .withArrayClaim("roles", account.getRoles().toArray(new String[account.getRoles().size()]))
-            .sign(algo);
+            .withArrayClaim("roles", account.getRoles().toArray(new String[account.getRoles().size()]));
 
-        // TODO add other account properties
-        // if (account instanceof MongoRealmAccount mra) {
-        //     mra.getAccountDocument();
-        // } else if (account instanceof FileRealmAccount fra) {
-        //     fra.getAccountProperties();
-        // }
+        Builder[] builder = { _builder };
 
-        return new Token(raw.toCharArray(), expires, account.getRoles().toArray(new String[0]));
+        final Map<String, ? super Object> properties;
+
+        if (account instanceof WithProperties<?> awp) {
+            properties = claimsFromAccountProps(awp.propertiesAsMap());
+            properties.entrySet().stream().forEach(e -> builder[0] = withClaim(builder[0], e.getKey(), e.getValue()));
+        } else {
+            properties = null;
+        }
+
+        var raw = builder[0].sign(algo);
+
+        return new Token(raw.toCharArray(), expires, account.getRoles().toArray(new String[0]), properties);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private Builder withClaim(Builder b, String k, Object v) {
+        if (k == null || v == null) {
+            return b;
+        } if (v instanceof String s) {
+            return b.withClaim(k, s);
+        } else if (v instanceof String[] ss) {
+            return b.withArrayClaim(k, ss);
+        }else if (v instanceof Boolean boo) {
+            return b.withClaim(k, boo);
+        } else if (v instanceof Integer i) {
+            return b.withClaim(k, i);
+        } else if (v instanceof Integer[] ii) {
+            return b.withArrayClaim(k, ii);
+        } else if (v instanceof Long l) {
+            return b.withClaim(k, l);
+        } else if (v instanceof Long[] ll) {
+            return b.withArrayClaim(k, ll);
+        } else if (v instanceof Double d) {
+            return b.withClaim(k, d);
+        } else if (v instanceof Date d) {
+            return b.withClaim(k, d);
+        } else if (v instanceof Map m) {
+            try {
+                return b.withClaim(k, (Map<String, ?>) m);
+            } catch(ClassCastException cce) {
+                LOGGER.warn("cannot add claim {} to jwt because of usupported type", k);
+                return b;
+            }
+        } else if (v instanceof List l) {
+            return b.withClaim(k, (List<?>) l);
+        } else {
+            LOGGER.warn("cannot add claim {} to jwt because of usupported type", k, v.getClass().getSimpleName());
+            return b;
+        }
+    }
+
+    private Map<String, ? super Object> claimsFromAccountProps(Map<String, ? super Object> properties) {
+        var ret = new HashMap<String, Object>();
+
+        if (accountPropertiesClaims != null) {
+            this.accountPropertiesClaims.stream()
+            .map(path -> new Pair<String[], Object>(keysFromPath(path), Utils.find(properties, path, true)))
+            .filter(p -> p.getValue() != null)
+            .forEach(p -> addClaim(ret, p.getKey(), p.getValue()));
+        }
+
+        return ret;
+    }
+
+    private String[] keysFromPath(String path) {
+        var ret = path.contains("/")
+            ? path.split("/")
+            : new String[] { path } ;
+
+        // remove empty elements
+        return Arrays.stream(ret).filter(k -> k != null && !k.isBlank()).toArray(String[]::new);
+    }
+
+    /**
+     * add the claim preserving the json structure
+     * i.e. /a/nested/value -> { a: { nested: value} }
+     * @param map
+     * @param keys
+     * @param val
+     */
+    private void addClaim(Map<String, Object> map, String[] keys, Object val) {
+        for (var idx = 0; idx < keys.length; idx++) {
+            if (idx == keys.length-1) {
+                map.put(keys[idx], val);
+            } else {
+                var nestedMap = new HashMap<String, Object>();
+                map.put(keys[idx], nestedMap);
+                addClaim(nestedMap, Arrays.copyOfRange(keys, idx+1, keys.length), val);
+                break;
+            }
+        }
     }
 
     @Override
@@ -247,32 +364,29 @@ public class JwtTokenManager implements TokenManager {
                 var newToken = newToken(account);
 
                 this.jwtCache.put(ca, newToken);
-                exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(newToken.raw));
+                exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(newToken.raw()));
                 exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, newToken.getDateAsString());
             } else if (this.jwtCache.get(ca) != null) {
                 var cachedToken = this.jwtCache.get(ca).get();
-                exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(cachedToken.raw));
+                exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(cachedToken.raw()));
                 exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, cachedToken.getDateAsString());
             }
         }
     }
 }
 
-class Token {
-    final public char[] raw;
-    final public Date expires;
-    final public String[] roles;
+record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Object> properties) {
+    public static Token fromJWT(DecodedJWT jwt) {
+        var raw = jwt.getToken().toCharArray();
+        var expires = jwt.getExpiresAt();
+        var roles = jwt.getClaim("roles").asArray(String.class);
+        var _properties = jwt.getClaim("properties");
 
-    public Token(char[] raw, Date expires, String[] roles) {
-        this.raw = raw;
-        this.expires = expires;
-        this.roles = roles;
-    }
-
-    public Token(DecodedJWT jwt) {
-        this.raw = jwt.getToken().toCharArray();
-        this.expires = jwt.getExpiresAt();
-        this.roles = jwt.getClaim("roles").asArray(String.class);;
+        if (_properties instanceof NullClaim) {
+            return new Token(raw, expires, roles, null);
+        } else {
+            return new Token(raw, expires, roles, _properties.asMap());
+        }
     }
 
     public String getDateAsString() {
