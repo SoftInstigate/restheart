@@ -41,8 +41,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "extraJwtVerifier",
         priority = 100,
-        description = "Adds an extra verifictation step "
-        + "to the jwtAuthenticationMechanism")
+        description = "Adds an extra verifictation step to the jwtAuthenticationMechanism")
 public class ExtraJwtVerifier implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtraJwtVerifier.class);
 
@@ -80,14 +79,16 @@ public class ExtraJwtVerifier implements Initializer {
 
             var extra = extraClaim.asMap();
 
+            if (extra == null) {
+                throw new JWTVerificationException("extra claim is empty");
+            }
+
             if (!extra.containsKey("a")) {
-                throw new JWTVerificationException("extra claim does not have "
-                        + "'a' property");
+                throw new JWTVerificationException("extra claim does not have 'a' property");
             }
 
             if (!extra.containsKey("b")) {
-                throw new JWTVerificationException("extra claim does not have "
-                        + "'b' property");
+                throw new JWTVerificationException("extra claim does not have 'b' property");
             }
         });
     }
