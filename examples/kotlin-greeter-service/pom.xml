@@ -11,7 +11,7 @@
     <artifactId>kotlin-greeter-service</artifactId>
 
     <properties>
-        <kotlin.version>1.6.10</kotlin.version>
+        <kotlin.version>1.8.21</kotlin.version>
         <main.class>GreeterServiceKt</main.class>
     </properties>
 
@@ -42,6 +42,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
+                <extensions>true</extensions>
                 <configuration>
                     <jvmTarget>17</jvmTarget>
                 </configuration>
@@ -61,7 +62,7 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                             <!-- the following settings just include dependencies
-                      of runtime and compile scopes -->
+                                 of runtime and compile scopes -->
                             <excludeTransitive>true</excludeTransitive>
                             <includeScope>runtime</includeScope>
                         </configuration>
