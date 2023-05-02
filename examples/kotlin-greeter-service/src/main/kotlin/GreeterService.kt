@@ -6,7 +6,7 @@ import org.restheart.plugins.RegisterPlugin
 import org.restheart.utils.HttpStatus
 import org.restheart.utils.GsonUtils.`object` as obj
 
-@RegisterPlugin(name = "kotlinGreeterService", description = "just another Hello World in Kotlin")
+@RegisterPlugin(name = "kotlinGreeterService", defaultURI = "/greetings", description = "just another Hello World in Kotlin")
 class GreeterService : JsonService {
     override fun handle(req: JsonRequest, res: JsonResponse) {
         when(req.method) {
