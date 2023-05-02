@@ -51,7 +51,6 @@
         <module>polyglot</module>
         <module>core</module>
         <module>test-plugins</module>
-        <module>examples</module>
     </modules>
 
     <!-- Project Information -->
