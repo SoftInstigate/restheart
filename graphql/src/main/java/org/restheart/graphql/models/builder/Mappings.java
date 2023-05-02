@@ -45,7 +45,11 @@ abstract class Mappings {
     }
 
     protected static void throwIllegalDefinitionException(String field, String type, String arg, String typeExpected, BsonValue value) {
-        LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with field '" + field + "' of type '" + type + "'. The field '" + arg + "' must be a '" + typeExpected + "' but was '" + value.getBsonType() + "'."));
+        LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field + " requires the property '" + arg + "' to be a " + typeExpected + " but it is a " + value.getBsonType()));
+    }
+
+    protected static void throwIllegalDefinitionException(String field, String type, String missingPropertyName) {
+        LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field + " does not specify the property '" + missingPropertyName + "'"));
     }
 
     protected static boolean hasKeyOfType(BsonDocument source, String key, Predicate<BsonValue> isOfType) {

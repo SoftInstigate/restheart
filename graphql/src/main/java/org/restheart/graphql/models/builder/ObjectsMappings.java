@@ -99,18 +99,19 @@ class ObjectsMappings extends Mappings {
                     // These are common to both Aggregation and Query mapping.
                     if (fieldMappingDoc.containsKey("db")) {
                         if (!fieldMappingDoc.get("db").isString()) {
-                            throwIllegalDefinitionException(field, type, "db", "String", fieldMappingDoc.get("db"));
+                            throwIllegalDefinitionException(field, type, "db", "string", fieldMappingDoc.get("db"));
                         }
                     } else {
-                        throw new NullPointerException("Error with field " + field + " of type " + type + ". db could not be null.");
+                        throwIllegalDefinitionException(field, type, "db");
                     }
 
                     if (fieldMappingDoc.containsKey("collection")) {
                         if (!fieldMappingDoc.get("collection").isString()) {
-                            throwIllegalDefinitionException(field, type, "db", "String", fieldMappingDoc.get("collection"));
+                            throwIllegalDefinitionException(field, type, "db", "string", fieldMappingDoc.get("collection"));
+                            LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field +  " should be a string but is a " +  fieldMappingDoc.get("collection")));
                         }
                     } else {
-                        throw new NullPointerException("Error with field " + field + " of type " + type + ". collection could not be null.");
+                        throwIllegalDefinitionException(field, type, "collection");
                     }
 
                     // if "stages" key is present -> Aggregation Mapping
@@ -240,7 +241,7 @@ class ObjectsMappings extends Mappings {
 
                     break;
                 }
-                default -> LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("Error with mappings of type: " + type + ". A field mapping must be of type String but was " + fieldMapping.getBsonType()));
+                default -> LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field + " must be a String or a Document, but it is a " + fieldMapping.getBsonType()));
             }
         }
 
