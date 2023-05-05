@@ -80,13 +80,19 @@ public abstract class AbstactIT {
     /**
      *
      */
-    public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
-
-    // this to test with FerretDb
-    // public static final ConnectionString MONGO_URI = new
-    // ConnectionString("mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN");
+    public static ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
     static {
+        // set the system property test-connection-string to specify a non-default connection string for testing
+        try {
+            var mongoConnectionString = System.getProperty("test-connection-string");
+            if (mongoConnectionString != null) {
+                MONGO_URI = new ConnectionString(mongoConnectionString);
+            }
+        } catch(Throwable t) {
+            LOG.warn("wrong property test-connection-string, using default value");
+        }
+
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", MONGO_URI.toString());
         RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI), null);
