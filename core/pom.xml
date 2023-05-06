@@ -331,141 +331,146 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-        <configuration>
-          <skip>${skipITs}</skip>
-          <showLogs>false</showLogs>
-          <removeVolumes>true</removeVolumes>
-          <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
-          <images>
-            <image>
-              <name>mongo:${mongodb.version}</name>
-              <run>
-                <cmd>--bind_ip_all --replSet rs0</cmd>
-                <ports>
-                  <port>27017:27017</port>
-                </ports>
-                <!-- remove showLogs=false above to get logs -->
-                <log>
-                  <prefix>[mongodb]</prefix>
-                  <enabled>true</enabled>
-                  <color>yellow</color>
-                </log>
-                <wait>
-                  <http>
-                    <url>http://localhost:27017</url>
-                    <method>GET</method>
-                    <status>200</status>
-                  </http>
-                  <time>60000</time>
-                </wait>
-              </run>
-            </image>
-          </images>
-        </configuration>
-        <executions>
-          <execution>
-            <id>start</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>start</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop</id>
-            <phase>post-integration-test</phase>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>dist</id>
-            <phase>package</phase>
-            <configuration>
-              <target>
-                <mkdir dir="./target/plugins" />
-                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>start-server</id>
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
-                <echo>***** Initializing MongoDB cluster...</echo>
-                <!-- mongo shell command is mongo for v <=5.x then mongosh -->
-                <condition property="mongoshellcmd" value="mongo" else="mongosh">
-                  <matches string="${mongodb.version}" pattern="^[1-5].*" />
-                </condition>
-                <exec executable="docker">
-                  <arg value="run" />
-                  <arg value="--rm" />
-                  <arg value="--net" />
-                  <arg value="host" />
-                  <arg value="mongo:${mongodb.version}" />
-                  <arg value="${mongoshellcmd}" />
-                  <arg value="--eval" />
-                  <arg value="rs.initiate()" />
-                </exec>
-                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
-                <exec dir="${basedir}" executable="bin/start.sh">
-                  <arg value="-o" />
-                  <arg value="${basedir}/src/test/resources/etc/conf-overrides.yml" />
-                  <arg value="--fork" />
-                </exec>
-                <echo>***** Waiting RESTHeart process to start...</echo>
-                <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
-                  <http url="http://localhost:8080/ping" />
-                </waitfor>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop-server</id>
-            <phase>post-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <delete file="./target/plugins/restheart-test-plugins.jar" />
-                <echo>***** Stopping RESTHeart process...</echo>
-                <exec dir="${basedir}" executable="bin/stop.sh">
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
   <profiles>
+    <!--
+        This profile is used to run the integration tests against a MongoDB docker contaniner. 
+        If you are already running MongoDB locally, disable this profile: 
+        mvn -P-mongodb clean verify
+    -->
+    <profile>
+      <id>mongodb</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.fabric8</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipITs}</skip>
+              <showLogs>false</showLogs>
+              <removeVolumes>true</removeVolumes>
+              <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
+              <images>
+                <image>
+                  <name>mongo:${mongodb.version}</name>
+                  <run>
+                    <cmd>--bind_ip_all --replSet rs0</cmd>
+                    <ports>
+                      <port>27017:27017</port>
+                    </ports>
+                    <!-- remove showLogs=false above to get logs -->
+                    <log>
+                      <prefix>[mongodb]</prefix>
+                      <enabled>true</enabled>
+                      <color>yellow</color>
+                    </log>
+                    <wait>
+                      <http>
+                        <url>http://localhost:27017</url>
+                        <method>GET</method>
+                        <status>200</status>
+                      </http>
+                      <time>60000</time>
+                    </wait>
+                  </run>
+                </image>
+              </images>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- 
+        This profile:
+         * initializes the MongoDB cluster using the mongo shell.
+         * starts the restheart server before the integration tests
+         * stops the restheart server after the integration tests
+    -->
+    <profile>
+      <id>start-server</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>dist</id>
+                <phase>package</phase>
+                <configuration>
+                  <target>
+                    <mkdir dir="./target/plugins" />
+                    <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
+                    <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
+                    <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
+                    <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
+                    <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>start-server</id>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skipITs}</skip>
+                  <target>
+                    <ant antfile="./build.xml" target="start-server" />
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-server</id>
+                <phase>post-integration-test</phase>
+                <configuration>
+                  <skip>${skipITs}</skip>
+                  <target>
+                    <delete file="./target/plugins/restheart-test-plugins.jar" />
+                    <echo>***** Stopping RESTHeart process...</echo>
+                    <exec dir="${basedir}" executable="bin/stop.sh">
+                    </exec>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>deps</id>
       <build>
