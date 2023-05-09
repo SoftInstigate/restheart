@@ -83,7 +83,7 @@ To avoid starting the MongoDB Docker container, specify the system property `-P-
 
 The integration tests use the MongoDB connection string `mongodb://127.0.0.1` by default. To use a different connection string, specify the property `test-connection-string`.
 
-The following example shows how to run the integration test suite against an instance of [FerretDB](https:s//ferretdb.io) running on `localhost`.
+The following example shows how to run the integration test suite against an instance of [FerretDB](https://www.ferretdb.io) running on `localhost`.
 
 ```bash
 # run FerretDB
