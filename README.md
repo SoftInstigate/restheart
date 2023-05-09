@@ -136,7 +136,7 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
 
 - Open a [issue on GitHub](https://github.com/SoftInstigate/restheart/issues/new) to report a specific problem.
 - Ask technical questions on [Stackoverflow](https://stackoverflow.com/questions/ask?tags=restheart).
-- Chat with us on [Gitter](https://gitter.im/SoftInstigate/restheart).
+- Chat with other users on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
 - Send us an [e-mail](mailto://ask@restheart.org) for general or commercial inquiries.
 - Book a [free 1-to-1 demo](https://calendly.com/restheart) with us!
 
