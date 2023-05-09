@@ -162,4 +162,4 @@ You can support the development of RESTHeart via the GitHub Sponsor program and 
 
 ---
 
-_Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
+_Made with :heart: by [SoftInstigate](https://www.softinstigate.com). Follow us on [Twitter](https://twitter.com/softinstigate)_.
