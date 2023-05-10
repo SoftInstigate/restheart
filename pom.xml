@@ -496,6 +496,7 @@
                         <excludes>
                             <exclude>**/IT*.java</exclude>
                         </excludes>
+                        <trimStackTrace>true</trimStackTrace>
                     </configuration>
                 </plugin>
                 <plugin>
