@@ -57,7 +57,7 @@ public class TxnsActivator implements Initializer {
             if (replicaSet(mclient)) {
                 enableTxns();
             } else {
-                LOGGER.error("Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
+                LOGGER.warn("Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
             }
         }
     }
