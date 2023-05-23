@@ -55,7 +55,7 @@ public class ChangeStreamsActivator implements Initializer {
             if (replicaSet(mclient)) {
                 enableChangeStreams();
             } else {
-                LOGGER.error("Cannot enable Change Streams: MongoDB is a standalone instance and Change Streams require a Replica Set.");
+                LOGGER.warn("Cannot enable Change Streams: MongoDB is a standalone instance and Change Streams require a Replica Set.");
             }
         }
     }
