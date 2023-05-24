@@ -32,6 +32,7 @@ import com.google.gson.JsonElement;
 import com.jayway.jsonpath.JsonPath;
 
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
@@ -421,28 +422,31 @@ public class AclVarsInterpolator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static BsonValue toBson(Object obj) {
-        if (obj instanceof String) {
-            return new BsonString((String) obj);
-        } else if (obj instanceof Map<?, ?>) {
-            var map = (Map<String, Object>) obj;
+        if (obj == null) {
+            return BsonNull.VALUE;
+        } else if (obj instanceof String s) {
+            return new BsonString(s);
+        } else if (obj instanceof Map<?, ?> map) {
             var ret = new BsonDocument();
-            map.entrySet().stream().forEachOrdered(e -> ret.put(e.getKey(), toBson(e.getValue())));
+            map.entrySet().stream()
+                .filter(e -> e.getKey() instanceof String)
+                .forEachOrdered(e -> ret.put((String) e.getKey(), toBson(e.getValue())));
             return ret;
-        } else if (obj instanceof List<?>) {
-            var list = (List<Object>) obj;
+        } else if (obj instanceof List<?> list) {
             var ret = new BsonArray();
             list.stream().forEachOrdered(e -> ret.add(toBson(e)));
             return ret;
-        } else if (obj instanceof Integer) {
-            return new BsonInt32((Integer) obj);
-        } else if (obj instanceof Long) {
-            return new BsonInt64((Long) obj);
-        } else if (obj instanceof Double) {
-            return new BsonDouble((Double) obj);
+        } else if (obj instanceof Integer i) {
+            return new BsonInt32(i);
+        } else if (obj instanceof Long l) {
+            return new BsonInt64(l);
+        } else if (obj instanceof Double d) {
+            return new BsonDouble(d);
+        } else if (obj instanceof Boolean b) {
+            return new BsonBoolean(b);
         } else {
-            LOGGER.warn("ovverridendProp value not suppored {}", obj);
+            LOGGER.warn("Cannot convert value {} to BSON, the type {} is not supported", obj, obj.getClass().getSimpleName());
             return BsonNull.VALUE;
         }
     }
