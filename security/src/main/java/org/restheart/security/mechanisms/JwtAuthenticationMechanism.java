@@ -95,7 +95,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         usernameClaim = arg(config, "usernameClaim");
         rolesClaim = argOrDefault(config, "rolesClaim", null);
         fixedRoles = argOrDefault(config, "fixedRoles", null);
-        issuer = arg(config, "issuer");
+        issuer = argOrDefault(config, "issuer", null);
         audience = argOrDefault(config, "audience", null);
 
         Algorithm _algorithm;
