@@ -26,6 +26,23 @@ At startup, RESTHeart **connects automatically to the configured MongoDB databas
 
 ![RESTHeart use cases](https://restheart.org/images/clients.png)
 
+## Supported databases
+
+RESTHeart works with any MongoDB compatible database. The actual features supported depend on the level of compatibility of the database with the official MongoDB Java driver.
+
+**Note**: RESTHeart releases are tested in continuous integration with official MongoDB distributions only (at the moment from MongoDB 3.6 to 6.0).
+
+<a href="https://mongodb.com"><img src="https://upload.wikimedia.org/wikipedia/commons/9/93/MongoDB_Logo.svg" width="200px"></a>
+<a href="https://www.ferretdb.io"><img src="https://dbdb.io/media/logos/ferretdb.svg" width="200px"></a>
+<a href="https://developer.azurecosmosdb.com"><img src="https://devblogs.microsoft.com/wp-content/uploads/sites/31/2019/04/cosmosdb_fi.png" width="100px"></a>
+<a href="https://aws.amazon.com/documentdb/features/"><img src="https://d2908q01vomqb2.cloudfront.net/887309d048beef83ad3eabf2a79a64a389ab1c9f/2020/02/04/DocumentDB.png" width="160px"></a>
+<a href="https://www.percona.com/software/mongodb/percona-server-for-mongodb"><img src="https://www.percona.com/blog/wp-content/uploads/2015/12/psmdb-logo.png" width="200px"></a>
+
+- MongoDB Community, Enterprise and Atlas Cloud are 100% supported in all their functionalities.
+- Azure Cosmos DB and Amazon DocumentDB offer partial support for the MongoDB API, but most common RESTHeart features work as expected.
+- FerretDB offers partial support for the MongoDB API on top of PostgreSQL, but its level of compatibility with MongoDB is growing daily. FerretDB plans to support more relational databases in the future.
+- Percona Server for MongoDB is, in general, fully compatible with MongoDB, so RESTHeart usually works perfectly with it.
+
 ## Advanced features
 
 RESTHeart embeds [Undertow](https://undertow.io), a flexible and performant web server written in Java, providing both blocking and non-blocking HTTP API’s based on [NIO](https://en.wikipedia.org/wiki/Non-blocking_I/O_(Java)). Undertow is the underlying HTTP server of [RedHat's Wildfly](https://www.wildfly.org).
