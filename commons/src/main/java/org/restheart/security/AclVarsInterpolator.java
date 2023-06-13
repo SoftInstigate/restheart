@@ -470,7 +470,7 @@ public class AclVarsInterpolator {
         // - COLLECTION_SIZE, COLLECTION_META, DOCUMENT, COLLECTION_INDEXES, INDEX,
         // - FILES_BUCKET, FILES_BUCKET_SIZE, FILES_BUCKET_META, FILE, FILE_BINARY,
         // - AGGREGATION, SCHEMA, SCHEMA_STORE, SCHEMA_STORE_SIZE, SCHEMA_STORE_META,
-        // - BULK_DOCUMENTS, METRICS, SESSION, SESSIONS, TRANSACTIONS, TRANSACTION
+        // - BULK_DOCUMENTS, SESSION, SESSIONS, TRANSACTIONS, TRANSACTION
         properties.put("resourceType", new BsonString(request.getType().name()));
 
         var _userName = ExchangeAttributes.remoteUser().readAttribute(exchange);

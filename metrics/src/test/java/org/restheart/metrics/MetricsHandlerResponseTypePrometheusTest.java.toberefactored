@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-metrics
  * %%
  * Copyright (C) 2014 - 2023 SoftInstigate
  * %%
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.metrics;
+package org.restheart.metrics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.restheart.metrics.MetricsHandler;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;

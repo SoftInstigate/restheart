@@ -431,6 +431,7 @@
                     <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
                     <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
                     <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
+                    <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
                   </target>
                 </configuration>
                 <goals>

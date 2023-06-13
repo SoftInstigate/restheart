@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
@@ -83,7 +82,6 @@ public class MongoServiceConfiguration {
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
-    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
 
     public static MongoServiceConfiguration get() {
         return INSTANCE;
@@ -230,15 +228,6 @@ public class MongoServiceConfiguration {
         defaultPagesize = asInteger(conf, DEFAULT_PAGESIZE_KEY, DEFAULT_DEFAULT_PAGESIZE, silent);
 
         maxPagesize = asInteger(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE, silent);
-
-        METRICS_GATHERING_LEVEL mglevel;
-        try {
-            var value = asString(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT", silent);
-            mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
-        } catch (IllegalArgumentException iae) {
-            mglevel = METRICS_GATHERING_LEVEL.ROOT;
-        }
-        metricsGatheringLevel = mglevel;
     }
 
     @Override
@@ -247,8 +236,8 @@ public class MongoServiceConfiguration {
                 + ", defaultRepresentationFromat=" + defaultRepresentationFormat + ", mongoUri=" + mongoUri
                 + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
-                + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", metricsGatheringLevel="
-                + metricsGatheringLevel + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
+                + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit
+                + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
                 + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
@@ -423,46 +412,5 @@ public class MongoServiceConfiguration {
      */
     public int getDefaultPagesize() {
         return defaultPagesize;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
-        return metricsGatheringLevel;
-    }
-
-    /**
-     * decides whether metrics are gathered at the given log level or not
-     *
-     * @param level Metrics Gathering Level
-     * @return true if gathering Above Or Equal To Level
-     */
-    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
-        return getMetricsGatheringLevel().compareTo(level) >= 0;
-    }
-
-    /**
-     *
-     */
-    public enum METRICS_GATHERING_LEVEL {
-        /**
-         * do not gather any metrics
-         */
-        OFF,
-        /**
-         * gather basic metrics (for all databases, but not specific per database)
-         */
-        ROOT,
-        /**
-         * gather basic metrics, and also specific per database (but not
-         * collection-specific)
-         */
-        DATABASE,
-        /**
-         * gather basic, database, and collection-specific metrics
-         */
-        COLLECTION
     }
 }

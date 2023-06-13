@@ -115,7 +115,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     protected static URI documentTmpUri;
     protected static URI indexesTmpUri;
     protected static URI indexTmpUri;
-    protected static URI metricsUri;
     protected static URI metricsUnknownCollectionUri;
     protected static final String document1Id = "doc1";
     protected static final String document2Id = "doc2";
@@ -384,8 +383,6 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         document2UriRemappedDocument = buildURI(REMAPPEDDOC2, new NameValuePair[] {
                 new BasicNameValuePair("hal", "f")
         });
-        metricsUri = buildURI("/_metrics");
-        metricsUnknownCollectionUri = buildURI("/someunknowndb/unknowncollection/_metrics");
     }
 
     /**

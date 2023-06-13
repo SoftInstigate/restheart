@@ -58,7 +58,6 @@ import org.restheart.mongodb.handlers.files.PutFileHandler;
 import org.restheart.mongodb.handlers.indexes.DeleteIndexHandler;
 import org.restheart.mongodb.handlers.indexes.GetIndexesHandler;
 import org.restheart.mongodb.handlers.indexes.PutIndexHandler;
-import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import org.restheart.mongodb.handlers.root.GetRootHandler;
 import org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.mongodb.handlers.schema.JsonSchemaTransformer;
@@ -377,8 +376,6 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                 ));
 
         putHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
-
-        putHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler());
     }
 
     /**

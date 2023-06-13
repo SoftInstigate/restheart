@@ -131,7 +131,6 @@ public class CollectionPropsInjector implements MongoInterceptor {
         return dbs != null
                 && request.isHandledBy("mongo")
                 && !(request.isInError()
-                || request.isMetrics()
                 || request.isDbSize()
                 || request.isTxn()
                 || request.isTxns()

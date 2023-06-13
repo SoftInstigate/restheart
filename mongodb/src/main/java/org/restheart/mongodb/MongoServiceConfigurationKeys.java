@@ -199,14 +199,6 @@ public interface MongoServiceConfigurationKeys {
      */
     public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
 
-
-    /**
-     * Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT,
-     * OFF), gradually gathering less specific metrics. Every level contain the
-     * upper level as well.
-     */
-    public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
-
     /**
      * The key for specifying the max pagesize
      */

@@ -328,7 +328,6 @@ public class MongoRequest extends BsonRequest {
         if ((type == TYPE.COLLECTION_META && sdi.startsWith(COLL_META_DOCID_PREFIX))
             || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
             || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
-            || (type == TYPE.METRICS && _METRICS.equalsIgnoreCase(sdi))
             || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
             || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
             || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
@@ -387,8 +386,6 @@ public class MongoRequest extends BsonRequest {
             type = TYPE.TRANSACTIONS;
         } else if (pathTokens.length == 5 && pathTokens[pathTokens.length - 4].equalsIgnoreCase(_SESSIONS) && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_TRANSACTIONS)) {
             type = TYPE.TRANSACTION;
-        } else if (pathTokens.length < 3 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
-            type = TYPE.METRICS;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
         } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
@@ -418,12 +415,8 @@ public class MongoRequest extends BsonRequest {
             } else {
                 type = TYPE.SCHEMA;
             }
-        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_METRICS)) {
-            type = TYPE.METRICS;
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_METRICS)) {
-            type = TYPE.METRICS;
         } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
         } else if (pathTokens.length == 4 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
@@ -1525,15 +1518,6 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isSchemaStoreMeta() {
         return getType() == TYPE.SCHEMA_STORE_META;
-    }
-
-    /**
-     * helper method to check request resource type
-     *
-     * @return true if type is TYPE.METRICS
-     */
-    public boolean isMetrics() {
-        return getType() == TYPE.METRICS;
     }
 
     /**

@@ -188,11 +188,6 @@ public interface ExchangeKeys {
     /**
      *
      */
-    public static final String _METRICS = "_metrics";
-
-    /**
-     *
-     */
     public static final String _SIZE = "_size";
 
     /**
@@ -461,11 +456,6 @@ public interface ExchangeKeys {
          *
          */
         BULK_DOCUMENTS,
-
-        /**
-         *
-         */
-        METRICS,
 
         /**
          *

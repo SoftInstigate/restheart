@@ -49,6 +49,7 @@
         <module>mongodb</module>
         <module>graphql</module>
         <module>polyglot</module>
+        <module>metrics</module>
         <module>core</module>
         <module>test-plugins</module>
     </modules>
@@ -194,6 +195,11 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-mongoclient-provider</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-metrics</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- IMPORTANT

@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-metrics
  * %%
  * Copyright (C) 2014 - 2023 SoftInstigate
  * %%
@@ -18,15 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.metrics;
+package org.restheart.metrics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.mongodb.handlers.metrics.MetricsHandler.ResponseType;
-import org.restheart.mongodb.handlers.metrics.MetricsHandler.ResponseType.AcceptHeaderEntry;
+import org.restheart.metrics.MetricsHandler.ResponseType;
+import org.restheart.metrics.MetricsHandler.ResponseType.AcceptHeaderEntry;
 
 public class ResponseTypeTest {
 

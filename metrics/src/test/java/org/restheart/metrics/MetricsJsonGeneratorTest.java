@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-metrics
  * %%
- * Copyright (C) 2014 - 2023 SoftInstigate
+ * Copyright (C) 2023 - 2023 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.utils;
+
+package org.restheart.metrics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,7 +29,6 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.junit.jupiter.api.Test;
-import org.restheart.mongodb.handlers.metrics.MetricsJsonGenerator;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;

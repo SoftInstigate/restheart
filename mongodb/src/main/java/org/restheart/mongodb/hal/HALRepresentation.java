@@ -88,7 +88,6 @@ public class HALRepresentation implements MongoInterceptor {
                 && !request.isSchemaStoreMeta()
                 && !request.isSchemaStoreSize()
                 && !request.isFileBinary()
-                && !request.isMetrics()
                 && request.isHandledBy("mongo")
                 && request.getRepresentationFormat() != null
                 && (Resource.isSHAL(request) || Resource.isHAL(request));
