@@ -280,10 +280,6 @@ mongo:
   # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
   aggregation-time-limit: 0
 
-  # see https://restheart.org/docs/mongodb-rest/monitoring
-  # OFF => no gathering, ROOT => gathering at root level, DATABASE => at db level, COLLECTION => at collection level
-  metrics-gathering-level: "OFF"
-
 changeStreamActivator:
   enabled: false
 
