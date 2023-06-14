@@ -18,22 +18,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
+
 package org.restheart.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.util.stream.Stream;
-public class SharedMongoMetricRegistryProxy {
-    public static final String REGISTRY_PREFIX = "MONGO_METRICS_REGISTRY_";
-    private static final String DEFAULT_NAME = "MONGO_METRICS_REGISTRY_0_DEFAULT";
+
+public class SharedMetricsRegistryProxy {
+    public static final String REGISTRY_PREFIX = "RESTHEART_METRICS_REGISTRY_";
+    private static final String DEFAULT_NAME = "DEFAULT_RESTHEART_METRICS_REGISTRY";
 
     /**
      *
-     * @param databaseName
+     * @param uri
      * @return
      */
-    public boolean isDefault(String databaseName) {
-        return DEFAULT_NAME.equals(databaseName);
+    public boolean isDefault(String uri) {
+        return DEFAULT_NAME.equals(uri);
     }
 
     /**
@@ -46,21 +48,11 @@ public class SharedMongoMetricRegistryProxy {
 
     /**
      *
-     * @param dbName
+     * @param uri
      * @return
      */
-    public MetricRegistry registry(String dbName) {
-        return SharedMetricRegistries.getOrCreate(REGISTRY_PREFIX.concat(dbName));
-    }
-
-    /**
-     *
-     * @param dbName
-     * @param collectionName
-     * @return
-     */
-    public MetricRegistry registry(String dbName, String collectionName) {
-        return SharedMetricRegistries.getOrCreate(REGISTRY_PREFIX.concat(dbName).concat("/").concat(collectionName));
+    public MetricRegistry registry(String uri) {
+        return SharedMetricRegistries.getOrCreate(REGISTRY_PREFIX.concat(uri));
     }
 
     /**
