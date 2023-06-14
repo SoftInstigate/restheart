@@ -22,6 +22,7 @@ package org.restheart.plugins;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
+import org.restheart.utils.PluginUtils;
 
 /**
  *
@@ -39,7 +40,7 @@ public interface ConfigurablePlugin extends Plugin {
     @SuppressWarnings("unchecked")
     public static <V extends Object> V argValue(final Map<String, ?> args, final String argKey) throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
-            throw new ConfigurationException("The plugin" + " requires the argument '" + argKey + "'");
+            throw new ConfigurationException("Required configuration argument '" + argKey + "' non found");
         } else {
             return (V) args.get(argKey);
         }
@@ -53,11 +54,20 @@ public interface ConfigurablePlugin extends Plugin {
         }
     }
 
+    @SuppressWarnings("unchecked")
     default public <V extends Object> V arg(final Map<String, ?> args, final String argKey) throws ConfigurationException {
-        return argValue(args, argKey);
+        if (args == null || !args.containsKey(argKey)) {
+            throw new ConfigurationException("The plugin " + PluginUtils.name(this) + " requires the missing configuration argument '" + argKey + "'");
+        } else {
+            return (V) args.get(argKey);
+        }
     }
 
     default public <V extends Object> V argOrDefault(final Map<String, ?> args, final String argKey, V value) throws ConfigurationException {
-        return argValueOrDefault(args, argKey, value);
+        if (args == null || !args.containsKey(argKey)) {
+            return value;
+        } else {
+            return arg(args, argKey);
+        }
     }
 }

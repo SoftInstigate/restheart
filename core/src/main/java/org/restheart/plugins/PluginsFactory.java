@@ -386,16 +386,16 @@ public class PluginsFactory {
 
         for (var injection : injections) {
             if (OnInit.class.equals(injection.clazz()) && ip.descriptor.injections().stream()
-                                                            .filter(p -> p instanceof MethodInjectionDescriptor)
-                                                            .map(p -> (MethodInjectionDescriptor) p)
-                                                            .filter(p -> p.methodHash() == injection.methodHash()).count() == 1) {
+                    .filter(p -> p instanceof MethodInjectionDescriptor)
+                    .map(p -> (MethodInjectionDescriptor) p)
+                    .filter(p -> p.methodHash() == injection.methodHash()).count() == 1) {
                 // try to inovke @OnInit() method
                 try {
                     ip.clazz.getDeclaredMethod(injection.method()).invoke(ip.instance);
                 } catch (NoSuchMethodException nme) {
                     throw new ConfigurationException(ip.type + " " + ip.name + " has an invalid method @OnInit " + injection.method() + "()");
                 } catch (Throwable t) {
-                    throw new ConfigurationException("Error injecting dependencies into " + ip.type + " " + ip.name, getRootException(t));
+                    throw new ConfigurationException("Error executing @OnInit method " + injection.method() + " of " + ip.type + " " + ip.name, getRootException(t));
                 }
             }
         }
