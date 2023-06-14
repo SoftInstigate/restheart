@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-@RegisterPlugin(name = "metrics",
+@RegisterPlugin(name = "metricsCollector",
         description = "collects request metrics",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
 public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
@@ -95,13 +95,13 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         var exchange = request.getExchange();
 
-        final var requestStartTime = exchange.getRequestStartTime();
         final var uri = exchange.getRequestPath();
+        var startTime = System.currentTimeMillis();
 
         if (!exchange.isComplete()) {
             try {
                 exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                    addMetrics(uri, requestStartTime, request, response);
+                    addMetrics(uri, startTime, request, response);
                     nextListener.proceed();
                 });
             } catch(Throwable t) {
@@ -145,8 +145,7 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
 
     @VisibleForTesting
     void addMetrics(String uri, long startTime, ServiceRequest<?> request, ServiceResponse<?> response) {
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
+        long duration = System.currentTimeMillis() - startTime;
 
         _addMetrics(metrics.registry(), duration, request, response);
         _addMetrics(metrics.registry(uri), duration, request, response);

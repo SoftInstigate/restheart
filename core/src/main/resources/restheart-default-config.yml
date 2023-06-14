@@ -389,7 +389,7 @@ logging:
 
 # Metrics
 # see https://restheart.org/docs/metrics
-metrics:
+metricsCollector:
   enabled: true
   uri: /metrics
   include: [ "/*" ]
