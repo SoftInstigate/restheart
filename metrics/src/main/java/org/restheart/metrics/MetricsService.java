@@ -41,8 +41,10 @@ import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.BsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
+import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
+import com.codahale.metrics.SharedMetricRegistries;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON
@@ -53,9 +55,6 @@ import org.restheart.utils.LambdaUtils;
  */
 @RegisterPlugin(name = "metrics", description = "return requests metrics", secure = true)
 public class MetricsService implements BsonService {
-    @VisibleForTesting
-    SharedMetricsRegistryProxy metrics = new SharedMetricsRegistryProxy();
-
     /**
      *
      * @param exchange
@@ -71,34 +70,41 @@ public class MetricsService implements BsonService {
             return;
         }
 
-        var params = request.getPathParams("/{servicename}/{uri}");
+        var params = request.getPathParams("/{servicename}/{pathTemplate}");
 
-        var uri = params.containsKey("uri") ? "/".concat(params.get("uri")) : "/";
-
-        var registry = uri.equals("/*") ? metrics.registry() : metrics.registry(uri);
-
-        if (registry == null) {  //no matching registry found
-            response.setInError(HttpStatus.SC_NOT_FOUND, "not found");
-            return;
-        }
-
-        // detect metrics response type
-        var representationFormatParameters = request.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
-
-        var responseType = Optional.ofNullable(ResponseType.forQueryParameter(representationFormatParameters == null ? null : representationFormatParameters.getFirst())
-        ).orElseGet(() -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString())));
-
-        // render metrics or error on unknown response type
-        if (responseType != null) {
-            response.setStatusCode(HttpStatus.SC_OK);
-            responseType.writeTo(response, uri, registry);
+        if (!params.containsKey("pathTemplate")) {
+            var content = array();
+            SharedMetricRegistries.names().stream().forEachOrdered(reg -> content.add(reg));
+            response.setContent(content);
         } else {
-            var acceptableTypes = Arrays.stream(ResponseType.values())
-                .map(ResponseType::getContentType)
-                .map(x -> "'" + x + "'")
-                .collect(Collectors.joining(","));
+            var _pathTemplate = "/" + params.get("pathTemplate");
+            var pathTemplate = SharedMetricRegistries.names().stream().filter(_pathTemplate::equals).findFirst();
 
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "not acceptable, acceptable content types are: " + acceptableTypes);
+            if (pathTemplate.isPresent()) {
+                var registry = SharedMetricRegistries.getOrCreate(pathTemplate.get());
+
+                // detect metrics response type
+                var representationFormatParameters = request.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
+
+                var responseType = Optional.ofNullable(ResponseType.forQueryParameter(representationFormatParameters == null ? null : representationFormatParameters.getFirst())
+                ).orElseGet(() -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString())));
+
+                // render metrics or error on unknown response type
+                if (responseType != null) {
+                    response.setStatusCode(HttpStatus.SC_OK);
+                    responseType.writeTo(response, registry);
+                } else {
+                    var acceptableTypes = Arrays.stream(ResponseType.values())
+                        .map(ResponseType::getContentType)
+                        .map(x -> "'" + x + "'")
+                        .collect(Collectors.joining(","));
+
+                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "not acceptable, acceptable content types are: " + acceptableTypes);
+                }
+            } else {
+                response.setInError(HttpStatus.SC_NOT_FOUND, "metric not found");
+                return;
+            }
         }
     }
 
@@ -111,7 +117,7 @@ public class MetricsService implements BsonService {
          */
         JSON("application/json") {
             @Override
-            public String generateResponse(String uri, MetricRegistry registry) throws IOException {
+            public String generateResponse(MetricRegistry registry) throws IOException {
                 var document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 return BsonUtils.toJson(document, JsonMode.RELAXED);
             }
@@ -136,11 +142,11 @@ public class MetricsService implements BsonService {
             }
 
             @Override
-            public String generateResponse(String uri, MetricRegistry registry) throws IOException {
-                return generateResponse(registry, uri, System.currentTimeMillis());
+            public String generateResponse(MetricRegistry registry) throws IOException {
+                return generateResponse(registry, System.currentTimeMillis());
             }
 
-            public String generateResponse(MetricRegistry registry, String uri, long timestamp) {
+            public String generateResponse(MetricRegistry registry, long timestamp) {
                 // fetch metrics registry and build json data
                 var root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 root.remove("version");
@@ -148,19 +154,18 @@ public class MetricsService implements BsonService {
                 // convert json data to prometheus format
                 var sb = new StringBuilder();
                 root.forEach((groupKey, groupContent) -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
-                        final var split = metricKey.split("\\.");
-                        final var type = split[0];
+                        final var split = metricKey.split(" ");
+                        final var pathTemplate = split[2];
                         final var method = split[1];
-                        final var responseCode = split.length >= 3 ? split[2] : null;
+                        final var responseCode = split.length >= 4 ? split[3] : null;
 
                         metricContent.asDocument().forEach((metricType, value) -> {
                             if (value.isNumber()) {
                                 sb.append("http_response_").append(groupKey).append("_").append(metricType);
                                 sb.append("{");
-                                if (uri != null) {
-                                    sb.append("uri=\"").append(escapePrometheusLabelValue(uri)).append("\",");
+                                if (pathTemplate != null) {
+                                    sb.append("pathTemplate=\"").append(escapePrometheusLabelValue(pathTemplate)).append("\",");
                                 }
-                                sb.append("type=\"").append(type).append("\",");
                                 sb.append("method=\"").append(method).append("\"");
                                 if (responseCode != null) {
                                     sb.append(",code=\"").append(responseCode).append("\"");
@@ -188,8 +193,6 @@ public class MetricsService implements BsonService {
             }
         };
 
-        SharedMetricsRegistryProxy metricsProxy = new SharedMetricsRegistryProxy();
-
         // if we just use /* data is aggregated this would lead to problems
         // defining filters in grafana correctly, so it's better to use an artificial value for these cases. we use a
         // value starting and ending with an underscore here to reduce the chance of hitting a real uri
@@ -212,7 +215,7 @@ public class MetricsService implements BsonService {
          */
         String specialization;
 
-        abstract public String generateResponse(String c, MetricRegistry registry) throws IOException;
+        abstract public String generateResponse(MetricRegistry registry) throws IOException;
 
         ResponseType(String contentType) {
             this(contentType, null);
@@ -254,8 +257,8 @@ public class MetricsService implements BsonService {
                 || entry.contentType.equalsIgnoreCase(mediaRange);
         }
 
-        public void writeTo(ServiceResponse<?> response, String uri, MetricRegistry registry) throws IOException {
-            var body = generateResponse(uri, registry);
+        public void writeTo(ServiceResponse<?> response, MetricRegistry registry) throws IOException {
+            var body = generateResponse(registry);
 
             if (body != null) {
                 response.getHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());

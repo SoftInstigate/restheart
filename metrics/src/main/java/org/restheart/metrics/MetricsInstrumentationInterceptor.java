@@ -21,8 +21,7 @@
 
 package org.restheart.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.annotations.VisibleForTesting;
+import com.codahale.metrics.SharedMetricRegistries;
 import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
 import org.restheart.exchange.ServiceRequest;
@@ -33,13 +32,15 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RegisterPlugin(name = "metricsCollector",
         description = "collects request metrics",
@@ -53,8 +54,9 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
-    private PathTemplateMatcher<Boolean> include = new PathTemplateMatcher<>();
-    private PathTemplateMatcher<Boolean> exclude = new PathTemplateMatcher<>();;
+    // include is a set because we want to check all path templates that match the request
+    private Set<PathTemplateMatcher<Boolean>> include = new HashSet<>();
+    private PathTemplateMatcher<Boolean> exclude = new PathTemplateMatcher<>();
 
     @OnInit
     public void onInit() {
@@ -72,7 +74,11 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
                 }
             })
             .filter(pathTemplate -> pathTemplate != null)
-            .forEach(pathTemplate -> this.include.add(pathTemplate, true));
+            .forEach(pathTemplate ->{
+                final var ptm = new PathTemplateMatcher<Boolean>();
+                ptm.add(pathTemplate, true);
+                this.include.add(ptm);
+            });
 
         _exclude.stream().map(path -> {
                 try {
@@ -88,20 +94,24 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
             .forEach(pathTemplate -> this.exclude.add(pathTemplate, true));
     }
 
-    @VisibleForTesting
-    SharedMetricsRegistryProxy metrics = new SharedMetricsRegistryProxy();
-
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         var exchange = request.getExchange();
 
-        final var uri = exchange.getRequestPath();
-        var startTime = System.currentTimeMillis();
-
         if (!exchange.isComplete()) {
+            final var startTime = System.currentTimeMillis();
+            final var uri = request.getPath();
+
+            final var matchedTemplates = this.include.stream()
+                .filter(ptm -> ptm.match(uri) != null)
+                .map(ptm -> ptm.getPathTemplates().iterator().next().getTemplateString())
+                .collect(Collectors.toList());
+
+            LOGGER.debug("Matched path templates {}", matchedTemplates);
+
             try {
                 exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                    addMetrics(uri, startTime, request, response);
+                    matchedTemplates.forEach(mt -> addMetrics(mt, startTime, request, response));
                     nextListener.proceed();
                 });
             } catch(Throwable t) {
@@ -113,12 +123,9 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
         var uri = request.getPath();
+        var matchInclude = this.include.stream().anyMatch(ptm -> ptm.match(uri) != null);
 
-        var matchInclude = this.include.match(uri);
-
-        if (matchInclude != null && matchInclude.getValue()) {
-            LOGGER.debug("Matched include path {}", matchInclude.getMatchedTemplate());
-
+        if (matchInclude) {
             var matchExclude = this.exclude.match(uri);
 
              if (matchExclude != null && matchExclude.getValue()) {
@@ -127,7 +134,7 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
                 return false;
              }
 
-             LOGGER.debug("Return true since matched include path {}", matchInclude.getMatchedTemplate());
+             LOGGER.debug("Return true since matched include paths");
              return true;
         }
 
@@ -135,19 +142,17 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
         return false;
     }
 
-    private void _addMetrics(MetricRegistry registry, long duration, ServiceRequest<?> request, ServiceResponse<?> response) {
-        var handlingService = PluginUtils.name(PluginUtils.handlingService(pluginsRegistry, request.getExchange()));
+    private void addMetrics(String pathTemplate, long startTime, ServiceRequest<?> request, ServiceResponse<?> response) {
+        var registry = SharedMetricRegistries.getOrCreate(pathTemplate);
+        var duration = System.currentTimeMillis() - startTime;
+        var code = response.getStatusCode() > 0 ? response.getStatusCode() : 200;
 
-        registry.timer(handlingService + "." + request.getMethod().toString()).update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(handlingService + "." + request.getMethod().toString() + "." + response.getStatusCode()).update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(handlingService + "." + request.getMethod().toString() + "." + (response.getStatusCode() / 100) + "xx").update(duration, TimeUnit.MILLISECONDS);
-    }
+        var name = request.getMethod().toString() + " " + pathTemplate;
+        var nameAndCode = name + " " + code;
+        var nameAndCodeXX = name + " " + (code / 100) + "xx";
 
-    @VisibleForTesting
-    void addMetrics(String uri, long startTime, ServiceRequest<?> request, ServiceResponse<?> response) {
-        long duration = System.currentTimeMillis() - startTime;
-
-        _addMetrics(metrics.registry(), duration, request, response);
-        _addMetrics(metrics.registry(uri), duration, request, response);
+        registry.timer("timer " + name).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer("timer " + nameAndCode).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer("timer " + nameAndCodeXX).update(duration, TimeUnit.MILLISECONDS);
     }
 }

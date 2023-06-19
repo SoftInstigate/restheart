@@ -67,7 +67,6 @@ public class MetricsJsonGenerator {
      * @param durationUnit
      * @return
      */
-    @SuppressWarnings("unchecked")
     public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
         var generator = new MetricsJsonGenerator(rateUnit, durationUnit);
 
