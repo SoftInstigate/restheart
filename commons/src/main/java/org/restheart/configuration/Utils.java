@@ -399,7 +399,6 @@ public class Utils {
 
     static {
         UNDERTOW_OPTIONS = Sets.newHashSet();
-        UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_ENCODED_SLASH);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNKNOWN_PROTOCOLS);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL);
