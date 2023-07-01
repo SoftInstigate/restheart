@@ -52,6 +52,7 @@ import com.codahale.metrics.SharedMetricRegistries;
  *
  * @author Lena Brüder {@literal <brueder@e-spirit.com>}
  * @author Christian Groth {@literal <groth@e-spirit.com>}
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "metrics", description = "return requests metrics", secure = true)
 public class MetricsService implements BsonService {
@@ -146,6 +147,56 @@ public class MetricsService implements BsonService {
                 return generateResponse(registry, System.currentTimeMillis());
             }
 
+            private void _forJvm(StringBuilder sb, long timestamp, String groupKey, String metricKey, BsonValue metricContent) {
+                final var metric = metricKey.substring("jvm ".length(), metricKey.length())
+                    .replaceAll("\\.", "_")
+                    .replaceAll("-", "_")
+                    .replaceAll("'", "");
+
+                metricContent.asDocument().forEach((metricType, value) -> {
+                    if (value.isNumber()) {
+                        sb.append("jvm_").append(groupKey).append("_").append(metric);
+                        sb.append("{");
+                        sb.append("} ");
+                        sb.append(valueAsString(value));
+                        sb.append(" ");
+                        sb.append(timestamp);
+                        sb.append("\n");
+                    }
+                });
+
+                sb.append("\n");
+            }
+
+            private void _forHttpRequest(StringBuilder sb, long timestamp, String groupKey, String metricKey, BsonValue metricContent) {
+                final var split = metricKey.split(" ");
+
+                final var pathTemplate = split[2];
+                final var method = split[1];
+                final var responseCode = split.length >= 4 ? split[3] : null;
+
+                metricContent.asDocument().forEach((metricType, value) -> {
+                    if (value.isNumber()) {
+                        sb.append("http_response_").append(groupKey).append("_").append(metricType);
+                        sb.append("{");
+                        if (pathTemplate != null) {
+                            sb.append("pathTemplate=\"").append(escapePrometheusLabelValue(pathTemplate)).append("\",");
+                        }
+                        sb.append("method=\"").append(method).append("\"");
+                        if (responseCode != null) {
+                            sb.append(",code=\"").append(responseCode).append("\"");
+                        }
+                        sb.append("} ");
+                        sb.append(valueAsString(value));
+                        sb.append(" ");
+                        sb.append(timestamp);
+                        sb.append("\n");
+                    }
+                });
+
+                sb.append("\n");
+            }
+
             public String generateResponse(MetricRegistry registry, long timestamp) {
                 // fetch metrics registry and build json data
                 var root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
@@ -154,33 +205,12 @@ public class MetricsService implements BsonService {
                 // convert json data to prometheus format
                 var sb = new StringBuilder();
                 root.forEach((groupKey, groupContent) -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
-                        final var split = metricKey.split(" ");
-                        final var pathTemplate = split[2];
-                        final var method = split[1];
-                        final var responseCode = split.length >= 4 ? split[3] : null;
-
-                        metricContent.asDocument().forEach((metricType, value) -> {
-                            if (value.isNumber()) {
-                                sb.append("http_response_").append(groupKey).append("_").append(metricType);
-                                sb.append("{");
-                                if (pathTemplate != null) {
-                                    sb.append("pathTemplate=\"").append(escapePrometheusLabelValue(pathTemplate)).append("\",");
-                                }
-                                sb.append("method=\"").append(method).append("\"");
-                                if (responseCode != null) {
-                                    sb.append(",code=\"").append(responseCode).append("\"");
-                                }
-                                sb.append("} ");
-                                sb.append(valueAsString(value));
-                                sb.append(" ");
-                                sb.append(timestamp);
-                                sb.append("\n");
-                            }
-                        });
-
-                        sb.append("\n");
+                    if (metricKey.startsWith("jvm ")) {
+                         _forJvm(sb, timestamp, groupKey, metricKey, metricContent);
+                    } else {
+                        _forHttpRequest(sb, timestamp, groupKey, metricKey, metricContent);
                     }
-                    ));
+                }));
 
                 // return result
                 return sb.toString();

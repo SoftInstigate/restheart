@@ -406,6 +406,14 @@ logging:
   #  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
   #  - tracestate        # ^^
 
+# Metrics
+# see https://restheart.org/docs/metrics
+metricsCollector:
+  enabled: true
+  uri: /metrics
+  include: [ "/*" ]
+  exclude: [ "/metrics", "/metrics/*" ]
+
 # base configuration for core module
 core:
   # The name of this instance. Displayed in log, also allows to implement instance specific custom code

@@ -386,14 +386,13 @@ logging:
   #  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
   #  - tracestate        # ^^
 
-
 # Metrics
 # see https://restheart.org/docs/metrics
 metricsCollector:
   enabled: true
   uri: /metrics
   include: [ "/*" ]
-  exclude: [ ]
+  exclude: [ "/metrics", "/metrics/*" ]
 
 # base configuration for core module
 core:
