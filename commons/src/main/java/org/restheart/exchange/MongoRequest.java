@@ -1090,7 +1090,7 @@ public class MongoRequest extends BsonRequest {
     @Override
     public BsonValue getContent() {
         if (!isContentInjected()) {
-            LOGGER.debug("getContent() called but content has not been injected yet. Let's inject it.");
+            LOGGER.trace("getContent() called but content has not been injected yet. Let's inject it.");
 
             // the MongoRequest content can have been already attached to the exchange
             // with MongoServiceAttachments.attachBsonContent()
