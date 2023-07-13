@@ -23,24 +23,22 @@ package org.restheart.metrics;
 
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(name="jvmMetricsInizializer", description = "registers the JVM metrics")
-public class JvmMetricsInizializer implements Initializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JvmMetricsInizializer.class);
+@RegisterPlugin(name="jvmMetricsCollector", description = "registers the JVM metrics", enabledByDefault = false)
+public class JvmMetricsCollector implements Initializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JvmMetricsCollector.class);
 
     public void init() {
-        var registry = SharedMetricRegistries.getOrCreate("/jvm");
+        var registry = SharedMetricRegistries.getOrCreate(METRICS_REGISTRIES_PREFIX + "/jvm");
         registry.registerAll("jvm mem", new MemoryUsageGaugeSet());
         LOGGER.info("registered VM memory usage metrics");
         registry.registerAll("jvm garbage-collector", new GarbageCollectorMetricSet());
         LOGGER.info("registered Garbage Collections metrics");
-
-        // registry.registerAll("jvm buffer-pool", new BufferPoolMetricSet());
     }
 }

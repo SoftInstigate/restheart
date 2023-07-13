@@ -44,6 +44,7 @@ import org.restheart.utils.BsonUtils;
 import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
+import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
 import com.codahale.metrics.SharedMetricRegistries;
 
 /**
@@ -54,7 +55,7 @@ import com.codahale.metrics.SharedMetricRegistries;
  * @author Christian Groth {@literal <groth@e-spirit.com>}
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "metrics", description = "return requests metrics", secure = true)
+@RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true)
 public class MetricsService implements BsonService {
     /**
      *
@@ -75,11 +76,11 @@ public class MetricsService implements BsonService {
 
         if (!params.containsKey("pathTemplate")) {
             var content = array();
-            SharedMetricRegistries.names().stream().forEachOrdered(reg -> content.add(reg));
+            SharedMetricRegistries.names().stream().filter(name -> name.startsWith(METRICS_REGISTRIES_PREFIX)).forEachOrdered(reg -> content.add(reg.substring(METRICS_REGISTRIES_PREFIX.length())));
             response.setContent(content);
         } else {
             var _pathTemplate = "/" + params.get("pathTemplate");
-            var pathTemplate = SharedMetricRegistries.names().stream().filter(_pathTemplate::equals).findFirst();
+            var pathTemplate = SharedMetricRegistries.names().stream().filter(METRICS_REGISTRIES_PREFIX.concat(_pathTemplate)::equals).findFirst();
 
             if (pathTemplate.isPresent()) {
                 var registry = SharedMetricRegistries.getOrCreate(pathTemplate.get());
@@ -169,23 +170,16 @@ public class MetricsService implements BsonService {
             }
 
             private void _forHttpRequest(StringBuilder sb, long timestamp, String groupKey, String metricKey, BsonValue metricContent) {
-                final var split = metricKey.split(" ");
-
-                final var pathTemplate = split[2];
-                final var method = split[1];
-                final var responseCode = split.length >= 4 ? split[3] : null;
+                var nameAndLabels = MetricLabels.fromString(metricKey);
 
                 metricContent.asDocument().forEach((metricType, value) -> {
                     if (value.isNumber()) {
-                        sb.append("http_response_").append(groupKey).append("_").append(metricType);
-                        sb.append("{");
-                        if (pathTemplate != null) {
-                            sb.append("pathTemplate=\"").append(escapePrometheusLabelValue(pathTemplate)).append("\",");
-                        }
-                        sb.append("method=\"").append(method).append("\"");
-                        if (responseCode != null) {
-                            sb.append(",code=\"").append(responseCode).append("\"");
-                        }
+                        sb.append(nameAndLabels.name()).append("_").append(groupKey).append("_").append(metricType).append("{");
+
+                        sb.append(nameAndLabels.lables().stream()
+                            .map(l -> escapeMetricLabel(l))
+                            .map(l -> l.name().concat("=\"").concat(l.value()).concat("\"")).collect(Collectors.joining(",")));
+
                         sb.append("} ");
                         sb.append(valueAsString(value));
                         sb.append(" ");
@@ -216,17 +210,17 @@ public class MetricsService implements BsonService {
                 return sb.toString();
             }
 
+            private String escapeMetricValue(String value) {
+                return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            }
+
             // see description for 'label_value' at https://prometheus.io/docs/instrumenting/exposition_formats/#comments-help-text-and-type-information
             // quote and backslash get escaped and line feed gets converted to text '\n'
-            private String escapePrometheusLabelValue(String input) {
-                return input.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            // name cannot contain *
+            private MetricLabel escapeMetricLabel(MetricLabel label) {
+                return new MetricLabel(label.name().replaceAll("\\*", "STAR"), escapeMetricValue(label.value()));
             }
         };
-
-        // if we just use /* data is aggregated this would lead to problems
-        // defining filters in grafana correctly, so it's better to use an artificial value for these cases. we use a
-        // value starting and ending with an underscore here to reduce the chance of hitting a real uri
-        final String ALL_VALUES_LABEL_VALUE = "_all_";
 
         /**
          * The content-type that is being used for both Accept and Content-Type

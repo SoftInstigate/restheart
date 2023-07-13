@@ -388,11 +388,14 @@ logging:
 
 # Metrics
 # see https://restheart.org/docs/metrics
-metricsCollector:
-  enabled: true
+requestsMetricsCollector:
+  enabled: false
   uri: /metrics
   include: [ "/*" ]
   exclude: [ "/metrics", "/metrics/*" ]
+
+jvmMetricsCollector:
+  enabled: false
 
 # base configuration for core module
 core:

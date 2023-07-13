@@ -44,7 +44,6 @@ public class MetricsUtils {
      /**
      *
      * @param exchange
-     * @param useXForwardedFor true to use the X-Forwarded-For header, false to use the remote ip
      * @return the name of the histogram that stores the percentage of failed auth requests in the last 10 seconds
      */
     public static String failedAuthHistogramName(HttpServerExchange exchange) {
@@ -64,14 +63,9 @@ public class MetricsUtils {
      * handles the case where the X_Forwarded_For header
      * is set as "<client-suppied-value>, ..., <proxy-supplied-value>"
      *
-     * we want to take into account only the last value to avoid
-     * metrics to be flooded with values from the client
-     *
-     * NOTE: this is the behavior of AWS ALB
-     *
      * @param xff
      * @param rindex @see useXForwaderdedElement()
-     * @return the last element of a comma separated list
+     * @return the rindex-th element of a comma separated list
      */
     public static String xffValue(String xff, int rindex) {
         if (xff == null) {
@@ -102,7 +96,7 @@ public class MetricsUtils {
     }
 
     /**
-     * Choose the key used to collect failed auth requests, REMOTE_IP (default) or X_FORWARDED_FOR
+     * Set the key used to collect failed auth requests, REMOTE_IP (default) or X_FORWARDED_FOR
      *
      * @param key the key to use
      */
@@ -122,4 +116,10 @@ public class MetricsUtils {
     public static void xffValueRIndex(int ridx) {
         xffReverseIndex = ridx;
     }
+
+     /**
+     *
+     * prefix for registry names used by retheart-metrics plugins
+     */
+    public static String METRICS_REGISTRIES_PREFIX = "METRICS-";
 }

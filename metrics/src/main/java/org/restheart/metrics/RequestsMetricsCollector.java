@@ -24,6 +24,9 @@ package org.restheart.metrics;
 import com.codahale.metrics.SharedMetricRegistries;
 import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
+import io.undertow.util.PathTemplateMatcher.PathMatchResult;
+import org.bson.BsonDocument;
+import org.bson.json.JsonWriterSettings;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
@@ -32,6 +35,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
@@ -41,12 +45,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
+import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.utils.BsonUtils.array;
 
-@RegisterPlugin(name = "metricsCollector",
-        description = "collects request metrics",
-        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
-public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetricsInstrumentationInterceptor.class);
+@RegisterPlugin(name = "requestsMetricsCollector",
+        description = "collects http requests metrics",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
+        enabledByDefault = false)
+public class RequestsMetricsCollector implements WildcardInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestsMetricsCollector.class);
 
     @Inject("config")
     private Map<String, Object> config;
@@ -102,9 +110,12 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
             final var startTime = System.currentTimeMillis();
             final var uri = request.getPath();
 
+            // template string /{db}/{coll}
+            // uri /foo/bar
+
             final var matchedTemplates = this.include.stream()
-                .filter(ptm -> ptm.match(uri) != null)
-                .map(ptm -> ptm.getPathTemplates().iterator().next().getTemplateString())
+                .map(ptm -> ptm.match(uri))
+                .filter(pmr -> pmr != null)
                 .collect(Collectors.toList());
 
             LOGGER.debug("Matched path templates {}", matchedTemplates);
@@ -142,17 +153,90 @@ public class MetricsInstrumentationInterceptor implements WildcardInterceptor {
         return false;
     }
 
-    private void addMetrics(String pathTemplate, long startTime, ServiceRequest<?> request, ServiceResponse<?> response) {
-        var registry = SharedMetricRegistries.getOrCreate(pathTemplate);
+    private void addMetrics(PathMatchResult<Boolean> pathTemplate, long startTime, ServiceRequest<?> request, ServiceResponse<?> response) {
+        var registyName = METRICS_REGISTRIES_PREFIX.concat(pathTemplate.getMatchedTemplate());
+        var registry = SharedMetricRegistries.getOrCreate(registyName);
         var duration = System.currentTimeMillis() - startTime;
-        var code = response.getStatusCode() > 0 ? response.getStatusCode() : 200;
+        var _status = response.getStatusCode() > 0 ? response.getStatusCode() : 200;
 
-        var name = request.getMethod().toString() + " " + pathTemplate;
-        var nameAndCode = name + " " + code;
-        var nameAndCodeXX = name + " " + (code / 100) + "xx";
+        var status = new MetricLabel("response_status_code", _status + "");
+        var method = new MetricLabel("request_method", request.getMethod().toString());
+        var matchedTemplate = new MetricLabel("path_template", pathTemplate.getMatchedTemplate());
 
-        registry.timer("timer " + name).update(duration, TimeUnit.MILLISECONDS);
-        registry.timer("timer " + nameAndCode).update(duration, TimeUnit.MILLISECONDS);
-        registry.timer("timer " + nameAndCodeXX).update(duration, TimeUnit.MILLISECONDS);
+        var matchParams = pathTemplate.getParameters().entrySet().stream().sorted()
+            .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
+            .collect(Collectors.toList());
+
+        var t1wp = new ArrayList<MetricLabel>();
+        t1wp.addAll(MetricLabel.from(method, matchedTemplate, status));
+        t1wp.addAll(matchParams);
+
+        registry.timer(new MetricLabels("http_requests", t1wp).toString()).update(duration, TimeUnit.MILLISECONDS);
+    }
+}
+
+/**
+ * utility record for metric name and labels that can be serialized/deserialized to string
+ */
+record MetricLabels(String name, ArrayList<MetricLabel> lables) {
+    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
+
+    public BsonDocument bson() {
+        var _labels = array();
+        var ret = document().put("l", _labels).put("n", name());
+
+        lables().stream().map(MetricLabel::bson).forEachOrdered(_labels::add);
+
+        return ret.get();
+    }
+
+    public static MetricLabels fromJson(BsonDocument raw) {
+        var _labels = raw.getArray("l").stream()
+            .map(v -> v.asDocument())
+            .map(d -> MetricLabel.fromJson(d))
+            .collect(Collectors.toList());
+
+        ArrayList<MetricLabel> labels = new ArrayList<>(_labels);
+
+        return new MetricLabels(raw.getString("n").getValue(), labels);
+    }
+
+    public String toString() {
+        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
+    }
+
+    public static MetricLabels fromString(String raw) {
+        return fromJson(BsonUtils.parse(raw).asDocument());
+    }
+}
+
+/**
+ * utility record for metric labels that can be serialized/deserialized to string
+ */
+record MetricLabel(String name, String value) {
+    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
+
+    public BsonDocument bson() {
+        return document().put("n", name).put("v", value).get();
+    }
+
+    public static MetricLabel fromJson(BsonDocument raw) {
+        return new MetricLabel(raw.getString("n").getValue(), raw.getString("v").getValue());
+    }
+
+    public String toString() {
+        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
+    }
+
+    public static MetricLabel from(String raw) {
+        return fromJson(BsonUtils.parse(raw).asDocument());
+    }
+
+    public static ArrayList<MetricLabel> from(MetricLabel... labels) {
+        var ret = new ArrayList<MetricLabel>();
+        for (var label: labels) {
+            ret.add(label);
+        }
+        return ret;
     }
 }

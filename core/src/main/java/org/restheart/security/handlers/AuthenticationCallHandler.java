@@ -36,6 +36,7 @@ import com.codahale.metrics.Slf4jReporter.LoggingLevel;
 import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 
 import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.security.Authenticator;
@@ -118,7 +119,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             // update failed auth metrics
             updateFailedAuthMetrics(exchange);
             // set status code and end exchange
-            exchange.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+            Response.of(exchange).setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             fastEndExchange(exchange);
         }
     }
