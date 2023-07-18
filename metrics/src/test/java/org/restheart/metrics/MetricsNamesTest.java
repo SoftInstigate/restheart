@@ -52,13 +52,13 @@ public class MetricsNamesTest {
         labels.add(new MetricLabel("method", "GET"));
         labels.add(new MetricLabel("status", "200"));
 
-        var nameAndLabelsFromConstructor = new MetricLabels("foo", labels);
+        var nameAndLabelsFromConstructor = new MetricNameAndLabels("foo", labels);
 
         var nameAndLabelsAsString = nameAndLabelsFromConstructor.toString();
 
         LOG.debug("string representation {}", nameAndLabelsAsString);
 
-        var nameAndLabelsFromString = MetricLabels.fromString(nameAndLabelsAsString);
+        var nameAndLabelsFromString = MetricNameAndLabels.fromString(nameAndLabelsAsString);
 
         assertEquals(nameAndLabelsFromConstructor, nameAndLabelsFromString);
     }

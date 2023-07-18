@@ -20,50 +20,39 @@
  */
 package org.restheart.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.annotations.VisibleForTesting;
-import io.undertow.util.Headers;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.bson.BsonValue;
-import org.bson.json.JsonMode;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
-import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import static org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
-import org.restheart.exchange.ServiceResponse;
-import org.restheart.plugins.BsonService;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
+import org.restheart.exchange.StringRequest;
+import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.BsonUtils;
+import org.restheart.plugins.StringService;
 import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.LambdaUtils;
 import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
 import com.codahale.metrics.SharedMetricRegistries;
+import io.prometheus.client.Collector.MetricFamilySamples.Sample;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.dropwizard.samplebuilder.DefaultSampleBuilder;
+import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.dropwizard.samplebuilder.SampleBuilder;
 
 /**
- * A handler for dropwizard.io metrics that can return both default metrics JSON
- * and the prometheus format.
+ * Service to returns metrics in prometheus format.
  *
- * @author Lena Brüder {@literal <brueder@e-spirit.com>}
- * @author Christian Groth {@literal <groth@e-spirit.com>}
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true)
-public class MetricsService implements BsonService {
+public class MetricsService implements StringService {
+
     /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(StringRequest request, StringResponse response) throws Exception {
         if (request.isOptions()) {
             handleOptions(request);
             return;
@@ -77,7 +66,8 @@ public class MetricsService implements BsonService {
         if (!params.containsKey("pathTemplate")) {
             var content = array();
             SharedMetricRegistries.names().stream().filter(name -> name.startsWith(METRICS_REGISTRIES_PREFIX)).forEachOrdered(reg -> content.add(reg.substring(METRICS_REGISTRIES_PREFIX.length())));
-            response.setContent(content);
+            response.setContent(content.toJson());
+            response.setContentTypeAsJson();
         } else {
             var _pathTemplate = "/" + params.get("pathTemplate");
             var pathTemplate = SharedMetricRegistries.names().stream().filter(METRICS_REGISTRIES_PREFIX.concat(_pathTemplate)::equals).findFirst();
@@ -85,24 +75,13 @@ public class MetricsService implements BsonService {
             if (pathTemplate.isPresent()) {
                 var registry = SharedMetricRegistries.getOrCreate(pathTemplate.get());
 
-                // detect metrics response type
-                var representationFormatParameters = request.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
+                var collector = new CollectorRegistry();
+                collector.register(new DropwizardExports(registry, new CustomSampler()));
+                var writer = new StringWriter();
 
-                var responseType = Optional.ofNullable(ResponseType.forQueryParameter(representationFormatParameters == null ? null : representationFormatParameters.getFirst())
-                ).orElseGet(() -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString())));
+                TextFormat.write004(writer, collector.metricFamilySamples());
 
-                // render metrics or error on unknown response type
-                if (responseType != null) {
-                    response.setStatusCode(HttpStatus.SC_OK);
-                    responseType.writeTo(response, registry);
-                } else {
-                    var acceptableTypes = Arrays.stream(ResponseType.values())
-                        .map(ResponseType::getContentType)
-                        .map(x -> "'" + x + "'")
-                        .collect(Collectors.joining(","));
-
-                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "not acceptable, acceptable content types are: " + acceptableTypes);
-                }
+                response.setContent(writer.toString());
             } else {
                 response.setInError(HttpStatus.SC_NOT_FOUND, "metric not found");
                 return;
@@ -110,299 +89,28 @@ public class MetricsService implements BsonService {
         }
     }
 
-    @VisibleForTesting
-    enum ResponseType {
-        /**
-         * dropwizard-metrics compatible JSON format, see
-         * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
-         * for how it looks like
-         */
-        JSON("application/json") {
-            @Override
-            public String generateResponse(MetricRegistry registry) throws IOException {
-                var document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
-                return BsonUtils.toJson(document, JsonMode.RELAXED);
-            }
-        },
-        /**
-         * format description can be found at
-         * https://prometheus.io/docs/instrumenting/exposition_formats/
-         */
-        PROMETHEUS("text/plain", "version=0.0.4") {
-            private String valueAsString(BsonValue value) {
-                if (value.isDouble()) {
-                    return Double.toString(value.asDouble().getValue());
-                } else if (value.isString()) {
-                    return value.asString().getValue();
-                } else if (value.isInt64()) {
-                    return Long.toString(value.asInt64().getValue());
-                } else if (value.isInt32()) {
-                    return Long.toString(value.asInt32().getValue());
-                } else {
-                    return value.toString();
-                }
-            }
+    private class CustomSampler implements SampleBuilder {
+        private static DefaultSampleBuilder DSB = new DefaultSampleBuilder();
 
-            @Override
-            public String generateResponse(MetricRegistry registry) throws IOException {
-                return generateResponse(registry, System.currentTimeMillis());
-            }
-
-            private void _forJvm(StringBuilder sb, long timestamp, String groupKey, String metricKey, BsonValue metricContent) {
-                final var metric = metricKey.substring("jvm ".length(), metricKey.length())
-                    .replaceAll("\\.", "_")
-                    .replaceAll("-", "_")
-                    .replaceAll("'", "");
-
-                metricContent.asDocument().forEach((metricType, value) -> {
-                    if (value.isNumber()) {
-                        sb.append("jvm_").append(groupKey).append("_").append(metric);
-                        sb.append("{");
-                        sb.append("} ");
-                        sb.append(valueAsString(value));
-                        sb.append(" ");
-                        sb.append(timestamp);
-                        sb.append("\n");
-                    }
-                });
-
-                sb.append("\n");
-            }
-
-            private void _forHttpRequest(StringBuilder sb, long timestamp, String groupKey, String metricKey, BsonValue metricContent) {
-                var nameAndLabels = MetricLabels.fromString(metricKey);
-
-                metricContent.asDocument().forEach((metricType, value) -> {
-                    if (value.isNumber()) {
-                        sb.append(nameAndLabels.name()).append("_").append(groupKey).append("_").append(metricType).append("{");
-
-                        sb.append(nameAndLabels.lables().stream()
-                            .map(l -> escapeMetricLabel(l))
-                            .map(l -> l.name().concat("=\"").concat(l.value()).concat("\"")).collect(Collectors.joining(",")));
-
-                        sb.append("} ");
-                        sb.append(valueAsString(value));
-                        sb.append(" ");
-                        sb.append(timestamp);
-                        sb.append("\n");
-                    }
-                });
-
-                sb.append("\n");
-            }
-
-            public String generateResponse(MetricRegistry registry, long timestamp) {
-                // fetch metrics registry and build json data
-                var root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
-                root.remove("version");
-
-                // convert json data to prometheus format
-                var sb = new StringBuilder();
-                root.forEach((groupKey, groupContent) -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
-                    if (metricKey.startsWith("jvm ")) {
-                         _forJvm(sb, timestamp, groupKey, metricKey, metricContent);
-                    } else {
-                        _forHttpRequest(sb, timestamp, groupKey, metricKey, metricContent);
-                    }
-                }));
-
-                // return result
-                return sb.toString();
-            }
-
-            private String escapeMetricValue(String value) {
-                return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
-            }
-
-            // see description for 'label_value' at https://prometheus.io/docs/instrumenting/exposition_formats/#comments-help-text-and-type-information
-            // quote and backslash get escaped and line feed gets converted to text '\n'
-            // name cannot contain *
-            private MetricLabel escapeMetricLabel(MetricLabel label) {
-                return new MetricLabel(label.name().replaceAll("\\*", "STAR"), escapeMetricValue(label.value()));
-            }
-        };
-
-        /**
-         * The content-type that is being used for both Accept and Content-Type
-         * headers
-         */
-        String contentType;
-
-        /**
-         * the media range for the given content type
-         */
-        String mediaRange;
-
-        /**
-         * if any, the specialization of the content-type (after ";" in
-         * Content-Type header). null if n/a.
-         */
-        String specialization;
-
-        abstract public String generateResponse(MetricRegistry registry) throws IOException;
-
-        ResponseType(String contentType) {
-            this(contentType, null);
-        }
-
-        ResponseType(String contentType, String specialization) {
-            this.contentType = contentType;
-            this.mediaRange = calculateMediaRange(contentType);
-            this.specialization = specialization;
-        }
-
-        @VisibleForTesting
-        static String calculateMediaRange(String contentType) {
-            return contentType.substring(0, contentType.indexOf('/')) + "/*";
-        }
-
-        public String getContentType() {
-            return contentType;
-        }
-
-        public String getMediaRange() {
-            return mediaRange;
-        }
-
-        public String getOutputContentType() {
-            return specialization == null
-                ? contentType
-                : contentType + "; " + specialization;
-        }
-
-        /**
-         * whether this content type is acceptable for the given accept header
-         * entry
-         */
-        public boolean isAcceptableFor(AcceptHeaderEntry entry) {
-            return entry.contentType.equalsIgnoreCase("*/*")
-                || (entry.contentType.equalsIgnoreCase(contentType)
-                && (entry.specialization == null || entry.specialization.equalsIgnoreCase(specialization)))
-                || entry.contentType.equalsIgnoreCase(mediaRange);
-        }
-
-        public void writeTo(ServiceResponse<?> response, MetricRegistry registry) throws IOException {
-            var body = generateResponse(registry);
-
-            if (body != null) {
-                response.getHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
-                response.setCustomSender(() -> {
-                    try {
-                        response.getExchange().getResponseSender().send(body);
-                    } catch(Throwable t) {
-                        LambdaUtils.throwsSneakyException(t);
-                    }
-                });
-            }
-        }
-
-        /**
-         * Encapsulate code around accept-header handling
-         */
-        static class AcceptHeaderEntry {
-
-            /**
-             * Generate an accept header entry (if possible) for the given
-             * entry. Will be called for each entry of the accept header.
-             *
-             * @return null if the header could not be generated.
-             */
-            public static AcceptHeaderEntry of(String acceptHeaderEntry) {
-                var entries = Arrays.asList(acceptHeaderEntry.split(";"));
-
-                final var contentType = entries.stream().findFirst().orElse(null);
-                var qValue = 1.0d;
-                String specialization = null;
-                for (int i = 1; i < entries.size(); i++) {
-                    var element = entries.get(i).strip();
-                    if (element.startsWith("q=")) {
-                        try {
-                            qValue = Double.parseDouble(element.substring(2));
-                        } catch (NumberFormatException nfe) {
-                            qValue = 1.0;
-                        }
-                    } else {
-                        specialization = element;
-                    }
-                }
-                if (contentType == null) {
-                    return null;
-                } else {
-                    return new AcceptHeaderEntry(contentType, specialization, qValue);
-                }
-            }
-
-            String contentType;
-            String specialization;
-            double qValue = 1.0;
-
-            AcceptHeaderEntry(String contentType) {
-                this(contentType, null, Double.MAX_VALUE);
-            }
-
-            AcceptHeaderEntry(String contentType, String specialization, double qValue) {
-                this.contentType = contentType;
-                this.specialization = specialization;
-                this.qValue = qValue;
-            }
-
-            @Override
-            public String toString() {
-                return "AcceptHeaderEntry{"
-                        + "contentType='" + contentType + '\''
-                        + ", specialization='" + specialization + '\''
-                        + ", qValue=" + qValue
-                        + '}';
-            }
-        }
-
-        /**
-         * sorts large q-values first, smaller ones later
-         */
-        static class AcceptHeaderEntryComparator implements Comparator<AcceptHeaderEntry>, Serializable {
-
-            /**
-             *
-             */
-            private static final long serialVersionUID = 1546289051858469995L;
-
-            @Override
-            public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
-                return Double.compare(two.qValue, one.qValue);
-            }
-        }
-
-        /**
-         * Returns the correct response generator for any given accept header.
-         *
-         * behaviour is: * by default, return prometheus format * if something
-         * else is wanted, return that (if available) * if Accept header cannot
-         * be satisfied, return 406 (NOT ACCEPTABLE)
-         */
-        public static ResponseType forAcceptHeader(String acceptHeader) {
-            if (acceptHeader == null || acceptHeader.equalsIgnoreCase("*/*")) {
-                return ResponseType.PROMETHEUS;
-            }
-
-            return Arrays.stream(acceptHeader.split(","))
-                .map(String::trim)
-                .map(AcceptHeaderEntry::of).filter(Objects::nonNull) //parse
-                .sorted(new AcceptHeaderEntryComparator()) //sort by q-value
-                .flatMap(x -> Arrays.stream(ResponseType.values()).filter(rt -> rt.isAcceptableFor(x)))
-                .findFirst()
-                .orElse(null);
-        }
-
-        public static ResponseType forQueryParameter(String rep) {
-            if (REPRESENTATION_FORMAT.S.name().equalsIgnoreCase(rep)
-                    || REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep)
-                    || REPRESENTATION_FORMAT.HAL.name().equalsIgnoreCase(rep)
-                    || REPRESENTATION_FORMAT.SHAL.name().equalsIgnoreCase(rep)
-                    || REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
-                    || REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
-                return ResponseType.JSON;
+        @Override
+        public Sample createSample(String dropwizardName, String nameSuffix, List<String> additionalLabelNames, List<String> additionalLabelValues, double value) {
+            if (dropwizardName.startsWith("jvm")) {
+                return DSB.createSample(dropwizardName, nameSuffix, additionalLabelNames, additionalLabelValues, value);
             } else {
-                return null;
+                var nals = MetricNameAndLabels.fromString(dropwizardName);
+
+                List<String> _additionalLabelNames = new ArrayList<>();
+                List<String> _additionalLabelValues = new ArrayList<>();
+
+                nals.lables().forEach(l -> {
+                    _additionalLabelNames.add(l.name());
+                    _additionalLabelValues.add(l.value());
+                });
+
+                _additionalLabelNames.addAll(additionalLabelNames);
+                _additionalLabelValues.addAll(additionalLabelValues);
+
+                return DSB.createSample(nals.name(), nameSuffix, _additionalLabelNames, _additionalLabelValues, value);
             }
         }
     }

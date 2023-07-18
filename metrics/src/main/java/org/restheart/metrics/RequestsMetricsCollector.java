@@ -163,7 +163,9 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
         var method = new MetricLabel("request_method", request.getMethod().toString());
         var matchedTemplate = new MetricLabel("path_template", pathTemplate.getMatchedTemplate());
 
-        var matchParams = pathTemplate.getParameters().entrySet().stream().sorted()
+        var matchParams = pathTemplate.getParameters().entrySet().stream()
+            .filter(p -> !p.getKey().equals("*"))
+            .sorted()
             .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
             .collect(Collectors.toList());
 
@@ -171,14 +173,14 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
         t1wp.addAll(MetricLabel.from(method, matchedTemplate, status));
         t1wp.addAll(matchParams);
 
-        registry.timer(new MetricLabels("http_requests", t1wp).toString()).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(new MetricNameAndLabels("http_requests", t1wp).toString()).update(duration, TimeUnit.MILLISECONDS);
     }
 }
 
 /**
  * utility record for metric name and labels that can be serialized/deserialized to string
  */
-record MetricLabels(String name, ArrayList<MetricLabel> lables) {
+record MetricNameAndLabels(String name, ArrayList<MetricLabel> lables) {
     private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
 
     public BsonDocument bson() {
@@ -190,7 +192,7 @@ record MetricLabels(String name, ArrayList<MetricLabel> lables) {
         return ret.get();
     }
 
-    public static MetricLabels fromJson(BsonDocument raw) {
+    public static MetricNameAndLabels fromJson(BsonDocument raw) {
         var _labels = raw.getArray("l").stream()
             .map(v -> v.asDocument())
             .map(d -> MetricLabel.fromJson(d))
@@ -198,14 +200,14 @@ record MetricLabels(String name, ArrayList<MetricLabel> lables) {
 
         ArrayList<MetricLabel> labels = new ArrayList<>(_labels);
 
-        return new MetricLabels(raw.getString("n").getValue(), labels);
+        return new MetricNameAndLabels(raw.getString("n").getValue(), labels);
     }
 
     public String toString() {
         return BsonUtils.minify(bson().toJson(jsonWriterSettings));
     }
 
-    public static MetricLabels fromString(String raw) {
+    public static MetricNameAndLabels fromString(String raw) {
         return fromJson(BsonUtils.parse(raw).asDocument());
     }
 }
