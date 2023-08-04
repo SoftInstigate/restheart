@@ -34,7 +34,7 @@
             mvn clean verify -Dmongodb.version="5.0"  (to test with mongo:5.0 container)
         -->
         <mongodb.version>6.0</mongodb.version>
-        <graalvm.version>22.3.2</graalvm.version>
+        <graalvm.version>22.3.3</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -243,7 +243,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.1-jre</version>
+                <version>32.1.2-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
