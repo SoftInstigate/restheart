@@ -21,23 +21,15 @@
 package org.restheart.metrics;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
-
 import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
-
 import com.codahale.metrics.SharedMetricRegistries;
-import io.prometheus.client.Collector.MetricFamilySamples.Sample;
 import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.dropwizard.samplebuilder.DefaultSampleBuilder;
 import io.prometheus.client.exporter.common.TextFormat;
-import io.prometheus.client.dropwizard.samplebuilder.SampleBuilder;
 
 /**
  * Service to returns metrics in prometheus format.
@@ -79,10 +71,8 @@ public class MetricsService implements StringService {
             var pathTemplate = SharedMetricRegistries.names().stream().filter(METRICS_REGISTRIES_PREFIX.concat(_pathTemplate)::equals).findFirst();
 
             if (pathTemplate.isPresent()) {
-                var registry = SharedMetricRegistries.getOrCreate(pathTemplate.get());
-
                 var collector = new CollectorRegistry();
-                collector.register(new DropwizardExports(registry, new CustomSampler()));
+                collector.register(new RHDropwizardExports(pathTemplate.get()));
                 var writer = new StringWriter();
 
                 TextFormat.write004(writer, collector.metricFamilySamples());
@@ -91,32 +81,6 @@ public class MetricsService implements StringService {
             } else {
                 response.setInError(HttpStatus.SC_NOT_FOUND, "metric not found");
                 return;
-            }
-        }
-    }
-
-    private class CustomSampler implements SampleBuilder {
-        private static DefaultSampleBuilder DSB = new DefaultSampleBuilder();
-
-        @Override
-        public Sample createSample(String dropwizardName, String nameSuffix, List<String> additionalLabelNames, List<String> additionalLabelValues, double value) {
-            if (dropwizardName.startsWith("jvm")) {
-                return DSB.createSample(dropwizardName, nameSuffix, additionalLabelNames, additionalLabelValues, value);
-            } else {
-                var nals = MetricNameAndLabels.fromString(dropwizardName);
-
-                List<String> _additionalLabelNames = new ArrayList<>();
-                List<String> _additionalLabelValues = new ArrayList<>();
-
-                nals.lables().forEach(l -> {
-                    _additionalLabelNames.add(l.name());
-                    _additionalLabelValues.add(l.value());
-                });
-
-                _additionalLabelNames.addAll(additionalLabelNames);
-                _additionalLabelValues.addAll(additionalLabelValues);
-
-                return DSB.createSample(nals.name(), nameSuffix, _additionalLabelNames, _additionalLabelValues, value);
             }
         }
     }
