@@ -17,15 +17,17 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.utils;
+package org.restheart.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.net.HttpHeaders;
+import java.util.Deque;
 
+import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
-
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.HttpString;
 
 /**
@@ -33,7 +35,7 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class MetricsUtils {
+public class Metrics {
     private static final HttpString _X_FORWARDED_FOR = HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR);
 
     public enum FAILED_AUTH_KEY { REMOTE_IP, X_FORWARDED_FOR }
@@ -117,9 +119,28 @@ public class MetricsUtils {
         xffReverseIndex = ridx;
     }
 
-     /**
+
+    private static AttachmentKey<Deque<MetricLabel>> CUSTOM_METRIC_LABELS = AttachmentKey.create(Deque.class);
+
+    /**
+     * attach metrics labels to request
      *
-     * prefix for registry names used by retheart-metrics plugins
+     * RequestsMetricsCollector adds labels to the collected metrics
+     *
+     * @param request
+     * @param labels
      */
-    public static String METRICS_REGISTRIES_PREFIX = "METRICS-";
+    public static void attachMetricLabels(Request<?> request, Deque<MetricLabel> labels) {
+        request.getExchange().putAttachment(CUSTOM_METRIC_LABELS, labels);
+    }
+
+    /**
+     * retrives the metrics labels attached to request
+     *
+     * @param request
+     * @param labels
+     */
+    public static Deque<MetricLabel> getMetricLabels(Request<?> request) {
+        return request.getExchange().getAttachment(CUSTOM_METRIC_LABELS);
+    }
 }

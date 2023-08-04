@@ -25,6 +25,8 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
+import static org.restheart.metrics.Metrics.failedAuthHistogramName;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import com.codahale.metrics.Histogram;
@@ -33,7 +35,6 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.Slf4jReporter.LoggingLevel;
-import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;

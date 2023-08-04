@@ -25,8 +25,6 @@ import com.codahale.metrics.SharedMetricRegistries;
 import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
 import io.undertow.util.PathTemplateMatcher.PathMatchResult;
-import org.bson.BsonDocument;
-import org.bson.json.JsonWriterSettings;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
@@ -35,9 +33,10 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import org.restheart.utils.BsonUtils;
+import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,9 +44,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
-import static org.restheart.utils.BsonUtils.document;
-import static org.restheart.utils.BsonUtils.array;
 
 @RegisterPlugin(name = "requestsMetricsCollector",
         description = "collects http requests metrics",
@@ -169,76 +165,16 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
             .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
             .collect(Collectors.toList());
 
-        var t1wp = new ArrayList<MetricLabel>();
+        var t1wp = new ArrayDeque<MetricLabel>();
         t1wp.addAll(MetricLabel.from(method, matchedTemplate, status));
         t1wp.addAll(matchParams);
 
-        registry.timer(new MetricNameAndLabels("http_requests", t1wp).toString()).update(duration, TimeUnit.MILLISECONDS);
-    }
-}
-
-/**
- * utility record for metric name and labels that can be serialized/deserialized to string
- */
-record MetricNameAndLabels(String name, ArrayList<MetricLabel> lables) {
-    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
-
-    public BsonDocument bson() {
-        var _labels = array();
-        var ret = document().put("l", _labels).put("n", name());
-
-        lables().stream().map(MetricLabel::bson).forEachOrdered(_labels::add);
-
-        return ret.get();
-    }
-
-    public static MetricNameAndLabels fromJson(BsonDocument raw) {
-        var _labels = raw.getArray("l").stream()
-            .map(v -> v.asDocument())
-            .map(d -> MetricLabel.fromJson(d))
-            .collect(Collectors.toList());
-
-        ArrayList<MetricLabel> labels = new ArrayList<>(_labels);
-
-        return new MetricNameAndLabels(raw.getString("n").getValue(), labels);
-    }
-
-    public String toString() {
-        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
-    }
-
-    public static MetricNameAndLabels fromString(String raw) {
-        return fromJson(BsonUtils.parse(raw).asDocument());
-    }
-}
-
-/**
- * utility record for metric labels that can be serialized/deserialized to string
- */
-record MetricLabel(String name, String value) {
-    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
-
-    public BsonDocument bson() {
-        return document().put("n", name).put("v", value).get();
-    }
-
-    public static MetricLabel fromJson(BsonDocument raw) {
-        return new MetricLabel(raw.getString("n").getValue(), raw.getString("v").getValue());
-    }
-
-    public String toString() {
-        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
-    }
-
-    public static MetricLabel from(String raw) {
-        return fromJson(BsonUtils.parse(raw).asDocument());
-    }
-
-    public static ArrayList<MetricLabel> from(MetricLabel... labels) {
-        var ret = new ArrayList<MetricLabel>();
-        for (var label: labels) {
-            ret.add(label);
+        // custom labels
+        var customLabels = Metrics.getMetricLabels(request);
+        if (customLabels != null) {
+            t1wp.addAll(customLabels);
         }
-        return ret;
+
+        registry.timer(new MetricNameAndLabels("http_requests", t1wp).toString()).update(duration, TimeUnit.MILLISECONDS);
     }
 }

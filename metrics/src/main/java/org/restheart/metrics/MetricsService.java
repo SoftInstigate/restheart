@@ -27,9 +27,10 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
+
 import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
-import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import io.prometheus.client.Collector.MetricFamilySamples.Sample;
 import io.prometheus.client.CollectorRegistry;
@@ -45,6 +46,11 @@ import io.prometheus.client.dropwizard.samplebuilder.SampleBuilder;
  */
 @RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true)
 public class MetricsService implements StringService {
+    /**
+     *
+     * prefix for registry names used by retheart-metrics plugins
+     */
+    public static String METRICS_REGISTRIES_PREFIX = "METRICS-";
 
     /**
      *

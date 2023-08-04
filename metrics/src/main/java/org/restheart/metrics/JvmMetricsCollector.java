@@ -23,10 +23,10 @@ package org.restheart.metrics;
 
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
+import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import static org.restheart.utils.MetricsUtils.METRICS_REGISTRIES_PREFIX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

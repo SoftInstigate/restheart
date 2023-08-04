@@ -23,11 +23,9 @@ package org.restheart.metrics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayDeque;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.ArrayList;
 
 public class MetricsNamesTest {
 
@@ -48,7 +46,7 @@ public class MetricsNamesTest {
 
     @Test
     public void testMetricNameAndLabelsSerialization() {
-        var labels = new ArrayList<MetricLabel>();
+        var labels = new ArrayDeque<MetricLabel>();
         labels.add(new MetricLabel("method", "GET"));
         labels.add(new MetricLabel("status", "200"));
 
