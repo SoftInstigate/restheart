@@ -35,10 +35,7 @@ import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.codahale.metrics.SharedMetricRegistries;
-
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -167,8 +164,8 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
             .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
             .collect(Collectors.toList());
 
-        var t1wp = new ArrayDeque<MetricLabel>();
-        t1wp.addAll(MetricLabel.from(method, matchedTemplate, status));
+        var t1wp = new ArrayList<MetricLabel>();
+        t1wp.addAll(MetricLabel.collect(method, matchedTemplate, status));
         t1wp.addAll(matchParams);
 
         // custom labels

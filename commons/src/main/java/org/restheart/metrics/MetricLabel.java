@@ -20,12 +20,8 @@
 
 package org.restheart.metrics;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import org.bson.BsonDocument;
-import org.bson.json.JsonWriterSettings;
-import org.restheart.utils.BsonUtils;
-import static org.restheart.utils.BsonUtils.document;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * record for metric labels that can be serialized/deserialized to/from string
@@ -33,26 +29,25 @@ import static org.restheart.utils.BsonUtils.document;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public record MetricLabel(String name, String value) {
-    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
+    public static String SEPARATOR = "=";
 
-    public BsonDocument bson() {
-        return document().put("n", name).put("v", value).get();
+    public MetricLabel(String name, String value) {
+        this.name = name.replaceAll("=", "_").replaceAll("\\.", "_");
+        this.value = value.replaceAll("\\.", "_");
     }
 
-    public static MetricLabel fromJson(BsonDocument raw) {
-        return new MetricLabel(raw.getString("n").getValue(), raw.getString("v").getValue());
-    }
 
     public String toString() {
-        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
+        return name.concat(SEPARATOR).concat(value);
     }
 
     public static MetricLabel from(String raw) {
-        return fromJson(BsonUtils.parse(raw).asDocument());
+        var sepIdx = raw.indexOf(SEPARATOR);
+        return new MetricLabel(raw.substring(0, sepIdx), raw.substring(sepIdx+1));
     }
 
-    public static Deque<MetricLabel> from(MetricLabel... labels) {
-        var ret = new ArrayDeque<MetricLabel>();
+    public static List<MetricLabel> collect(MetricLabel... labels) {
+        var ret = new ArrayList<MetricLabel>();
         for (var label: labels) {
             ret.add(label);
         }

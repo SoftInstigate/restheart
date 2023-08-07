@@ -19,51 +19,40 @@
  */
 package org.restheart.metrics;
 
-import org.bson.BsonDocument;
-import org.bson.json.JsonWriterSettings;
-import org.restheart.utils.BsonUtils;
-
-import static org.restheart.utils.BsonUtils.document;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.restheart.utils.BsonUtils.array;
 
 /**
  * record for metric name and labels that can be serialized/deserialized to/from string
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public record MetricNameAndLabels(String name, Deque<MetricLabel> lables) {
-    private static JsonWriterSettings jsonWriterSettings =  JsonWriterSettings.builder().indent(false).build();
+public record MetricNameAndLabels(String name, List<MetricLabel> lables) {
+    public static String SEPARATOR = ".";
+    private static String SEPARATOR_REGEX = "\\.";
 
-    public BsonDocument bson() {
-        var _labels = array();
-        var ret = document().put("l", _labels).put("n", name());
-
-        lables().stream().map(MetricLabel::bson).forEachOrdered(_labels::add);
-
-        return ret.get();
+    public MetricNameAndLabels(String name, List<MetricLabel> lables) {
+        this.name = name.replaceAll("SEPARATOR_REGEX", "_");
+        this.lables = lables;
     }
 
-    public static MetricNameAndLabels fromJson(BsonDocument raw) {
-        var _labels = raw.getArray("l").stream()
-            .map(v -> v.asDocument())
-            .map(d -> MetricLabel.fromJson(d))
+    public static MetricNameAndLabels from(String raw) {
+        var name = raw.substring(0, raw.indexOf("."));
+
+        var labels = Arrays.stream(raw.split(SEPARATOR_REGEX))
+            .skip(1)
+            .map(l -> MetricLabel.from(l))
             .collect(Collectors.toList());
 
-        var labels = new ArrayDeque<MetricLabel>(_labels);
-
-        return new MetricNameAndLabels(raw.getString("n").getValue(), labels);
+        return new MetricNameAndLabels(name, labels);
     }
 
     public String toString() {
-        return BsonUtils.minify(bson().toJson(jsonWriterSettings));
-    }
+        var sb = new StringBuilder();
+        sb.append(name).append(SEPARATOR);
 
-    public static MetricNameAndLabels fromString(String raw) {
-        return fromJson(BsonUtils.parse(raw).asDocument());
+        sb.append(lables.stream().map(l -> l.toString()).collect(Collectors.joining(SEPARATOR)));
+        return sb.toString();
     }
 }

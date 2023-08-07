@@ -43,7 +43,8 @@
             "**/bin",
             "**/archetype-resources"
         ],
-        "java.compile.nullAnalysis.mode": "disabled"
+        "java.compile.nullAnalysis.mode": "disabled",
+        "java.debug.settings.onBuildFailureProceed": true
     },
     "launch": {
         "version": "0.2.0",

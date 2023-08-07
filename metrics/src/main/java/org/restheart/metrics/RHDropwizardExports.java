@@ -13,7 +13,6 @@ import com.codahale.metrics.Timer;
 import io.prometheus.client.dropwizard.samplebuilder.SampleBuilder;
 import io.prometheus.client.Collector.MetricFamilySamples.Sample;
 import io.prometheus.client.dropwizard.samplebuilder.DefaultSampleBuilder;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -206,7 +205,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
             if (dropwizardName.startsWith("jvm")) {
                 return DSB.createSample(dropwizardName, nameSuffix, additionalLabelNames, additionalLabelValues, value);
             } else {
-                var nals = MetricNameAndLabels.fromString(dropwizardName);
+                var nals = MetricNameAndLabels.from(dropwizardName);
 
                 var _additionalLabelNames = new ArrayList<String>();
                 var _additionalLabelValues = new ArrayList<String>();
