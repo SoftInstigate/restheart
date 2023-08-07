@@ -23,6 +23,7 @@ package org.restheart.metrics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.ArrayDeque;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,20 +56,10 @@ public class MetricsNamesTest {
         var nameAndLabelsAsString = nameAndLabelsFromConstructor.toString();
 
         LOG.debug("string representation {}", nameAndLabelsAsString);
+        LOG.debug("toString representation {}", nameAndLabelsFromConstructor);
 
         var nameAndLabelsFromString = MetricNameAndLabels.fromString(nameAndLabelsAsString);
 
         assertEquals(nameAndLabelsFromConstructor, nameAndLabelsFromString);
-    }
-
-    @Test
-    public void xxx() {
-        var ml = new MetricLabel("xxx_*", "foo");
-        var eml = escapeMetricLabel(ml);
-        LOG.info(eml.toString());
-    }
-
-    private MetricLabel escapeMetricLabel(MetricLabel label) {
-        return new MetricLabel(label.name().replaceAll("\\*", "STAR"), label.value());
     }
 }

@@ -196,7 +196,7 @@ public class DigestAuthMechanism implements AuthMechanism {
         this(Collections.singletonList(DigestAlgorithm.MD5), Collections.singletonList(DigestQop.AUTH), realmName, domain, new SimpleNonceManager(), mechanismName, identityManager);
     }
 
-    @SuppressWarnings("removal")
+    @SuppressWarnings({"removal", "deprecated"})
     private IdentityManager getIdentityManager(SecurityContext securityContext) {
         return identityManager != null ? identityManager : securityContext.getIdentityManager();
     }

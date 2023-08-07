@@ -29,6 +29,9 @@
         },
         {
             "path": "metrics"
+        },
+        {
+            "path": ".settings"
         }
     ],
     "settings": {

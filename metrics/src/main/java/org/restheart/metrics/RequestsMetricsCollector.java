@@ -21,7 +21,6 @@
 
 package org.restheart.metrics;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
 import io.undertow.util.PathTemplateMatcher.PathMatchResult;
@@ -36,6 +35,9 @@ import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.SharedMetricRegistries;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;

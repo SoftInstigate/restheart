@@ -71,7 +71,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
     /**
      * Export gauge as a prometheus gauge.
      */
-    MetricFamilySamples fromGauge(String dropwizardName, Gauge gauge) {
+    MetricFamilySamples fromGauge(String dropwizardName, Gauge<?> gauge) {
         Object obj = gauge.getValue();
         double value;
         if (obj instanceof Number) {
@@ -157,6 +157,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public List<MetricFamilySamples> collect() {
         Map<String, MetricFamilySamples> mfSamplesMap = new HashMap<String, MetricFamilySamples>();
 

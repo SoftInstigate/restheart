@@ -27,7 +27,9 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
 import static org.restheart.utils.BsonUtils.array;
 import org.restheart.utils.HttpStatus;
+
 import com.codahale.metrics.SharedMetricRegistries;
+
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
