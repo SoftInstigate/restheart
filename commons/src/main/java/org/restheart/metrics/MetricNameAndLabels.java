@@ -28,13 +28,22 @@ import java.util.stream.Collectors;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public record MetricNameAndLabels(String name, List<MetricLabel> lables) {
+public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
     public static String SEPARATOR = ".";
     private static String SEPARATOR_REGEX = "\\.";
 
-    public MetricNameAndLabels(String name, List<MetricLabel> lables) {
+    public MetricNameAndLabels(String name, List<MetricLabel> labels) {
+        if (name == null) {
+            throw new IllegalArgumentException("name cannot be null");
+        }
+
+        if (labels == null) {
+            throw new IllegalArgumentException("value cannot be null");
+        }
+
+
         this.name = name.replaceAll("SEPARATOR_REGEX", "_");
-        this.lables = lables;
+        this.labels = labels;
     }
 
     public static MetricNameAndLabels from(String raw) {
@@ -52,7 +61,7 @@ public record MetricNameAndLabels(String name, List<MetricLabel> lables) {
         var sb = new StringBuilder();
         sb.append(name).append(SEPARATOR);
 
-        sb.append(lables.stream().map(l -> l.toString()).collect(Collectors.joining(SEPARATOR)));
+        sb.append(labels.stream().map(l -> l.toString()).collect(Collectors.joining(SEPARATOR)));
         return sb.toString();
     }
 }

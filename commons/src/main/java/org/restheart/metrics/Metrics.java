@@ -21,8 +21,9 @@ package org.restheart.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.net.HttpHeaders;
-import java.util.Deque;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
 import io.undertow.attribute.ExchangeAttributes;
@@ -120,7 +121,7 @@ public class Metrics {
     }
 
 
-    private static AttachmentKey<Deque<MetricLabel>> CUSTOM_METRIC_LABELS = AttachmentKey.create(Deque.class);
+    private static AttachmentKey<List<MetricLabel>> CUSTOM_METRIC_LABELS = AttachmentKey.create(List.class);
 
     /**
      * attach metrics labels to request
@@ -130,7 +131,21 @@ public class Metrics {
      * @param request
      * @param labels
      */
-    public static void attachMetricLabels(Request<?> request, Deque<MetricLabel> labels) {
+    public static void attachMetricLabels(Request<?> request, List<MetricLabel> labels) {
+        request.getExchange().putAttachment(CUSTOM_METRIC_LABELS, labels);
+    }
+
+    /**
+     * attach metrics labels to request
+     *
+     * RequestsMetricsCollector adds labels to the collected metrics
+     *
+     * @param request
+     * @param labels
+     */
+    public static void attachMetricLabel(Request<?> request, MetricLabel label) {
+        var labels = new ArrayList<MetricLabel>();
+        labels.add(label);
         request.getExchange().putAttachment(CUSTOM_METRIC_LABELS, labels);
     }
 
@@ -140,7 +155,7 @@ public class Metrics {
      * @param request
      * @param labels
      */
-    public static Deque<MetricLabel> getMetricLabels(Request<?> request) {
+    public static List<MetricLabel> getMetricLabels(Request<?> request) {
         return request.getExchange().getAttachment(CUSTOM_METRIC_LABELS);
     }
 }

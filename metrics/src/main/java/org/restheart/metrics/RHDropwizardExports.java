@@ -210,7 +210,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
                 var _additionalLabelNames = new ArrayList<String>();
                 var _additionalLabelValues = new ArrayList<String>();
 
-                nals.lables().forEach(l -> {
+                nals.labels().forEach(l -> {
                     _additionalLabelNames.add(l.name());
                     _additionalLabelValues.add(l.value());
                 });

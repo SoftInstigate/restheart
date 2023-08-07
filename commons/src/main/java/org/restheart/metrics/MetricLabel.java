@@ -32,6 +32,14 @@ public record MetricLabel(String name, String value) {
     public static String SEPARATOR = "=";
 
     public MetricLabel(String name, String value) {
+        if (name == null) {
+            throw new IllegalArgumentException("name cannot be null");
+        }
+
+        if (value == null) {
+            throw new IllegalArgumentException("value cannot be null");
+        }
+
         this.name = name.replaceAll("=", "_").replaceAll("\\.", "_");
         this.value = value.replaceAll("\\.", "_");
     }
