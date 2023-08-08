@@ -26,6 +26,7 @@ import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
+import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
@@ -130,25 +131,12 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
             return;
         } else {
-            // check query syntax
             try {
+                // check query syntax
                 var doc = GQL_PARSER.parseDocument(request.getQuery());
 
-                // collect query root fields
-                var rootFields = doc.getDefinitionsOfType(OperationDefinition.class).stream()
-                    .filter(d -> d.getOperation() == Operation.QUERY)
-                    .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class)
-                    .stream()
-                        .filter(f -> f.getSelectionSet() != null)
-                        .collect(Collectors.toList())).findFirst().orElse(new ArrayList<>());
-
-                // add metric label with queries names
-                var rootFieldsStr = rootFields.stream()
-                    .filter(f -> f.getName() != null)
-                    .map(f -> f.getName())
-                    .collect(Collectors.joining(","));
-
-                Metrics.attachMetricLabel(request, new MetricLabel("query", rootFieldsStr));
+                // add metric label
+                Metrics.attachMetricLabel(request, new MetricLabel("query", queryNames(doc)));
             } catch(InvalidSyntaxException ise) {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "Syntax error in query", ise);
                 return;
@@ -195,9 +183,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     }
 
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
-        LOGGER.debug("##### DATALOADERS STATISTICS #####");
         dataLoaderRegistry.getKeys().forEach(key -> LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics()));
-        LOGGER.debug("##################################");
     }
 
     private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings) {
@@ -268,5 +254,26 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     @Override
     public Function<HttpServerExchange, MongoResponse> response() {
         return e -> MongoResponse.of(e);
+    }
+
+    /**
+     * collect first level query fields are return a comma separated list of their nmaes
+     * @param doc
+     * @return
+     */
+    static String queryNames(Document doc) {
+        // collect query root fields
+        var rootFields = doc.getDefinitionsOfType(OperationDefinition.class).stream()
+            .filter(d -> d.getOperation() == Operation.QUERY)
+            .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class)
+            .stream()
+                .filter(f -> f.getSelectionSet() != null)
+                .collect(Collectors.toList())).findFirst().orElse(new ArrayList<>());
+
+        // add metric label with queries names
+        return rootFields.stream()
+            .filter(f -> f.getName() != null)
+            .map(f -> f.getName())
+            .collect(Collectors.joining(","));
     }
 }

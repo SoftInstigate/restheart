@@ -17,6 +17,8 @@
     <logger name="com.intuit" level="DEBUG"/>
     <logger name="com.intuit.karate.netty.WebSocketClientHandler" level="OFF"/>
 
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
     <root level="info">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />

@@ -26,17 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.restheart.utils.BsonUtils.document;
 
 import org.junit.jupiter.api.Test;
-
-import graphql.language.Document;
-import graphql.language.Field;
-import graphql.language.OperationDefinition;
-import graphql.language.OperationDefinition.Operation;
-import graphql.parser.Parser;
 import io.undertow.predicate.Predicates;
-import java.util.stream.Collectors;
 
 public class PredicatesTest {
-
     @Test
     public void testNullVsAbsent() {
         var doc = document().put("bar", 1).get();
@@ -100,23 +92,5 @@ public class PredicatesTest {
 
         assertFalse(_barEqObj.resolve(ExchangeWithBsonValue.exchange(fooDoc)));
         assertFalse(_fooEqOne.resolve(ExchangeWithBsonValue.exchange(barDoc)));
-    }
-
-    @Test
-    public void testParse() {
-        Parser parser = new Parser();
-        Document document = parser.parseDocument("query First { users { _id } } Second { xxx { _id } }");
-
-        System.out.println("queries:");
-
-        var queries = document.getDefinitions().stream()
-            .filter(d -> d instanceof OperationDefinition)
-            .map(d -> (OperationDefinition) d)
-            .filter(d -> d.getOperation() == Operation.QUERY)
-            .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class).stream()
-                .filter(f -> f.getSelectionSet() != null)
-                .collect(Collectors.toList())).findFirst();
-
-        queries.get().stream().forEach(q -> System.out.println(q.getName()));
     }
 }
