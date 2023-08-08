@@ -26,6 +26,23 @@ At startup, RESTHeart **connects automatically to the configured MongoDB databas
 
 ![RESTHeart use cases](https://restheart.org/images/clients.png)
 
+## Supported databases
+
+RESTHeart works with any MongoDB compatible database. The actual features supported depend on the level of compatibility of the database with the official MongoDB Java driver.
+
+**Note**: RESTHeart releases are tested in continuous integration with official MongoDB distributions only (at the moment from MongoDB 3.6 to 6.0).
+
+<a href="https://mongodb.com"><img src="https://upload.wikimedia.org/wikipedia/commons/9/93/MongoDB_Logo.svg" width="200px"></a>
+<a href="https://www.ferretdb.io"><img src="https://dbdb.io/media/logos/ferretdb.svg" width="200px"></a>
+<a href="https://developer.azurecosmosdb.com"><img src="https://devblogs.microsoft.com/wp-content/uploads/sites/31/2019/04/cosmosdb_fi.png" width="100px"></a>
+<a href="https://aws.amazon.com/documentdb/features/"><img src="https://d2908q01vomqb2.cloudfront.net/887309d048beef83ad3eabf2a79a64a389ab1c9f/2020/02/04/DocumentDB.png" width="160px"></a>
+<a href="https://www.percona.com/software/mongodb/percona-server-for-mongodb"><img src="https://www.percona.com/blog/wp-content/uploads/2015/12/psmdb-logo.png" width="200px"></a>
+
+- MongoDB Community, Enterprise and Atlas Cloud are 100% supported in all their functionalities.
+- Azure Cosmos DB and Amazon DocumentDB offer partial support for the MongoDB API, but most common RESTHeart features work as expected.
+- FerretDB offers partial support for the MongoDB API on top of PostgreSQL, but its level of compatibility with MongoDB is growing daily. FerretDB plans to support more relational databases in the future.
+- Percona Server for MongoDB is, in general, fully compatible with MongoDB, so RESTHeart usually works perfectly with it.
+
 ## Advanced features
 
 RESTHeart embeds [Undertow](https://undertow.io), a flexible and performant web server written in Java, providing both blocking and non-blocking HTTP API’s based on [NIO](https://en.wikipedia.org/wiki/Non-blocking_I/O_(Java)). Undertow is the underlying HTTP server of [RedHat's Wildfly](https://www.wildfly.org).
@@ -69,6 +86,31 @@ You can then run it with (make sure to have `mongod` running on `localhost:27017
 $ java -jar core/target/restheart.jar
 ```
 
+## Execute the integration tests suite
+
+To execute the integration test suite:
+
+```bash
+$ ./mvnw clean verify
+```
+
+The `verify` goal starts the RESTHeart process and a MongoDB Docker container before running the integration tests.
+
+To avoid starting the MongoDB Docker container, specify the system property `-P-mongodb`.
+
+The integration tests use the MongoDB connection string `mongodb://127.0.0.1` by default. To use a different connection string, specify the property `test-connection-string`.
+
+The following example shows how to run the integration test suite against an instance of [FerretDB](https://www.ferretdb.io) running on `localhost`.
+
+```bash
+# run FerretDB
+$ docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/all-in-one
+# execute the integration tests
+$ ./mvnw clean verify -DskipUTs -P-mongodb -Dtest-connection-string="mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN" -Dkarate.options="--tags ~@requires-replica-set"
+```
+
+This example also specifies the karate options to skip tests tagged with `requires-replica-set` (FerretDB does not supports change stream and transactions) and `-DskipUTs` to skip the execution of unit tests.
+
 ## Automatic snapshot builds
 
 Snapshot builds are available from [sonatype.org](https://s01.oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/)
@@ -111,9 +153,9 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
 
 - Open a [issue on GitHub](https://github.com/SoftInstigate/restheart/issues/new) to report a specific problem.
 - Ask technical questions on [Stackoverflow](https://stackoverflow.com/questions/ask?tags=restheart).
-- Chat with us on [Gitter](https://gitter.im/SoftInstigate/restheart).
-- Send us an [e-mail](mailto://ask@restheart.org) for general or commercial inquiries.
-- Book a [free 1-to-1 demo](https://calendly.com/restheart) with us!
+- Chat with other users on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
+- Book a [free 1-to-1 demo](https://calendly.com/restheart) with us.
+- Write us an [e-mail](mailto:ask@restheart.org?subject=RESTHeart).
 
 ## Become a Sponsor
 
@@ -137,4 +179,4 @@ You can support the development of RESTHeart via the GitHub Sponsor program and 
 
 ---
 
-_Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
+_Made with :heart: by [SoftInstigate](https://www.softinstigate.com). Follow us on [Twitter](https://twitter.com/softinstigate)_.
