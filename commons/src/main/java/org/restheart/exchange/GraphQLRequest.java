@@ -90,22 +90,35 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
         }
     }
 
-    public void injectContentJson() throws IOException, JsonSyntaxException {
+    private void injectContentJson() throws IOException, JsonSyntaxException, BadRequestException {
         var body = ChannelReader.readString(wrapped);
         var json = JsonParser.parseString(body);
+
+        // json must contain the query field and is must be a string
+        if (json.isJsonObject() && json.getAsJsonObject().has(QUERY_FIELD)) {
+            if (json.getAsJsonObject().get(QUERY_FIELD).isJsonPrimitive()) {
+                if (!json.getAsJsonObject().get(QUERY_FIELD).getAsJsonPrimitive().isString()) {
+                    throw new BadRequestException("query field must be a string", HttpStatus.SC_BAD_REQUEST);
+                }
+            } else {
+                throw new BadRequestException("query field must be a string", HttpStatus.SC_BAD_REQUEST);
+            }
+        } else {
+            throw new BadRequestException("missing query field", HttpStatus.SC_BAD_REQUEST);
+        }
 
         setContent(json);
     }
 
-    public void injectContentGraphQL() throws IOException {
+    private void injectContentGraphQL() throws IOException {
         var body = ChannelReader.readString(wrapped);
         var jsonObject = new JsonObject();
-        jsonObject.addProperty(QUERY_FIELD,body);
+        jsonObject.addProperty(QUERY_FIELD, body);
 
         setContent(jsonObject);
     }
 
-    public String getQuery(){
+    public String getQuery() {
         if (this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(QUERY_FIELD)){
             return this.getContent().getAsJsonObject().get(QUERY_FIELD).getAsString();
         } else {

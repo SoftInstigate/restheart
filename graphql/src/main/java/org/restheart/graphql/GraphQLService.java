@@ -154,7 +154,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             }
             res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
         } catch(UnknownOperationException uoe) {
-            res.setInError(400, uoe.getMessage(), uoe);
+            res.setInError(404, uoe.getMessage(), uoe);
         } catch(Throwable t) {
             var gee = new GraphQLAppExecutionException("error executing query", t);
             res.setInError(500, gee.getMessage(), gee);
