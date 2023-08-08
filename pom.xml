@@ -228,7 +228,7 @@
             <dependency>
                 <groupId>com.github.luben</groupId>
                 <artifactId>zstd-jni</artifactId>
-                <version>1.5.5-1</version>
+                <version>1.5.5-5</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -288,7 +288,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.4.7</version>
+                <version>1.4.9</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -333,7 +333,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.161</version>
+                <version>4.8.162</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -360,7 +360,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>20.4</version>
+                <version>21.0</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>
@@ -397,7 +397,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>5.3.1</version>
+                <version>5.4.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
