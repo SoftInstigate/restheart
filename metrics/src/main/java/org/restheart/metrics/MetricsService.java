@@ -61,15 +61,15 @@ public class MetricsService implements StringService {
             return;
         }
 
-        var params = request.getPathParams("/{servicename}/{pathTemplate}");
+        var params = request.getPathParams("/{servicename}/{*}");
 
-        if (!params.containsKey("pathTemplate")) {
+        if (!params.containsKey("*")) {
             var content = array();
             SharedMetricRegistries.names().stream().filter(name -> name.startsWith(METRICS_REGISTRIES_PREFIX)).forEachOrdered(reg -> content.add(reg.substring(METRICS_REGISTRIES_PREFIX.length())));
             response.setContent(content.toJson());
             response.setContentTypeAsJson();
         } else {
-            var _pathTemplate = "/" + params.get("pathTemplate");
+            var _pathTemplate = "/" + params.get("*");
             var pathTemplate = SharedMetricRegistries.names().stream().filter(METRICS_REGISTRIES_PREFIX.concat(_pathTemplate)::equals).findFirst();
 
             if (pathTemplate.isPresent()) {
