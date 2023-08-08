@@ -26,6 +26,11 @@ import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
+import graphql.language.Field;
+import graphql.language.OperationDefinition;
+import graphql.language.OperationDefinition.Operation;
+import graphql.parser.InvalidSyntaxException;
+import graphql.parser.Parser;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
@@ -49,10 +54,14 @@ import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.metrics.MetricLabel;
+import org.restheart.metrics.Metrics;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +112,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         QueryMapping.setMaxLimit(this.maxLimit);
     }
 
+    private static Parser GQL_PARSER = new Parser();
+
     @Override
     @SuppressWarnings("unchecked")
     public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
@@ -118,6 +129,31 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         if (request.getQuery() == null) {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
             return;
+        } else {
+            // check query syntax
+            try {
+                var doc = GQL_PARSER.parseDocument(request.getQuery());
+
+                // collect query root fields
+                var rootFields = doc.getDefinitionsOfType(OperationDefinition.class).stream()
+                    .filter(d -> d.getOperation() == Operation.QUERY)
+                    .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class)
+                    .stream()
+                        .filter(f -> f.getSelectionSet() != null)
+                        .collect(Collectors.toList())).findFirst().orElse(new ArrayList<>());
+
+                // add metric label with queries names
+                var rootFieldsStr = rootFields.stream()
+                    .filter(f -> f.getName() != null)
+                    .map(f -> f.getName())
+                    .collect(Collectors.joining(","));
+
+                Metrics.attachMetricLabel(request, new MetricLabel("query", rootFieldsStr));
+            } catch(InvalidSyntaxException ise) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Syntax error in query", ise);
+                return;
+            }
+
         }
 
         var inputBuilder = ExecutionInput.newExecutionInput()
@@ -125,6 +161,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(request.getOperationName());
+
         if (request.hasVariables()) {
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
