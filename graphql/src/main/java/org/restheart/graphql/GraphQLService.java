@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
+import graphql.execution.UnknownOperationException;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
 import io.undertow.server.HttpServerExchange;
@@ -49,6 +50,8 @@ import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -105,28 +108,28 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
-        if (request.isOptions()) {
-            handleOptions(request);
+    public void handle(GraphQLRequest req, MongoResponse res) throws Exception {
+        if (req.isOptions()) {
+            handleOptions(req);
             return;
         }
 
-        var graphQLApp = gqlApp(appURI(request.getExchange()));
+        var graphQLApp = gqlApp(appURI(req.getExchange()));
 
         var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.objectsMappings());
 
-        if (request.getQuery() == null) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
+        if (req.getQuery() == null) {
+            res.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
             return;
         }
 
         var inputBuilder = ExecutionInput.newExecutionInput()
-            .query(request.getQuery())
+            .query(req.getQuery())
             .dataLoaderRegistry(dataLoaderRegistry);
 
-        inputBuilder.operationName(request.getOperationName());
-        if (request.hasVariables()) {
-            inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
+        inputBuilder.operationName(req.getOperationName());
+        if (req.hasVariables()) {
+            inputBuilder.variables((new Gson()).fromJson(req.getVariables(), Map.class));
         }
 
         var dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions.newOptions();
@@ -147,20 +150,20 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             }
 
             if (!result.getErrors().isEmpty()) {
-                response.setInError(400, "Bad Request");
+                res.setInError(400, "Bad Request");
             }
-            response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
+            res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
+        } catch(UnknownOperationException uoe) {
+            res.setInError(400, uoe.getMessage(), uoe);
         } catch(Throwable t) {
             var gee = new GraphQLAppExecutionException("error executing query", t);
-            response.setInError(500, gee.getMessage(), gee);
+            res.setInError(500, gee.getMessage(), gee);
             throw gee;
         }
     }
 
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
-        LOGGER.debug("##### DATALOADERS STATISTICS #####");
         dataLoaderRegistry.getKeys().forEach(key -> LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics()));
-        LOGGER.debug("##################################");
     }
 
     private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings) {
@@ -199,12 +202,13 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 } else {
                     throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 }
-            } catch (GraphQLAppDefNotFoundException notFoundException) {
-                LOGGER.error(notFoundException.getMessage());
+            } catch (GraphQLAppDefNotFoundException nfe) {
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
-            } catch (GraphQLIllegalAppDefinitionException illegalException) {
-                LOGGER.error(illegalException.getMessage());
-                throw new BadRequestException(illegalException.getMessage(), HttpStatus.SC_BAD_REQUEST);
+            } catch (GraphQLIllegalAppDefinitionException ie) {
+                LOGGER.error(ie.getMessage());
+                throw new BadRequestException(ie.getMessage(), HttpStatus.SC_BAD_REQUEST);
+            } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
             }
         };
     }
