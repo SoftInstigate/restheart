@@ -113,7 +113,7 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
                 .filter(pmr -> pmr != null)
                 .collect(Collectors.toList());
 
-            LOGGER.debug("Matched path templates {}", matchedTemplates);
+            LOGGER.debug("Matched path templates {}", matchedTemplates.stream().map(t -> t.getMatchedTemplate()).collect(Collectors.toList()));
 
             try {
                 exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
