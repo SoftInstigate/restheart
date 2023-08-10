@@ -69,7 +69,8 @@ jobs:
         with:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
-          push: true
+          push: true # push all images built
+          pull: true # pull all required images before building
           tags: softinstigate/restheart:latest,softinstigate/restheart:7,softinstigate/restheart:7.4,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Build and Push GraalVM Docker image
@@ -78,7 +79,8 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.graalvm
-          push: true
+          push: true # push all images built
+          pull: true # pull all required images before building
           tags: softinstigate/restheart:graalvm,softinstigate/restheart:latest-graalvm,softinstigate/restheart:7-graalvm,softinstigate/restheart:7.4-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Build and Push distroless docker image
@@ -87,7 +89,8 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
-          push: true
+          push: true # push all images built
+          pull: true # pull all required images before building
           tags: softinstigate/restheart:distroless,softinstigate/restheart:latest-distroless,softinstigate/restheart:7-distroless,softinstigate/restheart:7.4-distroless,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
       - name: Upload GitHub release
