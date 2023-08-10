@@ -65,7 +65,7 @@ jobs:
 
       - name: Build and Push multi-arch Docker images
         if: ${{ matrix.deploy }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
@@ -74,7 +74,7 @@ jobs:
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: ./core/
           file: ./core/Dockerfile.graalvm
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
