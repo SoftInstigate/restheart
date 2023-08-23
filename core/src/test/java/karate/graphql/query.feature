@@ -352,5 +352,37 @@ Feature: GraphQL query response test
 
     * call confDestroyer
 
+    Scenario: JSON bad query request due to illegal json 1
 
+    Given request { query: { users(limit: 1) { posts { text } } } } # this is invalid since query should be a string
+    When method POST
+    Then status 400
+
+    * call confDestroyer
+
+    Scenario: JSON bad query request due to illegal json 2
+
+    Given request "{ query: { users }"
+    When method POST
+    Then status 400
+
+    * call confDestroyer
+
+    Scenario: JSON bad query request due to missing query field
+
+    Given request { users(limit: 1) { posts { text } } } # this is invalid since body should be { query: "{...}" }
+    When method POST
+    Then status 400
+    And match response.message == 'missing query field'
+
+    * call confDestroyer
+
+    Scenario: JSON bad query request due to not existing operation
+
+    Given request { query: "{ users (limit: 1) { posts { text } } }", operationName: "foo" }
+    When method POST
+    Then status 404
+    And match response.message == 'Unknown operation named \'foo\'.'
+
+    * call confDestroyer
 

@@ -51,7 +51,7 @@ RESTHeart works out-of-the-box by merely installing and configuring it. It is pa
 
 RESTHeart also supports [GraalVM](https://restheart.org/docs/graalvm/), a new Java Virtual Machine from Oracle that offers a **polyglot runtime environment** and the ability to compile Java applications to **native binary images**.
 
-Ther internal architecture is based on [plugins](https://restheart.org/docs/plugins/overview/) and exposes an API that allows to implement additional custom services in Java, Kotlin, JavaScript or TypeScript.
+The internal architecture is based on [plugins](https://restheart.org/docs/plugins/overview/) and exposes an API that allows to implement additional custom services in Java, Kotlin, JavaScript or TypeScript.
 
 To [extend the default behavior](https://restheart.org/docs/plugins/overview/) you can implement the following Java interfaces:
 
@@ -80,7 +80,7 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 $ ./mvnw clean package
 ```
 
-You can then run it with (make sure to have mongod running on `localhost:27017`):
+You can then run it with (make sure to have `mongod` running on `localhost:27017`):
 
 ```bash
 $ java -jar core/target/restheart.jar

@@ -118,17 +118,14 @@ public abstract class Exchange<T> {
      * @return true if Content-Type request header is application/json
      */
     public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType())
-                || (getContentType() != null && getContentType().startsWith("application/json;"));
+        return "application/json".equals(getContentType()) || (getContentType() != null && getContentType().startsWith("application/json;"));
     }
 
     /**
      * @return true if request is errored
      */
     public boolean isInError() {
-        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
-                && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
-
+        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
     }
 
     /**

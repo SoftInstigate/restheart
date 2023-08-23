@@ -184,6 +184,7 @@ public class PolyglotDeployer implements Initializer {
                     }
                 } catch (InterruptedException ex) {
                     LOGGER.error("Error watching {}" + pluginsDirectory.toAbsolutePath(), ex);
+                    Thread.currentThread().interrupt();
                 }
             }});
 
@@ -405,10 +406,13 @@ public class PolyglotDeployer implements Initializer {
                     LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
                         srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
                 } catch (IOException | InterruptedException | ExecutionException ex) {
-                    LOGGER.error("Error deployng node service {}", pluginPath, ex);
+                    LOGGER.error("Error deploying node service {}", pluginPath, ex);
+                    Thread.currentThread().interrupt();
+                    executor.shutdownNow();
                     return;
                 }
             });
+        executor.shutdown();
     }
 
 
