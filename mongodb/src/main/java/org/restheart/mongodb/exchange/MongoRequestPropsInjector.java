@@ -207,9 +207,6 @@ public class MongoRequestPropsInjector {
 
         if (exchange.getQueryParameters().containsKey(HINT_QPARAM_KEY)) {
             hint = exchange.getQueryParameters().get(HINT_QPARAM_KEY);
-
-        } else if (exchange.getQueryParameters().containsKey(HINT_QPARAM_KEY)) {
-            hint = exchange.getQueryParameters().get(HINT_QPARAM_KEY);
         }
 
         if (hint != null) {
