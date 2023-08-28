@@ -193,6 +193,7 @@ public class NodeService extends AbstractJSPlugin implements StringService {
             }
         } catch (InterruptedException ie) {
             LOGGER.debug("Error initializing node plugin", ie);
+            Thread.currentThread().interrupt();
         }
     }
 
