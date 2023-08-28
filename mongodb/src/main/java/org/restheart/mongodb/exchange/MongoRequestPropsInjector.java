@@ -195,7 +195,7 @@ public class MongoRequestPropsInjector {
                 response.addWarning("unexepecting sorting; the _last_updated_on timestamp is generated from the _etag property if present");
             }
 
-            if (sort_by.stream().anyMatch(s -> s.strip().equals("_created_on") || s.strip().equals("_created_on") || s.strip().equals("_created_on"))) {
+            if (sort_by.stream().anyMatch(s -> s.strip().equals("_created_on"))) {
                 response.addWarning("unexepecting sorting; the _created_on timestamp is generated from the _id property if it is an ObjectId");
             }
 
