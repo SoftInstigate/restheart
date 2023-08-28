@@ -53,11 +53,15 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
     }
 
     public void setContent(ObjectBuilder builder) {
-        setContent(builder.get());
+        if (builder != null) {
+            setContent(builder.get());
+        }
     }
 
     public void setContent(ArrayBuilder builder) {
-        setContent(builder.get());
+        if (builder != null) {
+            setContent(builder.get());
+        }
     }
 
     @Override
