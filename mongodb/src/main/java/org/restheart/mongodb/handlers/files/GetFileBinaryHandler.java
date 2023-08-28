@@ -169,8 +169,6 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         if (file.getMetadata() != null && file.getMetadata().get("contentType") != null) {
             response.getHeaders().put(Headers.CONTENT_TYPE, file.getMetadata().get("contentType").toString());
-        } else if (file.getMetadata() != null && file.getMetadata().get("contentType") != null) {
-            response.getHeaders().put(Headers.CONTENT_TYPE, file.getMetadata().get("contentType").toString());
         } else {
             response.getHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         }
