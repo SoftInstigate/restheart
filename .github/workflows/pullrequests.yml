@@ -41,4 +41,4 @@ jobs:
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
+        run: MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
