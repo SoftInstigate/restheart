@@ -15,8 +15,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - mongodb-version: 3.6
-            karate-options: "--tags ~@requires-mongodb-4 ~@requires-replica-set"
           - mongodb-version: 4.2
           - mongodb-version: 4.4
           - mongodb-version: 5.0
