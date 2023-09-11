@@ -383,4 +383,8 @@ public class MongoAclAuthorizer implements Authorizer {
 
         return true;
     }
+
+    public String rootRole() {
+        return rootRole;
+    }
 }
