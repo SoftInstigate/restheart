@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -34,7 +34,7 @@ import io.undertow.util.HttpString;
 
 public class BsonRequestPredicatesTest {
     @Test
-    public void testJsonRequestContainsBson() {
+    public void testBsonRequestContainsBson() {
         final var predicateFooArray = PredicateParser.parse("bson-request-contains(foo, array)",
                 MongoUtils.class.getClassLoader());
         final var predicateFooArrayNotExisting = PredicateParser.parse("bson-request-contains(foo, array, notex)",
@@ -74,7 +74,7 @@ public class BsonRequestPredicatesTest {
     }
 
     @Test
-    public void testJsonRequestWhitelistBson() {
+    public void testBsonRequestWhitelistBson() {
         final var predicate = PredicateParser.parse("bson-request-whitelist(a, c, us.d, d.n)",
                 MongoUtils.class.getClassLoader());
         final var predicateEmpty = PredicateParser.parse("bson-request-whitelist()",
@@ -105,9 +105,8 @@ public class BsonRequestPredicatesTest {
     }
 
     @Test
-    public void testJsonRequestBlacklistBson() {
-        final var predicateFooArray = PredicateParser.parse("bson-request-blacklist(foo, array)",
-                MongoUtils.class.getClassLoader());
+    public void testBsonRequestBlacklistBson() {
+        final var predicateFooArray = PredicateParser.parse("bson-request-blacklist(foo, array)", MongoUtils.class.getClassLoader());
 
         final var exchangeFooArrayOK = exchangeWithBsonContent("{ 'good': true }");
 
@@ -188,5 +187,115 @@ public class BsonRequestPredicatesTest {
         exchange.setRelativePath("/softinstigate/coll");
 
         return withBson(exchange, bsonContent);
+    }
+
+    @Test
+    public void testBsonRequestPropEqualsStrings() {
+        final var exchangeFooEqBar = exchangeWithBsonContent("""
+                {
+                    "foo": "bar"
+                }
+                """);
+
+        final var exchangeFooEqZap = exchangeWithBsonContent("""
+                {
+                    "foo": "zap"
+                }
+                """);
+
+        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicate.resolve(exchangeFooEqBar),
+                "check foo=bar equals bar");
+
+        assertFalse(
+                predicate.resolve(exchangeFooEqZap),
+                "check foo=zap equals bar");
+    }
+
+    @Test
+    public void testBsonRequestPropEqualsSubdoc() {
+        final var exchangeFooEqBar = exchangeWithBsonContent("""
+                {
+                    "sub": { "foo": "bar" }
+                }
+                """);
+
+        final var exchangeFooEqZap = exchangeWithBsonContent("""
+                {
+                    "sub": { "foo": "zap" }
+                }
+                """);
+
+        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=sub.foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicate.resolve(exchangeFooEqBar),
+                "check sub.foo=bar equals bar");
+
+        assertFalse(
+                predicate.resolve(exchangeFooEqZap),
+                "check sub.foo=zap equals bar");
+
+        final var predicateOnDoc = PredicateParser.parse("bson-request-prop-equals(key=sub, value='{ \"foo\": \"bar\" }')", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicateOnDoc.resolve(exchangeFooEqBar),
+                "check sub={'foo':'bar'} equals {'foo':'bar'}");
+
+        assertFalse(
+                predicateOnDoc.resolve(exchangeFooEqZap),
+                "check sub={'foo':'zap'} equals {'foo':'bar'}");
+    }
+
+    @Test
+    public void testBsonRequestPropContainsStrings() {
+        final var exchangeFooEqBar = exchangeWithBsonContent("""
+                {
+                    "foo": [ "bar", "zap" ]
+                }
+                """);
+
+        final var exchangeFooEqZap = exchangeWithBsonContent("""
+                {
+                    "foo": [ "zap", "lemon" ]
+                }
+                """);
+
+        final var predicate = PredicateParser.parse("bson-request-prop-contains(key=foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicate.resolve(exchangeFooEqBar),
+                "check foo=[ \"bar\", \"zap\" ] contains bar");
+
+        assertFalse(
+                predicate.resolve(exchangeFooEqZap),
+                "check foo=[ \"zap\", \"lemon\" ] contains bar");
+    }
+
+    @Test
+    public void testBsonRequestPropContainsSubdoc() {
+        final var exchangeWithBar = exchangeWithBsonContent("""
+                {
+                    "sub": { "foo": [ "bar" ] }
+                }
+                """);
+
+        final var exchangeWithZap = exchangeWithBsonContent("""
+                {
+                    "sub": { "foo": [ "zap" ] }
+                }
+                """);
+
+        final var predicate = PredicateParser.parse("bson-request-prop-contains(key=sub.foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicate.resolve(exchangeWithBar),
+                "check sub.foo=[ \"bar\" ] contains bar");
+
+        assertFalse(
+                predicate.resolve(exchangeWithZap),
+                "check sub.foo=[ \"zap\" ] contains bar");
     }
 }
