@@ -575,4 +575,11 @@ public class MongoRealmAuthenticator implements Authenticator {
     public String getUsersCollection() {
         return usersCollection;
     }
+
+    /**
+     * @return the jsonPathRoles
+     */
+    public String getJsonPathRoles() {
+        return jsonPathRoles;
+    }
 }
