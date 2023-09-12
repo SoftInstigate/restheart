@@ -56,6 +56,10 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"ch.qos.logback.classic.joran.SerializedModelConfigurator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"ch.qos.logback.classic.pattern.DateConverter",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -88,9 +92,16 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"ch.qos.logback.classic.util.DefaultJoranConfigurator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"ch.qos.logback.core.ConsoleAppender",
   "allPublicMethods":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"setWithJansi","parameterTypes":["boolean"] }
+  ]
 },
 {
   "name":"ch.qos.logback.core.OutputStreamAppender",
@@ -179,10 +190,12 @@
 },
 {
   "name":"com.github.benmanes.caffeine.cache.SSMSA",
+  "fields":[{"name":"FACTORY"}],
   "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.AsyncCacheLoader","boolean"] }]
 },
 {
   "name":"com.github.benmanes.caffeine.cache.SSMSW",
+  "fields":[{"name":"FACTORY"}],
   "methods":[{"name":"<init>","parameterTypes":["com.github.benmanes.caffeine.cache.Caffeine","com.github.benmanes.caffeine.cache.AsyncCacheLoader","boolean"] }]
 },
 {
@@ -846,6 +859,8 @@
 },
 {
   "name":"java.security.AccessController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
   "methods":[{"name":"doPrivileged","parameterTypes":["java.security.PrivilegedAction"] }]
 },
 {
@@ -1061,21 +1076,6 @@
 },
 {
   "name":"javax.smartcardio.CardPermission"
-},
-{
-  "name":"jdk.internal.loader.BuiltinClassLoader",
-  "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
-},
-{
-  "name":"jdk.internal.loader.ClassLoaders$AppClassLoader",
-  "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
-},
-{
-  "name":"jdk.internal.loader.ClassLoaders$PlatformClassLoader",
-  "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
 },
 {
   "name":"jdk.management.jfr.ConfigurationInfo",

@@ -34,7 +34,7 @@
             mvn clean verify -Dmongodb.version="5.0"  (to test with mongo:5.0 container)
         -->
         <mongodb.version>6.0</mongodb.version>
-        <graalvm.version>22.3.3</graalvm.version>
+        <graalvm.version>23.0.1</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -362,11 +362,11 @@
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
+            <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/svm -->
             <dependency>
-                <groupId>com.oracle.substratevm</groupId>
+                <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>svm</artifactId>
-                <version>19.2.1</version>
+                <version>${graalvm.version}</version>
                 <scope>provided</scope>
                 <!-- remove transitive dependencies
                      that break karate tests execution
@@ -381,7 +381,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>21.0</version>
+                <version>21.1</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>
@@ -562,7 +562,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.9.25</version>
+                    <version>0.9.26</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

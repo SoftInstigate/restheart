@@ -112,7 +112,7 @@
       <artifactId>tika-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.oracle.substratevm</groupId>
+      <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
     </dependency>
     <dependency>
@@ -256,6 +256,7 @@
               <excludes>
                 <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
                 <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
+                <exclude>META-INF/proguard/*</exclude>
               </excludes>
             </filter>
             <filter>
@@ -415,7 +416,7 @@
         </plugins>
       </build>
     </profile>
-    <!-- 
+    <!--
         This profile:
          * initializes the MongoDB cluster using the mongo shell.
          * starts the restheart server before the integration tests
@@ -562,7 +563,7 @@
               <execution>
                 <id>build-native</id>
                 <goals>
-                  <goal>build</goal>
+                  <goal>compile-no-fork</goal>
                 </goals>
                 <phase>package</phase>
               </execution>
