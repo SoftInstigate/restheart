@@ -29,6 +29,9 @@
       "pattern":"\\QMETA-INF/services/org.apache.tika.metadata.filter.MetadataFilter\\E"
     }, 
     {
+      "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+    }, 
+    {
       "pattern":"\\QMETA-INF/services/org.xnio.XnioProvider\\E"
     }, 
     {
@@ -110,15 +113,15 @@
   "bundles":[
     {
       "name":"i18n.Parsing",
-      "locales":[""]
+      "locales":["und"]
     }, 
     {
       "name":"i18n.Scalars",
-      "locales":[""]
+      "locales":["und"]
     }, 
     {
       "name":"i18n.Validation",
-      "locales":[""]
+      "locales":["und"]
     }
   ]
 }
