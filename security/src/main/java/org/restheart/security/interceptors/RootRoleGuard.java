@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name="rootRoleGuard",
-        description = "",
+        description = "forbids creating or updating mongoRealmAuthenticator accounts with the root-role of the mongoAclAuthorizer",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         enabledByDefault = true,
         priority = 11) // after pwd hasher to avoid logging the pwd
