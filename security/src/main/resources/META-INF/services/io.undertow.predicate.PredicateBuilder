@@ -6,5 +6,6 @@ org.restheart.security.predicates.BsonRequestContainsPredicate$Builder
 org.restheart.security.predicates.BsonRequestWhitelistPredicate$Builder
 org.restheart.security.predicates.BsonRequestBlacklistPredicate$Builder
 org.restheart.security.predicates.BsonRequestPropEqualsPredicate$Builder
-org.restheart.security.predicates.BsonRequestPropContainsPredicate$Builder
+org.restheart.security.predicates.BsonRequestArrayContainsPredicate$Builder
+org.restheart.security.predicates.BsonRequestArrayIsSubsetPredicate$Builder
 org.restheart.security.predicates.InPredicate$Builder

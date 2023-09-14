@@ -22,16 +22,14 @@ package org.restheart.security.predicates;
 
 import java.util.Map;
 import java.util.Set;
-
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
-
-import io.undertow.attribute.ExchangeAttribute;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;
@@ -43,19 +41,28 @@ import org.slf4j.LoggerFactory;
  * a predicate that resolve to true if the request content is bson and
  * the property 'key' (can use the dot notation) is an array that contains 'value'
  */
-public class BsonRequestPropContainsPredicate implements Predicate {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestPropContainsPredicate.class);
+public class BsonRequestArrayContainsPredicate implements Predicate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestArrayIsSubsetPredicate.class);
 
     private final String key;
-    private final ExchangeAttribute value;
+    private final BsonArray values;
 
-    public BsonRequestPropContainsPredicate(String key, ExchangeAttribute value) {
-        if (key == null || value == null) {
-            throw new IllegalArgumentException("bson-request-prop-contains predicate must specify key and value");
+    public BsonRequestArrayContainsPredicate(String key, String[] values) {
+        if (key == null || values == null) {
+            throw new IllegalArgumentException("bson-request-array-contains predicate must specify key and values");
         }
 
         this.key = key;
-        this.value = value;
+
+        this.values = new BsonArray();
+
+        for (var value: values) {
+            try {
+                this.values.add(BsonUtils.parse(value));
+            } catch(Throwable t) {
+                throw new IllegalArgumentException(value + " is not a valid bson value");
+            }
+        }
     }
 
     @Override
@@ -63,13 +70,13 @@ public class BsonRequestPropContainsPredicate implements Predicate {
         var _request = Request.of(exchange);
 
         if (_request == null) {
-            LOGGER.warn("bson-request-prop-contains predicate invkoed on null BsonRequest");
+            LOGGER.warn("bson-request-array-contains predicate invkoed on null BsonRequest");
             return false;
         }
 
         if (_request instanceof BsonRequest bsonRequest) {
             if (bsonRequest.getContent() == null) {
-                LOGGER.warn("bson-request-prop-contains predicate invoked on a BsonRequest with null content");
+                LOGGER.warn("bson-request-array-contains predicate invoked on a BsonRequest with null content");
                 return false;
             }
 
@@ -80,8 +87,7 @@ public class BsonRequestPropContainsPredicate implements Predicate {
                     var value = _value.get();
 
                     if (value.isArray()) {
-                        var expected = BsonUtils.parse(this.value.readAttribute(exchange));
-                        return value.asArray().contains(expected);
+                        return value.asArray().contains(values);
                     } else {
                         return false;
                     }
@@ -89,12 +95,12 @@ public class BsonRequestPropContainsPredicate implements Predicate {
                     return false;
                 }
             } else {
-                LOGGER.warn("bson-request-prop-contains predicate invoked on a BsonRequest with content {}, it requires a BsonDocument",  bsonRequest.getContent().getClass().getSimpleName());
+                LOGGER.warn("bson-request-array-contains predicate invoked on a BsonRequest with content {}, it requires a BsonDocument",  bsonRequest.getContent().getClass().getSimpleName());
                 return false;
             }
 
         } else {
-            LOGGER.warn("bson-request-prop-contains predicate not invoked on a BsonRequest");
+            LOGGER.warn("bson-request-array-contains predicate not invoked on a BsonRequest");
             return false;
         }
     }
@@ -102,20 +108,20 @@ public class BsonRequestPropContainsPredicate implements Predicate {
     public static class Builder implements PredicateBuilder {
         @Override
         public String name() {
-            return "bson-request-prop-contains";
+            return "bson-request-array-contains";
         }
 
         @Override
         public Map<String, Class<?>> parameters() {
             var params = Maps.<String, Class<?>>newHashMap();
             params.put("key", String.class);
-            params.put("value", ExchangeAttribute.class);
+            params.put("values", String[].class);
             return params;
         }
 
         @Override
         public Set<String> requiredParameters() {
-            return Sets.newHashSet("key", "value");
+            return Sets.newHashSet("key", "values");
         }
 
         @Override
@@ -125,7 +131,7 @@ public class BsonRequestPropContainsPredicate implements Predicate {
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new BsonRequestPropContainsPredicate((String) config.get("key"), (ExchangeAttribute) config.get("value"));
+            return new BsonRequestArrayIsSubsetPredicate((String) config.get("key"), (String[]) config.get("values"));
         }
     }
 }
