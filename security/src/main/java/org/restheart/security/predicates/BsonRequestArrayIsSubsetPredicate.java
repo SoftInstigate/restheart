@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * a predicate that resolve to true if the request content is bson and
- * the property 'key' (can use the dot notation) is an array that only contains 'values'
+ * the property 'key' (can use the dot notation) is an array that is a subset of 'values'
  */
 public class BsonRequestArrayIsSubsetPredicate implements Predicate {
     private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestArrayContainsPredicate.class);
