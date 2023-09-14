@@ -267,7 +267,7 @@ public class BsonRequestPredicatesTest {
 
         assertTrue(
                 predicate.resolve(exchangeBarAndFoo),
-                "check [ \"bar\", \"zap\" ] contains bar");
+                "check [ \"bar\", \"foo\" ] contains bar");
 
         assertFalse(
                 predicate.resolve(exchangeFooAndBaz),
