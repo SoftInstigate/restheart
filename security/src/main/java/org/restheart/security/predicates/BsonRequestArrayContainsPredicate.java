@@ -81,13 +81,13 @@ public class BsonRequestArrayContainsPredicate implements Predicate {
             }
 
             if (bsonRequest.getContent() instanceof BsonDocument contentDoc) {
-                var _value = BsonUtils.get(contentDoc, this.key);
+                var _values = BsonUtils.get(contentDoc, this.key);
 
-                if (_value.isPresent()) {
-                    var value = _value.get();
+                if (_values.isPresent()) {
+                    var values = _values.get();
 
-                    if (value.isArray()) {
-                        return value.asArray().contains(values);
+                    if (values.isArray()) {
+                        return values.asArray().containsAll(this.values);
                     } else {
                         return false;
                     }
@@ -131,7 +131,7 @@ public class BsonRequestArrayContainsPredicate implements Predicate {
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new BsonRequestArrayIsSubsetPredicate((String) config.get("key"), (String[]) config.get("values"));
+            return new BsonRequestArrayContainsPredicate((String) config.get("key"), (String[]) config.get("values"));
         }
     }
 }
