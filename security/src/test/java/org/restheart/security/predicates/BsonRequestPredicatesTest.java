@@ -203,7 +203,7 @@ public class BsonRequestPredicatesTest {
                 }
                 """);
 
-        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=foo, value='\"bar\"')", MongoUtils.class.getClassLoader());
 
         assertTrue(
                 predicate.resolve(exchangeFooEqBar),
@@ -228,7 +228,7 @@ public class BsonRequestPredicatesTest {
                 }
                 """);
 
-        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=sub.foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+        final var predicate = PredicateParser.parse("bson-request-prop-equals(key=sub.foo, value='\"bar\"')", MongoUtils.class.getClassLoader());
 
         assertTrue(
                 predicate.resolve(exchangeFooEqBar),
@@ -250,52 +250,107 @@ public class BsonRequestPredicatesTest {
     }
 
     @Test
-    public void testBsonRequestPropContainsStrings() {
-        final var exchangeFooEqBar = exchangeWithBsonContent("""
+    public void testBsonRequestArrayContains() {
+        final var exchangeBarAndFoo = exchangeWithBsonContent("""
                 {
-                    "foo": [ "bar", "zap" ]
+                    "a": [ "bar", "foo" ]
                 }
                 """);
 
-        final var exchangeFooEqZap = exchangeWithBsonContent("""
+        final var exchangeFooAndBaz = exchangeWithBsonContent("""
                 {
-                    "foo": [ "zap", "lemon" ]
+                    "a": [ "foo", "baz" ]
                 }
                 """);
 
-        final var predicate = PredicateParser.parse("bson-request-prop-contains(key=foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+        final var predicate = PredicateParser.parse("bson-request-array-contains(key=a, values='\"bar\"')", MongoUtils.class.getClassLoader());
 
         assertTrue(
-                predicate.resolve(exchangeFooEqBar),
-                "check foo=[ \"bar\", \"zap\" ] contains bar");
+                predicate.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"zap\" ] contains bar");
 
         assertFalse(
-                predicate.resolve(exchangeFooEqZap),
-                "check foo=[ \"zap\", \"lemon\" ] contains bar");
+                predicate.resolve(exchangeFooAndBaz),
+                "check foo=[ \"foo\", \"baz\" ] contains bar");
+
+        final var predicateArray = PredicateParser.parse("bson-request-array-contains(key=a, values={'\"bar\"', '\"foo\"'})", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicateArray.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"foo\" ] contains { bar, foo }");
+
+        assertFalse(
+                predicateArray.resolve(exchangeFooAndBaz),
+                "check foo=[ \"foo\", \"zap\" ] contains { bar, zap }");
     }
 
     @Test
-    public void testBsonRequestPropContainsSubdoc() {
-        final var exchangeWithBar = exchangeWithBsonContent("""
+    public void testBsonRequestArrayContainsDotNotation() {
+        final var exchangeBarAndFoo = exchangeWithBsonContent("""
                 {
-                    "sub": { "foo": [ "bar" ] }
+                    "sub": { "a": [ "bar", "foo" ] }
                 }
                 """);
 
-        final var exchangeWithZap = exchangeWithBsonContent("""
+        final var exchangeFooAndBaz = exchangeWithBsonContent("""
                 {
-                    "sub": { "foo": [ "zap" ] }
+                    "sub": { "a": [ "foo", "baz" ] }
                 }
                 """);
 
-        final var predicate = PredicateParser.parse("bson-request-prop-contains(key=sub.foo, value='\"bar\"'')", MongoUtils.class.getClassLoader());
+        final var predicate = PredicateParser.parse("bson-request-array-contains(key=sub.a, values='\"bar\"'')", MongoUtils.class.getClassLoader());
 
         assertTrue(
-                predicate.resolve(exchangeWithBar),
-                "check sub.foo=[ \"bar\" ] contains bar");
+                predicate.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"foo\" ] contains bar using the dot notation");
 
         assertFalse(
-                predicate.resolve(exchangeWithZap),
-                "check sub.foo=[ \"zap\" ] contains bar");
+                predicate.resolve(exchangeFooAndBaz),
+                "check [ \"foo\", \"baz\" ] contains bar using the dot notation");
+
+        final var predicateArray = PredicateParser.parse("bson-request-array-contains(key=sub.a, values={'\"bar\"', '\"foo\"'})", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+            predicateArray.resolve(exchangeBarAndFoo),
+            "check [ \"bar\", \"foo\" ] contains { bar, foo } using the dot notation");
+
+        assertFalse(
+                predicateArray.resolve(exchangeFooAndBaz),
+                "check foo=[ \"foo\", \"baz\" ] contains { bar, foo } using the dot notation");
+    }
+
+    @Test
+    public void testBsonRequestArrayIsSubset() {
+        final var exchangeBarAndFoo = exchangeWithBsonContent("""
+                {
+                    "a": [ "bar", "foo" ]
+                }
+                """);
+
+        final var exchangeFooAndBaz = exchangeWithBsonContent("""
+                {
+                    "a": [ "foo", "baz" ]
+                }
+                """);
+
+        final var predicate = PredicateParser.parse("bson-request-array-is-subset(key=a, values='\"bar\"')", MongoUtils.class.getClassLoader());
+
+        assertFalse(
+                predicate.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"zap\" ] is subset of bar");
+
+        assertFalse(
+                predicate.resolve(exchangeFooAndBaz),
+                "check foo=[ \"foo\", \"baz\" ] is subset bar");
+
+        final var predicateArray = PredicateParser.parse("bson-request-array-is-subset(key=a, values={'\"bar\"', '\"foo\"'})", MongoUtils.class.getClassLoader());
+
+        assertTrue(
+                predicateArray.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"foo\" ] is subset of { bar, foo }");
+
+        assertFalse(
+                predicateArray.resolve(exchangeFooAndBaz),
+                "check [ \"foo\", \"baz\" ] is subset of { bar, foo }");
     }
 }
