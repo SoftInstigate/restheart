@@ -24,10 +24,13 @@ Build Linux image
 $ docker run -it --rm \
     -v "$PWD":/opt/app  \
     -v "$HOME"/.m2:/root/.m2 \
-    softinstigate/graalvm-maven clean package -Pnative -DskipTests
+    softinstigate/graalvm-maven \
+    clean package -Pnative -DskipTests -Dnative.gc="--gc=G1"
 ```
 
 native-image arguments are defined in file `core/src/main/resources/META-INF/native-image/org.restheart/restheart/native-image.properties`
+
+__Note__: Linux needs to use the `G1` garbage collector. This is obtained by passing the `-Dnative.gc="--gc=G1"` property to maven.
 
 ### build linux based container
 
