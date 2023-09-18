@@ -337,11 +337,11 @@ public class BsonRequestPredicatesTest {
 
         assertFalse(
                 predicate.resolve(exchangeBarAndFoo),
-                "check [ \"bar\", \"zap\" ] is subset of bar");
+                "check [ \"bar\", \"zap\" ] is subset of {bar}");
 
         assertFalse(
                 predicate.resolve(exchangeFooAndBaz),
-                "check foo=[ \"foo\", \"baz\" ] is subset bar");
+                "check foo=[ \"foo\", \"baz\" ] is subset {bar}");
 
         final var predicateArray = PredicateParser.parse("bson-request-array-is-subset(key=a, values={'\"bar\"', '\"foo\"'})", MongoUtils.class.getClassLoader());
 
@@ -352,5 +352,25 @@ public class BsonRequestPredicatesTest {
         assertFalse(
                 predicateArray.resolve(exchangeFooAndBaz),
                 "check [ \"foo\", \"baz\" ] is subset of { bar, foo }");
+
+        final var predicateEmpty = PredicateParser.parse("bson-request-array-is-subset(key=a, values={})", MongoUtils.class.getClassLoader());
+
+        assertFalse(
+                predicateEmpty.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"foo\" ] is subset of {}");
+
+        final var exchangeEmptyArray = exchangeWithBsonContent("""
+                {
+                    "a": [ ]
+                }
+                """);
+
+        assertTrue(
+                predicate.resolve(exchangeEmptyArray),
+                "check a=[ ] is subset of {bar}");
+
+        assertTrue(
+                predicateEmpty.resolve(exchangeEmptyArray),
+                "check a=[ ] is subset of { }");
     }
 }
