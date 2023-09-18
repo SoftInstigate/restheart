@@ -8,6 +8,10 @@
     <version>7.5.0-SNAPSHOT</version>
   </parent>
 
+  <properties>
+    <native.gc>--gc=serial</native.gc>
+  </properties>
+
   <groupId>org.restheart</groupId>
   <artifactId>restheart</artifactId>
   <packaging>jar</packaging>
@@ -558,6 +562,12 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
+            <!-- See https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#configuration-options -->
+            <configuration>
+              <buildArgs>
+                <arg>${native.gc}</arg>
+              </buildArgs>
+            </configuration>
             <extensions>true</extensions>
             <executions>
               <execution>
