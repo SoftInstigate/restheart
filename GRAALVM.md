@@ -15,7 +15,7 @@ $ gu install native-image
 Build image for local OS
 
 ```bash
-$ ./mvnw clean package -Pnative
+$ ./mvnw clean package -Pnative -DskipTests
 ```
 
 Build Linux image
@@ -24,7 +24,7 @@ Build Linux image
 $ docker run -it --rm \
     -v "$PWD":/opt/app  \
     -v "$HOME"/.m2:/root/.m2 \
-    softinstigate/graalvm-maven clean package -Pnative
+    softinstigate/graalvm-maven clean package -Pnative -DskipTests
 ```
 
 native-image arguments are defined in file `core/src/main/resources/META-INF/native-image/org.restheart/restheart/native-image.properties`
