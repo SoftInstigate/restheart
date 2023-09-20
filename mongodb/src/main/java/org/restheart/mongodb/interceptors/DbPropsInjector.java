@@ -124,6 +124,7 @@ public class DbPropsInjector implements MongoInterceptor {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return this.dbs != null
             && request.isHandledBy("mongo")
@@ -133,6 +134,7 @@ public class DbPropsInjector implements MongoInterceptor {
             || request.isTxn()
             || request.isTxns()
             || request.isRoot()
-            || request.isRootSize());
+            || request.isRootSize()
+            || request.isMetrics());
     }
 }
