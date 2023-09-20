@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
@@ -44,6 +45,7 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class MongoServiceConfiguration {
     private static MongoServiceConfiguration INSTANCE = null;
 
@@ -83,6 +85,12 @@ public class MongoServiceConfiguration {
     private final int defaultPagesize;
     private final int maxPagesize;
 
+    /**
+     * @deprecated will be removed in RH v8.0
+     */
+    @Deprecated
+    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
+
     public static MongoServiceConfiguration get() {
         return INSTANCE;
     }
@@ -98,7 +106,7 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * the configuration 
+     * the configuration
      */
     private final Map<String, Object> mongoSrvConfiguration;
 
@@ -117,6 +125,7 @@ public class MongoServiceConfiguration {
      * @param silent
      * @throws org.restheart.configuration.ConfigurationException
      */
+    @SuppressWarnings("deprecated")
     private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.mongoSrvConfiguration = conf;
 
@@ -228,6 +237,19 @@ public class MongoServiceConfiguration {
         defaultPagesize = asInteger(conf, DEFAULT_PAGESIZE_KEY, DEFAULT_DEFAULT_PAGESIZE, silent);
 
         maxPagesize = asInteger(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE, silent);
+
+        METRICS_GATHERING_LEVEL mglevel;
+        try {
+            var value = asString(conf, METRICS_GATHERING_LEVEL_KEY, "OFF", silent);
+            mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
+        } catch (IllegalArgumentException iae) {
+            mglevel = METRICS_GATHERING_LEVEL.OFF;
+        }
+        metricsGatheringLevel = mglevel;
+
+        if (metricsGatheringLevel != METRICS_GATHERING_LEVEL.OFF) {
+            LOGGER.warn("Deprecated mongo metrics enabled. It will be removed in RESTHeart v8.0. Use requestsMetricsCollector instead, see https://restheart.org/docs/monitoring");
+        }
     }
 
     @Override
@@ -243,6 +265,7 @@ public class MongoServiceConfiguration {
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
                 + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
                 + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + mongoSrvConfiguration
+                + ", metricsGatheringLevel=" + metricsGatheringLevel
                 + '}';
     }
 
@@ -412,5 +435,50 @@ public class MongoServiceConfiguration {
      */
     public int getDefaultPagesize() {
         return defaultPagesize;
+    }
+
+    /**
+     * @deprecated will be removed in RH v8.0
+     */
+    @Deprecated
+    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
+        return metricsGatheringLevel;
+    }
+
+    /**
+     * @deprecated will be removed in RH v8.0
+     *
+     * decides whether metrics are gathered at the given log level or not
+     *
+     * @param level Metrics Gathering Level
+     * @return true if gathering Above Or Equal To Level
+     */
+    @Deprecated
+    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
+        return getMetricsGatheringLevel().compareTo(level) >= 0;
+    }
+
+    /**
+     * @deprecated will be removed in RH v8.0
+     */
+    @Deprecated
+    public enum METRICS_GATHERING_LEVEL {
+        /**
+         * do not gather any metrics
+         */
+        OFF,
+        /**
+         * gather basic metrics (for all databases, but not specific per database)
+         */
+        ROOT,
+        /**
+         * gather basic metrics, and also specific per database (but not
+         * collection-specific)
+         */
+        DATABASE,
+        /**
+         * gather basic, database, and collection-specific metrics
+         */
+        COLLECTION
     }
 }

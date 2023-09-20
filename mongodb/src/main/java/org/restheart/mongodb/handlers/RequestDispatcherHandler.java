@@ -63,6 +63,7 @@ import org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.mongodb.handlers.schema.JsonSchemaTransformer;
 import org.restheart.mongodb.handlers.sessions.DeleteSessionHandler;
 import org.restheart.mongodb.handlers.sessions.PostSessionHandler;
+import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class RequestDispatcherHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
@@ -117,12 +119,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         var request = MongoRequest.of(exchange);
 
         if (request.getMethod() == METHOD.OTHER || request.getType() == TYPE.INVALID) {
-            LOGGER.debug(
-                    "This method is not allowed: returning a <{}> HTTP code",
-                    HttpStatus.SC_METHOD_NOT_ALLOWED);
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "method " + request.getMethod().name() + " not allowed");
+            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "method " + request.getMethod().name() + " not allowed");
             next(exchange);
             return;
         }
@@ -134,12 +132,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             httpHandler.handleRequest(exchange);
             after(exchange);
         } else {
-            LOGGER.error(
-                    "Can't find PipelinedHandler({}, {})",
-                    request.getType(), request.getMethod());
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "method " + request.getMethod().name() + " not allowed");
+            LOGGER.error("Can't find PipelinedHandler({}, {})", request.getType(), request.getMethod());
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "method " + request.getMethod().name() + " not allowed");
             next(exchange);
         }
     }
@@ -376,6 +370,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                 ));
 
         putHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
+
+        putHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler());
     }
 
     /**
