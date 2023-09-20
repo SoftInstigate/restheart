@@ -386,6 +386,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         });
 
         metricsUri = buildURI("/_metrics");
+        metricsUnknownCollectionUri = buildURI("/someunknowndb/unknowncollection/_metrics");
     }
 
     /**

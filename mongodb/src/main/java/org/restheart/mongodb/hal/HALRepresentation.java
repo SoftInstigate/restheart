@@ -88,6 +88,7 @@ public class HALRepresentation implements MongoInterceptor {
                 && !request.isSchemaStoreMeta()
                 && !request.isSchemaStoreSize()
                 && !request.isFileBinary()
+                && !request.isMetrics()
                 && request.isHandledBy("mongo")
                 && request.getRepresentationFormat() != null
                 && (Resource.isSHAL(request) || Resource.isHAL(request));
@@ -221,7 +222,7 @@ public class HALRepresentation implements MongoInterceptor {
                 addItems(__embedded, embedded, "rh:schema-store");
 
                 // add _items if not in error
-                if (response.getStatusCode() == HttpStatus.SC_OK) { 
+                if (response.getStatusCode() == HttpStatus.SC_OK) {
                     ret.append("_embedded", __embedded);
                 }
             } else if (response.getStatusCode() == HttpStatus.SC_OK) {
