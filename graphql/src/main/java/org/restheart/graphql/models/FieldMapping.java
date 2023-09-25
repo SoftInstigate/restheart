@@ -22,7 +22,6 @@ package org.restheart.graphql.models;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -30,12 +29,11 @@ import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.utils.BsonUtils;
-
 import graphql.Assert;
+import graphql.GraphQLContext;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
-
     protected final String OPERATORS[] = { "$arg", "$fk" };
 
     protected final String fieldName;
@@ -50,22 +48,42 @@ public abstract class FieldMapping {
 
     public abstract GraphQLDataFetcher getDataFetcher();
 
-    public BsonValue searchOperators(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+    public BsonValue interpolateOperators(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
         for (var operator : this.OPERATORS) {
             if (source.containsKey(operator)) {
                 var valueToInterpolate = source.getString(operator).getValue();
 
                 return switch (operator) {
                     case "$arg" -> {
-                        var arguments = BsonUtils.toBsonDocument(env.getArguments());
+                        if (valueToInterpolate.startsWith("rootDoc.")) {
+                            var rootDoc = (BsonDocument) ((GraphQLContext)env.getContext()).get("rootDoc");
 
-                        if (arguments == null || arguments.get(valueToInterpolate) == null) {
-                            throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
+                            if (rootDoc == null) {
+                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not available for execution path " + env.getExecutionStepInfo().getPath());
+                            }
+
+                            var rootDocFieldPath = valueToInterpolate.substring("rootDoc.".length(), valueToInterpolate.length());
+
+                            var value = BsonUtils.get(rootDoc, rootDocFieldPath);
+
+                            if (value.isPresent()) {
+                                yield value.get();
+                            } else {
+                                yield BsonNull.VALUE;
+                            }
+                        } else {
+                            var arguments = BsonUtils.toBsonDocument(env.getArguments());
+
+                            if (arguments == null || !arguments.containsKey(valueToInterpolate)) {
+                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
+                            } else {
+                                yield arguments.get(valueToInterpolate);
+                            }
                         }
-
-                        yield arguments.get(valueToInterpolate);
                     }
+
                     case "$fk" -> getForeignValue(env.getSource(), valueToInterpolate);
+
                     default -> Assert.assertShouldNeverHappen();
                 };
             }
@@ -75,13 +93,13 @@ public abstract class FieldMapping {
 
         for (var key : source.keySet()) {
             if (source.get(key).isDocument()) {
-                var value = searchOperators(source.get(key).asDocument(), env);
+                var value = interpolateOperators(source.get(key).asDocument(), env);
                 result.put(key, value);
             } else if (source.get(key).isArray()) {
                 var array = new BsonArray();
                 for (var bsonValue : source.get(key).asArray()) {
                     if (bsonValue.isDocument()) {
-                        var value = searchOperators(bsonValue.asDocument(), env);
+                        var value = interpolateOperators(bsonValue.asDocument(), env);
                         array.add(value);
 
                     } else {

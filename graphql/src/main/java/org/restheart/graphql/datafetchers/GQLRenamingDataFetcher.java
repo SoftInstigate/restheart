@@ -36,10 +36,14 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        // store the root object in the context
+        // this happens when the execution level is 2
+        storeRootDoc(env);
+
         var alias = ((FieldRenaming) this.fieldMapping).getAlias();
 
-        BsonDocument parentDocument = dataFetchingEnvironment.getSource();
+        BsonDocument parentDocument = env.getSource();
         return getValues(parentDocument, alias);
     }
 
@@ -75,4 +79,3 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
         return current;
     }
 }
-

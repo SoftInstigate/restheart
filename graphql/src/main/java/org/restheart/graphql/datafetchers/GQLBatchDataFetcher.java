@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -36,20 +36,24 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher{
 
 
     @Override
-    public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        // store the root object in the context
+        // this happens when the execution level is 2
+        storeRootDoc(env);
+
         var queryMapping = (QueryMapping) this.fieldMapping;
 
         DataLoader<BsonValue, BsonValue> dataLoader;
 
-        String key = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName() + "_" + queryMapping.getFieldName();
+        String key = ((GraphQLObjectType) env.getParentType()).getName() + "_" + queryMapping.getFieldName();
 
-        dataLoader = dataFetchingEnvironment.getDataLoader(key);
+        dataLoader = env.getDataLoader(key);
 
-        var int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+        var int_args = queryMapping.interpolateArgs(env);
 
-        return dataLoader.load(int_args, dataFetchingEnvironment).thenApply(
+        return dataLoader.load(int_args, env).thenApply(
             results -> {
-                boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+                boolean isMultiple = env.getFieldDefinition().getType() instanceof GraphQLList;
                 if (isMultiple){
                     return results;
                 }

@@ -22,7 +22,6 @@ package org.restheart.graphql.datafetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -43,12 +42,16 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        // store the root object in the context
+        // this happens when the execution level is 2
+        storeRootDoc(env);
+
         var queryMapping = (QueryMapping) this.fieldMapping;
 
         BsonDocument int_args = null;
 
-        int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+        int_args = queryMapping.interpolateArgs(env);
 
         var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
         var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
@@ -71,7 +74,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
             query = query.limit(_limit);
         }
 
-        boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+        boolean isMultiple = env.getFieldDefinition().getType() instanceof GraphQLList;
 
         if (isMultiple) {
             var queryResult = new BsonArray();

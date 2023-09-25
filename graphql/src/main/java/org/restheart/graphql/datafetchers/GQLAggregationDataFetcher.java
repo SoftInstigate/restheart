@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -35,12 +35,11 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import graphql.schema.DataFetchingEnvironment;
 
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
-    private final Logger logger = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
 
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
     private long aggregationTimeLimit;
@@ -67,20 +66,24 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment environment) throws Exception {
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        // store the root object in the context
+        // this happens when the execution level is
+        storeRootDoc(env);
+
         return CompletableFuture.supplyAsync(() -> {
             var aggregation = (AggregationMapping) this.fieldMapping;
 
             try {
-                aggregation.getResolvedStagesAsList(environment);
+                aggregation.getResolvedStagesAsList(env);
             } catch (QueryVariableNotBoundException e) {
-                logger.info("Something went wrong while trying to resolve stages {}", e.getMessage());
+                LOGGER.info("Something went wrong while trying to resolve stages {}", e.getMessage());
                 throw new RuntimeException(e);
             }
 
             AggregateIterable<BsonDocument> res = null;
             try {
-                var aggregationList = aggregation.getResolvedStagesAsList(environment);
+                var aggregationList = aggregation.getResolvedStagesAsList(env);
 
                 // If user does not pass any stage return an empty array
                 if(aggregationList.size() == 0 ) {
@@ -96,8 +99,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                     .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
             } catch (QueryVariableNotBoundException e) {
-                logger.error("Aggregation pipeline has failed! {}", e.getMessage());
-                e.printStackTrace();
+                LOGGER.error("Field-to-aggregation mapping has failed! {}", e.getMessage(), e);
             }
 
             var stageOutput = new ArrayList<BsonDocument>();

@@ -125,7 +125,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
             var value = field.get(this);
 
             if(value instanceof BsonDocument bsonDoc) {
-                var ivalue = searchOperators(bsonDoc, env);
+                var ivalue = interpolateOperators(bsonDoc, env);
 
                 // make sure limit does not exceed max-limit
                 if (field.getName().equals("limit") && ivalue.asInt32().getValue() > maxLimit) {
