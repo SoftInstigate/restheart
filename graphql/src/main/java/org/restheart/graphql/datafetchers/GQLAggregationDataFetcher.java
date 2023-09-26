@@ -21,9 +21,9 @@
 
 package org.restheart.graphql.datafetchers;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import com.mongodb.client.AggregateIterable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.configuration.Configuration;
@@ -34,11 +34,13 @@ import org.restheart.plugins.OnInit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.client.AggregateIterable;
+
 import graphql.schema.DataFetchingEnvironment;
 
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
-    private final Logger logger = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
 
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
     private long aggregationTimeLimit;
@@ -65,46 +67,43 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public Object get(DataFetchingEnvironment environment) throws Exception {
-        return CompletableFuture.supplyAsync(() -> {
-            var aggregation = (AggregationMapping) this.fieldMapping;
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        var aggregation = (AggregationMapping) this.fieldMapping;
 
-            try {
-                aggregation.getResolvedStagesAsList(environment);
-            } catch (QueryVariableNotBoundException e) {
-                logger.info("Something went wrong while trying to resolve stages {}", e.getMessage());
-                throw new RuntimeException(e);
+        try {
+            aggregation.getResolvedStagesAsList(env);
+        } catch (QueryVariableNotBoundException e) {
+            LOGGER.info("Something went wrong while trying to resolve stages {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        AggregateIterable<BsonDocument> res = null;
+        try {
+            var aggregationList = aggregation.getResolvedStagesAsList(env);
+
+            // If user does not pass any stage return an empty array
+            if(aggregationList.isEmpty() ) {
+                return new BsonArray();
             }
 
-            AggregateIterable<BsonDocument> res = null;
-            try {
-                var aggregationList = aggregation.getResolvedStagesAsList(environment);
+            res = mongoClient
+                .getDatabase(aggregation.getDb().getValue())
+                .getCollection(aggregation.getCollection().getValue())
+                .withDocumentClass(BsonDocument.class)
+                .aggregate(aggregationList)
+                .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+                .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
-                // If user does not pass any stage return an empty array
-                if(aggregationList.size() == 0 ) {
-                    return new BsonArray();
-                }
+        } catch (QueryVariableNotBoundException e) {
+            LOGGER.error("Field-to-aggregation mapping has failed! {}", e.getMessage(), e);
+        }
 
-                res = mongoClient
-                    .getDatabase(aggregation.getDb().getValue())
-                    .getCollection(aggregation.getCollection().getValue())
-                    .withDocumentClass(BsonDocument.class)
-                    .aggregate(aggregationList)
-                    .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                    .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
+        var stageOutput = new ArrayList<BsonDocument>();
 
-            } catch (QueryVariableNotBoundException e) {
-                logger.error("Aggregation pipeline has failed! {}", e.getMessage());
-                e.printStackTrace();
-            }
+        if(res != null) {
+            res.forEach(doc -> stageOutput.add(doc));
+        }
 
-            var stageOutput = new ArrayList<BsonDocument>();
-
-            if(res != null) {
-                res.forEach(doc -> stageOutput.add(doc));
-            }
-
-            return stageOutput;
-        });
+        return stageOutput;
     }
 }
