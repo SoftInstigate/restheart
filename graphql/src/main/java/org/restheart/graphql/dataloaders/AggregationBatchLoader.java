@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -53,30 +53,28 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
 
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> pipelines) {
-        return CompletableFuture.supplyAsync(() -> {
-            var res = new ArrayList<BsonValue>();
+        var res = new ArrayList<BsonValue>();
 
-            var listOfFacets = pipelines.stream()
-                    .map(pipeline -> new Facet(String.valueOf(pipeline.hashCode()), toBson(pipeline)))
-                    .toList();
+        var listOfFacets = pipelines.stream()
+                .map(pipeline -> new Facet(String.valueOf(pipeline.hashCode()), toBson(pipeline)))
+                .toList();
 
-            var iterable = mongoClient.getDatabase(this.db)
-                    .getCollection(this.collection, BsonValue.class)
-                    .aggregate(List.of(Aggregates.facet(listOfFacets)));
+        var iterable = mongoClient.getDatabase(this.db)
+                .getCollection(this.collection, BsonValue.class)
+                .aggregate(List.of(Aggregates.facet(listOfFacets)));
 
-            var aggResult = new BsonArray();
+        var aggResult = new BsonArray();
 
-            iterable.into(aggResult);
+        iterable.into(aggResult);
 
-            var resultDoc = aggResult.get(0).asDocument();
+        var resultDoc = aggResult.get(0).asDocument();
 
-            pipelines.forEach(query -> {
-                BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
-                res.add(queryResult);
-            });
-
-            return res;
+        pipelines.forEach(query -> {
+            BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
+            res.add(queryResult);
         });
+
+        return CompletableFuture.completedFuture(res);
 
     }
 

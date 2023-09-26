@@ -25,15 +25,9 @@ import com.mongodb.client.MongoClient;
 import graphql.GraphQLContext;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-
-import org.bson.BsonValue;
 import org.restheart.graphql.models.FieldMapping;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLDataFetcher.class);
-
     protected static MongoClient mongoClient;
     protected FieldMapping fieldMapping;
 
@@ -54,7 +48,6 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
         GraphQLContext ctx = env.getContext();
         // at path level 2 the parent is the root
         if (ctx.getOrEmpty("rootDoc").isEmpty() && env.getExecutionStepInfo().getPath().getLevel() == 2) {
-            LOGGER.debug("store root: {}", (BsonValue) env.getSource());
             ctx.put("rootDoc", env.getSource());
         }
     }

@@ -22,9 +22,7 @@
 package org.restheart.graphql.datafetchers;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import com.mongodb.client.AggregateIterable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -71,44 +69,42 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         // this happens when the execution level is
         storeRootDoc(env);
 
-        return CompletableFuture.supplyAsync(() -> {
-            var aggregation = (AggregationMapping) this.fieldMapping;
+        var aggregation = (AggregationMapping) this.fieldMapping;
 
-            try {
-                aggregation.getResolvedStagesAsList(env);
-            } catch (QueryVariableNotBoundException e) {
-                LOGGER.info("Something went wrong while trying to resolve stages {}", e.getMessage());
-                throw new RuntimeException(e);
+        try {
+            aggregation.getResolvedStagesAsList(env);
+        } catch (QueryVariableNotBoundException e) {
+            LOGGER.info("Something went wrong while trying to resolve stages {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        AggregateIterable<BsonDocument> res = null;
+        try {
+            var aggregationList = aggregation.getResolvedStagesAsList(env);
+
+            // If user does not pass any stage return an empty array
+            if(aggregationList.size() == 0 ) {
+                return new BsonArray();
             }
 
-            AggregateIterable<BsonDocument> res = null;
-            try {
-                var aggregationList = aggregation.getResolvedStagesAsList(env);
+            res = mongoClient
+                .getDatabase(aggregation.getDb().getValue())
+                .getCollection(aggregation.getCollection().getValue())
+                .withDocumentClass(BsonDocument.class)
+                .aggregate(aggregationList)
+                .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+                .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
-                // If user does not pass any stage return an empty array
-                if(aggregationList.size() == 0 ) {
-                    return new BsonArray();
-                }
+        } catch (QueryVariableNotBoundException e) {
+            LOGGER.error("Field-to-aggregation mapping has failed! {}", e.getMessage(), e);
+        }
 
-                res = mongoClient
-                    .getDatabase(aggregation.getDb().getValue())
-                    .getCollection(aggregation.getCollection().getValue())
-                    .withDocumentClass(BsonDocument.class)
-                    .aggregate(aggregationList)
-                    .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                    .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
+        var stageOutput = new ArrayList<BsonDocument>();
 
-            } catch (QueryVariableNotBoundException e) {
-                LOGGER.error("Field-to-aggregation mapping has failed! {}", e.getMessage(), e);
-            }
+        if(res != null) {
+            res.forEach(doc -> stageOutput.add(doc));
+        }
 
-            var stageOutput = new ArrayList<BsonDocument>();
-
-            if(res != null) {
-                res.forEach(doc -> stageOutput.add(doc));
-            }
-
-            return stageOutput;
-        });
+        return stageOutput;
     }
 }

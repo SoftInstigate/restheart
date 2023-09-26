@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -76,57 +76,54 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> queries) {
-        return CompletableFuture.supplyAsync(() -> {
-            var res = new ArrayList<BsonValue>();
-            List<Bson> stages = new ArrayList<>();
+        var res = new ArrayList<BsonValue>();
+        List<Bson> stages = new ArrayList<>();
 
-            // if there are at least 2 queries within the batch
-            if (queries.size() > 1){
-                var mergedCond = new BsonArray();
-                var listOfFacets = new ArrayList<Facet>();
+        // if there are at least 2 queries within the batch
+        if (queries.size() > 1){
+            var mergedCond = new BsonArray();
+            var listOfFacets = new ArrayList<Facet>();
 
-                // foreach query within the batch...
-                queries.forEach(query -> {
-                    // add find condition to merged array
-                    BsonDocument findClause = query.asDocument().containsKey("find") ? query.asDocument().getDocument("find") : new BsonDocument();
-                    mergedCond.add(findClause);
+            // foreach query within the batch...
+            queries.forEach(query -> {
+                // add find condition to merged array
+                BsonDocument findClause = query.asDocument().containsKey("find") ? query.asDocument().getDocument("find") : new BsonDocument();
+                mergedCond.add(findClause);
 
-                    // create a new sub-pipeline with query stages
-                    listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query.asDocument())));
-                });
+                // create a new sub-pipeline with query stages
+                listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query.asDocument())));
+            });
 
-                // 1° stage --> $match with conditions merged by $or operator
-                stages.add(Aggregates.match(new BsonDocument("$or", mergedCond)));
+            // 1° stage --> $match with conditions merged by $or operator
+            stages.add(Aggregates.match(new BsonDocument("$or", mergedCond)));
 
-                // 2° stage --> $facet with one sub-pipeline for each query within the batch
-                stages.add(Aggregates.facet(listOfFacets));
+            // 2° stage --> $facet with one sub-pipeline for each query within the batch
+            stages.add(Aggregates.facet(listOfFacets));
 
-                var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
+            var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
 
-                BsonArray aggResult = new BsonArray();
+            BsonArray aggResult = new BsonArray();
 
-                iterable.into(aggResult);
+            iterable.into(aggResult);
 
-                var resultDoc = aggResult.get(0).asDocument();
-                queries.forEach(query -> {
-                    BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
-                    res.add(queryResult);
-                });
-                // ... otherwise merging is not needed and sub-pipelines neither
-            } else {
-                var query = queries.get(0).asDocument();
-                stages = getQueryStages(query);
-                var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
-                var aggResult = new BsonArray();
+            var resultDoc = aggResult.get(0).asDocument();
+            queries.forEach(query -> {
+                BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
+                res.add(queryResult);
+            });
+            // ... otherwise merging is not needed and sub-pipelines neither
+        } else {
+            var query = queries.get(0).asDocument();
+            stages = getQueryStages(query);
+            var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
+            var aggResult = new BsonArray();
 
-                iterable.into(aggResult);
+            iterable.into(aggResult);
 
-                res.add(aggResult);
-            }
+            res.add(aggResult);
+        }
 
-            return res;
-        });
-
+        return CompletableFuture.completedFuture(res);
     }
 
     private List<Bson> getQueryStages(BsonDocument queryDoc){
