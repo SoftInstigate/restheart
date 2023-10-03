@@ -1,8 +1,10 @@
 {
   "_id": "bar",
+  "sub": {
     "posts": [
       { "content": "ping", "visible": true },
       { "content": "pong", "visible": true },
       { "content": "invisible", "visible": false }
     ]
+  }
 }

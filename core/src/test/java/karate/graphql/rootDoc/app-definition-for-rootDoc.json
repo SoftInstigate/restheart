@@ -6,7 +6,7 @@
     "enabled": true,
     "uri": "test-rootDoc"
   },
-  "schema": "type Author { _id: String posts(visible: Boolean): [Post] } type Post { content: String } type Query { authors: [Author] }",
+  "schema": "type Author { _id: String posts(visible: Boolean): [Post]} type Post { content: String } type Query { authors: [Author] }",
   "mappings": {
     "Author": {
         "posts": {
@@ -14,8 +14,8 @@
         "collection": "authors-and-posts",
         "stages": [
             { "$match": { "_id": { "$arg": "rootDoc._id" } } },
-            { "$unwind" : "$posts"  },
-            { "$replaceRoot": {"newRoot": "$posts"} },
+            { "$unwind" : "$sub.posts"  },
+            { "$replaceRoot": {"newRoot": "$sub.posts"} },
             { "$match": { "visible": { "$arg": "visible" } } }
         ]
         }
