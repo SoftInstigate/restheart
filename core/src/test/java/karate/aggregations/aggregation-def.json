@@ -1,0 +1,12 @@
+{
+    "aggrs": [
+        {
+            "uri": "test",
+            "stages": [
+                { "$skip": { "$var": [ "options.skip", 0 ] } },
+                { "$limit": { "$var": [ "options.limit", 100 ] } },
+                { "$ifvar": [ "options.sort", { "$sort": { "$var": "options.sort" } } ] }
+            ]
+        }
+    ]
+}

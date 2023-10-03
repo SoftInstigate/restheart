@@ -29,6 +29,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.utils.BsonUtils;
 
 public abstract class AbstractAggregationOperation {
 
@@ -210,7 +211,7 @@ public abstract class AbstractAggregationOperation {
             if (_obj.size() == 1 && _obj.get("$var") != null) {
                 var v = _obj.get("$var");
 
-                if (v.isArray() && v.asArray().size() == 2) { // case {"$var": [ "name", "value" ] }
+                if (v.isArray() && v.asArray().size() == 2) { // case {"$var": [ "name", "value" ] }, i.e. var with default value
                     var _name = v.asArray().get(0);
                     var defaultValue = v.asArray().get(1);
 
@@ -220,15 +221,21 @@ public abstract class AbstractAggregationOperation {
 
                     var name = _name.asString().getValue();
 
-                    return aVars == null || aVars.get(name) == null
-                        ? defaultValue
-                        : aVars.get(_name.asString().getValue());
-                } else if (v.isString()) { // case { "$var": "name" }
-                    if (aVars == null || aVars.get(v.asString().getValue()) == null) {
+                    if (aVars == null) {
+                        return defaultValue;
+                    } else {
+                        var value = BsonUtils.get(aVars, name);
+
+                        return value.isPresent() ? value.get() : defaultValue;
+                    }
+                } else if (v.isString()) { // case { "$var": "name" }, i.e. var without defaul value
+                    if (aVars == null || BsonUtils.get(aVars, v.asString().getValue()).isEmpty()) {
                         throw new QueryVariableNotBoundException("variable " + v.asString().getValue() + " not bound");
                     }
 
-                    return aVars.get(v.asString().getValue());
+                    var value = BsonUtils.get(aVars, v.asString().getValue());
+
+                    return value.isPresent() ? value.get() : null;
                 } else {
                     throw new InvalidMetadataException("wrong variable name " + v.toString());
                 }

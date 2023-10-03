@@ -138,9 +138,9 @@ public class AggregationPipeline extends AbstractAggregationOperation {
         var vars = stage.get("$ifvar").asArray().get(0);
 
         if (vars.isString()) {
-            return avars.containsKey(vars.asString().getValue());
+            return BsonUtils.get(avars, vars.asString().getValue()).isPresent();
         } else {
-            return vars.asArray().stream().map(s -> s.asString().getValue()).allMatch(avars::containsKey);
+            return vars.asArray().stream().map(s -> s.asString().getValue()).allMatch(key -> BsonUtils.get(avars, key).isPresent());
         }
     }
 
