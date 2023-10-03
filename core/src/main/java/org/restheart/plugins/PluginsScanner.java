@@ -27,8 +27,11 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +50,8 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import graphql.Assert;
 
 /**
  * this class is configured to be initialized at build time by native-image
@@ -322,7 +327,7 @@ public class PluginsScanner {
     }
 
     static class RuntimeClassGraph {
-        private static final Logger LOGGER = LoggerFactory.getLogger(PluginsFactory.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(PluginsScanner.class);
 
         private ClassGraph classGraph;
 
@@ -376,11 +381,18 @@ public class PluginsScanner {
                 // relative to the jar (also working when running from classes)
                 var location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
 
-                var locationFile = new File(location.getPath());
+                try {
+                    var decodedLocation = URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8.toString());
 
-                pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
+                    var locationFile = new File(decodedLocation);
 
-                return FileSystems.getDefault().getPath(pluginsDir);
+                    pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
+
+                    return FileSystems.getDefault().getPath(pluginsDir);
+                } catch(UnsupportedEncodingException uee) {
+                    Assert.assertShouldNeverHappen();
+                    throw new RuntimeException(uee);
+                }
             }
         }
 
@@ -411,7 +423,7 @@ public class PluginsScanner {
                     }
 
                     urls.add(jar);
-                    LOGGER.info("Found plugin jar {}", jar);
+                    LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
                 }
             } catch (IOException ex) {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
