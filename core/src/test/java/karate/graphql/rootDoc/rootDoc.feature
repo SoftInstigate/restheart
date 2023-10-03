@@ -25,6 +25,9 @@ Scenario: Should return two posts
    {
      authors{
        _id
+       group {
+        description
+       }
        posts(visible: true) {
         content
        }
@@ -38,6 +41,7 @@ Scenario: Should return two posts
    When method POST
    Then status 200
    And match $..posts.length() == 2
+   And match $.data.authors[0].group.description == 'the coolest authors'
 
 Scenario: Should return one post
 
@@ -46,6 +50,9 @@ Scenario: Should return one post
    {
      authors{
        _id
+       group {
+        description
+       }
        posts(visible: false) {
         content
        }
@@ -59,3 +66,4 @@ Scenario: Should return one post
    When method POST
    Then status 200
    And match $..posts.length() == 1
+   And match $.data.authors[0].group.description == 'the coolest authors'

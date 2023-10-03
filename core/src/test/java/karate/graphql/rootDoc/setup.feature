@@ -42,8 +42,6 @@ Scenario: Create collection with mock data in gql-apps
     And request read('app-definition-for-rootDoc.json')
     When method PUT
 
-
-
     # crete authors-and-posts collection
     * header Authorization = admin
     Given path '/test-graphql/authors-and-posts'
@@ -52,5 +50,16 @@ Scenario: Create collection with mock data in gql-apps
     # insert authors and posts
     * header Authorization = admin
     Given path '/test-graphql/authors-and-posts'
-    And request read('test-data.json')
+    And request read('authors-and-posts.json')
+    When method POST
+
+    # crete groups collection
+    * header Authorization = admin
+    Given path '/test-graphql/groups'
+    When method PUT
+
+    # insert groups
+    * header Authorization = admin
+    Given path '/test-graphql/groups'
+    And request read('groups.json')
     When method POST

@@ -6,7 +6,7 @@
     "enabled": true,
     "uri": "test-rootDoc"
   },
-  "schema": "type Author { _id: String posts(visible: Boolean): [Post]} type Post { content: String } type Query { authors: [Author] }",
+  "schema": "type Author { _id: String posts(visible: Boolean): [Post] group: Group} type Group {_id: String description: String} type Post { content: String } type Query { authors: [Author] }",
   "mappings": {
     "Author": {
         "posts": {
@@ -18,6 +18,11 @@
             { "$replaceRoot": {"newRoot": "$sub.posts"} },
             { "$match": { "visible": { "$arg": "visible" } } }
         ]
+        },
+        "group": {
+            "db": "test-graphql",
+            "collection": "groups",
+            "query": { "_id": { "$arg": "rootDoc._id" } }
         }
     },
     "Query": {

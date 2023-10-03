@@ -1,5 +1,8 @@
 {
   "_id": "bar",
+  "properties": {
+    "group": "coolest"
+  },
   "sub": {
     "posts": [
       { "content": "ping", "visible": true },
