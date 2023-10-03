@@ -1,0 +1,20 @@
+{
+  "_id": "test-arg-operator",
+  "descriptor": {
+    "name": "test-arg-operator",
+    "description": "This is a GraphQL application to test the $arg operator",
+    "enabled": true,
+    "uri": "test-arg-operator"
+  },
+  "schema": "type Stuff { _id: String } input Options {limit: Int, skip: Int } type Query { stuff(options: Options): [Stuff] }",
+  "mappings": {
+    "Query": {
+        "stuff": {
+            "db": "test-graphql",
+            "collection": "test-arg-operator",
+            "limit": {"$arg": "options.limit"},
+            "skip": {"$arg": "options.skip"}
+        }
+      }
+  }
+}
