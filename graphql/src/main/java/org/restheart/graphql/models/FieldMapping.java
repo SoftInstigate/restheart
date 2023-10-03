@@ -55,7 +55,15 @@ public abstract class FieldMapping {
 
                 return switch (operator) {
                     case "$arg" -> {
-                        if (valueToInterpolate.startsWith("rootDoc.")) {
+                        if (valueToInterpolate.equals("rootDoc")) {
+                            var rootDoc = (BsonDocument) ((GraphQLContext)env.getContext()).get("rootDoc");
+
+                            if (rootDoc == null) {
+                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not available for execution path " + env.getExecutionStepInfo().getPath());
+                            }
+
+                            yield rootDoc;
+                        } else if (valueToInterpolate.startsWith("rootDoc.")) {
                             var rootDoc = (BsonDocument) ((GraphQLContext)env.getContext()).get("rootDoc");
 
                             if (rootDoc == null) {
@@ -74,10 +82,12 @@ public abstract class FieldMapping {
                         } else {
                             var arguments = BsonUtils.toBsonDocument(env.getArguments());
 
-                            if (arguments == null || !arguments.containsKey(valueToInterpolate)) {
-                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
+                            var value = BsonUtils.get(arguments, valueToInterpolate);
+
+                            if (value.isPresent()) {
+                                yield value.get();
                             } else {
-                                yield arguments.get(valueToInterpolate);
+                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
                             }
                         }
                     }
