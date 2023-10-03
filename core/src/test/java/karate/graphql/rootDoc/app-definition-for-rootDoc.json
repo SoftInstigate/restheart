@@ -1,0 +1,33 @@
+{
+  "_id": "test-rootDoc",
+  "descriptor": {
+    "name": "test-rootDoc",
+    "description": "This is a GraphQL application to test the rootDoc",
+    "enabled": true,
+    "uri": "test-rootDoc"
+  },
+  "schema": "type Author { _id: String posts(visible: Boolean): [Post] } type Post { content: String } type Query { authors: [Author] }",
+  "mappings": {
+    "Author": {
+        "posts": {
+        "db": "test-graphql",
+        "collection": "authors-and-posts",
+        "stages": [
+            { "$match": { "_id": { "$arg": "rootDoc._id" } } },
+            { "$unwind" : "$posts"  },
+            { "$replaceRoot": {"newRoot": "$posts"} },
+            { "$match": { "visible": { "$arg": "visible" } } }
+        ]
+        }
+    },
+    "Query": {
+        "authors": {
+          "db": "test-graphql",
+          "collection": "authors-and-posts",
+          "limit": 10,
+          "skip": 0,
+          "sort": {}
+        }
+      }
+  }
+}
