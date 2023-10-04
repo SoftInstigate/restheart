@@ -222,10 +222,9 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private List<Path> findJsPluginDirectories(Path pluginsDirectory) {
-        if (pluginsDirectory == null) {
+        if (!checkPluginDirectory(pluginsDirectory)) {
+            LOGGER.error("js plugins will not be deployed");
             return Lists.newArrayList();
-        } else {
-            checkPluginDirectory(pluginsDirectory);
         }
 
         var paths = new ArrayList<Path>();
@@ -247,16 +246,23 @@ public class PolyglotDeployer implements Initializer {
         return paths;
     }
 
-    private void checkPluginDirectory(Path pluginsDirectory) {
+    private boolean checkPluginDirectory(Path pluginsDirectory) {
+        if (pluginsDirectory == null) {
+            LOGGER.error("Plugin directory {} configuration option not set");
+            return false;
+        }
+
         if (!Files.exists(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
-            throw new IllegalStateException("Plugins directory " + pluginsDirectory + " does not exist");
+            return false;
         }
 
         if (!Files.isReadable(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
-            throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
+            return false;
         }
+
+        return true;
     }
 
     private List<Path> findServices(Path path) {
