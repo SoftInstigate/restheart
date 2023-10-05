@@ -24,6 +24,7 @@ import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoException;
 import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
+import org.bson.BSONException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoRequest;
@@ -92,6 +93,9 @@ public class ErrorHandler implements HttpHandler {
                 LOGGER.debug("Error handling the request", mce);
                 response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
             }
+        } catch(BSONException be) {
+            LOGGER.debug("Request failed due to invalid BSON", be);
+            response.setInError(400, "Invalid BSON: " + be.getMessage());
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
