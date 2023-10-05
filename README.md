@@ -32,7 +32,7 @@ During startup, RESTHeart **automatically establishes a connection to the config
 
 RESTHeart works with any MongoDB compatible database. The actual features supported depend on the level of compatibility of the database with the official MongoDB Java driver.
 
-**Note**: RESTHeart releases are tested in continuous integration with official MongoDB distributions only (at the moment from MongoDB 3.6 to 6.0).
+**Note**: RESTHeart releases are tested in continuous integration with official MongoDB distributions only (from MongoDB 4.2 to 7.0).
 
 <a href="https://mongodb.com"><img src="https://upload.wikimedia.org/wikipedia/commons/9/93/MongoDB_Logo.svg" width="200px"></a>
 <a href="https://www.ferretdb.io"><img src="https://dbdb.io/media/logos/ferretdb.svg" width="200px"></a>
