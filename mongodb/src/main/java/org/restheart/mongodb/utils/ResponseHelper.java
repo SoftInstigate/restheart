@@ -160,6 +160,7 @@ public class ResponseHelper {
             // 17312 $meta is the only expression supported by $sort right now
             // 31138 Illegal $meta sort
             case 15974, 17312, 31138 -> HttpStatus.SC_BAD_REQUEST;
+            case 15998 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -228,6 +229,7 @@ public class ResponseHelper {
             // 31138 Illegal $meta sort
             case 31138 -> "Invalid $meta sort";
             case 40323 -> "A pipeline stage specification object must contain exactly one field.";
+            case 15998 -> "FieldPath field names may not be empty strings";
             default -> "Error handling the request, see log for more information";
         };
     }
