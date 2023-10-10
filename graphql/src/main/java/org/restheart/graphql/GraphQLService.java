@@ -41,6 +41,7 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Request;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
@@ -280,5 +281,11 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             .filter(f -> f.getName() != null)
             .map(f -> f.getName())
             .collect(Collectors.joining(","));
+    }
+
+    public static final String ACCESS_CONTROL_ALLOW_METHODS = "POST, OPTIONS";
+    @Override
+    public String accessControlAllowMethods(Request<?> r) {
+        return ACCESS_CONTROL_ALLOW_METHODS;
     }
 }
