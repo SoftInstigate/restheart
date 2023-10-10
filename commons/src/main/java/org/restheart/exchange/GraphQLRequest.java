@@ -119,24 +119,32 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     }
 
     public String getQuery() {
-        if (this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(QUERY_FIELD)){
-            return this.getContent().getAsJsonObject().get(QUERY_FIELD).getAsString();
+        if (this.getContent().isJsonObject()
+            && this.getContent().getAsJsonObject().has(QUERY_FIELD)
+            && this.getContent().getAsJsonObject().get(QUERY_FIELD).isJsonPrimitive()
+            && this.getContent().getAsJsonObject().getAsJsonPrimitive(QUERY_FIELD).isString()) {
+            return this.getContent().getAsJsonObject().getAsJsonPrimitive(QUERY_FIELD).getAsString();
         } else {
             return null;
         }
     }
 
-    public String getOperationName(){
-        if (this.getContent().isJsonObject() &&  this.getContent().getAsJsonObject().has(OPERATION_NAME_FIELD)) {
-            return this.getContent().getAsJsonObject().get(OPERATION_NAME_FIELD).getAsString();
+    public String getOperationName() {
+        if (this.getContent().isJsonObject()
+            && this.getContent().getAsJsonObject().has(OPERATION_NAME_FIELD)
+            && this.getContent().getAsJsonObject().get(OPERATION_NAME_FIELD).isJsonPrimitive()
+            && this.getContent().getAsJsonObject().getAsJsonPrimitive(OPERATION_NAME_FIELD).isString()) {
+            return this.getContent().getAsJsonObject().getAsJsonPrimitive(OPERATION_NAME_FIELD).getAsString();
         } else {
             return null;
         }
     }
 
-    public JsonObject getVariables(){
-        if (this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(VARIABLES_FIELD)) {
-            return this.getContent().getAsJsonObject().get(VARIABLES_FIELD).getAsJsonObject();
+    public JsonObject getVariables() {
+        if (this.getContent().isJsonObject()
+            && this.getContent().getAsJsonObject().has(VARIABLES_FIELD)
+            && this.getContent().getAsJsonObject().get(VARIABLES_FIELD).isJsonObject()) {
+            return this.getContent().getAsJsonObject().getAsJsonObject(VARIABLES_FIELD);
         } else {
             return null;
         }
@@ -146,8 +154,10 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
        return this.appUri;
     }
 
-    public boolean hasVariables(){
-        return this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(VARIABLES_FIELD);
+    public boolean hasVariables() {
+        return this.getContent().isJsonObject()
+            && this.getContent().getAsJsonObject().has(VARIABLES_FIELD)
+            && this.getContent().getAsJsonObject().get(VARIABLES_FIELD).isJsonObject();
     }
 
     private static boolean isContentTypeGraphQL(HttpServerExchange exchange){
