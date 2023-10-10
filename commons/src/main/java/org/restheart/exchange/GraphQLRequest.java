@@ -61,7 +61,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
                 ret.injectContentGraphQL();
             } else if (isContentTypeJson(exchange)){
                 ret.injectContentJson();
-            } else {
+            } else if (!method.equalToString("OPTIONS")) {
                 throw new BadRequestException("Bad request: " + Headers.CONTENT_TYPE + " must be either " + GRAPHQL_CONTENT_TYPE + " or application/json", HttpStatus.SC_BAD_REQUEST);
             }
         } catch (JsonSyntaxException ex) {
