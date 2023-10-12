@@ -24,12 +24,9 @@ import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
-import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.BsonUtils;
 
 public abstract class AbstractAggregationOperation {
 
@@ -189,82 +186,6 @@ public abstract class AbstractAggregationOperation {
      */
     public String getUri() {
         return uri;
-    }
-
-    /**
-     * @param obj
-     * @param aVars RequestContext.getAggregationVars()
-     * @return the json object where the variables <code>{"_$var": "name" }</code>
-     * or <code>{"_$var": [ "name", "defaultValue" ] }</code> are
-     * replaced with the values defined in the avars URL query parameter
-     * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.exchange.QueryVariableNotBoundException
-     */
-    protected BsonValue bindAggregationVariables(BsonValue obj, BsonDocument aVars) throws InvalidMetadataException, QueryVariableNotBoundException {
-        if (obj == null) {
-            return null;
-        }
-
-        if (obj.isDocument()) {
-            var _obj = obj.asDocument();
-
-            if (_obj.size() == 1 && _obj.get("$var") != null) {
-                var v = _obj.get("$var");
-
-                if (v.isArray() && v.asArray().size() == 2) { // case {"$var": [ "name", "value" ] }, i.e. var with default value
-                    var _name = v.asArray().get(0);
-                    var defaultValue = v.asArray().get(1);
-
-                    if (!_name.isString()) {
-                        throw new InvalidMetadataException("wrong variable name " + v.toString());
-                    }
-
-                    var name = _name.asString().getValue();
-
-                    if (aVars == null) {
-                        return defaultValue;
-                    } else {
-                        var value = BsonUtils.get(aVars, name);
-
-                        return value.isPresent() ? value.get() : defaultValue;
-                    }
-                } else if (v.isString()) { // case { "$var": "name" }, i.e. var without defaul value
-                    if (aVars == null || BsonUtils.get(aVars, v.asString().getValue()).isEmpty()) {
-                        throw new QueryVariableNotBoundException("variable " + v.asString().getValue() + " not bound");
-                    }
-
-                    var value = BsonUtils.get(aVars, v.asString().getValue());
-
-                    return value.isPresent() ? value.get() : null;
-                } else {
-                    throw new InvalidMetadataException("wrong variable name " + v.toString());
-                }
-            } else {
-                var ret = new BsonDocument();
-
-                for (var key : _obj.keySet()) {
-                    ret.put(key, bindAggregationVariables(_obj.get(key), aVars));
-                }
-
-                return ret;
-            }
-        } else if (obj.isArray()) {
-            var ret = new BsonArray();
-
-            for (var el : obj.asArray().getValues()) {
-                if (el.isDocument()) {
-                    ret.add(bindAggregationVariables(el, aVars));
-                } else if (el.isArray()) {
-                    ret.add(bindAggregationVariables(el, aVars));
-                } else {
-                    ret.add(el);
-                }
-            }
-
-            return ret;
-        } else {
-            return obj;
-        }
     }
 
     /**

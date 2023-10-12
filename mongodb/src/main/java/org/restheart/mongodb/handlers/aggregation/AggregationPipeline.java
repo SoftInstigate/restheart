@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.handlers.aggregation;
 
+import static org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.LambdaUtils;
 
@@ -176,7 +179,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
             .filter(stage -> stage != null)
             .collect(Collectors.toCollection(BsonArray::new));
 
-        var resolvedStages = bindAggregationVariables(stagesWithoutUnboudOptionalStages, avars).asArray();
+        var resolvedStages = VarOperatorsInterpolator.interpolate(OPERATOR.$var, stagesWithoutUnboudOptionalStages, avars).asArray();
 
         var ret = new ArrayList<BsonDocument>();
 

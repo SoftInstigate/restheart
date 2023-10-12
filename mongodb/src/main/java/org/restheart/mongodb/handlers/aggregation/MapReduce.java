@@ -20,11 +20,14 @@
  */
 package org.restheart.mongodb.handlers.aggregation;
 
+import static org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+
 import java.util.regex.Matcher;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator;
 import org.restheart.utils.BsonUtils;
 
 /**
@@ -143,7 +146,7 @@ public class MapReduce extends AbstractAggregationOperation {
      */
     public BsonDocument getResolvedQuery(BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        return bindAggregationVariables(BsonUtils.unescapeKeys(query), aVars).asDocument();
+        return VarOperatorsInterpolator.interpolate(OPERATOR.$var, BsonUtils.unescapeKeys(query), aVars).asDocument();
     }
 
     /**
