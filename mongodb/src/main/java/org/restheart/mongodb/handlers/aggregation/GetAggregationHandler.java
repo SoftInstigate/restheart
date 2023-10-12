@@ -45,7 +45,8 @@ import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.WithProperties;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
-
+import org.restheart.mongodb.utils.AggregationInterpolator;
+import static org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +161,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     try {
                         var clientSession = request.getClientSession();
 
-                        var stages = pipeline.getResolvedStagesAsList(avars);
+                        var stages = AggregationInterpolator.interpolate(OPERATOR.$var, pipeline.getStages(), avars);
 
                         if (clientSession == null) {
                             agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())

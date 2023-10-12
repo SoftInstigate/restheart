@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -24,12 +24,13 @@ package org.restheart.mongodb.handlers.aggregation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.restheart.utils.BsonUtils.document;
-
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.utils.BsonUtils;
+import org.restheart.mongodb.utils.AggregationInterpolator;
+import static org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
 
 public class AggregationPipelineTest {
     @Test
@@ -47,7 +48,7 @@ public class AggregationPipelineTest {
 
         var apDef = BsonUtils.parse(aggr).asDocument();
         var ap = new AggregationPipeline(apDef);
-        assertEquals(1, ap.getResolvedStagesAsList(new BsonDocument()).size());
+        assertEquals(1, AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(), new BsonDocument()).size());
     }
 
     @Test
@@ -66,7 +67,7 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        assertThrows(QueryVariableNotBoundException.class, () -> ap.getResolvedStagesAsList(document().get()));
+        assertThrows(QueryVariableNotBoundException.class, () -> AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().get()));
     }
 
     @Test
@@ -85,7 +86,7 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        var resolvedStages = ap.getResolvedStagesAsList(document().put("name", "foo").get());
+        var resolvedStages = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(), document().put("name", "foo").get());
 
         assertEquals(1, resolvedStages.size());
         assertEquals(new BsonString("foo"), resolvedStages.get(0).getDocument("$match").getString("name"));
@@ -106,14 +107,13 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        var resolvedStagesShouldUseAvar = ap
-                .getResolvedStagesAsList(document().put("s", document().put("surname", -1)).get());
+        var resolvedStagesShouldUseAvar = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().put("s", document().put("surname", -1)).get());
 
         assertEquals(1, resolvedStagesShouldUseAvar.size());
         assertEquals(document().put("surname", -1).get(),
                 resolvedStagesShouldUseAvar.get(0).getDocument("$sort"));
 
-        var resolvedStagesShouldUseDefaultValue = ap.getResolvedStagesAsList(document().get());
+        var resolvedStagesShouldUseDefaultValue = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().get());
 
         assertEquals(1, resolvedStagesShouldUseDefaultValue.size());
         assertEquals(document().put("surname", 1).get(),
@@ -136,13 +136,12 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        var optinalStagesShouldBeIn = ap
-                .getResolvedStagesAsList(document().put("s", document().put("surname", -1)).get());
+        var optinalStagesShouldBeIn = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().put("s", document().put("surname", -1)).get());
 
         assertEquals(2, optinalStagesShouldBeIn.size());
         assertEquals(document().put("surname", -1).get(), optinalStagesShouldBeIn.get(1).getDocument("$sort"));
 
-        var optinalStagesShouldBeOut = ap.getResolvedStagesAsList(document().get());
+        var optinalStagesShouldBeOut = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().get());
 
         assertEquals(1, optinalStagesShouldBeOut.size());
         assertEquals(document().put("name", "foo").get(), optinalStagesShouldBeOut.get(0).getDocument("$match"));
@@ -164,14 +163,14 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        var optinalStagesShouldBeIn = ap.getResolvedStagesAsList(document()
+        var optinalStagesShouldBeIn = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document()
                 .put("s", document().put("surname", -1))
                 .put("n", 1).get());
 
         assertEquals(2, optinalStagesShouldBeIn.size());
         assertEquals(document().put("surname", -1).get(), optinalStagesShouldBeIn.get(1).getDocument("$sort"));
 
-        var optinalStagesShouldBeOut = ap.getResolvedStagesAsList(document().get());
+        var optinalStagesShouldBeOut = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().get());
 
         assertEquals(1, optinalStagesShouldBeOut.size());
         assertEquals(document().put("name", "foo").get(), optinalStagesShouldBeOut.get(0).getDocument("$match"));
@@ -193,13 +192,13 @@ public class AggregationPipelineTest {
         var apDef = BsonUtils.parse(aggr).asDocument();
 
         var ap = new AggregationPipeline(apDef);
-        var optinalStagesShouldBeUsed = ap.getResolvedStagesAsList(document()
+        var optinalStagesShouldBeUsed = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document()
                 .put("s", document().put("surname", -1)).get());
 
         assertEquals(2, optinalStagesShouldBeUsed.size());
         assertEquals(document().put("surname", -1).get(), optinalStagesShouldBeUsed.get(1).getDocument("$sort"));
 
-        var elseStageShouldBeUsed = ap.getResolvedStagesAsList(document().get());
+        var elseStageShouldBeUsed = AggregationInterpolator.interpolate(OPERATOR.$var, ap.getStages(),document().get());
 
         assertEquals(2, elseStageShouldBeUsed.size());
         assertEquals(document().put("else", 1).get(), elseStageShouldBeUsed.get(1).getDocument("$sort"));

@@ -37,6 +37,8 @@ import org.restheart.exchange.QueryNotFoundException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.RHMongoClients;
+import org.restheart.mongodb.utils.AggregationInterpolator;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,8 +153,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         ChangeStreamOperation pipeline = _query.get();
 
-        List<BsonDocument> resolvedStages = pipeline
-                .getResolvedStagesAsList(request.getAggregationVars());
+        List<BsonDocument> resolvedStages = AggregationInterpolator.interpolate(OPERATOR.$var, pipeline.getStages(), request.getAggregationVars());
         return resolvedStages;
     }
 
