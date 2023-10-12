@@ -10,19 +10,19 @@
   "mappings": {
     "Author": {
         "posts": {
-        "db": "test-graphql",
-        "collection": "authors-and-posts",
-        "stages": [
-            { "$match": { "_id": { "$arg": "rootDoc._id" } } },
-            { "$unwind" : "$sub.posts"  },
-            { "$replaceRoot": {"newRoot": "$sub.posts"} },
-            { "$match": { "visible": { "$arg": "visible" } } }
-        ]
+            "db": "test-graphql",
+            "collection": "authors-and-posts",
+            "stages": [
+                { "$match": { "_id": { "$arg": "rootDoc._id" } } },
+                { "$unwind" : "$sub.posts"  },
+                { "$replaceRoot": {"newRoot": "$sub.posts"} },
+                { "$match": { "visible": { "$arg": "visible" } } }
+            ]
         },
         "group": {
             "db": "test-graphql",
             "collection": "groups",
-            "query": { "_id": { "$arg": "rootDoc._id" } }
+            "find": { "_id": { "$arg": "rootDoc.properties.group" } }
         }
     },
     "Query": {
