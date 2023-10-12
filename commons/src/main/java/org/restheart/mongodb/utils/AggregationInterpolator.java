@@ -26,11 +26,13 @@ import java.util.stream.Collectors;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import static org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.LambdaUtils;
+
 
 /**
  * Utility class for interpolating aggregation stages with a specified format, e.g., <code>{ <operator>: "name"}</code>,
@@ -75,6 +77,34 @@ public class AggregationInterpolator {
         return ret;
     }
 
+    /**
+     * checks if values contain operators. this is not allowed by default since
+     * the client would be able to modify the query or aggregation stages
+     *
+     * @param values RequestContext.getAggregationVars()
+     */
+    public static void shouldNotContainOperators(BsonValue values) throws SecurityException {
+        if (values == null) {
+            return;
+        }
+        if (values.isDocument()) {
+            var _obj = values.asDocument();
+
+            _obj.forEach((key, value) -> {
+                if (key.startsWith("$")) {
+                    throw new SecurityException("aggregation variables cannot include operators");
+                }
+
+                if (value.isDocument() || value.isArray()) {
+                    shouldNotContainOperators(value);
+                }
+            });
+        } else if (values.isArray()) {
+            values.asArray().getValues().stream()
+                .filter(el -> (el.isDocument() || el.isArray()))
+                .forEachOrdered(AggregationInterpolator::shouldNotContainOperators);
+        }
+    }
     /**
      * @param stage
      * @return true if stage is optional

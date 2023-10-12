@@ -24,10 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
-import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -80,37 +77,6 @@ public class ChangeStreamOperation {
         return ret;
     }
 
-    /**
-     * checks if the aggregation variable start with $ this is not allowed since
-     * the client would be able to modify the aggregation stages
-     *
-     * @param aVars RequestContext.getAggregationVars()
-     */
-    public static void checkAggregationVariables(BsonValue aVars) throws SecurityException {
-        if (aVars == null) {
-            return;
-        }
-        if (aVars.isDocument()) {
-            var _obj = aVars.asDocument();
-
-            _obj.forEach((key, value) -> {
-                if (key.startsWith("$")) {
-                    throw new SecurityException(
-                            "aggregation variables cannot include operators");
-                }
-
-                if (value.isDocument()
-                        || value.isArray()) {
-                    checkAggregationVariables(value);
-                }
-            });
-        } else if (aVars.isArray()) {
-            aVars.asArray().getValues().stream()
-                    .filter(el -> (el.isDocument() || el.isArray()))
-                    .forEachOrdered(ChangeStreamOperation::checkAggregationVariables);
-        }
-    }
-
     private final String uri;
     private final BsonArray stages;
 
@@ -123,8 +89,7 @@ public class ChangeStreamOperation {
         var _uri = properties.get(URI_ELEMENT_NAME);
 
         if (!properties.containsKey(URI_ELEMENT_NAME)) {
-            throw new InvalidMetadataException("query does not have '"
-                    + URI_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query does not have '" + URI_ELEMENT_NAME + "' property");
         }
 
         this.uri = _uri.asString().getValue();
@@ -148,12 +113,10 @@ public class ChangeStreamOperation {
         }
 
         if (!properties.containsKey(URI_ELEMENT_NAME)) {
-            throw new InvalidMetadataException("query does not have '"
-                    + URI_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query does not have '" + URI_ELEMENT_NAME + "' property");
         }
 
         this.stages = _stages.asArray();
-
     }
 
     /**
@@ -169,93 +132,4 @@ public class ChangeStreamOperation {
     public BsonArray getStages() {
         return stages;
     }
-
-    /**
-     * @param vars RequestContext.getAggregationVars()
-     * @return the stages, with unescaped operators and bound variables
-     * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.exchange.QueryVariableNotBoundException
-     */
-    public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
-            throws InvalidMetadataException, QueryVariableNotBoundException {
-        
-        var replacedStages = bindAggregationVariables(
-            BsonUtils.unescapeKeys(stages), vars).asArray();
-
-        List<BsonDocument> ret = new ArrayList<>();
-
-        replacedStages.stream().filter((stage) -> (stage.isDocument()))
-                .forEach((stage) -> {
-                    ret.add(stage.asDocument());
-                });
-
-        return ret;
-    }
-
-
-    /**
-     * @param obj
-     * @param aVars RequestContext.getAggregationVars()
-     * @return the json object where the variables ({"_$var": "var") are
-     * replaced with the values defined in the avars URL query parameter
-     * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.exchange.QueryVariableNotBoundException
-     */
-    protected BsonValue bindAggregationVariables(
-            BsonValue obj,
-            BsonDocument aVars)
-            throws InvalidMetadataException, QueryVariableNotBoundException {
-        if (obj == null) {
-            return null;
-        }
-
-        if (obj.isDocument()) {
-            var _obj = obj.asDocument();
-
-            if (_obj.size() == 1 && _obj.get("$var") != null) {
-                var varName = _obj.get("$var");
-
-                if (!(varName.isString())) {
-                    throw new InvalidMetadataException("wrong variable name "
-                            + varName.toString());
-                }
-
-                if (aVars == null
-                        || aVars.get(varName.asString().getValue()) == null) {
-                    throw new QueryVariableNotBoundException("variable "
-                            + varName.asString().getValue() + " not bound");
-                }
-
-                return aVars.get(varName.asString().getValue());
-            } else {
-                var ret = new BsonDocument();
-
-                for (String key : _obj.keySet()) {
-                    ret.put(key,
-                            bindAggregationVariables(
-                                    _obj.get(key), aVars));
-                }
-
-                return ret;
-            }
-        } else if (obj.isArray()) {
-            var ret = new BsonArray();
-
-            for (var el : obj.asArray().getValues()) {
-                if (el.isDocument()) {
-                    ret.add(bindAggregationVariables(el, aVars));
-                } else if (el.isArray()) {
-                    ret.add(bindAggregationVariables(el, aVars));
-                } else {
-                    ret.add(el);
-                }
-            }
-
-            return ret;
-
-        } else {
-            return obj;
-        }
-    }
-
 }

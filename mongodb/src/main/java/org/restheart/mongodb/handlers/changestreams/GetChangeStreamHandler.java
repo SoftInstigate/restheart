@@ -79,22 +79,18 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
                 WEBSOCKET_HANDSHAKE_HANDLER.handleRequest(exchange);
             } else {
-                response.setInError(HttpStatus.SC_BAD_REQUEST,
-                        "The stream connection requires WebSocket, "
-                        + "no 'Upgrade' or 'Connection' request header found");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "The stream connection requires WebSocket, no 'Upgrade' or 'Connection' request header found");
 
                 next(exchange);
             }
         } catch (QueryNotFoundException ex) {
-            response.setInError(HttpStatus.SC_NOT_FOUND,
-                    "Stream does not exist");
+            response.setInError(HttpStatus.SC_NOT_FOUND, "Stream does not exist");
 
             LOGGER.debug("Requested stream {} does not exist", request.getUnmappedRequestUri());
 
             next(exchange);
         } catch (QueryVariableNotBoundException ex) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST,
-                    ex.getMessage());
+            response.setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
 
             LOGGER.warn("Cannot open stream connection, "
                     + "the request does not specify the required variables "
@@ -103,12 +99,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
             next(exchange);
         } catch (IllegalStateException ise) {
-            if (ise.getMessage() != null
-                    && ise.getMessage()
-                            .contains("transport does not support HTTP upgrade")) {
-
-                var error = "Cannot open stream connection: "
-                        + "the AJP listener does not support WebSocket";
+            if (ise.getMessage() != null && ise.getMessage().contains("transport does not support HTTP upgrade")) {
+                var error = "Cannot open stream connection: the AJP listener does not support WebSocket";
 
                 LOGGER.warn(error);
 
@@ -121,34 +113,27 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     private boolean isWebSocketHandshakeRequest(HttpServerExchange exchange) {
-        var chVals = exchange.getRequestHeaders()
-            .get(CONNECTION_HEADER_KEY);
+        var chVals = exchange.getRequestHeaders().get(CONNECTION_HEADER_KEY);
 
-        var uhVals = exchange.getRequestHeaders()
-            .get(UPGRADE_HEADER_KEY);
+        var uhVals = exchange.getRequestHeaders().get(UPGRADE_HEADER_KEY);
 
         return chVals != null && uhVals != null &&
-                Arrays.stream(chVals.toArray())
-                    .anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
-                Arrays.stream(uhVals.toArray())
-                    .anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
+            Arrays.stream(chVals.toArray()).anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
+            Arrays.stream(uhVals.toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request) throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
         String changesStreamOperation = request.getChangeStreamOperation();
 
-        List<ChangeStreamOperation> streams = ChangeStreamOperation
-                .getFromJson(request.getCollectionProps());
+        List<ChangeStreamOperation> streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
 
         Optional<ChangeStreamOperation> _query = streams
-                .stream()
-                .filter(q -> q.getUri().equals(changesStreamOperation))
-                .findFirst();
+            .stream()
+            .filter(q -> q.getUri().equals(changesStreamOperation))
+            .findFirst();
 
         if (!_query.isPresent()) {
-            throw new QueryNotFoundException("Stream "
-                    + request.getUnmappedRequestUri()
-                    + "  does not exist");
+            throw new QueryNotFoundException("Stream " + request.getUnmappedRequestUri() + "  does not exist");
         }
 
         ChangeStreamOperation pipeline = _query.get();
@@ -167,14 +152,14 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             ChangeStreamsRegistry.getInstance().put(streamKey, new SessionInfo(MongoRequest.of(exchange)));
 
             RHMongoClients.mclientReactive()
-                    .getDatabase(request.getDBName())
-                    .getCollection(request.getCollectionName())
-                    .watch(resolvedStages)
-                    .fullDocument(FullDocument.UPDATE_LOOKUP)
-                    .subscribe(new ChangeStreamSubscriber(streamKey,
-                            resolvedStages,
-                            request.getDBName(),
-                            request.getCollectionName()));
+                .getDatabase(request.getDBName())
+                .getCollection(request.getCollectionName())
+                .watch(resolvedStages)
+                .fullDocument(FullDocument.UPDATE_LOOKUP)
+                .subscribe(new ChangeStreamSubscriber(streamKey,
+                    resolvedStages,
+                    request.getDBName(),
+                    request.getCollectionName()));
 
             return true;
         } else {

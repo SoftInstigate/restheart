@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 
 public abstract class AbstractAggregationOperation {
@@ -103,36 +102,6 @@ public abstract class AbstractAggregationOperation {
             } else {
                 throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "': " + type);
             }
-        }
-    }
-
-    /**
-     * checks if the aggregation variable start with $ this is not allowed since
-     * the client would be able to modify the aggregation stages
-     *
-     * @param aVars RequestContext.getAggregationVars()
-     */
-    public static void checkAggregationVariables(BsonValue aVars) throws SecurityException {
-        if (aVars == null) {
-            return;
-        }
-
-        if (aVars.isDocument()) {
-            var _obj = aVars.asDocument();
-
-            _obj.forEach((key, value) -> {
-                if (key.startsWith("$")) {
-                    throw new SecurityException("aggregation variables cannot include operators");
-                }
-
-                if (value.isDocument() || value.isArray()) {
-                    checkAggregationVariables(value);
-                }
-            });
-        } else if (aVars.isArray()) {
-            aVars.asArray().getValues().stream()
-                .filter(el -> (el.isDocument() || el.isArray()))
-                .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);
         }
     }
 
