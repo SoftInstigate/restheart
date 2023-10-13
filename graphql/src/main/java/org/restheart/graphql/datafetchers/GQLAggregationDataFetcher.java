@@ -27,18 +27,12 @@ import com.mongodb.client.AggregateIterable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.configuration.Configuration;
-import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import graphql.schema.DataFetchingEnvironment;
 
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
-
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
     private long aggregationTimeLimit;
 
@@ -71,38 +65,28 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
         var aggregation = (AggregationMapping) this.fieldMapping;
 
-        try {
-            aggregation.getResolvedStagesAsList(env);
-        } catch (QueryVariableNotBoundException e) {
-            LOGGER.info("Something went wrong while trying to resolve stages {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-
         AggregateIterable<BsonDocument> res = null;
-        try {
-            var aggregationList = aggregation.getResolvedStagesAsList(env);
 
-            // If user does not pass any stage return an empty array
-            if(aggregationList.size() == 0 ) {
-                return new BsonArray();
-            }
+        var interpolatedAggregation = aggregation.interpolateArgs(env);
 
-            res = mongoClient
-                .getDatabase(aggregation.getDb().getValue())
-                .getCollection(aggregation.getCollection().getValue())
-                .withDocumentClass(BsonDocument.class)
-                .aggregate(aggregationList)
-                .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
-
-        } catch (QueryVariableNotBoundException e) {
-            LOGGER.error("Field-to-aggregation mapping has failed! {}", e.getMessage(), e);
+        // If user does not pass any stage return an empty array
+        if(interpolatedAggregation.size() == 0) {
+            return new BsonArray();
         }
+
+        res = mongoClient
+            .getDatabase(aggregation.getDb().getValue())
+            .getCollection(aggregation.getCollection().getValue())
+            .withDocumentClass(BsonDocument.class)
+            .aggregate(interpolatedAggregation)
+            .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+            .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
         var stageOutput = new ArrayList<BsonDocument>();
 
         if(res != null) {
-            res.forEach(doc -> stageOutput.add(doc));
+            res.into(stageOutput);
+            // res.forEach(doc -> stageOutput.add(doc));
         }
 
         return stageOutput;

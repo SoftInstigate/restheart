@@ -28,14 +28,9 @@ import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
-import org.restheart.utils.BsonUtils;
-import graphql.Assert;
-import graphql.GraphQLContext;
 import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
-    protected final String OPERATORS[] = { "$arg", "$fk" };
-
     protected final String fieldName;
 
     public FieldMapping(String fieldName) {
@@ -48,68 +43,23 @@ public abstract class FieldMapping {
 
     public abstract GraphQLDataFetcher getDataFetcher();
 
-    public BsonValue interpolateOperators(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
-        for (var operator : this.OPERATORS) {
-            if (source.containsKey(operator)) {
-                var valueToInterpolate = source.getString(operator).getValue();
-
-                return switch (operator) {
-                    case "$arg" -> {
-                        if (valueToInterpolate.equals("rootDoc")) {
-                            var rootDoc = (BsonDocument) ((GraphQLContext)env.getContext()).get("rootDoc");
-
-                            if (rootDoc == null) {
-                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not available for execution path " + env.getExecutionStepInfo().getPath());
-                            }
-
-                            yield rootDoc;
-                        } else if (valueToInterpolate.startsWith("rootDoc.")) {
-                            var rootDoc = (BsonDocument) ((GraphQLContext)env.getContext()).get("rootDoc");
-
-                            if (rootDoc == null) {
-                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not available for execution path " + env.getExecutionStepInfo().getPath());
-                            }
-
-                            var rootDocFieldPath = valueToInterpolate.substring("rootDoc.".length(), valueToInterpolate.length());
-
-                            var value = BsonUtils.get(rootDoc, rootDocFieldPath);
-
-                            if (value.isPresent()) {
-                                yield value.get();
-                            } else {
-                                yield BsonNull.VALUE;
-                            }
-                        } else {
-                            var arguments = BsonUtils.toBsonDocument(env.getArguments());
-
-                            var value = BsonUtils.get(arguments, valueToInterpolate);
-
-                            if (value.isPresent()) {
-                                yield value.get();
-                            } else {
-                                throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
-                            }
-                        }
-                    }
-
-                    case "$fk" -> getForeignValue(env.getSource(), valueToInterpolate);
-
-                    default -> Assert.assertShouldNeverHappen();
-                };
-            }
+    public BsonValue interpolateFkOperator(BsonDocument source, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+        if (source.containsKey("$fk")) {
+            var valueToInterpolate = source.getString("$fk").getValue();
+            return getForeignValue(env.getSource(), valueToInterpolate);
         }
 
         var result = new BsonDocument();
 
         for (var key : source.keySet()) {
             if (source.get(key).isDocument()) {
-                var value = interpolateOperators(source.get(key).asDocument(), env);
+                var value = interpolateFkOperator(source.get(key).asDocument(), env);
                 result.put(key, value);
             } else if (source.get(key).isArray()) {
                 var array = new BsonArray();
                 for (var bsonValue : source.get(key).asArray()) {
                     if (bsonValue.isDocument()) {
-                        var value = interpolateOperators(bsonValue.asDocument(), env);
+                        var value = interpolateFkOperator(bsonValue.asDocument(), env);
                         array.add(value);
 
                     } else {

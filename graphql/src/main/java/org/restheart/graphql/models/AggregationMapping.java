@@ -32,11 +32,16 @@ import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderOptions;
+import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.datafetchers.GQLAggregationDataFetcher;
 import org.restheart.graphql.datafetchers.GQLBatchAggregationDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
+import org.restheart.mongodb.utils.AggregationInterpolator;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+import org.restheart.utils.BsonUtils;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -81,16 +86,32 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         return null;
     }
 
-    public List<BsonDocument> getResolvedStagesAsList(DataFetchingEnvironment env) throws QueryVariableNotBoundException {
-        var resultList = new ArrayList<BsonDocument>();
-
-        for (var stage : this.stages) {
-            if (stage.isDocument()) {
-                resultList.add(interpolateOperators(stage.asDocument(), env).asDocument());
-            }
+    public List<BsonDocument> interpolateArgs(DataFetchingEnvironment env) throws QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
+        var values = BsonUtils.toBsonDocument(env.getArguments());
+        // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
+        BsonDocument rootDoc = env.getGraphQlContext().get("rootDoc");
+        if (rootDoc != null) { // rootDoc is only available at path level >= 2
+            values.put("rootDoc", rootDoc);
         }
 
-        return resultList;
+        try {
+            var argInterpolated = AggregationInterpolator.interpolate(OPERATOR.$arg, stages, values);
+            var argAndFkInterpolated = new ArrayList<BsonDocument>();
+
+            for (var s: argInterpolated) {
+                var is = interpolateFkOperator(s, env);
+
+                if (is.isDocument()) {
+                    argAndFkInterpolated.add(is.asDocument());
+                } else {
+                    throw new GraphQLIllegalAppDefinitionException("invalid stage: " + BsonUtils.toJson(s));
+                }
+            }
+
+            return argAndFkInterpolated;
+        } catch(InvalidMetadataException ime) {
+            throw new GraphQLIllegalAppDefinitionException("invalid app definition", ime);
+        }
     }
 
     public DataLoaderSettings getDataLoaderSettings() {

@@ -45,7 +45,7 @@ public class GQLBatchAggregationDataFetcher extends GraphQLDataFetcher {
 
         var dataLoader = env.getDataLoader(key);
 
-        var aggregationList = aggregationMapping.getResolvedStagesAsList(env);
+        var aggregationList = aggregationMapping.interpolateArgs(env);
 
         var bsonArray = new BsonArray();
         bsonArray.addAll(aggregationList);

@@ -20,28 +20,34 @@
  */
 package org.restheart.graphql.models;
 
-import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderOptions;
 import org.dataloader.stats.SimpleStatisticsCollector;
+import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator;
+import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+import org.restheart.utils.BsonUtils;
+
+import graphql.schema.DataFetchingEnvironment;
 
 public class QueryMapping extends FieldMapping implements Batchable {
-    private String db;
-    private String collection;
-    private BsonDocument find;
-    private BsonDocument sort;
-    private BsonValue limit;
-    private BsonValue skip;
-    private DataLoaderSettings dataLoaderSettings;
+    private final String db;
+    private final String collection;
+    private final BsonDocument find;
+    private final BsonDocument sort;
+    private final BsonValue limit;
+    private final BsonValue skip;
+    private final DataLoaderSettings dataLoaderSettings;
 
     private static int maxLimit = GraphQLService.DEFAULT_MAX_LIMIT;
 
@@ -117,7 +123,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
         return dataLoaderSettings;
     }
 
-    public BsonDocument interpolateArgs(DataFetchingEnvironment env) throws IllegalAccessException, QueryVariableNotBoundException {
+    public BsonDocument interpolateArgs(DataFetchingEnvironment env) throws IllegalAccessException, QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
         var result = new BsonDocument();
 
         var fields = (QueryMapping.class).getDeclaredFields();
@@ -125,14 +131,31 @@ public class QueryMapping extends FieldMapping implements Batchable {
             var value = field.get(this);
 
             if(value instanceof BsonDocument bsonDoc) {
-                var ivalue = interpolateOperators(bsonDoc, env);
+                var values = BsonUtils.toBsonDocument(env.getArguments());
 
-                // make sure limit does not exceed max-limit
-                if (field.getName().equals("limit") && ivalue.asInt32().getValue() > maxLimit) {
-                    throw new QueryVariableNotBoundException("Query variable cannot be greater than " + maxLimit);
+                // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
+                BsonDocument rootDoc = env.getGraphQlContext().get("rootDoc");
+                if (rootDoc != null) { // rootDoc is only available at path level >= 2
+                    values.put("rootDoc", rootDoc);
                 }
 
-                result.put(field.getName(), ivalue);
+                try {
+                    var argInterpolated = VarOperatorsInterpolator.interpolate(OPERATOR.$arg, bsonDoc, values);
+                    var argAndFkIntepolated = argInterpolated;
+
+                    if (argInterpolated.isDocument()) {
+                        argAndFkIntepolated = interpolateFkOperator(argInterpolated.asDocument(), env);
+                    }
+
+                    // make sure limit does not exceed max-limit
+                    if (field.getName().equals("limit") && argAndFkIntepolated.asInt32().getValue() > maxLimit) {
+                        throw new QueryVariableNotBoundException("Query variable cannot be greater than " + maxLimit);
+                    }
+
+                    result.put(field.getName(), argAndFkIntepolated);
+                } catch(InvalidMetadataException ime) {
+                    throw new GraphQLIllegalAppDefinitionException("invalid app definition", ime);
+                }
             } else if (value instanceof BsonValue bsonVal && !bsonVal.isNull()) {
                 result.put(field.getName(), bsonVal);
             }

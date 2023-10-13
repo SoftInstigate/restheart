@@ -21,8 +21,6 @@
 package org.restheart.graphql.datafetchers;
 
 import com.mongodb.client.MongoClient;
-
-import graphql.GraphQLContext;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.restheart.graphql.models.FieldMapping;
@@ -45,7 +43,7 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
      * @param env
      */
     protected void storeRootDoc(DataFetchingEnvironment env) {
-        GraphQLContext ctx = env.getContext();
+        var ctx = env.getGraphQlContext();
         // at path level 2 the parent is the root
         if (ctx.getOrEmpty("rootDoc").isEmpty() && env.getExecutionStepInfo().getPath().getLevel() == 2) {
             ctx.put("rootDoc", env.getSource());
