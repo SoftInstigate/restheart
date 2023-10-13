@@ -80,8 +80,6 @@ public class PluginsScanner {
     private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
     private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
-    public static final ArrayList<MethodInjectionDescriptor> INJECTIONS = new ArrayList<>();
-
     static URL[] jars = null;
 
     // ClassGraph.scan() at class initialization time to support native image
@@ -107,7 +105,7 @@ public class PluginsScanner {
             // apply plugins-packages configuration option
             var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!Bootstrapper.getConfiguration().coreModule().pluginsPackages().isEmpty()) {
-                classGraph = classGraph.acceptPackages(pluginsPackages.toArray(new String[0]));
+                classGraph = classGraph.acceptPackages(pluginsPackages.toArray(String[]::new));
             }
 
             rtcg.logStartScan();
@@ -264,10 +262,10 @@ public class PluginsScanner {
                 ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
                 for (var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
                     var value = p.getValue();
-                    if (value instanceof AnnotationEnumValue) {
-                        removeRefToScanResult((AnnotationEnumValue)value);
+                    if (value instanceof AnnotationEnumValue annotationEnumValue) {
+                        removeRefToScanResult(annotationEnumValue);
                     }
-                    annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
+                    annotationParams.add(new AbstractMap.SimpleEntry<>(p.getName(), value));
                 }
 
                 var methodParams = new ArrayList<String>();
@@ -291,10 +289,10 @@ public class PluginsScanner {
                 var annotationParams = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
                 for (var p : fi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
                     var value = p.getValue();
-                    if (value instanceof AnnotationEnumValue) {
-                        removeRefToScanResult((AnnotationEnumValue)value);
+                    if (value instanceof AnnotationEnumValue annotationEnumValue) {
+                        removeRefToScanResult(annotationEnumValue);
                     }
-                    annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
+                    annotationParams.add(new AbstractMap.SimpleEntry<>(p.getName(), value));
                 }
 
                 try {
@@ -321,7 +319,7 @@ public class PluginsScanner {
             var f = AnnotationEnumValue.class.getSuperclass().getDeclaredField("scanResult");
             f.setAccessible(true);
             f.set(obj, null);
-        } catch (Throwable ex) {
+        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
             // nothing to do
         }
     }
@@ -329,7 +327,7 @@ public class PluginsScanner {
     static class RuntimeClassGraph {
         private static final Logger LOGGER = LoggerFactory.getLogger(PluginsScanner.class);
 
-        private ClassGraph classGraph;
+        private final ClassGraph classGraph;
 
         URL[] jars = null;
 
@@ -398,7 +396,7 @@ public class PluginsScanner {
 
         private URL[] findPluginsJars(Path pluginsDirectory) {
             var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
-            if (pluginsPackages.size() > 0) {
+            if (!pluginsPackages.isEmpty()) {
                 LOGGER.info("Limiting the scanning of plugins to packages {}", pluginsPackages);
             }
             if (pluginsDirectory == null) {
@@ -429,7 +427,7 @@ public class PluginsScanner {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
             }
 
-            return urls.isEmpty() ? null : urls.toArray(new URL[urls.size()]);
+            return urls.isEmpty() ? null : urls.toArray(URL[]::new);
         }
 
         private void checkPluginDirectory(Path pluginsDirectory) {
