@@ -20,8 +20,48 @@
  */
 package org.restheart.graphql;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.bson.BsonValue;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.BadRequestException;
+import org.restheart.exchange.ExchangeKeys;
+import org.restheart.exchange.GraphQLRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Request;
+import org.restheart.graphql.cache.AppDefinitionLoader;
+import org.restheart.graphql.cache.AppDefinitionLoadingCache;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.graphql.dataloaders.AggregationBatchLoader;
+import org.restheart.graphql.dataloaders.QueryBatchLoader;
+import org.restheart.graphql.models.AggregationMapping;
+import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.models.QueryMapping;
+import org.restheart.graphql.models.TypeMapping;
+import org.restheart.graphql.models.builder.AppBuilder;
+import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
+import org.restheart.metrics.MetricLabel;
+import org.restheart.metrics.Metrics;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
+import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
+
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.UnknownOperationException;
@@ -34,40 +74,6 @@ import graphql.language.OperationDefinition.Operation;
 import graphql.parser.InvalidSyntaxException;
 import graphql.parser.Parser;
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonValue;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderRegistry;
-import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.BadRequestException;
-import org.restheart.exchange.ExchangeKeys;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.Request;
-import org.restheart.graphql.cache.AppDefinitionLoader;
-import org.restheart.graphql.cache.AppDefinitionLoadingCache;
-import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
-import org.restheart.graphql.dataloaders.AggregationBatchLoader;
-import org.restheart.graphql.dataloaders.QueryBatchLoader;
-import org.restheart.exchange.GraphQLRequest;
-import org.restheart.graphql.models.AggregationMapping;
-import org.restheart.graphql.models.GraphQLApp;
-import org.restheart.graphql.models.QueryMapping;
-import org.restheart.graphql.models.TypeMapping;
-import org.restheart.graphql.models.builder.AppBuilder;
-import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
-import org.restheart.plugins.*;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.BsonUtils;
-import org.restheart.metrics.MetricLabel;
-import org.restheart.metrics.Metrics;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
 
@@ -116,7 +122,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         QueryMapping.setMaxLimit(this.maxLimit);
     }
 
-    private static Parser GQL_PARSER = new Parser();
+    private static final Parser GQL_PARSER = new Parser();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -174,9 +180,6 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 logDataLoadersStatistics(dataLoaderRegistry);
             }
 
-            if (!result.getErrors().isEmpty()) {
-                res.setInError(400, "Bad Request");
-            }
             res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
         } catch(UnknownOperationException uoe) {
             res.setInError(404, uoe.getMessage(), uoe);
@@ -194,17 +197,17 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings) {
         var dataLoaderRegistry = new DataLoaderRegistry();
 
-        mappings.forEach((type, typeMapping) -> {
+        mappings.forEach((String type, TypeMapping typeMapping) -> {
             typeMapping.getFieldMappingMap().forEach((field, fieldMapping) -> {
-                if (fieldMapping instanceof QueryMapping) {
-                    DataLoader<BsonValue, BsonValue> dataLoader = ((QueryMapping) fieldMapping).getDataloader();
+                if (fieldMapping instanceof QueryMapping queryMapping) {
+                    DataLoader<BsonValue, BsonValue> dataLoader = queryMapping.getDataloader();
                     if (dataLoader != null) {
                         dataLoaderRegistry.register(type + "_" + field, dataLoader);
                     }
                 }
                 // register dataLoaders for Aggregation Mapping
-                if (fieldMapping instanceof AggregationMapping) {
-                    DataLoader<BsonValue, BsonValue> dataLoader = ((AggregationMapping) fieldMapping).getDataloader();
+                if (fieldMapping instanceof AggregationMapping aggregationMapping) {
+                    DataLoader<BsonValue, BsonValue> dataLoader = aggregationMapping.getDataloader();
                     if (dataLoader != null) {
                         dataLoaderRegistry.register(type + "_" + field, dataLoader);
                     }
@@ -283,9 +286,10 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             .collect(Collectors.joining(","));
     }
 
-    public static final String ACCESS_CONTROL_ALLOW_METHODS = "POST, OPTIONS";
+    public static final String GQL_ACCESS_CONTROL_ALLOW_METHODS = "POST, OPTIONS";
+
     @Override
     public String accessControlAllowMethods(Request<?> r) {
-        return ACCESS_CONTROL_ALLOW_METHODS;
+        return GQL_ACCESS_CONTROL_ALLOW_METHODS;
     }
 }
