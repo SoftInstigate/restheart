@@ -73,6 +73,7 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.parser.InvalidSyntaxException;
 import graphql.parser.Parser;
+import graphql.validation.ValidationError;
 import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
@@ -144,13 +145,14 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 // check query syntax
                 var doc = GQL_PARSER.parseDocument(req.getQuery());
 
+                var queryNames = queryNames(doc);
                 // add metric label
-                Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames(doc)));
+                Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames));
+                LOGGER.debug("Executing GraphQL query: {}", queryNames);
             } catch(InvalidSyntaxException ise) {
                 res.setInError(HttpStatus.SC_BAD_REQUEST, "Syntax error in query", ise);
                 return;
             }
-
         }
 
         var inputBuilder = ExecutionInput.newExecutionInput()
@@ -175,6 +177,11 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         try {
             var result = this.gql.execute(inputBuilder.build());
+
+            // if the result contains errors due ValidationError, set status code to 400
+            if (result.getErrors().stream().anyMatch(e -> e instanceof ValidationError)) {
+                res.setStatusCode(400);
+            }
 
             if (this.verbose) {
                 logDataLoadersStatistics(dataLoaderRegistry);

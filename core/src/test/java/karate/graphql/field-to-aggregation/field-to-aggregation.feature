@@ -13,7 +13,7 @@ Background:
     return 'Basic ' + encoded;
     }
     """
-  
+
     * def admin = basic({username: 'admin', password: 'secret'})
 
     * def setupData = callonce read('field-to-aggregation-setup.feature')
@@ -39,7 +39,7 @@ Scenario: Should return an array with two objects
    Then status 200
    And match $..postsByCategory.length() == 2
 
-  
+
 Scenario: Should return an empty array for emptyStage field
     * text query =
     """
@@ -71,8 +71,8 @@ Scenario: Should contain errors key
   And header Authorization = admin
   And request query
   When method POST
-  Then status 400
-  And match response contains {"errors": "#present"} 
+  Then status 200
+  And match response contains {"errors": "#present"}
 
 Scenario: When passing dataloader options should return an array of objects
   * text query =

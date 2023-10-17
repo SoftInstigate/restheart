@@ -23,16 +23,26 @@ package org.restheart.graphql.datafetchers;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import com.mongodb.client.AggregateIterable;
+import java.util.stream.Collectors;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.configuration.Configuration;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.utils.BsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.AggregateIterable;
+
 import graphql.schema.DataFetchingEnvironment;
 
+
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
+
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
     private long aggregationTimeLimit;
 
@@ -65,18 +75,25 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
         var aggregation = (AggregationMapping) this.fieldMapping;
 
-        AggregateIterable<BsonDocument> res = null;
+        AggregateIterable<BsonDocument> res;
 
         var interpolatedAggregation = aggregation.interpolateArgs(env);
 
         // If user does not pass any stage return an empty array
-        if(interpolatedAggregation.size() == 0) {
+        if(interpolatedAggregation.isEmpty()) {
             return new BsonArray();
         }
 
+        var _db = aggregation.getDb().getValue();
+        var _collection = aggregation.getCollection().getValue();
+
+        LOGGER.debug("Executing aggregation: {}.{}.aggregate {}, context vars {}", _db, _collection,
+            "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
+            "{ ".concat(env.getGraphQlContext().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(",")).concat(" }")));
+
         res = mongoClient
-            .getDatabase(aggregation.getDb().getValue())
-            .getCollection(aggregation.getCollection().getValue())
+            .getDatabase(_db)
+            .getCollection(_collection)
             .withDocumentClass(BsonDocument.class)
             .aggregate(interpolatedAggregation)
             .allowDiskUse(aggregation.getAllowDiskUse().getValue())

@@ -20,14 +20,17 @@
  */
 package org.restheart.graphql.datafetchers;
 
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLList;
+import java.util.stream.Collectors;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.QueryMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLList;
 
 public class GQLQueryDataFetcher extends GraphQLDataFetcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(GQLQueryDataFetcher.class);
@@ -49,7 +52,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
         var queryMapping = (QueryMapping) this.fieldMapping;
 
-        BsonDocument int_args = null;
+        BsonDocument int_args;
 
         int_args = queryMapping.interpolateArgs(env);
 
@@ -58,7 +61,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
         var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
         var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-        LOGGER.debug("Executing query: find {}, sort {}, skip {}, limit {}", _find, _sort, _skip, _limit);
+        LOGGER.debug("Executing query: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, "{ ".concat(env.getGraphQlContext().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(",")).concat(" }")));
 
         var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
 

@@ -20,10 +20,12 @@
  */
 package org.restheart.graphql.datafetchers;
 
+import org.restheart.graphql.models.FieldMapping;
+
 import com.mongodb.client.MongoClient;
+
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import org.restheart.graphql.models.FieldMapping;
 
 public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
     protected static MongoClient mongoClient;
