@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.client.AggregateIterable;
 
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLList;
 
 
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
@@ -99,12 +100,14 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             .allowDiskUse(aggregation.getAllowDiskUse().getValue())
             .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
-        var stageOutput = new ArrayList<BsonDocument>();
+        boolean isMultiple = env.getFieldDefinition().getType() instanceof GraphQLList;
 
-        if (res != null) {
-            res.into(stageOutput);
+        if (isMultiple) {
+            var aggregationResult = new BsonArray();
+            res.into(aggregationResult.asArray());
+            return aggregationResult;
+        } else {
+            return res.first();
         }
-
-        return stageOutput;
     }
 }

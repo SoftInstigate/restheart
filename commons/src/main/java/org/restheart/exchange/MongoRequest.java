@@ -19,11 +19,6 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
-import io.undertow.util.Headers;
-import io.undertow.util.PathTemplateMatch;
-
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,6 +27,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -40,19 +36,54 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.ExchangeKeys.*;
-import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.exchange.ExchangeKeys.ADMIN;
+import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
+import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
+import static org.restheart.exchange.ExchangeKeys.CONFIG;
+import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
+import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.FS_CHUNKS_SUFFIX;
+import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
+import static org.restheart.exchange.ExchangeKeys.JSON_MODE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.LOCAL;
+import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
+import static org.restheart.exchange.ExchangeKeys.NO_CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.NO_PROPS_KEY;
+import static org.restheart.exchange.ExchangeKeys.NUL;
+import static org.restheart.exchange.ExchangeKeys.READ_CONCERN_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.READ_PREFERENCE_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import static org.restheart.exchange.ExchangeKeys.RESOURCES_WILDCARD_KEY;
+import static org.restheart.exchange.ExchangeKeys.SYSTEM;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import static org.restheart.exchange.ExchangeKeys.WRITE_CONCERN_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
+import static org.restheart.exchange.ExchangeKeys._INDEXES;
+import static org.restheart.exchange.ExchangeKeys._META;
+import static org.restheart.exchange.ExchangeKeys._METRICS;
+import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+import static org.restheart.exchange.ExchangeKeys._SESSIONS;
+import static org.restheart.exchange.ExchangeKeys._SIZE;
+import static org.restheart.exchange.ExchangeKeys._STREAMS;
+import static org.restheart.exchange.ExchangeKeys._TRANSACTIONS;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.MongoServiceAttachments;
 import org.restheart.utils.URLUtils;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
+import io.undertow.util.PathTemplateMatch;
 
 /**
  *
@@ -208,12 +239,12 @@ public class MongoRequest extends BsonRequest {
         this.writeMode = mode;
 
         var anyRsSet = false;
-        var rsOps = new RSOps();
+        var _rsOps = new RSOps();
 
         // readConcern
         if (exchange.getQueryParameters().containsKey(READ_CONCERN_QPARAM_KEY)) {
             try {
-                rsOps = rsOps.withReadConcern(exchange.getQueryParameters().get(READ_CONCERN_QPARAM_KEY).getFirst());
+                _rsOps = _rsOps.withReadConcern(exchange.getQueryParameters().get(READ_CONCERN_QPARAM_KEY).getFirst());
                 anyRsSet = true;
             } catch (IllegalArgumentException iae) {
                 // nothing to do
@@ -223,7 +254,7 @@ public class MongoRequest extends BsonRequest {
         // readPreference
         if (exchange.getQueryParameters().containsKey(READ_PREFERENCE_QPARAM_KEY)) {
             try {
-                rsOps = rsOps.withReadPreference(exchange.getQueryParameters().get(READ_PREFERENCE_QPARAM_KEY).getFirst());
+                _rsOps = _rsOps.withReadPreference(exchange.getQueryParameters().get(READ_PREFERENCE_QPARAM_KEY).getFirst());
                 anyRsSet = true;
             } catch (IllegalArgumentException iae) {
                 // nothing to do
@@ -232,12 +263,12 @@ public class MongoRequest extends BsonRequest {
 
         // writeConcern
         if (exchange.getQueryParameters().containsKey(WRITE_CONCERN_QPARAM_KEY)) {
-            rsOps = rsOps.withWriteConcern(exchange.getQueryParameters().get(WRITE_CONCERN_QPARAM_KEY).getFirst());
+            _rsOps = _rsOps.withWriteConcern(exchange.getQueryParameters().get(WRITE_CONCERN_QPARAM_KEY).getFirst());
             anyRsSet = true;
         }
 
-        this.rsOps = anyRsSet ? Optional.of(rsOps) : Optional.empty();
-        LOGGER.debug("ReplicaSet connection options: {}", rsOps);
+        this.rsOps = anyRsSet ? Optional.of(_rsOps) : Optional.empty();
+        LOGGER.debug("ReplicaSet connection options: {}", _rsOps);
     }
 
     private String defaultWriteMode() {
@@ -655,7 +686,7 @@ public class MongoRequest extends BsonRequest {
      * @return the txn id or null if request type is not TRANSACTION
      */
     public Long getTxnId() {
-        return isTxn() ? Long.parseLong(getPathTokenAt(4)) : null;
+        return isTxn() ? Long.valueOf(getPathTokenAt(4)) : null;
     }
 
     /**
@@ -1093,7 +1124,7 @@ public class MongoRequest extends BsonRequest {
         return this.wrapped.getAttachment(CONTENT_INJECTED);
     }
 
-    public void setContentInjected(boolean value) {
+    public final void setContentInjected(boolean value) {
         this.wrapped.putAttachment(CONTENT_INJECTED, value);
     }
 
@@ -1599,7 +1630,7 @@ public class MongoRequest extends BsonRequest {
     /**
      * ReplicaSet connection otpions
      *
-     * @return the rsOps
+     * @return the _rsOps
      */
     public Optional<RSOps> rsOps() {
         return rsOps;

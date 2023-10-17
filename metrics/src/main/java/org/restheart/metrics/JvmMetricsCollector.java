@@ -21,19 +21,21 @@
 
 package org.restheart.metrics;
 
+import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
-import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name="jvmMetricsCollector", description = "registers the JVM metrics", enabledByDefault = false)
 public class JvmMetricsCollector implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(JvmMetricsCollector.class);
 
+    @Override
     public void init() {
         var registry = SharedMetricRegistries.getOrCreate(METRICS_REGISTRIES_PREFIX + "/jvm");
         registry.registerAll("jvm mem", new MemoryUsageGaugeSet());
