@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
@@ -157,6 +158,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         var inputBuilder = ExecutionInput.newExecutionInput()
             .query(req.getQuery())
+            .localContext(new BsonDocument())
             .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(req.getOperationName());

@@ -89,7 +89,8 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     public List<BsonDocument> interpolateArgs(DataFetchingEnvironment env) throws QueryVariableNotBoundException, GraphQLIllegalAppDefinitionException {
         var values = BsonUtils.toBsonDocument(env.getArguments());
         // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
-        BsonDocument rootDoc = env.getGraphQlContext().get("rootDoc");
+        BsonDocument locaLContext = env.getLocalContext();
+        BsonValue rootDoc = locaLContext.get("rootDoc");
         if (rootDoc != null) { // rootDoc is only available at path level >= 2
             values.put("rootDoc", rootDoc);
         }

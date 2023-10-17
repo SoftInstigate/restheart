@@ -87,9 +87,9 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         var _db = aggregation.getDb().getValue();
         var _collection = aggregation.getCollection().getValue();
 
-        LOGGER.debug("Executing aggregation: {}.{}.aggregate {}, context vars {}", _db, _collection,
+        LOGGER.debug("Executing aggregation for field {}: {}.{}.aggregate {}, context vars {}", env.getField().getName(), _db, _collection,
             "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
-            "{ ".concat(env.getGraphQlContext().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(",")).concat(" }")));
+            BsonUtils.toJson(env.getLocalContext()));
 
         res = mongoClient
             .getDatabase(_db)
@@ -101,9 +101,8 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
         var stageOutput = new ArrayList<BsonDocument>();
 
-        if(res != null) {
+        if (res != null) {
             res.into(stageOutput);
-            // res.forEach(doc -> stageOutput.add(doc));
         }
 
         return stageOutput;

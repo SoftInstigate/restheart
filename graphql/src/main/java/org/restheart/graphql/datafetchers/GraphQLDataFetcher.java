@@ -20,6 +20,7 @@
  */
 package org.restheart.graphql.datafetchers;
 
+import org.bson.BsonDocument;
 import org.restheart.graphql.models.FieldMapping;
 
 import com.mongodb.client.MongoClient;
@@ -45,9 +46,9 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
      * @param env
      */
     protected void storeRootDoc(DataFetchingEnvironment env) {
-        var ctx = env.getGraphQlContext();
+        BsonDocument ctx = env.getLocalContext();
         // at path level 2 the parent is the root
-        if (ctx.getOrEmpty("rootDoc").isEmpty() && env.getExecutionStepInfo().getPath().getLevel() == 2) {
+        if (env.getExecutionStepInfo().getPath().getLevel() == 2) {
             ctx.put("rootDoc", env.getSource());
         }
     }

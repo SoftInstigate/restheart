@@ -20,12 +20,11 @@
  */
 package org.restheart.graphql.datafetchers;
 
-import java.util.stream.Collectors;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.QueryMapping;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +60,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
         var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
         var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-        LOGGER.debug("Executing query: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, "{ ".concat(env.getGraphQlContext().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(",")).concat(" }")));
+        LOGGER.debug("Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
 
         var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
 

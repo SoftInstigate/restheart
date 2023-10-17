@@ -29,13 +29,13 @@ import org.restheart.utils.BsonUtils;
 
 /**
  * Utility class for interpolating variables within a BsonDocument or BsonArray by using a specific format,
- * such as <code>{ <operator>: "name"}</code>, and replacing placeholders with provided values.
+ * such as <code>{ [operator]: "name"}</code>, and replacing placeholders with provided values.
  * The class facilitates the dynamic substitution of placeholders in BSON documents and arrays.
  */
 public class VarOperatorsInterpolator {
     public enum OPERATOR { $var, $arg };
     /**
-     * @param bson
+     * @param operator
      * @param bson the BsonDocument or BsonArray containing variables
      * @param values the BsonDocument containing the values of the variables, as RequestContext.getAggregationVars()
      * @return the BsonValue where the variables <code>{"$var": "name" }</code>
