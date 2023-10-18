@@ -22,6 +22,7 @@ package org.restheart.utils;
 
 import com.google.common.collect.Sets;
 import com.mongodb.MongoClientSettings;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +61,6 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.json.Converter;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
@@ -355,7 +355,7 @@ public class BsonUtils {
         List<Optional<BsonValue>> nested;
 
         switch (pathToken) {
-            case DOLLAR:
+            case DOLLAR -> {
                 if (!(json.isDocument())) {
                     throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + json.toString());
                 }
@@ -365,7 +365,8 @@ public class BsonUtils {
                 }
 
                 return _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
-            case "*":
+            }
+            case "*" -> {
                 if (!(json.isDocument())) {
                     return null;
                 } else {
@@ -384,7 +385,8 @@ public class BsonUtils {
 
                     return ret;
                 }
-            case "[*]":
+            }
+            case "[*]" -> {
                 if (!(json.isArray())) {
                     if (json.isDocument()) {
                         // this might be the case of PATCHING an element array using the dot notation
@@ -393,14 +395,14 @@ public class BsonUtils {
                         // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
 
                         var allNumbericKeys = json.asDocument().keySet()
-                            .stream().allMatch(k -> {
-                                try {
-                                    Integer.parseInt(k);
-                                    return true;
-                                } catch (NumberFormatException nfe) {
-                                    return false;
-                                }
-                            });
+                                .stream().allMatch(k -> {
+                                    try {
+                                        Integer.valueOf(k);
+                                        return true;
+                                    } catch (NumberFormatException nfe) {
+                                        return false;
+                                    }
+                                });
 
                         if (allNumbericKeys) {
                             var ret = new ArrayList<Optional<BsonValue>>();
@@ -439,7 +441,8 @@ public class BsonUtils {
 
                     return ret;
                 }
-            default:
+            }
+            default -> {
                 if (json.isArray()) {
                     throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
                 } else if (json.isDocument()) {
@@ -451,6 +454,7 @@ public class BsonUtils {
                 } else {
                     return null;
                 }
+            }
         }
     }
 
@@ -490,24 +494,23 @@ public class BsonUtils {
                     var rt = rightPathTokens[cont];
 
                     switch (lt) {
-                        case "*":
-                            break;
-                        case "[*]":
+                        case "*" -> {
+                        }
+                        case "[*]" -> {
                             try {
-                                Integer.parseInt(rt);
-                                break;
-                            } catch (NumberFormatException nfe) {
+                                Integer.valueOf(rt);
+                            }catch (NumberFormatException nfe) {
                                 ret = false;
                                 break outerloop;
                             }
-                        default:
+                        }
+                        default -> {
                             ret = rt.equals(lt);
-
                             if (!ret) {
                                 break outerloop;
                             } else {
-                                break;
                             }
+                        }
                     }
                 }
             }
@@ -559,7 +562,7 @@ public class BsonUtils {
             subpath.add(pathTokens[cont]);
         }
 
-        return subpath.toArray(new String[subpath.size()]);
+        return subpath.toArray(String[]::new);
     }
 
     /**
@@ -686,12 +689,9 @@ public class BsonUtils {
                 .build()
             : JsonWriterSettings.builder()
                 .indent(false)
-                .dateTimeConverter(new Converter<Long>() {
-                    @Override
-                    public void convert(Long t, StrictJsonWriter writer) {
-                        writer.writeRaw("{\"$date\": " + t + " }");
-                    }
-                }).build();
+                .dateTimeConverter((Long t, StrictJsonWriter writer) -> {
+                    writer.writeRaw("{\"$date\": " + t + " }");
+        }).build();
 
         if (bson.isDocument()) {
             return minify(bson.asDocument().toJson(settings));
@@ -987,7 +987,7 @@ public class BsonUtils {
     }
 
     /**
-    * @param doc the BsonArray to wrap
+     * @param array the BsonArray to wrap
      *
      * @return a ArrayBuilder to help building BsonArray
      */
@@ -1150,7 +1150,7 @@ public class BsonUtils {
             if (value == null) {
                 putNull(key);
             } else {
-                doc.put(key, new BsonDateTime(value.getEpochSecond()));
+                doc.put(key, new BsonDateTime(value.getEpochSecond()*1000));
             }
 
             return this;
@@ -1297,7 +1297,7 @@ public class BsonUtils {
         }
 
         public ArrayBuilder add(Instant... values) {
-            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDateTime(v.getEpochSecond())).forEach(array::add);
+            Arrays.stream(values).map(v -> v == null ? BsonNull.VALUE : new BsonDateTime(v.getEpochSecond()*1000)).forEach(array::add);
             return this;
         }
 
