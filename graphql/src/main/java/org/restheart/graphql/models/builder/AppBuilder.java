@@ -20,6 +20,7 @@
  */
 package org.restheart.graphql.models.builder;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.bson.BsonDocument;
@@ -27,6 +28,7 @@ import org.bson.BsonInvalidOperationException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.AppDescriptor;
 import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.models.ObjectMapping;
 import org.restheart.graphql.models.TypeMapping;
 import org.restheart.utils.BsonUtils;
 
@@ -71,6 +73,8 @@ public class AppBuilder extends Mappings {
             throw new GraphQLIllegalAppDefinitionException(errorMSg, schemaProblem);
         }
 
+
+
         if (appDef.containsKey("mappings")) {
             if (appDef.get("mappings").isDocument()) {
                 var mappings = appDef.getDocument("mappings");
@@ -82,15 +86,19 @@ public class AppBuilder extends Mappings {
                 throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be an Object but was " + appDef.get("mappings").getBsonType());
             }
         } else {
-            objectsMappings = null;
+            objectsMappings = new HashMap<>();
         }
 
         // Provide a default field mappings for Objects that are not explicitly mapped.
         // see ObjectsMappings.defaultObjectFieldMappings() javadoc for more information.
         typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> objectsMappings == null || !objectsMappings.containsKey(e.getKey()))
+                    .filter(e -> !objectsMappings.containsKey(e.getKey()))
                     .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
-                    .forEach(e -> ObjectsMappings.defaultObjectFieldMappings(e.getKey(), typeDefinitionRegistry, new BsonDocument()));
+                    .forEach(e -> {
+                        var objectFieldMappings = ObjectsMappings.defaultObjectFieldMappings(e.getKey(), typeDefinitionRegistry, new BsonDocument());
+                        var objectMapping = new ObjectMapping(e.getKey(), objectFieldMappings);
+                        objectsMappings.put(e.getKey(), objectMapping);
+                    });
 
         try {
             return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema)
