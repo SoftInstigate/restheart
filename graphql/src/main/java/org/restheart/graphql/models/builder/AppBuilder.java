@@ -20,7 +20,6 @@
  */
 package org.restheart.graphql.models.builder;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.bson.BsonDocument;
@@ -83,10 +82,16 @@ public class AppBuilder extends Mappings {
                 unionsMappings = UnionsMappings.get(mappings, typeDefinitionRegistry);
                 interfacesMappings = InterfacesMappings.get(mappings, typeDefinitionRegistry);
             } else {
-                throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be an Object but was " + appDef.get("mappings").getBsonType());
+                throw new GraphQLIllegalAppDefinitionException("'mappings' field must be an Object but was " + appDef.get("mappings").getBsonType());
             }
         } else {
-            objectsMappings = new HashMap<>();
+            // at least a mapping for a Query is needed
+            throw new GraphQLIllegalAppDefinitionException("Missing mappings: please provide a mapping for at least one Query.");
+        }
+
+        if (!objectsMappings.containsKey("Query") || objectsMappings.get("Query").getFieldMappingMap().isEmpty()) {
+            // at least a mapping for a Query is needed
+            throw new GraphQLIllegalAppDefinitionException("Missing or empty mappings for type Query: please provide a mapping for at least one Query field.");
         }
 
         // Provide a default field mappings for Objects that are not explicitly mapped.
