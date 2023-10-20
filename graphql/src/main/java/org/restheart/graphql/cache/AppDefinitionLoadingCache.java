@@ -34,7 +34,7 @@ public class AppDefinitionLoadingCache {
     private static long TTL = 100_000;
     private static final long MAX_CACHE_SIZE = 1_000;
 
-    private LoadingCache<String, GraphQLApp> appLoadingCache;
+    private final LoadingCache<String, GraphQLApp> appLoadingCache;
 
     private AppDefinitionLoadingCache(){
         this.appLoadingCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,

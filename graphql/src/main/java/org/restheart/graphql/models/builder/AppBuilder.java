@@ -20,6 +20,8 @@
  */
 package org.restheart.graphql.models.builder;
 
+import java.util.Map;
+
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
@@ -27,16 +29,17 @@ import org.restheart.graphql.models.AppDescriptor;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.TypeMapping;
 import org.restheart.utils.BsonUtils;
+
+import graphql.language.ObjectTypeDefinition;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
-import java.util.Map;
 
 public class AppBuilder extends Mappings {
     public static final GraphQLApp build(BsonDocument appDef) throws GraphQLIllegalAppDefinitionException {
         AppDescriptor descriptor = null;
         String schema = null;
         TypeDefinitionRegistry typeDefinitionRegistry;
-        Map<String, TypeMapping> objectsMappings = null;
+        final Map<String, TypeMapping> objectsMappings;
         Map<String, Map<String, Object>> enumsMappings = null;
         Map<String, Map<String, io.undertow.predicate.Predicate>> unionsMappings = null;
         Map<String, Map<String, io.undertow.predicate.Predicate>> interfacesMappings = null;
@@ -78,7 +81,16 @@ public class AppBuilder extends Mappings {
             } else {
                 throw new GraphQLIllegalAppDefinitionException("'Mappings' field must be an Object but was " + appDef.get("mappings").getBsonType());
             }
+        } else {
+            objectsMappings = null;
         }
+
+        // Provide a default field mappings for Objects that are not explicitly mapped.
+        // see ObjectsMappings.defaultObjectFieldMappings() javadoc for more information.
+        typeDefinitionRegistry.types().entrySet().stream()
+                    .filter(e -> objectsMappings == null || !objectsMappings.containsKey(e.getKey()))
+                    .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
+                    .forEach(e -> ObjectsMappings.defaultObjectFieldMappings(e.getKey(), typeDefinitionRegistry, new BsonDocument()));
 
         try {
             return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema)

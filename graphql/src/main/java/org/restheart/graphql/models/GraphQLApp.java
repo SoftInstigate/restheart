@@ -20,10 +20,22 @@
  */
 package org.restheart.graphql.models;
 
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+
+import org.bson.BsonValue;
+import org.restheart.graphql.predicates.ExchangeWithBsonValue;
+import org.restheart.graphql.scalars.BsonScalars;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import graphql.TypeResolutionEnvironment;
 import graphql.language.InterfaceTypeDefinition;
 import graphql.language.UnionTypeDefinition;
-import graphql.schema.*;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.TypeResolver;
 import graphql.schema.idl.MapEnumValuesProvider;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -31,14 +43,6 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
 import io.undertow.predicate.Predicate;
-import org.bson.BsonValue;
-import org.restheart.graphql.predicates.ExchangeWithBsonValue;
-import org.restheart.graphql.scalars.BsonScalars;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Map.Entry;
 
 public class GraphQLApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLApp.class);
@@ -158,6 +162,9 @@ public class GraphQLApp {
                 var RWBuilder = RuntimeWiring.newRuntimeWiring();
                 var bsonScalars = BsonScalars.getBsonScalars();
 
+                // Custom BSON Scalars
+                bsonScalars.forEach(((s, graphQLScalarType) -> RWBuilder.scalar(graphQLScalarType)));
+
                 // Unions
                 typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
                     var unionMapping = this.unionMappings.get(e.getKey());
@@ -222,7 +229,7 @@ public class GraphQLApp {
                 this.enumsMappings.entrySet().forEach(em -> RWBuilder.type(TypeRuntimeWiring.newTypeWiring(em.getKey())
                     .enumValues(new MapEnumValuesProvider(em.getValue()))));
 
-                bsonScalars.forEach(((s, graphQLScalarType) -> RWBuilder.scalar(graphQLScalarType)));
+                // Objects
                 this.objectsMappings.forEach(((type, typeMapping) -> RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
 
                 var runtimeWiring = RWBuilder.build();

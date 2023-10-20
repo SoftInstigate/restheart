@@ -21,6 +21,7 @@
 package org.restheart.graphql.models.builder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bson.BsonBoolean;
@@ -36,9 +37,15 @@ import org.restheart.graphql.models.ObjectMapping;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
 import org.restheart.utils.LambdaUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import graphql.language.ObjectTypeDefinition;
 import graphql.schema.idl.TypeDefinitionRegistry;
 
 class ObjectsMappings extends Mappings {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ObjectsMappings.class);
+
     private static BsonInt32 defaultLimit = new BsonInt32(GraphQLService.DEFAULT_DEFAULT_LIMIT);
     private static int maxLimit = GraphQLService.DEFAULT_MAX_LIMIT;
 
@@ -73,7 +80,7 @@ class ObjectsMappings extends Mappings {
         doc.keySet().stream()
             .filter(key -> isObject(key, typeDefinitionRegistry))
             .filter(key -> doc.get(key).isDocument())
-            .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, doc.getDocument(type)))));
+            .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, typeDefinitionRegistry, doc.getDocument(type)))));
 
         return ret;
     }
@@ -84,7 +91,7 @@ class ObjectsMappings extends Mappings {
      * @param typeDoc
      * @return the FieldMappings of the Object Type
      */
-    private static HashMap<String, FieldMapping> objectFieldMappings(String type, BsonDocument typeDoc) {
+    private static HashMap<String, FieldMapping> objectFieldMappings(String type, TypeDefinitionRegistry typeDefinitionRegistry, BsonDocument typeDoc) {
         var typeMappings = new HashMap<String, FieldMapping>();
 
         for (var field : typeDoc.keySet()) {
@@ -244,6 +251,34 @@ class ObjectsMappings extends Mappings {
                 default -> LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field + " must be a String or a Document, but it is a " + fieldMapping.getBsonType()));
             }
         }
+
+        var defaultObjectFieldMappings = defaultObjectFieldMappings(type, typeDefinitionRegistry, typeDoc);
+
+        typeMappings.putAll(defaultObjectFieldMappings);
+        return typeMappings;
+    }
+
+    /**
+     * Provides a default mapping for fields that are not explicitly mapped.
+     *
+     * This is necessary to trigger the execution of GQLRenamingDataFetcher, even when no renaming is performed.
+     * The purpose of this method is to ensure that GQLDataFetcher.storeRootDoc() is executed, preventing the use of
+     * the default graphql.schema.PropertyDataFetcher, which would result in missing rootDoc for all executions
+     * involving only non-mapped fields at path level 2.
+     */
+    public static HashMap<String, FieldMapping> defaultObjectFieldMappings(String type, TypeDefinitionRegistry typeDefinitionRegistry, BsonDocument typeDoc) {
+        var typeMappings = new HashMap<String, FieldMapping>();
+
+        typeDefinitionRegistry.types().entrySet().stream()
+                    .filter(e -> !type.equals("Query") && type.equals(e.getKey()))
+                    .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
+                    .map(e -> (ObjectTypeDefinition) e.getValue())
+                    .map(e -> e.getFieldDefinitions()) // get fields
+                    .flatMap(List::stream)
+                    .map(fd -> fd.getName())
+                    .filter(f -> !typeDoc.containsKey(f)) // field is not mapped
+                    .peek(f -> LOGGER.trace("adding default field mapping for {}.{}", type, f))
+                    .forEach(f -> typeMappings.put(f, new FieldRenaming(f, f))); // add default mapping
 
         return typeMappings;
     }

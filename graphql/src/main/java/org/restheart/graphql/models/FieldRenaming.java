@@ -19,10 +19,11 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.models;
+
 import org.restheart.graphql.datafetchers.GQLRenamingDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 
-public class FieldRenaming extends FieldMapping{
+public class FieldRenaming extends FieldMapping {
 
     private String alias;
 
