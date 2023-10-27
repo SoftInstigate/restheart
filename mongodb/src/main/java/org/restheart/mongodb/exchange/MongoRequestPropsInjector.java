@@ -51,8 +51,6 @@ import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * initialize the MongoRequest
@@ -61,8 +59,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoRequestPropsInjector {
-    static final Logger LOGGER = LoggerFactory.getLogger(MongoRequestPropsInjector.class);
-
     private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration.get().getDefaultPagesize();
     private static final int MAX_PAGESIZE = MongoServiceConfiguration.get().getMaxPagesize();
 
