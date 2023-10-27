@@ -39,8 +39,9 @@ import org.restheart.graphql.datafetchers.GQLAggregationDataFetcher;
 import org.restheart.graphql.datafetchers.GQLBatchAggregationDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
-import org.restheart.mongodb.utils.AggregationInterpolator;
-import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+import org.restheart.mongodb.utils.StagesInterpolator;
+import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.utils.BsonUtils;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -96,7 +97,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         }
 
         try {
-            var argInterpolated = AggregationInterpolator.interpolate(OPERATOR.$arg, stages, values);
+            var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values);
             var argAndFkInterpolated = new ArrayList<BsonDocument>();
 
             for (var s: argInterpolated) {

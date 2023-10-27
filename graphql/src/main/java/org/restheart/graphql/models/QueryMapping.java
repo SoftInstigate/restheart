@@ -34,8 +34,8 @@ import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
-import org.restheart.mongodb.utils.VarOperatorsInterpolator;
-import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator;
+import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.utils.BsonUtils;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -141,7 +141,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
                 }
 
                 try {
-                    var argInterpolated = VarOperatorsInterpolator.interpolate(OPERATOR.$arg, bsonDoc, values);
+                    var argInterpolated = VarsInterpolator.interpolate(VAR_OPERATOR.$arg, bsonDoc, values);
                     var argAndFkIntepolated = argInterpolated;
 
                     if (argInterpolated.isDocument()) {

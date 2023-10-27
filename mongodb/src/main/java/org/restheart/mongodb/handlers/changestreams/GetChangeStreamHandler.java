@@ -21,6 +21,7 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import com.mongodb.client.model.changestream.FullDocument;
+
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -37,8 +38,9 @@ import org.restheart.exchange.QueryNotFoundException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.RHMongoClients;
-import org.restheart.mongodb.utils.AggregationInterpolator;
-import org.restheart.mongodb.utils.VarOperatorsInterpolator.OPERATOR;
+import org.restheart.mongodb.utils.StagesInterpolator;
+import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +140,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         ChangeStreamOperation pipeline = _query.get();
 
-        List<BsonDocument> resolvedStages = AggregationInterpolator.interpolate(OPERATOR.$var, pipeline.getStages(), request.getAggregationVars());
+        List<BsonDocument> resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), request.getAggregationVars());
         return resolvedStages;
     }
 

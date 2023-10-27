@@ -47,7 +47,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.utils.AggregationInterpolator;
+import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -309,7 +309,7 @@ public class MongoRequestPropsInjector {
 
                 // throws SecurityException if aVars contains operators
                 if (MongoServiceConfiguration.get().getAggregationCheckOperators()) {
-                    AggregationInterpolator.shouldNotContainOperators(qvars);
+                    StagesInterpolator.shouldNotContainOperators(qvars);
                 }
 
                 request.setAggregationVars(qvars);

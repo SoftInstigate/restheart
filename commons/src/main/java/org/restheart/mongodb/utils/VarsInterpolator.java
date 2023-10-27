@@ -32,8 +32,8 @@ import org.restheart.utils.BsonUtils;
  * such as <code>{ [operator]: "name"}</code>, and replacing placeholders with provided values.
  * The class facilitates the dynamic substitution of placeholders in BSON documents and arrays.
  */
-public class VarOperatorsInterpolator {
-    public enum OPERATOR { $var, $arg };
+public class VarsInterpolator {
+    public enum VAR_OPERATOR { $var, $arg };
     /**
      * @param operator
      * @param bson the BsonDocument or BsonArray containing variables
@@ -47,7 +47,7 @@ public class VarOperatorsInterpolator {
      * @throws org.restheart.exchange.InvalidMetadataException
      * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
-    public static BsonValue interpolate(OPERATOR operator, BsonValue bson, BsonDocument values) throws InvalidMetadataException, QueryVariableNotBoundException {
+    public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {
             return null;
         }
