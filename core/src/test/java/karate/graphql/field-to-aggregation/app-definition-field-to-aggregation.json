@@ -5,7 +5,7 @@
     "name": "field-to-aggregation",
     "enabled": true
   },
-  "schema": "type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsByCategory: [BsonDocument] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: String created_at: DateTime author: User } type Query { userByEmail(email: String): User postsByCategory(category: String): [Post] countPostsByCategory: [Stat] }",
+  "schema": "enum Category { frontend, backend } type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsGroupedByCategory: [BsonDocument] postsByCategory(category: Category): [Post] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: Category created_at: DateTime author: User } type Query { userByEmail(email: String): User postsGroupedByCategory(category: Category): [Post] countPostsByCategory: [Stat] }",
   "mappings": {
     "User": {
       "postsByCategoryWithDataLoader": {
@@ -33,7 +33,7 @@
 					"caching": true
 				}
       },
-      "postsByCategory": {
+      "postsGroupedByCategory": {
         "db": "test-graphql",
         "collection": "posts-fta",
         "stages": [
@@ -50,6 +50,20 @@
               "posts": {
                 "$push": "$$ROOT"
               }
+            }
+          }
+        ]
+      },
+      "postsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$match": {
+              "author": {
+                "$fk": "_id"
+              },
+              "category": { "$arg": [ "category", "backend" ] }
             }
           }
         ]
@@ -92,7 +106,7 @@
           }
         }
       },
-      "postsByCategory": {
+      "postsGroupedByCategory": {
         "db": "test-graphql",
         "collection": "posts-fta",
         "find": {

@@ -27,7 +27,7 @@ Scenario: Should return an array with two objects
      userByEmail(email: "foo@example.com"){
        name
        email
-       postsByCategory
+       postsGroupedByCategory
      }
    }
    """
@@ -37,7 +37,7 @@ Scenario: Should return an array with two objects
    And request query
    When method POST
    Then status 200
-   And match $..postsByCategory.length() == 2
+   And match $..postsGroupedByCategory.length() == 2
 
 
 Scenario: Should return an empty array for emptyStage field
@@ -94,7 +94,7 @@ Scenario: Get a list of posts by category and for each one return the author nam
   * text query =
   """
     {
-      postsByCategory(category: "backend") {
+      postsGroupedByCategory(category: backend) {
         author {
           name,
           postsByCategoryWithDataLoader
@@ -109,8 +109,70 @@ Scenario: Get a list of posts by category and for each one return the author nam
   When method POST
   Then status 200
 
+Scenario: Get users with all posts in backend category
+    * text query =
+    """
+        {
+        userByEmail(email: "foo@example.com"){
+          name
+          email
+          postsByCategory(category: backend) {
+            body
+          }
+        }
+      }
+    """
 
-Scenario: Map query field to aggregation to count the number of posts by category 
+    Given header Content-Type = contTypeGraphQL
+    And header Authorization = admin
+    And request query
+    When method POST
+    Then status 200
+    And match $.data.userByEmail.postsByCategory.length() == 2
+
+Scenario: Get users with all posts in frontend category
+    * text query =
+    """
+        {
+        userByEmail(email: "foo@example.com"){
+          name
+          email
+          postsByCategory(category: frontend) {
+            body
+          }
+        }
+      }
+    """
+
+    Given header Content-Type = contTypeGraphQL
+    And header Authorization = admin
+    And request query
+    When method POST
+    Then status 200
+    And match $.data.userByEmail.postsByCategory.length() == 1
+
+Scenario: Get users with all posts in the default category (backend). this uses arg with default value
+    * text query =
+    """
+        {
+        userByEmail(email: "foo@example.com"){
+          name
+          email
+          postsByCategory {
+            body
+          }
+        }
+      }
+    """
+
+    Given header Content-Type = contTypeGraphQL
+    And header Authorization = admin
+    And request query
+    When method POST
+    Then status 200
+    And match $.data.userByEmail.postsByCategory.length() == 2
+
+Scenario: Map query field to aggregation to count the number of posts by category
   * text query =
   """
     {
@@ -125,4 +187,4 @@ Scenario: Map query field to aggregation to count the number of posts by categor
   And header Authorization = admin
   And request query
   When method POST
-  Then status 200 
+  Then status 200
