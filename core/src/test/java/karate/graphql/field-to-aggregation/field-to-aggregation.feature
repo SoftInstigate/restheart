@@ -109,14 +109,18 @@ Scenario: Get a list of posts by category and for each one return the author nam
   When method POST
   Then status 200
 
-Scenario: Get users with all posts in backend category
+Scenario: Get users with all posts in backend category. Uses arg with default value and optional stage.
     * text query =
     """
         {
         userByEmail(email: "foo@example.com"){
           name
           email
-          postsByCategory(category: backend) {
+          postsByCategoryAggr(category: backend) {
+            body
+            flag
+          }
+          postsByCategoryQuery(category: backend) {
             body
           }
         }
@@ -128,16 +132,22 @@ Scenario: Get users with all posts in backend category
     And request query
     When method POST
     Then status 200
-    And match $.data.userByEmail.postsByCategory.length() == 2
+    And match $.data.userByEmail.postsByCategoryAggr.length() == 2
+    And match $.data.userByEmail.postsByCategoryAggr[*].flag == [true,true]
+    And match $.data.userByEmail.postsByCategoryQuery.length() == 2
 
-Scenario: Get users with all posts in frontend category
+Scenario: Get users with all posts in frontend category. Uses arg with default value and optional stage.
     * text query =
     """
         {
         userByEmail(email: "foo@example.com"){
           name
           email
-          postsByCategory(category: frontend) {
+          postsByCategoryAggr(category: frontend) {
+            body
+            flag
+          }
+          postsByCategoryQuery(category: frontend) {
             body
           }
         }
@@ -149,16 +159,22 @@ Scenario: Get users with all posts in frontend category
     And request query
     When method POST
     Then status 200
-    And match $.data.userByEmail.postsByCategory.length() == 1
+    And match $.data.userByEmail.postsByCategoryAggr.length() == 1
+    And match $.data.userByEmail.postsByCategoryAggr[*].flag == [true]
+    And match $.data.userByEmail.postsByCategoryQuery.length() == 1
 
-Scenario: Get users with all posts in the default category (backend). this uses arg with default value
+Scenario: Get users with all posts in the default category (backend). Uses arg with default value and optional stage.
     * text query =
     """
         {
         userByEmail(email: "foo@example.com"){
           name
           email
-          postsByCategory {
+          postsByCategoryAggr {
+            body
+            flag
+          }
+          postsByCategoryQuery {
             body
           }
         }
@@ -170,7 +186,9 @@ Scenario: Get users with all posts in the default category (backend). this uses 
     And request query
     When method POST
     Then status 200
-    And match $.data.userByEmail.postsByCategory.length() == 2
+    And match $.data.userByEmail.postsByCategoryAggr.length() == 2
+    And match $.data.userByEmail.postsByCategoryAggr[*].flag == [false, false]
+    And match $.data.userByEmail.postsByCategoryQuery.length() == 2
 
 Scenario: Map query field to aggregation to count the number of posts by category
   * text query =

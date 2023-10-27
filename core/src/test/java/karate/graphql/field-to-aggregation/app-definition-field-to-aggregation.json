@@ -5,7 +5,7 @@
     "name": "field-to-aggregation",
     "enabled": true
   },
-  "schema": "enum Category { frontend, backend } type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsGroupedByCategory: [BsonDocument] postsByCategory(category: Category): [Post] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: Category created_at: DateTime author: User } type Query { userByEmail(email: String): User postsGroupedByCategory(category: Category): [Post] countPostsByCategory: [Stat] }",
+  "schema": "enum Category { frontend, backend } type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsGroupedByCategory: [BsonDocument] postsByCategoryAggr(category: Category): [Post] postsByCategoryQuery(category: Category): [Post] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: Category created_at: DateTime author: User flag: Boolean } type Query { userByEmail(email: String): User postsGroupedByCategory(category: Category): [Post] countPostsByCategory: [Stat] }",
   "mappings": {
     "User": {
       "postsByCategoryWithDataLoader": {
@@ -54,19 +54,21 @@
           }
         ]
       },
-      "postsByCategory": {
+      "postsByCategoryAggr": {
         "db": "test-graphql",
         "collection": "posts-fta",
         "stages": [
-          {
-            "$match": {
-              "author": {
-                "$fk": "_id"
-              },
-              "category": { "$arg": [ "category", "backend" ] }
-            }
-          }
+          { "$match": { "author": { "$fk": "_id" }, "category": { "$arg": [ "category", "backend" ] } } },
+          { "$ifarg": [ "category", { "$addFields": { "flag": true} }, { "$addFields": { "flag": false } } ] }
         ]
+      },
+      "postsByCategoryQuery": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "find": {
+            "author": { "$fk": "_id" },
+            "category": { "$arg": [ "category", "backend" ] }
+        }
       },
       "emptyStage": {
         "db": "test-graphql",
