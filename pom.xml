@@ -239,7 +239,7 @@
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.3.9.Final</version>
+                <version>2.3.10.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -324,7 +324,7 @@
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
-                <version>2.9.0</version>
+                <version>2.9.1</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
