@@ -1,13 +1,104 @@
-{
-  "_id": "bar",
-  "properties": {
-    "group": "coolest"
-  },
-  "sub": {
-    "posts": [
-      { "content": "ping", "visible": true },
-      { "content": "pong", "visible": true },
-      { "content": "invisible", "visible": false }
-    ]
-  }
-}
+[
+    {
+        "_id": "foo",
+        "properties": {
+            "group": "coolest",
+            "genre": "sci-fi"
+        },
+        "posts": [
+            {
+                "content": "ping",
+                "visible": true
+            },
+            {
+                "content": "pong",
+                "visible": true
+            },
+            {
+                "content": "invisible",
+                "visible": false
+            }
+        ],
+        "propertiesWrapperNoMapping": {
+            "properties": {
+                "group": "coolest",
+                "genre": "sci-fi"
+            }
+        },
+        "propertiesWrapperPartialMapping": {
+            "v": 2,
+            "properties": {
+                "group": "weird",
+                "genre": "sci-fi"
+            }
+        }
+    },
+    {
+        "_id": "bar",
+        "properties": {
+            "group": "coolest",
+            "genre": "crime"
+        },
+        "posts": [
+            {
+                "content": "ping bar",
+                "visible": true
+            },
+            {
+                "content": "pong bar",
+                "visible": false
+            },
+            {
+                "content": "invisible bar",
+                "visible": false
+            }
+        ],
+        "propertiesWrapperNoMapping": {
+            "properties": {
+                "group": "coolest",
+                "genre": "crime"
+            }
+        },
+        "propertiesWrapperPartialMapping": {
+            "v": 1,
+            "properties": {
+                "group": "weird",
+                "genre": "crime"
+            }
+        }
+    },
+    {
+        "_id": "zum",
+        "properties": {
+            "group": "weird",
+            "genre": "action"
+        },
+        "posts": [
+            {
+                "content": "ping zum",
+                "visible": true
+            },
+            {
+                "content": "pong zum",
+                "visible": false
+            },
+            {
+                "content": "invisible zum",
+                "visible": false
+            }
+        ],
+        "propertiesWrapperNoMapping": {
+            "properties": {
+                "group": "weird",
+                "genre": "action"
+            }
+        },
+        "propertiesWrapperPartialMapping": {
+            "v": 1,
+            "properties": {
+                "group": "weird",
+                "genre": "action"
+            }
+        }
+    }
+]

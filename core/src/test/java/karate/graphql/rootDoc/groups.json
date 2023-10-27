@@ -1,4 +1,12 @@
-{
-  "_id": "coolest",
-  "description": "the coolest authors"
-}
+[
+    {
+        "_id": "coolest",
+        "description": "the coolest authors",
+        "tag": "coolest tag"
+    },
+    {
+        "_id": "weird",
+        "description": "authors somehow wierd",
+        "tag": "weird tag"
+    }
+]
