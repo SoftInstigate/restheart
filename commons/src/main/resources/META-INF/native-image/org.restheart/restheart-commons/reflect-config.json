@@ -2169,15 +2169,6 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.Timeout",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
   { "name": "com.mongodb.internal.async.AsyncAggregateResponseBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
