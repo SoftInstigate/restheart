@@ -183,7 +183,7 @@ public class PolyglotDeployer implements Initializer {
                         key.reset();
                     }
                 } catch (InterruptedException ex) {
-                    LOGGER.error("Error watching {}" + pluginsDirectory.toAbsolutePath(), ex);
+                    LOGGER.error("Error watching {}", pluginsDirectory.toAbsolutePath(), ex);
                     Thread.currentThread().interrupt();
                 }
             }});
@@ -191,7 +191,7 @@ public class PolyglotDeployer implements Initializer {
             watchThread.start();
 
         } catch (IOException ex) {
-            LOGGER.error("Error watching {}: {}" + pluginsDirectory.toAbsolutePath(), ex);
+            LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
     }
 
