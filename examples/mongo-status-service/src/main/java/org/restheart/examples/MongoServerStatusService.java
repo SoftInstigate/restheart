@@ -58,8 +58,8 @@ public class MongoServerStatusService implements BsonService {
             response.setStatusCode(HttpStatus.SC_OK);
             response.setContentTypeAsJson();
         } else {
-            // Any other HTTP verb is a bad request
-            response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            // Any other HTTP verb is not allowed
+            response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 }
