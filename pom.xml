@@ -43,6 +43,8 @@
     </properties>
 
     <modules>
+        <module>examples</module>
+        <module>test-plugins</module>
         <module>commons</module>
         <module>mongoclient</module>
         <module>security</module>
@@ -51,8 +53,6 @@
         <module>polyglot</module>
         <module>metrics</module>
         <module>core</module>
-        <module>test-plugins</module>
-        <module>examples</module>
     </modules>
 
     <!-- Project Information -->
