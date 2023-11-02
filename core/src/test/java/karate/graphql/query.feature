@@ -373,7 +373,7 @@ Feature: GraphQL query response test
     Given request { users(limit: 1) { posts { text } } } # this is invalid since body should be { query: "{...}" }
     When method POST
     Then status 400
-    And match response.message == 'missing query field'
+    And match response.errors[0].message == 'missing query field'
 
     * call confDestroyer
 
@@ -381,8 +381,8 @@ Feature: GraphQL query response test
 
     Given request { query: "{ users (limit: 1) { posts { text } } }", operationName: "foo" }
     When method POST
-    Then status 404
-    And match response.message == 'Unknown operation named \'foo\'.'
+    Then status 400
+    And match response.errors[0].message == 'Unknown operation named \'foo\'.'
 
     * call confDestroyer
 

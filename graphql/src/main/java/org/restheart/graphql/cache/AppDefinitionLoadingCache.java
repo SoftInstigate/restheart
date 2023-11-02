@@ -68,8 +68,8 @@ public class AppDefinitionLoadingCache {
         } else {
             try {
                 _app = this.appLoadingCache.getLoading(appName);
-            } catch (Exception e){
-                throw new GraphQLIllegalAppDefinitionException(e.getMessage());
+            } catch (Exception e) {
+                throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
             }
 
             if (_app != null && _app.isPresent()) {

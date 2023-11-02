@@ -33,12 +33,16 @@ public class BadRequestException extends RuntimeException {
     private static final long serialVersionUID = -8466126772297299751L;
 
     int statusCode = HttpStatus.SC_BAD_REQUEST;
+    private final boolean jsonMessage;
+    private final String contentType;
 
     /**
      *
      */
     public BadRequestException() {
         super();
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
     }
 
     /**
@@ -48,6 +52,8 @@ public class BadRequestException extends RuntimeException {
     public BadRequestException(int statusCode) {
         super();
         this.statusCode = statusCode;
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
     }
 
     /**
@@ -56,6 +62,31 @@ public class BadRequestException extends RuntimeException {
      */
     public BadRequestException(String message) {
         super(message);
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param jsonMessage mark message as json
+     */
+    public BadRequestException(String message, boolean jsonMessage) {
+        super(message);
+        this.jsonMessage = jsonMessage;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param jsonMessage mark message as json
+     * @param contentType error response content type
+     */
+    public BadRequestException(String message, boolean jsonMessage, String contentType) {
+        super(message);
+        this.jsonMessage = jsonMessage;
+        this.contentType = contentType;
     }
 
     /**
@@ -66,6 +97,35 @@ public class BadRequestException extends RuntimeException {
     public BadRequestException(String message, int statusCode) {
         super(message);
         this.statusCode = statusCode;
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param statusCode
+     * @param jsonMessage mark message as json
+     */
+    public BadRequestException(String message, int statusCode, boolean jsonMessage) {
+        super(message);
+        this.statusCode = statusCode;
+        this.jsonMessage = jsonMessage;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param statusCode
+     * @param jsonMessage mark message as json
+     * @param contentType error response content type
+     */
+    public BadRequestException(String message, int statusCode, boolean jsonMessage, String contentType) {
+        super(message);
+        this.statusCode = statusCode;
+        this.jsonMessage = jsonMessage;
+        this.contentType = contentType;
     }
 
     /**
@@ -75,6 +135,33 @@ public class BadRequestException extends RuntimeException {
      */
     public BadRequestException(String message, Throwable cause) {
         super(message, cause);
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param cause
+     * @param jsonMessage mark message as json
+     */
+    public BadRequestException(String message, boolean jsonMessage, Throwable cause) {
+        super(message, cause);
+        this.jsonMessage = jsonMessage;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param cause
+     * @param jsonMessage mark message as json
+     * @param contentType error response content type
+     */
+    public BadRequestException(String message, boolean jsonMessage, String contentType, Throwable cause) {
+        super(message, cause);
+        this.jsonMessage = jsonMessage;
+        this.contentType = contentType;
     }
 
     /**
@@ -86,6 +173,37 @@ public class BadRequestException extends RuntimeException {
     public BadRequestException(String message, int statusCode, Throwable cause) {
         super(message, cause);
         this.statusCode = statusCode;
+        this.jsonMessage = false;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param statusCode
+     * @param jsonMessage mark message as json
+     * @param cause
+     */
+    public BadRequestException(String message, int statusCode, boolean jsonMessage, Throwable cause) {
+        super(message, cause);
+        this.statusCode = statusCode;
+        this.jsonMessage = jsonMessage;
+        this.contentType = Exchange.JSON_MEDIA_TYPE;
+    }
+
+    /**
+     *
+     * @param message
+     * @param statusCode
+     * @param jsonMessage mark message as json
+     * @param contentType error response content type
+     * @param cause
+     */
+    public BadRequestException(String message, int statusCode, boolean jsonMessage, String contentType, Throwable cause) {
+        super(message, cause);
+        this.statusCode = statusCode;
+        this.jsonMessage = jsonMessage;
+        this.contentType = contentType;
     }
 
     /**
@@ -93,5 +211,13 @@ public class BadRequestException extends RuntimeException {
      */
     public int getStatusCode() {
         return statusCode;
+    }
+
+    public boolean isJsonMessage() {
+        return jsonMessage;
+    }
+
+    public String contentType() {
+        return this.contentType;
     }
 }

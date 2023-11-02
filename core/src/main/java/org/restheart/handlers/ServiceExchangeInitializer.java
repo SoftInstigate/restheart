@@ -20,21 +20,21 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.exchange.BadRequestException;
-import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  * Initializes the Request and the Response invoking requestInitializer() and
@@ -91,8 +91,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             } catch (BadRequestException bre) {
                 LOGGER.debug("Error handling the request: {}", bre.getMessage(), bre);
                 exchange.setStatusCode(bre.getStatusCode());
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Exchange.JSON_MEDIA_TYPE);
-                exchange.getResponseSender().send(BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, bre.contentType());
+                exchange.getResponseSender().send(
+                    bre.isJsonMessage()
+                    ? bre.getMessage()
+                    : BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
                 return;
             } catch (Throwable t) {
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

@@ -36,7 +36,8 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.GraphQLRequest;
-import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.GraphQLResponse;
+import static org.restheart.exchange.GraphQLResponse.GRAPHQL_RESPONSE_CONTENT_TYPE;
 import org.restheart.exchange.Request;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
@@ -61,11 +62,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
+import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoClient;
 
+import graphql.ErrorType;
 import graphql.ExecutionInput;
+import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
-import graphql.execution.UnknownOperationException;
+import graphql.GraphQLError;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
 import graphql.language.Document;
@@ -74,12 +80,11 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.parser.InvalidSyntaxException;
 import graphql.parser.Parser;
-import graphql.validation.ValidationError;
 import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
 
-public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
+public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
     public static final Boolean DEFAULT_VERBOSE = false;
@@ -128,7 +133,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void handle(GraphQLRequest req, MongoResponse res) throws Exception {
+    public void handle(GraphQLRequest req, GraphQLResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
             return;
@@ -139,7 +144,13 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.objectsMappings());
 
         if (req.getQuery() == null) {
-            res.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
+            // no query -> 400
+            // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+            // If the GraphQL response does not contain the {data} entry then
+            // the server MUST reply with a 4xx or 5xx status code as appropriate.
+            var errorResult = new ExecutionResultImpl.Builder().addError(GraphQLError.newError().message("Query cannot be null").build()).build();
+            res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
             return;
         } else {
             try {
@@ -151,7 +162,12 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames));
                 LOGGER.debug("Executing GraphQL query: {}", queryNames);
             } catch(InvalidSyntaxException ise) {
-                res.setInError(HttpStatus.SC_BAD_REQUEST, "Syntax error in query", ise);
+                // invalid syntax -> 400
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // If the GraphQL response does not contain the {data} entry then
+                // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                res.setContent(BsonUtils.toBsonDocument(ise.toInvalidSyntaxError().toSpecification()));
                 return;
             }
         }
@@ -180,9 +196,15 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         try {
             var result = this.gql.execute(inputBuilder.build());
 
-            // if the result contains errors due ValidationError, set status code to 400
-            if (result.getErrors().stream().anyMatch(e -> e instanceof ValidationError)) {
-                res.setStatusCode(400);
+            // errors and no data -> 400
+            // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+            // If the GraphQL response does not contain the {data} entry then
+            // the server MUST reply with a 4xx or 5xx status code as appropriate.
+
+            //  The graphql specification specifies:
+            //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null."
+            if (result.getErrors() != null && !result.getErrors().isEmpty() && result.getData() == null) {
+                res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }
 
             if (this.verbose) {
@@ -190,13 +212,53 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             }
 
             res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
-        } catch(UnknownOperationException uoe) {
-            res.setInError(404, uoe.getMessage(), uoe);
         } catch(Throwable t) {
-            var gee = new GraphQLAppExecutionException("error executing query", t);
-            res.setInError(500, gee.getMessage(), gee);
-            throw gee;
+            if (containsMongoTimeoutException(t)) {
+                // db down -> 500
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // If the GraphQL response does not contain the {data} entry then
+                // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                LOGGER.error("Unable to establish a connection to the database", t);
+                var errorResult = new ExecutionResultImpl.Builder()
+                    .addError(GraphQLError.newError()
+                        .errorType(ErrorType.ExecutionAborted)
+                        .message("Unable to establish a connection to the database: " + t.getCause().getMessage()).build()).build();
+
+                res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
+            } else {
+                // other errors down -> 400
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // If the GraphQL response does not contain the {data} entry then
+                // the server MUST reply with a 4xx or 5xx status code as appropriate.
+
+                if (t instanceof GraphQLError gqle) {
+                    var errorResult = new ExecutionResultImpl.Builder().addError(gqle).build();
+                    res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
+                } else {
+                    var errorResult = new ExecutionResultImpl.Builder()
+                            .addError(GraphQLError.newError()
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("Runtime Error: " + t.getMessage()).build()).build();
+
+                    res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
+                }
+
+                res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            }
         }
+    }
+
+    private boolean containsMongoTimeoutException(Throwable t) {
+        if (t == null) {
+            return false;
+        } else if (t instanceof  MongoTimeoutException) {
+            return true;
+        } else if (t.getCause() != null) {
+            return containsMongoTimeoutException(t.getCause());
+        }
+
+        return false;
     }
 
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
@@ -230,24 +292,114 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
     @Override
     public Consumer<HttpServerExchange> requestInitializer() {
+        // TODO set the response content type
+        // in case of error
         return e -> {
             try {
                 if (e.getRequestMethod().equalToString(ExchangeKeys.METHOD.POST.name()) || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())) {
                     var appURI = appURI(e);
                     gqlApp(appURI); // throws GraphQLAppDefNotFoundException when uri is not bound to an app definition
-                    GraphQLRequest.init(e, appURI);
+                                    // thorws GraphQLIllegalAppDefinitionException is app def is invalid
+                    GraphQLRequest.init(e, appURI); // throws BadRequestException when content type is not valid or query field is missing
+                                                    // throws JsonSyntaxException when content is not valid JSON
                 } else {
+                    // wrong method -> 405
                     throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 }
+            } catch(BadRequestException brex) {
+                if (brex.getStatusCode() == HttpStatus.SC_METHOD_NOT_ALLOWED) {
+                    // wrong method -> 405
+                    var errorResult = new ExecutionResultImpl.Builder()
+                            .addError(GraphQLError.newError()
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("Method Not Allowed").build()).build();
+
+                    throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_METHOD_NOT_ALLOWED, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
+                } else {
+                    // wrong content type or query field is missing -> 400
+                    // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                    // Requests that the server cannot interpret SHOULD result in status code 400 (Bad Request).
+                    var errorResult = new ExecutionResultImpl.Builder()
+                            .addError(GraphQLError.newError()
+                                .errorType(ErrorType.ValidationError)
+                                .message(brex.getMessage()).build()).build();
+
+                    throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
+                }
+            } catch(JsonSyntaxException jse) {
+                // invalid json -> 400
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // Requests that the server cannot interpret SHOULD result in status code 400 (Bad Request).
+
+                var errorResult = new ExecutionResultImpl.Builder()
+                        .addError(GraphQLError.newError()
+                            .errorType(ErrorType.ValidationError)
+                            .message(jseCleanMessage(jse)).build()).build();
+
+                throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             } catch (GraphQLAppDefNotFoundException nfe) {
-                throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
+                // GrahpQL app not found -> 404
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // If the GraphQL response does not contain the {data} entry then
+                // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                var errorResult = new ExecutionResultImpl.Builder()
+                        .addError(GraphQLError.newError()
+                            .errorType(ErrorType.ExecutionAborted)
+                            .message("GraphQL app not found").build()).build();
+                throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_NOT_FOUND, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             } catch (GraphQLIllegalAppDefinitionException ie) {
-                LOGGER.error(ie.getMessage());
-                throw new BadRequestException(ie.getMessage(), HttpStatus.SC_BAD_REQUEST);
+                if (containsMongoTimeoutException(ie)) {
+                    // db down -> 500
+                    // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                    // If the GraphQL response does not contain the {data} entry then
+                    // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                    LOGGER.error("Unable to establish a connection to the database", ie);
+                    var errorResult = new ExecutionResultImpl.Builder()
+                        .addError(GraphQLError.newError()
+                            .errorType(ErrorType.ExecutionAborted)
+                            .message("Unable to establish a connection to the database: " + ie.getCause().getMessage()).build()).build();
+
+                    throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_INTERNAL_SERVER_ERROR, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
+                } else {
+                    // this should never happen unless the app definition was not created via API when is checked (e.g. when created directly in the db with mongosh or similar)
+                    // invalid app definition -> 400
+                    // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                    // If the GraphQL response does not contain the {data} entry then
+                    // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                    LOGGER.error("Illegal GraphQL App definition", ie);
+                    var errorResult = new ExecutionResultImpl.Builder()
+                            .addError(GraphQLError.newError()
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("Invalid GraphQL app definition: " + ie.getMessage()).build()).build();
+                    throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
+                }
             } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
+                // network error -> 400
+                // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                // If the GraphQL response does not contain the {data} entry then
+                // the server MUST reply with a 4xx or 5xx status code as appropriate.
+                var errorResult = new ExecutionResultImpl.Builder()
+                        .addError(GraphQLError.newError()
+                            .errorType(ErrorType.ExecutionAborted)
+                            .message("Network error: " + ioe.getMessage()).build()).build();
+                throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             }
         };
+    }
+
+    private static String jseCleanMessage(JsonSyntaxException ex) {
+        if (ex.getCause() instanceof MalformedJsonException mje) {
+            return "Bad Request: " + mje.getMessage();
+        } else if (ex.getMessage() != null) {
+            if (ex.getMessage().indexOf("MalformedJsonException") > 0) {
+                var index = ex.getMessage().indexOf("MalformedJsonException" + "MalformedJsonException".length());
+                return "Bad Request: " + ex.getMessage().substring(index);
+            } else {
+                return "Bad Request: " + ex.getMessage();
+            }
+        } else {
+            return "Bad Request";
+        }
     }
 
     private String appURI(HttpServerExchange exchange) {
@@ -261,7 +413,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
     @Override
     public Consumer<HttpServerExchange> responseInitializer() {
-        return e -> MongoResponse.init(e);
+        return e -> GraphQLResponse.init(e);
     }
 
     @Override
@@ -270,8 +422,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     }
 
     @Override
-    public Function<HttpServerExchange, MongoResponse> response() {
-        return e -> MongoResponse.of(e);
+    public Function<HttpServerExchange, GraphQLResponse> response() {
+        return e -> GraphQLResponse.of(e);
     }
 
     /**
