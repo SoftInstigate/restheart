@@ -43,7 +43,6 @@
     </properties>
 
     <modules>
-        <module>examples</module>
         <module>test-plugins</module>
         <module>commons</module>
         <module>mongoclient</module>
