@@ -575,6 +575,12 @@
 
     <profiles>
         <profile>
+            <id>examples</id>
+            <modules>
+                <module>examples</module>
+            </modules>
+        </profile>
+        <profile>
             <id>deploy</id>
             <build>
                 <plugins>

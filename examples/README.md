@@ -16,10 +16,12 @@ The only required dependency for building Java plugins is `restheart-commons`:
 
 ## Build the plugins
 
+Note: the `examples` module is by default excluded from building. To build it it's necessary to activate its Maven profile, using the `-P examples` parameter, as below.
+
 ```bash
 $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 $ cd restheart/examples
-$ ./mvnw clean package
+$ ./mvnw clean package -P examples
 ```
 
 ## Deploy
