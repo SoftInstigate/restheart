@@ -186,5 +186,5 @@ public class GetCollectionCache {
 
         private SingletonHolder() {
         }
-    };
+    }
 }
