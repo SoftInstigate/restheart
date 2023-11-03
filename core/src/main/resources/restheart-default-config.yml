@@ -241,6 +241,7 @@ mongo:
     doc: OPTIONAL
 
   # get collection cache speedups GET /coll?cache requests
+  get-collection-cache-enabled: true
   get-collection-cache-size: 100
   get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
   get-collection-cache-docs: 1000 # number of documents to cache for each request
