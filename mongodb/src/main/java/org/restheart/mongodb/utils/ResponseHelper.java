@@ -232,7 +232,7 @@ public class ResponseHelper {
             case 40352 -> "FieldPath cannot be constructed with empty string";
             case 13297 -> "Db already exists with different case";
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
-            case 31253 -> "Keys projection cannot have a mix of inclusion and exclusion";
+            case 17287, 31253 -> "Keys projection cannot have a mix of inclusion and exclusion";
             // 15974 Illegal key in $sort specification
             // 17312 $meta is the only expression supported by $sort right now
             case 15974, 17312 -> "Invalid sort parameter";
