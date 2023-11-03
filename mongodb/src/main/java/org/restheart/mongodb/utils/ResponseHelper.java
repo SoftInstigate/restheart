@@ -20,16 +20,16 @@
  */
 package org.restheart.mongodb.utils;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-
-import com.mongodb.MongoException;
-
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
+
+import com.mongodb.MongoException;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -161,6 +161,8 @@ public class ResponseHelper {
             // 31138 Illegal $meta sort
             case 15974, 17312, 31138 -> HttpStatus.SC_BAD_REQUEST;
             case 15998 -> HttpStatus.SC_BAD_REQUEST;
+            // 31249 Path collision
+            case 31249 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -176,7 +178,8 @@ public class ResponseHelper {
         return switch(code) {
             // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
             // Query failed with error code 51108 with name 'Location51108' and error message 'invalid flag in regex options: z' on server 127.0.0.1:27017'
-            case 2, 51091, 51108 -> {
+            // Command failed with error 31249 (Location31249): 'Path collision at page.children.children.displayname remaining portion children.children.displayname' on server...
+            case 2, 51091, 51108, 31249 -> {
                 var msg = me.getMessage();
 
                 var b = msg.indexOf(": '");
