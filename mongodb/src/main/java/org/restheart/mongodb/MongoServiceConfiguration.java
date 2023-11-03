@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb;
 
-import com.mongodb.ConnectionString;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,14 +29,56 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
+import static org.restheart.configuration.Utils.asBoolean;
+import static org.restheart.configuration.Utils.asInteger;
+import static org.restheart.configuration.Utils.asListOfMaps;
+import static org.restheart.configuration.Utils.asLong;
+import static org.restheart.configuration.Utils.asMap;
+import static org.restheart.configuration.Utils.asMapOfMaps;
+import static org.restheart.configuration.Utils.asString;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.AGGREGATION_CHECK_OPERATORS;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.AGGREGATION_TIME_LIMIT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.CURSOR_BATCH_SIZE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_COLL_ETAG_CHECK_POLICY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DB_ETAG_CHECK_POLICY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DEFAULT_PAGESIZE;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DOC_ETAG_CHECK_POLICY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MAX_PAGESIZE;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_MOUNT_WHAT;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_MOUNT_WHERE;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_URI;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_PAGESIZE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_REPRESENTATION_FORMAT;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_COLL_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_DB_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_DOC_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_DOCS_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_ENABLED_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_SIZE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_TTL_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.INSTANCE_BASE_URL_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.LOCAL_CACHE_ENABLED_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.LOCAL_CACHE_TTL_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MAX_PAGESIZE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.METRICS_GATHERING_LEVEL_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNTS_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_URI_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.QUERY_TIME_LIMIT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.REPRESENTATION_FORMAT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.REQUESTS_LIMIT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_ENABLED_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_TTL_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.configuration.Utils.*;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
+import com.mongodb.ConnectionString;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -71,6 +111,7 @@ public class MongoServiceConfiguration {
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
     private final int requestsLimit;
+    private final boolean getCollectionCacheEnabled;
     private final int getCollectionCacheSize;
     private final int getCollectionCacheTTL;
     private final int getCollectionCacheDocs;
@@ -178,6 +219,7 @@ public class MongoServiceConfiguration {
         schemaCacheEnabled = asBoolean(conf, SCHEMA_CACHE_ENABLED_KEY, true, silent);
         schemaCacheTtl = asLong(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000, silent);
 
+        getCollectionCacheEnabled = asBoolean(conf, GET_COLLECTION_CACHE_ENABLED_KEY, true, silent);
         getCollectionCacheSize = asInteger(conf, GET_COLLECTION_CACHE_SIZE_KEY, 100, silent);
         getCollectionCacheTTL = asInteger(conf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
         getCollectionCacheDocs = asInteger(conf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
@@ -259,7 +301,7 @@ public class MongoServiceConfiguration {
                 + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit
-                + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
+                + ", cacheEnabled=" + getCollectionCacheEnabled + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
                 + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
@@ -316,6 +358,13 @@ public class MongoServiceConfiguration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
+    }
+
+    /**
+     * @return the getCollectionCacheEnabled
+     */
+    public boolean isGetCollectionCacheEnabled() {
+        return getCollectionCacheEnabled;
     }
 
     /**

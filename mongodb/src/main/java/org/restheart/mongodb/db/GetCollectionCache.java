@@ -27,8 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.bson.BsonDocument;
-import com.mongodb.client.MongoCollection;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -39,6 +39,8 @@ import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.client.MongoCollection;
+
 
 /**
  *
@@ -48,6 +50,7 @@ public class GetCollectionCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionCache.class);
 
+    private static final boolean CACHE_ENABLED = MongoServiceConfiguration.get() == null ? true : MongoServiceConfiguration.get().isGetCollectionCacheEnabled();
     private static final long CACHE_SIZE = MongoServiceConfiguration.get() == null ? 100 : MongoServiceConfiguration.get().getGetCollectionCacheSize();
     private static final long CACHE_TTL = MongoServiceConfiguration.get() == null ? 10_000 : MongoServiceConfiguration.get().getGetCollectionCacheTTL();
 
@@ -56,39 +59,51 @@ public class GetCollectionCache {
      * @return
      */
     public static GetCollectionCache getInstance() {
-        return DBCursorPoolSingletonHolder.INSTANCE;
+        return SingletonHolder.INSTANCE;
     }
 
     private final Cache<GetCollectionCacheKey, List<BsonDocument>> cache;
 
     private GetCollectionCache() {
-        cache = CacheFactory.createLocalCache(CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, CACHE_TTL);
+        if (CACHE_ENABLED) {
+            cache = CacheFactory.createLocalCache(CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, CACHE_TTL);
 
-        if (LOGGER.isTraceEnabled()) {
-            // print stats every 1 minute
-            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-                getCacheSizes().forEach((s, c) -> {
-                    LOGGER.debug("get collection cache size: {}\t{}", s, c);
-                });
+            if (LOGGER.isTraceEnabled()) {
+                // print stats every 1 minute
+                Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+                    getCacheSizes().forEach((s, c) -> {
+                        LOGGER.debug("get collection cache size: {}\t{}", s, c);
+                    });
 
-                LOGGER.trace("get collection cache entries: {}", cache.asMap().keySet());
-            }, 1, 1, TimeUnit.MINUTES);
+                    LOGGER.trace("get collection cache entries: {}", cache.asMap().keySet());
+                }, 1, 1, TimeUnit.MINUTES);
+            }
+        } else {
+            cache = null;
         }
     }
 
     public synchronized void put(GetCollectionCacheKey key, List<BsonDocument> value) {
+        if (cache == null) return;
+
         cache.put(key, value);
     }
 
     public synchronized Pair<GetCollectionCacheKey, List<BsonDocument>> find(GetCollectionCacheKey key) {
+        if (cache == null) return null;
+
         return _get(key, false);
     }
 
     public synchronized List<BsonDocument> get(GetCollectionCacheKey key) {
+        if (cache == null) return null;
+
         return _get(key, false).getValue();
     }
 
     public synchronized List<BsonDocument> remove(GetCollectionCacheKey key) {
+        if (cache == null) return null;
+
         return _get(key, true).getValue();
     }
 
@@ -99,6 +114,8 @@ public class GetCollectionCache {
      * @return
      */
     private synchronized Pair<GetCollectionCacheKey, List<BsonDocument>> _get(GetCollectionCacheKey key, boolean remove) {
+        if (cache == null) return null;
+
         // return the first entry with all avaible documents
         var _bestKey = cache.asMap().keySet().stream()
             .filter(cacheKeyFilter(key))
@@ -121,10 +138,14 @@ public class GetCollectionCache {
     }
 
     public synchronized void invalidate(GetCollectionCacheKey key) {
+        if (cache == null) return;
+
         cache.invalidate(key);
     }
 
     public void invalidateAll(String db, String coll) {
+        if (cache == null) return;
+
         cache.asMap().keySet().stream()
             .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
             .filter(k -> k.collection().getNamespace().getCollectionName().equals(coll))
@@ -132,12 +153,16 @@ public class GetCollectionCache {
     }
 
     public void invalidateAll(MongoCollection<?> coll) {
+        if (cache == null) return;
+
         cache.asMap().keySet().stream()
             .filter(k -> k.collection().getNamespace().equals(coll.getNamespace()))
             .forEach(k -> cache.invalidate(k));
     }
 
     private Predicate<? super GetCollectionCacheKey> cacheKeyFilter(GetCollectionCacheKey requested) {
+        if (cache == null) return null;
+
         return cached
             -> Objects.equals(cached.collection().getNamespace(), requested.collection().getNamespace())
             && Objects.equals(cached.filter(), requested.filter())
@@ -148,16 +173,18 @@ public class GetCollectionCache {
     }
 
     private TreeMap<String, Long> getCacheSizes() {
+        if (cache == null) return null;
+
         return new TreeMap<>(cache.asMap()
             .keySet()
             .stream()
             .collect(Collectors.groupingBy(GetCollectionCacheKey::getCacheStatsGroup, Collectors.counting())));
     }
 
-    private static class DBCursorPoolSingletonHolder {
+    private static class SingletonHolder {
         private static final GetCollectionCache INSTANCE = new GetCollectionCache();
 
-        private DBCursorPoolSingletonHolder() {
+        private SingletonHolder() {
         }
     };
 }

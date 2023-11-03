@@ -160,6 +160,12 @@ public interface MongoServiceConfigurationKeys {
      */
     public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
 
+
+    /**
+     * the key for the get-collection-cache-enabled property.
+     */
+    public static final String GET_COLLECTION_CACHE_ENABLED_KEY = "get-collection-cache-enabled";
+
     /**
      * the key for the get-collection-cache-size property.
      */
