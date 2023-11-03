@@ -22,8 +22,6 @@ package org.restheart.mongodb.handlers.collection;
 
 import java.util.Optional;
 
-import com.mongodb.MongoException;
-import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
@@ -36,6 +34,8 @@ import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -114,30 +114,19 @@ public class GetCollectionHandler extends PipelinedHandler {
                 return;
             }
 
-            try {
-                data = dbs.getCollectionData(
-                    Optional.ofNullable(request.getClientSession()),
-                    request.rsOps(),
-                    request.getDBName(),
-                    request.getCollectionName(),
-                    request.getPage(),
-                    request.getPagesize(),
-                    sort,
-                    filter,
-                    request.getHintDocument(),
-                    request.getProjectionDocument(),
-                    request.isCache());
-            } catch (MongoException me) {
-                if (me.getMessage().matches(".*Can't canonicalize query.*")) {
-                    // error with the filter expression during query execution
-                    LOGGER.debug("invalid filter expression {}", request.getFilter(), me);
-                    MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
-                    next(exchange);
-                    return;
-                } else {
-                    throw me;
-                }
-            }
+            data = dbs.getCollectionData(
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getPage(),
+                request.getPagesize(),
+                sort,
+                filter,
+                request.getHintDocument(),
+                request.getProjectionDocument(),
+                request.isCache());
+
         }
 
         if (exchange.isComplete()) {

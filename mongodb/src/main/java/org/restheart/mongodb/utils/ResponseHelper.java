@@ -163,6 +163,13 @@ public class ResponseHelper {
             case 15998 -> HttpStatus.SC_BAD_REQUEST;
             // 31249 Path collision
             case 31249 -> HttpStatus.SC_BAD_REQUEST;
+            // 168 InvalidPipelineOperator
+            case 168 -> HttpStatus.SC_BAD_REQUEST;
+            // 17276 Use of undefined variable
+            case 17276 -> HttpStatus.SC_BAD_REQUEST;
+            // 1728, Can't canonicalize query: BadValue Projection cannot have a mix of inclusion and exclusion (old error message)
+            case 17287, 31254 -> HttpStatus.SC_BAD_REQUEST;
+            // 31254 Cannot do exclusion on field x in inclusion projection
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -179,14 +186,14 @@ public class ResponseHelper {
             // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
             // Query failed with error code 51108 with name 'Location51108' and error message 'invalid flag in regex options: z' on server 127.0.0.1:27017'
             // Command failed with error 31249 (Location31249): 'Path collision at page.children.children.displayname remaining portion children.children.displayname' on server...
-            case 2, 51091, 51108, 31249 -> {
+            case 2, 51091, 51108, 31249, 168, 17276, 31254 -> {
                 var msg = me.getMessage();
 
                 var b = msg.indexOf(": '");
                 var e = msg.indexOf("' on server");
 
                 if (b >= 0 && e >= 0) {
-                    yield "Invalid filter: " + msg.substring(b+3, e).strip();
+                    yield "Invalid query parameter: " + msg.substring(b+3, e).strip();
                 } else {
                     yield msg;
                 }
