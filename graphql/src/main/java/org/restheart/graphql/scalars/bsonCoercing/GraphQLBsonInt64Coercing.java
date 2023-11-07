@@ -20,36 +20,46 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
-import graphql.schema.Coercing;
-import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
+import java.util.Locale;
+
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
-
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-@SuppressWarnings("deprecation")
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.Value;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+
 public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
     @Override
-    public Long serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public Long serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if (dataFetcherResult instanceof BsonInt64 bsonInt64) {
+        } else if (input instanceof BsonInt64 bsonInt64) {
             return bsonInt64.getValue();
-        } else if (dataFetcherResult instanceof Long value) {
+        } else if (input instanceof Long value) {
             return value;
         }else {
-            throw new CoercingParseValueException("Expected types 'Long' or 'BsonInt64' but was '" + typeName(dataFetcherResult) + ".");
+            throw new CoercingParseValueException("Expected types 'Long' or 'BsonInt64' but was '" + typeName(input) + ".");
         }
     }
 
     @Override
-    public Long parseValue(Object input) {
+    public Long parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         return (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
     }
 
     @Override
-    public Long parseLiteral(Object AST) {
-        return (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST);
+    public Long parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        return (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input);
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        return CoercingUtils.builtInCoercing.get("Long").valueToLiteral(input);
     }
 }

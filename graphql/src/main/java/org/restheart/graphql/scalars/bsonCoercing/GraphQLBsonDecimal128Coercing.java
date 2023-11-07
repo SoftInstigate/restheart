@@ -20,38 +20,43 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
-import graphql.language.FloatValue;
-import graphql.language.IntValue;
-import graphql.language.StringValue;
-import graphql.schema.Coercing;
-import graphql.schema.CoercingParseLiteralException;
-import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
+import java.util.Locale;
+
 import org.bson.BsonDecimal128;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
-
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+import org.restheart.utils.BsonUtils;
 
-@SuppressWarnings("deprecation")
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.StringValue;
+import graphql.language.Value;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+
 public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, Decimal128> {
     @Override
-    public Decimal128 serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public Decimal128 serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
         }
 
-        var possibleDecimal = convertImpl(dataFetcherResult);
+        var possibleDecimal = convertImpl(input);
         if (possibleDecimal == null){
-            throw new CoercingSerializeException("Expected type 'Decimal128' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected type 'Decimal128' but was '" + typeName(input) +"'.");
         } else {
             return possibleDecimal;
         }
     }
 
     @Override
-    public BsonDecimal128 parseValue(Object input) throws CoercingParseValueException {
+    public BsonDecimal128 parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         var possibleDecimal = convertImpl(input);
         if (possibleDecimal == null){
             throw new CoercingParseValueException("Expected type 'Decimal128' but was '" + typeName(input) +"'.");
@@ -61,7 +66,7 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
     }
 
     @Override
-    public BsonDecimal128 parseLiteral(Object input) throws CoercingParseLiteralException {
+    public BsonDecimal128 parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
         if (input instanceof StringValue || input instanceof IntValue || input instanceof FloatValue){
             String value = null;
             if (input instanceof IntValue intValue){
@@ -97,5 +102,12 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
 
     private boolean isANumber(Object input) {
         return input instanceof Number || input instanceof String;
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        var value = parseValue(input);
+        var s = BsonUtils.toJson(value);
+        return StringValue.newStringValue(s).build();
     }
 }

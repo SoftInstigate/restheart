@@ -20,32 +20,36 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
+import java.util.Locale;
+
+import org.bson.BsonNull;
+import org.bson.BsonRegularExpression;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+import org.restheart.utils.BsonUtils;
+
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 
-import org.bson.BsonNull;
-import org.bson.BsonRegularExpression;
-
-import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
-
-@SuppressWarnings("deprecation")
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override
-    public BsonRegularExpression serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public BsonRegularExpression serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if (dataFetcherResult instanceof BsonRegularExpression bsonRegularExpression){
+        } else if (input instanceof BsonRegularExpression bsonRegularExpression){
             return bsonRegularExpression;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(input) +"'.");
         }
     }
 
     @Override
-    public BsonRegularExpression parseValue(Object input) throws CoercingParseValueException {
+    public BsonRegularExpression parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         if (input instanceof String string){
             return new BsonRegularExpression(string);
         } else {
@@ -54,11 +58,18 @@ public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression,
     }
 
     @Override
-    public BsonRegularExpression parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if (AST instanceof StringValue stringValue){
+    public BsonRegularExpression parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        if (input instanceof StringValue stringValue){
             return new BsonRegularExpression(stringValue.getValue());
         } else {
-            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(AST) + "'.");
+            throw new CoercingParseLiteralException("Expected input type 'StringValue' but was '" + typeName(input) + "'.");
         }
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        var value = serialize(input);
+        var s = BsonUtils.toJson(value);
+        return StringValue.newStringValue(s).build();
     }
 }

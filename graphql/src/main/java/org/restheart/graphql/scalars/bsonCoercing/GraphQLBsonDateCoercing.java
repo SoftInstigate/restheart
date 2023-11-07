@@ -20,35 +20,39 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
+
+import org.bson.BsonDateTime;
+import org.bson.BsonNull;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+import org.restheart.utils.BsonUtils;
+
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
-import org.bson.BsonDateTime;
-import org.bson.BsonNull;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-
-import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
-
-@SuppressWarnings("deprecation")
 public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime>  {
     @Override
-    public BsonDateTime serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public BsonDateTime serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if (dataFetcherResult instanceof BsonDateTime bsonDateTime){
+        } else if (input instanceof BsonDateTime bsonDateTime){
             return bsonDateTime;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(input) +"'.");
         }
     }
 
     @Override
-    public BsonDateTime parseValue(Object input) throws CoercingParseValueException {
+    public BsonDateTime parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         var possibleDate = convertImpl(input);
         if (possibleDate == null){
             throw new CoercingParseValueException("Expected type 'Long' or 'String' (with a valid OffsetDateTime) but was '" + typeName(input) +"'.");
@@ -58,8 +62,8 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
     }
 
     @Override
-    public BsonDateTime parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if (AST instanceof StringValue stringValue) {
+    public BsonDateTime parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        if (input instanceof StringValue stringValue) {
             var possibleDate = stringValue.getValue();
             try {
                 var ofsDate = OffsetDateTime.parse(possibleDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -72,7 +76,7 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
                 }
             }
         } else {
-            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(AST) + "'.");
+            throw new CoercingParseLiteralException("Expected input type 'StringValue' but was '" + typeName(input) + "'.");
         }
     }
 
@@ -84,8 +88,8 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
                 var ofsDate = OffsetDateTime.parse(string, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 return ofsDate.toInstant().toEpochMilli();
             } catch (DateTimeParseException dtpe){
-                try{
-                    return Long.parseLong(string);
+                try {
+                    return Long.valueOf(string);
                 } catch (NumberFormatException nfe) {
                     return null;
                 }
@@ -95,5 +99,12 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
         }
 
         return null;
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        var value = serialize(input);
+        var s = BsonUtils.toJson(value);
+        return StringValue.newStringValue(s).build();
     }
 }

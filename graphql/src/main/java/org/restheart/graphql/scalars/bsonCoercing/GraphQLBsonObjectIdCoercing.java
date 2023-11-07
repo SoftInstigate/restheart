@@ -19,36 +19,41 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
+import java.util.Locale;
+
+import org.bson.BsonNull;
+import org.bson.BsonObjectId;
+import org.bson.BsonValue;
+import org.bson.types.ObjectId;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+import org.restheart.utils.BsonUtils;
+
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 
-import org.bson.BsonNull;
-import org.bson.BsonValue;
-import org.bson.types.ObjectId;
-
-import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
-
-@SuppressWarnings("deprecation")
 public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
     @Override
-    public ObjectId serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public ObjectId serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
         }
 
-        var possibleObjID = convertImpl(dataFetcherResult);
+        var possibleObjID = convertImpl(input);
         if (possibleObjID == null){
-            throw new CoercingSerializeException("Expected type 'ObjectId' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected type 'ObjectId' but was '" + typeName(input) +"'.");
         } else {
             return possibleObjID;
         }
     }
 
     @Override
-    public ObjectId parseValue(Object input) throws CoercingParseValueException {
+    public ObjectId parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         var possibleObjID = convertImpl(input);
         if (possibleObjID == null) {
             throw new CoercingParseValueException("Expected type 'ObjectId' or a valid 'String' but was '" + typeName(input) + ".");
@@ -58,15 +63,15 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
     }
 
     @Override
-    public ObjectId parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if (AST instanceof StringValue stringValue){
+    public ObjectId parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        if (input instanceof StringValue stringValue){
             if (!ObjectId.isValid(stringValue.getValue())){
                 throw new CoercingParseLiteralException("Input string is not a valid ObjectId");
             } else {
                 return new ObjectId(stringValue.getValue());
             }
         } else {
-            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(AST) + "'.");
+            throw new CoercingParseLiteralException("Expected input type 'StringValue' but was '" + typeName(input) + "'.");
         }
     }
 
@@ -80,5 +85,12 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
             return value.isObjectId() ? value.asObjectId().getValue() : null;
         }
         else return null;
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        var value = serialize(input);
+        var s = BsonUtils.toJson(new BsonObjectId(value));
+        return StringValue.newStringValue(s).build();
     }
 }
