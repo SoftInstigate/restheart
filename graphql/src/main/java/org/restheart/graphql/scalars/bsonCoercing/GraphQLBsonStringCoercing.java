@@ -19,34 +19,46 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
-import graphql.schema.*;
+import java.util.Locale;
 
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-@SuppressWarnings("deprecation")
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.Value;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+
 public class GraphQLBsonStringCoercing implements Coercing<String, String> {
     @Override
-    public String serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public String serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if(dataFetcherResult instanceof BsonString bsonString) {
+        } else if(input instanceof BsonString bsonString) {
             return bsonString.getValue();
-        } else if (dataFetcherResult instanceof String string) {
+        } else if (input instanceof String string) {
             return string;
         } else {
-            throw new CoercingSerializeException("Expected types 'String' or 'BsonString' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected types 'String' or 'BsonString' but was '" + typeName(input) +"'.");
         }
     }
 
     @Override
-    public String parseValue(Object input) throws CoercingParseValueException {
+    public String parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         return (String) CoercingUtils.builtInCoercing.get("String").parseValue(input);
     }
 
     @Override
-    public String parseLiteral(Object AST) throws CoercingParseLiteralException {
-        return (String) CoercingUtils.builtInCoercing.get("String").parseLiteral(AST);
+    public String parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        return (String) CoercingUtils.builtInCoercing.get("String").parseLiteral(input);
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        return CoercingUtils.builtInCoercing.get("String").valueToLiteral(input);
     }
 }

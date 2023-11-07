@@ -20,37 +20,46 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
+import java.util.Locale;
+
+import org.bson.BsonDouble;
+import org.bson.BsonNull;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
-import org.bson.BsonDouble;
-import org.bson.BsonNull;
 
-import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
-
-@SuppressWarnings("deprecation")
 public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
     @Override
-    public Double serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public Double serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if(dataFetcherResult instanceof BsonDouble bsonString) {
+        } else if(input instanceof BsonDouble bsonString) {
             return bsonString.getValue();
-        } else if (dataFetcherResult instanceof Double value) {
+        } else if (input instanceof Double value) {
             return value;
         } else {
-            throw new CoercingSerializeException("Expected types 'Double' or 'BsonDouble' but was '" + typeName(dataFetcherResult) + "'.");
+            throw new CoercingSerializeException("Expected types 'Double' or 'BsonDouble' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
-    public Double parseValue(Object input) throws CoercingParseValueException {
+    public Double parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         return (Double) CoercingUtils.builtInCoercing.get("Float").parseValue(input);
     }
 
     @Override
-    public Double parseLiteral(Object AST) throws CoercingParseLiteralException {
-        return (Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(AST);
+    public Double parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        return (Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(input);
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        return CoercingUtils.builtInCoercing.get("Float").valueToLiteral(input);
     }
 }

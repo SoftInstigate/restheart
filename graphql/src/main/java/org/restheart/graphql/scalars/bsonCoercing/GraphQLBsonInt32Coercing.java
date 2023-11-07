@@ -20,34 +20,46 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
-import graphql.schema.*;
+import java.util.Locale;
+
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
-
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-@SuppressWarnings("deprecation")
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.Value;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+
 public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
     @Override
-    public Integer serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public Integer serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if(dataFetcherResult instanceof BsonInt32 bsonInt32) {
+        } else if(input instanceof BsonInt32 bsonInt32) {
             return bsonInt32.getValue();
-        } else if (dataFetcherResult instanceof Integer integer) {
+        } else if (input instanceof Integer integer) {
             return integer;
         } else {
-            throw new CoercingSerializeException("Expected types 'Integer' or 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected types 'Integer' or 'BsonInt32' but was '" + typeName(input) +"'.");
         }
     }
 
     @Override
-    public Integer parseValue(Object input) {
+    public Integer parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         return (Integer) CoercingUtils.builtInCoercing.get("Int").parseValue(input);
     }
 
     @Override
-    public Integer parseLiteral(Object AST) {
-        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(AST);
+    public Integer parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(input);
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        return CoercingUtils.builtInCoercing.get("Int").valueToLiteral(input);
     }
 }

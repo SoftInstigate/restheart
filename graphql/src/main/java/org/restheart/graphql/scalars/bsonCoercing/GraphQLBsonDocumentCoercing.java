@@ -19,35 +19,54 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
+import org.bson.BsonNull;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
+import org.restheart.utils.BsonUtils;
+
 import graphql.Assert;
-import graphql.language.*;
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.ArrayValue;
+import graphql.language.BooleanValue;
+import graphql.language.EnumValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.NullValue;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
+import graphql.language.Value;
+import graphql.language.VariableReference;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
-import org.bson.*;
-import org.restheart.utils.BsonUtils;
 
-import java.util.*;
-
-import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
-
-@SuppressWarnings("deprecation")
 public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonDocument> {
     @Override
-    public BsonDocument serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public BsonDocument serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if(dataFetcherResult instanceof BsonDocument){
-            return (BsonDocument) dataFetcherResult;
+        } else if(input instanceof BsonDocument){
+            return (BsonDocument) input;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonDocument' but was '" + typeName(dataFetcherResult) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonDocument' but was '" + typeName(input) +"'.");
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public BsonDocument parseValue(Object input) throws CoercingParseValueException {
+    public BsonDocument parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         if (input instanceof Map<?,?> map) {
             return BsonUtils.toBsonDocument((Map<String,Object>) map);
         } else {
@@ -56,8 +75,8 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
     }
 
     @Override
-    public BsonDocument parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if (AST instanceof ObjectValue objectValue) {
+    public BsonDocument parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        if (input instanceof ObjectValue objectValue) {
             var fields = objectValue.getObjectFields();
             var parsedValues = new BsonDocument();
             fields.forEach(field ->{
@@ -66,13 +85,13 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
             });
             return parsedValues;
         } else {
-            throw new CoercingParseLiteralException("Expected AST type 'Value' but was '" + typeName(AST) + "'.");
+            throw new CoercingParseLiteralException("Expected input type 'Value' but was '" + typeName(input) + "'.");
         }
     }
 
     public BsonValue parseObjectField(Object input, Map<String, Object> variables) throws CoercingParseLiteralException {
         if(!(input instanceof Value)) {
-            throw new CoercingParseLiteralException("Expected AST type 'Value' but was '" + typeName(input) + "'.");
+            throw new CoercingParseLiteralException("Expected input type 'Value' but was '" + typeName(input) + "'.");
         } else if (input instanceof StringValue stringValue) {
             return new BsonString(stringValue.getValue());
         } else if (input instanceof IntValue intValue) {
@@ -104,5 +123,12 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
         } else {
             return Assert.assertShouldNeverHappen("All types have been covered");
         }
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        var value = parseValue(input);
+        var s = BsonUtils.toJson(value);
+        return StringValue.newStringValue(s).build();
     }
 }

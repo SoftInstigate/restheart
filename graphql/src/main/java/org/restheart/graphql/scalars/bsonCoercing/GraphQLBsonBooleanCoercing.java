@@ -20,34 +20,46 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
-import graphql.schema.Coercing;
-import graphql.schema.CoercingSerializeException;
+import java.util.Locale;
+
 import org.bson.BsonBoolean;
 import org.bson.BsonNull;
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-@SuppressWarnings({"deprecated", "deprecation"})
+import graphql.GraphQLContext;
+import graphql.execution.CoercedVariables;
+import graphql.language.Value;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+
 public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
     @Override
-    public Boolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult == null || dataFetcherResult instanceof BsonNull) {
+    public Boolean serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
+        if(input == null || input instanceof BsonNull) {
             return null;
-        } else if (dataFetcherResult instanceof BsonBoolean bsonBoolean) {
+        } else if (input instanceof BsonBoolean bsonBoolean) {
             return bsonBoolean.getValue();
-        } else if (dataFetcherResult instanceof Boolean value) {
+        } else if (input instanceof Boolean value) {
             return value;
-        }else {
-            throw new CoercingSerializeException("Expected types 'Boolean' or 'BsonBoolean' but was '" + typeName(dataFetcherResult) + "'.");
+        } else {
+            throw new CoercingSerializeException("Expected types 'Boolean' or 'BsonBoolean' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
-    public Boolean parseValue(Object input) {
+    public Boolean parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseValue(input);
     }
 
     @Override
-    public Boolean parseLiteral(Object AST) {
-        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(AST);
+    public Boolean parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
+        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(input);
+    }
+
+    @Override
+    public Value<?> valueToLiteral(Object input) {
+        return CoercingUtils.builtInCoercing.get("Boolean").valueToLiteral(input);
     }
 }
