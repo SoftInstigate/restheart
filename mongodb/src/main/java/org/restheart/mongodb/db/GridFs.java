@@ -19,20 +19,11 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.mongodb.db;
-import com.mongodb.DuplicateKeyException;
-import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.MongoGridFSException;
-import com.mongodb.client.gridfs.GridFSBucket;
-import com.mongodb.client.gridfs.GridFSBuckets;
-import com.mongodb.client.gridfs.model.GridFSFile;
-import com.mongodb.client.gridfs.model.GridFSUploadOptions;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
@@ -44,8 +35,24 @@ import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.RSOps;
 import org.restheart.utils.HttpStatus;
-import static org.restheart.utils.HttpStatus.*;
+import static org.restheart.utils.HttpStatus.SC_CONFLICT;
+import static org.restheart.utils.HttpStatus.SC_CREATED;
+import static org.restheart.utils.HttpStatus.SC_NOT_FOUND;
+import static org.restheart.utils.HttpStatus.SC_NO_CONTENT;
+import static org.restheart.utils.HttpStatus.SC_OK;
+import static org.restheart.utils.HttpStatus.SC_PRECONDITION_FAILED;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoGridFSException;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.gridfs.GridFSBucket;
+import com.mongodb.client.gridfs.GridFSBuckets;
+import com.mongodb.client.gridfs.model.GridFSFile;
+import com.mongodb.client.gridfs.model.GridFSUploadOptions;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  *
@@ -127,7 +134,6 @@ public class GridFs {
      * @param bucketName
      * @param metadata
      * @param fileInputStream
-     * @param fileId
      * @param filter
      * @param requestEtag
      * @param checkEtag
