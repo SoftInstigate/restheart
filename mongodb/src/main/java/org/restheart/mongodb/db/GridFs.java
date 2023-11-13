@@ -157,7 +157,6 @@ public class GridFs {
             id = metadata.get("_id");
             deletionResult = deleteFile(rsOps, dbName, bucketName, id, filter, requestEtag, checkEtag);
         } else {
-            id = new BsonObjectId();
             deletionResult = null;
         }
 

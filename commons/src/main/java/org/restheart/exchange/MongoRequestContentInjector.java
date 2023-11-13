@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,11 +19,6 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.form.FormData;
-import io.undertow.server.handlers.form.FormParserFactory;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +30,6 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
@@ -44,13 +38,18 @@ import static org.restheart.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys._ID;
-
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -214,7 +213,7 @@ public class MongoRequestContentInjector {
         } else if (isFormOrMultipart(contentType)) {
             content = injectMultipart(exchange, request, response);
         } else if (isHalOrJson(contentType)) {
-            content = injectBson(exchange, request, response);
+            content = injectBson(exchange);
         } else {
             response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
             return;
@@ -275,7 +274,7 @@ public class MongoRequestContentInjector {
         request.setContent(content);
     }
 
-    private static BsonValue injectBson(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+    private static BsonValue injectBson(HttpServerExchange exchange) {
         BsonValue content;
         final String contentString;
 
@@ -293,7 +292,7 @@ public class MongoRequestContentInjector {
         } catch (IOException ieo) {
             var errMsg = "Error reading request content";
             LOGGER.error(errMsg, ieo);
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
             return null;
         }
 
@@ -306,7 +305,7 @@ public class MongoRequestContentInjector {
                     throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
                 }
             } catch (JsonParseException | IllegalArgumentException ex) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
                 return null;
             }
         } else {
@@ -371,7 +370,7 @@ public class MongoRequestContentInjector {
     }
 
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
-        BsonValue content = null;
+        BsonValue content;
 
         var parser = FORM_PARSER.createParser(exchange);
 
