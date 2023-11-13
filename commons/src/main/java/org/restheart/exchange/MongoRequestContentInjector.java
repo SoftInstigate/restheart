@@ -211,7 +211,7 @@ public class MongoRequestContentInjector {
         } else if (isFormOrMultipart(contentType)) {
             content = injectMultipart(exchange, request, response);
         } else if (isHalOrJson(contentType)) {
-            content = injectBson(exchange, request, response);
+            content = injectBson(exchange);
         } else {
             response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
             return;
@@ -272,7 +272,7 @@ public class MongoRequestContentInjector {
         request.setContent(content);
     }
 
-    private static BsonValue injectBson(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+    private static BsonValue injectBson(HttpServerExchange exchange) {
         BsonValue content;
         final String contentString;
 
@@ -290,7 +290,7 @@ public class MongoRequestContentInjector {
         } catch (IOException ieo) {
             var errMsg = "Error reading request content";
             LOGGER.error(errMsg, ieo);
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
             return null;
         }
 
@@ -303,7 +303,7 @@ public class MongoRequestContentInjector {
                     throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
                 }
             } catch (JsonParseException | IllegalArgumentException ex) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
                 return null;
             }
         } else {
