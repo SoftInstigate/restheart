@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,11 +19,6 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.form.FormData;
-import io.undertow.server.handlers.form.FormParserFactory;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +30,6 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
@@ -44,13 +38,18 @@ import static org.restheart.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys._ID;
-
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -144,9 +143,7 @@ public class MongoRequestContentInjector {
      * BsonDocument
      */
     protected static BsonDocument extractMetadata(final FormData formData) throws JsonParseException {
-        final String metadataString;
-
-        metadataString = formData.getFirst(FILE_METADATA) != null
+        var metadataString = formData.getFirst(FILE_METADATA) != null
                 ? formData.getFirst(FILE_METADATA).getValue()
                 : formData.getFirst(PROPERTIES) != null
                 ? formData.getFirst(PROPERTIES).getValue()
@@ -184,7 +181,7 @@ public class MongoRequestContentInjector {
         return fileField;
     }
 
-    private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
+    private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().withDefaultCharset(StandardCharsets.UTF_8.name()).build();
 
     /**
      * Creates a new instance of BodyInjectorHandler
@@ -371,7 +368,7 @@ public class MongoRequestContentInjector {
     }
 
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
-        BsonValue content = null;
+        BsonValue content;
 
         var parser = FORM_PARSER.createParser(exchange);
 
