@@ -143,9 +143,7 @@ public class MongoRequestContentInjector {
      * BsonDocument
      */
     protected static BsonDocument extractMetadata(final FormData formData) throws JsonParseException {
-        final String metadataString;
-
-        metadataString = formData.getFirst(FILE_METADATA) != null
+        var metadataString = formData.getFirst(FILE_METADATA) != null
                 ? formData.getFirst(FILE_METADATA).getValue()
                 : formData.getFirst(PROPERTIES) != null
                 ? formData.getFirst(PROPERTIES).getValue()
@@ -183,7 +181,7 @@ public class MongoRequestContentInjector {
         return fileField;
     }
 
-    private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
+    private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().withDefaultCharset(StandardCharsets.UTF_8.name()).build();
 
     /**
      * Creates a new instance of BodyInjectorHandler
