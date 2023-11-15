@@ -44,6 +44,8 @@ import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
+import org.restheart.graphql.instrumentation.MaxQueryTimeInstrumentation;
+import org.restheart.graphql.instrumentation.QueryTimeoutException;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
@@ -90,6 +92,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     public static final Boolean DEFAULT_VERBOSE = false;
     public static final int DEFAULT_DEFAULT_LIMIT = 100;
     public static final int DEFAULT_MAX_LIMIT = 1_000;
+    public static final int DEFAULT_QUERY_TIME_LIMIT = 0; // disabled
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -99,6 +102,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private Boolean verbose = DEFAULT_VERBOSE;
     private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
     private int maxLimit = DEFAULT_MAX_LIMIT;
+    private int queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -115,8 +119,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
         this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
 
-        this.defaultLimit = argOrDefault(config, "default-limit", 100);
-        this.maxLimit = argOrDefault(config, "max-limit", 1000);
+        this.defaultLimit = argOrDefault(config, "default-limit", DEFAULT_DEFAULT_LIMIT);
+        this.maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
+        this.queryTimeLimit = argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT);
 
         AppDefinitionLoadingCache.setTTL(argOrDefault(config, "app-def-cache-ttl", 1_000));
 
@@ -190,8 +195,12 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
 
         var dispatcherInstrumentation = new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions);
+        var maxQueryTimeInstrumentation = new MaxQueryTimeInstrumentation(this.queryTimeLimit);
 
-        this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema()).instrumentation(dispatcherInstrumentation).build();
+        this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
+            .instrumentation(dispatcherInstrumentation)
+            .instrumentation(maxQueryTimeInstrumentation)
+            .build();
 
         try {
             var result = this.gql.execute(inputBuilder.build());
@@ -204,7 +213,11 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             //  The graphql specification specifies:
             //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null."
             if (result.getErrors() != null && !result.getErrors().isEmpty() && result.getData() == null) {
-                res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                if (result.getErrors().stream().anyMatch(e -> e instanceof QueryTimeoutException)) {
+                    res.setStatusCode(HttpStatus.SC_REQUEST_TIMEOUT);
+                } else {
+                    res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                }
             }
 
             if (this.verbose) {
