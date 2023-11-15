@@ -45,7 +45,6 @@ import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.instrumentation.MaxQueryTimeInstrumentation;
-import org.restheart.graphql.instrumentation.QueryTimeoutException;
 import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
@@ -74,6 +73,8 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
 import graphql.GraphQLError;
+import graphql.execution.instrumentation.ChainedInstrumentation;
+import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
 import graphql.language.Document;
@@ -194,12 +195,12 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             dispatcherInstrumentationOptions = dispatcherInstrumentationOptions.includeStatistics(true);
         }
 
-        var dispatcherInstrumentation = new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions);
-        var maxQueryTimeInstrumentation = new MaxQueryTimeInstrumentation(this.queryTimeLimit);
+        var chainedInstrumentations = new ArrayList<Instrumentation>();
+        chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
+        chainedInstrumentations.add(new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions));
 
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
-            .instrumentation(dispatcherInstrumentation)
-            .instrumentation(maxQueryTimeInstrumentation)
+            .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
             .build();
 
         try {
@@ -213,7 +214,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             //  The graphql specification specifies:
             //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null."
             if (result.getErrors() != null && !result.getErrors().isEmpty() && result.getData() == null) {
-                if (result.getErrors().stream().anyMatch(e -> e instanceof QueryTimeoutException)) {
+                if (result.getErrors().stream().anyMatch(e -> e instanceof GraphQLQueryTimeoutException)) {
                     res.setStatusCode(HttpStatus.SC_REQUEST_TIMEOUT);
                 } else {
                     res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
