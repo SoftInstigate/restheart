@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
-package org.restheart.graphql.instrumentation;
+package org.restheart.graphql;
 
 import graphql.execution.AbortExecutionException;
 
@@ -11,8 +11,8 @@ import graphql.execution.AbortExecutionException;
  *
  * @author uji
  */
-public class QueryTimeoutException extends AbortExecutionException {
-    public QueryTimeoutException(String message) {
+public class GraphQLQueryTimeoutException extends AbortExecutionException {
+    public GraphQLQueryTimeoutException(String message) {
         super(message);
     }
 }

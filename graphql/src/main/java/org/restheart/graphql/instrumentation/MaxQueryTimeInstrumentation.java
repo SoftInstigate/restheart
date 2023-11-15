@@ -1,6 +1,7 @@
 package org.restheart.graphql.instrumentation;
 
 
+import org.restheart.graphql.GraphQLQueryTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class MaxQueryTimeInstrumentation extends SimplePerformantInstrumentation
      * @return an instance of AbortExecutionException
      */
     protected AbortExecutionException mkAbortException(long maxTime) {
-        return new QueryTimeoutException("Maximum query time limit of " + maxTime + "ms exceeded");
+        return new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTime + "ms exceeded");
     }
 
     private static record State(long startTime) implements InstrumentationState {
