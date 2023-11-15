@@ -276,9 +276,9 @@ mongo:
   # TTL in milliseconds; specify a value < 0 to never expire cached entries
   schema-cache-ttl: 60000
 
-  # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
+  # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0
-  # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
+  # The time limit in milliseconds for processing aggregations. Set to 0 for no time limit.
   aggregation-time-limit: 0
 
 changeStreamActivator:
@@ -306,6 +306,8 @@ graphql:
   default-limit: 100
   # max-limit is the maximum value for a Query limit
   max-limit: 1000
+  # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
+  query-time-limit: 0
   verbose: false
 
 cacheInvalidator:
