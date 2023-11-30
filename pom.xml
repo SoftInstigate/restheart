@@ -234,7 +234,7 @@
             <dependency>
                 <groupId>com.github.luben</groupId>
                 <artifactId>zstd-jni</artifactId>
-                <version>1.5.5-6</version>
+                <version>1.5.5-10</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -294,7 +294,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.4.11</version>
+                <version>1.4.13</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -329,12 +329,12 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.21</version>
+                <version>4.2.22</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.21</version>
+                <version>4.2.22</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -354,7 +354,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.163</version>
+                <version>4.8.165</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -402,7 +402,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>5.10.0</version>
+                <version>5.10.1</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
