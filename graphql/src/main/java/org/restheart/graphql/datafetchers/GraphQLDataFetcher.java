@@ -27,6 +27,9 @@ import com.mongodb.client.MongoClient;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLType;
 
 public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
     protected static MongoClient mongoClient;
@@ -51,5 +54,20 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
         if (env.getExecutionStepInfo().getPath().getLevel() == 2) {
             ctx.put("rootDoc", env.getSource());
         }
+    }
+
+    /**
+     * check if type is a list also when the actual type is wrapped in GraphQLNonNull
+     * @param type
+     * @return true if the field type is a list
+     */
+    protected boolean isList(GraphQLType type) {
+        if (type instanceof GraphQLList) {
+            return true;
+        } else if (type instanceof GraphQLNonNull nnt) {
+            return isList(nnt.getWrappedType());
+        }
+
+        return false;
     }
 }

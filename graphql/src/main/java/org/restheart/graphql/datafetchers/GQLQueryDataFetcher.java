@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLList;
 
 public class GQLQueryDataFetcher extends GraphQLDataFetcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(GQLQueryDataFetcher.class);
@@ -76,9 +75,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
             query = query.limit(_limit);
         }
 
-        boolean isMultiple = env.getFieldDefinition().getType() instanceof GraphQLList;
-
-        if (isMultiple) {
+        if (isList(env.getFieldDefinition().getType())) {
             var queryResult = new BsonArray();
             query.into(queryResult.asArray());
             return queryResult;
