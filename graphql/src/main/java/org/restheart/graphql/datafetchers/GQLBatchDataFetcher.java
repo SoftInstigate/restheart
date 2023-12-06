@@ -20,12 +20,12 @@
  */
 package org.restheart.graphql.datafetchers;
 
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLObjectType;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.restheart.graphql.models.QueryMapping;
+
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLObjectType;
 
 
 public class GQLBatchDataFetcher extends GraphQLDataFetcher{
@@ -53,12 +53,10 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher{
 
         return dataLoader.load(int_args, env).thenApply(
             results -> {
-                boolean isMultiple = env.getFieldDefinition().getType() instanceof GraphQLList;
-                if (isMultiple){
+                if (isList(env.getFieldDefinition().getType())) {
                     return results;
-                }
-                else{
-                    return results.asArray().size() > 0 ? results.asArray().get(0) : null;
+                } else {
+                    return !results.asArray().isEmpty() ? results.asArray().get(0) : null;
                 }
             }
         );
