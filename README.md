@@ -29,7 +29,7 @@ Refer to the documentation sections [Setup](https://restheart.org/docs/setup) or
 One-liner to run RESTHeart with Docker:
 
 ```
-$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --attach restheart
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --attach restheart
 ```
 
 ## The Framework
