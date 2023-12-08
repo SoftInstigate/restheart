@@ -22,6 +22,10 @@ RESTHeart offers comprehensive authentication and authorization services, suppor
 
 The full documentation is available on [restheart.org/docs](https://restheart.org/docs/).
 
+If you want to play with the APIs, you can start from:
+- [The REST Data API Tutorial](https://restheart.org/docs/mongodb-rest/tutorial)
+- [The GraphQL Data API Tutorial](https://restheart.org/docs/mongodb-graphql/tutorial)
+
 ## Installation
 
 Refer to the documentation sections [Setup](https://restheart.org/docs/setup) or [Setup with Docker](https://restheart.org/docs/setup-with-docker).
@@ -31,6 +35,12 @@ One-liner to run RESTHeart with Docker:
 ```
 $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --attach restheart
 ```
+
+## Become a Sponsor
+
+You can support the development of RESTHeart via the GitHub Sponsor program and receive public acknowledgment of your help.
+
+[Go and see available sponsor tiers.](https://github.com/sponsors/SoftInstigate)
 
 ## The Framework
 
@@ -120,12 +130,6 @@ $ docker pull softinstigate/restheart-snapshot:2108ce0
 - Ask technical questions on [Stackoverflow](https://stackoverflow.com/questions/ask?tags=restheart).
 - Chat with other users on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
 - Book a [free 1-to-1 demo](https://calendly.com/restheart) with us.
-
-## Become a Sponsor
-
-You can support the development of RESTHeart via the GitHub Sponsor program and receive public acknowledgment of your help.
-
-[Go and see available sponsor tiers.](https://github.com/sponsors/SoftInstigate)
 
 ### Sponsors
 
