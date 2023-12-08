@@ -1,6 +1,6 @@
-# RESTHeart - Ready to use backend for the modern Web.
+# RESTHeart - Open Source Low-code API development framework
 
-##  REST, GraphQL and WebSocket APIs for MongoDB.
+_Featuring ready-to-go Security and MongoDB API_
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -8,70 +8,42 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
-RESTHeart offers the following features:
-
-1. **Out-of-the-box data persistence** on [MongoDB](https://www.mongodb.com) as well as **compatible databases** such as [AWS DocumentDB](https://aws.amazon.com/documentdb/?nc1=h_ls) or [Azure Cosmos DB](https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/mongodb-introduction), all accessible through REST, GraphQL, and WebSocket APIs.
-
-2. **Declarative authentication, authorization, and user management** for your applications.
-
-3. A **polyglot development framework** that supports Java, Kotlin, JavaScript, and TypeScript.
-
-With RESTHeart, you can harness **100% of MongoDB's capabilities using simple HTTP calls**, eliminating the need for programming!
-
 > **Note**: Schedule a [free 1-to-1 demo](https://calendly.com/restheart) and feel free to ask us anything!
 
-During startup, RESTHeart **automatically establishes a connection to the configured MongoDB database** and provides comprehensive API access. Refer to the example session below, which employs [HTTPie](https://httpie.io) for making REST calls:
+RESTHeart is a framework for building HTTP microservices that aims to empower developers with intuitive APIs out of the box. It is built for developers, with a focus on simplicity, speed and ease of use.
 
-![See RESTHeart in action](https://github.com/SoftInstigate/restheart-website/raw/aa2a9be0fc13c5d70f3ad4ed9e337875525394bc/images/restheart.gif)
+RESTHeart is classified as a low-code framework because it provides pre-configured APIs like authentication/authorization and data management through MongoDB integration. This approach reduces the amount of code developers need to write, streamlining the development process and making it easier and faster to build cloud-native HTTP microservices
 
-**Developers can reduce backend code by at least 80%** when managing security and delivering content to mobile apps, Angular, React, Vue, or other single-page application (SPA) frameworks.
+The **MongoDB plugin** exposes the full database capabilities through REST, GraphQL and Websockets with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, FerretDB, AWS DocumentDB, and Azure CosmosDB.
 
-![RESTHeart use cases](https://restheart.org/images/clients.png)
+RESTHeart offers comprehensive authentication and authorization services, supporting various security schemes. It enables the management of users and permissions directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
 
-## Supported databases
+## Documentation
 
-RESTHeart works with any MongoDB compatible database. The actual features supported depend on the level of compatibility of the database with the official MongoDB Java driver.
+The full documentation is available on [restheart.org/docs](https://restheart.org/docs/).
 
-**Note**: RESTHeart releases are tested in continuous integration with official MongoDB distributions only (from MongoDB 4.2 to 7.0).
+## Installation
 
-<a href="https://mongodb.com"><img src="https://upload.wikimedia.org/wikipedia/commons/9/93/MongoDB_Logo.svg" width="200px"></a>
-<a href="https://www.ferretdb.io"><img src="https://dbdb.io/media/logos/ferretdb.svg" width="200px"></a>
-<a href="https://developer.azurecosmosdb.com"><img src="https://devblogs.microsoft.com/wp-content/uploads/sites/31/2019/04/cosmosdb_fi.png" width="100px"></a>
-<a href="https://aws.amazon.com/documentdb/features/"><img src="https://d2908q01vomqb2.cloudfront.net/887309d048beef83ad3eabf2a79a64a389ab1c9f/2020/02/04/DocumentDB.png" width="160px"></a>
-<a href="https://www.percona.com/software/mongodb/percona-server-for-mongodb"><img src="https://www.percona.com/blog/wp-content/uploads/2015/12/psmdb-logo.png" width="200px"></a>
+Refer to the documentation sections [Setup](https://restheart.org/docs/setup) or [Setup with Docker](https://restheart.org/docs/setup-with-docker).
 
-- MongoDB Community, Enterprise and Atlas Cloud are 100% supported in all their functionalities.
-- Azure Cosmos DB and Amazon DocumentDB offer partial support for the MongoDB API, but most common RESTHeart features work as expected.
-- FerretDB offers partial support for the MongoDB API on top of PostgreSQL, but its level of compatibility with MongoDB is growing daily. FerretDB plans to support more relational databases in the future.
-- Percona Server for MongoDB is, in general, fully compatible with MongoDB, so RESTHeart usually works perfectly with it.
+One-liner to run RESTHeart with Docker:
 
-## Advanced Capabilities
+```
+$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --attach restheart
+```
 
-RESTHeart incorporates [Undertow](https://undertow.io), a versatile and high-performance web server crafted in Java. Undertow furnishes both blocking and non-blocking HTTP APIs built upon [NIO](https://en.wikipedia.org/wiki/Non-blocking_I/O_(Java)). Notably, Undertow serves as the foundational HTTP server for [RedHat's Wildfly](https://www.wildfly.org).
+## The Framework
 
-Setting up RESTHeart is effortless, as it operates seamlessly after installation and configuration. It is exceptionally well-suited for deployment within a [Docker container](https://hub.docker.com/r/softinstigate/restheart), making it a natural fit for deployment in **Kubernetes** and **AWS ECS** clusters.
+A plugin is a software component that extends the functionality of RESTHeart, allowing you to add additional features and capabilities to the basic API. RESTHeart supports the development of plugins in Java, Kotlin, and JavaScript.
 
-RESTHeart additionally provides support for [GraalVM](https://restheart.org/docs/graalvm/), an innovative Java Virtual Machine developed by Oracle. GraalVM introduces a **polyglot runtime environment** and the ability to compile Java applications into **native binary images**.
+There are four types of plugins in RESTHeart:
 
-The internal architecture relies on a system of [plugins](https://restheart.org/docs/plugins/overview/), exposing an API that empowers the implementation of custom services in Java, Kotlin, JavaScript, or TypeScript.
+- Service: These plugins extend the API by adding web services.
+- Interceptor: These plugins snoop and modify requests and responses at different stages of the request lifecycle.
+- Initializer: These plugins execute initialization logic at system startup time.
+- Provider: These plugins provide objects to other plugins via the @Inject annotation.
 
-To [enhance the default functionality](https://restheart.org/docs/plugins/overview/), you can implement the following Java interfaces:
-
-- __Service__ - Expands the API by introducing new web services.
-- __Interceptor__ - Observes and modifies requests and responses at various stages of the request lifecycle.
-- __Initializer__ - Executes initialization logic during startup.
-- __Providers__ - Implements the Dependency Injection mechanism to supply objects to other plugins using the @Inject annotation.
-
-The default [GraphQL](https://restheart.org/docs/graphql/) plugin seamlessly coexists with the existing REST endpoints, yielding a managed and unified GraphQL API tailored for modern applications.
-
-Furthermore, the embedded WebSocket server can expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), permitting applications to access real-time data alterations.
-
-Given these considerations, __RESTHeart emerges as the ideal "low code," self-contained backend solution for contemporary web and mobile applications__. Its design is centered on streamlining development and deployment processes.
-## Download
-
-Download prebuilt packages from [releases](https://github.com/SoftInstigate/restheart/releases)
-
-Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentation page.
+Additionally, it is also possible to develop security plugins to customize the security layer.
 
 ## Build from source
 
@@ -142,21 +114,12 @@ The short hash is `2108ce0` and the docker pull command is therefore
 $ docker pull softinstigate/restheart-snapshot:2108ce0
 ```
 
-## Documentation
-
-The full documentation is available [here](https://restheart.org/docs/).
-
-You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS0) on Youtube:
-
-[![Watch the video!](https://img.youtube.com/vi/9KroH-RvjS0/hqdefault.jpg)](https://youtu.be/9KroH-RvjS0)
-
-## Contacts and Support
+## Community Support
 
 - Open a [issue on GitHub](https://github.com/SoftInstigate/restheart/issues/new) to report a specific problem.
 - Ask technical questions on [Stackoverflow](https://stackoverflow.com/questions/ask?tags=restheart).
 - Chat with other users on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
 - Book a [free 1-to-1 demo](https://calendly.com/restheart) with us.
-- Write us an [e-mail](mailto:ask@restheart.org?subject=RESTHeart).
 
 ## Become a Sponsor
 
