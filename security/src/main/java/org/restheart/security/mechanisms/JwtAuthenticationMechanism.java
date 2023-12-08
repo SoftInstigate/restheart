@@ -20,6 +20,33 @@
  */
 package org.restheart.security.mechanisms;
 
+import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+
+import org.apache.commons.codec.binary.StringUtils;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.ConsumingPlugin;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.security.JwtAccount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -29,33 +56,10 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import com.google.common.net.HttpHeaders;
+
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
-import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPublicKey;
-import java.util.Base64;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import org.apache.commons.codec.binary.StringUtils;
-import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.Request;
-import org.restheart.security.JwtAccount;
-import org.restheart.plugins.ConsumingPlugin;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.AuthMechanism;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * factory for JWT AuthenticationMechanism
@@ -78,7 +82,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     private String rolesClaim;
     private List<String> fixedRoles;
     private String issuer;
-    private String[] audience;
+    private List<String> audience;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -96,7 +100,21 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         rolesClaim = argOrDefault(config, "rolesClaim", null);
         fixedRoles = argOrDefault(config, "fixedRoles", null);
         issuer = argOrDefault(config, "issuer", null);
-        audience = argOrDefault(config, "audience", null);
+        var _audience = argOrDefault(config, "audience", null);
+
+        audience = new ArrayList<String>();
+
+        if (_audience == null) {
+            this.audience = null;
+        } else if (_audience instanceof String _as) {
+            audience = new ArrayList<String>();
+            this.audience.add(_as);
+        } else if (_audience instanceof List<?> _al) {
+            audience = new ArrayList<String>();
+            _al.stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> this.audience.add(e));
+        } else {
+            throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
+        }
 
         Algorithm _algorithm;
 
@@ -108,8 +126,8 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
 
         Verification v = JWT.require(_algorithm);
 
-        if (audience != null) {
-            v = v.withAudience(audience);
+        if (audience != null && !audience.isEmpty()) {
+            v = v.withAudience(audience.toArray(String[]::new));
         }
 
         if (issuer != null) {
@@ -120,7 +138,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
             throw new ConfigurationException("wrong JWT configuration, cannot set both 'rolesClaim' and 'fixedRoles'");
         }
 
-        if (rolesClaim == null && fixedRoles == null) {
+        if (rolesClaim == null && (fixedRoles == null || fixedRoles.isEmpty())) {
             throw new ConfigurationException("wrong JWT configuration, need to set either 'rolesClaim' or 'fixedRoles'");
         }
 
