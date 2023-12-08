@@ -8,7 +8,8 @@ services:
           /mclient/connection-string->"mongodb://mongodb";
           /http-listener/host->"0.0.0.0";
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     ports:
       - "8080:8080"
 
@@ -16,7 +17,8 @@ services:
     image: mongo:7.0
     command: [ "--bind_ip_all", "--replSet", "rs0" ]
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "if (!rs.isMaster().ismaster) { rs.initiate(); }"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "'if (!rs.isMaster().ismaster) { rs.initiate(); }'"]
       interval: 5s
-      timeout: 60s
+      timeout: 10s
       retries: 5
+      start_period: 5s
