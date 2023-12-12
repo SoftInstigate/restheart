@@ -11,7 +11,7 @@ export const options = {
 }
 
 export function handle(request, response) {
-    // pluginArgs comes from configuration file plugins-args.jsMClient
+    // pluginArgs comes from configuration file jsMClient
     LOGGER.debug("pluginArgs {}", pluginArgs);
 
     const limit = parseInt(request.getQueryParameterOrDefault("limit", "100"));
