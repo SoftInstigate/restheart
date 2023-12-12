@@ -10,7 +10,7 @@ This example demonstrates an implementation of a user signup process, including 
 - **Verification Code**: The `verificationCodeGenerator` interceptor adds a verification code to the user document upon creation.
 - **User Roles**: The newly created user is assigned `roles: ["UNVERIFIED"]`. This is set by the `mergeRequest` statement in the permission, allowing unauthenticated clients to create user documents. The role `UNVERIFIED` is defined in the ACL with no permissions.
 - **Email Verification**: The `emailVerificationSender` async response interceptor sends a verification email. This email contains a link to the `userVerifier` service, passing the verification code as a query parameter.
-- **User Verification**: The `userVerifier` service validates the verification code and updates the user's role to `["USER"]`.
+- **User Verification**: The `userVerifier` service plays a crucial role in the verification process. Upon receiving the verification code, it authenticates the code's validity. Once verified, the service updates the user's role to `["USER"]`. This updated role is significant as it is predefined in the Access Control List (ACL) with specific permissions. Notably, it grants the verified user the ability to access the collection `/coll`. This access is essential as it enables the verified user to interact with the core data of the dummy application, marking a successful transition from an unverified to a fully authenticated and functional user within the system.
 
 ## Deployment Steps
 
