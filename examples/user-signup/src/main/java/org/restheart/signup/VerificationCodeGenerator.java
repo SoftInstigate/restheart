@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,30 +18,11 @@
  * =========================LICENSE_END==================================
  */
 
-/*
- * Copyright 2020 SoftInstigate srl
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.restheart.signup;
 
-import static com.mongodb.client.model.Filters.eq;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-import com.mongodb.client.MongoClient;
-
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
@@ -52,9 +33,12 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
+import com.mongodb.client.MongoClient;
+import static com.mongodb.client.model.Filters.eq;
+
 /**
  * whan an unauthenticated client creates a user user document, this interceptor
- * adds the verification code and sets the roles to UNVERIFIED
+ * adds the verification code
  *
  * it also forbids the client to update an existing document
  *
@@ -63,7 +47,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterPlugin(name = "verificationCodeGenerator", description = "adds the verification code and sets the roles to UNVERIFIED whan an unauthenticated client creates a user user document", interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
+@RegisterPlugin(name = "verificationCodeGenerator", description = "adds the verification code whan an unauthenticated client creates a user user document", interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class VerificationCodeGenerator implements MongoInterceptor {
 
     private static final SecureRandom RND_GENERATOR = new SecureRandom();
@@ -79,12 +63,7 @@ public class VerificationCodeGenerator implements MongoInterceptor {
         } else {
             // unautheticated client is creating a user, add verification code
             var user = request.getContent().asDocument();
-
-            final BsonArray UNLOCKED_ROLES = new BsonArray();
-            UNLOCKED_ROLES.add(new BsonString("UNVERIFIED"));
-
             user.put("code", nextCode());
-            user.put("roles", UNLOCKED_ROLES);
         }
     }
 
@@ -107,8 +86,10 @@ public class VerificationCodeGenerator implements MongoInterceptor {
         if (request.getContent().asDocument().containsKey("_id")) {
             var id = request.getContent().asDocument().get("_id");
 
-            var existingUser = this.mclient.getDatabase(request.getDBName())
-                    .getCollection(request.getCollectionName(), BsonDocument.class).find(eq("_id", id)).first();
+            var existingUser = this.mclient
+                .getDatabase(request.getDBName())
+                .getCollection(request.getCollectionName(), BsonDocument.class)
+                .find(eq("_id", id)).first();
 
             return existingUser != null;
         } else {
