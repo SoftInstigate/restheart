@@ -2,15 +2,14 @@
 
 This plugin adds a response async interceptor that sends a message to a Slack channel when a document is created in a configurable collection.
 
-It requires the following configuration:
+It requires the following configuration in `restheart.yml`:
 
 ```yml
-plugins-args:
-  slackNotifierInterceptor:
-    channel: "your Slack channel id"
-    oauth-token: "your Slack OAuth Token"
-    db: restheart
-    collection: contacts
+slackNotifierInterceptor:
+channel: "your Slack channel id"
+oauth-token: "your Slack OAuth Token"
+db: restheart
+collection: contacts
 ```
 
 You need to create a Slack app and generate an OAuth Token:

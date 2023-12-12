@@ -21,8 +21,6 @@
 
 package org.restheart.test.plugins.initializers;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -33,13 +31,15 @@ import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.undertow.predicate.Predicate;
+import io.undertow.server.HttpServerExchange;
+
 /**
  * Just an example initializer. It is not enabledByDefault; to enable it add to
  * configuration file:<br>
  * <pre>
- * plugins-args:
- *     testInitializer:
- *         enabled: true
+ *   testInitializer:
+ *       enabled: true
  * </pre>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}

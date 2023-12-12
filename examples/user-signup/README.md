@@ -20,18 +20,17 @@ This example demonstrates an implementation of a user signup process, including 
 
 ## Configuration
 
-Configure the `emailVerificationSender` interceptor with your SMTP server details for sending verification emails. Add the following to the `plugins-args` section in `restheart.yml`:
+Configure the `emailVerificationSender` interceptor with your SMTP server details for sending verification emails. Add the following in `restheart.yml`:
 
 ```yml
-plugins-args:
-  emailVerificationSender:
-    verifier-srv-url: http://127.0.0.1:8080/verify
-    from: <your-email-address>
-    from-name: <your-name>
-    host: smtp.gmail.com
-    port: 465
-    smtp-username: <your-gmail-address>
-    smtp-password: <your-gmail-password>
+emailVerificationSender:
+verifier-srv-url: http://127.0.0.1:8080/verify
+from: <your-email-address>
+from-name: <your-name>
+host: smtp.gmail.com
+port: 465
+smtp-username: <your-gmail-address>
+smtp-password: <your-gmail-password>
 ```
 
 > Note: For Gmail, create a third-party password as described [here](https://support.google.com/accounts/answer/185833?hl=en).

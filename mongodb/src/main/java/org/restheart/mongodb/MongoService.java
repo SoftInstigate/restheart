@@ -20,21 +20,13 @@
  */
 package org.restheart.mongodb;
 
-import static io.undertow.Handlers.path;
-import static io.undertow.Handlers.pathTemplate;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.PathMatcher;
-import io.undertow.util.PathTemplate;
-import io.undertow.util.PathTemplateMatch;
-import io.undertow.util.PathTemplateMatcher;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
-
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
@@ -44,7 +36,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
-
 import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -62,6 +53,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
+
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.pathTemplate;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.PathMatcher;
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatch;
+import io.undertow.util.PathTemplateMatcher;
 
 /**
  * The Service that handles requests to mongodb resources
@@ -118,8 +117,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         // see method javadoc for more information
         resetRelativePath(request);
-
-        var mclient = RHMongoClients.mclient();
 
         if (mclient != null) {
             this.pipeline.handleRequest(request.getExchange());
@@ -274,30 +271,12 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     }
 
     private String myURI() {
-        Object uri;
+        var uri = MongoServiceConfiguration.get().getUri();
 
-        if (MongoServiceConfiguration.get().getPluginsArgs() != null) {
-            var myconf = MongoServiceConfiguration.get().getPluginsArgs().get("mongo");
-
-            if (myconf != null
-                    && myconf.containsKey("uri")
-                    && !"/".equals(myconf.get("uri"))) {
-                uri = myconf.get("uri");
-            } else {
-                uri = PluginUtils.defaultURI(this);
-            }
+        if (uri == null || "/".equals(uri)) {
+            return PluginUtils.defaultURI(this);
         } else {
-            uri = PluginUtils.defaultURI(this);
-        }
-
-        if (uri instanceof String) {
-            var _uri = (String) uri;
-            // make sure myURI does not end with /
-            _uri = MongoURLUtils.removeTrailingSlashes(_uri);
-
-            return _uri;
-        } else {
-            throw new IllegalArgumentException("Wrong 'uri' configuration of mongo service.");
+            return MongoURLUtils.removeTrailingSlashes(uri);
         }
     }
 

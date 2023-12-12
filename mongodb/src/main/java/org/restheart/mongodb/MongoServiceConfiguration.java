@@ -23,7 +23,6 @@ package org.restheart.mongodb;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,7 +33,6 @@ import static org.restheart.configuration.Utils.asInteger;
 import static org.restheart.configuration.Utils.asListOfMaps;
 import static org.restheart.configuration.Utils.asLong;
 import static org.restheart.configuration.Utils.asMap;
-import static org.restheart.configuration.Utils.asMapOfMaps;
 import static org.restheart.configuration.Utils.asString;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
@@ -69,7 +67,6 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNTS_K
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_URI_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.QUERY_TIME_LIMIT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.REQUESTS_LIMIT_KEY;
@@ -101,11 +98,11 @@ public class MongoServiceConfiguration {
      */
     public final static Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
+    private final String uri;
     private final String instanceBaseURL;
     private final REPRESENTATION_FORMAT defaultRepresentationFormat;
     private final ConnectionString mongoUri;
     private final List<Map<String, Object>> mongoMounts;
-    private final Map<String, Map<String, Object>> pluginsArgs;
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
     private final boolean schemaCacheEnabled;
@@ -170,6 +167,8 @@ public class MongoServiceConfiguration {
     private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.mongoSrvConfiguration = conf;
 
+        uri = asString(conf, "uri", null, silent);
+
         instanceBaseURL = asString(conf, INSTANCE_BASE_URL_KEY, null, silent);
 
         var _representationFormat = asString(conf, REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name(), silent);
@@ -204,8 +203,6 @@ public class MongoServiceConfiguration {
         mongoMountsDefault.add(defaultMongoMounts);
 
         mongoMounts = asListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault, silent);
-
-        pluginsArgs = asMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>(), silent);
 
         requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100, silent);
 
@@ -298,7 +295,7 @@ public class MongoServiceConfiguration {
     public String toString() {
         return "Configuration{instanceBaseURL=" + instanceBaseURL
                 + ", defaultRepresentationFromat=" + defaultRepresentationFormat + ", mongoUri=" + mongoUri
-                + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
+                + ", mongoMounts=" + mongoMounts + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit
                 + ", cacheEnabled=" + getCollectionCacheEnabled + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
@@ -309,6 +306,10 @@ public class MongoServiceConfiguration {
                 + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + mongoSrvConfiguration
                 + ", metricsGatheringLevel=" + metricsGatheringLevel
                 + '}';
+    }
+
+    public String getUri() {
+        return this.uri;
     }
 
     /**
@@ -393,13 +394,6 @@ public class MongoServiceConfiguration {
      */
     public ConnectionString getMongoUri() {
         return mongoUri;
-    }
-
-    /**
-     * @return the pluginsArgs
-     */
-    public Map<String, Map<String, Object>> getPluginsArgs() {
-        return pluginsArgs;
     }
 
     /**

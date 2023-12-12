@@ -75,11 +75,6 @@ public interface MongoServiceConfigurationKeys {
     public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
 
     /**
-     * the key for the plugins-args property.
-     */
-    public static final String  PLUGINS_ARGS_KEY = "plugins-args";
-
-    /**
      * the key for the local-cache-enabled property.
      */
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
