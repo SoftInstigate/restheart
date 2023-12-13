@@ -1,0 +1,8 @@
+/emailVerificationSender:
+  verifier-srv-url: http://127.0.0.1:8080/verify
+  from: <your-email-address>
+  from-name: <your-name>
+  host: smtp.gmail.com
+  port: 465
+  smtp-username: <your-gmail-address>
+  smtp-password: <your-gmail-password>

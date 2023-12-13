@@ -14,9 +14,44 @@ This example demonstrates an implementation of a user signup process, including 
 
 ## Deployment Steps
 
-1. Navigate to the user-signup directory: `cd user-signup`
-2. Build the plugin: Run `../mvnw package`. This uses the maven-dependency-plugin to copy the jar of the external dependency to `/target/lib`.
-3. Copy the plugin JARs (`user-signup/target/user-signup.jar` and `user-signup/target/lib/*`) to the `<RH_HOME>/plugins` directory.
+### Simplified Deployment with the `rh.sh` Script
+
+This method works if you are on a system able to execute bash scripts.
+
+Ease your deployment process with the `rh.sh` script, a convenient tool for automating various tasks in setting up RESTHeart. You can retrieve this script from the [RESTHeart Plugin Skeleton repository](https://github.com/SoftInstigate/restheart-plugin-skeleton).
+
+**Downloading the Script**
+
+Begin by creating a `bin` directory and downloading the `rh.sh` script into it:
+
+```bash
+mkdir bin && curl https://raw.githubusercontent.com/SoftInstigate/restheart-plugin-skeleton/master/bin/rh.sh --output bin/rh.sh
+```
+
+Then link the Maven wrapper `mvnw` that is available on the parent directory because `rh.sh` requires it.
+
+```bash
+$ ln -s ../mvnw mvnw
+```
+
+**Utilizing rh.sh for Effortless Deployment**
+
+The `rh.sh` script is ingeniously designed to streamline the entire deployment process. It's capable of installing RESTHeart, building your code, deploying it, and initiating the RESTHeart server - all through a single command:
+
+```bash
+./bin/rh.sh -o "-o conf.yml"
+```
+
+**Important Configuration Step**: Before executing this script, ensure you have customized the `conf.yml` file with your SMTP server details. This configuration is crucial for the script to facilitate the sending of verification emails.
+
+For detailed instructions on configuring your SMTP server in `conf.yml`, refer to the upcoming section titled **Configuration**.
+
+### Alternate method
+
+1. Download and install RESTHeart. Check the documentation section [Setup](https://restheart.org/docs/setup)
+2. Navigate to the user-signup directory: `cd user-signup`
+3. Build the plugin: Run `../mvnw package`. This uses the maven-dependency-plugin to copy the jar of the external dependency to `/target/lib`.
+4. Copy the plugin JARs (`user-signup/target/user-signup.jar` and `user-signup/target/lib/*`) to the `$RH_HOME/plugins` directory. Where `$RH_HOME` is a environment variable pointing to the RESTHeart installation directory.
 
 ## Configuration
 
