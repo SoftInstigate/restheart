@@ -14,6 +14,15 @@ This example demonstrates an implementation of a user signup process, including 
 
 ## Deployment Steps
 
+First clone the restheart repository and cd into the `user-signup` directory.
+
+```bash
+$ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
+$ cd restheart/examples/user-signup
+$ ../mvnw clean package
+$ cp target/user-signup.jar target/lib/* $RH_HOME/plugins
+```
+
 ### Simplified Deployment with the `rh.sh` Script
 
 This method works if you are on a system able to execute bash scripts.
