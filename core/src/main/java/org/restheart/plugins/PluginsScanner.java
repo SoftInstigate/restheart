@@ -25,6 +25,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -32,6 +33,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
+
 import org.restheart.Bootstrapper;
 import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.plugins.security.AuthMechanism;
@@ -409,10 +412,10 @@ public class PluginsScanner {
                 }
             }
 
-            var urls = new ArrayList<>();
+            var urls = new ArrayList<URL>();
 
-            try (var directoryStream = Files.newDirectoryStream(pluginsDirectory, "*.jar")) {
-                for (Path path : directoryStream) {
+            try (var ds = Files.newDirectoryStream(pluginsDirectory, "*.jar")) {
+                for (Path path : ds) {
                     var jar = path.toUri().toURL();
 
                     if (!Files.isReadable(path)) {
@@ -425,6 +428,16 @@ public class PluginsScanner {
                 }
             } catch (IOException ex) {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
+            }
+
+            // recursively scan sub directories
+            try (var ds = Files.newDirectoryStream(pluginsDirectory, (Filter<Path>) (Path entry) -> Files.isDirectory(entry))) {
+                for (Path subdir : ds) {
+                    var subjars = findPluginsJars(subdir);
+                    Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                }
+            } catch (IOException ex) {
+                LOGGER.error("Cannot read jars in plugins subdirectory", ex.getMessage());
             }
 
             return urls.isEmpty() ? null : urls.toArray(URL[]::new);
