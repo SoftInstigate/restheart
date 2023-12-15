@@ -440,7 +440,9 @@ public class PluginsScanner {
                     for (Path subdir : ds) {
                         if (Files.isReadable(subdir)) {
                             var subjars = _findPluginsJars(subdir, depth + 1);
-                            Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                            if (subjars != null) {
+                                Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                            }
                         } else {
                             LOGGER.warn("Subdirectory {} of plugins directory {} is not readable", subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
                         }
