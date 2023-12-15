@@ -20,24 +20,6 @@
  */
 package org.restheart;
 
-import static io.undertow.Handlers.resource;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
-import static org.restheart.handlers.PipelinedHandler.pipe;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
-import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
-import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
-import static org.restheart.utils.PluginUtils.defaultURI;
-import static org.restheart.utils.PluginUtils.initPoint;
-import static org.restheart.utils.PluginUtils.uriMatchPolicy;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,22 +46,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
-import org.restheart.configuration.Utils;
 import org.restheart.configuration.ProxiedResource;
+import org.restheart.configuration.Utils;
 import org.restheart.exchange.Exchange;
+import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
 import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.PipelinedHandler;
+import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.ProxyExchangeBuffersCloser;
 import org.restheart.handlers.QueryStringRebuilder;
@@ -91,20 +82,35 @@ import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.RequestContentInjector;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
+import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
+import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.plugins.security.TokenManager;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
+import static org.restheart.utils.BootstrapperUtils.checkPidFile;
+import static org.restheart.utils.BootstrapperUtils.initLogging;
+import static org.restheart.utils.BootstrapperUtils.logLoggingConfiguration;
+import static org.restheart.utils.BootstrapperUtils.logStartMessages;
+import static org.restheart.utils.BootstrapperUtils.pidFile;
+import static org.restheart.utils.BootstrapperUtils.setJsonpathDefaults;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
 import org.restheart.utils.PluginUtils;
+import static org.restheart.utils.PluginUtils.defaultURI;
+import static org.restheart.utils.PluginUtils.initPoint;
+import static org.restheart.utils.PluginUtils.uriMatchPolicy;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -113,6 +119,8 @@ import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
+
+import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
@@ -128,7 +136,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import static org.restheart.utils.BootstrapperUtils.*;
 
 /**
  *
@@ -222,7 +229,9 @@ public final class Bootstrapper {
         try {
             configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration, true);
         } catch(ConfigurationException ce) {
-            logErrorAndExit(ce.getMessage(), ce, true, true, -1);
+            var confJustForError = Configuration.Builder.build(true, true);
+            initLogging(confJustForError, null, IS_FORKED);
+            logErrorAndExit(ce.getMessage(), ce, false, true, -1);
         }
 
         run();
