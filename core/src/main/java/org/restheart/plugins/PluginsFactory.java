@@ -56,7 +56,7 @@ public class PluginsFactory {
         return SINGLETON;
     }
 
-    private ArrayList<ClassLoader> classLoaders = new ArrayList<>();
+    private final ArrayList<ClassLoader> classLoaders = new ArrayList<>();
 
     private PluginsFactory() {
         classLoaders.add(this.getClass().getClassLoader());
