@@ -204,14 +204,14 @@ public class PluginsFactory {
         return providersCache;
     }
 
-    private static Map<String, Class<?>> providersTypes = new HashMap<>();
+    private static final Map<String, Class<?>> providersTypes = new HashMap<>();
 
     /**
      * NOTE: this is availabe only after providers instantiation happening in method providers()
      * @return a Map whose keys are the provider's name and values are the classes of the provided objects
      */
     static Map<String, Class<?>> providersTypes() {
-        if (PluginsScanner.providers().size() > 0 && providersTypes.keySet().size() == 0) {
+        if (!PluginsScanner.providers().isEmpty() && providersTypes.keySet().isEmpty()) {
             throw new IllegalStateException("providersTypes are available only after providers instantiation happening in method providers()");
         }
         return providersTypes;
@@ -305,9 +305,9 @@ public class PluginsFactory {
         }
     }
 
-    private List<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
+    private final List<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
 
-    private HashMap<String, PluginRecord<?>> INSTANTIATED_PLUGINS_RECORDS = new HashMap<>();
+    private final HashMap<String, PluginRecord<?>> INSTANTIATED_PLUGINS_RECORDS = new HashMap<>();
 
     void injectDependencies() {
         for (var ip: PLUGINS_TO_INJECT_DEPS) {
