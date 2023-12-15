@@ -398,15 +398,19 @@ public class PluginsScanner {
         }
 
         private URL[] findPluginsJars(Path pluginsDirectory) {
+            return _findPluginsJars(pluginsDirectory, true);
+        }
+
+        private URL[] _findPluginsJars(Path dir, boolean first) {
             var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!pluginsPackages.isEmpty()) {
                 LOGGER.info("Limiting the scanning of plugins to packages {}", pluginsPackages);
             }
-            if (pluginsDirectory == null) {
+            if (dir == null) {
                 return new URL[0];
             } else {
                 try {
-                    checkPluginDirectory(pluginsDirectory);
+                    checkPluginDirectory(dir);
                 } catch(IllegalStateException ise) {
                     return new URL[0];
                 }
@@ -414,7 +418,7 @@ public class PluginsScanner {
 
             var urls = new ArrayList<URL>();
 
-            try (var ds = Files.newDirectoryStream(pluginsDirectory, "*.jar")) {
+            try (var ds = Files.newDirectoryStream(dir, "*.jar")) {
                 for (Path path : ds) {
                     var jar = path.toUri().toURL();
 
@@ -430,14 +434,20 @@ public class PluginsScanner {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
             }
 
-            // recursively scan sub directories
-            try (var ds = Files.newDirectoryStream(pluginsDirectory, (Filter<Path>) (Path entry) -> Files.isDirectory(entry))) {
-                for (Path subdir : ds) {
-                    var subjars = findPluginsJars(subdir);
-                    Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+            // scan first level sub directories of dir
+            if (first) {
+                try (var ds = Files.newDirectoryStream(dir, (Filter<Path>) (Path entry) -> Files.isDirectory(entry))) {
+                    for (Path subdir : ds) {
+                        if (Files.isReadable(subdir)) {
+                            var subjars = _findPluginsJars(subdir, false);
+                            Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                        } else {
+                            LOGGER.warn("Subdirectory {} of plugins directory {} is not readable", subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
+                        }
+                    }
+                } catch (IOException ex) {
+                    LOGGER.error("Cannot read jars in plugins subdirectory", ex.getMessage());
                 }
-            } catch (IOException ex) {
-                LOGGER.error("Cannot read jars in plugins subdirectory", ex.getMessage());
             }
 
             return urls.isEmpty() ? null : urls.toArray(URL[]::new);
