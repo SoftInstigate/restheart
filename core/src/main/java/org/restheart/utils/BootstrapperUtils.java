@@ -25,18 +25,17 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.jayway.jsonpath.spi.json.GsonJsonProvider;
-import com.jayway.jsonpath.spi.json.JsonProvider;
-import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
-import com.jayway.jsonpath.spi.mapper.MappingProvider;
-
-import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.RED;
-
+import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.jayway.jsonpath.spi.json.GsonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 public class BootstrapperUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
@@ -109,7 +108,8 @@ public class BootstrapperUtils {
     /**
      * initLogging
      *
-     * @param args
+     * @param configuration
+     * @param isForked
      * @param d
      */
     public static void initLogging(Configuration configuration, final RESTHeartDaemon d, boolean isForked) {
@@ -138,6 +138,7 @@ public class BootstrapperUtils {
     /**
      * logLoggingConfiguration
      *
+     * @param configuration
      * @param fork
      */
     public static void logLoggingConfiguration(Configuration configuration, boolean fork) {

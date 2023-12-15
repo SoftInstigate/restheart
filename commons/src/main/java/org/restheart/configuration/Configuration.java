@@ -19,13 +19,6 @@
  */
 package org.restheart.configuration;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import com.google.common.collect.Maps;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import static org.restheart.configuration.Utils.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -40,17 +33,28 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import com.mongodb.ConnectionString;
+
 import org.apache.commons.jxpath.JXPathContext;
+import org.restheart.configuration.Utils.RhOverride;
+import static org.restheart.configuration.Utils.asMap;
+import static org.restheart.configuration.Utils.findOrDefault;
+import static org.restheart.configuration.Utils.overrides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+
+import com.google.common.collect.Maps;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.mongodb.ConnectionString;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Class that holds the configuration.
@@ -97,7 +101,7 @@ public class Configuration {
     private final Logging logging;
     private final Map<String, Object> connectionOptions;
 
-    private Map<String, Object> conf;
+    private final Map<String, Object> conf;
 
     /**
      * Creates a new instance of Configuration from the configuration file For any
@@ -238,15 +242,11 @@ public class Configuration {
         return PATH;
     }
 
-    static boolean isParametric(final Path confFilePath) throws IOException {
-        try (var sc = new Scanner(confFilePath, "UTF-8")) {
-            return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
-        }
-    }
-
     public class Builder {
         /**
          *
+         * @param standaloneConfiguration
+         * @param silent
          * @return the default configuration
          */
         public static Configuration build(boolean standaloneConfiguration, boolean silent) {
@@ -255,7 +255,10 @@ public class Configuration {
 
         /**
          *
-         * @param confFile
+         * @param confFilePath
+         * @param confOverridesFilePath
+         * @param standaloneConfiguration
+         * @param silent
          * @return return the configuration from confFile and propFile
          */
         public static Configuration build(Path confFilePath, Path confOverridesFilePath, boolean standaloneConfiguration, boolean silent) throws ConfigurationException {
@@ -369,7 +372,7 @@ public class Configuration {
         final var gson = new GsonBuilder().serializeNulls().create();
 
         return _yml.entrySet().stream()
-            .map(e -> e.getKey() + "->" + gson.toJson(e.getValue()).toString())
+            .map(e -> e.getKey() + "->" + gson.toJson(e.getValue()))
             .collect(Collectors.joining(";"));
     }
 
@@ -389,7 +392,7 @@ public class Configuration {
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
                 if (o.value() instanceof HashMap<?, ?> mapValue) {
-                    var maskedValue = new HashMap<String, Object>();
+                    var maskedValue = new HashMap<>();
                     mapValue.keySet().stream()
                         .filter(k -> k instanceof String)
                         .map(k -> (String) k)
