@@ -20,20 +20,15 @@
  */
 package org.restheart.plugins;
 
-import static io.undertow.Handlers.path;
-
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import java.util.Objects;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -41,10 +36,12 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
-import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.PipelinedHandler;
+import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.QueryStringRebuilder;
 import org.restheart.handlers.RequestInterceptorsExecutor;
@@ -52,24 +49,26 @@ import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.ResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
 import org.restheart.handlers.ServiceExchangeInitializer;
-import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.TracingInstrumentationHandler;
+import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
-import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.utils.PluginUtils;
 import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.authorizers.FullAuthorizer;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
-import static org.restheart.handlers.PipelinedHandler.pipe;
+import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.utils.PluginUtils;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import static io.undertow.Handlers.path;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.PathMatcher;
@@ -80,16 +79,11 @@ import io.undertow.util.PathMatcher;
  */
 public class PluginsRegistryImpl implements PluginsRegistry {
 
-    private static PluginsRegistryImpl HOLDER;
     private static final PathHandler ROOT_PATH_HANDLER = path();
     private static final PathMatcher<PipelineInfo> PIPELINE_INFOS = new PathMatcher<>();
 
-    public static synchronized PluginsRegistryImpl getInstance() {
-        if (HOLDER == null) {
-            HOLDER = new PluginsRegistryImpl();
-        }
-
-        return HOLDER;
+    public static PluginsRegistryImpl getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
@@ -104,7 +98,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Provider<?>>> providers;
 
-    private Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
+    private final Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
     // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
     private boolean servicesInitialized = false;
@@ -235,6 +229,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     /**
      * note, this is cached to speed up requests
+     * @return the interceptors
      */
     @Override
     public Set<PluginRecord<Interceptor<?, ?>>> getInterceptors() {
@@ -276,7 +271,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return this.interceptors.removeIf(filter);
     }
 
-    private LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
+    private final LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
         .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
 
     private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
@@ -328,7 +323,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         var serviceName = PluginUtils.name(srv);
 
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<String, InterceptPoint>(serviceName, interceptPoint));
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(serviceName, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }
@@ -340,7 +335,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      */
     @Override
     public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint) {
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<String, InterceptPoint>(null, interceptPoint));
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(null, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }
@@ -396,12 +391,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public void plugService(PluginRecord<Service<?, ?>> srv, final String uri, MATCH_POLICY mp, boolean secured) {
         SecurityHandler securityHandler;
 
-        var mechanisms = getAuthMechanisms();
-        var authorizers = getAuthorizers();
-        var tokenManager = getTokenManager();
+        var _mechanisms = getAuthMechanisms();
+        var _authorizers = getAuthorizers();
+        var _tokenManager = getTokenManager();
 
         if (secured) {
-            securityHandler = new SecurityHandler(mechanisms, authorizers, tokenManager);
+            securityHandler = new SecurityHandler(_mechanisms, _authorizers, _tokenManager);
         } else {
             var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
@@ -417,7 +412,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
             _fauthorizers.add(_fauthorizer);
 
-            securityHandler = new SecurityHandler(mechanisms, _fauthorizers, tokenManager);
+            securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
         }
 
         var blockingSrv = PluginUtils.blocking(srv.getInstance());
@@ -456,6 +451,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * @param uri
      * @param mp
      */
+    @Override
     public void unplug(String uri, MATCH_POLICY mp) {
         var pi = getPipelineInfo(uri);
 
@@ -471,5 +467,32 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+    }
+
+    private static class SingletonHolder {
+        private static final PluginsRegistryImpl INSTANCE;
+
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (PluginsRegistryImpl) sysProps.get(PluginsRegistryImpl.class.getName());
+
+                // Some other class loader loaded PluginsRegistryImpl earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new PluginsRegistryImpl();
+                    System.getProperties().put(PluginsRegistryImpl.class.getName(), INSTANCE);
+                }
+            }
+        }
     }
 }

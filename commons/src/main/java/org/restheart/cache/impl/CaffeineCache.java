@@ -25,13 +25,12 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  *
@@ -68,12 +67,8 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
         }
 
 
-        wrapped = builder.removalListener(
-            new RemovalListener<K,Optional<V>>() {
-                @Override
-                public void onRemoval(@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) {
-                    remover.accept(new AbstractMap.SimpleEntry<K,Optional<V>>(k, v));
-                }
+        wrapped = builder.removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) -> {
+            remover.accept(new AbstractMap.SimpleEntry<>(k, v));
         }).build();
     }
 
