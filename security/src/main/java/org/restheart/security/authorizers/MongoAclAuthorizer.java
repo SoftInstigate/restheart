@@ -20,14 +20,6 @@
  */
 package org.restheart.security.authorizers;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import static com.google.common.collect.Sets.newHashSet;
-import com.mongodb.client.MongoClient;
-import static com.mongodb.client.model.Filters.eq;
-import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
-import io.undertow.security.idm.Account;
-import io.undertow.server.HttpServerExchange;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +29,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.restheart.cache.Cache;
@@ -44,18 +37,27 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.Request;
+import static org.restheart.mongodb.ConnectionChecker.connected;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.security.utils.MongoUtils;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
+import org.restheart.security.utils.MongoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.mongodb.ConnectionChecker.connected;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import static com.google.common.collect.Sets.newHashSet;
+import com.mongodb.client.MongoClient;
+import static com.mongodb.client.model.Filters.eq;
+
+import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
+import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -319,41 +321,40 @@ public class MongoAclAuthorizer implements Authorizer {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
         } else {
-            var permissions = this.mclient.getDatabase(this.aclDb)
-                .getCollection(this.aclCollection, BsonDocument.class)
+            var permissions = new LinkedHashSet<BsonDocument>();
+            this.mclient.getDatabase(this.aclDb)
+                .getCollection(this.aclCollection)
+                .withDocumentClass(BsonDocument.class)
                 .find(eq("roles", role))
                 .projection(PROJECTION)
-                .sort(SORT);
+                .sort(SORT)
+                .into(permissions);
 
-            if (permissions == null) {
-                return new LinkedHashSet<>();
-            } else {
-                LinkedHashSet<MongoAclPermission> ret = Sets.newLinkedHashSet();
+            var ret = new LinkedHashSet<MongoAclPermission>();
 
-                StreamSupport.stream(permissions.spliterator(), true)
-                    .filter(permissionElem -> permissionElem.isDocument())
-                    .map(permissionElem -> permissionElem.asDocument())
-                    .filter(permissionDocument -> {
-                        // filter out illegal permissions
-                        try {
-                            MongoAclPermission.build(permissionDocument);
-                            return true;
-                        } catch (IllegalArgumentException iae) {
-                            LOGGER.warn("invalid permission _id={}: {}", permissionDocument.get("_id"), iae);
-                            return false;
-                        }
-                    })
-                    .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
-                    .forEachOrdered(p->  {
-                        this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p));
-                        ret.add(p);
-                    });
+            StreamSupport.stream(permissions.spliterator(), true)
+                .filter(permissionElem -> permissionElem.isDocument())
+                .map(permissionElem -> permissionElem.asDocument())
+                .filter(permissionDocument -> {
+                    // filter out illegal permissions
+                    try {
+                        MongoAclPermission.build(permissionDocument);
+                        return true;
+                    } catch (IllegalArgumentException iae) {
+                        LOGGER.warn("invalid permission _id={}: {}", permissionDocument.get("_id"), iae);
+                        return false;
+                    }
+                })
+                .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
+                .forEachOrdered(p ->  {
+                    this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p));
+                    ret.add(p);
+                });
 
-                // apply the permission transformers
-                ret.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));
+            // apply the permission transformers
+            ret.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));
 
-                return ret;
-            }
+            return ret;
         }
     }
 

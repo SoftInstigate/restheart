@@ -209,12 +209,12 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>4.10.2</version>
+                <version>4.11.1</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <version>4.10.2</version>
+                <version>4.11.1</version>
             </dependency>
             <dependency>
                 <groupId>com.github.jnr</groupId>
