@@ -83,25 +83,25 @@ public class GetCollectionCache {
         }
     }
 
-    public synchronized void put(GetCollectionCacheKey key, List<BsonDocument> value) {
+    public void put(GetCollectionCacheKey key, List<BsonDocument> value) {
         if (cache == null) return;
 
         cache.put(key, value);
     }
 
-    public synchronized Pair<GetCollectionCacheKey, List<BsonDocument>> find(GetCollectionCacheKey key) {
+    public Pair<GetCollectionCacheKey, List<BsonDocument>> find(GetCollectionCacheKey key) {
         if (cache == null) return null;
 
         return _get(key, false);
     }
 
-    public synchronized List<BsonDocument> get(GetCollectionCacheKey key) {
+    public List<BsonDocument> get(GetCollectionCacheKey key) {
         if (cache == null) return null;
 
         return _get(key, false).getValue();
     }
 
-    public synchronized List<BsonDocument> remove(GetCollectionCacheKey key) {
+    public List<BsonDocument> remove(GetCollectionCacheKey key) {
         if (cache == null) return null;
 
         return _get(key, true).getValue();
@@ -113,7 +113,7 @@ public class GetCollectionCache {
      * @param allocationPolicy
      * @return
      */
-    private synchronized Pair<GetCollectionCacheKey, List<BsonDocument>> _get(GetCollectionCacheKey key, boolean remove) {
+    private Pair<GetCollectionCacheKey, List<BsonDocument>> _get(GetCollectionCacheKey key, boolean remove) {
         if (cache == null) return null;
 
         // return the first entry with all avaible documents
@@ -137,7 +137,7 @@ public class GetCollectionCache {
         }
     }
 
-    public synchronized void invalidate(GetCollectionCacheKey key) {
+    public void invalidate(GetCollectionCacheKey key) {
         if (cache == null) return;
 
         cache.invalidate(key);

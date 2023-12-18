@@ -20,24 +20,21 @@
  */
 package org.restheart.mongodb;
 
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.connection.ConnectionPoolSettings;
-import com.mongodb.Block;
-import com.mongodb.ConnectionString;
-import com.mongodb.MongoClientSettings;
-
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.restheart.mongodb.ConnectionChecker.connected;
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.mongodb.ConnectionChecker.connected;
-import static org.restheart.mongodb.ConnectionChecker.replicaSet;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.connection.ConnectionPoolSettings;
 
 /**
  *
@@ -54,7 +51,6 @@ public class MongoClientSingleton {
     /**
      *
      * @param uri
-     * @param pr
      */
     public static void init(ConnectionString uri) {
         mongoUri = uri;
@@ -109,12 +105,10 @@ public class MongoClientSingleton {
 
         // TODO add minSize and maxSize to configuration
         var settings = MongoClientSettings.builder()
-            .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
-                @Override
-                public void apply(final ConnectionPoolSettings.Builder builder) {
-                    // default mongodb values: min=0 and max=100
-                    builder.minSize(0).maxSize(128);
-                }})
+            .applyToConnectionPoolSettings((final ConnectionPoolSettings.Builder builder) -> {
+                // default mongodb values: min=0 and max=100
+                builder.minSize(0).maxSize(128);
+        })
             .applicationName("restheart (sync)")
             .applyConnectionString(mongoUri)
             .build();
@@ -190,15 +184,8 @@ public class MongoClientSingleton {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-
         // it is a singleton!
-        return true;
+        return obj == null ? false : getClass().getName().equals(obj.getClass().getName());
     }
 
     private static class MongoClientSingletonHolder {
