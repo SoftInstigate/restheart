@@ -21,12 +21,6 @@
 
 package org.restheart.mongodb.security;
 
-import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.BaseAclPermission;
-import org.restheart.security.BaseAclPermissionTransformer;
-import org.restheart.security.MongoPermissions;
-
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -35,6 +29,11 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.BaseAclPermissionTransformer;
+import org.restheart.security.MongoPermissions;
 
 @RegisterPlugin(name = "mongoPermissionAllowBulkRequests",
     description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
@@ -60,7 +59,7 @@ public class AllowBulkRequests extends BaseAllowInitializer implements Initializ
         }
     };
 
-    private BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (p, _request) -> {
+    private final BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (p, _request) -> {
         if (!isHandledByMongoService(_request)) {
             return true;
         }
