@@ -19,9 +19,6 @@
  */
 package org.restheart.plugins;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.server.handlers.PathHandler;
-
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +33,9 @@ import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAclPermissionTransformer;
+
+import io.undertow.predicate.Predicate;
+import io.undertow.server.handlers.PathHandler;
 
 /**
  *
@@ -86,11 +86,12 @@ public interface PluginsRegistry {
     public Set<PluginRecord<Provider<?>>> getProviders();
 
     /**
-     * @return add the interceptor
+     * @param i
      */
     public void addInterceptor(PluginRecord<Interceptor<?, ?>> i);
 
     /**
+     * @param filter
      * @return remove all interceptors that match the filter predicate
      */
     public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor<?, ?>>> filter);
