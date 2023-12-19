@@ -600,7 +600,7 @@ public class BsonUtils {
      * @param jsonString
      * @return minified json string
      */
-    public static String minify(String jsonString) {
+    public static StringBuilder minify(String jsonString) {
         // Minify is not thread safe. don to declare as static object
         // see https://softinstigate.atlassian.net/browse/RH-233
         return new Minify().minify(jsonString);
@@ -692,12 +692,12 @@ public class BsonUtils {
         }).build();
 
         if (bson.isDocument()) {
-            return minify(bson.asDocument().toJson(settings));
+            return bson.asDocument().toJson(settings);
         } else if (bson.isArray()) {
             var wrappedArray = new BsonDocument("w", bson.asArray());
-            var json = minify(wrappedArray.toJson(settings));
+            var json = wrappedArray.toJson(settings);
 
-            return json.substring(5, json.length()-1); // removes {"w": and } closing }
+            return json.substring(6, json.length()-1); // removes {"w" : and } closing }
         } else {
             var ret = new BsonDocument("x", bson).toJson(settings);
 
@@ -707,7 +707,7 @@ public class BsonUtils {
             int index = ret.lastIndexOf('}');
             ret = ret.substring(0, index);
 
-            return minify(ret);
+            return ret;
         }
     }
 
@@ -727,7 +727,7 @@ public class BsonUtils {
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toString();
         } else {
-            return minify(BsonUtils.toJson(id).replace("\"", "'"));
+            return minify(BsonUtils.toJson(id).replace("\"", "'")).toString();
         }
     }
 

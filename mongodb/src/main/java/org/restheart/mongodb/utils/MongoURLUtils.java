@@ -271,7 +271,7 @@ public class MongoURLUtils extends URLUtils {
             .append("':{").append("'$elemMatch':{'$eq':")
             .append(getIdString(id)).append("}}}");
 
-        return BsonUtils.minify(request.mapUri(sb.toString()));
+        return BsonUtils.minify(request.mapUri(sb.toString())).toString();
     }
 
     private static BsonNumber getIdAsNumber(String id) throws IllegalArgumentException {
@@ -335,7 +335,7 @@ public class MongoURLUtils extends URLUtils {
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toHexString();
         } else {
-            return BsonUtils.minify(BsonUtils.toJson(id));
+            return BsonUtils.minify(BsonUtils.toJson(id)).toString();
         }
     }
 
@@ -352,9 +352,6 @@ public class MongoURLUtils extends URLUtils {
             cont++;
         }
 
-        return BsonUtils.minify(Arrays.toString(_ids));
-    }
-
-    private MongoURLUtils() {
+        return BsonUtils.minify(Arrays.toString(_ids)).toString();
     }
 }
