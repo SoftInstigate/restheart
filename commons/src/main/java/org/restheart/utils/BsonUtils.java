@@ -20,8 +20,6 @@
 
 package org.restheart.utils;
 
-import java.io.StringWriter;
-
 import com.google.common.collect.Sets;
 import com.mongodb.MongoClientSettings;
 
