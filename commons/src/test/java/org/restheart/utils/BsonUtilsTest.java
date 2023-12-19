@@ -103,7 +103,7 @@ public class BsonUtilsTest {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
         String minified = "{'_id':{'$in':[1,20.0,'id']}}";
 
-        assertEquals(minified, BsonUtils.minify(json));
+        assertEquals(minified, BsonUtils.minify(json).toString());
     }
 
     /**
@@ -627,7 +627,7 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseToBsonObject() {
-        String object = BsonUtils.minify("{\"a\" :1 }");
+        String object = "{\"a\": 1}";
 
         BsonValue bson = BsonUtils.parse(object);
 
@@ -641,13 +641,13 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseToBsonArray() {
-        String array = "[\"a\", \"b\", 2 ]";
+        String array = "[\"a\", \"b\", 2]";
 
         BsonValue bson = BsonUtils.parse(array);
 
         String actual = BsonUtils.toJson(bson);
 
-        assertEquals(BsonUtils.minify(array), actual);
+        assertEquals(array, actual);
     }
 
     /**
@@ -704,13 +704,13 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseToBsonArrayOfObjectets() {
-        String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
+        String arrayOfObjs = "[{\"a\": 1}, {\"b\": 2}]";
 
         BsonValue bson = BsonUtils.parse(arrayOfObjs);
 
         String actual = BsonUtils.toJson(bson);
 
-        assertEquals(BsonUtils.minify(arrayOfObjs), actual);
+        assertEquals(arrayOfObjs, actual);
     }
 
     private boolean eq(List<Optional<BsonValue>> left, List<Optional<BsonValue>> right) {
@@ -1017,8 +1017,10 @@ public class BsonUtilsTest {
 
     /**
      * used to optimize BsonUtils.toJson()
+     * but ignored by default cause it takes few sceconds
      * @throws IOException
      */
+    //@Test
     public void testPerformanceOfToJson() throws IOException {
         var url = Resources.getResource("large-file.json");
         var text = Resources.toString(url, StandardCharsets.UTF_8);

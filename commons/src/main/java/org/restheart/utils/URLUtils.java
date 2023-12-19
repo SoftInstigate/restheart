@@ -140,7 +140,7 @@ public class URLUtils {
         } else if (id.isString()) {
             return "'" + id.asString().getValue() + "'";
         } else {
-            return BsonUtils.toJson(id).replace("\"", "'");
+            return BsonUtils.minify(BsonUtils.toJson(id).replace("\"", "'")).toString();
         }
     }
 }

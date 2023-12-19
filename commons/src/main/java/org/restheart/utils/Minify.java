@@ -60,7 +60,6 @@
 package org.restheart.utils;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -99,9 +98,10 @@ public class Minify {
      * @return A minified, yet functionally identical, version of the input JSON
      * string
      */
-    public String minify(String json) {
+    public StringBuilder minify(String json) {
+        var ret = new StringBuilder();
         var ins = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-        var bout = new ByteArrayOutputStream();
+        var bout = new StringBufferOutputStream(ret);
 
         try {
             minify(ins, bout);
@@ -109,7 +109,20 @@ public class Minify {
             return null;
         }
 
-        return bout.toString();
+        return ret;
+    }
+
+    private static class StringBufferOutputStream extends OutputStream {
+        protected StringBuilder sb;
+
+        public StringBufferOutputStream(StringBuilder sb) {
+            this.sb = sb;
+        }
+
+        @Override
+        public void write(int ch) throws IOException {
+            this.sb.append((char)ch);
+        }
     }
 
     /**
