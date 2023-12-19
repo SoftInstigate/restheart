@@ -20,17 +20,13 @@
 
 package org.restheart.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.restheart.utils.BsonUtils.array;
-import static org.restheart.utils.BsonUtils.document;
-
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.LongStream;
 
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -43,11 +39,19 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.io.Resources;
 
 /**
  *
@@ -1009,5 +1013,33 @@ public class BsonUtilsTest {
         var actual = BsonUtils.toJson(new BsonArray());
 
         assertEquals(expected, actual);
+    }
+
+    /**
+     * used to optimize BsonUtils.toJson()
+     * @throws IOException
+     */
+    public void testPerformanceOfToJson() throws IOException {
+        var url = Resources.getResource("large-file.json");
+        var text = Resources.toString(url, StandardCharsets.UTF_8);
+
+        LOG.info("start parsing large file");
+        var startParse = System.currentTimeMillis();
+        var bson = BsonUtils.parse(text);
+        var endParse = System.currentTimeMillis();
+        LOG.info("end parsing large file. took {} ms", endParse-startParse);
+
+        LOG.info("start invoking toJson of large bson 10 times");
+        var avg = LongStream.range(0, 9).map(i -> toJson(i, bson)).average();
+
+        LOG.info("toJson average time {} ms", avg.getAsDouble());
+    }
+
+    private long toJson(long idx, BsonValue bson) {
+        var start = System.currentTimeMillis();
+        BsonUtils.toJson(bson);
+        var end = System.currentTimeMillis();
+        LOG.info("toJson iteration {} took {} ms", idx, end-start);
+        return end - start;
     }
 }

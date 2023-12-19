@@ -694,16 +694,10 @@ public class BsonUtils {
         if (bson.isDocument()) {
             return minify(bson.asDocument().toJson(settings));
         } else if (bson.isArray()) {
-            var sb = new StringBuilder();
+            var wrappedArray = new BsonDocument("w", bson.asArray());
+            var json = minify(wrappedArray.toJson(settings));
 
-            sb.append("[");
-            bson.asArray().stream().map(e -> toJson(e)).map(e -> minify(e)).forEach(e -> sb.append(e).append(","));
-            if (sb.length() > 1) {
-                sb.deleteCharAt(sb.length()-1); // remove last comma
-            }
-            sb.append("]");
-
-            return sb.toString();
+            return json.substring(5, json.length()-1); // removes {"w": and } closing }
         } else {
             var ret = new BsonDocument("x", bson).toJson(settings);
 
