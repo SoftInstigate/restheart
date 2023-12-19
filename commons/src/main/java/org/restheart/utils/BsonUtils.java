@@ -672,10 +672,8 @@ public class BsonUtils {
 
     /**
      * @param bson either a BsonDocument or a BsonArray
-     * @param mode
+     * @param mode the JsonMode
      * @return the minified string representation of the bson value
-     * @throws IllegalArgumentException if bson is not a BsonDocument or a
-     * BsonArray
      */
     public static String toJson(BsonValue bson, JsonMode mode) {
         if (bson == null) {
@@ -700,7 +698,9 @@ public class BsonUtils {
 
             sb.append("[");
             bson.asArray().stream().map(e -> toJson(e)).map(e -> minify(e)).forEach(e -> sb.append(e).append(","));
-            sb.deleteCharAt(sb.length()-1); // remove last comma
+            if (sb.length() > 1) {
+                sb.deleteCharAt(sb.length()-1); // remove last comma
+            }
             sb.append("]");
 
             return sb.toString();

@@ -1000,4 +1000,14 @@ public class BsonUtilsTest {
         assertFalse(BsonUtils.get(doc, "array[100].idx").isPresent());
         assertFalse(BsonUtils.get(doc, "not.exists").isPresent());
     }
+
+
+    @Test
+    public void testToJsonEmptyArray() {
+        var expected = "[]";
+
+        var actual = BsonUtils.toJson(new BsonArray());
+
+        assertEquals(expected, actual);
+    }
 }
