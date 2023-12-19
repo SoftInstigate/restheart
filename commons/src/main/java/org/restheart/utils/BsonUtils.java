@@ -20,6 +20,8 @@
 
 package org.restheart.utils;
 
+import java.io.StringWriter;
+
 import com.google.common.collect.Sets;
 import com.mongodb.MongoClientSettings;
 
@@ -696,20 +698,16 @@ public class BsonUtils {
         if (bson.isDocument()) {
             return minify(bson.asDocument().toJson(settings));
         } else if (bson.isArray()) {
-            var _array = bson.asArray();
-            var wrappedArray = new BsonDocument("wrapped", _array);
-            var json = wrappedArray.toJson(settings);
+            var sb = new StringBuilder();
 
-            json = json.substring(0, json.length() - 1); // removes closing }
-            json = json.replaceFirst("\\{", "");
-            json = json.replaceFirst("\"wrapped\"", "");
-            json = json.replaceFirst(":", "");
+            sb.append("[");
+            bson.asArray().stream().map(e -> toJson(e)).map(e -> minify(e)).forEach(e -> sb.append(e).append(","));
+            sb.deleteCharAt(sb.length()-1); // remove last comma
+            sb.append("]");
 
-            return minify(json);
+            return sb.toString();
         } else {
-            var doc = new BsonDocument("x", bson);
-
-            String ret = doc.toJson(settings);
+            var ret = new BsonDocument("x", bson).toJson(settings);
 
             ret = ret.replaceFirst("\\{", "");
             ret = ret.replaceFirst("\"x\"", "");
