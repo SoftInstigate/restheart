@@ -40,6 +40,7 @@ import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
+import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
@@ -417,10 +418,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         var blockingSrv = PluginUtils.blocking(srv.getInstance());
 
-        var _srv = pipe(new PipelineInfoInjector(),
+        var _srv = pipe(
             // if service is blocking (i.e. @RegisterPlugin(blocking=true))
             // add WorkingThreadsPoolDispatcher to the pipe
             blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
+            new ErrorHandler(),
+            new PipelineInfoInjector(),
             new TracingInstrumentationHandler(),
             new RequestLogger(),
             new BeforeExchangeInitInterceptorsExecutor(),

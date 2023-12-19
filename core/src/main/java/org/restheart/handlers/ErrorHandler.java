@@ -20,8 +20,6 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.Version;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
@@ -29,13 +27,14 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.undertow.server.HttpServerExchange;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ErrorHandler implements HttpHandler {
+public class ErrorHandler extends PipelinedHandler {
 
-    private final HttpHandler next;
 
     private final PipelinedHandler sender = new ResponseSender(null);
 
@@ -44,10 +43,18 @@ public class ErrorHandler implements HttpHandler {
     /**
      * Creates a new instance of ErrorHandler
      *
+     */
+    public ErrorHandler() {
+        super(null);
+    }
+
+    /**
+     * Creates a new instance of ErrorHandler
+     *
      * @param next
      */
-    public ErrorHandler(HttpHandler next) {
-        this.next = next;
+    public ErrorHandler(PipelinedHandler next) {
+        super(next);
     }
 
     /**
@@ -58,7 +65,7 @@ public class ErrorHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
-            next.handleRequest(exchange);
+            next(exchange);
         } catch (NoClassDefFoundError ncdfe) {
             // this can occur with plugins missing external dependencies
 
