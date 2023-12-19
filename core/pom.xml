@@ -307,7 +307,6 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <id>bin</id>
               <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
