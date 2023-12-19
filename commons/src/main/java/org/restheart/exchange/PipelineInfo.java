@@ -43,7 +43,7 @@ public class PipelineInfo {
     private final String name;
 
     public PipelineInfo(PIPELINE_TYPE type, String uri, MATCH_POLICY matchPolicy, String name) {
-        Objects.requireNonNull(type, "argument 'branch' cannot be null");
+        Objects.requireNonNull(type, "argument 'type' cannot be null");
         Objects.requireNonNull(uri, "argument 'uri' cannot be null");
 
         this.type = type;
@@ -53,7 +53,7 @@ public class PipelineInfo {
     }
 
     public PipelineInfo(PIPELINE_TYPE type, String uri, String name) {
-        Objects.requireNonNull(type, "argument 'branch' cannot be null");
+        Objects.requireNonNull(type, "argument 'type' cannot be null");
         Objects.requireNonNull(uri, "argument 'uri' cannot be null");
 
         this.type = type;

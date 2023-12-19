@@ -19,11 +19,11 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-
 import java.util.Arrays;
 import java.util.Objects;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
 /**
  * base class to implement a PipelinedHandler
@@ -31,7 +31,6 @@ import java.util.Objects;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class PipelinedHandler implements HttpHandler {
-
     protected static final String CONTENT_TYPE = "contentType";
 
     private PipelinedHandler next;

@@ -685,8 +685,7 @@ public final class Bootstrapper {
             new RequestLimitingHandler(
                 new RequestLimit(configuration.coreModule().requestsLimit()),
                 new AllowedMethodsHandler(
-                    new ErrorHandler(
-                        new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler())),
+                    new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
                     // allowed methods
                     HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
                     HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
