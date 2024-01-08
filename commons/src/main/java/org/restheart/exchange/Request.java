@@ -129,6 +129,8 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * @param name the name of the query parameter
+     * @param defaultValue the default value of the query parameter to be used if request does not specifies it
      * @return the value of the query parameter or defaultValue if not present
      * @deprecated use {@link org.restheart.exchange.Request#getQueryParameterOrDefault} instead
      * This method contains a typo in the name and will be removed in a future release
@@ -175,6 +177,7 @@ public abstract class Request<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
+     * @param value
      */
     public void setHeader(HttpString name, String value) {
         if (getHeaders().get(name) == null) {
@@ -190,6 +193,7 @@ public abstract class Request<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
+     * @param value
      */
     public void setHeader(String name, String value) {
         if (getHeaders().get(name) == null) {
@@ -297,6 +301,7 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * @return true if account is authenticated
      */
+    @Override
     public boolean isAuthenticated() {
         return getAuthenticatedAccount() != null;
     }
@@ -330,6 +335,7 @@ public abstract class Request<T> extends Exchange<T> {
 
     /**
      *
+     * @param exchange
      * @return the PipelineInfo that allows to know which pipeline (service, proxy
      *         or static resource) is handling the exchange
      */
@@ -356,6 +362,7 @@ public abstract class Request<T> extends Exchange<T> {
 
     /**
      *
+     * @param exchange
      * @return the PipelineInfo that allows to know which pipeline (service, proxy
      *         or static resource) is handling the exchange
      */
