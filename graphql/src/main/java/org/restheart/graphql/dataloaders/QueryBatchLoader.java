@@ -23,6 +23,7 @@ package org.restheart.graphql.dataloaders;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Facet;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -33,21 +34,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import org.restheart.graphql.GraphQLQueryTimeoutException;
+
+import com.mongodb.MongoExecutionTimeoutException;
 
 public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
     private static MongoClient mongoClient;
 
-    private String db;
-    private String collection;
+    private final String db;
+    private final String collection;
+    private final long queryTimeLimit;
 
     public static void setMongoClient(MongoClient mClient){
         mongoClient = mClient;
     }
 
-    public QueryBatchLoader(String db, String collection) {
+    public QueryBatchLoader(String db, String collection, long queryTimeLimit) {
         this.db = db;
         this.collection = collection;
+        this.queryTimeLimit = queryTimeLimit;
     }
 
     /**
@@ -77,56 +85,63 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> queries) {
         var res = new ArrayList<BsonValue>();
-        List<Bson> stages = new ArrayList<>();
+        var stages = new ArrayList<Bson>();
 
-        // if there are at least 2 queries within the batch
-        if (queries.size() > 1){
-            var mergedCond = new BsonArray();
-            var listOfFacets = new ArrayList<Facet>();
+        try {
+            // if there are at least 2 queries within the batch
+            if (queries.size() > 1){
+                var mergedCond = new BsonArray();
+                var listOfFacets = new ArrayList<Facet>();
 
-            // foreach query within the batch...
-            queries.forEach(query -> {
-                // add find condition to merged array
-                BsonDocument findClause = query.asDocument().containsKey("find") ? query.asDocument().getDocument("find") : new BsonDocument();
-                mergedCond.add(findClause);
+                // foreach query within the batch...
+                queries.forEach(query -> {
+                    // add find condition to merged array
+                    var findClause = query.asDocument().containsKey("find") ? query.asDocument().getDocument("find") : new BsonDocument();
+                    mergedCond.add(findClause);
 
-                // create a new sub-pipeline with query stages
-                listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query.asDocument())));
-            });
+                    // create a new sub-pipeline with query stages
+                    listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query.asDocument())));
+                });
 
-            // 1° stage --> $match with conditions merged by $or operator
-            stages.add(Aggregates.match(new BsonDocument("$or", mergedCond)));
+                // 1° stage --> $match with conditions merged by $or operator
+                stages.add(Aggregates.match(new BsonDocument("$or", mergedCond)));
 
-            // 2° stage --> $facet with one sub-pipeline for each query within the batch
-            stages.add(Aggregates.facet(listOfFacets));
+                // 2° stage --> $facet with one sub-pipeline for each query within the batch
+                stages.add(Aggregates.facet(listOfFacets));
 
-            var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
+                var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class)
+                    .aggregate(stages)
+                    .allowDiskUse(true)
+                    .maxTime(this.queryTimeLimit, TimeUnit.MILLISECONDS);
 
-            BsonArray aggResult = new BsonArray();
+                var aggResult = new BsonArray();
 
-            iterable.into(aggResult);
+                iterable.into(aggResult);
 
-            var resultDoc = aggResult.get(0).asDocument();
-            queries.forEach(query -> {
-                BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
-                res.add(queryResult);
-            });
-            // ... otherwise merging is not needed and sub-pipelines neither
-        } else {
-            var query = queries.get(0).asDocument();
-            stages = getQueryStages(query);
-            var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
-            var aggResult = new BsonArray();
+                var resultDoc = aggResult.get(0).asDocument();
+                queries.forEach(query -> {
+                    BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
+                    res.add(queryResult);
+                });
+                // ... otherwise merging is not needed and sub-pipelines neither
+            } else {
+                var query = queries.get(0).asDocument();
+                stages = getQueryStages(query);
+                var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);
+                var aggResult = new BsonArray();
 
-            iterable.into(aggResult);
+                iterable.into(aggResult);
 
-            res.add(aggResult);
+                res.add(aggResult);
+            }
+
+            return CompletableFuture.completedFuture(res);
+        } catch(MongoExecutionTimeoutException toe) {
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + this.queryTimeLimit + "ms exceeded");
         }
-
-        return CompletableFuture.completedFuture(res);
     }
 
-    private List<Bson> getQueryStages(BsonDocument queryDoc){
+    private ArrayList<Bson> getQueryStages(BsonDocument queryDoc){
         var stages = new ArrayList<Bson>();
 
         if (queryDoc.containsKey("find")) {

@@ -21,14 +21,14 @@ public class MaxQueryTimeInstrumentation extends SimplePerformantInstrumentation
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MaxQueryTimeInstrumentation.class);
 
-    private final int queryTimeLimit; // in ms
+    private final long queryTimeLimit; // in ms
 
     /**
      * Creates a new instrumentation that aborts the execution if the query time is greater than the specified queryTimeLimit
      *
      * @param queryTimeLimit max allowed query time, otherwise execution will be aborted. Set queryTimeLimit <= 0 to disable it.
      */
-    public MaxQueryTimeInstrumentation(int queryTimeLimit) {
+    public MaxQueryTimeInstrumentation(long queryTimeLimit) {
         this.queryTimeLimit = queryTimeLimit;
     }
 

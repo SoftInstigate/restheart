@@ -74,14 +74,14 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var options = new DataLoaderOptions().setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()));
 
-            if (this.dataLoaderSettings.getMax_batch_size() > 0) {
-                options.setMaxBatchSize(this.dataLoaderSettings.getMax_batch_size());
+            if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
+                options.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
             }
 
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
-            return DataLoaderFactory.newDataLoader(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue()), options);
+            return DataLoaderFactory.newDataLoader(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue(), this.allowDiskUse.getValue(), this.dataLoaderSettings.getQueryTimeLimit()), options);
         }
 
         return null;
@@ -199,7 +199,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
 
         public AggregationMapping build() {
             if (this.dataLoaderSettings == null) {
-                this.dataLoaderSettings = DataLoaderSettings.newBuilder().build();
+                this.dataLoaderSettings = DataLoaderSettings.builder().build();
             }
             return new AggregationMapping(
                     this.fieldName,

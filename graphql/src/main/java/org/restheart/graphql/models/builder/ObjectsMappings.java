@@ -140,7 +140,7 @@ class ObjectsMappings extends Mappings {
                             if (fieldMappingDoc.containsKey("dataLoader")) {
                                 if (fieldMappingDoc.get("dataLoader").isDocument()) {
                                     var settings = fieldMappingDoc.getDocument("dataLoader");
-                                    var dataLoaderBuilder = DataLoaderSettings.newBuilder();
+                                    var dataLoaderBuilder = DataLoaderSettings.builder();
 
                                     if (settings.containsKey("batching") && settings.get("batching").isBoolean()) {
                                         dataLoaderBuilder.batching(settings.getBoolean("batching").getValue());
@@ -221,7 +221,7 @@ class ObjectsMappings extends Mappings {
                         if (fieldMappingDoc.containsKey("dataLoader")) {
                             if (fieldMappingDoc.get("dataLoader").isDocument()) {
                                 var settings = fieldMappingDoc.getDocument("dataLoader");
-                                var dataLoaderBuilder = DataLoaderSettings.newBuilder();
+                                var dataLoaderBuilder = DataLoaderSettings.builder();
 
                                 if (settings.containsKey("batching") && settings.get("batching").isBoolean()) {
                                     dataLoaderBuilder.batching(settings.getBoolean("batching").getValue());

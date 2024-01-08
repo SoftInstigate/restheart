@@ -80,8 +80,8 @@ public class QueryMapping extends FieldMapping implements Batchable {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
 
-            if (this.dataLoaderSettings.getMax_batch_size() > 0) {
-                options.setMaxBatchSize(this.dataLoaderSettings.getMax_batch_size());
+            if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
+                options.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
             }
 
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
@@ -89,7 +89,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
 
             options.setStatisticsCollector(() -> new SimpleStatisticsCollector());
 
-            return DataLoaderFactory.newDataLoader(new QueryBatchLoader(this.db, this.collection), options);
+            return DataLoaderFactory.newDataLoader(new QueryBatchLoader(this.db, this.collection, this.dataLoaderSettings.getQueryTimeLimit()), options);
         } else {
             return null;
         }
@@ -227,7 +227,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
             }
 
             if (this.dataLoaderSettings == null) {
-                this.dataLoaderSettings = DataLoaderSettings.newBuilder().build();
+                this.dataLoaderSettings = DataLoaderSettings.builder().build();
             }
 
             return new QueryMapping(this.fieldName, this.db, this.collection, this.find, this.sort, this.limit, this.skip, this.dataLoaderSettings);

@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
@@ -58,6 +57,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.BsonUtils;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     public static final Boolean DEFAULT_VERBOSE = false;
     public static final int DEFAULT_DEFAULT_LIMIT = 100;
     public static final int DEFAULT_MAX_LIMIT = 1_000;
-    public static final int DEFAULT_QUERY_TIME_LIMIT = 0; // disabled
+    public static final long DEFAULT_QUERY_TIME_LIMIT = 0l; // disabled
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -103,7 +103,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private Boolean verbose = DEFAULT_VERBOSE;
     private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
     private int maxLimit = DEFAULT_MAX_LIMIT;
-    private int queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
+    private long queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -122,7 +122,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
 
         this.defaultLimit = argOrDefault(config, "default-limit", DEFAULT_DEFAULT_LIMIT);
         this.maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
-        this.queryTimeLimit = argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT);
+
+        this.queryTimeLimit = ((Number)argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
 
         AppDefinitionLoadingCache.setTTL(argOrDefault(config, "app-def-cache-ttl", 1_000));
 
@@ -178,9 +179,16 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             }
         }
 
+        var localContext = document();
+
+        // add the query-time-limit to the local context;
+        if (this.queryTimeLimit > 0) {
+            localContext.put("query-time-limit", this.queryTimeLimit);
+        }
+
         var inputBuilder = ExecutionInput.newExecutionInput()
             .query(req.getQuery())
-            .localContext(new BsonDocument())
+            .localContext(localContext.get())
             .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(req.getOperationName());
@@ -266,7 +274,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private boolean containsMongoTimeoutException(Throwable t) {
         if (t == null) {
             return false;
-        } else if (t instanceof  MongoTimeoutException) {
+        } else if (t instanceof MongoTimeoutException) {
             return true;
         } else if (t.getCause() != null) {
             return containsMongoTimeoutException(t.getCause());

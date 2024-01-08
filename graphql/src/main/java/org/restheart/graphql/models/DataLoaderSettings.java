@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -22,42 +22,34 @@ package org.restheart.graphql.models;
 
 public class DataLoaderSettings {
 
-    private Boolean batching;
-    private Integer max_batch_size;
-    private Boolean caching;
+    private final boolean batching;
+    private final int maxBatchSize;
+    private final boolean caching;
+    private final long queryTimeLimit;
 
-    private DataLoaderSettings(Boolean batching, Boolean caching, Integer max_batch_size){
+    private DataLoaderSettings(Boolean batching, Boolean caching, Integer maxBatchSize, long queryTimeLimit){
         this.batching = batching;
         this.caching = caching;
-        this.max_batch_size = max_batch_size;
+        this.maxBatchSize = maxBatchSize;
+        this.queryTimeLimit = queryTimeLimit;
     }
 
-    public static Builder newBuilder(){
+    public static Builder builder(){
         return new Builder();
     }
 
-
-    public Boolean getBatching() {
+    public boolean getBatching() {
         return batching;
     }
 
-    public Boolean getCaching(){ return  caching;}
+    public boolean getCaching(){ return  caching;}
 
-    public Integer getMax_batch_size() {
-        return max_batch_size;
+    public int getMaxBatchSize() {
+        return maxBatchSize;
     }
 
-    public void setBatching(Boolean enabled) {
-        this.batching = enabled;
-    }
-
-    public void setCaching(Boolean enabled) {
-        this.caching = enabled;
-    }
-
-
-    public void setMax_batch_size(Integer max_batch_size) {
-        this.max_batch_size = max_batch_size;
+    public long getQueryTimeLimit() {
+        return this.queryTimeLimit;
     }
 
     public static class Builder{
@@ -65,6 +57,7 @@ public class DataLoaderSettings {
         private Boolean batching;
         private Boolean caching;
         private Integer max_batch_size;
+        private Long queryTimeLimit;
 
         private Builder(){}
 
@@ -83,6 +76,11 @@ public class DataLoaderSettings {
             return this;
         }
 
+        public Builder queryTimeLimit(Long queryTimeLimit){
+            this.queryTimeLimit = queryTimeLimit;
+            return this;
+        }
+
         public DataLoaderSettings build(){
 
             if (this.batching == null){
@@ -97,10 +95,11 @@ public class DataLoaderSettings {
                 this.max_batch_size = 0;
             }
 
-            return new DataLoaderSettings(this.batching, this.caching, this.max_batch_size);
+            if (this.queryTimeLimit == null){
+                this.queryTimeLimit = 0l;
+            }
 
+            return new DataLoaderSettings(this.batching, this.caching, this.max_batch_size, this.queryTimeLimit);
         }
-
     }
-
 }

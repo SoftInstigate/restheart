@@ -20,13 +20,18 @@
  */
 package org.restheart.graphql.datafetchers;
 
+import java.util.concurrent.TimeUnit;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.graphql.GraphQLQueryTimeoutException;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoExecutionTimeoutException;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -61,26 +66,33 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
         LOGGER.debug("Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
 
-        var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
+        try {
+            var query = mongoClient
+                .getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class)
+                .find(_find)
+                .maxTime(maxTime(env), TimeUnit.MILLISECONDS);
 
-        if (_sort != null) {
-            query = query.sort(_sort);
-        }
+            if (_sort != null) {
+                query = query.sort(_sort);
+            }
 
-        if (_skip != null) {
-            query = query.skip(_skip);
-        }
+            if (_skip != null) {
+                query = query.skip(_skip);
+            }
 
-        if (_limit != null) {
-            query = query.limit(_limit);
-        }
+            if (_limit != null) {
+                query = query.limit(_limit);
+            }
 
-        if (isList(env.getFieldDefinition().getType())) {
-            var queryResult = new BsonArray();
-            query.into(queryResult.asArray());
-            return queryResult;
-        } else {
-            return query.first();
+            if (isList(env.getFieldDefinition().getType())) {
+                var queryResult = new BsonArray();
+                query.into(queryResult.asArray());
+                return queryResult;
+            } else {
+                return query.first();
+            }
+        } catch(MongoExecutionTimeoutException toe) {
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTime(env) + "ms exceeded");
         }
     }
 }

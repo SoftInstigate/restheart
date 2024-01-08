@@ -26,14 +26,13 @@ import java.util.stream.Collectors;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.restheart.configuration.Configuration;
+import org.restheart.graphql.GraphQLQueryTimeoutException;
 import org.restheart.graphql.models.AggregationMapping;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.client.AggregateIterable;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -41,26 +40,6 @@ import graphql.schema.DataFetchingEnvironment;
 
 public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(GQLAggregationDataFetcher.class);
-
-    private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
-    private long aggregationTimeLimit;
-
-    @Inject("rh-config")
-    private Configuration config;
-
-    @OnInit
-    public void init() {
-        var _config = config.toMap();
-
-        if(_config.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
-            var limit = _config.get(AGGREGATION_TIME_LIMIT_KEY);
-            if(limit instanceof Number) {
-                this.aggregationTimeLimit = Long.parseLong(_config.get(AGGREGATION_TIME_LIMIT_KEY).toString());
-            } else {
-                this.aggregationTimeLimit = 0;
-            }
-        }
-    }
 
     public GQLAggregationDataFetcher(AggregationMapping aggregationMapping) {
         super(aggregationMapping);
@@ -90,20 +69,25 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
             BsonUtils.toJson(env.getLocalContext()));
 
-        res = mongoClient
-            .getDatabase(_db)
-            .getCollection(_collection)
-            .withDocumentClass(BsonDocument.class)
-            .aggregate(interpolatedAggregation)
-            .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-            .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
+        try {
+            res = mongoClient
+                .getDatabase(_db)
+                .getCollection(_collection)
+                .withDocumentClass(BsonDocument.class)
+                .aggregate(interpolatedAggregation)
+                .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+                .maxTime(maxTime(env), TimeUnit.MILLISECONDS);
 
-        if (isList(env.getFieldDefinition().getType())) {
-            var aggregationResult = new BsonArray();
-            res.into(aggregationResult.asArray());
-            return aggregationResult;
-        } else {
-            return res.first();
+
+            if (isList(env.getFieldDefinition().getType())) {
+                var aggregationResult = new BsonArray();
+                res.into(aggregationResult.asArray());
+                return aggregationResult;
+            } else {
+                return res.first();
+            }
+        } catch(MongoExecutionTimeoutException toe) {
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTime(env) + "ms exceeded");
         }
     }
 }

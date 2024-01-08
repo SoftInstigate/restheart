@@ -25,26 +25,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Facet;
+import java.util.concurrent.TimeUnit;
 
 import org.bson.BsonArray;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.dataloader.BatchLoader;
+import org.restheart.graphql.GraphQLQueryTimeoutException;
+
+import com.mongodb.MongoExecutionTimeoutException;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Facet;
 
 public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
     private static MongoClient mongoClient;
 
-    private String db;
-    private String collection;
+    private final String db;
+    private final String collection;
+    private final long queryTimeLimit;
+    private final boolean allowDiskUse;
 
-    public AggregationBatchLoader(String db, String collection) {
+    public AggregationBatchLoader(String db, String collection, boolean allowDiskUse, long queryTimeLimit) {
         this.db = db;
         this.collection = collection;
+        this.allowDiskUse = allowDiskUse;
+        this.queryTimeLimit = queryTimeLimit;
     }
 
     public static void setMongoClient(MongoClient mClient) {
@@ -59,22 +66,28 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
                 .map(pipeline -> new Facet(String.valueOf(pipeline.hashCode()), toBson(pipeline)))
                 .toList();
 
-        var iterable = mongoClient.getDatabase(this.db)
-                .getCollection(this.collection, BsonValue.class)
-                .aggregate(List.of(Aggregates.facet(listOfFacets)));
+        try {
+            var iterable = mongoClient.getDatabase(this.db)
+                    .getCollection(this.collection, BsonValue.class)
+                    .aggregate(List.of(Aggregates.facet(listOfFacets)))
+                    .allowDiskUse(this.allowDiskUse)
+                    .maxTime(this.queryTimeLimit, TimeUnit.MILLISECONDS);
 
-        var aggResult = new BsonArray();
+            var aggResult = new BsonArray();
 
-        iterable.into(aggResult);
+            iterable.into(aggResult);
 
-        var resultDoc = aggResult.get(0).asDocument();
+            var resultDoc = aggResult.get(0).asDocument();
 
-        pipelines.forEach(query -> {
-            BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
-            res.add(queryResult);
-        });
+            pipelines.forEach(query -> {
+                BsonValue queryResult = resultDoc.get(String.valueOf(query.hashCode()));
+                res.add(queryResult);
+            });
 
-        return CompletableFuture.completedFuture(res);
+            return CompletableFuture.completedFuture(res);
+        } catch(MongoExecutionTimeoutException toe) {
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + this.queryTimeLimit + "ms exceeded");
+        }
 
     }
 
