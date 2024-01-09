@@ -50,16 +50,16 @@ public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
 
     @Override
     public Integer parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseValue(input);
+        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseValue(input, graphQLContext, locale);
     }
 
     @Override
     public Integer parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(input);
+        return (Integer) CoercingUtils.builtInCoercing.get("Int").parseLiteral(input, variables, graphQLContext, locale);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        return CoercingUtils.builtInCoercing.get("Int").valueToLiteral(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        return CoercingUtils.builtInCoercing.get("Int").valueToLiteral(input, graphQLContext, locale);
     }
 }

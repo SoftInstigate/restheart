@@ -102,8 +102,8 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        var value = serialize(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        var value = serialize(input, graphQLContext, locale);
         var s = BsonUtils.toJson(value);
         return StringValue.newStringValue(s).build();
     }

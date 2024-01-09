@@ -49,16 +49,16 @@ public class GraphQLBsonStringCoercing implements Coercing<String, String> {
 
     @Override
     public String parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        return (String) CoercingUtils.builtInCoercing.get("String").parseValue(input);
+        return (String) CoercingUtils.builtInCoercing.get("String").parseValue(input, graphQLContext, locale);
     }
 
     @Override
     public String parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        return (String) CoercingUtils.builtInCoercing.get("String").parseLiteral(input);
+        return (String) CoercingUtils.builtInCoercing.get("String").parseLiteral(input, variables, graphQLContext, locale);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        return CoercingUtils.builtInCoercing.get("String").valueToLiteral(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        return CoercingUtils.builtInCoercing.get("String").valueToLiteral(input, graphQLContext, locale);
     }
 }

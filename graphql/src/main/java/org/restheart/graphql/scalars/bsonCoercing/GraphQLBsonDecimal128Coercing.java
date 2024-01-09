@@ -105,7 +105,7 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
         var value = parseValue(input);
         var s = BsonUtils.toJson(value);
         return StringValue.newStringValue(s).build();

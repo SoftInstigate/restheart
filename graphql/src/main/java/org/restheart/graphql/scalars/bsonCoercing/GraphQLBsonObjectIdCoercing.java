@@ -88,8 +88,8 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        var value = serialize(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        var value = serialize(input, graphQLContext, locale);
         var s = BsonUtils.toJson(new BsonObjectId(value));
         return StringValue.newStringValue(s).build();
     }

@@ -50,19 +50,19 @@ public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, Bso
 
     @Override
     public BsonTimestamp parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
+        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input, graphQLContext, locale);
         return new BsonTimestamp(timestamp);
     }
 
     @Override
     public BsonTimestamp parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input);
+        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input, variables, graphQLContext, locale);
         return new BsonTimestamp(timestamp);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        var value = serialize(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        var value = serialize(input, graphQLContext, locale);
         var s = BsonUtils.toJson(value);
         return StringValue.newStringValue(s).build();
     }

@@ -50,16 +50,16 @@ public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
 
     @Override
     public Boolean parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseValue(input);
+        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseValue(input, graphQLContext, locale);
     }
 
     @Override
     public Boolean parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(input);
+        return (Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(input, variables, graphQLContext, locale);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        return CoercingUtils.builtInCoercing.get("Boolean").valueToLiteral(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        return CoercingUtils.builtInCoercing.get("Boolean").valueToLiteral(input, graphQLContext, locale);
     }
 }

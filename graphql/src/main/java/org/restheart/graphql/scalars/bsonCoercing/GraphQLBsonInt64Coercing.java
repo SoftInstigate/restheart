@@ -50,16 +50,16 @@ public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
 
     @Override
     public Long parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        return (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
+        return (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input, graphQLContext, locale);
     }
 
     @Override
     public Long parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        return (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input);
+        return (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input, variables, graphQLContext, locale);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        return CoercingUtils.builtInCoercing.get("Long").valueToLiteral(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        return CoercingUtils.builtInCoercing.get("Long").valueToLiteral(input, graphQLContext, locale);
     }
 }

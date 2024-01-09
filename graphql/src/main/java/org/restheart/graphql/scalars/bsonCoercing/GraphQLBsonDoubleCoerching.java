@@ -50,16 +50,16 @@ public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
 
     @Override
     public Double parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        return (Double) CoercingUtils.builtInCoercing.get("Float").parseValue(input);
+        return (Double) CoercingUtils.builtInCoercing.get("Float").parseValue(input, graphQLContext, locale);
     }
 
     @Override
     public Double parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        return (Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(input);
+        return (Double) CoercingUtils.builtInCoercing.get("Float").parseLiteral(input, variables, graphQLContext, locale);
     }
 
     @Override
-    public Value<?> valueToLiteral(Object input) {
-        return CoercingUtils.builtInCoercing.get("Float").valueToLiteral(input);
+    public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
+        return CoercingUtils.builtInCoercing.get("Float").valueToLiteral(input, graphQLContext, locale);
     }
 }
