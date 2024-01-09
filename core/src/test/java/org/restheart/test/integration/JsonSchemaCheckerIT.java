@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2023 SoftInstigate
+ * Copyright (C) 2014 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -168,7 +168,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
     /**
      * Seehttps://github.com/SoftInstigate/restheart/issues/241
-     * 
+     *
      * @throws Exception
      */
     @Test

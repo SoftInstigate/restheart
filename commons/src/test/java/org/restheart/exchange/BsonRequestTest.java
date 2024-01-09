@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2023 SoftInstigate
+ * Copyright (C) 2019 - 2024 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,9 @@ public class BsonRequestTest {
 
     /**
      *
-     * 
+     *
      * public TestRule watcher = new TestWatcher() {
-     * 
+     *
      * @Override
      *           protected void starting(Description description) {
      *           LOG.info("executing test {}", description.toString());

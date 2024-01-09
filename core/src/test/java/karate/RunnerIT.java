@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2023 SoftInstigate
+ * Copyright (C) 2014 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ import com.intuit.karate.Runner;
 /**
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove 'ignore' tag from streams.feature
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RunnerIT extends AbstactIT {

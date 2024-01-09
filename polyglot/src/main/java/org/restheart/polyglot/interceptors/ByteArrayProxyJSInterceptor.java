@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-polyglot
  * %%
- * Copyright (C) 2020 - 2023 SoftInstigate
+ * Copyright (C) 2020 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by

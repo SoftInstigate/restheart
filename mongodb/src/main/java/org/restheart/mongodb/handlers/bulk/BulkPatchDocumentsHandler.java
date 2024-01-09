@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2023 SoftInstigate
+ * Copyright (C) 2014 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -69,7 +69,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
         var result = this.documents.bulkPatchDocuments(
             Optional.ofNullable(request.getClientSession()),
-            request.rsOps(), 
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
             request.getFiltersDocument(),

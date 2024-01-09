@@ -2,18 +2,18 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2023 SoftInstigate
+ * Copyright (C) 2014 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -40,9 +40,9 @@ public class CopyFolderRecursively {
         String projectRoot = workingDir.substring(0, workingDir.lastIndexOf("/"));
 
         Path src = Paths.get(projectRoot, "/polyglot/src/test/resources/test-js-plugins");
-        
+
         Path dest = Paths.get(projectRoot, "/core/target/plugins/test-js-plugins/");
-       
+
         Path jsPluginDir = Paths.get(projectRoot, "/core/target/plugins/test-js-plugins/");
 
         // delete test-js-plugins directory and files within
@@ -52,7 +52,7 @@ public class CopyFolderRecursively {
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete);
-        }     
+        }
 
         try (Stream<Path> stream = Files.walk(src)) {
             stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))) );
@@ -73,5 +73,5 @@ public class CopyFolderRecursively {
     public void setLastModified(File file, long timestamp) {
         file.setLastModified(timestamp);
     }
-    
+
 }
