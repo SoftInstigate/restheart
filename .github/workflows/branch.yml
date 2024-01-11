@@ -74,7 +74,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -84,7 +84,7 @@ jobs:
           file: ./core/Dockerfile.graalvm
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: softinstigate/restheart-snapshot:graalvm,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
 
       - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
@@ -94,7 +94,7 @@ jobs:
           file: ./core/Dockerfile.distroless
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
