@@ -299,7 +299,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.9</version>
+                <version>2.0.11</version>
             </dependency>
             <dependency>
                 <groupId>org.kohsuke</groupId>
@@ -319,7 +319,7 @@
             <dependency>
                 <groupId>com.github.everit-org.json-schema</groupId>
                 <artifactId>org.everit.json.schema</artifactId>
-                <version>1.14.3</version>
+                <version>1.14.4</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tika</groupId>
@@ -329,12 +329,12 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.22</version>
+                <version>4.2.23</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.22</version>
+                <version>4.2.23</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
