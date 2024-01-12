@@ -54,7 +54,6 @@
         <module>core</module>
     </modules>
 
-    <!-- Project Information -->
     <organization>
         <name>SoftInstigate</name>
         <url>https://softinstigate.com</url>
