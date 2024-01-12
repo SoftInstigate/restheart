@@ -11,6 +11,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <restheart.version>[7.7.0,8.0.0)</restheart.version>
     </properties>
 
     <modules>
@@ -36,7 +37,7 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-commons</artifactId>
-                <version>[7.7.0,8.0.0)</version>
+                <version>${restheart.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
