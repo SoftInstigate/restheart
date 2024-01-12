@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.restheart.plugins.Inject;
@@ -41,6 +42,7 @@ import org.restheart.plugins.PluginsScanner;
  * @see https://www.graalvm.org/22.3/reference-manual/native-image/dynamic-features/Reflection/#configuration-with-features
  */
 public class PluginsReflectionRegistrationFeature implements Feature {
+    @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         PluginsScanner.allPluginsClassNames().stream()
                 .map(this::clazz)
@@ -54,6 +56,11 @@ public class PluginsReflectionRegistrationFeature implements Feature {
         } catch (ClassNotFoundException cfe) {
             return null;
         }
+    }
+
+    @Override
+    public String getDescription() {
+        return "Automates reflection configuration of RESTHeart plugins for native-image builds";
     }
 
     /**
@@ -79,7 +86,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
                 .filter((f -> f.getAnnotation(Inject.class) != null))
                 .collect(Collectors.toList());
 
-        return list.toArray(new Field[list.size()]);
+        return list.toArray(Field[]::new);
     }
 
     /**
@@ -94,6 +101,6 @@ public class PluginsReflectionRegistrationFeature implements Feature {
                 .filter(m -> m.getAnnotation(OnInit.class) != null)
                 .collect(Collectors.toList());
 
-        return list.toArray(new Method[list.size()]);
+        return list.toArray(Method[]::new);
     }
 }
