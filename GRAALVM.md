@@ -37,10 +37,10 @@ __Note__: Linux needs to use the `G1` garbage collector. This is obtained by pas
 ```bash
 $ RH_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout ) && echo version=$RH_VERSION, major version=${RH_VERSION%.*}
 $ cd core
-$ docker build -f Dockerfile.native . -t softinstigate/restheart:${RH_VERSION}-native -t softinstigate/restheart:latest-native -t softinstigate/restheart:${RH_VERSION%.*}
+$ docker build -f Dockerfile.native . -t softinstigate/restheart:${RH_VERSION}-native -t softinstigate/restheart:latest-native -t softinstigate/restheart:${RH_VERSION%.*}-native
 $ docker push softinstigate/restheart:${RH_VERSION}-native
 $ docker push softinstigate/restheart:latest-native
-$ docker push softinstigate/restheart:${RH_VERSION%.*}
+$ docker push softinstigate/restheart:${RH_VERSION%.*}-native
 ```
 
 ## start native image
