@@ -2,7 +2,7 @@
 
 ## prerequisites
 
-> GraalVM required version: >= 23.0.1 Java 17 based (https://www.graalvm.org/downloads/)
+> GraalVM required version: >= 17.0.9-graal (23.0.2) (https://www.graalvm.org/downloads/)
 
 Also install `native-image`
 
@@ -51,7 +51,9 @@ Start RESTHeart
 $ ./core/target/restheart
 ```
 
-## Generate native-image build configuration
+## How-tos
+
+### Generate native-image build configuration
 
 Start RESTHeart with test configuration and the `native-image-agent`
 
@@ -103,7 +105,7 @@ The following fields must be configured with `allowWrite: true`
 }
 ```
 
-#### Generate reflect configuration needed to access Java types from JavaScript
+### Generate reflect configuration needed to access Java types from JavaScript
 
 Run
 
@@ -113,42 +115,18 @@ $ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectC
 
 And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
 
-### allow restheart js plugins access java classes via reflection
-
-restheart js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
+### Get GraalVM sdk version from JDK version
 
 ```bash
-$ java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
+$ sdk install java 17.0.9-graal <====
+...
+$ gu install js
+Downloading: Artifacts catalog from gds.oracle.com
+Skipping ULN EE channels, no username provided.
+Downloading: Component catalog from www.graalvm.org
+Processing Component: Graal.js
+Downloading: Component js: Graal.js from gds.oracle.com
+Installing new component: Graal.js (org.graalvm.js, version 23.0.2) <====
 ```
 
-it will print out the entries to add to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
-
-## issues
-
-### [FIXED] build fails due to ClassNotFoundException from mongodb-driver
-
-resolved adding the following dependencies in native profile:
-
-```xml
-<dependency>
-  <groupId>com.github.jnr</groupId>
-  <artifactId>jnr-unixsocket</artifactId>
-  <version>0.18</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-</dependency>
-<dependency>
-  <groupId>org.mongodb</groupId>
-  <artifactId>mongodb-crypt</artifactId>
-  <version>1.1.0-beta1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-</dependency>
-<dependency>
-  <groupId>org.xerial.snappy</groupId>
-  <artifactId>snappy-java</artifactId>
-  <version>1.1.4</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-</dependency>
-<dependency>
-  <groupId>com.github.luben</groupId>
-  <artifactId>zstd-jni</artifactId>
-  <version>1.4.5-1</version>
-</dependency>
-</dependencies>
-```
+So GraalVM JDK v`17.0.9` is about GraalVM v`23.0.2`
