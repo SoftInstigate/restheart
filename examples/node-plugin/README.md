@@ -21,8 +21,8 @@ $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 (here we use the brilliant sdkman)
 
 ```bash
-$ sdk install java 22.3.r17-grl
-$ sdk use java 22.3.r17-grl
+$ sdk install java 17.0.9-graal
+$ sdk use java 17.0.9-graal
 $ gu install nodejs
 ```
 
@@ -38,7 +38,7 @@ Where <RH_HOME> is the RESTHeart installation directory.
 ## Run RESTHeart on Node
 
 ```bash
-$ $(sdk home java 22.3.r17-grl)/bin/node --jvm --vm.cp=restheart.jar restheart.js
+$ $(sdk home java 17.0.9-graal)/bin/node --jvm --vm.cp=restheart.jar restheart.js
 ```
 
 (we use `sdk home` to make sure to use the GraalVM's node implementation)
