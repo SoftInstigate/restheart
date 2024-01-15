@@ -40,7 +40,7 @@ $ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the Mo
 If you've previously created the MongoDB container and just need to start it again, you can simply use the following command:
 
 ```bash
-$ docker run mongodb
+$ docker start mongodb
 ```
 
 2) **Launch RESTHeart Container**

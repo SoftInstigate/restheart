@@ -5,6 +5,14 @@ RESTHeart can be executed on GraalVM's implementation of Node.js
 This allows to develop plugins in JavaScript leveraging the Node runtime. For instance
 it is possible to use the `http` Node module.
 
+RESTHeart is designed to be fully compatible with GraalVM, particularly its implementation of Node.js. This compatibility offers significant advantages, especially for developers looking to write plugins in JavaScript. By leveraging the Node.js runtime environment provided by GraalVM, developers can:
+
+- Utilize Node.js Modules: You can easily integrate Node.js modules into your plugins. For example, the http module from Node.js can be seamlessly used within RESTHeart. This opens up a range of possibilities for HTTP networking and server-side functionalities in your plugins.
+
+- Leverage JavaScript Ecosystem: Developers can take advantage of the vast JavaScript ecosystem, including numerous libraries and tools, to build more powerful and feature-rich plugins for RESTHeart.
+
+NOTE: executing RESTHeart on GraalVM Node is experimental and not suggested for production.
+
 ## Install RESTHeart
 
 We assume that the latest version of RESTHeart is installed in the directory <RH_HOME>

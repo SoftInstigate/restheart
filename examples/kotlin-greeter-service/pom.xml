@@ -11,7 +11,7 @@
     <artifactId>kotlin-greeter-service</artifactId>
 
     <properties>
-        <kotlin.version>1.8.21</kotlin.version>
+        <kotlin.version>1.9.22</kotlin.version>
         <main.class>GreeterServiceKt</main.class>
     </properties>
 
