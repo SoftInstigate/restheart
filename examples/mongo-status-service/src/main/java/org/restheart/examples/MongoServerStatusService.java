@@ -20,8 +20,6 @@
 
 package org.restheart.examples;
 
-import com.mongodb.client.MongoClient;
-
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.exchange.BsonRequest;
@@ -33,7 +31,9 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(name = "serverstatus", description = "returns MongoDB serverStatus", enabledByDefault = true, defaultURI = "/status")
+import com.mongodb.client.MongoClient;
+
+@RegisterPlugin(name = "mongoServerStatus", description = "returns MongoDB serverStatus", secure=true)
 public class MongoServerStatusService implements BsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoServerStatusService.class);

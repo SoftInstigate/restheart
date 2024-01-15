@@ -27,28 +27,27 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
 @RegisterPlugin(
-        name = "hello",
-        description = "Hello world example",
-        enabledByDefault = true,
-        defaultURI = "/hello")
-public class HelloByteArrayService implements ByteArrayService {
+        name = "textGreeter",
+        description = "just another text/plain Hello World")
+public class TextGreeterService implements ByteArrayService {
     @Override
-    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        response.setContentType("text/plain; charset=utf-8");
+    public void handle(ByteArrayRequest req, ByteArrayResponse res) throws Exception {
+        res.setContentType("text/plain; charset=utf-8");
 
-        switch (request.getMethod()) {
-            case OPTIONS -> handleOptions(request);
+        switch (req.getMethod()) {
+            case OPTIONS -> handleOptions(req);
+
             case GET -> {
-                var name = request.getQueryParameters().get("name");
-                response.setContent("Hello, " + (name == null ? "Anonymous" : name.getFirst()));
+                var name = req.getQueryParameters().get("name");
+                res.setContent("Hello, " + (name == null ? "World" : name.getFirst()));
             }
 
             case POST -> {
-                var content = request.getContent();
-                response.setContent("Hello, " + (content == null ? "Anonymous" : new String(content)));
+                var content = req.getContent();
+                res.setContent("Hello, " + (content == null ? "World" : new String(content)));
             }
 
-            default -> response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            default -> res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 }

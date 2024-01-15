@@ -15,7 +15,7 @@
     </properties>
 
     <modules>
-        <module>bytes-array-service</module>
+        <module>greeter-service</module>
         <module>mongo-status-service</module>
         <module>random-string-service</module>
         <module>csv-interceptor</module>
@@ -25,7 +25,6 @@
         <module>slack-notifier</module>
         <module>form-handler</module>
         <module>protobuffer-contacts</module>
-        <module>greeter-service</module>
         <module>x-powered-by-remover</module>
         <module>freemarker</module>
         <module>custom-logging-field</module>

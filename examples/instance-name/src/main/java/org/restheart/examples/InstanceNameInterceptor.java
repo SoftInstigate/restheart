@@ -20,19 +20,20 @@
 
 package org.restheart.examples;
 
-import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.MongoInterceptor;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.Inject;
 import org.restheart.configuration.Configuration;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.WildcardInterceptor;
+
 import io.undertow.util.HttpString;
 
 @RegisterPlugin(name = "instanceNameInterceptor",
                 description = "Add the X-Restheart-Instance response header",
                 enabledByDefault = true)
-public class InstanceNameInterceptor implements MongoInterceptor {
+public class InstanceNameInterceptor implements WildcardInterceptor {
     public static final HttpString X_RESTHEART_INSTANCE_HEADER = HttpString.tryFromString("X-Restheart-Instance");
 
     private String instanceName;
@@ -46,12 +47,12 @@ public class InstanceNameInterceptor implements MongoInterceptor {
     }
 
     @Override
-    public void handle(MongoRequest request, MongoResponse response) {
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         response.getHeaders().put(X_RESTHEART_INSTANCE_HEADER, this.instanceName);
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
+    public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
         return true;
     }
 }

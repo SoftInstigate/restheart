@@ -1,39 +1,75 @@
-# Protocol Buffer Interceptors
+# Protocol Buffer Interceptors for Enhanced Data Format Handling
 
-> NOTE: this example requires RESTHeart 7.0.0-SNAPSHOT
+This example showcases two powerful interceptors designed to enable the `MongoService` to handle data in [Protocol Buffer](https://developers.google.com/protocol-buffers) format over HTTP. Protocol Buffers (Protobuf) is a method developed by Google for serializing structured data, similar to XML or JSON but smaller, faster, and simpler.
 
-This example includes two interceptors that allow to use the `MongoService`
-with [Protocol Buffer](https://developers.google.com/protocol-buffers) over HTTP.
+## Functional Overview
 
-It shows how to transform the request and response content to and from a different format
-than expected by a Service.
+The primary function of these interceptors is to transform the request and response content into a format different from what is typically expected by a Service. In this case, they convert data between the MongoDB's native format and Protocol Buffers.
 
-The example creates documents in the `/contacts` collection via a command line client that sends requests using Protocol Buffer.
+## Application in RESTHeart
 
-The proto file is:
+In this specific application, the interceptors facilitate the creation of documents within the `/contacts` collection. They enable a command-line client to send requests in Protocol Buffer format, making the communication more efficient and streamlined compared to traditional JSON or XML formats.
+
+## Protocol Buffer Schema
+
+The Protocol Buffer schema used in this example is defined as follows:
 
 ```proto
-// The request message
+// The request message schema
 message ContactPostRequest {
   string name = 1;
   string email = 2;
   string phone = 3;
 }
 
-// The response message containing the id of the created document
+// The response message schema containing the id of the created document
 message ContactPostReply {
     string id = 1;
 }
 ```
 
-## Deploy
+This schema outlines the structure for both the request (`ContactPostRequest`) and response (`ContactPostReply`). The request message includes fields for a contact's name, email, and phone, while the response message contains the unique ID of the newly created document.
+
+## Implementation Significance
+
+By implementing Protocol Buffers, this example not only enhances the efficiency of data transmission but also demonstrates the versatility of RESTHeart in accommodating different data serialization formats. It opens avenues for more optimized data handling, especially in scenarios where performance and bandwidth are critical.
+
+## Running RESTHeart with the plugin
+
+To run the RESTHeart with the plugin, use Docker as follows. This command maps the host's port 8080 to the container's port 8080 and mounts the build directory as a volume:
+
+1) **Start MongoDB Container**
+
+**For First-Time Setup:**
+
+Use the following commands to start a MongoDB container and initialize it as a single node replica set.
 
 ```bash
-# copy the jar files to the RESTHeart plugin directory
-$ cp target/protobuffer-contacts.jar target/lib/* <RH_HOME>/plugins
+$ docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
+$ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
+```
 
-# (re)start RESTHeart in a different terminal
+**For Subsequent Uses:**
 
+If you've previously created the MongoDB container and just need to start it again, you can simply use the following command:
+
+```bash
+$ docker run mongodb
+```
+
+2) **Launch RESTHeart Container**
+
+Run the RESTHeart container, linking it to the MongoDB container and using the configuration override file `conf.yml`:
+
+```bash
+$ docker run --name restheart --rm -p "8080:8080" -v ./target:/opt/restheart/plugins/custom -v ./conf.yml:/opt/restheart/etc/conf.yml softinstigate/restheart:latest -o etc/conf.yml
+```
+
+For more information see: [For development: run RESTHeart and open MongoDB with Docker](https://restheart.org/docs/setup-with-docker#for-development-run-restheart-and-open-mongodb-with-docker)
+
+## Testing the Service
+
+```bash
 # create the /contacts collection
 $ http -a admin:secret :8080/contacts
 
@@ -41,9 +77,8 @@ $ http -a admin:secret :8080/contacts
 $ echo '{"_id":"openProto","predicate":"path[/proto]","roles":["$unauthenticated"],"priority":1}' | http -a admin:secret POST :8080/acl\?wm=upsert
 ```
 
-## Run
-
 ```bash
+$ # send a protobuffer request
 $ java -cp target/classes:target/test-classes:target/lib/\*:target/test-lib/\* org.restheart.examples.CreateContact Uji andrea@softinstigate.com "000 555 911"
 
 response status: 201
@@ -108,8 +143,6 @@ var uninitializedRequest = (UninitializedRequest) request;
 
 
 The custom also remaps the request URI `/proto` to the database resource `restheart.coll` using `MongoRequest.init()` that allows to specify the URI/MongoDB resource mapping.
-
-
 
 ## Response transformation
 

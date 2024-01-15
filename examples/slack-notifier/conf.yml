@@ -1,0 +1,5 @@
+slackNotifierInterceptor:
+  channel: "your Slack channel id"
+  oauth-token: "your Slack OAuth Token"
+  db: restheart
+  collection: contacts

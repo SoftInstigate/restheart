@@ -1,13 +1,35 @@
-# Server-side HTML generation with Apache Freemarker
+# Server-Side HTML Rendering with Apache Freemarker in RESTHeart
 
-This example uses [Apache Freemarker](https://freemarker.apache.org/) to generate server-side HTML.
+This RESTHeart Service is enhanced by integrating the [Apache Freemarker](https://freemarker.apache.org/) template engine, a powerful tool for generating server-side HTML content. 
 
-_Apache FreeMarker™ is a template engine: a Java library to generate text output (HTML web pages, e-mails, configuration files, source code, etc.) based on templates and changing data. Templates are written in the FreeMarker Template Language (FTL), which is a simple, specialized language (not a full-blown programming language like PHP). Usually, a general-purpose programming language (like Java) is used to prepare the data (issue database queries, do business calculations). Then, Apache FreeMarker displays that prepared data using templates. In the template you are focusing on how to present the data, and outside the template you are focusing on what data to present._
+## Key Features
 
-## Setup
+- **Apache Freemarker Integration**: By incorporating the Apache Freemarker template engine, this service can dynamically generate HTML content on the server side. Apache Freemarker is renowned for its efficiency and flexibility in processing and presenting data-driven web content.
 
-Build the JAR and copy it in RESTHeart's `plugins/` folder as usual, then point your browser to the local running instance at <http://localhost:8080/site>
+- **Template Rendering**: The service specifically focuses on rendering an HTML template located at `src/main/resources/templates/index.html`. This template is crafted using the FreeMarker Template Language (FTL), known for its simplicity and specialization in templating.
+
+## Building the Plugin
+
+Use the following command to build the plugin. Ensure you are in the project's root directory before executing it:
+
+```bash
+$ ../mvnw clean package
+```
+
+## Running RESTHeart with the plugin
+
+This Plugin doesn't require MongoDB so we can run RESTHeart in standalone mode (specifying the `-s` option).
+
+To run the RESTHeart with the plugin, use Docker as follows. This command maps the host's port 8080 to the container's port 8080 and mounts the build directory as a volume:
+
+```bash
+$ docker run --rm -p 8080:8080 -e RHO="/fileRealmAuthenticator/users[userid='admin']/password->'secret';/http-listener/host->'0.0.0.0'" -v ./target:/opt/restheart/plugins/custom softinstigate/restheart:latest -s
+```
+
+For more information see [RESTHeart with custom Plugin](https://restheart.org/docs/setup-with-docker#run-restheart-with-custom-plugin) documentation section.
+
+## Testing the Service
+
+Open you browser at [http://localhost:8080/site?user=Sara](http://localhost:8080/site?user=Sara)
 
 You can add a `user` query parameter to see it rendered server-side (e.g. <http://localhost:8080/site?user=Anna>).
-
-See the main [README](../README.md) for general setup instructions.

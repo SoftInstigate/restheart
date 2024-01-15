@@ -83,7 +83,7 @@ public class XHeadersToQParams implements WildcardInterceptor {
         var accessControlAllowHeaders = handlingService.accessControlAllowHeaders(request);
 
         var updatedAccessControlAllowHeaders = processedHeaders.stream()
-            .filter(header -> accessControlAllowHeaders.indexOf(header) < 0)
+            .filter(header -> !accessControlAllowHeaders.contains(header))
             .collect(Collectors.joining(", "));
 
         updatedAccessControlAllowHeaders = accessControlAllowHeaders.concat(",").concat(updatedAccessControlAllowHeaders);
