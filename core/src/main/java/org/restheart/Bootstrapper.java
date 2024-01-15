@@ -606,7 +606,7 @@ public final class Bootstrapper {
 
     private static SSLContext initSSLContext() {
         try {
-            var sslContext = SSLContext.getInstance("TLS");
+            var sslContext = SSLContext.getInstance("TLSv1.2");
 
             var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
