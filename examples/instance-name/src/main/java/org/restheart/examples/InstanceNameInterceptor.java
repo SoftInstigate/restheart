@@ -47,7 +47,7 @@ public class InstanceNameInterceptor implements WildcardInterceptor {
     }
 
     @Override
-    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
         response.getHeaders().put(X_RESTHEART_INSTANCE_HEADER, this.instanceName);
     }
 

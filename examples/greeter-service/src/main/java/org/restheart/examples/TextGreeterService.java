@@ -31,7 +31,7 @@ import org.restheart.utils.HttpStatus;
         description = "just another text/plain Hello World")
 public class TextGreeterService implements ByteArrayService {
     @Override
-    public void handle(ByteArrayRequest req, ByteArrayResponse res) throws Exception {
+    public void handle(ByteArrayRequest req, ByteArrayResponse res) {
         res.setContentType("text/plain; charset=utf-8");
 
         switch (req.getMethod()) {

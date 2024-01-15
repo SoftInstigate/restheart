@@ -36,7 +36,7 @@ import org.restheart.utils.LambdaUtils;
     requiresContent = true)
 public class BsonToProtobuf implements MongoInterceptor {
     @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) {
         // get the created document id
         var id = BsonUtils.toJson(response.getDbOperationResult().getNewId(), JsonMode.RELAXED);
 

@@ -149,7 +149,7 @@ The custom also remaps the request URI `/proto` to the database resource `resthe
 After the request has been handled by the `MongoService` it can be easily transformed by using an `MongoInterceptor` with `interceptPoint=RESPONSE`. It uses `ServiceResponse.setCustomSender()` to customize the response format.
 
 ```java
-public void handle(MongoRequest request, MongoResponse response) throws Exception {
+public void handle(MongoRequest request, MongoResponse response) {
     var id = BsonUtils.toJson(response.getDbOperationResult().getNewId(), JsonMode.RELAXED);
     // transform the json to a protobuf
     var builder = ContactPostReply.newBuilder().setId(id);

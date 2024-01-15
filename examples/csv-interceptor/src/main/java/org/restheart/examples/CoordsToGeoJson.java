@@ -35,7 +35,7 @@ import org.restheart.plugins.RegisterPlugin;
 @RegisterPlugin(name = "coordsToGeoJson", description = "transforms cordinates array to GeoJSON point object for csv loader service")
 public class CoordsToGeoJson implements Interceptor<BsonFromCsvRequest, BsonResponse> {
     @Override
-    public void handle(BsonFromCsvRequest request, BsonResponse response) throws Exception {
+    public void handle(BsonFromCsvRequest request, BsonResponse response) {
         var docs = request.getContent();
 
         if (docs == null) {
