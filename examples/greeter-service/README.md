@@ -42,12 +42,12 @@ public class TextGreeterService implements ByteArrayService {
 
             case GET -> {
                 var name = req.getQueryParameters().get("name");
-                res.setContent("Hello, " + (name == null ? "Anonymous" : name.getFirst()));
+                res.setContent("Hello, " + (name == null ? "World" : name.getFirst()));
             }
 
             case POST -> {
                 var content = req.getContent();
-                res.setContent("Hello, " + (content == null ? "Anonymous" : new String(content)));
+                res.setContent("Hello, " + (content == null ? "World" : new String(content)));
             }
 
             default -> res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
