@@ -41,14 +41,8 @@ To work with these examples, the following are required:
    $ sdk install java 17.0.9-tem
    ```
 
-2. **Docker**: Necessary for running RESTHeart.
+2. **Docker**: Necessary for running RESTHeart and MongoDB.
 
-3. **MongoDB**: Some examples need a MongoDB instance running locally.
-
-4. **HTTPie**: A command-line HTTP client for testing, available at [httpie.io/cli](https://httpie.io/cli).
+3. **HTTPie**: A command-line HTTP client for testing, available at [httpie.io/cli](https://httpie.io/cli).
 
 Note: The examples use Maven, but it's accessible through the included Maven wrapper (`mvnw`), so a separate installation is not required.
-
----
-
-This revision organizes the plugins list into a more readable format, adds a brief description to each plugin for context, and clarifies the requirements section for better user guidance.
