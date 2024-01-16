@@ -28,8 +28,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.bson.BsonValue;
-import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
@@ -69,6 +67,7 @@ import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoClient;
 
 import graphql.ErrorType;
+import graphql.ExceptionWhileDataFetching;
 import graphql.ExecutionInput;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
@@ -204,8 +203,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
 
         var chainedInstrumentations = new ArrayList<Instrumentation>();
-        chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
         chainedInstrumentations.add(new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions));
+        chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
 
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
             .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
@@ -214,26 +213,47 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         try {
             var result = this.gql.execute(inputBuilder.build());
 
-            // errors and no data -> 400
-            // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
-            // If the GraphQL response does not contain the {data} entry then
-            // the server MUST reply with a 4xx or 5xx status code as appropriate.
-
             //  The graphql specification specifies:
             //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null."
-            if (result.getErrors() != null && !result.getErrors().isEmpty() && result.getData() == null) {
-                if (result.getErrors().stream().anyMatch(e -> e instanceof GraphQLQueryTimeoutException)) {
+            if (result.getErrors() != null && !result.getErrors().isEmpty()) {
+
+                var graphQLQueryTimeoutException = result.getErrors().stream()
+                    .filter(e -> e instanceof ExceptionWhileDataFetching)
+                    .map(e -> (ExceptionWhileDataFetching) e)
+                    .map(e -> containsGraphQLQueryTimeoutException(e))
+                    .filter(e -> e != null)
+                    .findFirst();
+
+                if (graphQLQueryTimeoutException.isPresent()) {
+                    // timeout during a mongodb query -> 408
+                    // If we got a timeout, just response with 408 Request Timeout
+                    // this GraphQLQueryTimeoutException is added to errors if a single query or aggregation breaks the query-time-limit
+                    var errorResult = new ExecutionResultImpl.Builder().addError(graphQLQueryTimeoutException.get()).build();
+                    res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
                     res.setStatusCode(HttpStatus.SC_REQUEST_TIMEOUT);
-                } else {
+                } else if (result.getData() == null) {
+                    // errors and no data -> 400
+                    // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
+                    // If the GraphQL response does not contain the {data} entry then
+                    // the server MUST reply with a 4xx or 5xx status code as appropriate.
                     res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                    res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
+                } else {
+                    // errors and data -> 200 (partial result)
+                    res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
                 }
+            } else {
+                res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
             }
 
             if (this.verbose) {
                 logDataLoadersStatistics(dataLoaderRegistry);
             }
-
-            res.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
+        } catch(GraphQLQueryTimeoutException t) {
+            // this exception can be thrown by MaxQueryTimeInstrumentation
+            res.setStatusCode(HttpStatus.SC_REQUEST_TIMEOUT);
+            var errorResult = new ExecutionResultImpl.Builder().addError(t).build();
+            res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
         } catch(Throwable t) {
             if (containsMongoTimeoutException(t)) {
                 // db down -> 500
@@ -283,6 +303,16 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         return false;
     }
 
+    private GraphQLQueryTimeoutException containsGraphQLQueryTimeoutException(ExceptionWhileDataFetching e) {
+        if (e == null || e.getException() == null) {
+            return null;
+        } else if (e.getException() instanceof GraphQLQueryTimeoutException gqle) {
+            return gqle;
+        } else {
+            return null;
+        }
+    }
+
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
         dataLoaderRegistry.getKeys().forEach(key -> LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics()));
     }
@@ -293,14 +323,14 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         mappings.forEach((String type, TypeMapping typeMapping) -> {
             typeMapping.getFieldMappingMap().forEach((field, fieldMapping) -> {
                 if (fieldMapping instanceof QueryMapping queryMapping) {
-                    DataLoader<BsonValue, BsonValue> dataLoader = queryMapping.getDataloader();
+                    var dataLoader = queryMapping.getDataloader();
                     if (dataLoader != null) {
                         dataLoaderRegistry.register(type + "_" + field, dataLoader);
                     }
                 }
                 // register dataLoaders for Aggregation Mapping
                 if (fieldMapping instanceof AggregationMapping aggregationMapping) {
-                    DataLoader<BsonValue, BsonValue> dataLoader = aggregationMapping.getDataloader();
+                    var dataLoader = aggregationMapping.getDataloader();
                     if (dataLoader != null) {
                         dataLoaderRegistry.register(type + "_" + field, dataLoader);
                     }
