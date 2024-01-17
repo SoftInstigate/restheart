@@ -71,10 +71,17 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
         return false;
     }
 
-    protected long maxTime(DataFetchingEnvironment env) {
+    protected long maxTimeTotal(DataFetchingEnvironment env) {
         BsonDocument ctx = env.getLocalContext();
-        return ctx.containsKey("query-time-limit")
-             ? ctx.get("query-time-limit").asInt64().getValue()
-             : 0l;
+        return  ctx.containsKey("query-time-limit")
+                ? ctx.get("query-time-limit").asInt64().getValue()
+                : 0l;
+    }
+
+    protected long maxTimeLeft(DataFetchingEnvironment env) {
+        BsonDocument ctx = env.getLocalContext();
+        return ctx.containsKey("query-time-limit-left") ?
+            ctx.get("query-time-limit-left").asInt64().getValue()
+            : maxTimeTotal(env);
     }
 }

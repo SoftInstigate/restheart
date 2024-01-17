@@ -21,7 +21,10 @@
 
 package org.restheart.graphql.instrumentation;
 
+import org.bson.BsonDocument;
+import org.bson.BsonInt64;
 import org.restheart.graphql.GraphQLQueryTimeoutException;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +34,7 @@ import graphql.execution.instrumentation.InstrumentationState;
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.noOp;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationExecuteOperationParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
 
 /**
@@ -53,7 +57,8 @@ public class MaxQueryTimeInstrumentation implements Instrumentation {
 
     @Override
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
-        return new State(System.currentTimeMillis());
+        BsonDocument localContext = (BsonDocument) parameters.getExecutionInput().getLocalContext();
+        return new State(System.currentTimeMillis(), localContext);
     }
 
     @Override
@@ -65,6 +70,8 @@ public class MaxQueryTimeInstrumentation implements Instrumentation {
         State state = InstrumentationState.ofState(rawState);
         var elapsed = System.currentTimeMillis() - state.startTime;
 
+        state.localContext().put("query-time-limit-left", new BsonInt64(this.queryTimeLimit - elapsed));
+
         if (elapsed > this.queryTimeLimit) {
             LOGGER.debug("Exceeded query time limit of {} while attempting to fetch field '{}'. Current query elapsed time: {}.", this.queryTimeLimit, parameters.getExecutionStepInfo().getPath(), elapsed);
             throw new GraphQLQueryTimeoutException("Maximum query time limit of " + this.queryTimeLimit + "ms exceeded");
@@ -74,6 +81,6 @@ public class MaxQueryTimeInstrumentation implements Instrumentation {
         }
     }
 
-    private static record State(long startTime) implements InstrumentationState {
+    private static record State(long startTime, BsonDocument localContext) implements InstrumentationState {
     }
 }
