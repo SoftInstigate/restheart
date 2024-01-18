@@ -30,6 +30,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.MongoServiceAttachments;
+
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
@@ -41,7 +42,7 @@ import com.google.protobuf.util.JsonFormat;
     requiresContent = true)
 public class ProtobufToBson implements WildcardInterceptor {
     @Override
-    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
         // with InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT
         // request is instanceof UninitializedRequest
         var uninitializedRequest = (UninitializedRequest) request;

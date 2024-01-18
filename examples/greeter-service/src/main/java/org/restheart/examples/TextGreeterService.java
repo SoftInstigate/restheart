@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * greeter-service
+ * bytes-array-service
  * %%
  * Copyright (C) 2014 - 2024 SoftInstigate
  * %%
@@ -20,21 +20,33 @@
 
 package org.restheart.examples;
 
-import org.restheart.exchange.JsonRequest;
-import org.restheart.exchange.JsonResponse;
-import org.restheart.plugins.JsonService;
+import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.ByteArrayResponse;
+import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
-import static org.restheart.utils.GsonUtils.object;
-
-@RegisterPlugin(name = "greetings", description = "just another Hello World")
-public class GreeterService implements JsonService {
+@RegisterPlugin(
+        name = "textGreeter",
+        description = "just another text/plain Hello World")
+public class TextGreeterService implements ByteArrayService {
     @Override
-    public void handle(JsonRequest req, JsonResponse res) {
-        switch(req.getMethod()) {
-            case GET -> res.setContent(object().put("message", "Hello World!"));
+    public void handle(ByteArrayRequest req, ByteArrayResponse res) {
+        res.setContentType("text/plain; charset=utf-8");
+
+        switch (req.getMethod()) {
             case OPTIONS -> handleOptions(req);
+
+            case GET -> {
+                var name = req.getQueryParameters().get("name");
+                res.setContent("Hello, " + (name == null ? "World" : name.getFirst()));
+            }
+
+            case POST -> {
+                var content = req.getContent();
+                res.setContent("Hello, " + (content == null ? "World" : new String(content)));
+            }
+
             default -> res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }

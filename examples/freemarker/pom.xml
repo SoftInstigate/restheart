@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-examples</artifactId>
-        <version>7.7.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>freemarker</artifactId>
@@ -22,4 +22,31 @@
             <version>2.3.31</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+          <plugin>
+            <!-- maven-dependency-plugin is used to copy the external dependencies
+            (i.e. that are not provided by restheart.jar) to target/lib
+            see https://restheart.org/docs/plugins/deploy/ -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                  <!-- the following settings just include dependencies
+                  of runtime and compile scopes -->
+                  <excludeTransitive>true</excludeTransitive>
+                  <includeScope>runtime</includeScope>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
 </project>

@@ -76,8 +76,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 .withDocumentClass(BsonDocument.class)
                 .aggregate(interpolatedAggregation)
                 .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                .maxTime(maxTime(env), TimeUnit.MILLISECONDS);
-
+                .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
 
             if (isList(env.getFieldDefinition().getType())) {
                 var aggregationResult = new BsonArray();
@@ -87,7 +86,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 return res.first();
             }
         } catch(MongoExecutionTimeoutException toe) {
-            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTime(env) + "ms exceeded");
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTimeTotal(env) + "ms exceeded");
         }
     }
 }

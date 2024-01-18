@@ -70,7 +70,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
             var query = mongoClient
                 .getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class)
                 .find(_find)
-                .maxTime(maxTime(env), TimeUnit.MILLISECONDS);
+                .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
 
             if (_sort != null) {
                 query = query.sort(_sort);
@@ -92,7 +92,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
                 return query.first();
             }
         } catch(MongoExecutionTimeoutException toe) {
-            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTime(env) + "ms exceeded");
+            throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTimeTotal(env) + "ms exceeded");
         }
     }
 }

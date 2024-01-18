@@ -56,7 +56,7 @@ public class VerificationCodeGenerator implements MongoInterceptor {
     private MongoClient mclient;
 
     @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) {
         if (userExists(request)) {
             // unautheticated client cannot update documents
             response.setInError(HttpStatus.SC_FORBIDDEN, "not authorized");

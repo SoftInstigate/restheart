@@ -54,8 +54,6 @@ public class GetRoleService implements JsonService {
 
     /**
      * init the service
-     *
-     * @param confArgs
      */
     @OnInit
     public void init() {
@@ -73,32 +71,28 @@ public class GetRoleService implements JsonService {
      */
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
-        var exchange = request.getExchange();
-
         switch(request.getMethod()){
             case GET -> {
-                if (checkRequestPath(request)) {
+                if (!request.isAuthenticated()) {
+                    response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+                } else if (checkRequestPath(request)) {
                     var roles = array();
                     request.getAuthenticatedAccount().getRoles().forEach(roles::add);
                     response.setContent(object().put("authenticated", true).put("roles", roles));
                 } else {
-                    exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
+                    response.setStatusCode(HttpStatus.SC_FORBIDDEN);
 
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
                     response.getHeaders().remove(AUTH_TOKEN_HEADER);
                     response.getHeaders().remove(AUTH_TOKEN_VALID_HEADER);
                     response.getHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
-
-                    exchange.endExchange();
-                    return;
                 }
             }
 
             case OPTIONS -> handleOptions(request);
 
             default -> {
-                exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-                exchange.endExchange();
+                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         }
     }

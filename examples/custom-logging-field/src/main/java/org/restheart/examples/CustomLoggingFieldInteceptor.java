@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class CustomLoggingFieldInteceptor implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomLoggingFieldInteceptor.class);
     @Override
-    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
         // The MDC context is put in the thread context and
         // a thread switch in the request handling pipeline loses the MDC context.
 

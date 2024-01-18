@@ -52,7 +52,7 @@ public class XHeadersToQParams implements WildcardInterceptor {
     record Pair(String name, Deque<String> values) {};
 
     @Override
-    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) {
         var processedHeaders = new ArrayList<String>();
 
         // for each request header that starts with X_HEADER_PREFIX
@@ -83,7 +83,7 @@ public class XHeadersToQParams implements WildcardInterceptor {
         var accessControlAllowHeaders = handlingService.accessControlAllowHeaders(request);
 
         var updatedAccessControlAllowHeaders = processedHeaders.stream()
-            .filter(header -> accessControlAllowHeaders.indexOf(header) < 0)
+            .filter(header -> !accessControlAllowHeaders.contains(header))
             .collect(Collectors.joining(", "));
 
         updatedAccessControlAllowHeaders = accessControlAllowHeaders.concat(",").concat(updatedAccessControlAllowHeaders);

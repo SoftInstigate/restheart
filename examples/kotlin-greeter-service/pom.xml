@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-examples</artifactId>
-        <version>7.7.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>kotlin-greeter-service</artifactId>
 
     <properties>
-        <kotlin.version>1.8.21</kotlin.version>
+        <kotlin.version>1.9.22</kotlin.version>
         <main.class>GreeterServiceKt</main.class>
     </properties>
 

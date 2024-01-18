@@ -54,7 +54,6 @@
         <module>core</module>
     </modules>
 
-    <!-- Project Information -->
     <organization>
         <name>SoftInstigate</name>
         <url>https://softinstigate.com</url>
@@ -381,7 +380,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>21.1</version>
+                <version>21.3</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>

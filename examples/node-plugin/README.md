@@ -5,6 +5,14 @@ RESTHeart can be executed on GraalVM's implementation of Node.js
 This allows to develop plugins in JavaScript leveraging the Node runtime. For instance
 it is possible to use the `http` Node module.
 
+RESTHeart is designed to be fully compatible with GraalVM, particularly its implementation of Node.js. This compatibility offers significant advantages, especially for developers looking to write plugins in JavaScript. By leveraging the Node.js runtime environment provided by GraalVM, developers can:
+
+- Utilize Node.js Modules: You can easily integrate Node.js modules into your plugins. For example, the http module from Node.js can be seamlessly used within RESTHeart. This opens up a range of possibilities for HTTP networking and server-side functionalities in your plugins.
+
+- Leverage JavaScript Ecosystem: Developers can take advantage of the vast JavaScript ecosystem, including numerous libraries and tools, to build more powerful and feature-rich plugins for RESTHeart.
+
+NOTE: executing RESTHeart on GraalVM Node is experimental and not suggested for production.
+
 ## Install RESTHeart
 
 We assume that the latest version of RESTHeart is installed in the directory <RH_HOME>
@@ -21,8 +29,8 @@ $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 (here we use the brilliant sdkman)
 
 ```bash
-$ sdk install java 22.3.r17-grl
-$ sdk use java 22.3.r17-grl
+$ sdk install java 17.0.9-graal
+$ sdk use java 17.0.9-graal
 $ gu install nodejs
 ```
 
@@ -38,7 +46,7 @@ Where <RH_HOME> is the RESTHeart installation directory.
 ## Run RESTHeart on Node
 
 ```bash
-$ $(sdk home java 22.3.r17-grl)/bin/node --jvm --vm.cp=restheart.jar restheart.js
+$ $(sdk home java 17.0.9-graal)/bin/node --jvm --vm.cp=restheart.jar restheart.js
 ```
 
 (we use `sdk home` to make sure to use the GraalVM's node implementation)
