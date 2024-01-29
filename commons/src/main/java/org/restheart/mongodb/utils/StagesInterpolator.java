@@ -138,6 +138,12 @@ public class StagesInterpolator {
     }
 
     private static boolean stageApplies(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
+        // false if request does not include the ?avars qparam
+        // see issue https://github.com/SoftInstigate/restheart/issues/500
+        if (avars == null) {
+            return false;
+        }
+
         var vars = stage.get(stageOperator.name()).asArray().get(0);
 
         if (vars.isString()) {
