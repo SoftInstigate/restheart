@@ -560,9 +560,6 @@ restHeartConfiguration:
 
   ## Limits
 
-  # Limit for the maximum number of concurrent requests being served
-  requests-limit: 1000
-
   # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
   query-time-limit: 0
 
