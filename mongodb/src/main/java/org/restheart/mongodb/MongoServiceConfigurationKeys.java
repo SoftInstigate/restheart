@@ -95,11 +95,6 @@ public interface MongoServiceConfigurationKeys {
     public static final String SCHEMA_CACHE_TTL_KEY = "schema-cache-ttl";
 
     /**
-     * the key for the requests-limit property.
-     */
-    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
-
-    /**
      * the key for the query-time-limit property.
      */
     public static final String QUERY_TIME_LIMIT_KEY = "query-time-limit";

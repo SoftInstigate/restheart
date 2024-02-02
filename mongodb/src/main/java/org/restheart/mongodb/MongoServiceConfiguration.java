@@ -69,7 +69,6 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_URI_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.QUERY_TIME_LIMIT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.REPRESENTATION_FORMAT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.REQUESTS_LIMIT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_ENABLED_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_TTL_KEY;
 import org.slf4j.Logger;
@@ -107,7 +106,6 @@ public class MongoServiceConfiguration {
     private final long localCacheTtl;
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
-    private final int requestsLimit;
     private final boolean getCollectionCacheEnabled;
     private final int getCollectionCacheSize;
     private final int getCollectionCacheTTL;
@@ -204,8 +202,6 @@ public class MongoServiceConfiguration {
 
         mongoMounts = asListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault, silent);
 
-        requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100, silent);
-
         queryTimeLimit = asLong(conf, QUERY_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationTimeLimit = asLong(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0, silent);
         aggregationCheckOperators = asBoolean(conf, AGGREGATION_CHECK_OPERATORS, true, silent);
@@ -297,7 +293,7 @@ public class MongoServiceConfiguration {
                 + ", defaultRepresentationFromat=" + defaultRepresentationFormat + ", mongoUri=" + mongoUri
                 + ", mongoMounts=" + mongoMounts + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
-                + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit
+                + ", schemaCacheTtl=" + schemaCacheTtl
                 + ", cacheEnabled=" + getCollectionCacheEnabled + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
                 + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
@@ -331,13 +327,6 @@ public class MongoServiceConfiguration {
      */
     public long getLocalCacheTtl() {
         return localCacheTtl;
-    }
-
-    /**
-     * @return the requestsLimit
-     */
-    public int getRequestsLimit() {
-        return requestsLimit;
     }
 
     /**

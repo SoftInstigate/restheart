@@ -453,9 +453,6 @@ core:
   # if < 0, use the number of cores * 8. With 0 working threads, blocking services won't work.
   worker-threads: -1
 
-  # Limit for the maximum number of concurrent requests being served
-  requests-limit: 1000
-
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
   buffer-size: 16364

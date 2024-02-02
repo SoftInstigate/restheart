@@ -126,8 +126,6 @@ import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
-import io.undertow.server.handlers.RequestLimit;
-import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -682,17 +680,15 @@ public final class Bootstrapper {
      */
     private static GracefulShutdownHandler getBasePipeline() {
         return new GracefulShutdownHandler(
-            new RequestLimitingHandler(
-                new RequestLimit(configuration.coreModule().requestsLimit()),
-                new AllowedMethodsHandler(
-                    new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
-                    // allowed methods
-                    HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
-                    HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
-                    HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
-                    HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
-                    HttpString.tryFromString(ExchangeKeys.METHOD.PATCH.name()),
-                    HttpString.tryFromString(ExchangeKeys.METHOD.OPTIONS.name()))));
+            new AllowedMethodsHandler(
+                new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
+                // allowed methods
+                HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.PATCH.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.OPTIONS.name())));
     }
 
     /**
