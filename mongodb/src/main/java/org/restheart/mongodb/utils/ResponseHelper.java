@@ -135,6 +135,8 @@ public class ResponseHelper {
             case 61 -> HttpStatus.SC_BAD_REQUEST;
             // Update tried to change the immutable shardkey
             case 66 -> HttpStatus.SC_FORBIDDEN;
+            // Invalid database name
+            case 73 -> HttpStatus.SC_BAD_REQUEST;
             // Document failed validation
             case 121 -> HttpStatus.SC_BAD_REQUEST;
             //WriteConflict
@@ -153,7 +155,8 @@ public class ResponseHelper {
             // 40352 FieldPath cannot be constructed with empty string
             // 51091 Regular expression is invalid: unmatched parentheses
             // 51108 Invalid flag in regex options
-            case 56, 40353, 40352, 51091, 51108, 40323  -> HttpStatus.SC_BAD_REQUEST;
+            // 16410 FieldPath field names may not start with '$'
+            case 56, 40353, 40352, 51091, 51108, 40323, 16410  -> HttpStatus.SC_BAD_REQUEST;
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> HttpStatus.SC_BAD_REQUEST;
             // 15974 Illegal key in $sort specification
@@ -213,6 +216,7 @@ public class ResponseHelper {
             case 18 -> "Wrong MongoDB user credentials (wrong password or need to specify the authentication dababase with 'authSource=<db>' option in mongo-uri)";
             case 61 -> "Write request for sharded collection must specify the shardkey. Use the 'shardkey' query parameter";
             case 66 -> "Update tried to change the immutable shardkey";
+            case 73 -> "Invalid database name";
             case 121 -> "Document failed validation";
             case 112 -> "Write conflict inside transaction";
             // Cannot start transaction X on session Y because a newer transaction Z has already started// Cannot start transaction X on session Y because a newer transaction Z has already started
@@ -230,6 +234,7 @@ public class ResponseHelper {
             // FieldPath must not end with a '.'
             case 56, 40353 -> "FieldPath must not end with a '.'";
             case 40352 -> "FieldPath cannot be constructed with empty string";
+            case 16410 -> "FieldPath field names may not start with '$'";
             case 13297 -> "Db already exists with different case";
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 17287, 31253 -> "Keys projection cannot have a mix of inclusion and exclusion";
