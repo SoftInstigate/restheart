@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
 
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.restheart.Bootstrapper;
 import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.plugins.security.AuthMechanism;
@@ -299,7 +300,7 @@ public class PluginsScanner {
                 }
 
                 try {
-                    var fieldClass = Class.forName(fi.getTypeDescriptor().toString(), false, PluginsScanner.class.getClassLoader());
+                    var fieldClass = loadClass(fi.getTypeDescriptor().toString());
                     ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
                 } catch(ClassNotFoundException cnfe) {
                     // should not happen
@@ -309,6 +310,39 @@ public class PluginsScanner {
         }
 
         return ret;
+    }
+
+    private static ArrayList<ClassLoader> _classLoaders = null;
+
+    /**
+     * Loads a class, including searching within all plugin JAR files.
+     * <p>
+     * This method is essential for the {@code collectFieldInjections()} method, which processes field injections
+     * annotated with {@code @Inject}. Specifically, it addresses cases where the {@code @Inject} annotation
+     * references a {@link org.restheart.plugins.Provider} that returns an object. The class of this object may reside
+     * in a plugin JAR file, necessitating a comprehensive search to locate and load the class correctly.
+     * </p>
+     */
+    private static Class<?> loadClass(String clazz) throws ClassNotFoundException {
+        if (_classLoaders == null || _classLoaders.isEmpty()) {
+            _classLoaders = new ArrayList<>();
+            _classLoaders.add(PluginsScanner.class.getClassLoader());
+
+            // take all classloaders into account to search also within all plugin JAR files
+            if (PluginsScanner.jars != null) {
+                _classLoaders.add(new URLClassLoader(PluginsScanner.jars));
+            }
+        }
+
+        for (var classLoader: _classLoaders) {
+            try {
+                return Class.forName(clazz, false, classLoader);
+            } catch (ClassNotFoundException cnfe) {
+                // nothing to do
+            }
+        }
+
+        throw new ClassNotFoundException("plugin class not found " + clazz);
     }
 
     /**
