@@ -23,7 +23,6 @@ package org.restheart.plugins;
 import static org.restheart.configuration.Utils.getOrDefault;
 
 import java.lang.reflect.InvocationTargetException;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -56,15 +55,7 @@ public class PluginsFactory {
         return SINGLETON;
     }
 
-    private final ArrayList<ClassLoader> classLoaders = new ArrayList<>();
-
     private PluginsFactory() {
-        classLoaders.add(this.getClass().getClassLoader());
-
-        // take classloaders from PluginsScanner into account
-        if (PluginsScanner.jars != null) {
-            classLoaders.add(new URLClassLoader(PluginsScanner.jars));
-        }
     }
 
     private Set<PluginRecord<AuthMechanism>> authMechanismsCache = null;
@@ -283,18 +274,7 @@ public class PluginsFactory {
             return PC_CACHE.get(plugin.clazz());
         }
 
-        for (var classLoader : this.classLoaders) {
-            try {
-                var pluginc = (Class<Plugin>) classLoader.loadClass(plugin.clazz());
-
-                PC_CACHE.put(plugin.clazz(), pluginc);
-                return pluginc;
-            } catch (ClassNotFoundException cnfe) {
-                // nothing to do
-            }
-        }
-
-        throw new ClassNotFoundException("plugin class not found " + plugin.clazz());
+        return (Class<Plugin>) PluginsClassloader.getInstance().loadClass(plugin.clazz());
     }
 
     private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Configuration conf) throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException, SecurityException, ClassNotFoundException {
