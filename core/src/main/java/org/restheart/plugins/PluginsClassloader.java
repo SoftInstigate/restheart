@@ -52,6 +52,10 @@ public class PluginsClassloader extends ClassLoader {
         }
     }
 
+    public static boolean isInitialized() {
+        return SINGLETON != null;
+    }
+
     private final URLClassLoader pluginsClassLoader;
 
     private PluginsClassloader(URL[] jars) throws IOException {
