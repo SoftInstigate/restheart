@@ -21,6 +21,8 @@
 
 package org.restheart.plugins;
 
+import java.net.URL;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
@@ -121,6 +123,7 @@ public class PluginsTest {
     }
 
     private static MockedStatic<PluginsScanner> mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
+        PluginsClassloader.init(new URL[0]);
         var scanner = mockStatic(PluginsScanner.class);
         scanner.when(PluginsScanner::providers).thenReturn(providerDescriptors);
         return scanner;
@@ -204,7 +207,7 @@ public class PluginsTest {
 
         var iC2 = new ArrayList<InjectionDescriptor>();
         var apC2 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apC2.add(new AbstractMap.SimpleEntry<String, Object>("value", "c1"));
+        apC2.add(new AbstractMap.SimpleEntry<>("value", "c1"));
         iC2.add(new FieldInjectionDescriptor("s", String.class, apC2, 8));
 
         var providerDescriptors = new ArrayList<PluginDescriptor>();
