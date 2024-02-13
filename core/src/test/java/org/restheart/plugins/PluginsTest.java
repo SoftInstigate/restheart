@@ -123,7 +123,9 @@ public class PluginsTest {
     }
 
     private static MockedStatic<PluginsScanner> mockPluginsScanner(List<PluginDescriptor> providerDescriptors) {
-        PluginsClassloader.init(new URL[0]);
+        if (!PluginsClassloader.isInitialized()) {
+            PluginsClassloader.init(new URL[0]);
+        }
         var scanner = mockStatic(PluginsScanner.class);
         scanner.when(PluginsScanner::providers).thenReturn(providerDescriptors);
         return scanner;

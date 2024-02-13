@@ -93,6 +93,9 @@ public class PluginsScanner {
         RuntimeClassGraph rtcg = null;
 
         if (NativeImageBuildTimeChecker.isBuildTime()) {
+            if (!PluginsClassloader.isInitialized()) {
+                PluginsClassloader.init(new URL[0]);
+            }
             classGraph = new ClassGraph().disableModuleScanning() // added for GraalVM
                 .disableDirScanning() // added for GraalVM
                 .disableNestedJarScanning() // added for GraalVM
