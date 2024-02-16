@@ -20,14 +20,16 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import com.mongodb.MongoException;
 import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Databases;
+
+import com.mongodb.MongoException;
 
 /**
  * Caches for db and collection metadata
@@ -99,7 +101,6 @@ public class MetadataCachesSingleton {
     }
 
     /**
-     *
      * @param dbName
      * @return
      */
@@ -136,7 +137,6 @@ public class MetadataCachesSingleton {
     }
 
     /**
-     *
      * @param dbName
      * @param collName
      * @return
