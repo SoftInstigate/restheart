@@ -19,16 +19,18 @@
  */
 package org.restheart.cache.impl;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
+import org.restheart.utils.ThreadsUtils;
+
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 
 /**
  *
@@ -37,7 +39,8 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private final LoadingCache<K, Optional<V>> wrapped;
+    private static final Executor newVirtualThreadPerTaskExecutor = ThreadsUtils.virtualThreadsExecutor();
+    private final AsyncLoadingCache<K, Optional<V>> wrapped;
 
     public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
         var builder = Caffeine.newBuilder();
@@ -50,60 +53,64 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
             builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
         }
 
-        wrapped = builder.build(new CacheLoader<K, Optional<V>>() {
-            @Override
-            public Optional<V> load(K key) throws Exception {
-                return Optional.ofNullable(loader.apply(key));
-            }
-
-            @Override
-            public Map<? extends K, ? extends Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
-                var ret = new HashMap<K, Optional<V>>();
-                keys.stream().forEachOrdered(key -> ret.put(key, Optional.ofNullable(loader.apply(key))));
-                return ret;
-            }
-        });
+        wrapped = builder
+            .executor(newVirtualThreadPerTaskExecutor)
+            .buildAsync((K key, Executor executor) -> CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key))));
     }
 
     @Override
     public Optional<V> get(K key) {
-        return wrapped.getIfPresent(key);
+        var cf = wrapped.getIfPresent(key);
+        if (cf == null) {
+            return null;
+        }
+
+        try {
+            return cf.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
     public synchronized Optional<V> remove(K key) {
-        var ret = wrapped.getIfPresent(key);
-        wrapped.invalidate(key);
+        var ret = get(key);
+        wrapped.synchronous().invalidate(key);
         return ret;
     }
 
     @Override
     public Optional<V> getLoading(K key) {
-        return wrapped.get(key);
+        var cf = wrapped.get(key);
+        try {
+            return cf.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
     public void put(K key, V value) {
-        wrapped.put(key, Optional.ofNullable(value));
+        wrapped.synchronous().put(key, Optional.ofNullable(value));
     }
 
     @Override
     public void invalidate(K key) {
-        wrapped.invalidate(key);
+        wrapped.synchronous().invalidate(key);
     }
 
     @Override
     public void invalidateAll() {
-        wrapped.invalidateAll();
+        wrapped.synchronous().invalidateAll();
     }
 
     @Override
     public Map<K, Optional<V>> asMap() {
-        return wrapped.asMap();
+        return wrapped.synchronous().asMap();
     }
 
     @Override
     public void cleanUp() {
-        wrapped.cleanUp();
+        wrapped.synchronous().cleanUp();
     }
 }
