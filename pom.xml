@@ -18,8 +18,8 @@
         <finalName>${project.artifactId}-${project.version}</finalName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!--
             mvn install -DskipUTs   : Skips Unit tests
@@ -474,7 +474,7 @@
                                         </excludes>
                                     </requireReleaseDeps>
                                     <requireJavaVersion>
-                                        <version>17</version>
+                                        <version>21</version>
                                     </requireJavaVersion>
                                 </rules>
                                 <fail>true</fail>
