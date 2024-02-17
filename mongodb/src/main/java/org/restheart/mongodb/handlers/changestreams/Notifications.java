@@ -18,47 +18,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb;
+package org.restheart.mongodb.handlers.changestreams;
 
-import org.restheart.plugins.InitPoint;
-import org.restheart.plugins.Initializer;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.RegisterPlugin;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.mongodb.client.MongoClient;
+import java.util.concurrent.SubmissionPublisher;
 
 /**
- *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Omar Trasatti {@literal <omar@softinstigate.com>}
+ *
  */
-@RegisterPlugin(name = "mongoClients",
-        description = "helper singleton that holds the MongoClient",
-        initPoint = InitPoint.BEFORE_STARTUP,
-        priority = -10)
-public class RHMongoClients implements Initializer {
+public class Notifications {
+    private static final SubmissionPublisher<Notification> NOTIFICATION_PUBLISHER = new SubmissionPublisher<>();
 
-    @Inject("mclient")
-    private MongoClient mclient;
-
-    private static MongoClient MC_HOLDER;
-
-    @OnInit
-    public void onInit() {
-        MC_HOLDER = mclient;
+    static {
+        NOTIFICATION_PUBLISHER.subscribe(new NotificationSubscriber());
     }
 
-    @Override
-    public void init() {
-    }
-
-    public static com.mongodb.client.MongoClient mclient() {
-        return MC_HOLDER;
-    }
-
-    @VisibleForTesting
-    public static void setClients(MongoClient mclient) {
-        MC_HOLDER = mclient;
+    public static void submit(Notification notification) {
+        NOTIFICATION_PUBLISHER.submit(notification);
     }
 }

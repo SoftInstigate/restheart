@@ -25,10 +25,6 @@
       <groupId>org.mongodb</groupId>
       <artifactId>mongodb-driver-sync</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-reactivestreams</artifactId>
-    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

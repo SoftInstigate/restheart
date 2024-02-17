@@ -211,11 +211,6 @@
                 <version>4.11.1</version>
             </dependency>
             <dependency>
-                <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <version>4.11.1</version>
-            </dependency>
-            <dependency>
                 <groupId>com.github.jnr</groupId>
                 <artifactId>jnr-unixsocket</artifactId>
                 <version>0.38.21</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->

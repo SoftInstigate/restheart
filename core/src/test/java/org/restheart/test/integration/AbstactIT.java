@@ -95,7 +95,7 @@ public abstract class AbstactIT {
 
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", MONGO_URI.toString());
-        RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI), null);
+        RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI));
     }
 
     /**

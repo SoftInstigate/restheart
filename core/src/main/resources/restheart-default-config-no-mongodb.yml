@@ -183,7 +183,7 @@ jwtTokenManager:
     # - foo # property name
     # - /nested/property # xpath expr for nested properties
 
-# Provider the MongoClient via @Inject('mclient') and @Inject('mclient-reactive')
+# Provider the MongoClient via @Inject('mclient')
 mclient:
   enabled: false
   # see https://docs.mongodb.com/manual/reference/connection-string/

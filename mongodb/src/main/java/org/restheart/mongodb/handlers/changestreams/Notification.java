@@ -24,21 +24,20 @@ package org.restheart.mongodb.handlers.changestreams;
  *
  * @author omartrasatti
  */
-public class ChangeStreamNotification {
+public class Notification {
+    private final ChangeStreamKey key;
+    private final String message;
 
-    private final SessionKey sessionKey;
-    private final String notificationMessage;
-
-    public ChangeStreamNotification(SessionKey sessionKey, String notificationMessage) {
-        this.sessionKey = sessionKey;
-        this.notificationMessage = notificationMessage;
+    public Notification(ChangeStreamKey key, String message) {
+        this.key = key;
+        this.message = message;
     }
 
-    public SessionKey getSessionKey() {
-        return this.sessionKey;
+    public ChangeStreamKey getKey() {
+        return this.key;
     }
 
-    public String getNotificationMessage() {
-        return this.notificationMessage;
+    public String getMessage() {
+        return this.message;
     }
 }

@@ -20,32 +20,26 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import java.io.IOException;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.Flow.Subscription;
+
+import org.restheart.utils.ThreadsUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author omartrasatti
  */
-public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamNotification> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketNotificationSubscriber.class);
+public class NotificationSubscriber implements Subscriber<Notification> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationSubscriber.class);
 
     private Subscription sub;
-
-    public WebSocketNotificationSubscriber() {
-
-    }
 
     @Override
     public void onSubscribe(final Subscription s) {
@@ -54,49 +48,46 @@ public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamN
     }
 
     @Override
-    public void onNext(ChangeStreamNotification notification) {
-        Set<ChangeStreamWebSocketSession> sessions = WebSocketSessionsRegistry.getInstance().get(notification.getSessionKey());
+    public void onNext(Notification notification) {
+        var sessions = WebSocketSessions.getInstance().get(notification.getKey());
 
-        Set<ChangeStreamWebSocketSession> sessionsInError = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        var msg = notification.getMessage();
 
-        sessions.stream().forEach(session -> {
-            this.sendNotification(session, notification.getNotificationMessage(), sessionsInError);
-        });
-
-        sessionsInError.parallelStream().forEach(sessionInError -> {
-            try {
-                sessionInError.close();
-            } catch (IOException e) {
-                LOGGER.warn("error closing session in error {}", notification.getSessionKey());
-            }
-        });
+        sessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+            LOGGER.debug("sending change event to websocket session {}", session.getId());
+            this.send(session, msg);
+        }));
     }
 
     @Override
     public void onError(final Throwable t) {
-        LOGGER.warn("Error sending stream notification: " + t.getMessage());
+        LOGGER.warn("Error sending websocket message", t.getMessage());
     }
 
     @Override
     public void onComplete() {
-        LOGGER.trace("Notification subscription completed");
+        LOGGER.warn("Notification subscription completed. This should never happen!");
     }
 
     public void stop() {
+        LOGGER.warn("Notification subscription stopped. This should never happen!");
         this.sub.cancel();
     }
 
-    private synchronized void sendNotification(ChangeStreamWebSocketSession session, String notificationMessage, Set<ChangeStreamWebSocketSession> sessionsInError) {
-        WebSockets.sendText(notificationMessage, session.getChannel(), new WebSocketCallback<Void>() {
-
+    private void send(WebSocketSession session, String message) {
+        WebSockets.sendText(message, session.getChannel(), new WebSocketCallback<Void>() {
             @Override
             public void complete(final WebSocketChannel channel, Void context) {
-
             }
 
             @Override
             public void onError(final WebSocketChannel channel, Void context, Throwable throwable) {
-                sessionsInError.add(session);
+                try {
+                    session.close();
+                    LOGGER.info("websocket session closed! {}", session.getId());
+                } catch (IOException e) {
+                    LOGGER.warn("Error closing session in error {}", session.getId());
+                }
             }
         });
     }

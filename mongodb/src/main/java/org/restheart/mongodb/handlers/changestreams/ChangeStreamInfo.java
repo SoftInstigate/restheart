@@ -21,19 +21,20 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import java.util.Objects;
+
 import org.restheart.exchange.MongoRequest;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SessionInfo {
+public class ChangeStreamInfo {
 
     private final String db;
     private final String collection;
     private final String changeStreamOperation;
 
-    public SessionInfo(MongoRequest request) {
+    public ChangeStreamInfo(MongoRequest request) {
         this.db = request.getDBName();
         this.collection = request.getCollectionName();
         this.changeStreamOperation = request.getChangeStreamOperation();
@@ -46,7 +47,7 @@ public class SessionInfo {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof SessionKey)) {
+        if (!(obj instanceof ChangeStreamInfo)) {
             return false;
         } else {
             return obj.hashCode() == this.hashCode();

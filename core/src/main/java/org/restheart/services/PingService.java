@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
     secure = false,
     enabledByDefault = true,
     defaultURI = "/ping",
-    blocking = false)
+    blocking = true)
 public class PingService implements ByteArrayService {
     private String msg = null;
 

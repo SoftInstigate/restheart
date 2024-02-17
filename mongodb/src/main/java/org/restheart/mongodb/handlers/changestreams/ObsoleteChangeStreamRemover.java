@@ -29,7 +29,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 
-@RegisterPlugin(name = "obsoleteChangeStreamRemover", description = "removes obsolete change stream and web socket sessions (due to deleted db/collection, or updated change stream definition)", interceptPoint = InterceptPoint.RESPONSE)
+@RegisterPlugin(name = "obsoleteChangeStreamRemover", description = "removes obsolete change stream and WebSocket sessions (due to deleted db/collection, or updated change stream definition)", interceptPoint = InterceptPoint.RESPONSE)
 public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -61,10 +61,10 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     }
 
     private void closeAllOnDb(String db) {
-        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
-        var changeStreams = ChangeStreamsRegistry.getInstance();
+        var webSocketSessions = WebSocketSessions.getInstance();
+        var changeStreams = ChangeStreams.getInstance();
 
-        var sessionKeys = changeStreams.getSessionKeysOnDb(db);
+        var sessionKeys = changeStreams.getChangeStreamKeysOnDb(db);
 
         sessionKeys.stream()
             .collect(Collectors.toSet())
@@ -86,10 +86,10 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     }
 
     private void closeAllOnCollection(String db, String collection) {
-        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
-        var changeStreams = ChangeStreamsRegistry.getInstance();
+        var webSocketSessions = WebSocketSessions.getInstance();
+        var changeStreams = ChangeStreams.getInstance();
 
-        var sessionKeys = changeStreams.getSessionKeysOnCollection(db, collection);
+        var sessionKeys = changeStreams.getChangeStreamKeysOnCollection(db, collection);
 
         sessionKeys.stream()
             .collect(Collectors.toSet())

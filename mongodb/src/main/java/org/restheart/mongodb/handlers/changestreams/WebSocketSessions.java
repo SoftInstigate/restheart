@@ -20,44 +20,44 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import java.util.Set;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
-import java.util.Set;
 
 
 /**
- * Registry to keep track of web socket sessions
+ * Registry to keep track of WebSocket sessions
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class WebSocketSessionsRegistry {
+public class WebSocketSessions {
+    // TODO refactor using Caffeine chace
+    private final SetMultimap<ChangeStreamKey, WebSocketSession> MULTIMAP = Multimaps.synchronizedSetMultimap(Multimaps.synchronizedSetMultimap(HashMultimap.<ChangeStreamKey, WebSocketSession>create()));
 
-    private final SetMultimap<SessionKey, ChangeStreamWebSocketSession> MULTIMAP = Multimaps
-            .synchronizedSetMultimap(Multimaps.synchronizedSetMultimap(HashMultimap.<SessionKey, ChangeStreamWebSocketSession>create()));
-
-    public static WebSocketSessionsRegistry getInstance() {
-        return CacheManagerSingletonHolder.INSTANCE;
+    public static WebSocketSessions getInstance() {
+        return SingletonHolder.INSTANCE;
     }
 
-    public Set<ChangeStreamWebSocketSession> get(SessionKey key) {
+    public Set<WebSocketSession> get(ChangeStreamKey key) {
         return MULTIMAP.get(key);
     }
 
-    public Set<SessionKey> keySet() {
+    public Set<ChangeStreamKey> keySet() {
         return MULTIMAP.keySet();
     }
 
-    public boolean add(SessionKey key, ChangeStreamWebSocketSession session) {
+    public boolean add(ChangeStreamKey key, WebSocketSession session) {
         return MULTIMAP.put(key, session);
     }
 
-    public boolean remove(SessionKey key, ChangeStreamWebSocketSession session) {
+    public boolean remove(ChangeStreamKey key, WebSocketSession session) {
         return MULTIMAP.remove(key, session);
     }
 
-    private static class CacheManagerSingletonHolder {
-        private static final WebSocketSessionsRegistry INSTANCE = new WebSocketSessionsRegistry();
+    private static class SingletonHolder {
+        private static final WebSocketSessions INSTANCE = new WebSocketSessions();
     }
 }

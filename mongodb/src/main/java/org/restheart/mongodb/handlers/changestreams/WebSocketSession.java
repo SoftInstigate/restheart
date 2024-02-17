@@ -20,30 +20,31 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.server.session.SecureRandomSessionIdGenerator;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.StreamSourceFrameChannel;
 import io.undertow.websockets.core.WebSocketChannel;
-import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 /**
  *
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
 
-public class ChangeStreamWebSocketSession {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(ChangeStreamWebSocketSession.class);
+public class WebSocketSession {
+    private static final Logger LOGGER= LoggerFactory.getLogger(WebSocketSession.class);
 
     private final String sessionId;
-    private final SessionKey sessionKey;
+    private final ChangeStreamKey key;
     private final WebSocketChannel webSocketChannel;
 
-    public ChangeStreamWebSocketSession(WebSocketChannel channel, SessionKey sessionKey) {
+    public WebSocketSession(WebSocketChannel channel, ChangeStreamKey key) {
         this.sessionId = new SecureRandomSessionIdGenerator().createSessionId();
         this.webSocketChannel = channel;
-        this.sessionKey = sessionKey;
+        this.key = key;
         initChannelReceiveListener(webSocketChannel);
     }
 
@@ -57,8 +58,8 @@ public class ChangeStreamWebSocketSession {
         return this.sessionId;
     }
 
-    public SessionKey getSessionKey() {
-        return this.sessionKey;
+    public ChangeStreamKey getKey() {
+        return this.key;
     }
 
     public WebSocketChannel getChannel() {
@@ -66,19 +67,20 @@ public class ChangeStreamWebSocketSession {
     }
 
     public void close() throws IOException {
-        WebSocketSessionsRegistry.getInstance().remove(this.sessionKey, this);
-        this.webSocketChannel.close();
+        try (this.webSocketChannel) {
+            WebSocketSessions.getInstance().remove(this.key, this);
+        }
     }
 
     class ChangeStreamReceiveListener extends AbstractReceiveListener {
-        private final ChangeStreamWebSocketSession session;
+        private final WebSocketSession session;
 
-        public ChangeStreamReceiveListener(ChangeStreamWebSocketSession session) {
+        public ChangeStreamReceiveListener(WebSocketSession session) {
             this.session = session;
         }
         @Override
         protected void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
-            LOGGER.debug("Stream connection closed, sessionkey={}", sessionKey);
+            LOGGER.debug("Stream connection closed, sessionkey={}", key);
             this.session.close();
         }
     }
