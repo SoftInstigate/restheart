@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,12 +58,20 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
-        var csKey = new ChangeStreamKey(exchange);
-        var newSession = new WebSocketSession(channel, csKey);
+        var csKey = new ChangeStreamWorke(exchange);
+        var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
 
-        LOGGER.debug("New change stream websocket session, sessionkey={} for changeStreamKey={}", newSession.getId(), csKey);
-
-        WebSocketSessions.getInstance().add(csKey, newSession);
+        if (csw$.isPresent()) {
+            var wss = new WebSocketSession(channel);
+            csw$.get().websocketSessions().add(wss);
+            LOGGER.debug("New Change Stream WebSocket session, sessionkey={} for changeStreamKey={}", wss.getId(), csKey);
+        } else {
+            LOGGER.error("Cannot find Change Stream Worker changeStreamKey={}", csKey);
+            try {
+                channel.close();
+            } catch (IOException e) {
+            }
+        }
     });
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
@@ -83,18 +92,18 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, request.getAggregationVars());
 
-                startChangeStreamWorker(exchange);
+                initChangeStreamWorker(exchange);
 
                 WEBSOCKET_HANDLER.handleRequest(exchange);
             } else {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "The stream connection requires WebSocket, no 'Upgrade' or 'Connection' request header found");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Change Stream requires WebSocket, no 'Upgrade' or 'Connection' request header found");
 
                 next(exchange);
             }
         } catch (QueryNotFoundException ex) {
             response.setInError(HttpStatus.SC_NOT_FOUND, "Change Stream does not exist");
 
-            LOGGER.debug("Requested change stream {} does not exist", request.getUnmappedRequestUri());
+            LOGGER.debug("Requested Change Stream {} does not exist", request.getUnmappedRequestUri());
 
             next(exchange);
         } catch (QueryVariableNotBoundException ex) {
@@ -115,7 +124,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
         } catch (Throwable t) {
-            LOGGER.error("Error handling the change stream request", t);
+            LOGGER.error("Error handling the Change Stream request", t);
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, t.getMessage());
         }
     }
@@ -154,31 +163,32 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      * Initiate a `ChangeStreamWorker` thread to monitor change streams and relay updates to WebSocket clients.
      *
      * @param exchange
-     * @return true if actually started a new change stream, false if the worker already exists
      *
      * @throws QueryVariableNotBoundException
      * @throws QueryNotFoundException
      * @throws InvalidMetadataException
      */
-    private boolean startChangeStreamWorker(HttpServerExchange exchange) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
-        var csKey = new ChangeStreamKey(exchange);
+    private synchronized void initChangeStreamWorker(HttpServerExchange exchange) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
+        var csKey = new ChangeStreamWorke(exchange);
         var request = MongoRequest.of(exchange);
 
         var resolvedStages = getResolvedStagesAsList(request);
 
-        var alreadyExists = ChangeStreams.getInstance().put(csKey, new ChangeStreamInfo(MongoRequest.of(exchange)));
+        var existingChangeSreamWorker$ = ChangeStreamWorkers.getInstance().get(csKey);
 
-        if (alreadyExists == null) {
-            LOGGER.debug("New change stream worker, changeStreamKey={}", csKey);
-
-            ThreadsUtils.virtualThreadsExecutor().execute(new ChangeStreamWorker(csKey,
+        if (existingChangeSreamWorker$.isEmpty()) {
+            var changeStreamWorker = (new ChangeStreamWorker(csKey,
                 resolvedStages,
                 request.getDBName(),
                 request.getCollectionName()));
-            return true;
+
+            ChangeStreamWorkers.getInstance().put(changeStreamWorker);
+
+            ThreadsUtils.virtualThreadsExecutor().execute(changeStreamWorker);
+
+            LOGGER.debug("Started Change Stream Worker, {}", csKey);
         } else {
-            LOGGER.debug("Change stream worker already exists, changeStreamKey={}", csKey);
-            return false;
+            LOGGER.debug("Change Stream Worker already exists, {}", csKey);
         }
     }
 }

@@ -20,9 +20,6 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import java.io.IOException;
-import java.util.stream.Collectors;
-
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -61,53 +58,11 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     }
 
     private void closeAllOnDb(String db) {
-        var webSocketSessions = WebSocketSessions.getInstance();
-        var changeStreams = ChangeStreams.getInstance();
-
-        var sessionKeys = changeStreams.getChangeStreamKeysOnDb(db);
-
-        sessionKeys.stream()
-            .collect(Collectors.toSet())
-            .forEach(sk -> {
-            var _webSocketSession = webSocketSessions.get(sk);
-            _webSocketSession.stream()
-                .collect(Collectors.toSet())
-                .forEach(wss -> {
-                    try {
-                        wss.close();
-                        webSocketSessions.remove(sk, wss);
-                    } catch(IOException ioe) {
-                        // LOGGER
-                    }
-            });
-
-            changeStreams.remove(sk);
-        });
+        ChangeStreamWorkers.getInstance().getWorkersOnDb(db).stream().forEach(csw -> csw.getDbName());
     }
 
     private void closeAllOnCollection(String db, String collection) {
-        var webSocketSessions = WebSocketSessions.getInstance();
-        var changeStreams = ChangeStreams.getInstance();
-
-        var sessionKeys = changeStreams.getChangeStreamKeysOnCollection(db, collection);
-
-        sessionKeys.stream()
-            .collect(Collectors.toSet())
-            .forEach(sk -> {
-            var _webSocketSession = webSocketSessions.get(sk);
-            _webSocketSession.stream()
-                .collect(Collectors.toSet())
-                .forEach(wss -> {
-                    try {
-                        wss.close();
-                        webSocketSessions.remove(sk, wss);
-                    } catch(IOException ioe) {
-                        // LOGGER
-                    }
-            });
-
-            changeStreams.remove(sk);
-        });
+        ChangeStreamWorkers.getInstance().getWorkersOnCollection(db, collection);
     }
 
     @Override

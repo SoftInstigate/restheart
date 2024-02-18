@@ -33,22 +33,22 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
- * Idendify a MongoDB change stream
+ * Idendifies a ChangeStreamWorker
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ChangeStreamKey {
+public class ChangeStreamWorke {
     private final String url;
     private final BsonDocument avars;
     private final JsonMode jsonMode;
 
-    public ChangeStreamKey(String url, BsonDocument avars, JsonMode jsonMode) {
+    public ChangeStreamWorke(String url, BsonDocument avars, JsonMode jsonMode) {
         this.url = url;
         this.avars = avars;
         this.jsonMode = jsonMode;
     }
 
-    public ChangeStreamKey(WebSocketHttpExchange exchange) {
+    public ChangeStreamWorke(WebSocketHttpExchange exchange) {
         if (!exchange.getQueryString().isEmpty()) {
             var qstring = encode("?".concat(exchange.getQueryString()));
             var uri = encode(exchange.getRequestURI());
@@ -63,7 +63,7 @@ public class ChangeStreamKey {
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
-    public ChangeStreamKey(HttpServerExchange exchange) {
+    public ChangeStreamWorke(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
 
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
@@ -77,7 +77,7 @@ public class ChangeStreamKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof ChangeStreamKey)) {
+        if (!(obj instanceof ChangeStreamWorke)) {
             return false;
         } else {
             return obj.hashCode() == this.hashCode();
@@ -88,7 +88,7 @@ public class ChangeStreamKey {
     public String toString() {
         var _url = this.url == null ? null : URLDecoder.decode(this.url);
 
-        return "ChangeStreamKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
+        return "ChangeStreamWorkerKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
     }
 
     private static String encode(String queryString) {
