@@ -37,18 +37,18 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ChangeStreamWorke {
+public class ChangeStreamWorkerKey {
     private final String url;
     private final BsonDocument avars;
     private final JsonMode jsonMode;
 
-    public ChangeStreamWorke(String url, BsonDocument avars, JsonMode jsonMode) {
+    public ChangeStreamWorkerKey(String url, BsonDocument avars, JsonMode jsonMode) {
         this.url = url;
         this.avars = avars;
         this.jsonMode = jsonMode;
     }
 
-    public ChangeStreamWorke(WebSocketHttpExchange exchange) {
+    public ChangeStreamWorkerKey(WebSocketHttpExchange exchange) {
         if (!exchange.getQueryString().isEmpty()) {
             var qstring = encode("?".concat(exchange.getQueryString()));
             var uri = encode(exchange.getRequestURI());
@@ -63,7 +63,7 @@ public class ChangeStreamWorke {
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
-    public ChangeStreamWorke(HttpServerExchange exchange) {
+    public ChangeStreamWorkerKey(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
 
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
@@ -77,7 +77,7 @@ public class ChangeStreamWorke {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof ChangeStreamWorke)) {
+        if (!(obj instanceof ChangeStreamWorkerKey)) {
             return false;
         } else {
             return obj.hashCode() == this.hashCode();

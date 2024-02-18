@@ -58,7 +58,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
-        var csKey = new ChangeStreamWorke(exchange);
+        var csKey = new ChangeStreamWorkerKey(exchange);
         var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
 
         if (csw$.isPresent()) {
@@ -169,7 +169,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      * @throws InvalidMetadataException
      */
     private synchronized void initChangeStreamWorker(HttpServerExchange exchange) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
-        var csKey = new ChangeStreamWorke(exchange);
+        var csKey = new ChangeStreamWorkerKey(exchange);
         var request = MongoRequest.of(exchange);
 
         var resolvedStages = getResolvedStagesAsList(request);

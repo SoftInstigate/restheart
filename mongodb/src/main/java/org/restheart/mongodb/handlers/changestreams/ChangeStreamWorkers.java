@@ -34,13 +34,13 @@ import java.util.stream.Collectors;
  */
 public class ChangeStreamWorkers {
     // todo use caffeine cache
-    private final Map<ChangeStreamWorke, ChangeStreamWorker> CHANGE_STREAM_WORKERS = new ConcurrentHashMap<>();
+    private final Map<ChangeStreamWorkerKey, ChangeStreamWorker> CHANGE_STREAM_WORKERS = new ConcurrentHashMap<>();
 
     public static ChangeStreamWorkers getInstance() {
         return SingletonHolder.INSTANCE;
     }
 
-    public Optional<ChangeStreamWorker> get(ChangeStreamWorke key) {
+    public Optional<ChangeStreamWorker> get(ChangeStreamWorkerKey key) {
         var csw = CHANGE_STREAM_WORKERS.get(key);
 
         if (csw == null) {
@@ -54,7 +54,7 @@ public class ChangeStreamWorkers {
         return CHANGE_STREAM_WORKERS.putIfAbsent(csw.getKey(), csw) == null;
     }
 
-    public boolean remove(ChangeStreamWorke key) {
+    public boolean remove(ChangeStreamWorkerKey key) {
          return CHANGE_STREAM_WORKERS.remove(key) == null;
     }
 
