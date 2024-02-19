@@ -98,9 +98,9 @@ public class ChangeStreamWorker implements Runnable {
                 var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
 
                 this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                    LOGGER.debug("Sending change event to WebSocket session {}", session.getId());
                     try {
                         this.send(session, msg);
+                        LOGGER.debug("Change event sent to WebSocket session {}", session.getId());
                     } catch (Throwable t) {
                         LOGGER.error("Error sending change event to WebSocket session ", session.getId(), t);
                     }
@@ -131,15 +131,12 @@ public class ChangeStreamWorker implements Runnable {
             @Override
             public void onError(final WebSocketChannel channel, Void context, Throwable throwable) {
                 // close WebSocket session
-
-                var sid = session.getId();
-                websocketSessions().removeIf(s -> s.getId().equals(sid));
-                LOGGER.info("WebSocket session closed {}", session.getId());
-
                 try {
                     session.close();
+                    var sid = session.getId();
+                    websocketSessions().removeIf(s -> s.getId().equals(sid));
                 } catch (IOException e) {
-                    LOGGER.warn("Error closing WebSocket session {}", session.getId());
+                    LOGGER.warn("Error closing WebSocket session {}", session.getId(), e);
                 }
             }
         });
@@ -151,6 +148,7 @@ public class ChangeStreamWorker implements Runnable {
             .forEach(wsk -> {
                 try {
                     wsk.close();
+                    websocketSessions.remove(wsk);
                 } catch(IOException ioe) {
                     LOGGER.warn("Error closing WebSocket session {}", wsk, ioe);
                 }

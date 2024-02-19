@@ -62,8 +62,9 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
 
         if (csw$.isPresent()) {
-            var wss = new WebSocketSession(channel);
-            csw$.get().websocketSessions().add(wss);
+            var csw = csw$.get();
+            var wss = new WebSocketSession(channel, csw);
+            csw.websocketSessions().add(wss);
             LOGGER.debug("New Change Stream WebSocket session, sessionkey={} for changeStreamKey={}", wss.getId(), csKey);
         } else {
             LOGGER.error("Cannot find Change Stream Worker changeStreamKey={}", csKey);

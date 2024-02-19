@@ -22,6 +22,9 @@ package org.restheart.mongodb.handlers.changestreams;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.server.session.SecureRandomSessionIdGenerator;
 import io.undertow.websockets.core.WebSocketChannel;
 /**
@@ -30,30 +33,49 @@ import io.undertow.websockets.core.WebSocketChannel;
  */
 
 public class WebSocketSession {
-    private final String sessionId;
-    private final WebSocketChannel webSocketChannel;
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketSession.class);
 
-    public WebSocketSession(WebSocketChannel channel) {
-        this.sessionId = new SecureRandomSessionIdGenerator().createSessionId();
-        this.webSocketChannel = channel;
-        initChannelReceiveListener(webSocketChannel);
+    private final String id;
+    private final WebSocketChannel channel;
+    private final ChangeStreamWorker changeStreamWorker;
+
+    public WebSocketSession(WebSocketChannel channel, ChangeStreamWorker csw) {
+        this.id = new SecureRandomSessionIdGenerator().createSessionId();
+        this.channel = channel;
+        this.channel.resumeReceives(); // required to get close messages from client
+        this.changeStreamWorker = csw;
+
+        this.channel.addCloseTask((WebSocketChannel channel1) -> {
+            this.changeStreamWorker.websocketSessions().removeIf(s -> s.getId().equals(id));
+            try {
+                this.close();
+            } catch (IOException ex) {
+                // nothing to do
+            }
+        });
     }
 
-    private void initChannelReceiveListener(WebSocketChannel channel) {
-        channel.resumeReceives();
-    }
+    // private void initChannelReceiveListener(WebSocketChannel channel) {
+    //     channel.resumeReceives();
+    // }
 
     public void close() throws IOException {
-        if (webSocketChannel != null) {
-            webSocketChannel.close();
+        if (channel != null) {
+            try (channel) {
+                channel.sendClose();
+            } catch(IOException ioe) {
+                // nothing to do
+            }
         }
+
+        LOGGER.debug("WebSocket session closed {}", getId());
     }
 
     public String getId() {
-        return this.sessionId;
+        return this.id;
     }
 
     public WebSocketChannel getChannel() {
-        return this.webSocketChannel;
+        return this.channel;
     }
 }
