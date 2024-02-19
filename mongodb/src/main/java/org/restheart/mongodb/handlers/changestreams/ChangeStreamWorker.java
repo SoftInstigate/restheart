@@ -39,6 +39,7 @@ import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.ChangeStreamIterable;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.FullDocument;
@@ -85,37 +86,63 @@ public class ChangeStreamWorker implements Runnable {
 
     @Override
     public void run() {
-        var changeStream = starChangeStream();
-        LOGGER.debug("Change Stream Worker {} started listening for change events", this.key);
-
         try {
-            changeStream.forEach(changeEvent -> {
-                if (this.websocketSessions.isEmpty()) {
-                    // this terminates the ChangeStreamWorker
-                    LambdaUtils.throwsSneakyException(new NoMoreWebSocketException());
-                }
-
-                var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
-
-                this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                    try {
-                        this.send(session, msg);
-                        LOGGER.debug("Change event sent to WebSocket session {}", session.getId());
-                    } catch (Throwable t) {
-                        LOGGER.error("Error sending change event to WebSocket session ", session.getId(), t);
-                    }
-                }));
-            });
+            changeStreamEventsLoop();
         } catch(Throwable t) {
             if (t instanceof NoMoreWebSocketException) {
-                ChangeStreamWorkers.getInstance().remove(key);
                 LOGGER.debug("Closing Change Stream Worker {} since it has no active WebSocket sessions", key);
             } else {
-                LOGGER.error("Change Stream Worker {} died due to execption", key, t);
+                LOGGER.error("Change Stream Worker {} died due to exception", key, t);
             }
-        } finally {
+
             closeAllWebSocketSessions();
+        } finally {
+            ChangeStreamWorkers.getInstance().remove(key);
         }
+    }
+
+    /**
+     * executes the change stream events loop
+     *
+     * on MongoDB exceptions it reconnects to the change stream after 1 sec
+     *
+     **/
+    private void changeStreamEventsLoop() {
+        try {
+            _changeStreamEventsLoop();
+        } catch(MongoException mqe) {
+            LOGGER.error("MongoDb error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
+
+            try {
+                Thread.sleep(1_000);
+            } catch (InterruptedException ex) {
+                // nothing to do
+            } finally {
+                changeStreamEventsLoop();
+            }
+        }
+    }
+
+    private void _changeStreamEventsLoop() {
+        LOGGER.debug("Change Stream Worker {} started listening for change events", this.key);
+        final var changeStream = starChangeStream();
+        changeStream.forEach(changeEvent -> {
+            if (this.websocketSessions.isEmpty()) {
+                // this terminates the ChangeStreamWorker
+                LambdaUtils.throwsSneakyException(new NoMoreWebSocketException());
+            }
+
+            var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
+
+            this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                try {
+                    this.send(session, msg);
+                    LOGGER.debug("Change event sent to WebSocket session {}", session.getId());
+                } catch (Throwable t) {
+                    LOGGER.error("Error sending change event to WebSocket session ", session.getId(), t);
+                }
+            }));
+        });
     }
 
     public Set<WebSocketSession> websocketSessions() {
