@@ -33,7 +33,7 @@ import java.net.URLClassLoader;
  * in a plugin JAR file, necessitating a comprehensive search to locate and load the class correctly.
  * </p>
  */
-public class PluginsClassloader extends ClassLoader {
+public class PluginsClassloader extends URLClassLoader {
     private static PluginsClassloader SINGLETON = null;
 
     /**
@@ -56,10 +56,8 @@ public class PluginsClassloader extends ClassLoader {
         return SINGLETON != null;
     }
 
-    private final URLClassLoader pluginsClassLoader;
-
     private PluginsClassloader(URL[] jars) throws IOException {
-        this.pluginsClassLoader = new URLClassLoader(jars);
+        super(jars);
     }
 
     public static PluginsClassloader getInstance() {
@@ -73,11 +71,11 @@ public class PluginsClassloader extends ClassLoader {
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         try {
-            // use the current classloader
-            return this.getClass().getClassLoader().loadClass(name);
+            // first try to load the class with the PluginsScanner's classloader
+            return PluginsScanner.class.getClassLoader().loadClass(name);
         } catch (ClassNotFoundException cnfe) {
-            // look in the plugins jars
-            return this.pluginsClassLoader.loadClass(name);
+            // then use the URLClassLoader to try loading the class from the plugins jars
+            return super.loadClass(name);
         }
     }
 }
