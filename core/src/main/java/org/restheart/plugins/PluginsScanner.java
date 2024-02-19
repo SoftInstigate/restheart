@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream.Filter;
@@ -83,8 +82,6 @@ public class PluginsScanner {
     private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
     private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
-    static URL[] jars = null;
-
     // ClassGraph.scan() at class initialization time to support native image
     // generation with GraalVM
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
@@ -105,7 +102,6 @@ public class PluginsScanner {
         } else {
             rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
-            jars = rtcg.jars;
             // apply plugins-scanning-verbose configuration option
             classGraph = classGraph.verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
             // apply plugins-packages configuration option
@@ -341,19 +337,12 @@ public class PluginsScanner {
             var pdir = getPluginsDirectory();
             this.jars = findPluginsJars(pdir);
 
-            if (jars != null && jars.length != 0) {
-                PluginsClassloader.init(jars);
+            PluginsClassloader.init(jars);
 
-                this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                    .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                    .addClassLoader(new URLClassLoader(jars)).addClassLoader(ClassLoader.getSystemClassLoader())
-                    .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
-            } else {
-                this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                    .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                    .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().ignoreFieldVisibility().enableMethodInfo().enableFieldInfo()
-                    .initializeLoadedClasses();
-            }
+            this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
+                .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
+                .addClassLoader(PluginsClassloader.getInstance()).addClassLoader(ClassLoader.getSystemClassLoader())
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
         }
 
         private long starScanTime = 0;
@@ -445,7 +434,7 @@ public class PluginsScanner {
                     for (Path subdir : ds) {
                         if (Files.isReadable(subdir)) {
                             var subjars = _findPluginsJars(subdir, depth + 1);
-                            if (subjars != null) {
+                            if (subjars != null && subjars.length > 0) {
                                 Arrays.stream(subjars).forEach(jar -> urls.add(jar));
                             }
                         } else {
@@ -457,7 +446,7 @@ public class PluginsScanner {
                 }
             }
 
-            return urls.isEmpty() ? null : urls.toArray(URL[]::new);
+            return urls.toArray(URL[]::new);
         }
 
         private void checkPluginDirectory(Path pluginsDirectory) {
