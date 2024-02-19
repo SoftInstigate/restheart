@@ -9,7 +9,6 @@ Background:
 * def anotherColl = db + '/anotherColl'
 # note: db starting with 'test-' are automatically deleted after test finishes
 
-
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Setup test environment
 
