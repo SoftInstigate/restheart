@@ -71,7 +71,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./core/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
+          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
           tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
