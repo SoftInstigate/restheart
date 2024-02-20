@@ -129,7 +129,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
      * @return the customSender
      *
      */
-    public Runnable getCustomerSender() {
+    public Runnable getCustomSender() {
         return this.customSender;
     }
 
