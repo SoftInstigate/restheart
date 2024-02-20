@@ -120,6 +120,15 @@
       <artifactId>svm</artifactId>
     </dependency>
     <dependency>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>polyglot</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>js-community</artifactId>
+        <type>pom</type>
+    </dependency>
+    <dependency>
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
     </dependency>

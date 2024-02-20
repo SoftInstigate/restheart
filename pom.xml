@@ -34,7 +34,7 @@
             mvn clean verify -Dmongodb.version="5.0"  (to test with mongo:5.0 container)
         -->
         <mongodb.version>6.0</mongodb.version>
-        <graalvm.version>23.0.2</graalvm.version>
+        <graalvm.version>23.1.2</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -383,14 +383,15 @@
                 <version>1.8.2</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js-scriptengine</artifactId>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
                 <version>${graalvm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js</artifactId>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
                 <version>${graalvm.version}</version>
+                <type>pom</type>
             </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
@@ -404,10 +405,16 @@
                 <artifactId>karate-junit5</artifactId>
                 <version>1.4.1</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.graalvm.js</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
-            <!-- upgrade karate dependencies on org.graalvm.js artifacts
-                 to match the used GraalVM version
-                 otherwise the tests execution will hang
+            <!-- karate 1.4.1 works with GraalVM version up to v23.0.3
+                 with newer versions (that removed the org.graalvm.js artifacts)
+                 the tests execution hangs
             -->
             <dependency>
                 <groupId>org.mockito</groupId>
