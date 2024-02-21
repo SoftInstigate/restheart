@@ -125,7 +125,7 @@ public class ChangeStreamWorker implements Runnable {
 
     private void _changeStreamEventsLoop() {
         LOGGER.debug("Change Stream Worker {} started listening for change events", this.key);
-        final var changeStream = starChangeStream();
+        final var changeStream = startChangeStream();
         changeStream.forEach(changeEvent -> {
             if (this.websocketSessions.isEmpty()) {
                 // this terminates the ChangeStreamWorker
@@ -169,6 +169,17 @@ public class ChangeStreamWorker implements Runnable {
         });
     }
 
+    /**
+     * removes the workers form the list of active workers and
+     * close all its websocket sesssions
+     *
+     * on next change event, the thread will terminate since it has no active websocket sesssions
+     */
+    void close() {
+        ChangeStreamWorkers.getInstance().remove(key);
+        closeAllWebSocketSessions();
+    }
+
     void closeAllWebSocketSessions() {
         websocketSessions.stream()
             .collect(Collectors.toSet())
@@ -184,7 +195,7 @@ public class ChangeStreamWorker implements Runnable {
 
     private static class NoMoreWebSocketException extends Exception {}
 
-    private ChangeStreamIterable<Document> starChangeStream() {
+    private ChangeStreamIterable<Document> startChangeStream() {
         try {
             return RHMongoClients.mclient()
                 .getDatabase(dbName)

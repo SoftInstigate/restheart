@@ -75,7 +75,7 @@ public class ChangeStreamWorkers {
         } else {
             return CHANGE_STREAM_WORKERS.entrySet().stream()
                 .map(e -> e.getValue())
-                .filter(csw -> db.equals(csw.getDbName()) &&  db.equals(csw.getCollName()))
+                .filter(csw -> db.equals(csw.getDbName()) && coll.equals(csw.getCollName()))
                 .collect(Collectors.toSet());
         }
     }
