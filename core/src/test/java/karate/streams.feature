@@ -2,14 +2,16 @@
 # WARNING: with karate v1.4.1 these scenarios hang
 # it seems the socket does not disconnect after the scenario completes....
 
-# Workaround to execute the scenarios follows:
+# Workaround is forcing socket disconnection by RESTHeart. However if a test fails it hangs.
+
+# Other workaroud is:
 
 # 1) run restheart
 # $ java -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
 
 # 2) execute a single scenario
 # $ cd core
-# $  mvn test -Dtest=RunnerIT "-Dkarate.options=/Users/uji/development/restheart/core/src/test/java/karate/streams.feature:129"
+# $ mvn test -Dtest=RunnerIT "-Dkarate.options=/Users/uji/development/restheart/core/src/test/java/karate/streams.feature:66"
 
 # 3) let the scenario run. at the end it hangs...
 
@@ -24,7 +26,7 @@ Background:
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
 * def anotherColl = db + '/anotherColl'
-* callonce read('./streams-setup.feature')
+* call read('./streams-setup.feature')
 
 * def sleep =
 """
@@ -60,7 +62,14 @@ Scenario: test insert (POST) new document (without avars)
     * match result.fullDocument.a == 1
     * match result.fullDocument.b == 2
     * match result.fullDocument.c == 'test'
-    * socket.close()
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (with avars)
@@ -70,7 +79,7 @@ Scenario: test insert (POST) new document (with avars)
     * def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     * def baseUrl = 'http://localhost:8080'
     * def host = baseUrl + encodeURI(coll + streamPath)
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     # This POST shouldn't be notified
@@ -93,6 +102,13 @@ Scenario: test insert (POST) new document (with avars)
     * match result.fullDocument.targettedProperty == 'test'
     * match result.fullDocument.anotherProp == 1
 
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (without avars)
@@ -108,7 +124,7 @@ Scenario: test PATCH on inserted document (without avars)
     Then def postLocation = responseHeaders['Location'][0]
     Then status 201
 
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -124,6 +140,14 @@ Scenario: test PATCH on inserted document (without avars)
     * match parsedMsg.updateDescription.updatedFields.anotherProp == 1
     * match parsedMsg.updateDescription.removedFields contains "b"
 
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given url baseUrl
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (with avars)
@@ -140,7 +164,7 @@ Scenario: test PATCH on inserted document (with avars)
     Then status 201
     * print location
 
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -157,6 +181,14 @@ Scenario: test PATCH on inserted document (with avars)
     * match parsedMsg.updateDescription.updatedFields.anotherProp == 1
     * match parsedMsg.updateDescription.removedFields contains "toBeRemoved"
 
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given url baseUrl
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PUT upserting notifications (without avars)
@@ -166,7 +198,7 @@ Scenario: test PUT upserting notifications (without avars)
     * def streamPath = '/_streams/changeStream'
     * def baseUrl = 'http://localhost:8080'
     * def host = baseUrl + encodeURI(coll + streamPath)
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -189,7 +221,7 @@ Scenario: test PUT upserting notifications (without avars)
     * def streamPath = '/_streams/changeStream'
     * def baseUrl = 'http://localhost:8080'
     * def host = baseUrl + encodeURI(coll + streamPath)
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -204,6 +236,14 @@ Scenario: test PUT upserting notifications (without avars)
     * print parsedEditMsg
     * match parsedEditMsg.operationType == 'replace'
 
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
+
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PUT upserting notifications (with avars)
@@ -213,7 +253,7 @@ Scenario: test PUT upserting notifications (with avars)
     * def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     * def baseUrl = 'http://localhost:8080'
     * def host = baseUrl + encodeURI(coll + streamPath)
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -234,7 +274,7 @@ Scenario: test PUT upserting notifications (with avars)
     * def streamPath = '/_streams/changeStream'
     * def baseUrl = 'http://localhost:8080'
     * def host = baseUrl + encodeURI(coll + streamPath)
-    * def socket = karate.webSocket(host, undefined, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
 
     * header Authorization = authHeader
@@ -248,6 +288,14 @@ Scenario: test PUT upserting notifications (with avars)
     * json parsedEditMsg = listenResult
     * print parsedEditMsg
     * match parsedEditMsg.operationType == 'replace'
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/414
@@ -308,3 +356,11 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/415
     * print thirdParsedMsg
     * match thirdParsedMsg.operationType == 'insert'
     * match thirdParsedMsg.fullDocument.div == 0.5
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
