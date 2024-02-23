@@ -137,7 +137,7 @@ public class ChangeStreamWorker implements Runnable {
             this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
                     this.send(session, msg);
-                    LOGGER.debug("Change event sent to WebSocket session {}", session.getId());
+                    LOGGER.trace("Change event sent to WebSocket session {}", session.getId());
                 } catch (Throwable t) {
                     LOGGER.error("Error sending change event to WebSocket session ", session.getId(), t);
                 }
