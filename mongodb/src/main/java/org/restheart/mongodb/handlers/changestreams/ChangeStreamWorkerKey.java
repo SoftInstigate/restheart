@@ -86,7 +86,7 @@ public class ChangeStreamWorkerKey {
 
     @Override
     public String toString() {
-        var _url = this.url == null ? null : URLDecoder.decode(this.url);
+        var _url = this.url == null ? null : URLDecoder.decode(this.url, StandardCharsets.UTF_8);
 
         return "ChangeStreamWorkerKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
     }

@@ -20,12 +20,12 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import com.mongodb.MongoException;
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.Databases;
@@ -37,6 +37,8 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoException;
 
 /**
  * Injects the collection properties into the Request
@@ -136,8 +138,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
                 || request.isTxn()
                 || request.isTxns()
                 || request.isSessions()
-                || request.isSession()
-                || request.isMetrics());
+                || request.isSession());
     }
 
     /**

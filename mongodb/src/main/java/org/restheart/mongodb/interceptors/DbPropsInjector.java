@@ -133,7 +133,6 @@ public class DbPropsInjector implements MongoInterceptor {
             || request.isTxn()
             || request.isTxns()
             || request.isRoot()
-            || request.isRootSize()
-            || request.isMetrics());
+            || request.isRootSize());
     }
 }

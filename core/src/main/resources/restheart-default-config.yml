@@ -280,12 +280,6 @@ mongo:
   # The time limit in milliseconds for processing aggregations. Set to 0 for no time limit.
   aggregation-time-limit: 0
 
-  # Deprecated: it will be removed in RH v8.0
-  # use requestsMetricsCollector instead, see https://restheart.org/docs/monitoring
-  # see https://restheart.org/docs/mongodb-rest/monitoring
-  # OFF => no gathering, ROOT => gathering at root level, DATABASE => at db level, COLLECTION => at collection level
-  metrics-gathering-level: "OFF"
-
 # MongoDB GraphQL API
 # see https://restheart.org/docs/mongodb-graphql/
 graphql:

@@ -475,13 +475,7 @@ public interface ExchangeKeys {
         /**
          *
          */
-        TRANSACTION,
-
-        /**
-         * @deprecated will be removed in RH v8.0
-         */
-        @Deprecated
-        METRICS
+        TRANSACTION
     }
 
     /**
@@ -682,10 +676,4 @@ public interface ExchangeKeys {
          */
         UPDATE
     }
-
-    /**
-     * @deprecated will be removed in RH v8.0
-     */
-    @Deprecated
-    public static final String _METRICS = "_metrics";
 }
