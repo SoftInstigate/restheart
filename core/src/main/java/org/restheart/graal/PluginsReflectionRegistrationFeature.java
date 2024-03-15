@@ -44,10 +44,8 @@ import org.restheart.plugins.PluginsScanner;
 public class PluginsReflectionRegistrationFeature implements Feature {
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        System.out.println("*********************" + PluginsScanner.allPluginsClassNames());
         PluginsScanner.allPluginsClassNames().stream()
                 .map(this::clazz)
-                .peek(c -> System.out.println(c))
                 .filter(c -> c != null)
                 .forEach(this::registerAll);
     }

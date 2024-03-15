@@ -65,7 +65,6 @@ import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
-import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -236,9 +235,6 @@ public final class Bootstrapper {
     }
 
     private static void run() {
-        // we are at runtime. this is used for building native image
-        NativeImageBuildTimeChecker.atRuntime();
-
         if (!configuration.logging().ansiConsole()) {
             AnsiConsole.systemInstall();
         }

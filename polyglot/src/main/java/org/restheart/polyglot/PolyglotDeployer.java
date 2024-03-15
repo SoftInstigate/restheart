@@ -113,7 +113,11 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private boolean isRunningOnGraalVM() {
-        return Version.getCurrent().isRelease();
+        try {
+            return Version.getCurrent().isRelease();
+        } catch(Throwable cnfe) {
+            return false;
+        }
     }
 
     @Override

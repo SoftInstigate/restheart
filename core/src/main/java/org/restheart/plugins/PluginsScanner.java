@@ -45,10 +45,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
 
-import org.graalvm.nativeimage.ImageInfo;
+import org.restheart.graal.ImageInfo;
 
 import org.restheart.Bootstrapper;
-import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -257,7 +256,7 @@ public class PluginsScanner {
      * @return true if the plugin is enabled, taking into account enabledByDefault and its configuration
      */
     private static boolean isEnabled(String name, ClassInfo pluginClassInfo) {
-        if (NativeImageBuildTimeChecker.isBuildTime()) {
+        if (ImageInfo.inImageBuildtimeCode()) {
             return true;
         } else {
             var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()

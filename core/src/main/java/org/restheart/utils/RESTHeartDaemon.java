@@ -29,7 +29,7 @@ package org.restheart.utils;
 import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
 
-import org.graalvm.nativeimage.ImageInfo;
+import org.restheart.graal.ImageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
