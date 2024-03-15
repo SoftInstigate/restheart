@@ -29,6 +29,7 @@ import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import org.restheart.Bootstrapper;
 import org.restheart.graal.NativeImageBuildTimeChecker;
@@ -89,15 +92,26 @@ public class PluginsScanner {
         ClassGraph classGraph;
         RuntimeClassGraph rtcg = null;
 
-        if (NativeImageBuildTimeChecker.isBuildTime()) {
-            if (!PluginsClassloader.isInitialized()) {
-                PluginsClassloader.init(new URL[0]);
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // initizialize PluginsClassloader with the URL of restheart.jar uber jar
+            // during build time the class this class is loaded by
+            var jarPath = PluginsScanner.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            try {
+                var jarFile = new File(jarPath);
+                var jarURL = jarFile.toURI().toURL();
+                URL[] urls = { jarURL };
+
+                PluginsClassloader.init(urls);
+            } catch(MalformedURLException mue) {
+                System.err.println("Error initilizing PluginsClassloader on restheart uber jar " + jarPath + ". Exception: " + mue.getMessage());
             }
-            classGraph = new ClassGraph().disableModuleScanning() // added for GraalVM
+
+            classGraph = new ClassGraph()
                 .disableDirScanning() // added for GraalVM
                 .disableNestedJarScanning() // added for GraalVM
                 .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory, otherwise build fails
+                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
+                .ignoreParentClassLoaders()
                 .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
         } else {
             rtcg = new RuntimeClassGraph();
@@ -182,8 +196,6 @@ public class PluginsScanner {
         var ret = new ArrayList<PluginDescriptor>();
 
         var registeredPlugins = scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
-
-        System.out.println("@@@@@@@ " + className + " -> " + registeredPlugins.getAsStrings());
 
         if (registeredPlugins == null || registeredPlugins.isEmpty()) {
             return ret;
