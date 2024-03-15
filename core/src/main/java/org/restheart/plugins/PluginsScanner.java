@@ -183,6 +183,8 @@ public class PluginsScanner {
 
         var registeredPlugins = scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
+        System.out.println("@@@@@@@ " + className + " -> " + registeredPlugins.getAsStrings());
+
         if (registeredPlugins == null || registeredPlugins.isEmpty()) {
             return ret;
         }

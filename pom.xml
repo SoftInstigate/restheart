@@ -351,26 +351,15 @@
                 <version>4.8.165</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.sdk</groupId>
-                <artifactId>graal-sdk</artifactId>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
                 <version>${graalvm.version}</version>
-                <scope>provided</scope>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/svm -->
             <dependency>
-                <groupId>org.graalvm.nativeimage</groupId>
-                <artifactId>svm</artifactId>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
                 <version>${graalvm.version}</version>
-                <scope>provided</scope>
-                <!-- remove transitive dependencies
-                     that break karate tests execution
-                     we just need the package com.oracle.svm.core.annotate -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
+                <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java</groupId>
@@ -381,17 +370,6 @@
                 <groupId>com.nulab-inc</groupId>
                 <artifactId>zxcvbn</artifactId>
                 <version>1.8.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.polyglot</groupId>
-                <artifactId>polyglot</artifactId>
-                <version>${graalvm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.polyglot</groupId>
-                <artifactId>js-community</artifactId>
-                <version>${graalvm.version}</version>
-                <type>pom</type>
             </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
@@ -412,10 +390,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <!-- karate 1.4.1 works with GraalVM version up to v23.0.3
-                 with newer versions (that removed the org.graalvm.js artifacts)
-                 the tests execution hangs
-            -->
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
@@ -563,7 +537,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.9.26</version>
+                    <version>0.10.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
