@@ -25,7 +25,7 @@ public class ImageInfo {
 
     static {
         try {
-            imageInfoClass = Class.forName("org.restheart.graal.ImageInfo");
+            imageInfoClass = Class.forName("org.graalvm.nativeimage.ImageInfo");
         } catch(ClassNotFoundException cfe) {
             imageInfoClass = null;
         }
