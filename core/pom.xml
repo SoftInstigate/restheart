@@ -125,6 +125,31 @@
         <type>pom</type>
     </dependency>
     <dependency>
+        <groupId>org.graalvm.truffle</groupId>
+        <artifactId>truffle-compiler</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.truffle</groupId>
+        <artifactId>truffle-runtime</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>nativeimage</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>collections</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>word</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
     </dependency>
@@ -232,19 +257,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <configuration>
-          <artifactSet>
-                <!-- Following exclusions fix native-image errors such
-                    Error: Class-path entry file:restheart.jar contains class com.oracle.svm.core.annotate.TargetElement.
-                    This class is part of the image builder itself (in jrt:/org.graalvm.nativeimage) and must not be passed via -cp.
-                    This can be caused by a fat-jar that illegally includes svm.jar (or graal-sdk.jar) due to its build-time dependency on it.
-                -->
-                <excludes>
-                    <exclude>org.graalvm.sdk:nativeimage</exclude>
-                    <exclude>org.graalvm.truffle:truffle-compiler</exclude>
-                    <exclude>org.graalvm.sdk:collections</exclude>
-                    <exclude>org.graalvm.sdk:word</exclude>
-                </excludes>
-          </artifactSet>
           <createDependencyReducedPom>true</createDependencyReducedPom>
           <filters>
             <filter>
@@ -284,9 +296,9 @@
             <filter>
               <artifact>*:*</artifact>
               <excludes>
-                <!-- this fixes native-image build error about module
-                Error: Processing jar:file:restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
-                Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: restheart/core/target/restheart.jar.
+                <!-- this fixes native-image build errors such:
+                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
+                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
                 -->
                 <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
                 <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>

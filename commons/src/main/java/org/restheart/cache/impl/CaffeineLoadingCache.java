@@ -39,7 +39,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private static final Executor newVirtualThreadPerTaskExecutor = ThreadsUtils.virtualThreadsExecutor();
+    private static final Executor newVirtualThreadPerTaskExecutor = ThreadsUtils.threadsExecutor();
     private final AsyncLoadingCache<K, Optional<V>> wrapped;
 
     public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {

@@ -1322,6 +1322,10 @@
   "methods":[{"name":"getImpl","parameterTypes":[] }]
 },
 {
+    "name":"org.graalvm.nativeimage.ImageInfo",
+    "allPublicMethods":true
+},
+{
   "name":"org.graalvm.polyglot.Value"
 },
 {
@@ -1381,6 +1385,12 @@
 {
   "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
   "methods":[{"name":"loadAll","parameterTypes":["java.util.Set"] }]
+},
+{
+    "name":"com.github.benmanes.caffeine.cache.PSWMW",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
 },
 {
   "name":"org.restheart.configuration.Configuration"
