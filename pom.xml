@@ -384,18 +384,6 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.truffle</groupId>
-                <artifactId>truffle-runtime</artifactId>
-                <version>${graalvm.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.sdk</groupId>
-                <artifactId>nativeimage</artifactId>
-                <version>${graalvm.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>collections</artifactId>
                 <version>${graalvm.version}</version>
@@ -539,6 +527,7 @@
                             <exclude>**/IT*.java</exclude>
                         </excludes>
                         <trimStackTrace>true</trimStackTrace>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
