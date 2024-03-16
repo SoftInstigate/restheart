@@ -166,9 +166,13 @@
   "methods":[{"name":"loadAll","parameterTypes":["java.util.Set"] }]
 },
 {
+    "name":"com.github.benmanes.caffeine.cache.AsyncCacheLoader",
+    "methods":[{"name":"asyncLoadAll","parameterTypes":["java.util.Set", "java.util.concurrent.Executor"] }]
+},
+{
   "name":"com.github.benmanes.caffeine.cache.PS",
   "fields":[
-    {"name":"key"}, 
+    {"name":"key"},
     {"name":"value"}
   ]
 },
@@ -1384,7 +1388,10 @@
 },
 {
   "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
-  "methods":[{"name":"loadAll","parameterTypes":["java.util.Set"] }]
+  "methods":[
+    {"name":"loadAll","parameterTypes":["java.util.Set"] },
+    {"name":"asyncLoadAll","parameterTypes":["java.util.Set", "java.util.concurrent.Executor"] }
+]
 },
 {
     "name":"com.github.benmanes.caffeine.cache.PSWMW",

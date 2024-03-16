@@ -19,8 +19,10 @@
  */
 package org.restheart.cache.impl;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -29,6 +31,7 @@ import java.util.function.Function;
 
 import org.restheart.utils.ThreadsUtils;
 
+import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -39,7 +42,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private static final Executor newVirtualThreadPerTaskExecutor = ThreadsUtils.threadsExecutor();
+    private static final Executor threadPerTaskExecutor = ThreadsUtils.threadsExecutor();
     private final AsyncLoadingCache<K, Optional<V>> wrapped;
 
     public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
@@ -54,8 +57,23 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
         }
 
         wrapped = builder
-            .executor(newVirtualThreadPerTaskExecutor)
-            .buildAsync((K key, Executor executor) -> CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key))));
+            .executor(threadPerTaskExecutor)
+            .buildAsync(new AsyncCacheLoader<K, Optional<V>>() {
+                @Override
+                public CompletableFuture<? extends Optional<V>> asyncLoad(K key, Executor executor) throws Exception {
+                    return CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key)));
+                }
+
+                @Override
+                public CompletableFuture<? extends Map<? extends K, ? extends Optional<V>>> asyncLoadAll(Set<? extends K> keys, Executor executor) throws Exception {
+                    var ret = new HashMap<K, Optional<V>>();
+                    keys.stream().forEachOrdered(key -> {
+                        ret.put(key, Optional.ofNullable(loader.apply(key)));
+                    });
+
+                    return CompletableFuture.supplyAsync(() -> ret);
+                }
+            });
     }
 
     @Override
