@@ -350,7 +350,9 @@ public class PluginsScanner {
             var pdir = getPluginsDirectory();
             this.jars = findPluginsJars(pdir);
 
-            PluginsClassloader.init(jars);
+            if (!PluginsClassloader.isInitialized()) {
+                PluginsClassloader.init(jars);
+            }
 
             this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
                 .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
