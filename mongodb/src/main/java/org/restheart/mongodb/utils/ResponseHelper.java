@@ -171,8 +171,10 @@ public class ResponseHelper {
             // 17276 Use of undefined variable
             case 17276 -> HttpStatus.SC_BAD_REQUEST;
             // 1728, Can't canonicalize query: BadValue Projection cannot have a mix of inclusion and exclusion (old error message)
-            case 17287, 31254 -> HttpStatus.SC_BAD_REQUEST;
             // 31254 Cannot do exclusion on field x in inclusion projection
+            case 17287, 31254 -> HttpStatus.SC_BAD_REQUEST;
+            // 241 ConversionFailure
+            case 241 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -245,6 +247,7 @@ public class ResponseHelper {
             case 31138 -> "Invalid $meta sort";
             case 40323 -> "A pipeline stage specification object must contain exactly one field.";
             case 15998 -> "FieldPath field names may not be empty strings";
+            case 241 ->  "Failed to parse number in $convert";
             default -> "Error handling the request, see log for more information";
         };
     }
