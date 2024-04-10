@@ -19,15 +19,14 @@
  */
 package org.restheart.utils;
 
-import io.undertow.server.HttpServerExchange;
-
 import java.lang.reflect.Type;
 import java.util.Map;
+
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.ExchangeTypeResolver;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
@@ -37,18 +36,23 @@ import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- *
- * @return the interceptPoint as defined by the @RegisterPlugin annotation if
- *         annotated or the value of the field interceptPoint if exists
  */
 public class PluginUtils {
+    /**
+     *
+     * @param interceptor
+     * @return the interceptPoint as defined by the @RegisterPlugin annotation if
+     *         annotated or the value of the field interceptPoint if exists
+     */
     @SuppressWarnings("rawtypes")
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
         var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
@@ -75,8 +79,8 @@ public class PluginUtils {
             field.setAccessible(true);
 
             var value = field.get(o);
-            if (value instanceof InterceptPoint) {
-                return (InterceptPoint) value;
+            if (value instanceof InterceptPoint ip) {
+                return ip;
             } else {
                 return null;
             }
@@ -140,8 +144,8 @@ public class PluginUtils {
             field.setAccessible(true);
 
             var value = field.get(o);
-            if (value instanceof String) {
-                return (String) value;
+            if (value instanceof String s) {
+                return s;
             } else {
                 return null;
             }
@@ -318,10 +322,10 @@ public class PluginUtils {
     }
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.requestType());
+    private static final LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.requestType());
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.responseType());
+    private static final LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.responseType());
 
     /**
      * Plugin.requestType() is heavy. This helper methods speeds up invocation using

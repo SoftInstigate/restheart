@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+
 import com.google.common.collect.Maps;
 
 /**
@@ -52,7 +53,7 @@ public class HashMapLoadingCache<K, V> implements org.restheart.cache.LoadingCac
 
     @Override
     public Optional<V> getLoading(K key) {
-        if(wrapped.containsKey(key)) {
+        if(get(key) != null) {
             return get(key);
         } else {
             var value = Optional.ofNullable(loader.apply(key));
