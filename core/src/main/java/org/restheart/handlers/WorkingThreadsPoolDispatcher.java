@@ -26,15 +26,12 @@ import org.restheart.utils.ThreadsUtils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.BlockingHandler;
-import org.restheart.graal.ImageInfo;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  *         Dispatches the execution of the service to the Working Thread Pool
- *
- *         Unless running as a native image, it uses Virtual Threads Executor
  *
  *         This applies to Services annotated
  *         with @RegisterPlugin(blocking=true)
@@ -46,14 +43,7 @@ import org.restheart.graal.ImageInfo;
  */
 public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
     private final BlockingHandler blockingHandler = new BlockingHandler(this);
-    private static final Executor virtualThreadsExecutor;
-
-    static {
-        // As GraalVM version 23.1.2 Virtual threads are not supported together with Truffle JIT compilation.
-        virtualThreadsExecutor = ImageInfo.inImageCode()
-            ? null
-            : ThreadsUtils.threadsExecutor();
-    }
+    private static final Executor virtualThreadsExecutor = ThreadsUtils.virtualThreadsExecutor();
 
     /**
      * Creates a new instance of WorkingThreadsPoolDispatcher
@@ -79,9 +69,7 @@ public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (virtualThreadsExecutor != null) {
-            exchange.setDispatchExecutor(virtualThreadsExecutor);
-        }
+        exchange.setDispatchExecutor(virtualThreadsExecutor);
 
         if (exchange.isInIoThread()) {
             blockingHandler.handleRequest(exchange);

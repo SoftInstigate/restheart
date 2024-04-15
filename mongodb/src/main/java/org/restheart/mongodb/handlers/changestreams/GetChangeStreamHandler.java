@@ -185,7 +185,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
             ChangeStreamWorkers.getInstance().put(changeStreamWorker);
 
-            ThreadsUtils.threadsExecutor().execute(changeStreamWorker);
+            ThreadsUtils.virtualThreadsExecutor().execute(changeStreamWorker);
 
             LOGGER.debug("Started Change Stream Worker, {}", csKey);
         } else {

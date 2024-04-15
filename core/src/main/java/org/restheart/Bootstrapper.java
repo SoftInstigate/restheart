@@ -158,9 +158,6 @@ public final class Bootstrapper {
     private static final String EXITING = ", exiting...";
     private static final String RESTHEART = "RESTHeart";
 
-    private Bootstrapper() {
-    }
-
     /**
      *
      * @return the global configuration
@@ -221,6 +218,8 @@ public final class Bootstrapper {
     }
 
     public static void main(final String[] args) throws ConfigurationException, IOException {
+        doNotWarnTruffleInterpreterOnly();
+
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
@@ -912,6 +911,19 @@ public final class Bootstrapper {
 
         stopServer(silent, removePid);
         System.exit(status);
+    }
+
+    /**
+     * Disables JIT compilation for Truffle in environments using Virtual Threads, as of version 24.
+     * Since JIT compilation conflicts with Virtual Threads, the 'truffle-runtime' is excluded from 'restheart.jar'.
+     * The dependency for 'truffle-runtime' is marked as 'provided' in the project's pom.xml, facilitating its exclusion.
+     *
+     * This method addresses and suppresses the following warning:
+     * WARNING: The polyglot engine uses a fallback runtime that does not support runtime compilation to machine code.
+     * Execution without runtime compilation will negatively impact the performance of the guest application.
+     */
+    private static  void doNotWarnTruffleInterpreterOnly() {
+        System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
     }
 
     @Command(name="java -jar restheart.jar")

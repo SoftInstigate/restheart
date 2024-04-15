@@ -134,7 +134,7 @@ public class ChangeStreamWorker implements Runnable {
 
             var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
 
-            this.websocketSessions.stream().forEach(session -> ThreadsUtils.threadsExecutor().execute(() -> {
+            this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
                     this.send(session, msg);
                     LOGGER.trace("Change event sent to WebSocket session {}", session.getId());

@@ -169,7 +169,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                     return false;
                 }
             })
-            .forEachOrdered(ri -> ThreadsUtils.threadsExecutor().execute(() -> {
+            .forEachOrdered(ri -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
 
                 try {

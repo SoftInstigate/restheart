@@ -38,6 +38,7 @@ public class ImageInfo {
      *
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static boolean inImageBuildtimeCode() {
         if (imageInfoClass == null) {
             return false;
@@ -56,6 +57,7 @@ public class ImageInfo {
      *
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static boolean inImageCode() {
         if (imageInfoClass == null) {
             return false;
@@ -74,6 +76,7 @@ public class ImageInfo {
      *
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static boolean inImageRuntimeCode() {
         if (imageInfoClass == null) {
             return false;
@@ -91,6 +94,7 @@ public class ImageInfo {
      *
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static boolean isExecutable() {
         if (imageInfoClass == null) {
             return false;
@@ -106,6 +110,7 @@ public class ImageInfo {
     /**
      * Returns true if the image is build as a shared library.
      */
+    @SuppressWarnings("unchecked")
     public static boolean isSharedLibrary() {
         if (imageInfoClass == null) {
             return false;

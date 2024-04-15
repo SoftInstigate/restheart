@@ -35,6 +35,7 @@
         -->
         <mongodb.version>6.0</mongodb.version>
         <graalvm.version>23.1.2</graalvm.version>
+        <truffle.version>24.0.0</truffle.version> <!-- Truffle and Graal languages are compatible with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -353,33 +354,23 @@
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
                 <artifactId>polyglot</artifactId>
-                <version>${graalvm.version}</version>
+                <version>${truffle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
                 <artifactId>js-community</artifactId>
-                <version>${graalvm.version}</version>
+                <version>${truffle.version}</version>
                 <type>pom</type>
             </dependency>
             <!-- The following transitive dependencies of org.graalvm.polyglot artifacts
                  are overridden with scope=provided to not include them in restheart jars
-                 This leads to errors in building native images
+                 Including them leads to errors in building native images
                     Error: Class-path entry file:///.../restheart.jar contains class com.oracle.svm.core.annotate.TargetElement.
                     his class is part of the image builder itself (in jrt:/org.graalvm.nativeimage) and must not be passed via -cp.
-
-                And the following warning form GraalVM JVM
-                    WARNING: The polyglot engine uses a fallback runtime that does not support runtime compilation to native code.
-                    Execution without runtime compilation will negatively impact the guest application performance.
-                    The following cause was found: No optimizing Truffle runtime found on the module or class-path.-->
+            -->
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>nativeimage</artifactId>
-                <version>${graalvm.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.truffle</groupId>
-                <artifactId>truffle-compiler</artifactId>
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
             </dependency>
@@ -393,6 +384,18 @@
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>word</artifactId>
                 <version>${graalvm.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-runtime</artifactId>
+                <version>${truffle.version}</version>
+                <scope>provided</scope> <!-- Since Truffle JIT compilation conflicts with Virtual Threads, the 'truffle-runtime' is excluded from 'restheart.jar'. -->
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-compiler</artifactId>
+                <version>${truffle.version}</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>

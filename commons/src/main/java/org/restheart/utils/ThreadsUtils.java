@@ -23,20 +23,11 @@ package org.restheart.utils;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import org.restheart.graal.ImageInfo;
 
 public class ThreadsUtils {
-    private static final Executor THREAD_EXECUTOR;
+    private static final Executor VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
 
-    static {
-        if(ImageInfo.inImageCode()) {
-            THREAD_EXECUTOR = Executors.newWorkStealingPool();
-        } else {
-           THREAD_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
-        }
-    }
-
-    public static Executor threadsExecutor() {
-        return THREAD_EXECUTOR;
+    public static Executor virtualThreadsExecutor() {
+        return VIRTUAL_THREADS_EXECUTOR;
     }
 }
