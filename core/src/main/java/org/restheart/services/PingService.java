@@ -34,12 +34,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "ping",
-    description = "simple ping service",
-    secure = false,
-    enabledByDefault = true,
-    defaultURI = "/ping",
-    blocking = true)
+@RegisterPlugin(name = "ping", description = "simple ping service", secure = false, blocking = false)
 public class PingService implements ByteArrayService {
     private String msg = null;
 
