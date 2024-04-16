@@ -22,8 +22,10 @@ package org.restheart.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
 import org.xnio.channels.Channels;
 
 import io.undertow.server.HttpServerExchange;
@@ -39,7 +41,7 @@ public class ChannelReader {
 
     /**
      *
-     * @param channel
+     * @param exchange
      * @return
      * @throws IOException
      */
@@ -49,7 +51,7 @@ public class ChannelReader {
 
     /**
      *
-     * @param channel
+     * @param exchange
      * @return
      * @throws IOException
      */
@@ -61,8 +63,7 @@ public class ChannelReader {
         }
 
         try (var os = new ByteArrayOutputStream(CAPACITY)) {
-            var pooledByteBuffer = exchange.getConnection().getByteBufferPool().getArrayBackedPool().allocate();
-            var buffer = pooledByteBuffer.getBuffer();
+            var buffer = ByteBuffer.allocate(CAPACITY);
 
             while (Channels.readBlocking(channel, buffer) != -1) {
                 buffer.flip();

@@ -19,14 +19,17 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
-import io.undertow.connector.PooledByteBuffer;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+
 import org.restheart.utils.BuffersUtils;
+
+import com.google.common.reflect.TypeToken;
+
+import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -63,6 +66,9 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]>{
      *
      * allocates the PooledByteBuffer array so close() must be invoked
      * to avoid memory leaks
+     *
+     * @param content
+     * @throws java.io.IOException
      */
     @Override
     public void writeContent(byte[] content) throws IOException {

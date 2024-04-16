@@ -55,6 +55,7 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
+import org.restheart.buffers.FastByteBufferPool;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.ProxiedResource;
@@ -529,6 +530,10 @@ public final class Bootstrapper {
         }
 
         var builder = Undertow.builder();
+
+        builder.setByteBufferPool(new FastByteBufferPool(
+            configuration.coreModule().directBuffers(),
+            configuration.coreModule().bufferSize()));
 
         var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {

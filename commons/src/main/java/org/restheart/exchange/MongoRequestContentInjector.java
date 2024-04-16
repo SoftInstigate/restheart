@@ -53,8 +53,7 @@ import io.undertow.util.Headers;
 
 /**
  *
- * Injects the request content to MongoRequest from BufferedByteArrayRequest
- * buffer
+ * Injects the request content to MongoRequest
  *
  * also check the Content-Type header in case the content is not empty
  *

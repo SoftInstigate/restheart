@@ -69,10 +69,8 @@ public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.setDispatchExecutor(virtualThreadsExecutor);
-
         if (exchange.isInIoThread()) {
-            blockingHandler.handleRequest(exchange);
+            exchange.dispatch(virtualThreadsExecutor, blockingHandler);
         } else {
             next(exchange);
         }

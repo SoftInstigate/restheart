@@ -19,15 +19,17 @@
  */
 package org.restheart.utils;
 
-import io.undertow.connector.PooledByteBuffer;
-import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+
 import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Buffers;
+
+import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -47,18 +49,15 @@ public class BuffersUtils {
             return null;
         }
 
-        ByteBuffer dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
+        var dst = ByteBuffer.allocate(MAX_CONTENT_SIZE);
 
-        for (int i = 0; i < srcs.length; i++) {
-            PooledByteBuffer src = srcs[i];
+        for (var src : srcs) {
             if (src != null) {
-                final ByteBuffer srcBuffer = src.getBuffer();
+                final var srcBuffer = src.getBuffer();
 
                 if (srcBuffer.remaining() > dst.remaining()) {
-                    LOGGER.error("Request content exceeeded {} bytes limit",
-                            MAX_CONTENT_SIZE);
-                    throw new IOException("Request content exceeeded "
-                            + MAX_CONTENT_SIZE + " bytes limit");
+                    LOGGER.error("Request content exceeeded {} bytes limit", MAX_CONTENT_SIZE);
+                    throw new IOException("Request content exceeeded " + MAX_CONTENT_SIZE + " bytes limit");
                 }
 
                 if (srcBuffer.hasRemaining()) {
@@ -74,9 +73,9 @@ public class BuffersUtils {
     }
 
     public static byte[] toByteArray(final PooledByteBuffer[] srcs) throws IOException {
-        ByteBuffer content = toByteBuffer(srcs);
+        var content = toByteBuffer(srcs);
 
-        byte[] ret = new byte[content.limit()];
+        var ret = new byte[content.limit()];
 
         content.get(ret);
 
@@ -100,6 +99,7 @@ public class BuffersUtils {
      * @return
      */
     public static int transfer(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
+        var byteBufferPool = exchange.getConnection().getByteBufferPool();
         int copied = 0;
         int pidx = 0;
 
@@ -108,7 +108,7 @@ public class BuffersUtils {
             ByteBuffer _dest;
 
             if (dest[pidx] == null) {
-                dest[pidx] = exchange.getConnection().getByteBufferPool().allocate();
+                dest[pidx] = byteBufferPool.allocate();
                 _dest = dest[pidx].getBuffer();
             } else {
                 _dest = dest[pidx].getBuffer();
@@ -159,6 +159,7 @@ public class BuffersUtils {
      * @return
      */
     public static int append(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
+        var byteBufferPool = exchange.getConnection().getByteBufferPool();
         int copied = 0;
         int pidx = 0;
 
@@ -167,7 +168,7 @@ public class BuffersUtils {
             ByteBuffer _dest;
 
             if (dest[pidx] == null) {
-                dest[pidx] = exchange.getConnection().getByteBufferPool().allocate();
+                dest[pidx] = byteBufferPool.allocate();
                 _dest = dest[pidx].getBuffer();
             } else {
                 _dest = dest[pidx].getBuffer();
@@ -192,13 +193,14 @@ public class BuffersUtils {
     }
 
     public static int transfer(final PooledByteBuffer[] src, final PooledByteBuffer[] dest, final HttpServerExchange exchange) {
+        var byteBufferPool = exchange.getConnection().getByteBufferPool();
         int copied = 0;
         int idx = 0;
 
         while (idx < src.length && idx < dest.length) {
             if (src[idx] != null) {
                 if (dest[idx] == null) {
-                    dest[idx] = exchange.getConnection().getByteBufferPool().allocate();
+                    dest[idx] = byteBufferPool.allocate();
                 }
 
                 ByteBuffer _dest = dest[idx].getBuffer();

@@ -19,12 +19,12 @@
  */
 package org.restheart.exchange;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
 
 /**
  *
@@ -100,6 +100,7 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
     /**
      * Closes this resource, relinquishing any underlying resources.
      */
+    @Override
     public void close() {
         if (isContentAvailable()) {
             for (var b: this.getBuffer()) {
