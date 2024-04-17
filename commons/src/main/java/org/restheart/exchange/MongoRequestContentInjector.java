@@ -206,7 +206,7 @@ public class MongoRequestContentInjector {
         final var contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
 
         if (contentType == null) {
-            content = null;
+            content = injectBson(exchange); // if no content type is specified assume is application/json
         } else if (isFormOrMultipart(contentType)) {
             content = injectMultipart(exchange, request, response);
         } else if (isHalOrJson(contentType)) {
