@@ -577,14 +577,11 @@ public final class Bootstrapper {
         var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
-        var autoConfigWorkerThreads = configuration.coreModule().workerThreads() < 0;
-        var workerThreads = autoConfigWorkerThreads ? Runtime.getRuntime().availableProcessors()*8 : configuration.coreModule().workerThreads();
-
-        LOGGER.info("Available processors: {}, IO threads{}: {}, worker threads{}: {}, ", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads, autoConfigWorkerThreads ? " (auto detected)" : "", workerThreads);
+        LOGGER.info("Available processors: {}, IO threads{}: {}, worker virtual threads: \u221e", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads);
 
         builder = builder
             .setIoThreads(ioThreads)
-            .setWorkerThreads(workerThreads)
+            .setWorkerThreads(0) // starting v8, restheart uses virtual threads
             .setDirectBuffers(configuration.coreModule().directBuffers())
             .setBufferSize(configuration.coreModule().bufferSize())
             .setHandler(HANDLERS);

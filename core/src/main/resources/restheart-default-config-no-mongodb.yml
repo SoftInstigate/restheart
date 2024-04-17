@@ -449,11 +449,6 @@ core:
   # if <= 0, use the number of cores.
   io-threads: 0
 
-  # Number of threads created for blocking tasks (such as ones involving db access). Suggested value: core*8
-  # if < 0, use the number of cores * 8.
-  # This option is only used by restheart native image. In other cases requests are handled by the virtual thread executor.
-  worker-threads: 0
-
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
   buffer-size: 16364

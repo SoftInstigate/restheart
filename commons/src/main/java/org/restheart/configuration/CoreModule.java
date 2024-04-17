@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.restheart.graal.ImageInfo;
-
 import static org.restheart.configuration.Utils.asMap;
 import static org.restheart.configuration.Utils.getOrDefault;
 
@@ -34,7 +32,6 @@ public record CoreModule(String name,
         boolean pluginsScanningVerbose,
         String baseUrl,
         int ioThreads,
-        int workerThreads,
         int bufferSize,
         boolean directBuffers,
         boolean forceGzipEncoding,
@@ -47,13 +44,12 @@ public record CoreModule(String name,
     public static final String PLUGINS_SCANNING_VERBOSE_KEY = "plugins-scanning-verbose";
     public static final String BASE_URL_KEY = "base-url";
     public static final String IO_THREADS_KEY = "io-threads";
-    public static final String WORKER_THREADS_KEY = "worker-threads";
     public static final String BUFFER_SIZE_KEY = "buffer-size";
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
     public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
 
-    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 0, 16364, true, false, true);
+    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 16364, true, false, true);
 
     public CoreModule(Map<String, Object> conf, boolean silent) {
         this(
@@ -64,26 +60,12 @@ public record CoreModule(String name,
             getOrDefault(conf, PLUGINS_SCANNING_VERBOSE_KEY, false, true),
             getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
             getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
-            workerThreads(conf),
             getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
             getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
             // following is optional, so get it always in silent mode
             getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
             // following is optional, so get it always in silent mode
             getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
-    }
-
-    /**
-     * native image doesn't support Virtual Threads
-     * so workerThreads cannot be 0
-     * @param conf
-     */
-    private static int workerThreads(Map<String, Object> conf) {
-        int workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, DEFAULT_CORE_MODULE.workerThreads(), true);
-
-        return workerThreads == 0 && ImageInfo.inImageCode()
-            ? -1 // this is autodetect
-            : workerThreads;
     }
 
     public static CoreModule build(Map<String, Object> conf, boolean silent) {

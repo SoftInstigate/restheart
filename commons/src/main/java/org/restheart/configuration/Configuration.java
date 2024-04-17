@@ -411,7 +411,7 @@ public class Configuration {
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
                 if (o.value() instanceof HashMap<?, ?> mapValue) {
-                    var maskedValue = new HashMap<>();
+                    var maskedValue = new HashMap<String, Object>();
                     mapValue.keySet().stream()
                             .filter(k -> k instanceof String)
                             .map(k -> (String) k)
