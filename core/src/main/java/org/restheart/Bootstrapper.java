@@ -572,8 +572,8 @@ public final class Bootstrapper {
         // update buffer size in
         Exchange.updateBufferSize(configuration.coreModule().bufferSize());
 
-        // io and worker threads
-        // use value in configuration, or auto detect values if io-threds <= 0 and worker-threads < 0
+        // io threads
+        // use value in configuration, or auto detect values if io-threds <= 0
         var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
