@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.indexes;
 
-import io.undertow.server.HttpServerExchange;
-
 import java.util.Optional;
 
 import org.bson.BsonDocument;
@@ -32,6 +30,8 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -69,7 +69,7 @@ public class PutIndexHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-;
+
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
