@@ -41,7 +41,7 @@ public class ACLRegistryAllower implements Authorizer {
     public boolean isAllowed(Request<?> request) {
         var allowPredicate = registry.allowPredicates()
             .stream()
-            .filter(predicate -> predicate.resolve(request.getExchange()))
+            .filter(predicate -> predicate.test(request))
             .findFirst();
 
         LOGGER.debug("request authorized by ACLRegistryAllower? {}", allowPredicate.isPresent());
@@ -54,6 +54,6 @@ public class ACLRegistryAllower implements Authorizer {
         return registry.authenticationRequirements().isEmpty() ||
             registry.authenticationRequirements()
                 .stream()
-                .allMatch(predicate -> predicate.resolve(request.getExchange()));
+                .allMatch(predicate -> predicate.test(request));
     }
 }

@@ -19,7 +19,9 @@
  */
 package org.restheart.security;
 
-import io.undertow.predicate.Predicate;
+import java.util.function.Predicate;
+
+import org.restheart.exchange.Request;
 
 /**
  * Registry for defining Access Control Lists (ACLs) programmatically.
@@ -57,7 +59,7 @@ public interface ACLRegistry {
      * @param veto The veto predicate to register. This predicate should return true to veto (deny) the request,
      *             and false to let the decision be further evaluated by allow predicates or other authorizers.
      */
-    public void registerVeto(Predicate veto);
+    public void registerVeto(Predicate<Request<?>> veto);
 
     /**
      * Registers an allow predicate that determines if a request should be authorized.
@@ -68,7 +70,7 @@ public interface ACLRegistry {
      * @param allow The allow predicate to register. This predicate should return true to authorize the request,
      *              unless it is vetoed by any veto predicates or other vetoing conditions.
      */
-    public void registerAllow(Predicate allow);
+    public void registerAllow(Predicate<Request<?>> allow);
 
     /**
      * Registers a predicate that determines whether requests handled by the ACLRegistryAllower
@@ -81,6 +83,6 @@ public interface ACLRegistry {
      *                               It should return true if the request must be authenticated,
      *                               otherwise false if unauthenticated requests might be allowed.
      */
-    public void registerAuthenticationRequirement(Predicate authenticationRequired);
+    public void registerAuthenticationRequirement(Predicate<Request<?>> authenticationRequired);
 
 }

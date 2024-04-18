@@ -26,7 +26,6 @@ import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.Request;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -59,10 +58,8 @@ public class FilterOperatorsBlacklist implements Initializer {
 
     @Override
     public void init() {
-        this.registry.registerVeto(exchange -> {
-            var request = Request.of(exchange);
-
-            if (request instanceof MongoRequest mreq) {
+        this.registry.registerVeto(req -> {
+            if (req instanceof MongoRequest mreq) {
                 return contains(mreq.getFiltersDocument(), blacklist);
             } else {
                 return false; // don't veto

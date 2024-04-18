@@ -59,9 +59,12 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        this.registry.registerVeto(exchange -> {
-                var request = JsonProxyRequest.of(exchange);
-                return (request.isGet() && "/secho/foo".equals(removeTrailingSlashes(request.getPath())));
+        this.registry.registerVeto(req -> {
+                if (req instanceof JsonProxyRequest jreq) {
+                    return (jreq.isGet() && "/secho/foo".equals(removeTrailingSlashes(jreq.getPath())));
+                } else {
+                    return false; // don't veto
+                }
             });
     }
 }

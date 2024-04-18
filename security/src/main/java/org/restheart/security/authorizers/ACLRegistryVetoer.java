@@ -37,7 +37,7 @@ public class ACLRegistryVetoer implements Authorizer {
     public boolean isAllowed(Request<?> request) {
         return registry.vetoPredicates()
             .stream()
-            .allMatch(predicate -> !predicate.resolve(request.getExchange()));
+            .allMatch(predicate -> !predicate.test(request));
     }
 
     @Override

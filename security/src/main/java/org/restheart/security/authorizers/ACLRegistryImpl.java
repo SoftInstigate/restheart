@@ -22,17 +22,17 @@ package org.restheart.security.authorizers;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
+import org.restheart.exchange.Request;
 import org.restheart.security.ACLRegistry;
-
-import io.undertow.predicate.Predicate;
 
 public class ACLRegistryImpl implements ACLRegistry {
     private static final ACLRegistryImpl HOLDER = new ACLRegistryImpl();
 
-    private final Set<Predicate> vetoPredicates;
-    private final Set<Predicate> allowPredicates;
-    private final Set<Predicate> authenticationRequirements;
+    private final Set<Predicate<Request<?>>> vetoPredicates;
+    private final Set<Predicate<Request<?>>> allowPredicates;
+    private final Set<Predicate<Request<?>>> authenticationRequirements;
 
     private ACLRegistryImpl() {
         vetoPredicates  = new LinkedHashSet<>();
@@ -54,7 +54,7 @@ public class ACLRegistryImpl implements ACLRegistry {
      *             and false to let the decision be further evaluated by allow predicates or other authorizers.
      */
     @Override
-    public void registerVeto(Predicate veto) {
+    public void registerVeto(Predicate<Request<?>> veto) {
         this.vetoPredicates.add(veto);
     }
 
@@ -68,7 +68,7 @@ public class ACLRegistryImpl implements ACLRegistry {
      *              unless it is vetoed by any veto predicates or other vetoing conditions.
      */
     @Override
-    public void registerAllow(Predicate allow) {
+    public void registerAllow(Predicate<Request<?>> allow) {
         this.allowPredicates.add(allow);
     }
 
@@ -84,21 +84,19 @@ public class ACLRegistryImpl implements ACLRegistry {
      *                               otherwise false if unauthenticated requests might be allowed.
      */
     @Override
-    public void registerAuthenticationRequirement(Predicate authenticationRequired) {
+    public void registerAuthenticationRequirement(Predicate<Request<?>> authenticationRequired) {
         this.authenticationRequirements.add(authenticationRequired);
     }
 
-    Set<Predicate> vetoPredicates() {
+    Set<Predicate<Request<?>>> vetoPredicates() {
         return vetoPredicates;
     }
 
-    Set<Predicate> allowPredicates() {
+    Set<Predicate<Request<?>>> allowPredicates() {
         return allowPredicates;
     }
 
-    Set<Predicate> authenticationRequirements() {
+    Set<Predicate<Request<?>>> authenticationRequirements() {
         return authenticationRequirements;
     }
-
-    //Predicate<Request<?>>
 }

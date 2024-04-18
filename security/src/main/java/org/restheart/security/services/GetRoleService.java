@@ -65,13 +65,10 @@ public class GetRoleService implements JsonService {
         this.myURI = URLUtils.removeTrailingSlashes(argOrDefault(config, "uri", "/roles"));
 
         // authorize request if authenticated and path is /roles/{username}
-        aclRegistry.registerAllow(e -> e.getSecurityContext().getAuthenticatedAccount() != null && e.getRequestPath().equals(myURI + "/" + e.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()));
+        aclRegistry.registerAllow(req -> req.isAuthenticated()&& req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName()));
 
         // if the request is authorized by any other authenticator (eg root role of MongoRealmAuthenticator), veto it anyway if not requesting own role
-        aclRegistry.registerVeto(e ->
-            e.getRequestPath().startsWith(myURI)
-            && (e.getSecurityContext().getAuthenticatedAccount() == null
-            || !e.getRequestPath().equals(myURI + "/" + e.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName())));
+        aclRegistry.registerVeto(req -> req.getPath().startsWith(myURI) && (!req.isAuthenticated() || !req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName())));
     }
 
     /**
