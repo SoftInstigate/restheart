@@ -69,4 +69,18 @@ public interface ACLRegistry {
      *              unless it is vetoed by any veto predicates or other vetoing conditions.
      */
     public void registerAllow(Predicate allow);
+
+    /**
+     * Registers a predicate that determines whether requests handled by the ACLRegistryAllower
+     * require authentication. This method is used to specify conditions under which authentication
+     * is mandatory. Typically, authentication is required unless there are allow predicates
+     * explicitly authorizing requests that are not authenticated.
+     *
+     *
+     * @param authenticationRequired The predicate to determine if authentication is necessary.
+     *                               It should return true if the request must be authenticated,
+     *                               otherwise false if unauthenticated requests might be allowed.
+     */
+    public void registerAuthenticationRequirement(Predicate authenticationRequired);
+
 }

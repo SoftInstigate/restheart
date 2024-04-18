@@ -20,30 +20,30 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.attribute.ExchangeAttributes;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-
-import static org.restheart.metrics.Metrics.failedAuthHistogramName;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.Slf4jReporter;
-import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
-import com.codahale.metrics.Slf4jReporter.LoggingLevel;
 
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
+import static org.restheart.metrics.Metrics.failedAuthHistogramName;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.Slf4jReporter.LoggingLevel;
+import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
+
+import io.undertow.attribute.ExchangeAttributes;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  * This is the PipelinedHandler version of
@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthenticationCallHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationCallHandler.class);
-    private static MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
+    private static final MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
 
     private static final String BLOCK_AUTH_ERR_MSG = "Request authentication was blocked";
     private static final String FAILED_AUTH_METRIC_PREFIX = "failed-auth-";

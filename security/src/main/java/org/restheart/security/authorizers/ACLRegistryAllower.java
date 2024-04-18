@@ -24,6 +24,8 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(
         name = "aclRegistryAllower",
@@ -31,17 +33,27 @@ import org.restheart.plugins.security.Authorizer.TYPE;
         enabledByDefault = true,
         authorizerType = TYPE.ALLOWER)
 public class ACLRegistryAllower implements Authorizer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ACLRegistryAllower.class);
+
     private final ACLRegistryImpl registry = ACLRegistryImpl.getInstance();
 
     @Override
     public boolean isAllowed(Request<?> request) {
-        return registry.allowPredicates()
+        var allowPredicate = registry.allowPredicates()
             .stream()
-            .anyMatch(predicate -> predicate.resolve(request.getExchange()));
+            .filter(predicate -> predicate.resolve(request.getExchange()))
+            .findFirst();
+
+        LOGGER.debug("request authorized by ACLRegistryAllower? {}", allowPredicate.isPresent());
+
+        return allowPredicate.isPresent();
     }
 
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
-        return false;
+        return registry.authenticationRequirements().isEmpty() ||
+            registry.authenticationRequirements()
+                .stream()
+                .allMatch(predicate -> predicate.resolve(request.getExchange()));
     }
 }

@@ -32,10 +32,12 @@ public class ACLRegistryImpl implements ACLRegistry {
 
     private final Set<Predicate> vetoPredicates;
     private final Set<Predicate> allowPredicates;
+    private final Set<Predicate> authenticationRequirements;
 
     private ACLRegistryImpl() {
         vetoPredicates  = new LinkedHashSet<>();
         allowPredicates = new LinkedHashSet<>();
+        authenticationRequirements = new LinkedHashSet<>();
     }
 
     static ACLRegistryImpl getInstance() {
@@ -70,6 +72,22 @@ public class ACLRegistryImpl implements ACLRegistry {
         this.allowPredicates.add(allow);
     }
 
+    /**
+     * Registers a predicate that determines whether requests handled by the ACLRegistryAllower
+     * require authentication. This method is used to specify conditions under which authentication
+     * is mandatory. Typically, authentication is required unless there are allow predicates
+     * explicitly authorizing requests that are not authenticated.
+     *
+     *
+     * @param authenticationRequired The predicate to determine if authentication is necessary.
+     *                               It should return true if the request must be authenticated,
+     *                               otherwise false if unauthenticated requests might be allowed.
+     */
+    @Override
+    public void registerAuthenticationRequirement(Predicate authenticationRequired) {
+        this.authenticationRequirements.add(authenticationRequired);
+    }
+
     Set<Predicate> vetoPredicates() {
         return vetoPredicates;
     }
@@ -77,4 +95,10 @@ public class ACLRegistryImpl implements ACLRegistry {
     Set<Predicate> allowPredicates() {
         return allowPredicates;
     }
+
+    Set<Predicate> authenticationRequirements() {
+        return authenticationRequirements;
+    }
+
+    //Predicate<Request<?>>
 }

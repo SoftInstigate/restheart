@@ -20,8 +20,8 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
@@ -30,6 +30,8 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  * Executes isAllowed() on all enabled authorizer to check the request
@@ -83,7 +85,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             return false;
         } else {
             return authorizers.stream()
-                // at least one ALLOWER must authorize it
+                // at least one ALLOWER must authorize the request
                 .filter(a -> a.isEnabled())
                 .filter(a -> a.getInstance() != null)
                 .map(a -> a.getInstance())
@@ -91,7 +93,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 // filter out authorizers that requires authentication when the request is not authenticated
                 .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
                 .anyMatch(a -> a.isAllowed(request))
-                // all VETOERs must authorize it
+                // no VETOER must deny the request
                 && authorizers.stream()
                 .filter(a -> a.isEnabled())
                 .filter(a -> a.getInstance() != null)

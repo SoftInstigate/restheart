@@ -65,7 +65,7 @@ public class FilterOperatorsBlacklist implements Initializer {
             if (request instanceof MongoRequest mreq) {
                 return contains(mreq.getFiltersDocument(), blacklist);
             } else {
-                return true;
+                return false; // don't veto
             }
         });
     }

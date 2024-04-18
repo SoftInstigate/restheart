@@ -20,11 +20,8 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Sets;
 
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
@@ -32,6 +29,10 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.PluginUtils;
+
+import com.google.common.collect.Sets;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -56,7 +57,6 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
                 .map(a -> a.getInstance())
                 .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
                 .collect(Collectors.toSet());
-        ;
     }
 
     /**
