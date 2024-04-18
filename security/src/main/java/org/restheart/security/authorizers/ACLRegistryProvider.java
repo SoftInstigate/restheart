@@ -20,31 +20,16 @@
  */
 package org.restheart.security.authorizers;
 
-import org.restheart.exchange.Request;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Authorizer;
-import org.restheart.plugins.security.Authorizer.TYPE;
+import org.restheart.security.ACLRegistry;
 
-@RegisterPlugin(
-        name = "globalPredicatesVetoer",
-        description = "vetoes requests according to global predicates",
-        enabledByDefault = true,
-        authorizerType = TYPE.VETOER)
-public class GlobalPredicatesVetoer implements Authorizer {
-    @Inject("registry")
-    private PluginsRegistry registry;
+@RegisterPlugin(name="acl-registry", description="provides the ACLRegistry to programmatically define an ACL")
+public class ACLRegistryProvider implements Provider<ACLRegistry> {
 
     @Override
-    public boolean isAllowed(Request<?> request) {
-        return registry.getGlobalSecurityPredicates()
-                .stream()
-                .allMatch(predicate -> predicate.resolve(request.getExchange()));
-    }
-
-    @Override
-    public boolean isAuthenticationRequired(Request<?> request) {
-        return false;
+    public ACLRegistry get(PluginRecord<?> caller) {
+        return ACLRegistryImpl.getInstance();
     }
 }

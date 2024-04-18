@@ -34,7 +34,6 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAclPermissionTransformer;
 
-import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
 
 /**
@@ -117,14 +116,6 @@ public interface PluginsRegistry {
      *
      */
     public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint);
-
-    /**
-     * global security predicates must all resolve to true to allow the request
-     *
-     * @return the globalSecurityPredicates allow to get and set the global security
-     *         predicates to apply to all requests
-     */
-    public Set<Predicate> getGlobalSecurityPredicates();
 
     /**
      * Gets the RESTHeart root handler

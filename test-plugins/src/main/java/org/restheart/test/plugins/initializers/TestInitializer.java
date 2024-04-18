@@ -24,15 +24,11 @@ package org.restheart.test.plugins.initializers;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.undertow.predicate.Predicate;
-import io.undertow.server.HttpServerExchange;
 
 /**
  * Just an example initializer. It is not enabledByDefault; to enable it add to
@@ -53,13 +49,8 @@ public class TestInitializer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
-    @Inject("registry")
-    private PluginsRegistry registry;
-
-    @OnInit
-    public void onInit() {
-        registry.getServices();
-    }
+    @Inject("acl-registry")
+    private ACLRegistry registry;
 
     @Override
     public void init() {
@@ -68,10 +59,9 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        this.registry.getGlobalSecurityPredicates()
-                .add((Predicate) (HttpServerExchange exchange) -> {
-                    var request = JsonProxyRequest.of(exchange);
-                    return !(request.isGet() && "/secho/foo".equals(removeTrailingSlashes(request.getPath())));
-                });
+        this.registry.registerVeto(exchange -> {
+                var request = JsonProxyRequest.of(exchange);
+                return (request.isGet() && "/secho/foo".equals(removeTrailingSlashes(request.getPath())));
+            });
     }
 }
