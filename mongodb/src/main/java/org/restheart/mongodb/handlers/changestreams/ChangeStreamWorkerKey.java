@@ -20,31 +20,35 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.websockets.spi.WebSocketHttpExchange;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
+import org.restheart.utils.BsonUtils;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
+ * Idendifies a ChangeStreamWorker
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SessionKey {
+public class ChangeStreamWorkerKey {
     private final String url;
     private final BsonDocument avars;
     private final JsonMode jsonMode;
 
-    public SessionKey(String url, BsonDocument avars, JsonMode jsonMode) {
+    public ChangeStreamWorkerKey(String url, BsonDocument avars, JsonMode jsonMode) {
         this.url = url;
         this.avars = avars;
         this.jsonMode = jsonMode;
     }
 
-    public SessionKey(WebSocketHttpExchange exchange) {
+    public ChangeStreamWorkerKey(WebSocketHttpExchange exchange) {
         if (!exchange.getQueryString().isEmpty()) {
             var qstring = encode("?".concat(exchange.getQueryString()));
             var uri = encode(exchange.getRequestURI());
@@ -59,7 +63,7 @@ public class SessionKey {
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
 
-    public SessionKey(HttpServerExchange exchange) {
+    public ChangeStreamWorkerKey(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
 
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
@@ -73,7 +77,7 @@ public class SessionKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof SessionKey)) {
+        if (!(obj instanceof ChangeStreamWorkerKey)) {
             return false;
         } else {
             return obj.hashCode() == this.hashCode();
@@ -82,14 +86,13 @@ public class SessionKey {
 
     @Override
     public String toString() {
-        return "" + hashCode();
+        var _url = this.url == null ? null : URLDecoder.decode(this.url, StandardCharsets.UTF_8);
+
+        return "ChangeStreamWorkerKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
     }
 
     private static String encode(String queryString) {
-        return URLEncoder.encode(
-                URLDecoder.decode(queryString,
-                        StandardCharsets.UTF_8),
-                StandardCharsets.UTF_8);
+        return URLEncoder.encode(URLDecoder.decode(queryString, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
     }
 
     /**

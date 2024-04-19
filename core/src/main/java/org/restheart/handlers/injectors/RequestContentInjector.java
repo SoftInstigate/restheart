@@ -20,18 +20,15 @@
  */
 package org.restheart.handlers.injectors;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestBufferingHandler;
-import io.undertow.util.AttachmentKey;
+import java.util.List;
+
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
-
-import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -42,11 +39,13 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.requiresContent;
-
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.RequestBufferingHandler;
+import io.undertow.util.AttachmentKey;
 
 /**
  * injects in the exchange the request content if the request involves a Service

@@ -20,8 +20,8 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.List;
+
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.Exchange;
@@ -38,8 +38,11 @@ import org.restheart.plugins.Service;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.requiresContent;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  * Executes response interceptors
@@ -47,7 +50,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseInterceptorsExecutor extends PipelinedHandler {
-
     static final Logger LOGGER = LoggerFactory.getLogger(ResponseInterceptorsExecutor.class);
 
     private final boolean filterRequiringContent;
@@ -167,19 +169,17 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                     return false;
                 }
             })
-            .forEachOrdered(ri -> {
-                exchange.getConnection().getWorker().execute(() -> {
-                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
+            .forEachOrdered(ri -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
 
-                    try {
-                        ri.handle(request, response);
-                    } catch (Exception ex) {
-                        LOGGER.error("Error executing asyng interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC, ex);
+                try {
+                    ri.handle(request, response);
+                } catch (Exception ex) {
+                    LOGGER.error("Error executing asyng interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC, ex);
 
-                        Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
-                    }
-                });
-            });
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
+                }
+            }));
     }
 }

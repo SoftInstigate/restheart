@@ -45,6 +45,8 @@ import com.mongodb.client.MongoClient;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
+import org.graalvm.home.Version;
+
 import org.graalvm.polyglot.Source;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -110,15 +112,12 @@ public class PolyglotDeployer implements Initializer {
             .findFirst();
     }
 
-
     private boolean isRunningOnGraalVM() {
         try {
-            Class.forName("org.graalvm.polyglot.Value");
-        } catch (ClassNotFoundException cnfe) {
+            return Version.getCurrent().isRelease();
+        } catch(Throwable cnfe) {
             return false;
         }
-
-        return true;
     }
 
     @Override

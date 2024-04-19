@@ -27,30 +27,26 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.mongodb.client.MongoClient;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoClients",
-        description = "helper singleton that holds the MongoClients",
+        description = "helper singleton that holds the MongoClient",
         initPoint = InitPoint.BEFORE_STARTUP,
         priority = -10)
 public class RHMongoClients implements Initializer {
 
     @Inject("mclient")
-    private com.mongodb.client.MongoClient mclient;
+    private MongoClient mclient;
 
-    @Inject("mclient-reactive")
-    private com.mongodb.reactivestreams.client.MongoClient mclientReactive;
-
-    private static com.mongodb.client.MongoClient MC_HOLDER;
-    private static com.mongodb.reactivestreams.client.MongoClient MCR_HOLDER;
+    private static MongoClient MC_HOLDER;
 
     @OnInit
     public void onInit() {
         MC_HOLDER = mclient;
-        MCR_HOLDER = mclientReactive;
     }
 
     @Override
@@ -61,13 +57,8 @@ public class RHMongoClients implements Initializer {
         return MC_HOLDER;
     }
 
-    public static com.mongodb.reactivestreams.client.MongoClient mclientReactive() {
-        return MCR_HOLDER;
-    }
-
     @VisibleForTesting
-    public static void setClients(com.mongodb.client.MongoClient mclient, com.mongodb.reactivestreams.client.MongoClient mclientReactive) {
+    public static void setClients(MongoClient mclient) {
         MC_HOLDER = mclient;
-        MCR_HOLDER = mclientReactive;
     }
 }

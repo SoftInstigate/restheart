@@ -23,10 +23,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.restheart.exchange.Request;
-import io.undertow.util.AttachmentKey;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.util.AttachmentKey;
 
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
@@ -56,7 +56,7 @@ public abstract class BaseAclPermission {
 
     /**
      *
-     * @param exchange
+     * @param request
      * @return the acl predicate associated with this request
      */
     public static BaseAclPermission of(Request<?> request) {
@@ -120,6 +120,7 @@ public abstract class BaseAclPermission {
 
     /**
      *
+     * @param request
      * @return the raw permission data bound to the request
      */
     public static Object getRaw(Request<?> request) {

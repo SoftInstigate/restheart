@@ -20,16 +20,13 @@
 package org.restheart.security;
 
 import java.math.BigInteger;
-import java.util.Random;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.google.gson.JsonElement;
-import com.jayway.jsonpath.JsonPath;
 
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -47,6 +44,9 @@ import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonElement;
+import com.jayway.jsonpath.JsonPath;
 
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
@@ -133,20 +133,23 @@ public class AclVarsInterpolator {
         } else if ("%NOW".equals(value) || "@now".equals(value)) {
             return new BsonDateTime(Instant.now().getEpochSecond() * 1000);
         } else if (value.equals("@user")) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
-                return maccount.properties();
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
-                return toBson(faccount.properties());
-            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
-                var jwt = jwtAccount.propertiesAsMap();
-                // remove jwt specific fields, only using user properties
-                jwt.remove("exp");
-                jwt.remove("iss");
-                jwt.remove("sub");
-                return toBson(jwt);
-            } else {
+            if (request == null || request.getAuthenticatedAccount() == null) {
                 return BsonNull.VALUE;
             }
+
+            return switch (request.getAuthenticatedAccount()) {
+                case MongoRealmAccount maccount -> maccount.properties();
+                case FileRealmAccount faccount -> toBson(faccount.properties());
+                case JwtAccount jwtAccount -> {
+                    var jwt = jwtAccount.propertiesAsMap();
+                    // remove jwt specific fields, only using user properties
+                    jwt.remove("exp");
+                    jwt.remove("iss");
+                    jwt.remove("sub");
+                    yield toBson(jwt);
+                }
+                default -> BsonNull.VALUE;
+            };
         } else if (value.equals("@filter")) {
             return request.getFiltersDocument();
         } else if (value.equals("@request")) {
@@ -239,15 +242,16 @@ public class AclVarsInterpolator {
     }
 
     private static BsonDocument getAccountDocument(Request<?> request) {
-        if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
-            return maccount.properties();
-        } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
-            return toBson(faccount.properties()).asDocument();
-        } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
-            return toBson(jwtAccount.propertiesAsMap()).asDocument();
-        } else {
+        if (request == null || request.getAuthenticatedAccount() == null) {
             return null;
         }
+
+        return switch (request.getAuthenticatedAccount()) {
+            case MongoRealmAccount maccount -> maccount.properties();
+            case FileRealmAccount faccount -> toBson(faccount.properties()).asDocument();
+            case JwtAccount jwtAccount -> toBson(jwtAccount.propertiesAsMap()).asDocument();
+            default -> null;
+        };
     }
 
     /**
@@ -295,28 +299,18 @@ public class AclVarsInterpolator {
     }
 
     private static String jsonPrimitiveValue(BsonValue value) {
-        switch (value.getBsonType()) {
-            case NULL:
-                return "null";
-            case BOOLEAN:
-                return value.asBoolean().toString();
-            case INT32:
-                return "" + value.asInt32().getValue();
-            case INT64:
-                return "" + value.asInt64().getValue();
-            case DOUBLE:
-                return "" + value.asDouble().getValue();
-            case STRING:
-                return value.asString().getValue();
-            case OBJECT_ID:
-                return value.asObjectId().getValue().toHexString();
-            case DATE_TIME:
-                return "" + value.asDateTime().getValue();
-            case TIMESTAMP:
-                return "" + value.asTimestamp().getValue();
-            default:
-                throw new IllegalArgumentException("Cannot use in predicate field of type " + value.getBsonType());
-        }
+        return switch (value.getBsonType()) {
+            case NULL -> "null";
+            case BOOLEAN -> value.asBoolean().toString();
+            case INT32 -> "" + value.asInt32().getValue();
+            case INT64 ->"" + value.asInt64().getValue();
+            case DOUBLE -> "" + value.asDouble().getValue();
+            case STRING -> value.asString().getValue();
+            case OBJECT_ID -> value.asObjectId().getValue().toHexString();
+            case DATE_TIME -> "" + value.asDateTime().getValue();
+            case TIMESTAMP ->"" + value.asTimestamp().getValue();
+            default -> throw new IllegalArgumentException("Cannot use in predicate field of type " + value.getBsonType());
+        };
     }
 
     private static String jsonArrayValue(BsonArray array) {
@@ -332,7 +326,7 @@ public class AclVarsInterpolator {
         return "\"".concat(s).concat("\"");
     }
 
-    private static String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
+    private static final String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
 
     private static final Random RND_GENERATOR = new Random();
 
@@ -425,30 +419,31 @@ public class AclVarsInterpolator {
     private static BsonValue toBson(Object obj) {
         if (obj == null) {
             return BsonNull.VALUE;
-        } else if (obj instanceof String s) {
-            return new BsonString(s);
-        } else if (obj instanceof Map<?, ?> map) {
-            var ret = new BsonDocument();
-            map.entrySet().stream()
-                .filter(e -> e.getKey() instanceof String)
-                .forEachOrdered(e -> ret.put((String) e.getKey(), toBson(e.getValue())));
-            return ret;
-        } else if (obj instanceof List<?> list) {
-            var ret = new BsonArray();
-            list.stream().forEachOrdered(e -> ret.add(toBson(e)));
-            return ret;
-        } else if (obj instanceof Integer i) {
-            return new BsonInt32(i);
-        } else if (obj instanceof Long l) {
-            return new BsonInt64(l);
-        } else if (obj instanceof Double d) {
-            return new BsonDouble(d);
-        } else if (obj instanceof Boolean b) {
-            return new BsonBoolean(b);
-        } else {
-            LOGGER.warn("Cannot convert value {} to BSON, the type {} is not supported", obj, obj.getClass().getSimpleName());
-            return BsonNull.VALUE;
         }
+
+        return switch(obj) {
+            case String s -> new BsonString(s);
+            case Map<?, ?> map -> {
+                var ret = new BsonDocument();
+                map.entrySet().stream()
+                        .filter(e -> e.getKey() instanceof String)
+                        .forEachOrdered(e -> ret.put((String) e.getKey(), toBson(e.getValue())));
+                yield ret;
+            }
+            case List<?> list -> {
+                var ret = new BsonArray();
+                list.stream().forEachOrdered(e -> ret.add(toBson(e)));
+                yield ret;
+            }
+            case Integer i -> new BsonInt32(i);
+            case Long l -> new BsonInt64(l);
+            case Double d ->new BsonDouble(d);
+            case Boolean b -> new BsonBoolean(b);
+            default -> {
+                LOGGER.warn("Cannot convert value {} to BSON, the type {} is not supported", obj, obj.getClass().getSimpleName());
+                yield BsonNull.VALUE;
+            }
+        };
     }
 
     private static BsonDocument getRequestObject(final MongoRequest request) {

@@ -55,6 +55,7 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
+import org.restheart.buffers.FastByteBufferPool;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.ProxiedResource;
@@ -65,7 +66,6 @@ import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
-import org.restheart.graal.NativeImageBuildTimeChecker;
 import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -159,9 +159,6 @@ public final class Bootstrapper {
     private static final String EXITING = ", exiting...";
     private static final String RESTHEART = "RESTHeart";
 
-    private Bootstrapper() {
-    }
-
     /**
      *
      * @return the global configuration
@@ -222,6 +219,8 @@ public final class Bootstrapper {
     }
 
     public static void main(final String[] args) throws ConfigurationException, IOException {
+        doNotWarnTruffleInterpreterOnly();
+
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
@@ -236,9 +235,6 @@ public final class Bootstrapper {
     }
 
     private static void run() {
-        // we are at runtime. this is used for building native image
-        NativeImageBuildTimeChecker.atRuntime();
-
         if (!configuration.logging().ansiConsole()) {
             AnsiConsole.systemInstall();
         }
@@ -535,6 +531,10 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
+        builder.setByteBufferPool(new FastByteBufferPool(
+            configuration.coreModule().directBuffers(),
+            configuration.coreModule().bufferSize()));
+
         var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {
             builder.addHttpsListener(httpsListener.port(), httpsListener.host(), initSSLContext());
@@ -572,19 +572,16 @@ public final class Bootstrapper {
         // update buffer size in
         Exchange.updateBufferSize(configuration.coreModule().bufferSize());
 
-        // io and worker threads
-        // use value in configuration, or auto detect values if io-threds <= 0 and worker-threads < 0
+        // io threads
+        // use value in configuration, or auto detect values if io-threds <= 0
         var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
-        var autoConfigWorkerThreads = configuration.coreModule().workerThreads() < 0;
-        var workerThreads = autoConfigWorkerThreads ? Runtime.getRuntime().availableProcessors()*8 : configuration.coreModule().workerThreads();
-
-        LOGGER.info("Available processors: {}, IO threads{}: {}, worker threads{}: {}, ", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads, autoConfigWorkerThreads ? " (auto detected)" : "", workerThreads);
+        LOGGER.info("Available processors: {}, IO threads{}: {}, worker virtual threads: \u221e", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads);
 
         builder = builder
             .setIoThreads(ioThreads)
-            .setWorkerThreads(workerThreads)
+            .setWorkerThreads(0) // starting v8, restheart uses virtual threads
             .setDirectBuffers(configuration.coreModule().directBuffers())
             .setBufferSize(configuration.coreModule().bufferSize())
             .setHandler(HANDLERS);
@@ -916,6 +913,19 @@ public final class Bootstrapper {
 
         stopServer(silent, removePid);
         System.exit(status);
+    }
+
+    /**
+     * Disables JIT compilation for Truffle in environments using Virtual Threads, as of version 24.
+     * Since JIT compilation conflicts with Virtual Threads, the 'truffle-runtime' is excluded from 'restheart.jar'.
+     * The dependency for 'truffle-runtime' is marked as 'provided' in the project's pom.xml, facilitating its exclusion.
+     *
+     * This method addresses and suppresses the following warning:
+     * WARNING: The polyglot engine uses a fallback runtime that does not support runtime compilation to machine code.
+     * Execution without runtime compilation will negatively impact the performance of the guest application.
+     */
+    private static  void doNotWarnTruffleInterpreterOnly() {
+        System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
     }
 
     @Command(name="java -jar restheart.jar")

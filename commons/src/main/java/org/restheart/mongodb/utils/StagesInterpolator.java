@@ -45,7 +45,7 @@ public class StagesInterpolator {
 
     /**
      * @param varOperator the var operator, $var for queries and aggregations, $arg for GraphQL mappings
-     * @param stageOperator the stagee operator, $ifvar for aggregations, $ifarg for GraphQL mappings
+     * @param stageOperator the stage operator, $ifvar for aggregations, $ifarg for GraphQL mappings
      * @param stages the aggregation pipeline stages
      * @param values RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables

@@ -21,6 +21,7 @@
 package org.restheart.services;
 
 import java.util.Map;
+
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
@@ -33,12 +34,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "ping",
-    description = "simple ping service",
-    secure = false,
-    enabledByDefault = true,
-    defaultURI = "/ping",
-    blocking = false)
+@RegisterPlugin(name = "ping", description = "simple ping service", secure = false, blocking = false)
 public class PingService implements ByteArrayService {
     private String msg = null;
 

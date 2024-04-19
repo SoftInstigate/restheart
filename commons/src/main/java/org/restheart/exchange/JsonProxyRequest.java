@@ -19,17 +19,20 @@
  */
 package org.restheart.exchange;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+import org.restheart.utils.BuffersUtils;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import org.restheart.utils.BuffersUtils;
 
 /**
  *
@@ -73,6 +76,8 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
      *
      * allocates the PooledByteBuffer array so close() must be invoked
      * to avoid memory leaks
+     * @param content
+     * @throws java.io.IOException
      */
     @Override
     public void writeContent(JsonElement content) throws IOException {

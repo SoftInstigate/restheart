@@ -152,6 +152,15 @@ public class GetCollectionCache {
             .forEach(k -> cache.invalidate(k));
     }
 
+    public void invalidateAll(String db) {
+        if (cache == null) return;
+
+        cache.asMap().keySet().stream()
+            .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
+            .forEach(k -> cache.invalidate(k));
+    }
+
+
     public void invalidateAll(MongoCollection<?> coll) {
         if (cache == null) return;
 

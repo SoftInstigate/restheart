@@ -20,20 +20,17 @@
  */
 package org.restheart.mongodb.security;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.server.HttpServerExchange;
-
 import java.util.List;
 import java.util.Map;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.Request;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 
 /**
  * Forbids all requests to Mongo API that use an blacklisted operator in the filter query paramter
@@ -42,8 +39,8 @@ import org.restheart.plugins.RegisterPlugin;
     description = "forbids requests containing filter qparameter using operator in blacklist",
     enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
-    @Inject("registry")
-    private PluginsRegistry registry;
+    @Inject("acl-registry")
+    private ACLRegistry registry;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -61,17 +58,13 @@ public class FilterOperatorsBlacklist implements Initializer {
 
     @Override
     public void init() {
-        this.registry
-                .getGlobalSecurityPredicates()
-                .add((Predicate) (HttpServerExchange exchange) -> {
-                    var request = Request.of(exchange);
-
-                    if (request instanceof MongoRequest) {
-                        return !contains(((MongoRequest)request).getFiltersDocument(), blacklist);
-                    } else {
-                        return true;
-                    }
-                });
+        this.registry.registerVeto(req -> {
+            if (req instanceof MongoRequest mreq) {
+                return contains(mreq.getFiltersDocument(), blacklist);
+            } else {
+                return false; // don't veto
+            }
+        });
     }
 
     /**

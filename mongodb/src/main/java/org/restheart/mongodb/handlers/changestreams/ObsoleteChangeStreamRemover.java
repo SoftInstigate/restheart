@@ -20,16 +20,14 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import java.io.IOException;
-import java.util.stream.Collectors;
-
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.mongodb.db.GetCollectionCache;
 
-@RegisterPlugin(name = "obsoleteChangeStreamRemover", description = "removes obsolete change stream and web socket sessions (due to deleted db/collection, or updated change stream definition)", interceptPoint = InterceptPoint.RESPONSE)
+@RegisterPlugin(name = "obsoleteChangeStreamRemover", description = "removes obsolete change stream and WebSocket sessions (due to deleted db/collection, or updated change stream definition)", interceptPoint = InterceptPoint.RESPONSE)
 public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -61,53 +59,13 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     }
 
     private void closeAllOnDb(String db) {
-        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
-        var changeStreams = ChangeStreamsRegistry.getInstance();
-
-        var sessionKeys = changeStreams.getSessionKeysOnDb(db);
-
-        sessionKeys.stream()
-            .collect(Collectors.toSet())
-            .forEach(sk -> {
-            var _webSocketSession = webSocketSessions.get(sk);
-            _webSocketSession.stream()
-                .collect(Collectors.toSet())
-                .forEach(wss -> {
-                    try {
-                        wss.close();
-                        webSocketSessions.remove(sk, wss);
-                    } catch(IOException ioe) {
-                        // LOGGER
-                    }
-            });
-
-            changeStreams.remove(sk);
-        });
+        ChangeStreamWorkers.getInstance().getWorkersOnDb(db).stream().forEach(csw -> csw.close());
+        GetCollectionCache.getInstance().invalidateAll(db);
     }
 
     private void closeAllOnCollection(String db, String collection) {
-        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
-        var changeStreams = ChangeStreamsRegistry.getInstance();
-
-        var sessionKeys = changeStreams.getSessionKeysOnCollection(db, collection);
-
-        sessionKeys.stream()
-            .collect(Collectors.toSet())
-            .forEach(sk -> {
-            var _webSocketSession = webSocketSessions.get(sk);
-            _webSocketSession.stream()
-                .collect(Collectors.toSet())
-                .forEach(wss -> {
-                    try {
-                        wss.close();
-                        webSocketSessions.remove(sk, wss);
-                    } catch(IOException ioe) {
-                        // LOGGER
-                    }
-            });
-
-            changeStreams.remove(sk);
-        });
+        ChangeStreamWorkers.getInstance().getWorkersOnCollection(db, collection).stream().forEach(csw -> csw.close());
+        GetCollectionCache.getInstance().invalidateAll(db, collection);
     }
 
     @Override

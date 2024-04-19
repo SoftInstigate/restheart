@@ -21,18 +21,16 @@
 package org.restheart.security.services;
 
 import java.util.Map;
+
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-
-import static org.restheart.utils.GsonUtils.object;
+import org.restheart.security.ACLRegistry;
 import static org.restheart.utils.GsonUtils.array;
+import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 
@@ -41,16 +39,19 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "roles",
-        description = "returns the roles of the authenticated client",
-        secure = false,
-        enabledByDefault = true,
-        defaultURI = "/roles")
+    name = "roles",
+    description = "returns the roles of the authenticated client",
+    secure = true,
+    enabledByDefault = true,
+    defaultURI = "/roles")
 public class GetRoleService implements JsonService {
     private String myURI = null;
 
     @Inject("config")
     private Map<String, Object> config;
+
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
 
     /**
      * init the service
@@ -62,6 +63,12 @@ public class GetRoleService implements JsonService {
         }
 
         this.myURI = URLUtils.removeTrailingSlashes(argOrDefault(config, "uri", "/roles"));
+
+        // authorize request if authenticated and path is /roles/{username}
+        aclRegistry.registerAllow(req -> req.isAuthenticated()&& req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName()));
+
+        // if the request is authorized by any other authenticator (eg root role of MongoRealmAuthenticator), veto it anyway if not requesting own role
+        aclRegistry.registerVeto(req -> req.getPath().startsWith(myURI) && (!req.isAuthenticated() || !req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName())));
     }
 
     /**
@@ -73,20 +80,9 @@ public class GetRoleService implements JsonService {
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         switch(request.getMethod()){
             case GET -> {
-                if (!request.isAuthenticated()) {
-                    response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
-                } else if (checkRequestPath(request)) {
-                    var roles = array();
-                    request.getAuthenticatedAccount().getRoles().forEach(roles::add);
-                    response.setContent(object().put("authenticated", true).put("roles", roles));
-                } else {
-                    response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-
-                    // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
-                    response.getHeaders().remove(AUTH_TOKEN_HEADER);
-                    response.getHeaders().remove(AUTH_TOKEN_VALID_HEADER);
-                    response.getHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
-                }
+                var roles = array();
+                request.getAuthenticatedAccount().getRoles().forEach(roles::add);
+                response.setContent(object().put("authenticated", true).put("roles", roles));
             }
 
             case OPTIONS -> handleOptions(request);
@@ -95,18 +91,5 @@ public class GetRoleService implements JsonService {
                 response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         }
-    }
-
-    /**
-     *
-     * @param request
-     * @return true if the request is authenticated and the request path is /roles/{username}
-     */
-    private boolean checkRequestPath(JsonRequest request){
-        return request.getAuthenticatedAccount() != null
-                && request.getAuthenticatedAccount().getPrincipal() != null
-                && request.getAuthenticatedAccount().getPrincipal().getName() != null
-                && request.getAuthenticatedAccount().getRoles() != null
-                && request.getPath().equals(myURI + "/" + request.getAuthenticatedAccount().getPrincipal().getName());
     }
 }

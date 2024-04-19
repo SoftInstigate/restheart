@@ -22,6 +22,8 @@ package org.restheart.mongodb.handlers.changestreams;
 
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import static org.restheart.mongodb.ConnectionChecker.connected;
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -31,9 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
-import static org.restheart.mongodb.ConnectionChecker.replicaSet;
-import static org.restheart.mongodb.ConnectionChecker.connected;
-
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -41,8 +40,8 @@ import static org.restheart.mongodb.ConnectionChecker.connected;
 @RegisterPlugin(name = "changeStreamActivator",
         description = "activates support for change streams",
         priority = Integer.MIN_VALUE + 1)
-public class ChangeStreamsActivator implements Initializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamsActivator.class);
+public class Activator implements Initializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -63,12 +62,11 @@ public class ChangeStreamsActivator implements Initializer {
     private void enableChangeStreams() {
         var dispatcher = RequestDispatcherHandler.getInstance();
 
-        // *** init MongoDBReactiveClient
         try {
-            // *** Change Stream handler
+            // Add Change Stream handler
             dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET, new GetChangeStreamHandler());
         } catch (Throwable t) {
-            LOGGER.error("Change streams disabled due to error in MongoDB reactive client: {}", t.getMessage() != null ? t.getMessage() : "not initialized");
+            LOGGER.error("Error, change streams disabled {}", t);
         }
     }
 }

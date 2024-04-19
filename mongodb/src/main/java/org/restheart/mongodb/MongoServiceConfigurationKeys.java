@@ -205,15 +205,4 @@ public interface MongoServiceConfigurationKeys {
      * The key for specifying the cursor batch size
      */
     public static final String CURSOR_BATCH_SIZE_KEY = "cursor-batch-size";
-
-
-    /**
-     * Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT,
-     * OFF), gradually gathering less specific metrics. Every level contain the
-     * upper level as well.
-     *
-     * @deprecated will be removed in RH v8.0
-     */
-    @Deprecated
-    public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
 }

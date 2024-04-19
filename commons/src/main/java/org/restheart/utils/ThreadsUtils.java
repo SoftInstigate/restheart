@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
+ * Copyright (C) 2014 - 2023 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,25 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.graal;
 
-/**
- * this is used by PluginsScanner to determine if scanning is occurring at build
- * or run time. When running with java, Bootstrapper calls
- * NativeImageBuildTimeChecker.atRuntime() setting the variable bt=false. When
- * building with native-image, the class is initialized at build time (due to
- * native-image.properties that sets PluginScanner to be initialized at build
- * time and tranistively NativeImageBuildTimeChecker, since PluginScanner
- * references it) with bt=true
- */
-public class NativeImageBuildTimeChecker {
-    private static boolean bt = true;
+package org.restheart.utils;
 
-    public static boolean isBuildTime() {
-        return bt;
-    }
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
-    public static void atRuntime() {
-        bt = false;
+public class ThreadsUtils {
+    private static final Executor VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
+
+    public static Executor virtualThreadsExecutor() {
+        return VIRTUAL_THREADS_EXECUTOR;
     }
 }

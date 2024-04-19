@@ -21,30 +21,39 @@
 package org.restheart.security.authorizers;
 
 import org.restheart.exchange.Request;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(
-        name = "globalPredicatesVetoer",
-        description = "vetoes requests according to global predicates",
+        name = "aclRegistryAllower",
+        description = "allow requests according to allow predicates defined in the ACLRegistry",
         enabledByDefault = true,
-        authorizerType = TYPE.VETOER)
-public class GlobalPredicatesVetoer implements Authorizer {
-    @Inject("registry")
-    private PluginsRegistry registry;
+        authorizerType = TYPE.ALLOWER)
+public class ACLRegistryAllower implements Authorizer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ACLRegistryAllower.class);
+
+    private final ACLRegistryImpl registry = ACLRegistryImpl.getInstance();
 
     @Override
     public boolean isAllowed(Request<?> request) {
-        return registry.getGlobalSecurityPredicates()
-                .stream()
-                .allMatch(predicate -> predicate.resolve(request.getExchange()));
+        var allowPredicate = registry.allowPredicates()
+            .stream()
+            .filter(predicate -> predicate.test(request))
+            .findFirst();
+
+        LOGGER.debug("request authorized by ACLRegistryAllower? {}", allowPredicate.isPresent());
+
+        return allowPredicate.isPresent();
     }
 
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
-        return false;
+        return registry.authenticationRequirements().isEmpty() ||
+            registry.authenticationRequirements()
+                .stream()
+                .allMatch(predicate -> predicate.test(request));
     }
 }

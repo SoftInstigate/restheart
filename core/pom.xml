@@ -116,8 +116,29 @@
       <artifactId>tika-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>polyglot</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.polyglot</groupId>
+        <artifactId>js-community</artifactId>
+        <type>pom</type>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.truffle</groupId>
+        <artifactId>truffle-runtime</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>nativeimage</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>collections</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>word</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphql-java</groupId>
@@ -264,9 +285,27 @@
               </excludes>
             </filter>
             <filter>
-              <artifact>org.mongodb:mongodb-driver-core</artifact>
+              <artifact>*:*</artifact>
               <excludes>
+                <!-- this fixes native-image build errors such:
+                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
+                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
+                -->
+                <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
                 <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.home/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.polyglot/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.collections/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.nativeimage/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.word/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.js/native-image.properties</exclude>
+                <exclude>META-INF/native-image/com.oracle.truffle.regex/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.truffle/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.shadowed.org.jcodings/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.shadowed.icu4j/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.truffle.runtime/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.jniutils/native-image.properties</exclude>
+                <exclude>META-INF/native-image/org.graalvm.truffle.compiler/native-image.properties</exclude>
               </excludes>
             </filter>
           </filters>

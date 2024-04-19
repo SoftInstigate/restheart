@@ -166,9 +166,13 @@
   "methods":[{"name":"loadAll","parameterTypes":["java.util.Set"] }]
 },
 {
+    "name":"com.github.benmanes.caffeine.cache.AsyncCacheLoader",
+    "methods":[{"name":"asyncLoadAll","parameterTypes":["java.util.Set", "java.util.concurrent.Executor"] }]
+},
+{
   "name":"com.github.benmanes.caffeine.cache.PS",
   "fields":[
-    {"name":"key"}, 
+    {"name":"key"},
     {"name":"value"}
   ]
 },
@@ -268,9 +272,6 @@
   "allDeclaredFields":true,
   "allDeclaredMethods":true,
   "allDeclaredConstructors":true
-},
-{
-  "name":"com.mongodb.reactivestreams.client.MongoClient"
 },
 {
   "name":"com.sun.akuma.CLibrary",
@@ -1325,6 +1326,10 @@
   "methods":[{"name":"getImpl","parameterTypes":[] }]
 },
 {
+    "name":"org.graalvm.nativeimage.ImageInfo",
+    "allPublicMethods":true
+},
+{
   "name":"org.graalvm.polyglot.Value"
 },
 {
@@ -1383,7 +1388,16 @@
 },
 {
   "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
-  "methods":[{"name":"loadAll","parameterTypes":["java.util.Set"] }]
+  "methods":[
+    {"name":"loadAll","parameterTypes":["java.util.Set"] },
+    {"name":"asyncLoadAll","parameterTypes":["java.util.Set", "java.util.concurrent.Executor"] }
+]
+},
+{
+    "name":"com.github.benmanes.caffeine.cache.PSWMW",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
 },
 {
   "name":"org.restheart.configuration.Configuration"

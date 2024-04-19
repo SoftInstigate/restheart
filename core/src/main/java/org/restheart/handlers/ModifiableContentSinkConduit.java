@@ -20,14 +20,11 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.connector.PooledByteBuffer;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.protocol.http.ServerFixedLengthStreamSinkConduit;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+
 import org.restheart.exchange.ByteArrayProxyResponse;
 import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.exchange.ProxyResponse;
@@ -40,6 +37,11 @@ import org.xnio.conduits.AbstractStreamSinkConduit;
 import org.xnio.conduits.ConduitWritableByteChannel;
 import org.xnio.conduits.Conduits;
 import org.xnio.conduits.StreamSinkConduit;
+
+import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.protocol.http.ServerFixedLengthStreamSinkConduit;
+import io.undertow.util.Headers;
 
 /**
  * A conduit that buffers data allowing to modify it.

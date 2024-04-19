@@ -110,22 +110,16 @@ public class MongoAclAuthorizer implements Authorizer {
 
                 if (_cacheExpirePolicy != null) {
                     try {
-                        this.cacheExpirePolicy = Cache.EXPIRE_POLICY
-                                .valueOf((String) _cacheExpirePolicy);
+                        this.cacheExpirePolicy = Cache.EXPIRE_POLICY.valueOf((String) _cacheExpirePolicy);
                     } catch (IllegalArgumentException iae) {
-                        throw new ConfigurationException(
-                            "wrong configuration file format. "
-                            + "cache-expire-policy valid values are "
-                            + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+                        throw new ConfigurationException("wrong configuration file format. cache-expire-policy valid values are " + Arrays.toString(Cache.EXPIRE_POLICY.values()));
                     }
                 }
 
                 this.acl = CacheFactory.createLocalLoadingCache(
                     this.cacheSize,
                     this.cacheExpirePolicy,
-                    this.cacheTTL, (String role) -> {
-                        return this.findRolePermissions(role);
-                    });
+                    this.cacheTTL, role -> this.findRolePermissions(role));
             }
         }
 
@@ -184,8 +178,7 @@ public class MongoAclAuthorizer implements Authorizer {
 
         // debug roles and predicates evaluation order
         if (LOGGER.isDebugEnabled()) {
-            roles(exchange).forEachOrdered(role
-                    -> {
+            roles(exchange).forEachOrdered(role -> {
                 ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
 
                 rolePermissions(role)
@@ -283,6 +276,7 @@ public class MongoAclAuthorizer implements Authorizer {
      */
     public LinkedHashSet<MongoAclPermission> rolePermissions(String role) {
         if (this.cacheEnabled) {
+            // TOFIX pinned thread
             var _rolePermissions = this.acl.getLoading(role);
 
             if (_rolePermissions != null && _rolePermissions.isPresent()) {

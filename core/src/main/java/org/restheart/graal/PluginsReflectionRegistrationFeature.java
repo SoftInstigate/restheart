@@ -39,7 +39,7 @@ import org.restheart.plugins.PluginsScanner;
 /**
  * Automates reflection configuration of plugins for native-image builds
  *
- * @see https://www.graalvm.org/22.3/reference-manual/native-image/dynamic-features/Reflection/#configuration-with-features
+ * @see https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Reflection/#configuration-with-features
  */
 public class PluginsReflectionRegistrationFeature implements Feature {
     @Override

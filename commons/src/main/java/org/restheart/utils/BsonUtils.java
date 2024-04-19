@@ -80,6 +80,7 @@ public class BsonUtils {
     static final Logger LOGGER = LoggerFactory.getLogger(BsonUtils.class);
 
     private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(CodecRegistries.fromProviders(new BsonValueCodecProvider()));
+    private static final CodecRegistry REGISTRY = CodecRegistries.fromCodecs(new DocumentCodec());
 
     private static final String ESCAPED_DOLLAR = "_$";
     private static final String ESCAPED_DOT = "::";
@@ -949,6 +950,15 @@ public class BsonUtils {
     public static Document bsonToDocument(BsonDocument bsonDocument) {
         DecoderContext decoderContext = DecoderContext.builder().build();
         return codec.decode(new BsonDocumentReader(bsonDocument), decoderContext);
+    }
+
+    /**
+     * convert Document to BsonDocument
+     * @param document
+     * @return
+     */
+    public static BsonValue documentToBson(Document document) {
+        return document == null ? BsonNull.VALUE : document.toBsonDocument(BsonDocument.class, REGISTRY);
     }
 
     /**

@@ -23,10 +23,12 @@ package org.restheart.mongodb.db;
 import com.mongodb.client.ClientSession;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.conversions.Bson;
@@ -34,6 +36,12 @@ import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 
 import org.restheart.mongodb.RSOps;
 import org.restheart.utils.HttpStatus;
+
+import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CollationAlternate;
+import com.mongodb.client.model.CollationCaseFirst;
+import com.mongodb.client.model.CollationMaxVariable;
+import com.mongodb.client.model.CollationStrength;
 
 /**
  *
@@ -233,6 +241,78 @@ class Indexes {
             ret.bucketSize(options.get("bucketSize").asDouble().getValue());
         }
 
+        //***Options for collation
+        //collation	document
+        if (options.containsKey("collation")&& options.get("collation").isDocument()) {
+            ret.collation(collation(options.get("collation").asDocument()));
+        }
+
         return ret;
+    }
+
+    private Collation collation(BsonDocument specs) {
+        var builder = Collation.builder();
+
+        if (specs.containsKey("caseLevel") && specs.get("caseLevel").isBoolean()) {
+            builder.caseLevel(specs.get("caseLevel").asBoolean().getValue());
+        }
+
+        if (specs.containsKey("backwards") && specs.get("backwards").isBoolean()) {
+            builder.backwards(specs.get("backwards").asBoolean().getValue());
+        }
+
+        if (specs.containsKey("normalization") && specs.get("normalization").isBoolean()) {
+            builder.normalization(specs.get("normalization").asBoolean().getValue());
+        }
+
+        if (specs.containsKey("numericOrdering") && specs.get("numericOrdering").isBoolean()) {
+            builder.numericOrdering(specs.get("numericOrdering").asBoolean().getValue());
+        }
+
+        if (specs.containsKey("locale") && specs.get("locale").isString()) {
+            builder.locale(specs.get("locale").asString().getValue());
+        }
+
+        try {
+            if (specs.containsKey("collationAlternate") && specs.get("collationAlternate").isString()) {
+                builder.collationAlternate(CollationAlternate.fromString(specs.get("collationAlternate").asString().getValue()));
+            }
+        } catch(IllegalArgumentException iae) {
+            // nothing to do
+        }
+
+        try {
+            if (specs.containsKey("collationCaseFirst") && specs.get("collationCaseFirst").isString()) {
+                builder.collationCaseFirst(CollationCaseFirst.fromString(specs.get("collationCaseFirst").asString().getValue()));
+            }
+        } catch(IllegalArgumentException iae) {
+            // nothing to do
+        }
+
+        try {
+            if (specs.containsKey("collationCaseFirst") && specs.get("collationCaseFirst").isString()) {
+                builder.collationCaseFirst(CollationCaseFirst.fromString(specs.get("collationCaseFirst").asString().getValue()));
+            }
+        } catch(IllegalArgumentException iae) {
+            // nothing to do
+        }
+
+        try {
+            if (specs.containsKey("collationMaxVariable") && specs.get("collationMaxVariable").isString()) {
+                builder.collationMaxVariable(CollationMaxVariable.fromString(specs.get("collationMaxVariable").asString().getValue()));
+            }
+        } catch(IllegalArgumentException iae) {
+            // nothing to do
+        }
+
+        try {
+            if (specs.containsKey("collationStrength") && specs.get("collationStrength").isInt32()) {
+                builder.collationStrength(CollationStrength.fromInt(specs.get("collationStrength").asInt32().getValue()));
+            }
+        } catch(IllegalArgumentException iae) {
+            // nothing to do
+        }
+
+        return builder.build();
     }
 }

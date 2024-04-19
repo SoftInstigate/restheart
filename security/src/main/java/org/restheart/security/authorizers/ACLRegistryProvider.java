@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-security
  * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
+ * Copyright (C) 2018 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,27 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.changestreams;
+package org.restheart.security.authorizers;
 
-/**
- *
- * @author omartrasatti
- */
-public class ChangeStreamNotification {
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Provider;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 
-    private final SessionKey sessionKey;
-    private final String notificationMessage;
+@RegisterPlugin(name="acl-registry", description="provides the ACLRegistry to programmatically define an ACL")
+public class ACLRegistryProvider implements Provider<ACLRegistry> {
 
-    public ChangeStreamNotification(SessionKey sessionKey, String notificationMessage) {
-        this.sessionKey = sessionKey;
-        this.notificationMessage = notificationMessage;
-    }
-
-    public SessionKey getSessionKey() {
-        return this.sessionKey;
-    }
-
-    public String getNotificationMessage() {
-        return this.notificationMessage;
+    @Override
+    public ACLRegistry get(PluginRecord<?> caller) {
+        return ACLRegistryImpl.getInstance();
     }
 }

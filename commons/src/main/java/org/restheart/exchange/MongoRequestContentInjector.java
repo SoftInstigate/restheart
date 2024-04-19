@@ -53,8 +53,7 @@ import io.undertow.util.Headers;
 
 /**
  *
- * Injects the request content to MongoRequest from BufferedByteArrayRequest
- * buffer
+ * Injects the request content to MongoRequest
  *
  * also check the Content-Type header in case the content is not empty
  *
@@ -207,7 +206,7 @@ public class MongoRequestContentInjector {
         final var contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
 
         if (contentType == null) {
-            content = null;
+            content = injectBson(exchange); // if no content type is specified assume is application/json
         } else if (isFormOrMultipart(contentType)) {
             content = injectMultipart(exchange, request, response);
         } else if (isHalOrJson(contentType)) {

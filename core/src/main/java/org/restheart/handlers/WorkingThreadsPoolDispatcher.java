@@ -20,6 +20,10 @@
  */
 package org.restheart.handlers;
 
+import java.util.concurrent.Executor;
+
+import org.restheart.utils.ThreadsUtils;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.BlockingHandler;
 
@@ -38,10 +42,11 @@ import io.undertow.server.handlers.BlockingHandler;
  *
  */
 public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
-    private BlockingHandler blockingHandler = new BlockingHandler(new ErrorHandler(this));
+    private final BlockingHandler blockingHandler = new BlockingHandler(this);
+    private static final Executor virtualThreadsExecutor = ThreadsUtils.virtualThreadsExecutor();
 
     /**
-     * Creates a new instance of PipelineInfoInjector
+     * Creates a new instance of WorkingThreadsPoolDispatcher
      *
      */
     public WorkingThreadsPoolDispatcher() {
@@ -49,7 +54,7 @@ public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
     }
 
     /**
-     * Creates a new instance of ThreadExecutorDispatcher
+     * Creates a new instance of WorkingThreadsPoolDispatcher
      *
      * @param next
      */
@@ -65,7 +70,7 @@ public class WorkingThreadsPoolDispatcher extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange.isInIoThread()) {
-            blockingHandler.handleRequest(exchange);
+            exchange.dispatch(virtualThreadsExecutor, blockingHandler);
         } else {
             next(exchange);
         }

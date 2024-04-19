@@ -1,20 +1,33 @@
 @ignore
+# WARNING: with karate v1.4.1 these scenarios hang
+# it seems the socket does not disconnect after the scenario completes....
+
+# Workaround is forcing socket disconnection by RESTHeart. However if a test fails it hangs.
+
+# Other workaroud is:
+
+# 1) run restheart
+# $ java -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
+
+# 2) execute a single scenario
+# $ cd core
+# $ mvn test -Dtest=RunnerIT "-Dkarate.options=/Users/uji/development/restheart/core/src/test/java/karate/streams.feature:66"
+
+# 3) let the scenario run. at the end it hangs...
+
+# 4) stop restheart. the test result will be printed out
+
 @parallel=false
 Feature: Test Change Streams
 
 Background:
-* def adminAuthHeader = 'Basic YWRtaW46c2VjcmV0'
+* def authHeader = 'Basic YWRtaW46c2VjcmV0'
 * url 'http://localhost:8080'
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
 * def anotherColl = db + '/anotherColl'
-* callonce read('./streams-setup.feature')
-* def parseResponse =
-"""
-function(json) {
-    return JSON.parse(json)
-}
-"""
+* call read('./streams-setup.feature')
+
 * def sleep =
 """
 function(seconds) {
@@ -31,163 +44,205 @@ Scenario: Performing a simple GET request on a Change Stream resource (Expected 
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (without avars)
-
-    # Establish WebSocket connection to get notified.
-    * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStream'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def streamPath = '/_streams/changeStream'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
-    * header Authorization = authHeader
+
     Given path coll
+    And header Authorization = authHeader
     And request {"a":1, "b":2, "c":"test"}
     When method POST
-    And def result = socket.listen(5000)
-    * print result
-    Then def parsedMsg = parseResponse(result)
-    * print parsedMsg
-    And match parsedMsg.operationType == 'insert'
-    And match parsedMsg.fullDocument.a == 1
-    And match parsedMsg.fullDocument.b == 2
-    And match parsedMsg.fullDocument.c == 'test'
+    Then status 201
 
+    * listen 5000
+    * json result = listenResult
+    * match result.operationType == 'insert'
+    * match result.fullDocument.a == 1
+    * match result.fullDocument.b == 2
+    * match result.fullDocument.c == 'test'
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (with avars)
 
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
+    * def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * call sleep 3
 
     # This POST shouldn't be notified
-    * call sleep 3
     * header Authorization = authHeader
     Given path coll
     And request {"anotherProp": 1}
     When method POST
-    And def firstPostResult = socket.listen(5000)
-    Then match firstPostResult == '#null'
+    Then status 201
+
+    * listen 5000
+    * match listenResult == '#null'
 
     * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "anotherProp": 1}
     When method POST
-    And def result = socket.listen(5000)
-    Then def parsedMsg = parseResponse(result)
-    * print parsedMsg
-    And match parsedMsg.operationType == 'insert'
-    And match parsedMsg.fullDocument.targettedProperty == 'test'
-    And match parsedMsg.fullDocument.anotherProp == 1
+    * listen 5000
+    * json result = listenResult
+    * match result.operationType == 'insert'
+    * match result.fullDocument.targettedProperty == 'test'
+    * match result.fullDocument.anotherProp == 1
 
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (without avars)
 
     * header Authorization = authHeader
+    * def streamPath = '/_streams/changeStream'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
     Then def postLocation = responseHeaders['Location'][0]
+    Then status 201
 
-    # Establish WebSocket connection to get notified.
-    * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStream'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
+
     * header Authorization = authHeader
     Given url postLocation
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"b":1}}
     When method PATCH
-    And def result = socket.listen(5000)
-    Then def parsedMsg = parseResponse(result)
-    * print parsedMsg
-    And match parsedMsg.operationType == 'update'
-    And match parsedMsg.updateDescription.updatedFields.moreProp == 'test'
-    And match parsedMsg.updateDescription.updatedFields.anotherProp == 1
-    And match parsedMsg.updateDescription.removedFields contains "b"
 
+    * listen 5000
+    * json parsedMsg = listenResult
+    * print parsedMsg
+    * match parsedMsg.operationType == 'update'
+    * match parsedMsg.updateDescription.updatedFields.moreProp == 'test'
+    * match parsedMsg.updateDescription.updatedFields.anotherProp == 1
+    * match parsedMsg.updateDescription.removedFields contains "b"
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given url baseUrl
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (with avars)
 
     * header Authorization = authHeader
+    * def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+
     Given path coll
     And request {"targettedProperty": "test", "toBeRemoved": null}
     When method POST
     Then def location = responseHeaders['Location'][0]
+    Then status 201
     * print location
 
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
-    # Establish WebSocket connection to get notified.
-    * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
 
-    * call sleep 3
     * header Authorization = authHeader
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"toBeRemoved":1}}
     When method PATCH
-    And def result = socket.listen(5000)
-    Then def parsedMsg = parseResponse(result)
-    * print parsedMsg
-    And match parsedMsg.operationType == 'update'
-    And match parsedMsg.updateDescription.updatedFields.moreProp == 'test'
-    And match parsedMsg.updateDescription.updatedFields.anotherProp == 1
-    And match parsedMsg.updateDescription.removedFields contains "toBeRemoved"
+    Then status 200
 
+    * listen 5000
+    * json parsedMsg = listenResult
+    * print parsedMsg
+    * match parsedMsg.operationType == 'update'
+    * match parsedMsg.updateDescription.updatedFields.moreProp == 'test'
+    * match parsedMsg.updateDescription.updatedFields.anotherProp == 1
+    * match parsedMsg.updateDescription.removedFields contains "toBeRemoved"
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given url baseUrl
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PUT upserting notifications (without avars)
 
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStream'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def streamPath = '/_streams/changeStream'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
+
     * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"a":1, "b":2, "c":"test"}
     And param wm = 'upsert'
     When method PUT
-    And def firstResult = socket.listen(5000)
-    Then def parsedInsertingMsg = parseResponse(firstResult)
+    Then status 201
+
+    * listen 5000
+    * json parsedInsertingMsg = listenResult
     And print parsedInsertingMsg
-    And match parsedInsertingMsg.operationType == 'insert'
-    And match parsedInsertingMsg.fullDocument.a == 1
-    And match parsedInsertingMsg.fullDocument.b == 2
-    And match parsedInsertingMsg.fullDocument.c == 'test'
+    * match parsedInsertingMsg.operationType == 'insert'
+    * match parsedInsertingMsg.fullDocument.a == 1
+    * match parsedInsertingMsg.fullDocument.b == 2
+    * match parsedInsertingMsg.fullDocument.c == 'test'
 
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStream'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def streamPath = '/_streams/changeStream'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
+
     * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"moreProp": "test", "anotherProp": 1}
     And param wm = 'upsert'
     When method PUT
-    And def secondResult = socket.listen(5000)
-    Then def parsedEditMsg = parseResponse(secondResult)
-    And print parsedEditMsg
-    And match parsedEditMsg.operationType == 'replace'
+    Then status 200
+
+    * listen 5000
+    * json parsedEditMsg = listenResult
+    * print parsedEditMsg
+    * match parsedEditMsg.operationType == 'replace'
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 
 @requires-mongodb-3.6 @requires-replica-set
@@ -195,52 +250,52 @@ Scenario: test PUT upserting notifications (with avars)
 
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
+
     * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"targettedProperty": "test"}
     And param wm = 'upsert'
     When method PUT
-    And def firstResult = socket.listen(5000)
-    Then def parsedInsertingMsg = parseResponse(firstResult)
-    And print parsedInsertingMsg
-    And match parsedInsertingMsg.operationType == 'insert'
-    And match parsedInsertingMsg.fullDocument.targettedProperty == 'test'
+    Then status 201
+
+    * listen 5000
+    * json parsedInsertingMsg = listenResult
+    * print parsedInsertingMsg
+    * match parsedInsertingMsg.operationType == 'insert'
+    * match parsedInsertingMsg.fullDocument.targettedProperty == 'test'
 
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/changeStream'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    * def streamPath = '/_streams/changeStream'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def socket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
     * call sleep 3
+
     * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"moreProp": "test", "anotherProp": 1}
     And param wm = 'upsert'
     When method PUT
-    And def secondResult = socket.listen(5000)
-    Then def parsedEditMsg = parseResponse(secondResult)
-    And print parsedEditMsg
-    And match parsedEditMsg.operationType == 'replace'
+    Then status 200
 
+    * listen 5000
+    * json parsedEditMsg = listenResult
+    * print parsedEditMsg
+    * match parsedEditMsg.operationType == 'replace'
 
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: https://github.com/SoftInstigate/restheart/issues/373
-
-    # Connect to "cs" stream.
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
     * header Authorization = authHeader
-    Given def streamPath = '/_streams/cs'
-    And def baseUrl = 'http://localhost:8080'
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host)
-
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/414
@@ -260,47 +315,52 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/414
 Scenario: https://github.com/SoftInstigate/restheart/issues/415
 
     # Establish WebSocket connection to get notified.
-    Given def streamPath = '/_streams/testResume'
-    And def baseUrl = 'http://localhost:8080'
-
-    And def host = baseUrl + encodeURI(coll + streamPath)
+    * def streamPath = '/_streams/testResume'
+    * def baseUrl = 'http://localhost:8080'
+    * def host = baseUrl + encodeURI(coll + streamPath)
+    * def firstSocket = karate.webSocket(host, null, { headers: { Authorization: 'Basic YWRtaW46c2VjcmV0' }})
+    * call sleep 3
 
     * header Authorization = authHeader
     Given path coll
     And request { "n": 1 }
-    And def firstSocket = karate.webSocket(host);
-    * call sleep 2
     When method POST
-    And def firstResult = firstSocket.listen(5000)
-    * print firstResult
-    Then def firstParsedMsg = parseResponse(firstResult)
+    Then status 201
+
+    * listen 5000
+    * json firstParsedMsg = listenResult
     * print firstParsedMsg
-    And match firstParsedMsg.operationType == 'insert'
-    And match firstParsedMsg.fullDocument.n == 1
-    And def firstId = firstParsedMsg.fullDocument._id['$oid']
+    * match firstParsedMsg.operationType == 'insert'
+    * match firstParsedMsg.fullDocument.n == 1
+    * def firstId = firstParsedMsg.fullDocument._id['$oid']
 
     * header Authorization = authHeader
     Given path coll
     # this POST will cause an error in the change stream leading to disconnect the socket
     And request { "n": "string" }
-    And def secondSocket = karate.webSocket(host);
-    * call sleep 2
     When method POST
     Then status 201
-    And def secondResult = secondSocket.listen(5000)
-    And match secondResult == '#null'
 
-    * call sleep 3
+    * listen 5000
+    * match listenResult == '#null'
+
     * header Authorization = authHeader
     Given path coll
     And request { "n": 2 }
-    And def thirdSocket = karate.webSocket(host);
-    * call sleep 2
     When method POST
     Then status 201
-    And def thirdResult = thirdSocket.listen(5000)
-    * print thirdResult
-    Then def thirdParsedMsg = parseResponse(thirdResult)
+
+    * listen 5000
+    * match listenResult != '#null'
+    * json thirdParsedMsg = listenResult
     * print thirdParsedMsg
-    And match thirdParsedMsg.operationType == 'insert'
-    And match thirdParsedMsg.fullDocument.div == 0.5
+    * match thirdParsedMsg.operationType == 'insert'
+    * match thirdParsedMsg.fullDocument.div == 0.5
+
+    # this is a workaround to force socket to disconnet (thanks to obsoleteChangeStreamRemover)
+    # otherwise the test hangs
+    * header Authorization = authHeader
+    Given path coll
+    And request {"streams": [] }
+    When method PUT
+    Then status 200

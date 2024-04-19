@@ -271,8 +271,6 @@
 
 /mongo/default-representation-format: HAL
 
-/mongo/metrics-gathering-level: DATABASE
-
 /graphql/db: test-graphql
 /graphql/verbose: true
 /graphql/app-def-cache-ttl: 100

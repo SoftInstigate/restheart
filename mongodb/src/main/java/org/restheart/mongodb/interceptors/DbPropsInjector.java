@@ -22,7 +22,6 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.Optional;
 
-import com.mongodb.MongoException;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
@@ -36,6 +35,8 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoException;
 
 /**
  *
@@ -57,8 +58,6 @@ public class DbPropsInjector implements MongoInterceptor {
 
     /**
      * Makes sure that dbs is instantiated after MongoClient initialization
-     *
-     * @param mclient
      */
     @OnInit
     public void init() {
@@ -134,7 +133,6 @@ public class DbPropsInjector implements MongoInterceptor {
             || request.isTxn()
             || request.isTxns()
             || request.isRoot()
-            || request.isRootSize()
-            || request.isMetrics());
+            || request.isRootSize());
     }
 }

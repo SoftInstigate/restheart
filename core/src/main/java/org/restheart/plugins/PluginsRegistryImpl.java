@@ -70,7 +70,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import static io.undertow.Handlers.path;
-import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.PathMatcher;
 
@@ -107,8 +106,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private Set<PluginRecord<Initializer>> initializers;
 
     private Set<PluginRecord<Interceptor<?, ?>>> interceptors;
-
-    private final Set<Predicate> globalSecurityPredicates = new LinkedHashSet<>();
 
     private PluginsRegistryImpl() {
     }
@@ -352,17 +349,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         }
 
         return Collections.unmodifiableSet(this.services);
-    }
-
-    /**
-     * global security predicates must all resolve to true to allow the request
-     *
-     * @return the globalSecurityPredicates allow to get and set the global security
-     *         predicates to apply to all requests
-     */
-    @Override
-    public Set<Predicate> getGlobalSecurityPredicates() {
-        return globalSecurityPredicates;
     }
 
     @Override

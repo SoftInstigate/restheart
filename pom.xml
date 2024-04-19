@@ -18,8 +18,8 @@
         <finalName>${project.artifactId}-${project.version}</finalName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!--
             mvn install -DskipUTs   : Skips Unit tests
@@ -34,7 +34,8 @@
             mvn clean verify -Dmongodb.version="5.0"  (to test with mongo:5.0 container)
         -->
         <mongodb.version>6.0</mongodb.version>
-        <graalvm.version>23.0.2</graalvm.version>
+        <graalvm.version>23.1.2</graalvm.version>
+        <truffle.version>24.0.0</truffle.version> <!-- Truffle and Graal languages are compatible with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -211,11 +212,6 @@
                 <version>4.11.1</version>
             </dependency>
             <dependency>
-                <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <version>4.11.1</version>
-            </dependency>
-            <dependency>
                 <groupId>com.github.jnr</groupId>
                 <artifactId>jnr-unixsocket</artifactId>
                 <version>0.38.21</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
@@ -353,29 +349,54 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.165</version>
+                <version>4.8.168</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
+                <version>${truffle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
+                <version>${truffle.version}</version>
+                <type>pom</type>
+            </dependency>
+            <!-- The following transitive dependencies of org.graalvm.polyglot artifacts
+                 are overridden with scope=provided to not include them in restheart jars
+                 Including them leads to errors in building native images
+                    Error: Class-path entry file:///.../restheart.jar contains class com.oracle.svm.core.annotate.TargetElement.
+                    his class is part of the image builder itself (in jrt:/org.graalvm.nativeimage) and must not be passed via -cp.
+            -->
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>nativeimage</artifactId>
+                <version>${graalvm.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
-                <artifactId>graal-sdk</artifactId>
+                <artifactId>collections</artifactId>
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/svm -->
             <dependency>
-                <groupId>org.graalvm.nativeimage</groupId>
-                <artifactId>svm</artifactId>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>word</artifactId>
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
-                <!-- remove transitive dependencies
-                     that break karate tests execution
-                     we just need the package com.oracle.svm.core.annotate -->
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-runtime</artifactId>
+                <version>${truffle.version}</version>
+                <scope>provided</scope> <!-- Since Truffle JIT compilation conflicts with Virtual Threads, the 'truffle-runtime' is excluded from 'restheart.jar'. -->
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-compiler</artifactId>
+                <version>${truffle.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java</groupId>
@@ -386,16 +407,6 @@
                 <groupId>com.nulab-inc</groupId>
                 <artifactId>zxcvbn</artifactId>
                 <version>1.8.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js-scriptengine</artifactId>
-                <version>${graalvm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js</artifactId>
-                <version>${graalvm.version}</version>
             </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
@@ -409,11 +420,13 @@
                 <artifactId>karate-junit5</artifactId>
                 <version>1.4.1</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.graalvm.js</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
-            <!-- upgrade karate dependencies on org.graalvm.js artifacts
-                 to match the used GraalVM version
-                 otherwise the tests execution will hang
-            -->
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
@@ -474,7 +487,7 @@
                                         </excludes>
                                     </requireReleaseDeps>
                                     <requireJavaVersion>
-                                        <version>17</version>
+                                        <version>21</version>
                                     </requireJavaVersion>
                                 </rules>
                                 <fail>true</fail>
@@ -517,6 +530,7 @@
                             <exclude>**/IT*.java</exclude>
                         </excludes>
                         <trimStackTrace>true</trimStackTrace>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -561,7 +575,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.9.26</version>
+                    <version>0.10.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

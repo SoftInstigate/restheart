@@ -46,9 +46,6 @@ public class MongoClientProvider implements Provider<MongoClient> {
 
         // force first connection to MongoDb
         MongoClientSingleton.getInstance().client();
-
-        // init the reactive client
-        MongoReactiveClientProvider.init(mongoConnetion);
     }
 
     @Override

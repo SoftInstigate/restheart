@@ -20,10 +20,9 @@
  */
 package org.restheart.mongodb.handlers;
 
-import io.undertow.server.HttpServerExchange;
-
 import java.util.HashMap;
 import java.util.Map;
+
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
@@ -63,10 +62,11 @@ import org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.mongodb.handlers.schema.JsonSchemaTransformer;
 import org.restheart.mongodb.handlers.sessions.DeleteSessionHandler;
 import org.restheart.mongodb.handlers.sessions.PostSessionHandler;
-import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -370,8 +370,6 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                 ));
 
         putHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
-
-        putHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler());
     }
 
     /**

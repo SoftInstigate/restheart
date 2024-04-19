@@ -22,13 +22,13 @@
 package org.restheart.plugins;
 
 import java.net.URL;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -174,37 +174,37 @@ public class PluginsTest {
 
         var iC_A = new ArrayList<InjectionDescriptor>();
         var apC_A = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apC_A.add(new AbstractMap.SimpleEntry<String, Object>("value", "a"));
+        apC_A.add(new AbstractMap.SimpleEntry<>("value", "a"));
         iC_A.add(new FieldInjectionDescriptor("s", String.class, apC_A, 1));
 
         var iD_C = new ArrayList<InjectionDescriptor>();
         var apD_C = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apD_C.add(new AbstractMap.SimpleEntry<String, Object>("value", "c_a"));
+        apD_C.add(new AbstractMap.SimpleEntry<>("value", "c_a"));
         iD_C.add(new FieldInjectionDescriptor("s", String.class, apD_C, 2));
 
         var iB = new ArrayList<InjectionDescriptor>();
         var apB = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apB.add(new AbstractMap.SimpleEntry<String, Object>("value", "notExisting"));
+        apB.add(new AbstractMap.SimpleEntry<>("value", "notExisting"));
         iB.add(new FieldInjectionDescriptor("s", String.class, apB, 3));
 
         var iE_B = new ArrayList<InjectionDescriptor>();
         var apE_B = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apE_B.add(new AbstractMap.SimpleEntry<String, Object>("value", "b"));
+        apE_B.add(new AbstractMap.SimpleEntry<>("value", "b"));
         iE_B.add(new FieldInjectionDescriptor("s", String.class, apE_B, 4));
 
         var iWT = new ArrayList<InjectionDescriptor>();
         var apWT = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apWT.add(new AbstractMap.SimpleEntry<String, Object>("value", "a"));
+        apWT.add(new AbstractMap.SimpleEntry<>("value", "a"));
         iWT.add(new FieldInjectionDescriptor("s", Integer.class, apWT, 5));
 
         var iSelf = new ArrayList<InjectionDescriptor>();
         var apSelf = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apSelf.add(new AbstractMap.SimpleEntry<String, Object>("value", "self"));
+        apSelf.add(new AbstractMap.SimpleEntry<>("value", "self"));
         iSelf.add(new FieldInjectionDescriptor("s", String.class, apSelf, 6));
 
         var iC1 = new ArrayList<InjectionDescriptor>();
         var apC1 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-        apC1.add(new AbstractMap.SimpleEntry<String, Object>("value", "c2"));
+        apC1.add(new AbstractMap.SimpleEntry<>("value", "c2"));
         iC1.add(new FieldInjectionDescriptor("s", String.class, apC1, 7));
 
         var iC2 = new ArrayList<InjectionDescriptor>();

@@ -20,25 +20,12 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.BulkWriteOptions;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.exists;
-import com.mongodb.client.model.FindOneAndReplaceOptions;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
-import com.mongodb.client.model.InsertOneModel;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.ReturnDocument;
-import com.mongodb.client.model.UpdateOneModel;
-import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
@@ -51,10 +38,25 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.BulkWriteOptions;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.exists;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 
 /**
  *
@@ -423,8 +425,8 @@ public class DbUtils {
                 }
 
                 switch(writeMode) {
-                    case UPSERT -> updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(true)));
-                    case UPDATE -> updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(false)));
+                    case UPSERT -> updates.add(new ReplaceOneModel<>(_filter, document, new ReplaceOptions().upsert(true)));
+                    case UPDATE -> updates.add(new ReplaceOneModel<>(_filter, document, new ReplaceOptions().upsert(false)));
                     case INSERT -> updates.add(new InsertOneModel<>(document));
                 }
             });
