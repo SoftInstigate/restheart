@@ -76,25 +76,25 @@ jobs:
           pull: true # pull all required images before building
           tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
-    #   - name: Build and Push GraalVM Docker image
-    #     if: ${{ matrix.deploy }}
-    #     uses: docker/build-push-action@v4
-    #     with:
-    #       context: ./core/
-    #       file: ./core/Dockerfile.graalvm
-    #       push: true # push all images built
-    #       pull: true # pull all required images before building
-    #       tags: softinstigate/restheart-snapshot:graalvm,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
+      - name: Build and Push GraalVM Docker image
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v4
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.graalvm
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: softinstigate/restheart-snapshot:graalvm,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
 
-    #   - name: Build and Push distroless docker image
-    #     if: ${{ matrix.deploy }}
-    #     uses: docker/build-push-action@v4
-    #     with:
-    #       context: ./core/
-    #       file: ./core/Dockerfile.distroless
-    #       push: true # push all images built
-    #       pull: true # pull all required images before building
-    #       tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
+      - name: Build and Push distroless docker image
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v4
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.distroless
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
