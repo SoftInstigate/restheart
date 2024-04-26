@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -312,12 +313,23 @@ public class MongoRequestContentInjector {
         return content;
     }
 
+    private static FormDataParser parser(HttpServerExchange exchange) {
+        if (!exchange.isBlocking()) {
+            exchange.startBlocking();
+        }
+
+        return FORM_PARSER.createParser(exchange);
+    }
+
     private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+        // form data requires
+        exchange.startBlocking();
+
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
              return injectMultiparForFiles(exchange, request, response);
         }
 
-        var parser = FORM_PARSER.createParser(exchange);
+        var parser = parser(exchange);
 
         if (parser == null) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
@@ -369,7 +381,7 @@ public class MongoRequestContentInjector {
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
         BsonValue content;
 
-        var parser = FORM_PARSER.createParser(exchange);
+        var parser = parser(exchange);
 
         if (parser == null) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
