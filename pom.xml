@@ -208,17 +208,17 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>4.11.1</version>
+                <version>4.11.2</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <version>4.11.1</version>
+                <version>4.11.2</version>
             </dependency>
             <dependency>
                 <groupId>com.github.jnr</groupId>
                 <artifactId>jnr-unixsocket</artifactId>
-                <version>0.38.21</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+                <version>0.38.22</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
@@ -233,12 +233,12 @@
             <dependency>
                 <groupId>com.github.luben</groupId>
                 <artifactId>zstd-jni</artifactId>
-                <version>1.5.5-11</version>
+                <version>1.5.6-3</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.3.12.Final</version>
+                <version>2.3.13.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -298,7 +298,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.12</version>
+                <version>2.0.13</version>
             </dependency>
             <dependency>
                 <groupId>org.kohsuke</groupId>
@@ -323,7 +323,7 @@
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
-                <version>2.9.1</version>
+                <version>2.9.2</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -353,7 +353,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.165</version>
+                <version>4.8.172</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
@@ -401,7 +401,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>5.10.1</version>
+                <version>5.10.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
