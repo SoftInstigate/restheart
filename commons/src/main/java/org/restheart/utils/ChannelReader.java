@@ -21,6 +21,7 @@
 package org.restheart.utils;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -41,7 +42,8 @@ public class ChannelReader {
 
         receiver.receiveFullString(
             (_exchange, data) -> ret[0] = data,
-            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe));
+            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe),
+            Charset.defaultCharset());
 
         return ret[0];
     }
