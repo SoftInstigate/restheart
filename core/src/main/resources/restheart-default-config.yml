@@ -456,9 +456,17 @@ core:
   # Useful when RESTHeart is mediated by a reverse proxy or an API gateway to determine the instance's correct URL
   base-url: null
 
-  # Number of I/O threads created for non-blocking tasks. Suggested value: core*8.
+  # Number of I/O threads created for non-blocking tasks. Suggested value: core.
   # if <= 0, use the number of cores.
   io-threads: 0
+
+  # Initial number of platform carrier threads for executing worker virtual threads in blocking operations.
+  # Suggested value: 1.5*core.
+  # if <= 0, use 1.5 times the number of cores.
+  workers-scheduler-parallelism: 0
+
+  # Max number of platform carrier threads for executing worker virtual threads in blocking operations.
+  workers-scheduler-max-pool-size: 256
 
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209

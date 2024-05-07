@@ -472,6 +472,11 @@ core:
   # if <= 0, use the number of cores.
   io-threads: 0
 
+  # Number of platform carrier threads for executing worker virtual threads in blocking operations.
+  # Suggested value: 1.5*core.
+  # if <= 0, use 1.5 times the number of cores.
+  worker-carrier-threads: 0
+
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
   buffer-size: 16364

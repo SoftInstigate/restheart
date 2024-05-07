@@ -220,7 +220,6 @@ public final class Bootstrapper {
 
     public static void main(final String[] args) throws ConfigurationException, IOException {
         doNotWarnTruffleInterpreterOnly();
-
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
@@ -531,6 +530,7 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
+        // TODO use undertow default buffer pool for io-treads and FastByteBufferPool for virtual threads
         builder.setByteBufferPool(new FastByteBufferPool(
             configuration.coreModule().directBuffers(),
             configuration.coreModule().bufferSize()));
@@ -569,15 +569,27 @@ public final class Bootstrapper {
 
         HANDLERS = getPipeline(authMechanisms, authorizers, tokenManager);
 
-        // update buffer size in
+        // update buffer size
         Exchange.updateBufferSize(configuration.coreModule().bufferSize());
 
         // io threads
-        // use value in configuration, or auto detect values if io-threds <= 0
+        // use value in configuration, or auto detect values if io-threads <= 0
         var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
-        LOGGER.info("Available processors: {}, IO threads{}: {}, worker virtual threads: \u221e", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads);
+        // virtual threads carriers
+        // use value in configuration, or auto detect values if virtual-threads-carriers <= 0
+        var autoConfigWorkersSchedulerParallelism = configuration.coreModule().workersSchedulerParallelism() <= 0;
+        var workersSchedulerParallelism = autoConfigWorkersSchedulerParallelism ? Math.round(Runtime.getRuntime().availableProcessors()*1.5) : configuration.coreModule().workersSchedulerParallelism();
+
+        // apply workersSchedulerParallelism and workersSchedulerMaxPoolSize
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(workersSchedulerParallelism));
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(configuration.coreModule().workersSchedulerMaxPoolSize()));
+
+        LOGGER.info("Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
+            Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads,
+            autoConfigWorkersSchedulerParallelism ? " (auto detected)" : "", workersSchedulerParallelism,
+            configuration.coreModule().workersSchedulerMaxPoolSize());
 
         builder = builder
             .setIoThreads(ioThreads)
