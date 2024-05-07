@@ -21,6 +21,7 @@
 package org.restheart.handlers;
 
 import org.restheart.Version;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.utils.HttpStatus;
@@ -75,12 +76,11 @@ public class ErrorHandler extends PipelinedHandler {
 
             if (pi != null) {
                 var errMsg = "Error handling the request. "
-                        + "An external dependency could be missing for "
+                        + "An external dependency appears to be missing for plugin type '"
                         + pi.getType().name().toLowerCase()
-                        + " "
+                        + "' with the name '"
                         + pi.getName()
-                        + ". Copy the missing dependency jar to the plugins directory "
-                        + "to add it to the classpath";
+                        + "'.Please copy the missing dependency JAR file to the plugins directory to ensure it's included in the classpath.";
 
                 LOGGER.error(errMsg, ncdfe);
             } else {
@@ -94,17 +94,18 @@ public class ErrorHandler extends PipelinedHandler {
             var pi = Request.of(exchange).getPipelineInfo();
 
             if (pi != null) {
-                String version = Version.getInstance().getVersion() == null
-                        ? "of correct version"
-                        : "v" + Version.getInstance().getVersion();
+                var version = Version.getInstance().getVersion() == null
+                    ? "of correct version"
+                    : "v" + Version.getInstance().getVersion();
 
-                var errMsg = "Linkage error handling the request. "
-                        + "Check that "
-                        + pi.getType().name().toLowerCase()
-                        + " "
-                        + pi.getName()
-                        + " was compiled against restheart-commons "
-                        + version;
+                var errMsg = "Linkage error occurred while handling the request. "
+                    + "Ensure that '"
+                    + pi.getType().name().toLowerCase()
+                    + "' with the name '"
+                    + pi.getName()
+                    + "' was compiled using the correct version of restheart-commons: "
+                    + version;
+
 
                 LOGGER.error(errMsg, le);
             } else {
@@ -113,6 +114,9 @@ public class ErrorHandler extends PipelinedHandler {
 
             Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", le);
 
+            sender.handleRequest(exchange);
+        } catch (BadRequestException bre) {
+            Response.of(exchange).setInError(bre.getStatusCode(), bre.getMessage());
             sender.handleRequest(exchange);
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);

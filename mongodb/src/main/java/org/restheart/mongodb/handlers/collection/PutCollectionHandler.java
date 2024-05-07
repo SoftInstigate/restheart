@@ -21,8 +21,7 @@
 package org.restheart.mongodb.handlers.collection;
 
 import java.util.Optional;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -31,6 +30,9 @@ import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -77,7 +79,7 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object");
             next(exchange);
             return;
         }

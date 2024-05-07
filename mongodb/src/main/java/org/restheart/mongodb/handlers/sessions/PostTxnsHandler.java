@@ -65,7 +65,7 @@ public class PostTxnsHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Invalid session id");
             next(exchange);
             return;
         }

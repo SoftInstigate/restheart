@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.files;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -30,6 +28,9 @@ import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -71,7 +72,7 @@ public class PostBucketHandler extends PipelinedHandler {
 
         // must be an object
         if (!request.getContent().isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data cannot be an array");
             next(exchange);
             return;
         }

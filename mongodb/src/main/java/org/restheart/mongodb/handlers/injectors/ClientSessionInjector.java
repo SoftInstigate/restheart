@@ -20,13 +20,14 @@
  */
 package org.restheart.mongodb.handlers.injectors;
 
-import io.undertow.server.HttpServerExchange;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -103,7 +104,7 @@ public class ClientSessionInjector extends PipelinedHandler {
         try {
             request.setClientSession(getClientSessionFactory().getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, ex.getMessage());
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage());
             next(exchange);
             return;
         }

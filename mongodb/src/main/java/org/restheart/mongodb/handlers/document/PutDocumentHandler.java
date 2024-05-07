@@ -20,9 +20,6 @@
  */
 package org.restheart.mongodb.handlers.document;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-
 import java.util.Optional;
 
 import org.bson.BsonDocument;
@@ -33,6 +30,9 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -80,7 +80,7 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a josn object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data must be a josn object");
             next(exchange);
             return;
         }
@@ -92,7 +92,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "_id in content body is different than id in URL");
             next(exchange);
             return;
         }

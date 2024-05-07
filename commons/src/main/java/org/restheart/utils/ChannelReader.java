@@ -34,7 +34,7 @@ public class ChannelReader {
      *
      * @param exchange
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static String readString(HttpServerExchange exchange) throws IOException {
         final var receiver = exchange.getRequestReceiver();
@@ -52,7 +52,7 @@ public class ChannelReader {
      *
      * @param exchange
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static byte[] readBytes(HttpServerExchange exchange) throws IOException {
         final var receiver = exchange.getRequestReceiver();

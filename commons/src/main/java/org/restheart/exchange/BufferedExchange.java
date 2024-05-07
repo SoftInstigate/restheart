@@ -19,8 +19,9 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.connector.PooledByteBuffer;
 import java.io.IOException;
+
+import io.undertow.connector.PooledByteBuffer;
 
 /**
  *
@@ -36,7 +37,7 @@ public interface BufferedExchange<T> {
      * reads data from the buffer converting it to T
      *
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public abstract T readContent() throws IOException;
 
@@ -44,7 +45,7 @@ public interface BufferedExchange<T> {
      * writes data the buffer from T
      *
      * @param content
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public abstract void writeContent(T content) throws IOException;
 

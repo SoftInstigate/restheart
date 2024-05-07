@@ -20,15 +20,16 @@
  */
 package org.restheart.mongodb.utils;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -97,16 +98,16 @@ public class RequestHelper {
     public static boolean isNotAcceptableContent(BsonValue content, HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             return true;
         }
         return false;
@@ -124,21 +125,21 @@ public class RequestHelper {
     public static boolean isNotAcceptableContentForPatch(BsonValue content, HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             return true;
         }
         // can only proceed with an object or an array
         if (!content.isDocument() && !content.isArray() ) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object or array");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object or array");
             return true;
         }
         if (content.isDocument() && content.asDocument().isEmpty()) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             return true;
         }
 
         if (content.isArray() && content.asArray().isEmpty()) {
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             return true;
         }
         return false;

@@ -20,8 +20,6 @@
  */
 package org.restheart.test.integration;
 
-import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,8 +36,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.restheart.Bootstrapper;
 import org.restheart.mongodb.RHMongoClients;
+import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.mongodb.ConnectionString;
 
 import kong.unirest.Unirest;
@@ -118,7 +118,7 @@ public abstract class AbstactIT {
      *
      * @param resourcePath
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws URISyntaxException
      */
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {

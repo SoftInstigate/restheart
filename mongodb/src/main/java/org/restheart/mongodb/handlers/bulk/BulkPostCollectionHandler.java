@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.bulk;
 
-import io.undertow.server.HttpServerExchange;
-
 import java.util.Optional;
 
 import org.bson.BsonArray;
@@ -33,6 +31,8 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -140,7 +140,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
         if (document.isDocument() && document.asDocument().containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);
                 return false;
             }

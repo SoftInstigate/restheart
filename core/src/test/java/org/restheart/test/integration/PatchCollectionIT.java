@@ -20,11 +20,10 @@
  */
 package org.restheart.test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
@@ -68,7 +67,7 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
         resp = adminExecutor.execute(
                 Request.Patch(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
                         Exchange.HAL_JSON_MEDIA_TYPE));
-        check("check patch tmp doc without data", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        check("check patch tmp doc without data", resp, HttpStatus.SC_BAD_REQUEST);
 
         // try to patch without etag forcing etag check
         resp = adminExecutor.execute(Request.Patch(addCheckEtag(collectionTmpUri)).bodyString("{a:1}", halCT)

@@ -19,10 +19,11 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 
 import org.restheart.utils.ChannelReader;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -34,26 +35,19 @@ public class StringRequest extends ServiceRequest<String> {
     }
 
     public static StringRequest init(HttpServerExchange exchange) {
-        var ret = new StringRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (IOException ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+        return new StringRequest(exchange);
     }
 
     public static StringRequest of(HttpServerExchange exchange) {
         return of(exchange, StringRequest.class);
     }
 
-    public void injectContent() throws IOException {
+    @Override
+    public String parseContent() throws IOException, BadRequestException {
         if (wrapped.getRequestContentLength() > 0) {
-            setContent(ChannelReader.readString(wrapped));
+            return ChannelReader.readString(wrapped);
         } else {
-            setContent(null);
+            return null;
         }
     }
 }

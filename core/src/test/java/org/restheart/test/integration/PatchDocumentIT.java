@@ -20,12 +20,11 @@
  */
 package org.restheart.test.integration;
 
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.fluent.Response;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.fluent.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
@@ -34,10 +33,10 @@ import org.restheart.utils.HttpStatus;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
 
 import io.undertow.util.Headers;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 
 /**
  *
@@ -83,7 +82,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         // try to patch without body
         resp = adminExecutor.execute(Request.Patch(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
                 Exchange.HAL_JSON_MEDIA_TYPE));
-        check("check patch tmp doc without data", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        check("check patch tmp doc without data", resp, HttpStatus.SC_BAD_REQUEST);
 
         // try to patch without etag forcing checkEtag
         resp = adminExecutor.execute(Request.Patch(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT)

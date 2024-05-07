@@ -85,7 +85,7 @@ Scenario: Test bad multipart/form-data POST document
     Given path '/test-multipart-form/coll'
     And multipart fields { wronjson: '{ foo: "bar"' }
     When method POST
-    Then status 406
+    Then status 400
 
 Scenario: Test application/x-www-form-urlencoded POST document
 
@@ -136,7 +136,7 @@ Scenario: Test application/x-www-form-urlencoded POST document
     Given path '/test-multipart-form/coll'
     And form field wrongjson = '{ foo: "bar }'
     When method POST
-    Then status 406
+    Then status 400
 
 Scenario: Test application/x-www-form-urlencoded POST document with unquoted string
 

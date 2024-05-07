@@ -373,7 +373,7 @@ Feature: GraphQL query response test
     Given request { users(limit: 1) { posts { text } } } # this is invalid since body should be { query: "{...}" }
     When method POST
     Then status 400
-    And match response.errors[0].message == 'missing query field'
+    And match response.errors[0].message == 'Query cannot be null'
 
     * call confDestroyer
 

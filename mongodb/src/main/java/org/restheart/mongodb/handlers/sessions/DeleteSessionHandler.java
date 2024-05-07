@@ -20,18 +20,20 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
+
 import org.bson.BsonBinary;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.RHMongoClients;
-import org.restheart.utils.HttpStatus;
-import static org.restheart.utils.BsonUtils.document;
 import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
+import org.restheart.utils.HttpStatus;
 
 import com.mongodb.client.MongoClient;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -62,7 +64,7 @@ public class DeleteSessionHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(request.getPathParam("/_sessions/{sid}", "sid"));
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Invalid session id");
             next(exchange);
             return;
         }

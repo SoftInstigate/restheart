@@ -134,7 +134,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * with large data payloads.
      *
      * @param exchange
-     * @throws IOException
+     * @throws java.io.IOException
      */
     private void fastEndExchange(HttpServerExchange exchange) throws IOException {
         var requestChannel = exchange.getRequestChannel();

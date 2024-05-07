@@ -20,10 +20,6 @@
  */
 package org.restheart.mongodb.handlers.collection;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
-
 import java.util.Optional;
 
 import org.bson.BsonDocument;
@@ -32,10 +28,14 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.MongoURLUtils;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -83,7 +83,7 @@ public class PostCollectionHandler extends PipelinedHandler {
 
         // cannot POST an array
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object");
             next(exchange);
             return;
         }
@@ -100,7 +100,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         // check if the doc_type is different
         if (!content.containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID) && !(request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);
                 return;
             }
