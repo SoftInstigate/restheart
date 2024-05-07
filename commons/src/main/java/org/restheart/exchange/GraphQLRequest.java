@@ -78,22 +78,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     }
 
     private JsonElement _parseContentJson(String rawBody) throws JsonSyntaxException, BadRequestException {
-        var json = JsonParser.parseString(rawBody);
-
-        // json must contain the query field and is must be a string
-        // if (json.isJsonObject() && json.getAsJsonObject().has(QUERY_FIELD)) {
-        //     if (json.getAsJsonObject().get(QUERY_FIELD).isJsonPrimitive()) {
-        //         if (!json.getAsJsonObject().get(QUERY_FIELD).getAsJsonPrimitive().isString()) {
-        //             throw new BadRequestException("query field must be a string", HttpStatus.SC_BAD_REQUEST);
-        //         }
-        //     } else {
-        //         throw new BadRequestException("query field must be a string", HttpStatus.SC_BAD_REQUEST);
-        //     }
-        // } else {
-        //     throw new BadRequestException("missing query field", HttpStatus.SC_BAD_REQUEST);
-        // }
-
-        return json;
+        return JsonParser.parseString(rawBody);
     }
 
     private JsonElement _parseContentGraphQL(String rawBody) {

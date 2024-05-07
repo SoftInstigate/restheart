@@ -297,16 +297,13 @@ public class MongoRequestContentInjector {
     }
 
     private static FormDataParser parser(HttpServerExchange exchange) {
-        if (!exchange.isBlocking()) {
-            exchange.startBlocking();
-        }
+        // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         return FORM_PARSER.createParser(exchange);
     }
 
     private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) throws BadRequestException, IOException {
-        // form data requires
-        exchange.startBlocking();
+        // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
              return injectMultiparForFiles(exchange, request, response);

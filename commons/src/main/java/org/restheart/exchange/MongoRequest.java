@@ -1107,7 +1107,7 @@ public class MongoRequest extends BsonRequest {
         // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
         var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(wrapped);
         return attacheBsonContent == null
-            ? MongoRequestContentInjector.inject(wrapped) // TODO throw BadRequestException if error parsing
+            ? MongoRequestContentInjector.inject(wrapped)
             : attacheBsonContent;
     }
 

@@ -55,7 +55,7 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
-import org.restheart.buffers.FastByteBufferPool;
+import org.restheart.buffers.ThreadAwareByteBufferPool;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.ProxiedResource;
@@ -530,10 +530,12 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
-        // TODO use undertow default buffer pool for io-treads and FastByteBufferPool for virtual threads
-        builder.setByteBufferPool(new FastByteBufferPool(
+        // set the bytee buffer pool
+        // since the undertow default byte buffer is not good for virtual threads
+        builder.setByteBufferPool(new ThreadAwareByteBufferPool(
             configuration.coreModule().directBuffers(),
-            configuration.coreModule().bufferSize()));
+            configuration.coreModule().bufferSize(),
+            configuration.coreModule().buffersPooling()));
 
         var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {

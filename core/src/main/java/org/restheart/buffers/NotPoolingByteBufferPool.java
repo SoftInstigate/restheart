@@ -24,11 +24,15 @@ import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
 
 /**
- * A fast byte buffer pool that is fast just because it is not a pool and avoids all multithreading overhead
+ * A byte buffer pool implementation that does not actually pool resources.
+ * <p>
+ * This is intended for use with Virtual Threads, where resource pooling
+ * is unnecessary and may even be disadvantageous due to potential overhead.
+ * </p>
  *
  * @author Andrea Di Cesare
  */
-public class FastByteBufferPool implements ByteBufferPool {
+public class NotPoolingByteBufferPool implements ByteBufferPool {
     private final boolean direct;
     private final int bufferSize;
 
@@ -36,7 +40,7 @@ public class FastByteBufferPool implements ByteBufferPool {
      * @param direct               If this implementation should use direct buffers
      * @param bufferSize           The buffer size to use
      */
-    public FastByteBufferPool(boolean direct, int bufferSize) {
+    public NotPoolingByteBufferPool(boolean direct, int bufferSize) {
         this.direct = direct;
         this.bufferSize = bufferSize;
     }
@@ -57,7 +61,7 @@ public class FastByteBufferPool implements ByteBufferPool {
     }
 
     @Override
-    public FastByteBufferPool getArrayBackedPool() {
+    public NotPoolingByteBufferPool getArrayBackedPool() {
         return this;
     }
 

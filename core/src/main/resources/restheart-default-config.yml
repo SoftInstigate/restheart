@@ -468,6 +468,9 @@ core:
   # Max number of platform carrier threads for executing worker virtual threads in blocking operations.
   workers-scheduler-max-pool-size: 256
 
+  # set to true to pool buffer for io-threads. buffer pooling is always disabled for virtual worker threads.
+  buffer-pooling: true
+
   # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
   buffer-size: 16364

@@ -34,6 +34,7 @@ public record CoreModule(String name,
         int ioThreads,
         int workersSchedulerParallelism,
         int workersSchedulerMaxPoolSize,
+        boolean buffersPooling,
         int bufferSize,
         boolean directBuffers,
         boolean forceGzipEncoding,
@@ -48,12 +49,13 @@ public record CoreModule(String name,
     public static final String IO_THREADS_KEY = "io-threads";
     public static final String WORKERS_SCHEDULER_PARALLELISM_KEY ="workers-scheduler-parallelism";
     public static final String WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY = "workers-scheduler-max-pool-size";
+    public static final String BUFFERS_POOLING_KEY = "buffer-pooling";
     public static final String BUFFER_SIZE_KEY = "buffer-size";
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
     public static final String ALLOW_UNESCAPED_CHARS_IN_ULR_KEY = "allow-unescaped-characters-in-url";
 
-    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 0, 256, 16364, true, false, true);
+    private static final CoreModule DEFAULT_CORE_MODULE = new CoreModule("default", "plugins", new ArrayList<>(), false, null, 0, 0, 256, true, 16364, true, false, true);
 
     public CoreModule(Map<String, Object> conf, boolean silent) {
         this(getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_CORE_MODULE.name(), silent),
@@ -65,6 +67,7 @@ public record CoreModule(String name,
             getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
             getOrDefault(conf, WORKERS_SCHEDULER_PARALLELISM_KEY, DEFAULT_CORE_MODULE.workersSchedulerParallelism(), silent),
             getOrDefault(conf, WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY, DEFAULT_CORE_MODULE.workersSchedulerMaxPoolSize(), silent),
+            getOrDefault(conf, BUFFERS_POOLING_KEY, DEFAULT_CORE_MODULE.buffersPooling(), silent),
             getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
             getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
             // following is optional, so get it always in silent mode
