@@ -15,8 +15,6 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.security.authenticators.AuthCookieHandler.enabled;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.undertow.server.handlers.CookieImpl;
 
@@ -30,8 +28,6 @@ import io.undertow.server.handlers.CookieImpl;
                 description = "sets the auth cookie if the URL contains the qparam ?set-auth-cookie",
                 interceptPoint = InterceptPoint.RESPONSE)
 public class AuthCookieSetter implements WildcardInterceptor {
-    static final Logger LOGGER = LoggerFactory.getLogger(AuthCookieSetter.class);
-
     @Inject("config")
     private Map<String, Object> config;
 
