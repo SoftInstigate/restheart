@@ -46,9 +46,8 @@ jwtAuthenticationMechanism:
   key: secret
   base64Encoded: false
   usernameClaim: sub
-  rolesClaim: null
-  fixedRoles:
-  #  - jwt-role
+  rolesClaim: roles
+  fixedRoles: []
   issuer: restheart.org
   audience: null
 
