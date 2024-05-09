@@ -47,7 +47,7 @@ public @interface RegisterPlugin {
     String description();
 
     /**
-     * Set the order of execution (less is higher priority)
+     * Set the order of execution (less is higher priority). Default value is 10
      *
      * @return the execution priority (less is higher priority)
      */
