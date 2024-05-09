@@ -20,14 +20,6 @@
  */
 package org.restheart.security.mechanisms;
 
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.FlexBase64;
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
@@ -38,6 +30,17 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.TokenManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.undertow.security.api.SecurityContext;
+import io.undertow.security.idm.PasswordCredential;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.FlexBase64;
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**
  *
@@ -56,6 +59,7 @@ import org.restheart.plugins.security.TokenManager;
                 enabledByDefault = false,
                 priority = Integer.MIN_VALUE)
 public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implements AuthMechanism {
+    static final Logger LOGGER = LoggerFactory.getLogger(TokenBasicAuthMechanism.class);
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
@@ -67,6 +71,8 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     @Inject("registry")
     private PluginsRegistry registry;
+
+    private boolean enabled = true;
 
     private static void clear(final char[] array) {
         for (int i = 0; i < array.length; i++) {
@@ -84,13 +90,20 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     @OnInit
     public void init() throws ConfigurationException {
-        this.tokenManager = registry.getTokenManager() != null
-            ? registry.getTokenManager().getInstance()
-            : null;
+        if (registry.getTokenManager() != null) {
+            this.tokenManager = registry.getTokenManager().getInstance();
+        } else {
+            this.enabled = false;
+            LOGGER.warn("tokenBasicAuthMechanism is disabled because no token manager has been enabled. Consequently, it will not attempt to authenticate requests. Please ensure a token manager is active to use this mechanism.");
+        }
     }
 
     @Override
     public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext) {
+         if (!this.enabled) {
+            return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+        }
+
         var authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
             for (var current : authHeaders) {
@@ -135,6 +148,10 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     @Override
     public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext) {
+        if (!this.enabled) {
+            return new ChallengeResult(false);
+        }
+
         var authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
 
         if (authHeader == null) {
