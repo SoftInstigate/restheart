@@ -35,16 +35,18 @@ import com.google.common.net.HttpHeaders;
 import io.undertow.util.HttpString;
 
 /**
- * Author: Andrea Di Cesare <andrea@softinstigate.com>
+ * Sets the Date response header
  *
  * According to the HTTP specification, the `Date` header should be included in all responses,
  * except when the server lacks an accurate clock.
  *
  * In Undertow, the `Date` header is added via {@code ThreadLocal<SimpleDateFormat>}.
  * However, this approach is not optimal for virtual threads.
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="dateHeaderInjector", description="", enabledByDefault=true)
-public class DateHeaderInjector implements WildcardInterceptor {
+@RegisterPlugin(name="dateHeader", description="Sets the Date response header", enabledByDefault=true)
+public class DateHeader implements WildcardInterceptor {
     private static final HttpString DATE = HttpString.tryFromString(HttpHeaders.DATE);
     private static final String RFC1123_PATTERN = "EEE, dd MMM yyyy HH:mm:ss z";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern(RFC1123_PATTERN, Locale.US);

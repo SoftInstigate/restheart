@@ -85,7 +85,6 @@ import org.restheart.handlers.injectors.RequestContentInjector;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
-import org.restheart.handlers.injectors.XPoweredByInjector;
 import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
 import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
@@ -801,7 +800,6 @@ public final class Bootstrapper {
                 new RequestLogger(),
                 new ProxyExchangeBuffersCloser(),
                 new BeforeExchangeInitInterceptorsExecutor(),
-                new XPoweredByInjector(),
                 new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
                 new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                 new QueryStringRebuilder(),
