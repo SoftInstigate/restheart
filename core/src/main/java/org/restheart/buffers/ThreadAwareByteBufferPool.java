@@ -42,7 +42,7 @@ public class ThreadAwareByteBufferPool implements ByteBufferPool {
     private final boolean enablePooling;
 
     /**
-     * @param direct               If io threads implmentation should use direct buffers
+     * @param direct               If io threads implementation should use direct buffers
      * @param bufferSize           The buffer size to use
      * @param enablePooling        true to enable pooling for platform threads
      */

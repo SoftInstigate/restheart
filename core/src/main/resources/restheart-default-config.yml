@@ -390,6 +390,14 @@ bruteForceAttackGuard:
   # 2 -> y.y.y.y
   x-forwarded-for-value-from-last-element: 0
 
+# Sets the X-Powered-By: restheart.org response header
+xPoweredBy:
+  enabled: true
+
+# Sets the Date response header
+dateHeader:
+  enabled: true
+
 # Logging
 # see https://restheart.org/docs/logging
 # Options:
