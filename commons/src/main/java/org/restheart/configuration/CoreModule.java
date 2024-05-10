@@ -49,7 +49,7 @@ public record CoreModule(String name,
     public static final String IO_THREADS_KEY = "io-threads";
     public static final String WORKERS_SCHEDULER_PARALLELISM_KEY ="workers-scheduler-parallelism";
     public static final String WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY = "workers-scheduler-max-pool-size";
-    public static final String BUFFERS_POOLING_KEY = "buffer-pooling";
+    public static final String BUFFERS_POOLING_KEY = "buffers-pooling";
     public static final String BUFFER_SIZE_KEY = "buffer-size";
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
