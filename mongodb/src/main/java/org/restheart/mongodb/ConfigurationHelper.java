@@ -20,14 +20,17 @@
  */
 package org.restheart.mongodb;
 
-import com.google.common.collect.Sets;
-import io.undertow.Undertow.Builder;
-import io.undertow.UndertowOptions;
 import java.util.Map;
 import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Option;
+
+import com.google.common.collect.Sets;
+
+import io.undertow.Undertow.Builder;
+import io.undertow.UndertowOptions;
 
 /**
  *
@@ -47,7 +50,6 @@ public class ConfigurationHelper {
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNKNOWN_PROTOCOLS);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL);
-        UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_DATE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_KEEP_ALIVE);
         UNDERTOW_OPTIONS.add(UndertowOptions.BUFFER_PIPELINED_DATA);
         UNDERTOW_OPTIONS.add(UndertowOptions.DECODE_URL);
@@ -89,9 +91,7 @@ public class ConfigurationHelper {
      * @param configuration
      */
     @SuppressWarnings("unchecked")
-    public static void setConnectionOptions(
-            Builder builder,
-            MongoServiceConfiguration configuration) {
+    public static void setConnectionOptions(Builder builder, MongoServiceConfiguration configuration) {
 
         Map<String, Object> options = configuration.getConnectionOptions();
 
@@ -117,5 +117,10 @@ public class ConfigurationHelper {
                 }
             }
         });
+
+        // In Undertow, the `Date` header is added via {@code ThreadLocal<SimpleDateFormat>}.
+        // * However, this approach is not optimal for virtual threads
+        // we disable it and add the header with DateHeaderInjector
+        builder.setServerOption(UndertowOptions.ALWAYS_SET_DATE, false);
     }
 }

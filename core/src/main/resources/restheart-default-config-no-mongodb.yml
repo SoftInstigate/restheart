@@ -569,9 +569,3 @@ connection-options:
   # even when it is not strictly required by the specification.
   # Defaults to true
   ALWAYS_SET_KEEP_ALIVE: true
-
-  # If this is true then a Date header will be added to all responses.
-  # The HTTP spec says this header should be added to all responses,
-  # unless the server does not have an accurate clock.
-  # Defaults to true
-  ALWAYS_SET_DATE: true

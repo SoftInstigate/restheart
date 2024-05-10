@@ -402,7 +402,6 @@ public class Utils {
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNKNOWN_PROTOCOLS);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL);
-        UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_DATE);
         UNDERTOW_OPTIONS.add(UndertowOptions.ALWAYS_SET_KEEP_ALIVE);
         UNDERTOW_OPTIONS.add(UndertowOptions.BUFFER_PIPELINED_DATA);
         UNDERTOW_OPTIONS.add(UndertowOptions.DECODE_URL);
@@ -464,11 +463,16 @@ public class Utils {
                 }
             }
         });
+
+        // In Undertow, the `Date` header is added via {@code ThreadLocal<SimpleDateFormat>}.
+        // * However, this approach is not optimal for virtual threads
+        // we disable it and add the header with DateHeaderInjector
+        builder.setServerOption(UndertowOptions.ALWAYS_SET_DATE, false);
     }
 
     // matches ; in a way that we can ignore matches that are inside quotes
     // inspired by https://stackoverflow.com/a/23667311/4481670
-    private static Pattern SPLIT_REGEX = Pattern.compile(
+    private static final Pattern SPLIT_REGEX = Pattern.compile(
             "\\\\\"|\"(?:\\\\\"|[^\"])*\"" +
             "|\\\\'|'(?:\\\\'|[^'])*'" +
             "|(;)");
