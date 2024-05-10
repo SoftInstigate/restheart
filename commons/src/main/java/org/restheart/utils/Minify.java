@@ -139,7 +139,7 @@ public class Minify {
      * JSON
      * @param out The <code>OutputStream</code> where the resulting minified
      * JSON will be streamed to
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws UnterminatedRegExpLiteralException
      * @throws UnterminatedCommentException
      * @throws UnterminatedStringLiteralException
@@ -251,7 +251,7 @@ public class Minify {
      * recognizes regular expressions if they are preceded by '(', ',', or '='.
      *
      * @param action The action to perform
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws UnterminatedRegExpLiteralException
      * @throws UnterminatedCommentException
      * @throws UnterminatedStringLiteralException
@@ -324,7 +324,7 @@ public class Minify {
      * control character, translate it to a space or line feed.
      *
      * @return The next character from the input stream
-     * @throws IOException
+     * @throws java.io.IOException
      */
     private int get() throws IOException {
         int c = in.read();
@@ -353,7 +353,7 @@ public class Minify {
      * the stack.
      *
      * @return The next character from the input stream
-     * @throws IOException
+     * @throws java.io.IOException
      */
     private int peek() throws IOException {
         int lookaheadChar = in.read();
@@ -371,7 +371,7 @@ public class Minify {
      *
      * @return The next character from the input stream, excluding characters
      * from comments
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws UnterminatedCommentException
      */
     private int next() throws IOException, UnterminatedCommentException {

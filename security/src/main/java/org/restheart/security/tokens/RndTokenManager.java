@@ -20,11 +20,6 @@
  */
 package org.restheart.security.tokens;
 
-import com.google.common.collect.Sets;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.server.HttpServerExchange;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -37,16 +32,23 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.JsonProxyRequest;
-import org.restheart.security.FileRealmAccount;
-import org.restheart.security.JwtAccount;
-import org.restheart.security.MongoRealmAccount;
-import org.restheart.security.PwdCredentialAccount;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.security.FileRealmAccount;
+import org.restheart.security.JwtAccount;
+import org.restheart.security.MongoRealmAccount;
+import org.restheart.security.PwdCredentialAccount;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
+
+import com.google.common.collect.Sets;
+
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.PasswordCredential;
+import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "rndTokenManager",
                 description = "generates random auth tokens",
@@ -91,13 +93,14 @@ public class RndTokenManager implements TokenManager {
     }
 
     private boolean verifyToken(final PwdCredentialAccount account, final Credential credential) {
-        if (credential instanceof PasswordCredential) {
-            char[] token = ((PasswordCredential) credential).getPassword();
+        if (credential instanceof PasswordCredential passwordCredential) {
+            char[] token = passwordCredential.getPassword();
             char[] expectedToken = account.getCredentials().getPassword();
 
             return Arrays.equals(token, expectedToken);
+        } else {
+            return false;
         }
-        return false;
     }
 
     public Cache<String, PwdCredentialAccount> getCACHE() {
@@ -122,19 +125,18 @@ public class RndTokenManager implements TokenManager {
     private PwdCredentialAccount cloneWithToken(Account account, char[] token) {
         PwdCredentialAccount ret;
 
-        if (account instanceof MongoRealmAccount maccount) {
-            ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.properties());
-        } else if (account instanceof FileRealmAccount faccount) {
-            ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.properties());
-        } else if (account instanceof JwtAccount jwtAccount) {
-            var accountDocument = BsonUtils.parse(jwtAccount.properties());
-            if (accountDocument instanceof BsonDocument bad) {
-                ret = new MongoRealmAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
-            } else {
-                ret = new PwdCredentialAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()));
+        switch (account) {
+            case MongoRealmAccount maccount -> ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.properties());
+            case FileRealmAccount faccount -> ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.properties());
+            case JwtAccount jwtAccount -> {
+                var accountDocument = BsonUtils.parse(jwtAccount.properties());
+                if (accountDocument instanceof BsonDocument bad) {
+                    ret = new MongoRealmAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
+                } else {
+                    ret = new PwdCredentialAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()));
+                }
             }
-        } else {
-            ret = new PwdCredentialAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()));
+            default -> ret = new PwdCredentialAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()));
         }
 
         return ret;

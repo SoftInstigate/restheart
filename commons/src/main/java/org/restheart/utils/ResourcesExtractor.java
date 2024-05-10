@@ -66,7 +66,7 @@ public class ResourcesExtractor {
      * @param resourcePath
      * @param tempDir
      * @throws URISyntaxException
-     * @throws IOException
+     * @throws java.io.IOException
      */
     @SuppressWarnings("rawtypes")
     public static void deleteTempDir(Class clazz, String resourcePath, File tempDir) throws URISyntaxException, IOException {
@@ -79,7 +79,7 @@ public class ResourcesExtractor {
      *
      * @param resourcePath
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws URISyntaxException
      * @throws IllegalStateException
      */

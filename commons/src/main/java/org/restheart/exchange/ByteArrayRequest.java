@@ -19,11 +19,12 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.restheart.utils.ChannelReader;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -35,26 +36,19 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
     }
 
     public static ByteArrayRequest init(HttpServerExchange exchange) {
-        var ret = new ByteArrayRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (IOException ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+        return new ByteArrayRequest(exchange);
     }
 
     public static ByteArrayRequest of(HttpServerExchange exchange) {
         return of(exchange, ByteArrayRequest.class);
     }
 
-    public void injectContent() throws IOException {
+    @Override
+    public byte[] parseContent() throws IOException, BadRequestException {
         if (wrapped.getRequestContentLength() > 0) {
-            setContent(ChannelReader.readBytes(wrapped));
+            return ChannelReader.readBytes(wrapped);
         } else {
-            setContent(null);
+            return new byte[0];
         }
     }
 

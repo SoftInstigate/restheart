@@ -55,10 +55,6 @@ public class MergeRequest implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (!request.isHandledBy("mongo") || request.getContent() == null) {
-            return false;
-        }
-
         if (request.isGet() || request.isDelete()) {
             return false;
         }

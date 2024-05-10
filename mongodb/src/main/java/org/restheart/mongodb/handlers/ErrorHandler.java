@@ -20,13 +20,8 @@
  */
 package org.restheart.mongodb.handlers;
 
-import com.mongodb.MongoBulkWriteException;
-import com.mongodb.MongoException;
-import com.mongodb.MongoExecutionTimeoutException;
-import com.mongodb.MongoTimeoutException;
 import org.bson.BSONException;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
@@ -34,6 +29,14 @@ import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoBulkWriteException;
+import com.mongodb.MongoException;
+import com.mongodb.MongoExecutionTimeoutException;
+import com.mongodb.MongoTimeoutException;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -96,7 +99,9 @@ public class ErrorHandler implements HttpHandler {
         } catch(BSONException be) {
             LOGGER.debug("Request failed due to invalid BSON", be);
             response.setInError(400, "Invalid BSON: " + be.getMessage());
-        } catch (Exception t) {
+        } catch(BadRequestException be) {
+            response.setInError(be.getStatusCode(), be.getMessage());
+        }catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);

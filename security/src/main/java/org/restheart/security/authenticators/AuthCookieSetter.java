@@ -11,13 +11,13 @@ import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import org.restheart.security.FileRealmAccount;
-import org.restheart.security.JwtAccount;
-import org.restheart.security.MongoRealmAccount;
+import static org.restheart.security.authenticators.AuthCookieHandler.enabled;
 
 import io.undertow.server.handlers.CookieImpl;
+
 
 /**
  * sets the rh_auth_token cookie when the URL contains the qparam ?set-auth-cookie
@@ -31,6 +31,12 @@ public class AuthCookieSetter implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("registry")
+    PluginsRegistry pluginsRegistry;
+
+    private boolean enabled = true;
+    private boolean jwtAuthWithJwtAuthMechanism = false;
+
     private String name;
     private String domain;
     private String path;
@@ -42,6 +48,10 @@ public class AuthCookieSetter implements WildcardInterceptor {
 
     @OnInit
     public void init() {
+        this.enabled = enabled(pluginsRegistry, true);
+        // true if the token manager is jwtTokenManager and jwtAuthenticationMechanism is enabled
+        this.jwtAuthWithJwtAuthMechanism = pluginsRegistry.getTokenManager() != null && "jwtTokenManager".equals(pluginsRegistry.getTokenManager().getName()) && pluginsRegistry.getAuthMechanisms().stream().map(pr -> pr.getName()).anyMatch(n -> "jwtAuthenticationMechanism".equals(n));
+
         this.name = argOrDefault(config, "name", "rh_auth");
         this.secure = argOrDefault(config, "secure", true);
         this.domain = argOrDefault(config, "domain", "localhost");
@@ -56,16 +66,12 @@ public class AuthCookieSetter implements WildcardInterceptor {
     public void handle(ServiceRequest<?> req, ServiceResponse<?> res) throws Exception {
         var authTokenHeader = res.getHeader("Auth-Token");
 
-        if (authTokenHeader == null) {
-            return;
-        }
-
-        var authToken = switch(req.getAuthenticatedAccount()) {
-            case JwtAccount jwt -> "Bearer " + authTokenHeader;
-            case FileRealmAccount fra -> "Basic " + Base64.getEncoder().encodeToString((fra.getPrincipal().getName() + ":" + authTokenHeader).getBytes());
-            case MongoRealmAccount mra -> "Basic " + Base64.getEncoder().encodeToString((mra.getPrincipal().getName() + ":" + authTokenHeader).getBytes());
-            default -> authTokenHeader;
-        };
+        // if the token is issued by jwtTokenManager and the jwtAuthenticationMechanism is enabled
+        // use JWT authetication (i.e. Bearer...)
+        // otherwise rely on tokenBasicAuthMechanism (i.e. Basic...)
+        var authToken = jwtAuthWithJwtAuthMechanism
+            ? "Bearer ".concat(authTokenHeader)
+            : "Basic ".concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
 
         if (authToken != null) {
             var expiry = LocalDateTime.now()
@@ -85,6 +91,6 @@ public class AuthCookieSetter implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
-        return !req.isOptions() && req.isAuthenticated() && req.getQueryParameters().containsKey("set-auth-cookie");
+        return this.enabled && !req.isOptions() && req.isAuthenticated() && req.getQueryParameters().containsKey("set-auth-cookie") && res.getHeader("Auth-Token") != null;
     }
 }

@@ -53,7 +53,6 @@ import org.restheart.handlers.ServiceExchangeInitializer;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
-import org.restheart.handlers.injectors.XPoweredByInjector;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
@@ -415,7 +414,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             new BeforeExchangeInitInterceptorsExecutor(),
             new ServiceExchangeInitializer(),
             new CORSHandler(),
-            new XPoweredByInjector(),
             new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
             new QueryStringRebuilder(),
             securityHandler,

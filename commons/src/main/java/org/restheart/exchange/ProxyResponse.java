@@ -19,13 +19,14 @@
  */
 package org.restheart.exchange;
 
+import java.io.IOException;
+
+import org.restheart.utils.HttpStatus;
+
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
-
-import java.io.IOException;
-import org.restheart.utils.HttpStatus;
 
 /**
  * Base class for Response implementation that can be used in proxied requests.
@@ -116,7 +117,7 @@ public abstract class ProxyResponse<T> extends Response<T> implements BufferedEx
      * @param t
      * @param includeStackTrace
      * @return the content descibing the error
-     * @throws IOException
+     * @throws java.io.IOException
      */
     protected abstract T getErrorContent(int code,
             String httpStatusText,

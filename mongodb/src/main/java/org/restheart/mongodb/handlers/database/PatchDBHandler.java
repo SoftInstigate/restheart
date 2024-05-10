@@ -20,10 +20,8 @@
  */
 package org.restheart.mongodb.handlers.database;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
-
 import java.util.Optional;
+
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -32,6 +30,9 @@ import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  *
@@ -73,7 +74,7 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, db name cannot be empty");
             next(exchange);
             return;
         }
@@ -81,14 +82,14 @@ public class PatchDBHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             next(exchange);
             return;
         }
 
         // cannot PATCH an array
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object");
             next(exchange);
             return;
         }

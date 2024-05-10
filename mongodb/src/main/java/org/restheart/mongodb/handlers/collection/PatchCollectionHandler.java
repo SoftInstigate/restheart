@@ -20,12 +20,10 @@
  */
 package org.restheart.mongodb.handlers.collection;
 
-import io.undertow.server.HttpServerExchange;
-import org.bson.BsonValue;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-
 import java.util.Optional;
 
+import org.bson.BsonValue;
+import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -33,6 +31,8 @@ import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -73,13 +73,13 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, db name cannot be empty");
             next(exchange);
             return;
         }
 
         if (request.getCollectionName().isEmpty() || (request.getCollectionName().startsWith("_") && !request.getCollectionName().equals(_SCHEMAS))) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, collection name cannot be empty or start with _");
             next(exchange);
             return;
         }
@@ -87,20 +87,20 @@ public class PatchCollectionHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             next(exchange);
             return;
         }
 
         // cannot PATCH with an array
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object");
             next(exchange);
             return;
         }
 
         if (_content.asDocument().isEmpty()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "no data provided");
             next(exchange);
             return;
         }

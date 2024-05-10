@@ -28,6 +28,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -102,15 +103,15 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         issuer = argOrDefault(config, "issuer", null);
         var _audience = argOrDefault(config, "audience", null);
 
-        audience = new ArrayList<String>();
+        audience = new ArrayList<>();
 
         if (_audience == null) {
             this.audience = null;
         } else if (_audience instanceof String _as) {
-            audience = new ArrayList<String>();
+            audience = new ArrayList<>();
             this.audience.add(_as);
         } else if (_audience instanceof List<?> _al) {
-            audience = new ArrayList<String>();
+            audience = new ArrayList<>();
             _al.stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> this.audience.add(e));
         } else {
             throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
@@ -134,12 +135,8 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
             v = v.withIssuer(issuer);
         }
 
-        if (rolesClaim != null && fixedRoles != null) {
-            throw new ConfigurationException("wrong JWT configuration, cannot set both 'rolesClaim' and 'fixedRoles'");
-        }
-
-        if (rolesClaim == null && (fixedRoles == null || fixedRoles.isEmpty())) {
-            throw new ConfigurationException("wrong JWT configuration, need to set either 'rolesClaim' or 'fixedRoles'");
+        if (rolesClaim == null && fixedRoles == null) {
+            throw new ConfigurationException("wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
         }
 
         this.jwtVerifier = v.build();
@@ -175,9 +172,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                             String[] __roles = _roles.asArray(String.class);
 
                             if (__roles != null) {
-                                for (String role : __roles) {
-                                    actualRoles.add(role);
-                                }
+                                actualRoles.addAll(Arrays.asList(__roles));
                             } else {
                                 LOGGER.debug("roles is not an array: {}", _roles.asString());
                                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
@@ -186,7 +181,9 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                             LOGGER.warn("Jwt cannot get roles from claim {}, extepected an array of strings: {}", rolesClaim, _roles.toString());
                         }
                     }
-                } else if (this.fixedRoles != null) {
+                }
+
+                if (this.fixedRoles != null) {
                     actualRoles.addAll(this.fixedRoles);
                 }
 

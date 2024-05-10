@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.restheart.utils.ChannelReader;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 
@@ -54,6 +55,7 @@ public class UninitializedRequest extends ServiceRequest<Object> {
      * throws IllegalStateException
      *
      * the content can only be retrieved in raw format, use getRawContent()
+     * @return
      */
     @Override
     public Object getContent() {
@@ -64,6 +66,7 @@ public class UninitializedRequest extends ServiceRequest<Object> {
      * throws IllegalStateException
      *
      * the content can only be set in raw format, use setRawContent()
+     * @param content
      */
     @Override
     public void setContent(Object content) {
@@ -87,7 +90,7 @@ public class UninitializedRequest extends ServiceRequest<Object> {
      * make sense to invoke it before request initialization
      *
      * @param data
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public void setRawContent(byte[] data) throws IOException {
         ByteArrayProxyRequest.of(wrapped).writeContent(data);
@@ -97,7 +100,7 @@ public class UninitializedRequest extends ServiceRequest<Object> {
      * If a customRequestInitializer is set (not null), the ServiceExchangeInitializer will
      * delegate to customRequestInitializer.accept(exchange) the responsability to initialize the request
      *
-     * @param customSender
+     * @param customRequestInitializer
      */
     public void setCustomRequestInitializer(Consumer<HttpServerExchange> customRequestInitializer) {
         this.wrapped.putAttachment(CUSTOM_REQUEST_INITIALIZER_KEY, customRequestInitializer);
@@ -109,5 +112,10 @@ public class UninitializedRequest extends ServiceRequest<Object> {
      */
     public Consumer<HttpServerExchange> customRequestInitializer() {
         return this.wrapped.getAttachment(CUSTOM_REQUEST_INITIALIZER_KEY);
+    }
+
+    @Override
+    public Object parseContent() throws IOException, BadRequestException {
+        throw new IllegalStateException("the request is not initialized");
     }
 }

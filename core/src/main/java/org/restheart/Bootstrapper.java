@@ -55,7 +55,7 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
-import org.restheart.buffers.FastByteBufferPool;
+import org.restheart.buffers.ThreadAwareByteBufferPool;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.ProxiedResource;
@@ -85,7 +85,6 @@ import org.restheart.handlers.injectors.RequestContentInjector;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
-import org.restheart.handlers.injectors.XPoweredByInjector;
 import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
 import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
@@ -220,7 +219,6 @@ public final class Bootstrapper {
 
     public static void main(final String[] args) throws ConfigurationException, IOException {
         doNotWarnTruffleInterpreterOnly();
-
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
@@ -531,9 +529,12 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
-        builder.setByteBufferPool(new FastByteBufferPool(
+        // set the bytee buffer pool
+        // since the undertow default byte buffer is not good for virtual threads
+        builder.setByteBufferPool(new ThreadAwareByteBufferPool(
             configuration.coreModule().directBuffers(),
-            configuration.coreModule().bufferSize()));
+            configuration.coreModule().bufferSize(),
+            configuration.coreModule().buffersPooling()));
 
         var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {
@@ -569,15 +570,27 @@ public final class Bootstrapper {
 
         HANDLERS = getPipeline(authMechanisms, authorizers, tokenManager);
 
-        // update buffer size in
+        // update buffer size
         Exchange.updateBufferSize(configuration.coreModule().bufferSize());
 
         // io threads
-        // use value in configuration, or auto detect values if io-threds <= 0
+        // use value in configuration, or auto detect values if io-threads <= 0
         var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
 
-        LOGGER.info("Available processors: {}, IO threads{}: {}, worker virtual threads: \u221e", Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads);
+        // virtual threads carriers
+        // use value in configuration, or auto detect values if virtual-threads-carriers <= 0
+        var autoConfigWorkersSchedulerParallelism = configuration.coreModule().workersSchedulerParallelism() <= 0;
+        var workersSchedulerParallelism = autoConfigWorkersSchedulerParallelism ? Math.round(Runtime.getRuntime().availableProcessors()*1.5) : configuration.coreModule().workersSchedulerParallelism();
+
+        // apply workersSchedulerParallelism and workersSchedulerMaxPoolSize
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(workersSchedulerParallelism));
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(configuration.coreModule().workersSchedulerMaxPoolSize()));
+
+        LOGGER.info("Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
+            Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads,
+            autoConfigWorkersSchedulerParallelism ? " (auto detected)" : "", workersSchedulerParallelism,
+            configuration.coreModule().workersSchedulerMaxPoolSize());
 
         builder = builder
             .setIoThreads(ioThreads)
@@ -787,7 +800,6 @@ public final class Bootstrapper {
                 new RequestLogger(),
                 new ProxyExchangeBuffersCloser(),
                 new BeforeExchangeInitInterceptorsExecutor(),
-                new XPoweredByInjector(),
                 new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
                 new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                 new QueryStringRebuilder(),

@@ -87,7 +87,7 @@ public class GridFs {
      * @param metadata
      * @param fileInputStream
      * @return the OperationResult
-     * @throws IOException
+     * @throws java.io.IOException
      * @throws DuplicateKeyException
      */
     public OperationResult createFile(
@@ -138,7 +138,7 @@ public class GridFs {
      * @param requestEtag
      * @param checkEtag
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public OperationResult upsertFile(
         final Optional<RSOps> rsOps,

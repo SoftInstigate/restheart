@@ -31,13 +31,14 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.utils.BsonUtils;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.ChannelReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import static org.restheart.utils.BsonUtils.document;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -61,17 +62,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
     public static BsonFromCsvRequest init(HttpServerExchange exchange) {
         var ret = new BsonFromCsvRequest(exchange);
 
-        if (checkContentType(exchange)) {
-            try {
-                ret.injectContent(exchange);
-            } catch (IOException ex) {
-                LOGGER.warn("error parsing CSV", ex);
-                ret.setInError(true);
-            } catch (Throwable ieo) {
-                LOGGER.warn("error initializing request", ieo);
-                ret.setInError(true);
-            }
-        } else {
+        if (!checkContentType(exchange)) {
             LOGGER.warn("error initializing request, " + "Contenty-Type is not {}", CVS_CONTENT_TYPE);
             ret.setInError(true);
         }
@@ -83,11 +74,12 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
         return of(exchange, BsonFromCsvRequest.class);
     }
 
-    public void injectContent(HttpServerExchange exchange) throws IOException {
-        final var params = new CsvRequestParams(exchange);
-        final var csv = ChannelReader.readString(exchange);
+    @Override
+    public BsonArray parseContent() throws IOException, BadRequestException {
+        final var params = new CsvRequestParams(wrapped);
+        final var csv = ChannelReader.readString(wrapped);
 
-        setContent(parseCsv(params, csv));
+        return parseCsv(params, csv);
     }
 
     private static boolean checkContentType(HttpServerExchange exchange) {
@@ -183,8 +175,8 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
             Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
             Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
 
-            sep = _sep != null ? _sep.size() > 0 ? _sep.getFirst() : "" : ",";
-            String _idIdx = _id != null ? _id.size() > 0 ? _id.getFirst() : "-1" : "-1";
+            sep = _sep != null ? !_sep.isEmpty() ? _sep.getFirst() : "" : ",";
+            String _idIdx = _id != null ? !_id.isEmpty() ? _id.getFirst() : "-1" : "-1";
 
             try {
                 idIdx = Integer.parseInt(_idIdx);

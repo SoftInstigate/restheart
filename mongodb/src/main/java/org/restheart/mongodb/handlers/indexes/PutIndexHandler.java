@@ -73,7 +73,7 @@ public class PutIndexHandler extends PipelinedHandler {
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with _");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "index name cannot start with _");
             next(exchange);
             return;
         }
@@ -82,7 +82,7 @@ public class PutIndexHandler extends PipelinedHandler {
 
         // must be an object
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "data cannot be an array");
             next(exchange);
             return;
         }
@@ -94,14 +94,14 @@ public class PutIndexHandler extends PipelinedHandler {
 
         // must be an object, mandatory
         if (_keys == null || !_keys.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "keys must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "keys must be a json object");
             next(exchange);
             return;
         }
 
         // must be an object, optional
         if (_ops != null && !_ops.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "ops must be a json object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "ops must be a json object");
             next(exchange);
             return;
         }
@@ -112,7 +112,7 @@ public class PutIndexHandler extends PipelinedHandler {
         var keys = _keys.asDocument();
 
         if (keys == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, content must include 'keys' object", null);
             next(exchange);
             return;
         }
@@ -126,7 +126,7 @@ public class PutIndexHandler extends PipelinedHandler {
                 keys,
                 Optional.of(ops));
         } catch (Throwable t) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "error creating the index", t);
             next(exchange);
             return;
         }

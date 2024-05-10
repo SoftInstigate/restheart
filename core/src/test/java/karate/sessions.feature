@@ -64,4 +64,4 @@ Scenario: try to use invalid sid
     And param sid = 'invalid'
     And param rep = 's'
     When method GET
-    Then status 406
+    Then status 400

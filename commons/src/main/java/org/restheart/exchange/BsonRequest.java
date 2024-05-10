@@ -19,11 +19,14 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
+
 import org.bson.BsonValue;
-import org.restheart.utils.ChannelReader;
+import org.bson.json.JsonParseException;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.ChannelReader;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  * ServiceRequest implementation backed by BsonValue
@@ -36,22 +39,19 @@ public class BsonRequest extends ServiceRequest<BsonValue> {
     }
 
     public static BsonRequest init(HttpServerExchange exchange) {
-        var ret = new BsonRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (Throwable ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+        return new BsonRequest(exchange);
     }
 
     public static BsonRequest of(HttpServerExchange exchange) {
         return of(exchange, BsonRequest.class);
     }
 
-    public void injectContent() throws IOException {
-        setContent(BsonUtils.parse(ChannelReader.readString(wrapped)));
+    @Override
+    public BsonValue parseContent() throws IOException, BadRequestException {
+        try {
+            return BsonUtils.parse(ChannelReader.readString(wrapped));
+        } catch(JsonParseException jpe) {
+            throw new BadRequestException(jpe.getMessage(), jpe);
+        }
     }
 }

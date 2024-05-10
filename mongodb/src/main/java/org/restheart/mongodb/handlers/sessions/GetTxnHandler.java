@@ -20,8 +20,8 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
+
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonInt64;
@@ -33,6 +33,8 @@ import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
 import org.restheart.mongodb.db.sessions.TxnsUtils;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -63,7 +65,7 @@ public class GetTxnHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Invalid session id");
             next(exchange);
             return;
         }

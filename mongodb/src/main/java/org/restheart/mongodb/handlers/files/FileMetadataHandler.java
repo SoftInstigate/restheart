@@ -20,16 +20,13 @@
  */
 package org.restheart.mongodb.handlers.files;
 
-import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
+import java.util.Optional;
 
+import org.bson.BsonDocument;
 import static org.restheart.exchange.ExchangeKeys.FILENAME;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.exchange.ExchangeKeys._ID;
-
-import java.util.Optional;
-
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -37,6 +34,8 @@ import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  * A customised and cut down version of the
@@ -91,14 +90,14 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (request.getFileInputStream() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
             if (request.isPatch()) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "only metadata is allowed, not binary data");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "only metadata is allowed for PATCH requests, not binary data");
             }
             next(exchange);
             return;
         }
 
         if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content must be a JSON object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "request content must be a JSON object");
             next(exchange);
             return;
         }
@@ -106,7 +105,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         var content = _content.asDocument();
 
         if (BsonUtils.containsUpdateOperators(content, true)) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content cannot contain update operators");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "request content cannot contain update operators");
             next(exchange);
             return;
         }
@@ -136,7 +135,7 @@ public class FileMetadataHandler extends PipelinedHandler {
 
         if (content.containsKey(_ID)) {
             if (!content.get(_ID).equals(id)) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "_id in json data cannot be different than id in URL");
                 next(exchange);
                 return;
             }

@@ -112,8 +112,8 @@ public class ResponseHelper {
 
         } else if (etag instanceof ObjectId) {
             setETagHeader(exchange, etag.toString());
-        } else if (etag instanceof String) {
-            setETagHeader(exchange, (String) etag);
+        } else if (etag instanceof String setag) {
+            setETagHeader(exchange, setag);
         }
 
     }
@@ -144,7 +144,7 @@ public class ResponseHelper {
             // Cannot start transaction X on session Y because a newer transaction Z has already started
             // transaction number X does not match any in-progress transactions
             // Transaction X has been committed.
-            case 225,251,256 -> HttpStatus.SC_NOT_ACCEPTABLE;
+            case 225,251,256 -> HttpStatus.SC_BAD_REQUEST;
             // error 11000 is duplicate key error
             // happens when the _id and a filter are specified,
             // the document exists but does not match the filter

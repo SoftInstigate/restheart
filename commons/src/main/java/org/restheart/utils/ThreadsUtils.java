@@ -21,13 +21,13 @@
 
 package org.restheart.utils;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ThreadsUtils {
-    private static final Executor VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
+    private static final ExecutorService VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
 
-    public static Executor virtualThreadsExecutor() {
+    public static ExecutorService virtualThreadsExecutor() {
         return VIRTUAL_THREADS_EXECUTOR;
     }
 }

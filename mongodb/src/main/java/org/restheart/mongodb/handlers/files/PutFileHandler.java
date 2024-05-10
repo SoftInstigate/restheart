@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.files;
 
-import com.mongodb.MongoWriteException;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -30,6 +28,10 @@ import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.MongoWriteException;
+
+import io.undertow.server.HttpServerExchange;
 public class PutFileHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
@@ -68,7 +70,7 @@ public class PutFileHandler extends PipelinedHandler {
 
         // must be an object
         if (request.getContent() == null || !request.getContent().isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "metadata must be a JSON object");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "metadata must be a JSON object");
             next(exchange);
             return;
         }
@@ -78,7 +80,7 @@ public class PutFileHandler extends PipelinedHandler {
         var id = request.getDocumentId();
 
         if (metadata.containsKey("_id") && !metadata.get("_id").equals(id)) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "_id in content body is different than id in URL");
             next(exchange);
             return;
         }

@@ -19,11 +19,15 @@
  */
 package org.restheart.exchange;
 
+import java.io.IOException;
+
+import org.restheart.utils.ChannelReader;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import org.restheart.utils.ChannelReader;
 
 /**
  *
@@ -35,26 +39,23 @@ public class JsonRequest extends ServiceRequest<JsonElement> {
     }
 
     public static JsonRequest init(HttpServerExchange exchange) {
-        var ret = new JsonRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (Throwable ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+        return new JsonRequest(exchange);
     }
 
     public static JsonRequest of(HttpServerExchange exchange) {
         return of(exchange, JsonRequest.class);
     }
 
-    public void injectContent() throws IOException {
+    @Override
+    public JsonElement parseContent() throws IOException, BadRequestException {
         if (wrapped.getRequestContentLength() > 0) {
-            setContent(JsonParser.parseString(ChannelReader.readString(wrapped)));
+            try {
+                return JsonParser.parseString(ChannelReader.readString(wrapped));
+            } catch(JsonSyntaxException jse) {
+                throw new BadRequestException(jse.getMessage(), jse);
+            }
         } else {
-            setContent(null);
+            return null;
         }
     }
 }

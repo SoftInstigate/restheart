@@ -20,46 +20,33 @@
  */
 package org.restheart.handlers.injectors;
 
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.WildcardInterceptor;
+
 import com.google.common.net.HttpHeaders;
-import io.undertow.server.HttpServerExchange;
+
 import io.undertow.util.HttpString;
-import org.restheart.handlers.PipelinedHandler;
 
 /**
+ * Sets the X-Powered-By: restheart.org response header
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * It injects the X-Powered-By response header
  */
-public class XPoweredByInjector extends PipelinedHandler {
-    /**
-     * Creates a new instance of XPoweredByInjector
-     *
-     * @param next
-     */
-    public XPoweredByInjector(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     * Creates a new instance of XPoweredByInjector
-     *
-     */
-    public XPoweredByInjector() {
-        super(null);
-    }
-
+@RegisterPlugin(name="xPoweredBy", description="Sets the X-Powered-By: restheart.org response header", enabledByDefault=true)
+public class XPoweredBy implements WildcardInterceptor {
     private static final HttpString X_POWERED_BY = HttpString.tryFromString(HttpHeaders.X_POWERED_BY);
+    private static final String RESTHEART_ORG = "restheart.org";
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.getResponseHeaders().add(X_POWERED_BY, "restheart.org");
+    public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
+        response.getHeaders().add(X_POWERED_BY, RESTHEART_ORG);
+    }
 
-        next(exchange);
+    @Override
+    public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
+        return true;
     }
 }

@@ -20,16 +20,15 @@
  */
 package org.restheart.test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
@@ -73,7 +72,7 @@ public class PutIndexIT extends HttpClientAbstactIT {
         // resp = adminExecutor.execute(Request.Put(indexTmpUri).bodyString("{a:1}",
         // halCT).addHeader(Headers.CONTENT_TYPE_STRING,
         // Representation.HAL_JSON_MEDIA_TYPE));
-        // check("check put wrong index", resp, HttpStatus.SC_NOT_ACCEPTABLE);
+        // check("check put wrong index", resp, HttpStatus.SC_BAD_REQUEST);
         resp = adminExecutor
                 .execute(Request.Put(indexTmpUri).bodyString("{ keys: {a:1,b:2}, ops: { name: \"ciao\"} }", halCT)
                         .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));

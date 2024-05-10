@@ -20,15 +20,14 @@
  */
 package org.restheart.security.authenticators;
 
-import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -36,9 +35,11 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.BsonUtils;
-import static org.restheart.utils.BsonUtils.document;
 import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -46,8 +47,6 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.nulabinc.zxcvbn.Feedback;
 import com.nulabinc.zxcvbn.Zxcvbn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * helper interceptor to add token headers to Access-Control-Expose-Headers to
@@ -63,7 +62,7 @@ import org.slf4j.LoggerFactory;
 public class UserPwdStrengthEnforcer implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserPwdStrengthEnforcer.class);
 
-    private static Zxcvbn zxcvbn = new Zxcvbn();
+    private static final Zxcvbn zxcvbn = new Zxcvbn();
 
     private String usersDb;
     private String usersCollection;
@@ -123,7 +122,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
         var content = request.getContent();
 
         if (content == null) {
-            return;
+            // nothing to do
         } else if (content.isArray() && request.isPost()) {
             // POST collection with array of documents
             JsonArray passwords = JsonPath.read(BsonUtils.toJson(content), "$.[*].".concat(this.propNamePassword));
@@ -159,7 +158,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
                     }
                 }
             } catch (PathNotFoundException pnfe) {
-                return;
+                // nothing to do
             }
         }
     }
@@ -171,8 +170,8 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
     private void reject(MongoResponse response, Feedback feedback, Integer idx) {
         var error = document()
             .put("message", idx == null ? "Password is too weak" : "Password is too weak in user document at index " + idx)
-            .put("http status code", HttpStatus.SC_NOT_ACCEPTABLE)
-            .put("http status description", HttpStatus.getStatusText(HttpStatus.SC_NOT_ACCEPTABLE));
+            .put("http status code", HttpStatus.SC_BAD_REQUEST)
+            .put("http status description", HttpStatus.getStatusText(HttpStatus.SC_BAD_REQUEST));
 
         var warning = feedback.getWarning();
 
@@ -184,12 +183,12 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
         if (suggestions != null && !suggestions.isEmpty()) {
             var _suggestions = array();
-            suggestions.stream().forEach(suggestion -> _suggestions.add(suggestion.toString()));
+            suggestions.stream().forEach(suggestion -> _suggestions.add(suggestion));
             error.put("suggestions", _suggestions);
         }
 
         response.setContent(error);
-        response.setStatusCode(HttpStatus.SC_NOT_ACCEPTABLE);
+        response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
         response.setInError(true);
     }
 

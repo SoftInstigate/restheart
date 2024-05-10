@@ -20,14 +20,16 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.Txn;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -56,7 +58,7 @@ public class DeleteTxnHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(request.getSid());
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "Invalid session id");
             next(exchange);
             return;
         }
@@ -64,7 +66,7 @@ public class DeleteTxnHandler extends PipelinedHandler {
         var cs = TxnClientSessionFactory.getInstance().getTxnClientSession(sid, request.rsOps());
 
         if (cs.getTxnServerStatus().getTxnId() != request.getTxnId() || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "The given transaction is not in-progress");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "The given transaction is not in-progress");
         } else {
             cs.setMessageSentInCurrentTransaction(true);
             cs.abortTransaction();

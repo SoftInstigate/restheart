@@ -41,12 +41,14 @@ import static org.restheart.exchange.ExchangeKeys._ID;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormDataParser;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -141,7 +143,7 @@ public class MongoRequestContentInjector {
      * @return the parsed BsonDocument from the form data or an empty
      * BsonDocument
      */
-    protected static BsonDocument extractMetadata(final FormData formData) throws JsonParseException {
+    protected static BsonDocument extractMetadata(final FormData formData) throws BadRequestException {
         var metadataString = formData.getFirst(FILE_METADATA) != null
                 ? formData.getFirst(FILE_METADATA).getValue()
                 : formData.getFirst(PROPERTIES) != null
@@ -156,7 +158,7 @@ public class MongoRequestContentInjector {
             } else if (parsed.isDocument()) {
                 return parsed.asDocument();
             } else {
-                throw new JsonParseException("metadata is not a valid JSON object");
+                throw new BadRequestException("metadata is not a valid JSON object");
             }
         } else {
             return new BsonDocument();
@@ -183,22 +185,18 @@ public class MongoRequestContentInjector {
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().withDefaultCharset(StandardCharsets.UTF_8.name()).build();
 
     /**
-     * Creates a new instance of BodyInjectorHandler
-     *
-     */
-    public MongoRequestContentInjector() {
-    }
-
-    /**
      *
      * @param exchange
+     * @return the parsed bson
+     * @throws org.restheart.exchange.BadRequestException
+     * @throws java.io.IOException
      */
-    public static void inject(final HttpServerExchange exchange) {
+    public static BsonValue inject(final HttpServerExchange exchange) throws BadRequestException, IOException {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
         if (request.isGet() || request.isOptions() || request.isDelete()) {
-            return;
+            return null;
         }
 
         BsonValue content;
@@ -212,8 +210,7 @@ public class MongoRequestContentInjector {
         } else if (isHalOrJson(contentType)) {
             content = injectBson(exchange);
         } else {
-            response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-            return;
+            throw new BadRequestException(ERROR_INVALID_CONTENTTYPE, HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE);
         }
 
         if (content == null) {
@@ -221,8 +218,7 @@ public class MongoRequestContentInjector {
         } else if (content.isArray()) {
             if (!(request.isCollection() && request.isPost()) &&
                 !(request.isDocument() && request.isPatch())) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request content must be a Json object");
-                return;
+                throw new BadRequestException("request content must be a Json object");
             }
 
             if (!content.asArray().stream().anyMatch(_doc -> {
@@ -230,17 +226,15 @@ public class MongoRequestContentInjector {
                     var _id = _doc.asDocument().get(_ID);
 
                     if (_id != null && _id.isArray()) {
-                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in request data is not supported: " + (_id == null ? "" : _id.getBsonType().name()));
-                        return false;
+                        throw new BadRequestException("the type of _id in request data is not supported: " + (_id == null ? "" : _id.getBsonType().name()));
                     }
                     return true;
                 } else {
-                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request data must be either an json object or an array of objects");
-                    return false;
+                    throw new BadRequestException("request data must be either an json object or an array of objects");
                 }
             })) {
                 // an error occurred
-                return;
+                return null;
             }
         } else if (content.isDocument()) {
             var _content = content.asDocument();
@@ -248,8 +242,7 @@ public class MongoRequestContentInjector {
             var _id = _content.get(_ID);
 
             if (_id != null && _id.isArray()) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in request data is not supported: " + _id.getBsonType().name());
-                return;
+                throw new BadRequestException("the type of _id in request data is not supported: " + _id.getBsonType().name());
             }
         }
 
@@ -260,37 +253,29 @@ public class MongoRequestContentInjector {
         if (request.isPost() || request.isPut()) {
             if (BsonUtils.containsUpdateOperators(content, true)) {
                 // not acceptable
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "update operators (but $currentDate) cannot be used on POST and PUT requests");
-                return;
+                throw new BadRequestException("update operators (but $currentDate) cannot be used on POST and PUT requests");
             }
 
             // unflatten request content for POST and PUT requests
             content = BsonUtils.unflatten(content);
         }
 
-        request.setContent(content);
+        return content;
     }
 
-    private static BsonValue injectBson(HttpServerExchange exchange) {
+    private static BsonValue injectBson(HttpServerExchange exchange) throws BadRequestException, IOException {
         BsonValue content;
         final String contentString;
 
         var bar = ByteArrayProxyRequest.of(exchange);
 
-        try {
-            if (bar.isContentAvailable()) {
-                // if content has been already injected
-                // get it from MongoRequest.readContent()
-                contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
-            } else {
-                // otherwise use ChannelReader
-                contentString = ChannelReader.readString(exchange);
-            }
-        } catch (IOException ieo) {
-            var errMsg = "Error reading request content";
-            LOGGER.error(errMsg, ieo);
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-            return null;
+        if (bar.isContentAvailable()) {
+            // if content has been already injected
+            // get it from MongoRequest.readContent()
+            contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
+        } else {
+            // otherwise use ChannelReader
+            contentString = ChannelReader.readString(exchange);
         }
 
         // parse the json content
@@ -299,11 +284,10 @@ public class MongoRequestContentInjector {
                 content = BsonUtils.parse(contentString);
 
                 if (content != null && !content.isDocument() && !content.isArray()) {
-                    throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
+                    throw new BadRequestException("request data must be either a json object or an array, got " + content.getBsonType().name());
                 }
             } catch (JsonParseException | IllegalArgumentException ex) {
-                MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
-                return null;
+                throw new BadRequestException("Invalid JSON. " + ex.getMessage(), ex);
             }
         } else {
             content = null;
@@ -312,26 +296,26 @@ public class MongoRequestContentInjector {
         return content;
     }
 
-    private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+    private static FormDataParser parser(HttpServerExchange exchange) {
+        // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
+
+        return FORM_PARSER.createParser(exchange);
+    }
+
+    private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) throws BadRequestException, IOException {
+        // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
+
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
              return injectMultiparForFiles(exchange, request, response);
         }
 
-        var parser = FORM_PARSER.createParser(exchange);
+        var parser = parser(exchange);
 
         if (parser == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
-            return null;
+            throw new BadRequestException("There is no form parser registered for the request content type", HttpStatus.SC_BAD_REQUEST);
         }
 
-        FormData formData;
-
-        try {
-            formData = parser.parseBlocking();
-        } catch (IOException ioe) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
-            return null;
-        }
+        var formData = parser.parseBlocking();
 
         var ret = new BsonDocument();
         boolean errored[] = {false};
@@ -355,7 +339,7 @@ public class MongoRequestContentInjector {
                 } catch(JsonParseException jpe) {
                     var strippedValue = part.getValue().getValue().strip();
                     if (strippedValue.startsWith("{") || strippedValue.startsWith("[")) {
-                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + jpe.getMessage(), jpe);
+                        LambdaUtils.throwsSneakyException(new BadRequestException("Invalid JSON. " + jpe.getMessage(), jpe));
                         errored[0] = true;
                     } else {
                         ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
@@ -366,37 +350,27 @@ public class MongoRequestContentInjector {
         return errored[0] ? null : ret;
     }
 
-    private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+    private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
         BsonValue content;
 
-        var parser = FORM_PARSER.createParser(exchange);
+        var parser = parser(exchange);
 
         if (parser == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
-            return null;
+            throw new BadRequestException("There is no form parser registered for the request content type", HttpStatus.SC_BAD_REQUEST);
         }
 
-        FormData formData;
-
-        try {
-            formData = parser.parseBlocking();
-        } catch (IOException ioe) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
-            return null;
-        }
+        var formData = parser.parseBlocking();
 
         try {
             content = extractMetadata(formData);
         } catch (JsonParseException | IllegalArgumentException ex) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'metadata' field is not a valid JSON object", ex);
-            return null;
+            throw new BadRequestException("Invalid data: 'metadata' field is not a valid JSON object", ex);
         }
 
         final var fileField = extractFileField(formData);
 
         if (fileField == null) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "This request does not contain any binary file");
-            return null;
+            throw new BadRequestException("This request does not contain any binary file");
         }
 
         final InputStream fileInputStream;
@@ -407,7 +381,7 @@ public class MongoRequestContentInjector {
         } catch(IOException ioe) {
             response.addWarning("error getting binary field from request");
             LOGGER.warn("error getting binary field from request", ioe);
-            return null;
+            throw ioe;
         }
 
         return content;

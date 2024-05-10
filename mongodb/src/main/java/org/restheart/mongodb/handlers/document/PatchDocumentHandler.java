@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.document;
 
-import io.undertow.server.HttpServerExchange;
-
 import java.util.Optional;
 
 import org.restheart.exchange.MongoRequest;
@@ -30,6 +28,8 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -78,7 +78,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
             if (content.get("_id") == null) {
                 content.put("_id", id);
             } else if (!content.get("_id").equals(id)) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "_id in json data cannot be different than id in URL");
                 next(exchange);
                 return;
             }

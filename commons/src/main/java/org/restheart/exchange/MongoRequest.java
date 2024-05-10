@@ -19,6 +19,7 @@
  */
 package org.restheart.exchange;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -80,7 +81,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 
@@ -162,8 +162,6 @@ public class MongoRequest extends BsonRequest {
 
     protected MongoRequest(HttpServerExchange exchange, String requestUri, String resourceUri) {
         super(exchange);
-
-        setContentInjected(false);
 
         this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null
             ? null
@@ -1102,57 +1100,27 @@ public class MongoRequest extends BsonRequest {
         return jsonMode;
     }
 
-    /**
-     * CONTENT_INJECTED is true if the request body has been already
-     * injected. calling setContent() and setFileInputStream() sets
-     * CONTENT_INJECTED to true.
-     *
-     * calling getContent() or getFileInputStream() when CONTENT_INJECTED=false
-     * triggers content injection via MongoRequestContentInjector
-     */
-    public static final AttachmentKey<Boolean> CONTENT_INJECTED = AttachmentKey.create(Boolean.class);
-
-    public boolean isContentInjected() {
-        return this.wrapped.getAttachment(CONTENT_INJECTED);
-    }
-
-    public final void setContentInjected(boolean value) {
-        this.wrapped.putAttachment(CONTENT_INJECTED, value);
-    }
-
     @Override
-    public BsonValue getContent() {
-        if (!isContentInjected()) {
-            LOGGER.trace("getContent() called but content has not been injected yet. Let's inject it.");
-
-            // the MongoRequest content can have been already attached to the exchange
-            // with MongoServiceAttachments.attachBsonContent()
-            // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
-            var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(wrapped);
-            if (attacheBsonContent == null) {
-                MongoRequestContentInjector.inject(wrapped);
-            } else {
-                MongoRequest.of(wrapped).setContent(attacheBsonContent);
-            }
-        }
-
-        return super.getContent();
-    }
-
-    @Override
-    public void setContent(BsonValue content) {
-        super.setContent(content);
-        setContentInjected(true);
+    public BsonValue parseContent() throws BadRequestException, IOException {
+        // the MongoRequest content can have been already attached to the exchange
+        // with MongoServiceAttachments.attachBsonContent()
+        // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
+        var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(wrapped);
+        return attacheBsonContent == null
+            ? MongoRequestContentInjector.inject(wrapped)
+            : attacheBsonContent;
     }
 
     /**
      *
      * @return the fileInputStream in case of a file resouces the fileInputStream, null othewise
+     * @throws org.restheart.exchange.BadRequestException
+     * @throws java.io.IOException
      */
-    public InputStream getFileInputStream() {
+    public InputStream getFileInputStream() throws BadRequestException, IOException {
         if (!isContentInjected()) {
             LOGGER.debug("getFileInputStream() called but content has not been injected yet. Let's inject it.");
-            MongoRequestContentInjector.inject(wrapped);
+            MongoRequestContentInjector.inject(wrapped); // inject calls request.setFileInputStream(fileInputStream);
         }
 
         return fileInputStream;

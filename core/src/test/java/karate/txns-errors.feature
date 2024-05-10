@@ -36,7 +36,7 @@ Scenario: commit txn when txn status=NONE
     Given path '/_sessions/' + sid + '/_txns/' + 1
     And request {}
     When method PATCH
-    Then status 406
+    Then status 400
     And match response.message == 'The given transaction is not in-progress'
 
 @requires-mongodb-4 @requires-replica-set
@@ -57,7 +57,7 @@ Scenario: abort txn when txn status=NONE
     Given path '/_sessions/' + sid + '/_txns/' + 1
     And param rep = 's'
     When method DELETE
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 @requires-mongodb-4 @requires-replica-set
@@ -70,7 +70,7 @@ Scenario: abort txn when txn status=ABORTED
     And param rep = 's'
     And request {}
     When method DELETE
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 Scenario: commit txn when txn status=ABORTED
@@ -82,7 +82,7 @@ Scenario: commit txn when txn status=ABORTED
     And param rep = 's'
     And request {}
     When method PATCH
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 # test requests on txn that are invalid due to wrong txn id
@@ -98,7 +98,7 @@ Scenario: create a document using a wrong txnId
     And param sid = sid
     And param txn = 2
     When method POST
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(sid)', txn: 1 }
@@ -112,7 +112,7 @@ Scenario: GET collection using a wrong txnId
     And param sid = sid
     And param txn = 2
     When method GET
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(sid)', txn: 1 }
@@ -131,7 +131,7 @@ Scenario: create a document in committed txn
     And param sid = sid
     And param txn = 1
     When method POST
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 @requires-mongodb-4 @requires-replica-set
@@ -145,7 +145,7 @@ Scenario: GET collection in committed txn
     And param sid = sid
     And param txn = 1
     When method GET
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 @requires-mongodb-4 @requires-replica-set
@@ -160,7 +160,7 @@ Scenario: create a document in aborted txn
     And param sid = sid
     And param txn = 1
     When method POST
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 @requires-mongodb-4 @requires-replica-set
@@ -175,7 +175,7 @@ Scenario: GET collection in aborted txn
     And param sid = sid
     And param txn = 1
     When method GET
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
 # test requests on documents that are invalid due to wrong txn id
@@ -191,7 +191,7 @@ Scenario: create a document with wrong txn id
     And param sid = sid
     And param txn = 2
     When method POST
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
@@ -206,7 +206,7 @@ Scenario: GET collection with wrong txn id
     And param sid = sid
     And param txn = 2
     When method GET
-    Then status 406
+    Then status 400
     And assert response.message == 'The given transaction is not in-progress'
 
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }

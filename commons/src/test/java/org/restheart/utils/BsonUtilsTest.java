@@ -1018,7 +1018,7 @@ public class BsonUtilsTest {
     /**
      * used to optimize BsonUtils.toJson()
      * but ignored by default cause it takes few sceconds
-     * @throws IOException
+     * @throws java.io.IOException
      */
     //@Test
     public void testPerformanceOfToJson() throws IOException {

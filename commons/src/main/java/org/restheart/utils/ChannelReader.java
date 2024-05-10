@@ -20,13 +20,8 @@
 
 package org.restheart.utils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
-import org.xnio.channels.Channels;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -35,43 +30,38 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ChannelReader {
-
-    final static Charset CHARSET = StandardCharsets.UTF_8;
-    final static int CAPACITY = 1024;
-
     /**
      *
      * @param exchange
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static String readString(HttpServerExchange exchange) throws IOException {
-        return new String(readBytes(exchange), CHARSET);
+        final var receiver = exchange.getRequestReceiver();
+        final var ret = new String[1];
+
+        receiver.receiveFullString(
+            (_exchange, data) -> ret[0] = data,
+            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe),
+            StandardCharsets.UTF_8);
+
+        return ret[0];
     }
 
     /**
      *
      * @param exchange
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static byte[] readBytes(HttpServerExchange exchange) throws IOException {
-        var channel = exchange.getRequestChannel();
+        final var receiver = exchange.getRequestReceiver();
+        final var ret = new byte[1][];
 
-        if (channel == null) {
-            return null;
-        }
+        receiver.receiveFullBytes(
+            (_exchange, data) -> ret[0] = data,
+            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe));
 
-        try (var os = new ByteArrayOutputStream(CAPACITY)) {
-            var buffer = ByteBuffer.allocate(CAPACITY);
-
-            while (Channels.readBlocking(channel, buffer) != -1) {
-                buffer.flip();
-                os.write(buffer.array(), 0, buffer.remaining());
-                buffer.clear();
-            }
-
-            return os.toByteArray();
-        }
+        return ret[0];
     }
 }

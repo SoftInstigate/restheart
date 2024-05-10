@@ -20,9 +20,6 @@
  */
 package org.restheart.test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,6 +43,8 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.restheart.exchange.Exchange;
@@ -450,7 +449,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      * @param resp
      * @param expectedCode
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     protected HttpResponse check(String message, Response resp, int expectedCode) throws IOException {
         var httpResp = resp.returnResponse();

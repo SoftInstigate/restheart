@@ -42,7 +42,7 @@ public class BuffersUtils {
     /**
      * @param srcs
      * @return
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static ByteBuffer toByteBuffer(final PooledByteBuffer[] srcs) throws IOException {
         if (srcs == null) {
