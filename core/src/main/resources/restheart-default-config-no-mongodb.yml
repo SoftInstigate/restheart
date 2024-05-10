@@ -480,10 +480,13 @@ core:
   # if <= 0, use the number of cores.
   io-threads: 0
 
-  # Number of platform carrier threads for executing worker virtual threads in blocking operations.
+  # Initial number of platform carrier threads for executing worker virtual threads in blocking operations.
   # Suggested value: 1.5*core.
   # if <= 0, use 1.5 times the number of cores.
-  worker-carrier-threads: 0
+  workers-scheduler-parallelism: 0
+
+  # Max number of platform carrier threads for executing worker virtual threads in blocking operations.
+  workers-scheduler-max-pool-size: 256
 
   # set to true to pool buffer for io-threads. buffer pooling is always disabled for virtual worker threads.
   buffer-pooling: true
