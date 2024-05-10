@@ -496,7 +496,7 @@ core:
   buffer-size: 16364
 
   # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
-  direct-buffers: false
+  direct-buffers: true
 
   # In order to save bandwitdth, force requests to support the giz encoding (if not, requests will be rejected)
   force-gzip-encoding: false
