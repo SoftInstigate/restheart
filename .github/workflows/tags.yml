@@ -16,8 +16,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - mongodb-version: 4.2
-          - mongodb-version: 4.4
           - mongodb-version: 5.0
           - mongodb-version: 6.0
             deploy: true
@@ -32,11 +30,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       - name: Set the VERSION
         id: vars
