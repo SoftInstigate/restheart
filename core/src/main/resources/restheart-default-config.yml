@@ -476,7 +476,9 @@ core:
   # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
   buffer-size: 16364
 
-  # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+  # Specifies whether the buffer pool for I/O threads should use direct buffers.
+  # Direct buffers enable the JVM to leverage native I/O operations if supported by the system.
+  # Virtual working threads always use heap buffers because they are faster for their operations.
   direct-buffers: true
 
   # In order to save bandwitdth, force requests to support the giz encoding (if not, requests will be rejected)

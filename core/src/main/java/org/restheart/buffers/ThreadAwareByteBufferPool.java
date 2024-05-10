@@ -42,13 +42,13 @@ public class ThreadAwareByteBufferPool implements ByteBufferPool {
     private final boolean enablePooling;
 
     /**
-     * @param direct               If this implementation should use direct buffers
+     * @param direct               If io threads implmentation should use direct buffers
      * @param bufferSize           The buffer size to use
      * @param enablePooling        true to enable pooling for platform threads
      */
     public ThreadAwareByteBufferPool(boolean direct, int bufferSize, boolean enablePooling) {
         this.undertowDefaultByteBufferPool = enablePooling ? new DefaultByteBufferPool(direct, bufferSize, -1, 4) : null;
-        this.notPoolingByteBufferPool = new NotPoolingByteBufferPool(direct, bufferSize);
+        this.notPoolingByteBufferPool = new NotPoolingByteBufferPool(false, bufferSize);
         this.enablePooling = enablePooling;
     }
 
