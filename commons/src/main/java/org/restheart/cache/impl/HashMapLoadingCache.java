@@ -53,8 +53,10 @@ public class HashMapLoadingCache<K, V> implements org.restheart.cache.LoadingCac
 
     @Override
     public Optional<V> getLoading(K key) {
-        if(get(key) != null) {
-            return get(key);
+        var cachedValue = get(key);
+
+        if(cachedValue != null) {
+            return cachedValue;
         } else {
             var value = Optional.ofNullable(loader.apply(key));
 
