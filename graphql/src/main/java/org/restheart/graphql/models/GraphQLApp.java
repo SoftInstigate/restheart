@@ -33,9 +33,7 @@ import org.slf4j.LoggerFactory;
 import graphql.TypeResolutionEnvironment;
 import graphql.language.InterfaceTypeDefinition;
 import graphql.language.UnionTypeDefinition;
-import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.TypeResolver;
 import graphql.schema.idl.MapEnumValuesProvider;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -169,58 +167,52 @@ public class GraphQLApp {
                 typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
                     var unionMapping = this.unionMappings.get(e.getKey());
 
-                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
-                        @Override
-                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-                            var obj = env.getObject();
-                            final Optional<Entry<String, Predicate>> match;
-                            if (obj instanceof BsonValue value) {
-                                match = unionMapping.entrySet().stream()
-                                    .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
-                                    .findFirst();
-                            } else {
-                                // predicates can only resolve on BsonValues
-                                LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
-                                return null;
-                            }
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver((TypeResolutionEnvironment env) -> {
+                        var obj = env.getObject();
+                        final Optional<Entry<String, Predicate>> match;
 
-                            if (match.isPresent()) {
-                                return env.getSchema().getObjectType(match.get().getKey());
-                            } else {
-                                return null;
-                            }
+                        if (obj instanceof BsonValue value) {
+                            match = unionMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                .findFirst();
+                        } else {
+                            // predicates can only resolve on BsonValues
+                            LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                            return null;
+                        }
+
+                        if (match.isPresent()) {
+                            return env.getSchema().getObjectType(match.get().getKey());
+                        } else {
+                            LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                            return null;
                         }
                     }).build());
                 });
 
                 // Interfaces
                 typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e ->{
-                    LOGGER.debug("Interface: {} -> {}", e.getKey(),  e.getValue());
-
                     var interfaceMapping = this.interfacesMappings.get(e.getKey());
 
-                    LOGGER.debug("\tmapping: {}", interfaceMapping);
+                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver((TypeResolutionEnvironment env) -> {
+                        var obj = env.getObject();
+                        final Optional<Entry<String, Predicate>> match;
 
-                    RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver(new TypeResolver() {
-                        @Override
-                        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
-                            var obj = env.getObject();
-                            final Optional<Entry<String, Predicate>> match;
-                            if (obj instanceof BsonValue value) {
-                                match = interfaceMapping.entrySet().stream()
-                                    .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
-                                    .findFirst();
-                            } else {
-                                // predicates can resolve on BsonValues
-                                LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
-                                return null;
-                            }
+                        if (obj instanceof BsonValue value) {
+                            match = interfaceMapping.entrySet().stream()
+                                .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                .findFirst();
+                        } else {
+                            // predicates can resolve on BsonValues
+                            LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                            return null;
+                        }
 
-                            if (match.isPresent()) {
-                                return env.getSchema().getObjectType(match.get().getKey());
-                            } else {
-                                return null;
-                            }
+                        if (match.isPresent()) {
+                            return env.getSchema().getObjectType(match.get().getKey());
+                        } else {
+                            LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
+                            return null;
                         }
                     }).build());
                 });

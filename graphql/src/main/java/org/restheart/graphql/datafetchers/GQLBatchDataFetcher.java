@@ -28,12 +28,10 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLObjectType;
 
 
-public class GQLBatchDataFetcher extends GraphQLDataFetcher{
-
+public class GQLBatchDataFetcher extends GraphQLDataFetcher {
     public GQLBatchDataFetcher(QueryMapping queryMapping) {
         super(queryMapping);
     }
-
 
     @Override
     public Object get(DataFetchingEnvironment env) throws Exception {

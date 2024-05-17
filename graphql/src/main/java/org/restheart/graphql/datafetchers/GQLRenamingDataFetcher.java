@@ -20,14 +20,14 @@
  */
 package org.restheart.graphql.datafetchers;
 
-import graphql.schema.DataFetchingEnvironment;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.FieldRenaming;
 
-import java.util.Arrays;
-import java.util.regex.Pattern;
+import graphql.schema.DataFetchingEnvironment;
 
 public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
@@ -43,8 +43,13 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
         var alias = ((FieldRenaming) this.fieldMapping).getAlias();
 
-        BsonDocument parentDocument = env.getSource();
-        return getValues(parentDocument, alias);
+        BsonValue source = env.getSource();
+
+        if (source == null || source.isNull()) {
+            return null;
+        }
+
+        return getValues(source, alias);
     }
 
 
