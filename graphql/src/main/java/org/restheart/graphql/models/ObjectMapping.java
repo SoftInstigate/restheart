@@ -20,10 +20,10 @@
  */
 package org.restheart.graphql.models;
 
+import java.util.Map;
+
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
-
-import java.util.Map;
 
 public class ObjectMapping extends TypeMapping {
     public ObjectMapping(String typeName, Map<String, FieldMapping> fieldMappingMap){
@@ -32,13 +32,10 @@ public class ObjectMapping extends TypeMapping {
 
     @Override
     public TypeRuntimeWiring.Builder getTypeWiring(TypeDefinitionRegistry typeRegistry) {
+        final var tWBuilder = TypeRuntimeWiring.newTypeWiring(this.typeName);
 
-        TypeRuntimeWiring.Builder TWBuilder = TypeRuntimeWiring.newTypeWiring(this.typeName);
+        fieldMappingMap.forEach(((fieldName, fieldMapping) -> tWBuilder.dataFetcher(fieldName, fieldMapping.getDataFetcher())));
 
-        this.fieldMappingMap.forEach(((fieldName, fieldMapping) -> {
-            TWBuilder.dataFetcher(fieldName, fieldMapping.getDataFetcher());
-        }));
-
-        return TWBuilder;
+        return tWBuilder;
     }
 }

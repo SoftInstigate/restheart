@@ -22,6 +22,7 @@
 package org.restheart.graphql.predicates;
 
 import org.bson.BsonValue;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.util.AttachmentKey;
@@ -43,5 +44,5 @@ public class ExchangeWithBsonValue {
         return exchange.getAttachment(DOC_KEY);
     }
 
-    private static AttachmentKey<BsonValue> DOC_KEY = AttachmentKey.create(BsonValue.class);
+    private static final AttachmentKey<BsonValue> DOC_KEY = AttachmentKey.create(BsonValue.class);
 }

@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.bson.BsonNull;
 import org.dataloader.DataLoaderRegistry;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
@@ -72,6 +73,7 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
 import graphql.GraphQLError;
+import graphql.execution.ValueUnboxer;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
@@ -207,6 +209,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
 
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
+            .valueUnboxer((Object object) -> object instanceof BsonNull ? null : ValueUnboxer.DEFAULT.unbox(object))
             .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
             .build();
 
