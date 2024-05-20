@@ -78,6 +78,7 @@ import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
 import org.restheart.handlers.TracingInstrumentationHandler;
+import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
@@ -115,13 +116,12 @@ import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
-import org.xnio.Options;
-import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
+import io.undertow.protocols.ssl.UndertowXnioSsl;
 import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
@@ -767,10 +767,6 @@ public final class Bootstrapper {
                 return;
             }
 
-            final var xnio = Xnio.getInstance();
-
-            final var optionMap = OptionMap.create(Options.SSL_CLIENT_AUTH_MODE, SslClientAuthMode.REQUIRED, Options.SSL_STARTTLS, true);
-
             var proxyClient = new LoadBalancingProxyClient()
                 .setConnectionsPerThread(proxy.connectionPerThread())
                 .setSoftMaxConnectionsPerThread(proxy.softMaxConnectionsPerThread())
@@ -780,8 +776,14 @@ public final class Bootstrapper {
 
             proxy.proxyPass().stream().forEach(pp -> {
                 try {
+                    var byteBufferPool = new ThreadAwareByteBufferPool(
+                        configuration.coreModule().directBuffers(),
+                        configuration.coreModule().bufferSize(),
+                        configuration.coreModule().buffersPooling());
+
+                    var xnioSsl = new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, byteBufferPool);
                     var uri = new URI(pp);
-                    proxyClient.addHost(uri, xnio.getSslProvider(optionMap));
+                    proxyClient.addHost(uri, xnioSsl);
                 } catch(URISyntaxException t) {
                     LOGGER.warn("Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
                 } catch (GeneralSecurityException ex) {
@@ -795,6 +797,7 @@ public final class Bootstrapper {
                 .build();
 
             var rhProxy = pipe(
+                new WorkingThreadsPoolDispatcher(),
                 new PipelineInfoInjector(),
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
@@ -886,7 +889,7 @@ public final class Bootstrapper {
                 if (file.exists()) {
                     var handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(sr.welcomeFile()).setDirectoryListingEnabled(false);
 
-                    var ph = PipelinedHandler.pipe(new PipelineInfoInjector(), new RequestLogger(), PipelinedWrappingHandler.wrap(handler));
+                    var ph = PipelinedHandler.pipe(new PipelineInfoInjector(), new RequestLogger(), new WorkingThreadsPoolDispatcher(PipelinedWrappingHandler.wrap(handler)));
 
                     PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph, new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
