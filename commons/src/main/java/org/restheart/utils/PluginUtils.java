@@ -57,11 +57,35 @@ public class PluginUtils {
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
         var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
+        InterceptPoint ret;
+
         if (a == null) {
             // if class is not annotated, look for field interceptPoint
-            return findInterceptPointField(interceptor.getClass(), interceptor);
+            ret = findInterceptPointField(interceptor.getClass(), interceptor);
         } else {
-            return a.interceptPoint();
+            ret = a.interceptPoint();
+        }
+
+        if (ret == InterceptPoint.ANY) {
+            throw new IllegalArgumentException("intercept point ANY can only be used in dontIntercept attribute");
+        } else {
+            return ret;
+        }
+    }
+
+
+    /**
+     *
+     * @param interceptor
+     * @return the requiredinterceptor as defined by the @RegisterPlugin annotation
+     */
+    public static Boolean requiredinterceptor(Interceptor interceptor) {
+        var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+
+        if (a == null) {
+            return null;
+        } else {
+            return a.requiredinterceptor();
         }
     }
 

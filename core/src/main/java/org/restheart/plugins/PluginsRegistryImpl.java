@@ -274,17 +274,19 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
         Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
 
+        var _interceptors = getInterceptors();
+
         if (_service.isPresent()) {
             // if the request is handled by a service set to not execute interceptors
-            // at this interceptPoint, skip interceptors execution
+            // at this interceptPoint, appy only required interceptor
             // var vip = PluginUtils.dontIntercept(PluginsRegistryImpl.getInstance(), exchange);
             var vip = PluginUtils.dontIntercept(_service.get().getInstance());
-            if (Arrays.stream(vip).anyMatch(interceptPoint::equals)) {
-                return Lists.newArrayList();
+            if (Arrays.stream(vip).anyMatch(interceptPoint::equals) || Arrays.stream(vip).anyMatch(InterceptPoint.ANY::equals) ) {
+                _interceptors = _interceptors.stream().filter(i ->  PluginUtils.requiredinterceptor(i.getInstance())).collect(Collectors.toSet());
             }
         }
 
-        return getInterceptors()
+        return _interceptors
             .stream()
             .filter(ri -> ri.isEnabled())
             .map(ri -> ri.getInstance())

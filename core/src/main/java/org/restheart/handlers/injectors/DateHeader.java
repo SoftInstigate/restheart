@@ -45,7 +45,7 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="dateHeader", description="Sets the Date response header", enabledByDefault=true)
+@RegisterPlugin(name="dateHeader", description="Sets the Date response header", enabledByDefault=true, requiredinterceptor=true)
 public class DateHeader implements WildcardInterceptor {
     private static final HttpString DATE = HttpString.tryFromString(HttpHeaders.DATE);
     private static final String RFC1123_PATTERN = "EEE, dd MMM yyyy HH:mm:ss z";

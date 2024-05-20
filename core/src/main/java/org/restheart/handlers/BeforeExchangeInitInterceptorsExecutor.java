@@ -20,13 +20,15 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
+import static org.restheart.plugins.InterceptPoint.ANY;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT;
 import org.restheart.plugins.InterceptorException;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -36,7 +38,7 @@ import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT;
+import io.undertow.server.HttpServerExchange;
 
 /**
  * Executes the Interceptor with interceptPoint REQUEST_BEFORE_EXCHANGE_INIT
@@ -49,11 +51,12 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
     private ArrayList<WildcardInterceptor> wildCardInterceptors = new ArrayList<>();
 
+    private ArrayList<WildcardInterceptor> requiredWildCardInterceptors = new ArrayList<>();
+
     private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();;
 
     /**
      *
-     * @param interceptPoint
      */
     public BeforeExchangeInitInterceptorsExecutor() {
         this(null);
@@ -61,7 +64,6 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
     /**
      * @param next
-     * @param interceptPoint
      */
     public BeforeExchangeInitInterceptorsExecutor(PipelinedHandler next) {
         super(next);
@@ -70,6 +72,11 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             .map(pr -> pr.getInstance())
             .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
             .filter(i -> i instanceof WildcardInterceptor)
+            .map(i -> (WildcardInterceptor) i)
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        this.requiredWildCardInterceptors =this.wildCardInterceptors.stream()
+            .filter(i -> PluginUtils.requiredinterceptor(i))
             .map(i -> (WildcardInterceptor) i)
             .collect(Collectors.toCollection(ArrayList::new));
     }
@@ -86,22 +93,23 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
+        ArrayList<WildcardInterceptor> interceptors = this.wildCardInterceptors;
+
         var request = UninitializedRequest.of(exchange);
         var response = UninitializedResponse.of(exchange);
 
         var handlingPlugin = PluginUtils.handlingService(pluginsRegistry, exchange);
 
         if (handlingPlugin != null) {
-            // if the request is handled by a service set to not execute intrceptors
-            // at this interceptPoint, skip interceptors execution
+            // if the request is handled by a service set to not execute interceptors
+            // at this interceptPoint, apply only required interceptors
             var vip = PluginUtils.dontIntercept(handlingPlugin);
-            if (Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals)) {
-                next(exchange);
-                return;
+            if (Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals) || Arrays.stream(vip).anyMatch(ANY::equals) ) {
+                interceptors = this.requiredWildCardInterceptors;
             }
         }
 
-        this.wildCardInterceptors.stream().filter(ri -> {
+        interceptors.stream().filter(ri -> {
             try {
                 return ri.resolve(request, response);
             } catch (Exception ex) {

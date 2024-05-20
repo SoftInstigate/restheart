@@ -102,6 +102,20 @@ public @interface RegisterPlugin {
      */
     InterceptPoint interceptPoint() default InterceptPoint.REQUEST_AFTER_AUTH;
 
+
+    /**
+     * Only used by Interceptors
+     *
+     * Indicates that the interceptor should always intercept a service, regardless of its dontIntercept settings.
+     *
+     * This attribute is exclusively used by interceptors to ensure they are applied even when other interceptors
+     * are disabled via the dontIntercept attribute.
+     *
+     * @return true if the interceptor should always intercept, false otherwise
+     */
+    boolean requiredinterceptor() default false;
+
+
     /**
      * Only used by Initializers
      *

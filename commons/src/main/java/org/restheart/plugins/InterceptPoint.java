@@ -30,14 +30,15 @@ public enum InterceptPoint {
      *
      * The interceptor must implement WildcardInterceptor
      *
-     * the Interceptor.handle(request, response) receives the request as UninitializedRequest
-     * and UninitializedResponse response.
+     * the Interceptor.handle(request, response) receives the request as
+     * UninitializedRequest and UninitializedResponse response.
      *
-     * The Interceptor.handle(request, response) receives the request as `UninitializedRequest`
-     * and the response as `UninitializedResponse`.
+     * The Interceptor.handle(request, response) receives the request as
+     * `UninitializedRequest` and the response as `UninitializedResponse`.
      *
-     * It can provide a custom initializer with PluginUtils.attachCustomRequestInitializer()
-     * or can modify the raw request content using Request.setRawContent()
+     * It can provide a custom initializer with
+     * PluginUtils.attachCustomRequestInitializer() or can modify the raw
+     * request content using Request.setRawContent()
      *
      *
      */
@@ -61,5 +62,18 @@ public enum InterceptPoint {
     /**
      * intercept the response and executes asynchronously with the response
      */
-    RESPONSE_ASYNC
+    RESPONSE_ASYNC,
+
+    /**
+     * ANY can be used exclusively in the dontIntercept attribute of the
+     * @RegisterPlugin annotation. dontIntercept=ANY specifies that the service should not be
+     * intercepted at any intercept point by standard interceptors.
+     *
+     * Setting interceptPoint=ANY results in IllegalArgumentException
+     *
+     * Note: Interceptors with requiredInterceptor=true will
+     * still intercept requests handled by the service, regardless of this
+     * setting.
+     */
+    ANY
 }
