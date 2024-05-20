@@ -21,7 +21,7 @@
 
 package org.restheart.test.plugins.initializers;
 
-import org.restheart.exchange.JsonProxyRequest;
+import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "testInitializer",
         priority = 100,
-        description = "The initializer used to test interceptors and veto predicates",
+        description = "The initializer used to test veto predicates",
         enabledByDefault = false)
 public class TestInitializer implements Initializer {
 
@@ -56,11 +56,10 @@ public class TestInitializer implements Initializer {
     public void init() {
         LOGGER.info("Testing initializer");
         LOGGER.info("\tdenies GET /secho/foo using a veto predicate");
-        LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
         this.registry.registerVeto(req -> {
-                if (req instanceof JsonProxyRequest jreq) {
+                if (req instanceof ByteArrayRequest jreq) {
                     return (jreq.isGet() && "/secho/foo".equals(removeTrailingSlashes(jreq.getPath())));
                 } else {
                     return false; // don't veto
