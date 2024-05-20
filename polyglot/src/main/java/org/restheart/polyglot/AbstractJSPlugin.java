@@ -32,6 +32,7 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.IOAccess;
 import org.restheart.configuration.Configuration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
@@ -109,7 +110,7 @@ public abstract class AbstractJSPlugin {
             .allowAllAccess(true)
             .allowHostAccess(HostAccess.ALL)
             .allowHostClassLookup(className -> true)
-            .allowIO(true)
+            .allowIO(IOAccess.ALL)
             .allowExperimentalOptions(true)
             .options(OPTS)
             .build();

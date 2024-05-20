@@ -38,6 +38,7 @@ public class AuthCookieHandler implements WildcardInterceptor {
     private boolean enabled = true;
 
     @OnInit
+    @SuppressWarnings("unchecked")
     public void init() {
         this.enabled = enabled(pluginsRegistry, false);
 

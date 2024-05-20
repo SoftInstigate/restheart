@@ -24,17 +24,15 @@ package org.restheart.graphql.instrumentation;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.restheart.graphql.GraphQLQueryTimeoutException;
-import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import graphql.ExecutionResult;
+import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.noOp;
-import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
-import graphql.execution.instrumentation.parameters.InstrumentationExecuteOperationParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
 
 /**
@@ -56,6 +54,7 @@ public class MaxQueryTimeInstrumentation implements Instrumentation {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
         BsonDocument localContext = (BsonDocument) parameters.getExecutionInput().getLocalContext();
         return new State(System.currentTimeMillis(), localContext);

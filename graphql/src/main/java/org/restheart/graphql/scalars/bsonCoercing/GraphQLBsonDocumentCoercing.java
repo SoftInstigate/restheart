@@ -19,7 +19,6 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -57,8 +56,8 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
     public BsonDocument serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
         if(input == null || input instanceof BsonNull) {
             return null;
-        } else if(input instanceof BsonDocument){
-            return (BsonDocument) input;
+        } else if(input instanceof BsonDocument bsonDocument){
+            return bsonDocument;
         } else {
             throw new CoercingSerializeException("Expected type 'BsonDocument' but was '" + typeName(input) +"'.");
         }
@@ -80,7 +79,7 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
             var fields = objectValue.getObjectFields();
             var parsedValues = new BsonDocument();
             fields.forEach(field ->{
-                var parsedValue = parseObjectField(field.getValue(), Collections.emptyMap());
+                var parsedValue = parseObjectField(field.getValue(), variables, graphQLContext, locale);
                 parsedValues.put(field.getName(), parsedValue);
             });
             return parsedValues;
@@ -89,7 +88,7 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
         }
     }
 
-    public BsonValue parseObjectField(Object input, Map<String, Object> variables) throws CoercingParseLiteralException {
+    public BsonValue parseObjectField(Object input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
         if(!(input instanceof Value)) {
             throw new CoercingParseLiteralException("Expected input type 'Value' but was '" + typeName(input) + "'.");
         } else if (input instanceof StringValue stringValue) {
@@ -110,13 +109,13 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
         } else if (input instanceof ArrayValue arrayValue) {
             var values = arrayValue.getValues();
             var bsonValues = new BsonArray();
-            values.forEach(value -> bsonValues.add(parseLiteral(value, variables)));
+            values.forEach(value -> bsonValues.add(parseLiteral(value, variables, graphQLContext, locale)));
             return bsonValues;
         } else if (input instanceof ObjectValue objectValue) {
             var fields = objectValue.getObjectFields();
             var parsedValues = new BsonDocument();
             fields.forEach(field ->{
-                var parsedValue = parseObjectField(field.getValue(), variables);
+                var parsedValue = parseObjectField(field.getValue(), variables, graphQLContext, locale);
                 parsedValues.put(field.getName(), parsedValue);
             });
             return parsedValues;

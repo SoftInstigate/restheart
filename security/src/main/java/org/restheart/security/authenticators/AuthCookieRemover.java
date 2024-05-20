@@ -35,6 +35,7 @@ public class AuthCookieRemover implements BsonService {
     private String sameSiteMode;
 
     @OnInit
+    @SuppressWarnings("unchecked")
     public void init() {
         if (rhConfig.toMap().containsKey("authCookieSetter")) {
             var authCookieSetterConf = (Map<String, Object>) rhConfig.toMap().get("authCookieSetter");

@@ -68,13 +68,15 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
     @Override
     public BsonDecimal128 parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
         if (input instanceof StringValue || input instanceof IntValue || input instanceof FloatValue){
-            String value = null;
-            if (input instanceof IntValue intValue){
-                value = intValue.getValue().toString();
-            } else if (input instanceof FloatValue floatValue){
-                value = floatValue.getValue().toString();
-            } else if (input instanceof StringValue stringValue){
-                value = stringValue.getValue();
+            var value = switch (input) {
+                case IntValue intValue -> intValue.getValue().toString();
+                case FloatValue floatValue -> floatValue.getValue().toString();
+                case StringValue stringValue -> stringValue.getValue();
+                default -> null;
+            };
+
+            if (value == null) {
+                throw new CoercingParseLiteralException("Expected value to be an int a float or a string but it was '" + input + "'");
             }
 
             var dec = Decimal128.parse(value);
@@ -106,7 +108,7 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
 
     @Override
     public Value<?> valueToLiteral(Object input, GraphQLContext graphQLContext, Locale locale) {
-        var value = parseValue(input);
+        var value = parseValue(input, graphQLContext, locale);
         var s = BsonUtils.toJson(value);
         return StringValue.newStringValue(s).build();
     }
