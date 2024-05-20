@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "testInitializer",
         priority = 100,
-        description = "The initializer used to test interceptors and global predicates",
+        description = "The initializer used to test interceptors and veto predicates",
         enabledByDefault = false)
 public class TestInitializer implements Initializer {
 
@@ -55,7 +55,7 @@ public class TestInitializer implements Initializer {
     @Override
     public void init() {
         LOGGER.info("Testing initializer");
-        LOGGER.info("\tdenies GET /secho/foo using a Global Permission Predicate");
+        LOGGER.info("\tdenies GET /secho/foo using a veto predicate");
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
