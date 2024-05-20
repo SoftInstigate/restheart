@@ -39,14 +39,15 @@ public class ACLRegistryAllower implements Authorizer {
 
     @Override
     public boolean isAllowed(Request<?> request) {
-        var allowPredicate = registry.allowPredicates()
+        var allowed = registry.allowPredicates()
             .stream()
-            .filter(predicate -> predicate.test(request))
-            .findFirst();
+            .anyMatch(predicate -> predicate.test(request));
 
-        LOGGER.debug("request authorized by ACLRegistryAllower? {}", allowPredicate.isPresent());
+        if (LOGGER.isDebugEnabled() && allowed) {
+            LOGGER.debug("Request allowed by ACLRegistryAllower due to an allow predicate");
+        }
 
-        return allowPredicate.isPresent();
+        return allowed;
     }
 
     @Override

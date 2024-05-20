@@ -24,6 +24,8 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(
         name = "aclRegistryVetoer",
@@ -31,13 +33,21 @@ import org.restheart.plugins.security.Authorizer.TYPE;
         enabledByDefault = true,
         authorizerType = TYPE.VETOER)
 public class ACLRegistryVetoer implements Authorizer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ACLRegistryVetoer.class);
+
     private final ACLRegistryImpl registry = ACLRegistryImpl.getInstance();
 
     @Override
     public boolean isAllowed(Request<?> request) {
-        return registry.vetoPredicates()
+        var vetoed = registry.vetoPredicates()
             .stream()
-            .allMatch(predicate -> !predicate.test(request));
+            .anyMatch(predicate -> predicate.test(request));
+
+        if (LOGGER.isDebugEnabled() && vetoed) {
+            LOGGER.debug("Request vetoed by ACLRegistryVetoer due to a veto predicate");
+        }
+
+        return !vetoed;
     }
 
     @Override
