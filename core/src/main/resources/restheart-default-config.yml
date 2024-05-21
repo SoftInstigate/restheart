@@ -168,7 +168,7 @@ authCookieSetter:
   http-only: true         # If true enhances security by making the cookie inaccessible to JavaScript.
   same-site: true         # Restricts the cookie to first-party contexts, preventing CSRF attacks.
   same-site-mode: strict  # Strictly prevents the cookie from being sent along with cross-site requests.
-  exprires-ttl: 86400     # Defines the duration (in seconds, default 1 day) for which the cookie is valid.
+  expires-ttl: 86400     # Defines the duration (in seconds, default 1 day) for which the cookie is valid.
 
  # Constructs the Authorization header using the auth cookie,
  # It is compatible with both Basic and JWT authentication mechanisms.

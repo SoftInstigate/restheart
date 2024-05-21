@@ -59,7 +59,7 @@ public class AuthCookieSetter implements WildcardInterceptor {
         this.httpOnly = argOrDefault(config, "http-only", true);
         this.sameSite = argOrDefault(config, "same-site", true);
         this.sameSiteMode = argOrDefault(config, "same-site-mode", "strict");
-        this.secondsUntilExpiration = argOrDefault(config, "exprires-ttl", 24*60*60); // default 1 day
+        this.secondsUntilExpiration = argOrDefault(config, "expires-ttl", 24*60*60); // default 1 day
     }
 
     @Override
