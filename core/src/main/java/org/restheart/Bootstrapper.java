@@ -628,7 +628,7 @@ public final class Bootstrapper {
                     kmf.init(ks, httpsListener.certificatePwd().toCharArray());
                 }
             } else {
-                logErrorAndExit("Cannot enable the HTTPS listener: the keystore is not configured. Generate a keystore and set the configuration options keystore-file, keystore-password and certpassword. More information at https://restheart.org/docs/security/tls/", null, false, -1);
+                logErrorAndExit("Cannot enable the HTTPS listener: the keystore is not configured. Generate a keystore and set the configuration options keystore-path, keystore-password and certificate-password. More information at https://restheart.org/docs/security/tls/", null, false, -1);
             }
 
             tmf.init(ks);
@@ -637,11 +637,11 @@ public final class Bootstrapper {
 
             return sslContext;
         } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
         } catch (FileNotFoundException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, keystore file not found. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start RESTHeart, keystore file not found. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
         } catch (IOException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, error reading the keystore file. Check the keystore-file, keystore-password and certpassword options. Exiting..", ex, false, -1);
+            logErrorAndExit("Couldn't start RESTHeart, error reading the keystore file. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
         }
 
         return null;
