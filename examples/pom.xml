@@ -11,7 +11,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <restheart.version>[7.7.0,8.0.0)</restheart.version>
+        <restheart.version>8.0.0</restheart.version>
     </properties>
 
     <modules>
