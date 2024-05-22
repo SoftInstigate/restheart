@@ -20,21 +20,21 @@
 
 package org.restheart.examples;
 
-import org.restheart.exchange.ServiceRequest;
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonResponse;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import static org.restheart.utils.GsonUtils.object;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormParserFactory;
-
-import static org.restheart.utils.GsonUtils.object;
-
-import java.io.IOException;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 @RegisterPlugin(name = "formHandler", description = "handle a form post using FormDataParser")
 public class FormHandler implements Service<FormRequest, JsonResponse> {
@@ -82,30 +82,23 @@ class FormRequest extends ServiceRequest<FormData> {
     }
 
     public static FormRequest init(HttpServerExchange exchange) {
-        var ret = new FormRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (Throwable ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+        return new FormRequest(exchange);
     }
 
     public static FormRequest of(HttpServerExchange exchange) {
         return of(exchange, FormRequest.class);
     }
 
-    private static FormParserFactory builder = FormParserFactory.builder().build();
+    private static final FormParserFactory builder = FormParserFactory.builder().build();
 
-    public void injectContent() throws IOException {
+    @Override
+    public FormData parseContent() throws IOException, BadRequestException {
         var parser = builder.createParser(getExchange());
 
         if (parser == null) {
             throw new IOException("Not a form.");
         }
 
-        setContent(parser.parseBlocking());
+        return parser.parseBlocking();
     }
 }
