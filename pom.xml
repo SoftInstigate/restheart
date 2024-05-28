@@ -366,7 +366,7 @@
                  are overridden with scope=provided to not include them in restheart jars
                  Including them leads to errors in building native images
                     Error: Class-path entry file:///.../restheart.jar contains class com.oracle.svm.core.annotate.TargetElement.
-                    his class is part of the image builder itself (in jrt:/org.graalvm.nativeimage) and must not be passed via -cp.
+                    this class is part of the image builder itself (in jrt:/org.graalvm.nativeimage) and must not be passed via -cp.
             -->
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
