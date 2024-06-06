@@ -45,7 +45,7 @@ public class ConnectionChecker {
             mclient.getDatabase("admin").runCommand(document().put("ping", 1).get());
             return true;
         } catch(Throwable t) {
-            LOGGER.error("Error checking connection with to MongoDb", t);
+            LOGGER.error("Error checking connection to MongoDb", t);
             return false;
         }
     });
