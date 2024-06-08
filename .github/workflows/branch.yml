@@ -74,6 +74,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true # push all images built
           pull: true # pull all required images before building
+          # NOTE: snapshot images must be tagged with "latest" in master branch only
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Build and Push GraalVM Docker image
@@ -84,6 +85,7 @@ jobs:
           file: ./core/Dockerfile.graalvm
           push: true # push all images built
           pull: true # pull all required images before building
+          # NOTE: snapshot images must be tagged with "graalvm" in master branch only
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
 
       - name: Build and Push distroless docker image
@@ -94,6 +96,7 @@ jobs:
           file: ./core/Dockerfile.distroless
           push: true # push all images built
           pull: true # pull all required images before building
+          # NOTE: snapshot images must be tagged with "distroless" in master branch only
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Import private gpg key
