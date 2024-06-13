@@ -3961,6 +3961,18 @@
     "allDeclaredConstructors":true
   },
   {
+    "name": "com.mongodb.internal.operation.CommandBatchCursor",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
+  },
+  {
+    "name": "com.mongodb.internal.operation.CommandCursorResult",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true
+  },
+  {
     "name": "org.apache.commons.logging.LogFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,

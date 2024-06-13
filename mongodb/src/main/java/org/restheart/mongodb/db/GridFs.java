@@ -70,12 +70,9 @@ public class GridFs {
     private GridFs() {
     }
 
-    private static GridFs INSTANCE = null;
+    private static final GridFs INSTANCE = new GridFs();
 
     public static GridFs get() {
-        if (INSTANCE == null) {
-            INSTANCE = new GridFs();
-        }
         return INSTANCE;
     }
 

@@ -20,6 +20,35 @@
  */
 package org.restheart.mongodb.db;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.json.JsonParseException;
+import org.bson.types.ObjectId;
+import static org.fusesource.jansi.Ansi.Color.YELLOW;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
+import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
+import org.restheart.exchange.ExchangeKeys.METHOD;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
+import org.restheart.mongodb.RHMongoClients;
+import org.restheart.mongodb.RSOps;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Lists;
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
@@ -30,35 +59,6 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.internal.MongoBatchCursorAdapter;
 import static com.mongodb.client.model.Filters.eq;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonObjectId;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.json.JsonParseException;
-import org.bson.types.ObjectId;
-import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
-import org.restheart.exchange.ExchangeKeys.METHOD;
-import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import static org.fusesource.jansi.Ansi.Color.YELLOW;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.mongodb.RHMongoClients;
-import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.RSOps;
-
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
-import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Data Access Object for the mongodb Collection resource. NOTE: this class
@@ -88,7 +88,7 @@ class Collections {
         this.client = RHMongoClients.mclient();
     }
 
-    private static Collections INSTANCE = new Collections();
+    private static final Collections INSTANCE = new Collections();
 
     public static Collections get() {
         return INSTANCE;
@@ -236,23 +236,23 @@ class Collections {
         }
     }
 
-    // match from=40.900, to=41.080
-    // from 41.000 -> to 41.100
-    // fromIndex = 41.000-40.900=100
-    // toIndex = min(100+100, 41.080-40.900) => 180
-    // => subList(100,180)
-
     private int cursorCount(MongoCursor<?> cursor) {
         try {
             var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("batchCursor");
             _batchCursor.setAccessible(true);
             var batchCursor = _batchCursor.get(cursor);
 
-            var _count = batchCursor.getClass().getDeclaredField("count");
-            _count.setAccessible(true);
-            return (int) _count.get(batchCursor);
+            var _commandCursorResult = batchCursor.getClass().getDeclaredField("commandCursorResult");
+            _commandCursorResult.setAccessible(true);
+            var commandCursorResult = _commandCursorResult.get(batchCursor);
+
+            var _results = commandCursorResult.getClass().getDeclaredField("results");
+            _results.setAccessible(true);
+            var results = (List) _results.get(commandCursorResult);
+
+            return results.size();
         } catch(NoSuchFieldException | IllegalAccessException ex) {
-            LOGGER.warn("cannot access field Cursor.batchCursor.count ", ex);
+            LOGGER.warn("cannot access field Cursor.batchCursor.commandCursorResult.results", ex);
             return 0;
         }
     }
