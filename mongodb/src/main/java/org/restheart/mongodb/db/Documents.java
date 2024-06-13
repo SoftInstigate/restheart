@@ -58,7 +58,7 @@ public class Documents {
     private Documents() {
     }
 
-    private static Documents INSTANCE = new Documents();
+    private static final Documents INSTANCE = new Documents();
 
     public static Documents get() {
         return INSTANCE;

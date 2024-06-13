@@ -63,7 +63,7 @@ class Indexes {
     private Indexes() {
     }
 
-    private static Indexes INSTANCE = new Indexes();
+    private static final Indexes INSTANCE = new Indexes();
 
     public static Indexes get() {
         return INSTANCE;
@@ -233,12 +233,6 @@ class Indexes {
         //max	number
         if (options.containsKey("max") && options.get("max").isDouble()) {
             ret.max(options.get("max").asDouble().getValue());
-        }
-
-        //***Options for geoHaystack Indexes
-        //bucketSize	number
-        if (options.containsKey("bucketSize")&& options.get("bucketSize").isDouble()) {
-            ret.bucketSize(options.get("bucketSize").asDouble().getValue());
         }
 
         //***Options for collation

@@ -202,34 +202,10 @@
                 <artifactId>restheart-metrics</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- IMPORTANT
-                 upgrading mongodb driver version requires upgrading jnr-unixsocket, mongodb-crypt and snappy-java
-                 dependecies in core/pom.xml native-image profile to match versions defined in https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle
-                 this is needed to for native-image build to work -->
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>4.11.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.jnr</groupId>
-                <artifactId>jnr-unixsocket</artifactId>
-                <version>0.38.22</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-            </dependency>
-            <dependency>
-                <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-crypt</artifactId>
-                <version>1.8.0</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-            </dependency>
-            <dependency>
-                <groupId>org.xerial.snappy</groupId>
-                <artifactId>snappy-java</artifactId>
-                <version>1.1.10.5</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-            </dependency>
-            <dependency>
-                <groupId>com.github.luben</groupId>
-                <artifactId>zstd-jni</artifactId>
-                <version>1.5.6-3</version>
+                <version>5.1.1</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>

@@ -87,7 +87,7 @@ public class Databases {
         this.indexes  = Indexes.get();
     }
 
-    private static Databases INSTANCE = new Databases();
+    private static final Databases INSTANCE = new Databases();
 
     public static Databases get() {
         return INSTANCE;
@@ -264,6 +264,7 @@ public class Databases {
      * @param updating
      * @param newContent
      * @param requestEtag
+     * @param checkEtag
      * @return the OperationResult
      */
     public OperationResult upsertDB(
@@ -456,7 +457,7 @@ public class Databases {
      * @param rsOps the ReplicaSet connection options
      * @param dbName the database name
      * @param collName the collection name
-     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * @param filter the filters to apply. it is a Deque collection of mongodb
      * query conditions.
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
@@ -474,7 +475,7 @@ public class Databases {
      * @param page
      * @param pagesize
      * @param sortBy
-     * @param filter
+     * @param filters
      * @param hint
      * @param keys
      * @param useCache

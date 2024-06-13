@@ -578,22 +578,6 @@
           <artifactId>restheart-test-plugins</artifactId>
           <version>${project.version}</version>
         </dependency> -->
-        <dependency>
-          <groupId>com.github.jnr</groupId>
-          <artifactId>jnr-unixsocket</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>org.mongodb</groupId>
-          <artifactId>mongodb-crypt</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>org.xerial.snappy</groupId>
-          <artifactId>snappy-java</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>com.github.luben</groupId>
-          <artifactId>zstd-jni</artifactId>
-        </dependency>
       </dependencies>
       <build>
         <plugins>
