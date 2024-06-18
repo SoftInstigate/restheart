@@ -300,12 +300,12 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.25</version>
+                <version>4.2.26</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.25</version>
+                <version>4.2.26</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -320,12 +320,12 @@
             <dependency>
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
-                <version>4.7.5</version>
+                <version>4.7.6</version>
             </dependency>
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.172</version>
+                <version>4.8.173</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
