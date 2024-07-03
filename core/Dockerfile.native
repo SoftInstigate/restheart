@@ -1,4 +1,4 @@
-FROM debian:12.5-slim
+FROM debian:bookworm-20240701-slim
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
