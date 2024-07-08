@@ -120,9 +120,8 @@
         <artifactId>polyglot</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.graalvm.polyglot</groupId>
-        <artifactId>js-community</artifactId>
-        <type>pom</type>
+        <groupId>org.graalvm.js</groupId>
+        <artifactId>js-language</artifactId>
     </dependency>
     <dependency>
         <groupId>org.graalvm.truffle</groupId>
