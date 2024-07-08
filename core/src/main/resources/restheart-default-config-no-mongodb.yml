@@ -106,8 +106,8 @@ mongoRealmAuthenticator:
   # default password is 'secret'
   # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
   cache-enabled: false
-  cache-size: 1000
-  cache-ttl: 60000
+  cache-size: 1_000
+  cache-ttl: 60_000 # in msecs
   cache-expire-policy: AFTER_WRITE
 
 # Cookie Authentication
@@ -125,7 +125,7 @@ authCookieSetter:
   http-only: true         # If true enhances security by making the cookie inaccessible to JavaScript.
   same-site: true         # Restricts the cookie to first-party contexts, preventing CSRF attacks.
   same-site-mode: strict  # Strictly prevents the cookie from being sent along with cross-site requests.
-  expires-ttl: 86400     # Defines the duration (in seconds, default 1 day) for which the cookie is valid.
+  expires-ttl: 86_400     # Defines the duration (in seconds, default 1 day) for which the cookie is valid.
 
  # Constructs the Authorization header using the auth cookie,
  # It is compatible with both Basic and JWT authentication mechanisms.
@@ -161,8 +161,8 @@ mongoAclAuthorizer:
   # clients with root-role can execute any request
   root-role: admin
   cache-enabled: true
-  cache-size: 1000
-  cache-ttl: 5000
+  cache-size: 1_000
+  cache-ttl: 5_000 # in msecs
   cache-expire-policy: AFTER_WRITE
 
 # originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
@@ -196,7 +196,7 @@ fullAuthorizer:
 # rndTokenService generates auth tokens using a random number generator.
 rndTokenManager:
   enabled: true
-  ttl: 15
+  ttl: 15 # in minutes
   srv-uri: /tokens
 
 # jwtTokenManager generates JWT auth tokens.
@@ -205,7 +205,7 @@ rndTokenManager:
 jwtTokenManager:
   enabled: false
   key: secret
-  ttl: 15
+  ttl: 15 # in minutes
   srv-uri: /tokens
   issuer: restheart.org
   audience: null
@@ -275,8 +275,8 @@ mongo:
   # get collection cache speedups GET /coll?cache requests
   get-collection-cache-enabled: true
   get-collection-cache-size: 100
-  get-collection-cache-ttl: 10_000 # Time To Live, default 10 seconds
-  get-collection-cache-docs: 1000 # number of documents to cache for each request
+  get-collection-cache-ttl: 10_000 # Time To Live, in msecs, default 10 seconds
+  get-collection-cache-docs: 1_000 # number of documents to cache for each request
 
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
   aggregation-check-operators: true
@@ -289,7 +289,7 @@ mongo:
   # max-pagesize sets the maximum allowed value of the pagesize query parameter
   # generally, the greater the pagesize, the more json serializan overhead occurs
   # the rule of thumb is not exeeding 1000
-  max-pagesize: 1000
+  max-pagesize: 1_000
 
   # local-cache allows to cache the db and collection properties to drammatically
   # improve performaces. Without caching, a GET on a document would requires
@@ -300,12 +300,12 @@ mongo:
   # In most of the cases Dbs and collections properties only change at development time.
   local-cache-enabled: true
   # TTL in milliseconds; specify a value < 0 to never expire cached entries
-  local-cache-ttl: 60000
+  local-cache-ttl: 60_000 # msecs
 
   # cache for JSON Schemas
   schema-cache-enabled: true
   # TTL in milliseconds; specify a value < 0 to never expire cached entries
-  schema-cache-ttl: 60000
+  schema-cache-ttl: 60_000 # msecs
 
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0
