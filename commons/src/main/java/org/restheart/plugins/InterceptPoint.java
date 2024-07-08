@@ -25,22 +25,17 @@ package org.restheart.plugins;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public enum InterceptPoint {
-    /**
-     * intercept the request before the exchange is initialized
+   /**
+     * Intercepts the request before the exchange is initialized.
      *
-     * The interceptor must implement WildcardInterceptor
+     * <p>Interceptors on {@code InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT}
+     * must implement the interface {@code WildcardInterceptor}; in this case,
+     * {@code Interceptor.handle(request, response)} receives the request as
+     * {@code UninitializedRequest} and the response as {@code UninitializedResponse}.
      *
-     * the Interceptor.handle(request, response) receives the request as
-     * UninitializedRequest and UninitializedResponse response.
-     *
-     * The Interceptor.handle(request, response) receives the request as
-     * `UninitializedRequest` and the response as `UninitializedResponse`.
-     *
-     * It can provide a custom initializer with
-     * PluginUtils.attachCustomRequestInitializer() or can modify the raw
-     * request content using Request.setRawContent()
-     *
-     *
+     * <p>Interceptors can provide a custom initializer with
+     * {@code PluginUtils.attachCustomRequestInitializer()} or can modify the raw
+     * request content using {@code Request.setRawContent()}.
      */
     REQUEST_BEFORE_EXCHANGE_INIT,
 
