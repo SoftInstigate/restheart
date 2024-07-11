@@ -535,12 +535,13 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
-                <phase>package</phase>
+                <phase>prepare-package</phase>
                 <goals>
                   <goal>copy-dependencies</goal>
                 </goals>
                 <configuration>
                   <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                  <includeScope>runtime</includeScope>
                 </configuration>
               </execution>
             </executions>
