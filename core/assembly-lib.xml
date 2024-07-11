@@ -9,19 +9,10 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}/..</directory>
+            <directory>${project.build.directory}/lib</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>LICENSE.txt</include>
-                <include>COMM-LICENSE.txt</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.build.directory}</directory>
-            <outputDirectory>.</outputDirectory>
-            <includes>
-                <include>restheart.jar</include>
-                <include>plugins/*.jar</include>
+                <include>*.jar</include>
             </includes>
         </fileSet>
     </fileSets>

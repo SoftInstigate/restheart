@@ -346,9 +346,26 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <finalName>restheart</finalName>
               <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
+              </descriptors>
+              <attach>false</attach>
+              <tarLongFileMode>posix</tarLongFileMode>
+            </configuration>
+          </execution>
+          <execution>
+            <id>lib</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>lib</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly-lib.xml</descriptor>
               </descriptors>
               <attach>false</attach>
               <tarLongFileMode>posix</tarLongFileMode>
