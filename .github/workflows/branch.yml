@@ -20,7 +20,7 @@ jobs:
           - mongodb-version: 6.0
             deploy: true
           - mongodb-version: 7.0
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
