@@ -361,7 +361,7 @@
                 <artifactId>js-language</artifactId>
                 <version>${truffle.version}</version>
                 <scope>runtime</scope>
-                </dependency>
+            </dependency>
             <dependency>
                 <groupId>org.graalvm.truffle</groupId>
                 <artifactId>truffle-runtime</artifactId>
