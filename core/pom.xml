@@ -357,7 +357,7 @@
         <executions>
           <execution>
             <id>fat</id>
-            <phase>install</phase>
+            <phase>verify</phase>
             <goals>
               <goal>single</goal>
             </goals>
@@ -373,7 +373,7 @@
           </execution>
           <execution>
             <id>with-deps</id>
-            <phase>install</phase>
+            <phase>verify</phase>
             <goals>
               <goal>single</goal>
             </goals>
