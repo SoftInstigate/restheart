@@ -245,98 +245,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <finalName>restheart</finalName>
-          <createDependencyReducedPom>true</createDependencyReducedPom>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/MANIFEST.MF</exclude>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-                <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
-                <exclude>META-INF/versions/9/module-info.*</exclude>
-                <exclude>module-info.class</exclude>
-                <exclude>LICENSE.md</exclude>
-                <exclude>LICENSE-ClassGraph.txt</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>org.restheart:restheart-commons</artifact>
-              <excludes>
-                <exclude>org/restheart/utils/package-info.class</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>org.restheart:restheart</artifact>
-              <excludes>
-                <exclude>org/restheart/security/authorizers/package-info.class</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>com.graphql-java:graphql-java</artifact>
-              <excludes>
-                <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
-                <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
-                <exclude>META-INF/proguard/*</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <!-- this fixes native-image build errors such:
-                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
-                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
-                -->
-                <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.home/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.polyglot/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.collections/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.nativeimage/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.word/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.js/native-image.properties</exclude>
-                <exclude>META-INF/native-image/com.oracle.truffle.regex/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.truffle/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.shadowed.org.jcodings/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.shadowed.icu4j/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.truffle.runtime/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.jniutils/native-image.properties</exclude>
-                <exclude>META-INF/native-image/org.graalvm.truffle.compiler/native-image.properties</exclude>
-              </excludes>
-            </filter>
-          </filters>
-          <transformers>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-              <addHeader>false</addHeader>
-            </transformer>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-              <resource>META-INF/RESTHEART-LICENSE.txt</resource>
-              <file>../LICENSE.txt</file>
-            </transformer>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-              <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
-              <file>../COMM-LICENSE.txt</file>
-            </transformer>
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
-          </transformers>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -347,44 +255,6 @@
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <includeScope>runtime</includeScope>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>fat</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <finalName>restheart</finalName>
-              <appendAssemblyId>false</appendAssemblyId>
-              <descriptors>
-                <descriptor>assembly-fat.xml</descriptor>
-              </descriptors>
-              <attach>false</attach>
-              <tarLongFileMode>posix</tarLongFileMode>
-            </configuration>
-          </execution>
-          <execution>
-            <id>with-deps</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <finalName>restheart</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>assembly-with-deps.xml</descriptor>
-              </descriptors>
-              <attach>false</attach>
-              <tarLongFileMode>posix</tarLongFileMode>
             </configuration>
           </execution>
         </executions>
@@ -422,9 +292,176 @@
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>dist</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <mkdir dir="./target/plugins" />
+                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>with-deps</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>restheart</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly-with-deps.xml</descriptor>
+              </descriptors>
+              <attach>false</attach>
+              <tarLongFileMode>posix</tarLongFileMode>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <profiles>
+    <profile>
+      <id>shade</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <configuration>
+              <finalName>restheart</finalName>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
+                    <exclude>META-INF/versions/9/module-info.*</exclude>
+                    <exclude>module-info.class</exclude>
+                    <exclude>LICENSE.md</exclude>
+                    <exclude>LICENSE-ClassGraph.txt</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.restheart:restheart-commons</artifact>
+                  <excludes>
+                    <exclude>org/restheart/utils/package-info.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.restheart:restheart</artifact>
+                  <excludes>
+                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>com.graphql-java:graphql-java</artifact>
+                  <excludes>
+                    <exclude>META-INF/maven/com.google.guava/guava/pom.properties</exclude>
+                    <exclude>META-INF/maven/com.google.guava/guava/pom.xml</exclude>
+                    <exclude>META-INF/proguard/*</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <!-- this fixes native-image build errors such:
+                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
+                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
+                -->
+                    <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.home/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.polyglot/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.collections/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.nativeimage/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.word/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.js/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/com.oracle.truffle.regex/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.truffle/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.shadowed.org.jcodings/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.shadowed.icu4j/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.truffle.runtime/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.jniutils/native-image.properties</exclude>
+                    <exclude>META-INF/native-image/org.graalvm.truffle.compiler/native-image.properties</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                  <addHeader>false</addHeader>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>META-INF/RESTHEART-LICENSE.txt</resource>
+                  <file>../LICENSE.txt</file>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                  <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
+                  <file>../COMM-LICENSE.txt</file>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+              </transformers>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>fat</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <finalName>restheart</finalName>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <descriptors>
+                    <descriptor>assembly-fat.xml</descriptor>
+                  </descriptors>
+                  <attach>false</attach>
+                  <tarLongFileMode>posix</tarLongFileMode>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <!--
         This profile is used to run the integration tests against a MongoDB docker contaniner. 
         If you are already running MongoDB locally, disable this profile: 
@@ -474,14 +511,14 @@
             <executions>
               <execution>
                 <id>start</id>
-                <phase>pre-integration-test</phase>
+                <phase>prepare-package</phase>
                 <goals>
                   <goal>start</goal>
                 </goals>
               </execution>
               <execution>
                 <id>stop</id>
-                <phase>post-integration-test</phase>
+                <phase>verify</phase>
                 <goals>
                   <goal>stop</goal>
                 </goals>
@@ -508,24 +545,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
-              <execution>
-                <id>dist</id>
-                <phase>package</phase>
-                <configuration>
-                  <target>
-                    <mkdir dir="./target/plugins" />
-                    <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
               <execution>
                 <id>start-server</id>
                 <phase>pre-integration-test</phase>
