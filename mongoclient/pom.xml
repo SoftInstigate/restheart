@@ -20,6 +20,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
@@ -31,6 +32,7 @@
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- END Test dependencies -->
   </dependencies>
 
   <build>
