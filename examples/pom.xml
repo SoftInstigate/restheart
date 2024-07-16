@@ -36,6 +36,7 @@
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-commons</artifactId>
                 <version>${restheart.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
