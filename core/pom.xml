@@ -470,7 +470,9 @@
     <profile>
       <id>mongodb</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
       </activation>
       <build>
         <plugins>
@@ -537,7 +539,9 @@
     <profile>
       <id>start-server</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
       </activation>
       <build>
         <plugins>
