@@ -3,20 +3,19 @@
 _Featuring ready-to-go Security and MongoDB API_
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/softinstigate/restheart/tags.yml)](https://github.com/SoftInstigate/restheart/actions/workflows/tags.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
-[![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:org.restheart/restheart-core)
+[![Maven Central Version](https://img.shields.io/maven-central/v/org.restheart/restheart-core)](https://central.sonatype.com/search?q=g:org.restheart/restheart-core)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
 > **Note**: Schedule a [free 1-to-1 demo](https://calendly.com/restheart) and feel free to ask us anything!
 
-RESTHeart is a framework for building HTTP microservices that aims to empower developers with intuitive APIs out of the box. It is built for developers, with a focus on simplicity, speed and ease of use.
+RESTHeart is a framework for building **microservices** that aims to empower developers with intuitive APIs out of the box. It is built for developers, with a focus on simplicity, speed and ease of use.
 
-RESTHeart is classified as a low-code framework because it provides pre-configured APIs like authentication/authorization and data management through MongoDB integration. This approach reduces the amount of code developers need to write, streamlining the development process and making it easier and faster to build cloud-native HTTP microservices
+The **MongoDB plugin** exposes the full database capabilities through **REST**, **GraphQL** and **Websockets** APIs with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, FerretDB, AWS DocumentDB, and Azure CosmosDB.
 
-The **MongoDB plugin** exposes the full database capabilities through REST, GraphQL and Websockets with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, FerretDB, AWS DocumentDB, and Azure CosmosDB.
-
-RESTHeart offers comprehensive authentication and authorization services, supporting various security schemes. It enables the management of users and permissions directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
+RESTHeart offers comprehensive **authentication** and **authorization** services, supporting various security schemes. It enables the management of users and permissions directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
 
 ## Documentation
 
