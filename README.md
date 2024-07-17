@@ -4,7 +4,7 @@ _Featuring ready-to-go Security and MongoDB API_
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
-[![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:org.restheart)
+[![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:org.restheart/restheart-core)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
@@ -59,8 +59,17 @@ Additionally, it is also possible to develop security plugins to customize the s
 
 > **Note**: Building RESTHeart from scratch requires at least Java 17 and maven 3.6.
 
+Build the fat JAR:
+
 ```bash
-$ ./mvnw clean package
+$ ./mvnw clean package -Pshade
+```
+
+To check the build version:
+
+```bash
+$ java -jar core/target/restheart.jar -v
+RESTHeart Version 8.0.7-SNAPSHOT Build-Time 2024-07-17
 ```
 
 You can then run it with (make sure to have `mongod` running on `localhost:27017`):
