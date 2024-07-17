@@ -1,6 +1,6 @@
-# RESTHeart - Open Source Low-code API development framework
+# RESTHeart - Rapid API Development with MongoDB
 
-_Featuring ready-to-go Security and MongoDB API_
+_RESTHeart is a **backend framework** that transforms MongoDB into a API server. It can be extended with **custom plugins** to enhance its functionality_
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/softinstigate/restheart/branch.yml)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -9,13 +9,13 @@ _Featuring ready-to-go Security and MongoDB API_
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
-> **Note**: Schedule a [free 1-to-1 demo](https://calendly.com/restheart) and feel free to ask us anything!
+[RESTHeart](https://restheart.org/) is designed for developing **microservices**, offering a robust and efficient solution built on top of [Undertow](https://undertow.io/).
 
-RESTHeart is a framework for building **microservices** that aims to empower developers with intuitive APIs out of the box. It is built for developers, with a focus on simplicity, speed and ease of use.
+> Undertow is a high-performance web server written in Java, known for its flexibility and efficiency. It provides both blocking and non-blocking APIs based on NIO (Non-blocking I/O), making it suitable for a wide range of use cases from lightweight HTTP handlers to full-fledged servlet containers. Notably, Undertow is the default web server for the WildFly application server and [replaces JBoss Web in JBoss EAP 7](https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/7.3/html/development_guide/undertow).
 
-The **MongoDB plugin** exposes the full database capabilities through **REST**, **GraphQL** and **Websockets** APIs with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, FerretDB, AWS DocumentDB, and Azure CosmosDB.
+RESTHeart simplify and accelerate the development process, exposing the full **MongoDB** capabilities through **REST**, **GraphQL** and **Websockets** APIs with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, Percona Server, FerretDB, AWS DocumentDB, and Azure CosmosDB.
 
-RESTHeart offers comprehensive **authentication** and **authorization** services, supporting various security schemes. It enables the management of users and permissions directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
+RESTHeart offers comprehensive **authentication** and **authorization** services, supporting various security schemes. It enables the management of **users**, **roles** and **permissions** directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
 
 ## Documentation
 
