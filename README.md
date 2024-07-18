@@ -56,8 +56,6 @@ Additionally, it is also possible to develop security plugins to customize the s
 
 ## Build from source
 
-> **Note**: Building RESTHeart from scratch requires at least Java 17 and maven 3.6.
-
 Build the fat JAR:
 
 ```bash
