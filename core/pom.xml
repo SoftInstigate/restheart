@@ -249,7 +249,29 @@
   <profiles>
     <profile>
       <id>shade</id>
-      <build>
+      <dependencies>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-polyglot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-graphql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongoclient-provider</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -265,24 +287,26 @@
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
-                    <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
                     <exclude>META-INF/versions/9/module-info.*</exclude>
                     <exclude>module-info.class</exclude>
+                    <exclude>LICENSE</exclude>
                     <exclude>LICENSE.md</exclude>
                     <exclude>LICENSE-ClassGraph.txt</exclude>
+                    <exclude>pipes-fork-server-default-log4j2.xml</exclude>
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.restheart:restheart-commons</artifact>
+                  <artifact>org.restheart:restheart-core</artifact>
                   <excludes>
+                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
                     <exclude>org/restheart/utils/package-info.class</exclude>
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.restheart:restheart</artifact>
-                  <excludes>
-                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
-                  </excludes>
+                    <artifact>org.mongodb:bson</artifact>
+                    <excludes>
+                        <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
+                    </excludes>
                 </filter>
                 <filter>
                   <artifact>com.graphql-java:graphql-java</artifact>
@@ -292,37 +316,12 @@
                     <exclude>META-INF/proguard/*</exclude>
                   </excludes>
                 </filter>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <!-- this fixes native-image build errors such:
-                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
-                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
-                -->
-                    <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.home/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.polyglot/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.collections/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.nativeimage/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.word/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.js/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/com.oracle.truffle.regex/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.shadowed.org.jcodings/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.shadowed.icu4j/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle.runtime/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.jniutils/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle.compiler/native-image.properties</exclude>
-                  </excludes>
-                </filter>
               </filters>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                  <addHeader>false</addHeader>
-                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"><addHeader>false</addHeader></transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                   <resource>META-INF/RESTHEART-LICENSE.txt</resource>
                   <file>../LICENSE.txt</file>
@@ -331,7 +330,6 @@
                   <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
                   <file>../COMM-LICENSE.txt</file>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
               </transformers>
             </configuration>
             <executions>
@@ -369,8 +367,8 @@
       </build>
     </profile>
     <!--
-        This profile is used to run the integration tests against a MongoDB docker contaniner. 
-        If you are already running MongoDB locally, disable this profile: 
+        This profile is used to run the integration tests against a MongoDB docker contaniner.
+        If you are already running MongoDB locally, disable this profile:
         mvn -P-mongodb clean verify
     -->
     <profile>
@@ -526,6 +524,7 @@
             <artifactId>native-maven-plugin</artifactId>
             <!-- See https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#configuration-options -->
             <configuration>
+              <imageName>restheart</imageName>
               <buildArgs>
                 <arg>${native.gc}</arg>
               </buildArgs>
