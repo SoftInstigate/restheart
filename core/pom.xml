@@ -93,6 +93,12 @@
       <artifactId>unirest-java</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>org.graalvm.js</groupId> <!-- note: avoid dependecy to org.graalvm.polyglot:js-community:pom due to https://github.com/SoftInstigate/restheart/issues/510 -->
+        <artifactId>js-language</artifactId>
+        <version>${truffle.version}</version>
+        <scope>test</scope>
+    </dependency>
     <!-- END Test dependencies -->
   </dependencies>
 
@@ -364,6 +370,7 @@
             <configuration>
               <skip>${skipITs}</skip>
               <showLogs>false</showLogs>
+              <autoRemove>true</autoRemove>
               <removeVolumes>true</removeVolumes>
               <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
               <images>
