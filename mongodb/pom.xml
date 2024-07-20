@@ -41,10 +41,6 @@
       <artifactId>org.everit.json.schema</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
     </dependency>
