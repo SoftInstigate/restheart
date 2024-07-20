@@ -222,7 +222,7 @@
                 <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
                 <!-- copy plugins dependencies to plugins/lib -->
                 <mkdir dir="./target/plugins/lib" />
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongoclient/target/lib"></fileset></copy>
+                <!-- <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongoclient/target/lib"></fileset></copy> -->
                 <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../security/target/lib"></fileset></copy>
                 <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongodb/target/lib"></fileset></copy>
                 <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../polyglot/target/lib"></fileset></copy>
