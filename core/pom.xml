@@ -157,7 +157,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -168,13 +168,36 @@
           </execution>
         </executions>
       </plugin>
+      <!-- copy plugins dependencies to core lib -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>include-plugins-dependencies</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <copy todir="./target/lib" overwrite="false"><fileset dir="../mongoclient/target/lib"></fileset></copy>
+                <copy todir="./target/lib" overwrite="false"><fileset dir="../security/target/lib"></fileset></copy>
+                <copy todir="./target/lib" overwrite="false"><fileset dir="../mongodb/target/lib"></fileset></copy>
+                <copy todir="./target/lib" overwrite="false"><fileset dir="../polyglot/target/lib"></fileset></copy>
+                <copy todir="./target/lib" overwrite="false"><fileset dir="../graphql/target/lib"></fileset></copy>
+                <copy todir="./target/lib" overwrite="falses"><fileset dir="../metrics/target/lib"></fileset></copy>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
             <manifest>
-              <addClasspath>true</addClasspath>
               <mainClass>org.restheart.Bootstrapper</mainClass>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
@@ -187,6 +210,7 @@
           </archive>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -202,6 +226,30 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>dist</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <mkdir dir="./target/plugins" />
+                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -232,27 +280,27 @@
       <id>shade</id>
       <dependencies>
         <dependency>
-          <groupId>org.restheart</groupId>
-          <artifactId>restheart-security</artifactId>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-security</artifactId>
         </dependency>
         <dependency>
-          <groupId>org.restheart</groupId>
-          <artifactId>restheart-mongodb</artifactId>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongodb</artifactId>
         </dependency>
         <dependency>
-          <groupId>org.restheart</groupId>
-          <artifactId>restheart-polyglot</artifactId>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-polyglot</artifactId>
         </dependency>
         <dependency>
-          <groupId>org.restheart</groupId>
-          <artifactId>restheart-graphql</artifactId>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-graphql</artifactId>
         </dependency>
         <dependency>
-          <groupId>org.restheart</groupId>
-          <artifactId>restheart-mongoclient-provider</artifactId>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
-      </dependencies>
-      <build>
+    </dependencies>
+    <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -284,10 +332,10 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.mongodb:bson</artifact>
-                  <excludes>
-                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
-                  </excludes>
+                    <artifact>org.mongodb:bson</artifact>
+                    <excludes>
+                        <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
+                    </excludes>
                 </filter>
                 <filter>
                   <artifact>com.graphql-java:graphql-java</artifact>
@@ -301,9 +349,7 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                  <addHeader>false</addHeader>
-                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"><addHeader>false</addHeader></transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                   <resource>META-INF/RESTHEART-LICENSE.txt</resource>
@@ -401,14 +447,14 @@
             <executions>
               <execution>
                 <id>start</id>
-                <phase>pre-integration-test</phase>
+                <phase>prepare-package</phase>
                 <goals>
                   <goal>start</goal>
                 </goals>
               </execution>
               <execution>
                 <id>stop</id>
-                <phase>post-integration-test</phase>
+                <phase>verify</phase>
                 <goals>
                   <goal>stop</goal>
                 </goals>
@@ -437,24 +483,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
-              <execution>
-                <id>dist</id>
-                <phase>package</phase>
-                <configuration>
-                  <target>
-                    <mkdir dir="./target/plugins" />
-                    <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
-                    <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
               <execution>
                 <id>start-server</id>
                 <phase>pre-integration-test</phase>
