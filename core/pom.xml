@@ -10,6 +10,7 @@
 
   <properties>
     <native.gc>--gc=serial</native.gc>
+    <mongodb.port>27017</mongodb.port>
   </properties>
 
   <groupId>org.restheart</groupId>
@@ -382,7 +383,9 @@
     <profile>
       <id>mongodb</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
       </activation>
       <build>
         <plugins>
@@ -400,7 +403,7 @@
                   <run>
                     <cmd>--bind_ip_all --replSet rs0</cmd>
                     <ports>
-                      <port>27017:27017</port>
+                      <port>${mongodb.port}:${mongodb.port}</port>
                     </ports>
                     <!-- remove showLogs=false above to get logs -->
                     <log>
@@ -410,11 +413,12 @@
                     </log>
                     <wait>
                       <http>
-                        <url>http://localhost:27017</url>
+                        <url>http://localhost:${mongodb.port}</url>
                         <method>GET</method>
                         <status>200</status>
                       </http>
-                      <time>60000</time>
+                      <time>10000</time>
+                      <shutdown>1000</shutdown>
                     </wait>
                     <autoRemove>true</autoRemove>
                   </run>
@@ -450,7 +454,9 @@
     <profile>
       <id>start-server</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
       </activation>
       <build>
         <plugins>
