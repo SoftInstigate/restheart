@@ -94,9 +94,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.graalvm.js</groupId> <!-- this fixes karate test hanging due to conflict in GraalVM releases -->
-        <artifactId>js-language</artifactId>
-        <scope>test</scope>
+      <groupId>org.graalvm.js</groupId> <!-- this fixes karate test hanging due to conflict in GraalVM releases -->
+      <artifactId>js-language</artifactId>
+      <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->
   </dependencies>
@@ -223,11 +223,21 @@
                 <!-- copy plugins dependencies to plugins/lib -->
                 <mkdir dir="./target/plugins/lib" />
                 <!-- <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongoclient/target/lib"></fileset></copy> -->
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../security/target/lib"></fileset></copy>
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongodb/target/lib"></fileset></copy>
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../polyglot/target/lib"></fileset></copy>
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../graphql/target/lib"></fileset></copy>
-                <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../metrics/target/lib"></fileset></copy>
+                <copy todir="./target/plugins/lib" overwrite="true">
+                  <fileset dir="../security/target/lib"></fileset>
+                </copy>
+                <copy todir="./target/plugins/lib" overwrite="true">
+                  <fileset dir="../mongodb/target/lib"></fileset>
+                </copy>
+                <copy todir="./target/plugins/lib" overwrite="true">
+                  <fileset dir="../polyglot/target/lib"></fileset>
+                </copy>
+                <copy todir="./target/plugins/lib" overwrite="true">
+                  <fileset dir="../graphql/target/lib"></fileset>
+                </copy>
+                <copy todir="./target/plugins/lib" overwrite="true">
+                  <fileset dir="../metrics/target/lib"></fileset>
+                </copy>
               </target>
             </configuration>
             <goals>
@@ -265,27 +275,27 @@
       <id>shade</id>
       <dependencies>
         <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart-security</artifactId>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-security</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart-mongodb</artifactId>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongodb</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart-polyglot</artifactId>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-polyglot</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart-graphql</artifactId>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-graphql</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.restheart</groupId>
-            <artifactId>restheart-mongoclient-provider</artifactId>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
-    </dependencies>
-    <build>
+      </dependencies>
+      <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -317,10 +327,10 @@
                   </excludes>
                 </filter>
                 <filter>
-                    <artifact>org.mongodb:bson</artifact>
-                    <excludes>
-                        <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
-                    </excludes>
+                  <artifact>org.mongodb:bson</artifact>
+                  <excludes>
+                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
+                  </excludes>
                 </filter>
                 <filter>
                   <artifact>com.graphql-java:graphql-java</artifact>
@@ -334,7 +344,9 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"></transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"><addHeader>false</addHeader></transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                  <addHeader>false</addHeader>
+                </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                   <resource>META-INF/RESTHEART-LICENSE.txt</resource>
