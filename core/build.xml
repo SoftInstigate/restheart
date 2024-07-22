@@ -2,9 +2,6 @@
     <target name="start-server">
         <echo>***** Initializing MongoDB as Replica Set</echo>
         <sleep seconds="3" />
-        <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
-            <http url="http://localhost:27017" />
-        </waitfor>
         <!-- mongo shell command is mongo for v <=5.x then mongosh -->
         <condition property="mongoshellcmd" value="mongo" else="mongosh">
             <matches string="${mongodb.version}" pattern="^[1-5].*" />
@@ -18,6 +15,17 @@
             <arg value="${mongoshellcmd}" />
             <arg value="--eval" />
             <arg value="rs.initiate()" />
+        </exec>
+        <echo>***** Printing Replica Set status:</echo>
+        <exec executable="docker">
+            <arg value="run" />
+            <arg value="--rm" />
+            <arg value="--net" />
+            <arg value="host" />
+            <arg value="mongo:${mongodb.version}" />
+            <arg value="${mongoshellcmd}" />
+            <arg value="--eval" />
+            <arg value="rs.status()" />
         </exec>
         <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
         <echo>***** Starting RESTHeart server</echo>
