@@ -157,7 +157,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <phase>prepare-package</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -200,8 +200,11 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -212,32 +215,7 @@
             <phase>package</phase>
             <configuration>
               <target>
-                <!-- copy plugins to plugins -->
-                <mkdir dir="./target/plugins" />
-                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
-                <!-- copy plugins dependencies to plugins/lib -->
-                <mkdir dir="./target/plugins/lib" />
-                <!-- <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongoclient/target/lib"></fileset></copy> -->
-                <copy todir="./target/plugins/lib" overwrite="true">
-                  <fileset dir="../security/target/lib"></fileset>
-                </copy>
-                <copy todir="./target/plugins/lib" overwrite="true">
-                  <fileset dir="../mongodb/target/lib"></fileset>
-                </copy>
-                <copy todir="./target/plugins/lib" overwrite="true">
-                  <fileset dir="../polyglot/target/lib"></fileset>
-                </copy>
-                <copy todir="./target/plugins/lib" overwrite="true">
-                  <fileset dir="../graphql/target/lib"></fileset>
-                </copy>
-                <copy todir="./target/plugins/lib" overwrite="true">
-                  <fileset dir="../metrics/target/lib"></fileset>
-                </copy>
+                <ant antfile="./copy-plugins.xml" target="copy" />
               </target>
             </configuration>
             <goals>
@@ -252,7 +230,7 @@
         <executions>
           <execution>
             <id>with-deps</id>
-            <phase>verify</phase>
+            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
@@ -267,6 +245,10 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
@@ -373,7 +355,7 @@
             <executions>
               <execution>
                 <id>fat</id>
-                <phase>verify</phase>
+                <phase>package</phase>
                 <goals>
                   <goal>single</goal>
                 </goals>
@@ -400,9 +382,7 @@
     <profile>
       <id>mongodb</id>
       <activation>
-        <property>
-          <name>!skipTests</name>
-        </property>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
@@ -412,7 +392,6 @@
             <configuration>
               <skip>${skipITs}</skip>
               <showLogs>false</showLogs>
-              <autoRemove>true</autoRemove>
               <removeVolumes>true</removeVolumes>
               <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
               <images>
@@ -444,14 +423,14 @@
             <executions>
               <execution>
                 <id>start</id>
-                <phase>prepare-package</phase>
+                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>start</goal>
                 </goals>
               </execution>
               <execution>
                 <id>stop</id>
-                <phase>verify</phase>
+                <phase>post-integration-test</phase>
                 <goals>
                   <goal>stop</goal>
                 </goals>
@@ -470,9 +449,7 @@
     <profile>
       <id>start-server</id>
       <activation>
-        <property>
-          <name>!skipTests</name>
-        </property>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
