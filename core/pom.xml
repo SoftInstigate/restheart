@@ -420,7 +420,6 @@
                       <time>10000</time>
                       <shutdown>1000</shutdown>
                     </wait>
-                    <autoRemove>true</autoRemove>
                   </run>
                 </image>
               </images>
