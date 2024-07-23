@@ -251,52 +251,6 @@
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>dist</id>
-            <phase>package</phase>
-            <configuration>
-              <target>
-                <mkdir dir="./target/plugins" />
-                <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
-                <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>with-deps</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <finalName>restheart</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>assembly-with-deps.xml</descriptor>
-              </descriptors>
-              <attach>false</attach>
-              <tarLongFileMode>posix</tarLongFileMode>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
   <profiles>
@@ -473,14 +427,14 @@
             <executions>
               <execution>
                 <id>start</id>
-                <phase>prepare-package</phase>
+                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>start</goal>
                 </goals>
               </execution>
               <execution>
                 <id>stop</id>
-                <phase>verify</phase>
+                <phase>post-integration-test</phase>
                 <goals>
                   <goal>stop</goal>
                 </goals>
@@ -567,9 +521,9 @@
           <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->
-            <artifactId>js-language</artifactId>
-            <scope>runtime</scope>
+          <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->
+          <artifactId>js-language</artifactId>
+          <scope>runtime</scope>
         </dependency>
         <!-- uncomment to add test plugins to the native image -->
         <!-- <dependency>
