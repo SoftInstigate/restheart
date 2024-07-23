@@ -44,10 +44,12 @@ import org.restheart.plugins.PluginsScanner;
 public class PluginsReflectionRegistrationFeature implements Feature {
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
+        System.out.println("[PluginsReflectionRegistrationFeature] configuring reflection for:");
+
         PluginsScanner.allPluginsClassNames().stream()
-                .map(this::clazz)
-                .filter(c -> c != null)
-                .forEach(this::registerAll);
+            .map(this::clazz)
+            .filter(c -> c != null)
+            .forEach(this::registerAll);
     }
 
     private Class<?> clazz(String clazzName) {
@@ -69,6 +71,8 @@ public class PluginsReflectionRegistrationFeature implements Feature {
      * @param clazz
      */
     private void registerAll(Class<?> clazz) {
+        System.out.println(" - " + clazz.getCanonicalName());
+
         RuntimeReflection.register(clazz);
         RuntimeReflection.registerForReflectiveInstantiation(clazz);
         RuntimeReflection.register(annotated(clazz.getDeclaredFields()));

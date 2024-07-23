@@ -55,8 +55,6 @@ import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import graphql.Assert;
-
 /**
  * this class is configured to be initialized at build time by native-image
  * note: we cannot use logging in this class, otherwise native-image will fail
@@ -92,8 +90,7 @@ public class PluginsScanner {
         RuntimeClassGraph rtcg = null;
 
         if (ImageInfo.inImageBuildtimeCode()) {
-            // initizialize PluginsClassloader with the URL of restheart.jar uber jar
-            // during build time the class this class is loaded by
+            // initizialize PluginsClassloader with the restheart jar
             var jarPath = PluginsScanner.class.getProtectionDomain().getCodeSource().getLocation().getPath();
             try {
                 var jarFile = new File(jarPath);
@@ -105,13 +102,17 @@ public class PluginsScanner {
                 System.err.println("Error initilizing PluginsClassloader on restheart uber jar " + jarPath + ". Exception: " + mue.getMessage());
             }
 
-            classGraph = new ClassGraph()
+            final var cg = new ClassGraph();
+
+            classGraph = cg
                 .disableDirScanning() // added for GraalVM
                 .disableNestedJarScanning() // added for GraalVM
                 .disableRuntimeInvisibleAnnotations() // added for GraalVM
                 .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
                 .ignoreParentClassLoaders()
                 .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+
+                System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
         } else {
             rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
@@ -377,7 +378,7 @@ public class PluginsScanner {
             return this.classGraph;
         }
 
-        private Path getPluginsDirectory() {
+        public static Path getPluginsDirectory() {
             var pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
 
             if (pluginsDir == null) {
@@ -400,7 +401,6 @@ public class PluginsScanner {
 
                     return FileSystems.getDefault().getPath(pluginsDir);
                 } catch(UnsupportedEncodingException uee) {
-                    Assert.assertShouldNeverHappen();
                     throw new RuntimeException(uee);
                 }
             }

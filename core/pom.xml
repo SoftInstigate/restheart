@@ -10,6 +10,7 @@
 
   <properties>
     <native.gc>--gc=serial</native.gc>
+    <mongodb.port>27017</mongodb.port>
   </properties>
 
   <groupId>org.restheart</groupId>
@@ -36,52 +37,8 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.undertow</groupId>
-      <artifactId>undertow-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-sync</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.kohsuke</groupId>
       <artifactId>akuma</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.fusesource.jansi</groupId>
-      <artifactId>jansi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>java-jwt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>de.svenkubiak</groupId>
-      <artifactId>jBCrypt</artifactId>
     </dependency>
     <dependency>
       <groupId>io.github.classgraph</groupId>
@@ -92,60 +49,8 @@
       <artifactId>picocli</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.everit-org.json-schema</groupId>
-      <artifactId>org.everit.json.schema</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-jvm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_dropwizard</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.graalvm.polyglot</groupId>
-      <artifactId>polyglot</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.graalvm.js</groupId>
-      <artifactId>js-language</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.graalvm.truffle</groupId>
-      <artifactId>truffle-runtime</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>nativeimage</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.graalvm.sdk</groupId>
-      <artifactId>collections</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.graalvm.sdk</groupId>
-      <artifactId>word</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.graphql-java</groupId>
-      <artifactId>graphql-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.nulab-inc</groupId>
-      <artifactId>zxcvbn</artifactId>
     </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
@@ -187,6 +92,11 @@
     <dependency>
       <groupId>com.konghq</groupId>
       <artifactId>unirest-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.js</groupId> <!-- this fixes karate test hanging due to conflict in GraalVM releases -->
+      <artifactId>js-language</artifactId>
       <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->
@@ -265,7 +175,6 @@
         <configuration>
           <archive>
             <manifest>
-              <addClasspath>true</addClasspath>
               <mainClass>org.restheart.Bootstrapper</mainClass>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
@@ -278,6 +187,7 @@
           </archive>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -287,6 +197,53 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>dist</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <ant antfile="./copy-plugins.xml" target="copy" />
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>with-deps</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>restheart</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly-with-deps.xml</descriptor>
+              </descriptors>
+              <attach>false</attach>
+              <tarLongFileMode>posix</tarLongFileMode>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -345,6 +302,28 @@
   <profiles>
     <profile>
       <id>shade</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-security</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongodb</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-polyglot</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-graphql</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongoclient-provider</artifactId>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
           <plugin>
@@ -361,23 +340,25 @@
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
-                    <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
                     <exclude>META-INF/versions/9/module-info.*</exclude>
                     <exclude>module-info.class</exclude>
+                    <exclude>LICENSE</exclude>
                     <exclude>LICENSE.md</exclude>
                     <exclude>LICENSE-ClassGraph.txt</exclude>
+                    <exclude>pipes-fork-server-default-log4j2.xml</exclude>
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.restheart:restheart-commons</artifact>
+                  <artifact>org.restheart:restheart-core</artifact>
                   <excludes>
+                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
                     <exclude>org/restheart/utils/package-info.class</exclude>
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.restheart:restheart</artifact>
+                  <artifact>org.mongodb:bson</artifact>
                   <excludes>
-                    <exclude>org/restheart/security/authorizers/package-info.class</exclude>
+                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
                   </excludes>
                 </filter>
                 <filter>
@@ -388,30 +369,6 @@
                     <exclude>META-INF/proguard/*</exclude>
                   </excludes>
                 </filter>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <!-- this fixes native-image build errors such:
-                    Error: Processing jar:file:///...restheart.jar!/META-INF/native-image/org.graalvm.jniutils/native-image.properties failed
-                    Caused by: com.oracle.svm.driver.NativeImage$NativeImageError: Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: /.../restheart/core/target/restheart.jar
-                -->
-                    <exclude>META-INF/native-image/org.restheart/restheart-commons/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.mongodb/bson/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.home/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.polyglot/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.collections/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.nativeimage/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.word/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.js/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/com.oracle.truffle.regex/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.shadowed.org.jcodings/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.shadowed.icu4j/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle.runtime/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.jniutils/native-image.properties</exclude>
-                    <exclude>META-INF/native-image/org.graalvm.truffle.compiler/native-image.properties</exclude>
-                  </excludes>
-                </filter>
               </filters>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
@@ -419,6 +376,7 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                   <addHeader>false</addHeader>
                 </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                   <resource>META-INF/RESTHEART-LICENSE.txt</resource>
                   <file>../LICENSE.txt</file>
@@ -427,7 +385,6 @@
                   <resource>META-INF/RESTHEART-COMM-LICENSE.txt</resource>
                   <file>../COMM-LICENSE.txt</file>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
               </transformers>
             </configuration>
             <executions>
@@ -445,7 +402,7 @@
             <executions>
               <execution>
                 <id>fat</id>
-                <phase>verify</phase>
+                <phase>package</phase>
                 <goals>
                   <goal>single</goal>
                 </goals>
@@ -465,8 +422,8 @@
       </build>
     </profile>
     <!--
-        This profile is used to run the integration tests against a MongoDB docker contaniner. 
-        If you are already running MongoDB locally, disable this profile: 
+        This profile is used to run the integration tests against a MongoDB docker contaniner.
+        If you are already running MongoDB locally, disable this profile:
         mvn -P-mongodb clean verify
     -->
     <profile>
@@ -492,7 +449,7 @@
                   <run>
                     <cmd>--bind_ip_all --replSet rs0</cmd>
                     <ports>
-                      <port>27017:27017</port>
+                      <port>${mongodb.port}:${mongodb.port}</port>
                     </ports>
                     <!-- remove showLogs=false above to get logs -->
                     <log>
@@ -502,12 +459,14 @@
                     </log>
                     <wait>
                       <http>
-                        <url>http://localhost:27017</url>
+                        <url>http://localhost:${mongodb.port}</url>
                         <method>GET</method>
                         <status>200</status>
                       </http>
-                      <time>60000</time>
+                      <time>10000</time>
+                      <shutdown>1000</shutdown>
                     </wait>
+                    <autoRemove>true</autoRemove>
                   </run>
                 </image>
               </images>
@@ -608,6 +567,11 @@
           <groupId>org.restheart</groupId>
           <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->
+            <artifactId>js-language</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- uncomment to add test plugins to the native image -->
         <!-- <dependency>
           <groupId>org.restheart</groupId>
@@ -622,6 +586,7 @@
             <artifactId>native-maven-plugin</artifactId>
             <!-- See https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#configuration-options -->
             <configuration>
+              <imageName>restheart</imageName>
               <buildArgs>
                 <arg>${native.gc}</arg>
               </buildArgs>

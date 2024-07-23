@@ -1,6 +1,12 @@
-# RESTHeart - Rapid API Development with MongoDB
+# RESTHeart - Low-Code API Server and Framework
 
-_RESTHeart is a **backend framework** that transforms MongoDB into a API server. It can be extended with **custom plugins** to enhance its functionality_
+✅ Develop your backend in minutes  
+✅ Instant REST, GraphQL, and Websockets APIs for MongoDB   
+✅ Declarative security with no code required  
+✅ Powered by Java Virtual Threads  
+✅ Based on the super-fast Undertow HTTP engine  
+✅ Designed for Docker and Kubernetes Microservices 
+
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/softinstigate/restheart/branch.yml)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -9,13 +15,11 @@ _RESTHeart is a **backend framework** that transforms MongoDB into a API server.
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
-[RESTHeart](https://restheart.org/) is designed for developing **microservices**, offering a robust and efficient solution built on top of [Undertow](https://undertow.io/).
+RESTHeart is solution for developing microservices, offering a robust and efficient framework built on top of [Undertow](https://undertow.io/), a high-performance web server written in Java providing both blocking and non-blocking API’s based on NIO. RESTHeart leverages [Java Virtual Threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html), which are lightweight threads designed to simplify the writing, maintaining, and debugging of high-throughput concurrent applications.
 
-> Undertow is a high-performance web server written in Java, known for its flexibility and efficiency. It provides both blocking and non-blocking APIs based on NIO (Non-blocking I/O), making it suitable for a wide range of use cases from lightweight HTTP handlers to full-fledged servlet containers. Notably, Undertow is the default web server for the WildFly application server and [replaces JBoss Web in JBoss EAP 7](https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/7.3/html/development_guide/undertow).
+RESTHeart simplifies and accelerates the development process by exposing the full capabilities of [MongoDB](https://www.mongodb.com/) through **REST**, **GraphQL**, and **Websockets** APIs, all without requiring backend code. This significantly reduces development time. It supports MongoDB, Mongo Atlas, Percona Server, FerretDB, AWS DocumentDB, and Azure CosmosDB.
 
-RESTHeart simplify and accelerate the development process, exposing the full **MongoDB** capabilities through **REST**, **GraphQL** and **Websockets** APIs with no backend code required. This cuts development time significantly. Supports MongoDB, Mongo Atlas, Percona Server, FerretDB, AWS DocumentDB, and Azure CosmosDB.
-
-RESTHeart offers comprehensive **authentication** and **authorization** services, supporting various security schemes. It enables the management of **users**, **roles** and **permissions** directly in MongoDB collections, eliminating the need for backend code. This streamlined approach significantly reduces development time.
+RESTHeart also provides comprehensive **authentication** and **authorization** services, supporting various security schemes. It enables the management of users, roles, and permissions directly within MongoDB collections, eliminating the need for backend code and further streamlining the development process.
 
 ## Documentation
 
@@ -41,22 +45,22 @@ You can support the development of RESTHeart via the GitHub Sponsor program and 
 
 [Go and see available sponsor tiers.](https://github.com/sponsors/SoftInstigate)
 
-## The Framework
+## Software Development Framework
 
-A plugin is a software component that extends the functionality of RESTHeart, allowing you to add additional features and capabilities to the basic API. RESTHeart supports the development of plugins in Java, Kotlin, and JavaScript.
+RESTHeart offers a SDK to develop custom plugins. A plugin in RESTHeart is a software component that enhances the API by adding new features and capabilities. RESTHeart supports creating plugins in Java, Kotlin or any language supported by the JVM and JavaScript or any language supported by GraalVM.
 
 There are four types of plugins in RESTHeart:
 
-- Service: These plugins extend the API by adding web services.
-- Interceptor: These plugins snoop and modify requests and responses at different stages of the request lifecycle.
-- Initializer: These plugins execute initialization logic at system startup time.
-- Provider: These plugins provide objects to other plugins via the @Inject annotation.
+1. **Service**: These plugins add new web services to the API.
+2. **Interceptor**: These plugins monitor and modify requests and responses at various stages of the request lifecycle.
+3. **Initializer**: These plugins run initialization logic during system startup.
+4. **Provider**: These plugins supply objects to other plugins using the @Inject annotation.
 
-Additionally, it is also possible to develop security plugins to customize the security layer.
+Additionally, security plugins can be developed to customize the security layer.
 
 ## Build from source
 
-> **Note**: Building RESTHeart from scratch requires at least Java 17 and maven 3.6.
+Build the thin JAR:
 
 Build the fat JAR:
 
@@ -71,7 +75,21 @@ $ java -jar core/target/restheart.jar -v
 RESTHeart Version 8.0.7-SNAPSHOT Build-Time 2024-07-17
 ```
 
-You can then run it with (make sure to have `mongod` running on `localhost:27017`):
+Build the fat JAR:
+
+```bash
+$ ./mvnw clean package -Pshade
+```
+
+Then you can check the build version:
+
+```bash
+$ java -jar core/target/restheart-core.jar -v
+RESTHeart Version 8.0.7-SNAPSHOT Build-Time 2024-07-17
+```
+## Run
+
+Start MongoDB on `localhost:27017` and then run RESTHeart with:
 
 ```bash
 $ java -jar core/target/restheart.jar

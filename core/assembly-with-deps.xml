@@ -22,6 +22,7 @@
             <includes>
                 <include>restheart-core.jar</include>
                 <include>plugins/*.jar</include>
+                <include>plugins/lib/*.jar</include>
                 <include>lib/*.jar</include>
             </includes>
         </fileSet>

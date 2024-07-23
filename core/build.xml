@@ -1,6 +1,7 @@
 <project basedir=".">
     <target name="start-server">
-        <echo>***** Initializing MongoDB cluster</echo>
+        <echo>***** Initializing MongoDB as Replica Set</echo>
+        <sleep seconds="3" />
         <!-- mongo shell command is mongo for v <=5.x then mongosh -->
         <condition property="mongoshellcmd" value="mongo" else="mongosh">
             <matches string="${mongodb.version}" pattern="^[1-5].*" />
@@ -15,8 +16,20 @@
             <arg value="--eval" />
             <arg value="rs.initiate()" />
         </exec>
+        <echo>***** Printing Replica Set status:</echo>
+        <exec executable="docker">
+            <arg value="run" />
+            <arg value="--rm" />
+            <arg value="--net" />
+            <arg value="host" />
+            <arg value="mongo:${mongodb.version}" />
+            <arg value="${mongoshellcmd}" />
+            <arg value="--eval" />
+            <arg value="rs.status()" />
+        </exec>
         <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
-        <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
+        <echo>***** Starting RESTHeart server</echo>
+        <echo>NOTE: in order to execute the integration test suite you need:</echo>
         <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
         <exec dir="${basedir}" executable="bin/start.sh">
             <arg value="-o" />
@@ -27,5 +40,6 @@
         <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
             <http url="http://localhost:8080/ping" />
         </waitfor>
+        <echo>***** RESTHeart process started</echo>
     </target>
 </project>
