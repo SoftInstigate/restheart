@@ -116,6 +116,8 @@ jobs:
           tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Upload coverage reports to Codecov
+        if: ${{ matrix.deploy }}
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
