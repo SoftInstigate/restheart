@@ -114,10 +114,3 @@ jobs:
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "distroless" in master branch only
           tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
-
-      - name: Upload coverage reports to Codecov
-        if: ${{ matrix.deploy }}
-        continue-on-error: true
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
