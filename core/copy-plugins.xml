@@ -1,6 +1,6 @@
 <project basedir=".">
     <target name="copy">
-        <echo message="***** Copying plugins to target/plugins" />
+        <echo message="***** Copying plugins to target/plugins" level="info" />
         <mkdir dir="./target/plugins" />
         <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
@@ -9,7 +9,7 @@
         <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
 
-        <echo message="***** Copying plugins dependencies to target/plugins/lib" />
+        <echo message="***** Copying plugins dependencies to target/plugins/lib" level="info" />
         <mkdir dir="./target/plugins/lib" />
         <!-- <copy todir="./target/plugins/lib" overwrite="true"><fileset dir="../mongoclient/target/lib"></fileset></copy> -->
         <copy todir="./target/plugins/lib" overwrite="true">
@@ -27,6 +27,6 @@
         <copy todir="./target/plugins/lib" overwrite="true">
             <fileset dir="../metrics/target/lib"></fileset>
         </copy>
-        <echo message="***** Done copying plugins" />
+        <echo message="***** Done copying plugins" level="info" />
     </target>
 </project>
