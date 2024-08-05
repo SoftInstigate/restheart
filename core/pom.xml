@@ -483,7 +483,7 @@
                   <skip>${skipITs}</skip>
                   <target>
                     <delete file="./target/plugins/restheart-test-plugins.jar" />
-                    <echo>***** Stopping RESTHeart process...</echo>
+                    <echo level="info">***** Stopping RESTHeart process...</echo>
                     <exec dir="${basedir}" executable="bin/stop.sh">
                     </exec>
                   </target>
