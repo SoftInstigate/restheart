@@ -51,6 +51,7 @@ import com.google.common.collect.Maps;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.Strictness;
 import com.mongodb.ConnectionString;
 
 import ch.qos.logback.classic.Level;
@@ -362,7 +363,7 @@ public class Configuration {
     // converst a JSON configuration override file into the RHO syntax
     // { "/logging/log-level": "INFO", "/core/name": "foo" } => /logging/log-level->"INFO";/core/name->"foo";
     private static String fromJsonToRho(Reader jsonReader) throws JsonParseException {
-        var gson = new GsonBuilder().setLenient().create(); // lenient allows JSON with comments
+        var gson = new GsonBuilder().setStrictness(Strictness.LENIENT).create(); // setStrictness(Strictness.LENIENT) allows JSON with comments
         var _json = gson.fromJson(jsonReader, JsonObject.class);
 
         if (_json == null || !_json.isJsonObject()) {
