@@ -7,6 +7,14 @@
         <format>tar.gz</format>
         <format>zip</format>
     </formats>
+    <files>
+        <!-- rename restheart-core.jar to restheart.jar -->
+        <file>
+            <source>${project.build.directory}/restheart-core.jar</source>
+            <outputDirectory>.</outputDirectory>
+            <destName>restheart.jar</destName>
+        </file>
+    </files>
     <fileSets>
         <fileSet>
             <directory>${project.basedir}/..</directory>
@@ -20,7 +28,7 @@
             <directory>${project.build.directory}</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>restheart-core.jar</include>
+                <include>restheart.jar</include>
                 <include>plugins/*.jar</include>
                 <include>plugins/lib/*.jar</include>
                 <include>lib/*.jar</include>
