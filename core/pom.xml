@@ -158,7 +158,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -187,7 +187,6 @@
           </archive>
         </configuration>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -237,9 +236,9 @@
             </goals>
             <configuration>
               <finalName>restheart</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
+              <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
-                <descriptor>assembly-with-deps.xml</descriptor>
+                <descriptor>assembly.xml</descriptor>
               </descriptors>
               <attach>false</attach>
               <tarLongFileMode>posix</tarLongFileMode>
@@ -355,16 +354,16 @@
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
               <execution>
-                <id>fat</id>
+                <id>shaded</id>
                 <phase>package</phase>
                 <goals>
                   <goal>single</goal>
                 </goals>
                 <configuration>
                   <finalName>restheart</finalName>
-                  <appendAssemblyId>false</appendAssemblyId>
+                  <appendAssemblyId>true</appendAssemblyId>
                   <descriptors>
-                    <descriptor>assembly-fat.xml</descriptor>
+                    <descriptor>assembly-shaded.xml</descriptor>
                   </descriptors>
                   <attach>false</attach>
                   <tarLongFileMode>posix</tarLongFileMode>
