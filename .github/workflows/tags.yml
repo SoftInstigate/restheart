@@ -122,8 +122,5 @@ jobs:
           files: |
             core/target/restheart.tar.gz
             core/target/restheart.zip
-            core/target/restheart.jar
-            core/target/restheart-with-deps.tar.gz
-            core/target/restheart-with-deps.zip
           draft: true
           prerelease: false
