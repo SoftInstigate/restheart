@@ -4,8 +4,10 @@ LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /opt/restheart
 COPY bin/entrypoint-graalvm.sh entrypoint.sh
-COPY target/restheart.jar .
+COPY target/restheart-core.jar ./restheart.jar
+COPY target/lib/* lib/
 COPY target/plugins/* plugins/
+COPY target/plugins/lib/* plugins/lib/
 
 SHELL ["/bin/bash", "-i", "-c"]
 
