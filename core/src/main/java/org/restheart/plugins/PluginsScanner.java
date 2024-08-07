@@ -439,7 +439,14 @@ public class PluginsScanner {
                     }
 
                     urls.add(jar);
-                    LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
+
+                    if (path.toAbsolutePath().toString().contains("/lib/")) {
+                        LOGGER.debug("Found lib jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
+                    } else {
+                        LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
+                    }
+
+
                 }
             } catch (IOException ex) {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
