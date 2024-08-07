@@ -57,10 +57,12 @@ To explore the APIs, start with:
 1. Run both RESTHeart and MongoDB with Docker Compose using the following one-liner:
 
 ```sh
-curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --attach restheart
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
+  --output docker-compose.yml \
+  && docker compose up --pull=always --attach restheart
 ```
 
-2. Call RESTHeart's ping service with [curl](https://curl.se/) or any other tool you like, to verify it's running:
+2. Open another terminal and call RESTHeart's ping service with [curl](https://curl.se/) or any other tool you like, to verify it's running:
 
 ```sh
 curl -i localhost:8080/ping
