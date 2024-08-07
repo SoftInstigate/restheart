@@ -210,11 +210,11 @@ public class PolyglotDeployer implements Initializer {
         } else {
             // this is to allow specifying the plugins directory path
             // relative to the jar (also working when running from classes)
-            var location = PluginsRegistry.class.getProtectionDomain().getCodeSource().getLocation();
+            var location = PolyglotDeployer.class.getProtectionDomain().getCodeSource().getLocation();
 
             File locationFile = new File(location.getPath());
 
-            pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
+            pluginsDir = locationFile.getParent();
 
             return FileSystems.getDefault().getPath(pluginsDir);
         }
