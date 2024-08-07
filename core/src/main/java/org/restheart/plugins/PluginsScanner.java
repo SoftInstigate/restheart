@@ -29,7 +29,6 @@ import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -82,40 +81,10 @@ public class PluginsScanner {
     private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
     private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
-    // ClassGraph.scan() at class initialization time to support native image
-    // generation with GraalVM
-    // see https://github.com/SoftInstigate/classgraph-on-graalvm
     static {
-        ClassGraph classGraph;
-        RuntimeClassGraph rtcg = null;
-
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // initizialize PluginsClassloader with the restheart jar
-            var jarPath = PluginsScanner.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-            try {
-                var jarFile = new File(jarPath);
-                var jarURL = jarFile.toURI().toURL();
-                URL[] urls = { jarURL };
-
-                PluginsClassloader.init(urls);
-            } catch(MalformedURLException mue) {
-                System.err.println("Error initilizing PluginsClassloader on restheart uber jar " + jarPath + ". Exception: " + mue.getMessage());
-            }
-
-            final var cg = new ClassGraph();
-
-            classGraph = cg
-                .disableDirScanning() // added for GraalVM
-                .disableNestedJarScanning() // added for GraalVM
-                .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
-                .ignoreParentClassLoaders()
-                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
-
-                System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
-        } else {
-            rtcg = new RuntimeClassGraph();
-            classGraph = rtcg.get();
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            var rtcg = new RuntimeClassGraph();
+            var classGraph = rtcg.get();
             // apply plugins-scanning-verbose configuration option
             classGraph = classGraph.verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
             // apply plugins-packages configuration option
@@ -125,7 +94,44 @@ public class PluginsScanner {
             }
 
             rtcg.logStartScan();
+
+            try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
+                INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
+                AUTH_MECHANISMS.addAll(collectPlugins(scanResult, AUTHMECHANISM_CLASS_NAME));
+                AUTHORIZERS.addAll(collectPlugins(scanResult, AUTHORIZER_CLASS_NAME));
+                TOKEN_MANAGERS.addAll(collectPlugins(scanResult, TOKEN_MANAGER_CLASS_NAME));
+                AUTHENTICATORS.addAll(collectPlugins(scanResult, AUTHENTICATOR_CLASS_NAME));
+                INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
+                SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
+                PROVIDERS.addAll(collectProviders(scanResult));
+            }
+
+            rtcg.logEndScan();
         }
+    }
+
+    // ClassGraph.scan() at class initialization time to support native image
+    // generation with GraalVM
+    // see https://github.com/SoftInstigate/classgraph-on-graalvm
+    public static void initAtBuildTime() {
+         if (!ImageInfo.inImageBuildtimeCode()) {
+            throw new IllegalStateException("Called initAtBuildTime() but we are not at build time");
+         }
+
+        // requires PluginsClassloader being initialized
+        // this is done by PluginsClassloaderInitFeature
+
+        final var cg = new ClassGraph();
+
+        var classGraph = cg
+            .disableDirScanning() // added for GraalVM
+            .disableNestedJarScanning() // added for GraalVM
+            .disableRuntimeInvisibleAnnotations() // added for GraalVM
+            .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
+            .ignoreParentClassLoaders()
+            .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+
+        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
 
         try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
             INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
@@ -136,10 +142,6 @@ public class PluginsScanner {
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
             PROVIDERS.addAll(collectProviders(scanResult));
-        }
-
-        if (rtcg != null) {
-            rtcg.logEndScan();
         }
     }
 

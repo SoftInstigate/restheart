@@ -44,7 +44,12 @@ import org.restheart.plugins.PluginsScanner;
 public class PluginsReflectionRegistrationFeature implements Feature {
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        System.out.println("[PluginsReflectionRegistrationFeature] configuring reflection for:");
+        if (PluginsScanner.allPluginsClassNames().isEmpty()) {
+            System.err.println("[PluginsReflectionRegistrationFeature] Error: no plugins found in classpath. This indicates a build misconfiguration, as at least the plugins in 'restheart-core' should be detected.");
+            throw new IllegalStateException("Error: No plugins found in classpath.");
+        } else {
+            System.out.println("[PluginsReflectionRegistrationFeature] configuring reflection for:");
+        }
 
         PluginsScanner.allPluginsClassNames().stream()
             .map(this::clazz)

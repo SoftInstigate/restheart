@@ -21,8 +21,13 @@
 package org.restheart.plugins;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.List;
+
+import org.restheart.utils.LambdaUtils;
 
 /**
  * Loads a class, including searching within all plugin JAR files.
@@ -46,6 +51,26 @@ public class PluginsClassloader extends URLClassLoader {
         } else {
             try {
                 SINGLETON = new PluginsClassloader(jars);
+            } catch(IOException ioe) {
+                throw new RuntimeException("error initializing", ioe);
+            }
+        }
+    }
+
+    public static void init(List<Path> paths) {
+        if (SINGLETON != null) {
+            throw new IllegalStateException("already initialized");
+        } else {
+            var urls = paths.stream().map(p -> {
+                    try {
+                        return p.toUri().toURL();
+                    } catch(MalformedURLException murle) {
+                        LambdaUtils.throwsSneakyException(murle);
+                        return null;
+                    }
+                }).toArray(size -> new URL[size]);
+            try {
+                SINGLETON = new PluginsClassloader(urls);
             } catch(IOException ioe) {
                 throw new RuntimeException("error initializing", ioe);
             }
