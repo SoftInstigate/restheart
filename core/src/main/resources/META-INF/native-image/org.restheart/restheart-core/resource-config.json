@@ -89,7 +89,7 @@
       "pattern":"\\Qlogback.xml\\E"
     }, 
     {
-      "pattern":"\\Qlrestheart-default-config.json\\E"
+      "pattern":"\\Qrestheart-default-config.json\\E"
     }, 
     {
       "pattern":"\\Qorg/apache/tika/mime/tika-mimetypes.xml\\E"
