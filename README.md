@@ -5,7 +5,7 @@ _RESTHeart is a **backend framework** that transforms MongoDB into a API server.
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
-[![Maven Central Version](https://img.shields.io/maven-central/v/org.restheart/restheart-core)](https://central.sonatype.com/search?q=g:org.restheart/restheart-core)
+[![Maven Central Version](https://img.shields.io/maven-central/v/org.restheart/restheart-core)](https://central.sonatype.com/namespace/org.restheart)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
