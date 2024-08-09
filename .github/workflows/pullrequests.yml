@@ -1,4 +1,4 @@
-# This workflow build and test pull requests
+# This workflow builds and tests pull requests
 
 name: Build pull request
 
@@ -9,32 +9,41 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        include:
-          - mongodb-version: "5.0"
-          - mongodb-version: "6.0"
-          - mongodb-version: "7.0"
-            deploy: true
-    timeout-minutes: 20
+        mongodb-version: ["5.0", "6.0", "7.0"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
 
+      - name: Cache Maven Repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+  build_and_test:
+    runs-on: ubuntu-22.04
+    needs: setup
+    strategy:
+      matrix:
+        mongodb-version: ["5.0", "6.0", "7.0"]
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
+        run: |
+          MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED \
+                      --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
+                      --add-opens=java.base/java.text=ALL-UNNAMED \
+                      --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
+          mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
