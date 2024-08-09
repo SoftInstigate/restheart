@@ -20,12 +20,19 @@ jobs:
           - mongodb-version: "6.0"
           - mongodb-version: "7.0"
             deploy: true
+    outputs:
+      deploy: ${{ steps.set_output.outputs.deploy }}
+      version: ${{ steps.vars.outputs.VERSION }}
     steps:
       - name: Set the VERSION
         id: vars
         run: |
           echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
-          echo "DEPLOY=${{ matrix.deploy }}" >> $GITHUB_ENV
+          echo "VERSION=${{ steps.vars.outputs.VERSION }}" >> $GITHUB_OUTPUT
+
+      - name: Set deploy output
+        id: set_output
+        run: echo "deploy=${{ matrix.deploy }}" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -76,7 +83,7 @@ jobs:
   deploy:
     runs-on: ubuntu-22.04
     needs: build_and_test
-    if: "!contains(github.event.head_commit.message, 'skip ci') && env.DEPLOY == 'true'"
+    if: "!contains(github.event.head_commit.message, 'skip ci') && needs.setup.outputs.deploy == 'true'"
     steps:
       - uses: actions/checkout@v4
 
@@ -110,7 +117,7 @@ jobs:
             softinstigate/restheart:latest,
             softinstigate/restheart:8,
             softinstigate/restheart:8.0,
-            softinstigate/restheart:${{ env.VERSION }}
+            softinstigate/restheart:${{ needs.setup.outputs.version }}
 
       - name: Build and Push GraalVM Docker image
         uses: docker/build-push-action@v6
@@ -123,7 +130,7 @@ jobs:
             softinstigate/restheart:graalvm,
             softinstigate/restheart:latest-graalvm,
             softinstigate/restheart:8-graalvm,
-            softinstigate/restheart:${{ env.VERSION }}-graalvm
+            softinstigate/restheart:${{ needs.setup.outputs.version }}-graalvm
 
       - name: Build and Push distroless Docker image
         uses: docker/build-push-action@v6
@@ -136,12 +143,12 @@ jobs:
             softinstigate/restheart:distroless,
             softinstigate/restheart:latest-distroless,
             softinstigate/restheart:8-distroless,
-            softinstigate/restheart:${{ env.VERSION }}-distroless
+            softinstigate/restheart:${{ needs.setup.outputs.version }}-distroless
 
   release:
     runs-on: ubuntu-22.04
     needs: deploy
-    if: "!contains(github.event.head_commit.message, 'skip ci') && env.DEPLOY == 'true'"
+    if: "!contains(github.event.head_commit.message, 'skip ci') && needs.setup.outputs.deploy == 'true'"
     steps:
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v2
