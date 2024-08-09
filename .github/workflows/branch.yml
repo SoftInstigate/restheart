@@ -26,6 +26,7 @@ jobs:
         run: |
           echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
           echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
+          echo "DEPLOY=${{ matrix.deploy }}" >> $GITHUB_ENV
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -73,10 +74,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
+      - name: Set deploy output
+        if: ${{ matrix.deploy }}
+        id: set_deploy
+        run: echo "deploy=true" >> $GITHUB_ENV
+
   deploy:
     runs-on: ubuntu-22.04
-    needs: [setup, build_and_test]
-    if: "!contains(github.event.head_commit.message, 'skip ci') && matrix.deploy"
+    needs: build_and_test
+    if: "!contains(github.event.head_commit.message, 'skip ci') && env.DEPLOY == 'true'"
     steps:
       - uses: actions/checkout@v4
 
