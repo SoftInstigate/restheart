@@ -10,9 +10,9 @@ on:
       - "*"
 
 jobs:
-  build_and_test:
-    runs-on: ubuntu-22.04
+  build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -20,106 +20,81 @@ jobs:
           - mongodb-version: "6.0"
           - mongodb-version: "7.0"
             deploy: true
-    outputs:
-      deploy: ${{ steps.set_output.outputs.deploy }}
-      version: ${{ steps.vars.outputs.VERSION }}
+    timeout-minutes: 20
     steps:
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "21"
-
-      - name: Set the VERSION and SHA
-        id: vars
-        run: |
-          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
-          echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
-          echo "VERSION=${{ steps.vars.outputs.VERSION }}" >> $GITHUB_OUTPUT
-          echo "SHA=${{ steps.vars.outputs.SHA }}" >> $GITHUB_OUTPUT
-
-      - name: Set deploy output
-        id: set_output
-        run: echo "deploy=${{ matrix.deploy }}" >> $GITHUB_OUTPUT
-
-      - name: Cache Maven Repository
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - uses: actions/checkout@v4
-
-      - name: Build and Test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
-
-  deploy:
-    runs-on: ubuntu-22.04
-    needs: build_and_test
-    if: "!contains(github.event.head_commit.message, 'skip ci') && needs.build_and_test.outputs.deploy == 'true'"
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Import private GPG key
+      - name: Set VERSION and SHA
+        id: vars
+        run: |
+          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT
+          echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_OUTPUT
+          echo "VERSION=${{steps.vars.outputs.VERSION}}"
+          echo "SHA=${{steps.vars.outputs.SHA}}"
+
+      - name: Build and Test
+        if: ${{ ! matrix.deploy }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
+
+      - name: Import private gpg key
+        if: ${{ matrix.deploy }}
         run: |
           printf "%s" "$GPG_PRIVATE_KEY" > private.key
           gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
-          rm private.key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Deploy to Maven Central
+        if: ${{ matrix.deploy }}
+        run: MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" mvn -B deploy -Pdeploy -s settings.xml
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED \
-                      --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
-                      --add-opens=java.base/java.text=ALL-UNNAMED \
-                      --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -s settings.xml
 
       - name: Set up QEMU
+        if: ${{ matrix.deploy }}
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
+        if: ${{ matrix.deploy }}
         uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
+        if: ${{ matrix.deploy }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and Push multi-arch Docker images
+        if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v6
         with:
           context: ./core/
-          platforms: |
-            linux/amd64,
-            linux/arm64/v8,
-            linux/ppc64le,
-            linux/s390x
+          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "latest" in master branch only
-          tags: |
-            softinstigate/restheart-snapshot:latest,
-            softinstigate/restheart-snapshot:${{ needs.build_and_test.outputs.SHA }}
+          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Build and Push GraalVM Docker image
+        if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v6
         with:
           context: ./core/
@@ -127,11 +102,10 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "graalvm" in master branch only
-          tags: |
-            softinstigate/restheart-snapshot:graalvm,
-            softinstigate/restheart-snapshot:${{ needs.build_and_test.outputs.SHA }}-graalvm
+          tags: softinstigate/restheart-snapshot:graalvm,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
 
-      - name: Build and Push distroless Docker image
+      - name: Build and Push distroless docker image
+        if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v6
         with:
           context: ./core/
@@ -139,6 +113,4 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "distroless" in master branch only
-          tags: |
-            softinstigate/restheart-snapshot:distroless,
-            softinstigate/restheart-snapshot:${{ needs.build_and_test.outputs.SHA }}-distroless
+          tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
