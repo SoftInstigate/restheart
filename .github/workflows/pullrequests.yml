@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  setup:
+  build_and_test:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -29,13 +29,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-  build_and_test:
-    runs-on: ubuntu-22.04
-    needs: setup
-    strategy:
-      matrix:
-        mongodb-version: ["5.0", "6.0", "7.0"]
-    steps:
       - uses: actions/checkout@v4
 
       - name: Build and Test
