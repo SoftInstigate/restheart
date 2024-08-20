@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.AbstractMap;
+import java.util.stream.StreamSupport;
 
 import org.restheart.graal.ImageInfo;
 
@@ -354,13 +355,27 @@ public class PluginsScanner {
             this.jars = findPluginsJars(pdir);
 
             if (!PluginsClassloader.isInitialized()) {
-                PluginsClassloader.init(jars);
+                PluginsClassloader.init(this.jars);
             }
 
+            var libJars = Arrays.stream(this.jars)
+                .map(jar -> jar.getPath())
+                .map(path -> Path.of(path))
+                .filter(jar -> isLibJar(jar))
+                .map(path -> path.getFileName().toString())
+                .toArray(String[]::new);
+
             this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                .addClassLoader(PluginsClassloader.getInstance()).addClassLoader(ClassLoader.getSystemClassLoader())
-                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+                .disableNestedJarScanning()
+                .disableRuntimeInvisibleAnnotations()
+                .addClassLoader(PluginsClassloader.getInstance())
+                .addClassLoader(ClassLoader.getSystemClassLoader())
+                .rejectJars(libJars) // avoids scanning lib jars
+                .enableAnnotationInfo()
+                .enableMethodInfo()
+                .enableFieldInfo()
+                .ignoreFieldVisibility()
+                .initializeLoadedClasses();
         }
 
         private long starScanTime = 0;
@@ -440,13 +455,11 @@ public class PluginsScanner {
 
                     urls.add(jar);
 
-                    if (path.toAbsolutePath().toString().contains("/lib/")) {
+                    if (isLibJar(path)) {
                         LOGGER.debug("Found lib jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
                     } else {
                         LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
                     }
-
-
                 }
             } catch (IOException ex) {
                 LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
@@ -473,6 +486,9 @@ public class PluginsScanner {
             return urls.toArray(URL[]::new);
         }
 
+        /**
+         *
+         */
         private void checkPluginDirectory(Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
                 LOGGER.warn("Plugin directory {} does not exist", pluginsDirectory);
@@ -482,6 +498,48 @@ public class PluginsScanner {
             if (!Files.isReadable(pluginsDirectory)) {
                 LOGGER.warn("Plugin directory {} is not readable", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
+            }
+        }
+
+        /**
+         * Determines whether the given JAR file is classified as a library.
+         * A JAR is considered a library if it is located within a subdirectory of the plugins direcory
+         * whose relative path contains "lib", "-lib", or "_lib" as part of the directory name.
+         *
+         * @param path the path of the JAR file to be checked
+         * @return {@code true} if the JAR file is under a subdirectory of the plugins directory that contains "lib", "-lib",
+         *         or "_lib" in its relative path; {@code false} otherwise
+         */
+        private boolean isLibJar(Path path) {
+            var pluginsDirectory = getPluginsDirectory();
+
+            try {
+                var rpath = pluginsDirectory.relativize(path).toString();
+
+                /*
+                 * This regular expression matches paths containing directories with names
+                 * that are exactly "lib", "<prefix>-lib", or "<prefix>_lib".
+                 *
+                 * The match works for both absolute and relative paths.
+                 *
+                 * The pattern is explained as follows:
+                 *
+                 * (^|.*[\\/\\\\]) Matches either the beginning of the string
+                 *       (for relative paths like lib/pippo.jar or my-lib/pippo.jar),
+                 *       or any preceding directories in the path for absolute paths.
+                 *
+                 * ([^\\/\\\\]+[-_])? Optionally matches a prefix consisting of one or more characters,
+                 *       excluding directory separators, followed by either a hyphen ("-") or underscore ("_").
+                 *
+                 * lib Matches the literal string "lib"
+                 *
+                 * ([\\/\\\\].*|$) Matches either a directory separator followed by any characters
+                 *
+                 * ([\\/\\\\].*) or the end of the string ($).
+                 */
+                return rpath.matches("(^|.*[\\/\\\\])([^\\/\\\\]+[-_])?lib([\\/\\\\].*|$)");
+            } catch(IllegalArgumentException iae) {
+                return false;
             }
         }
     }
