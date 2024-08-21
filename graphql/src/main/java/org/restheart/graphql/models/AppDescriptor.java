@@ -61,7 +61,7 @@ public class AppDescriptor {
         this.description = description;
     }
 
-    public String getUrl() {
+    public String getUri() {
         return uri;
     }
 

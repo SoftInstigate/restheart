@@ -273,7 +273,6 @@
 
 /graphql/db: test-graphql
 /graphql/verbose: true
-/graphql/app-def-cache-ttl: 100
 
 /proxies:
  - location: /pecho

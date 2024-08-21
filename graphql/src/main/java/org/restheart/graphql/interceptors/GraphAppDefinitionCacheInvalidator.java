@@ -24,31 +24,28 @@ import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
-import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.BsonUtils;
-import org.restheart.utils.HttpStatus;
 
 import java.util.Map;
 
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-@RegisterPlugin(name="graphAppDefinitionPutPostChecker",
-        description = "checks GraphQL application definitions on PUT and POST requests",
-        interceptPoint = REQUEST_AFTER_AUTH,
+@RegisterPlugin(name="graphAppDefinitionCacheInvalidator",
+        description = "invalidate GraphQL cached application definitions on gqlapps delete requests",
+        interceptPoint = RESPONSE,
         enabledByDefault = true
 )
-public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionPutPostChecker.class);
+public class GraphAppDefinitionCacheInvalidator implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionCacheInvalidator.class);
 
     private String db = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
@@ -76,36 +73,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var content = request.getContent();
-
-        if (content.isDocument()) {
-            var appDef = content.asDocument();
-
-            try {
-                var app = AppBuilder.build(BsonUtils.unflatten(appDef).asDocument());
-                var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
-                AppDefinitionLoadingCache.getCache().put(appUri, app);
-            } catch(GraphQLIllegalAppDefinitionException e) {
-                LOGGER.debug("Wrong GraphQL App definition", e);
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
-            }
-        } else {
-            var index = 0;
-
-            for (var appDef: content.asArray()) {
-                try {
-                    var app = AppBuilder.build(BsonUtils.unflatten(appDef).asDocument());
-                    var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
-                    AppDefinitionLoadingCache.getCache().put(appUri, app);
-                } catch(GraphQLIllegalAppDefinitionException e) {
-                    LOGGER.debug("Wrong GraphQL App definition", e);
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
-                    break;
-                }
-
-                index++;
-            }
-        }
+        LOGGER.debug("invalidating all gql app definitions cache entries");
+        AppDefinitionLoadingCache.getCache().invalidateAll();
     }
 
     @Override
@@ -113,8 +82,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
         return enabled
             && this.db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
-            && request.getContent() != null
-            && ((request.isCollection() && request.isPost())
-            || (request.isDocument() && request.isPut()));
+            && request.isDelete()
+            && !response.isInError()
+            && response.getStatusCode() == HttpStatus.SC_NO_CONTENT;
     }
 }

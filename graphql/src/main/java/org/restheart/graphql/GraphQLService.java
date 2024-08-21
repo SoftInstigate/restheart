@@ -87,7 +87,6 @@ import graphql.parser.Parser;
 import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
-
 public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
@@ -125,8 +124,6 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         this.maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
 
         this.queryTimeLimit = ((Number)argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
-
-        AppDefinitionLoadingCache.setTTL(argOrDefault(config, "app-def-cache-ttl", 1_000));
 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
@@ -463,7 +460,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     }
 
     private GraphQLApp gqlApp(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
-        return AppDefinitionLoadingCache.getInstance().get(appURI);
+        return AppDefinitionLoadingCache.get(appURI);
     }
 
     @Override
