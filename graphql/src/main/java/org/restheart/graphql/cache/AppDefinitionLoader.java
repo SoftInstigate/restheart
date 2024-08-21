@@ -29,7 +29,11 @@ import org.restheart.graphql.models.builder.AppBuilder;
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AppDefinitionLoader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppDefinitionLoader.class);
 
     private static final String APP_URI_FIELD = "descriptor.uri";
     private static final String APP_NAME_FIELD = "descriptor.name";
@@ -45,7 +49,9 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
+    static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
+        LOGGER.debug("Loading GQL App Definition {} from db", appURI);
+
         var uriOrNameCond = array()
             .add(document().put(APP_URI_FIELD, appURI))
             .add(document().put(APP_NAME_FIELD, appURI));
