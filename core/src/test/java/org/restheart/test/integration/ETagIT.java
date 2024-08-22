@@ -22,8 +22,6 @@ package org.restheart.test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.URISyntaxException;
-
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,20 +34,25 @@ import kong.unirest.Unirest;
  */
 public class ETagIT extends AbstactIT {
 
-    private final String DB = TEST_DB_PREFIX + "-etag-db";
-    private final String DB_REQUIRED = TEST_DB_PREFIX + "-etag-required-db";
-    private final String COLL_REQUIRED = "coll-required";
-    private final String COLL = "coll";
+    private static final String E_TAG = "ETag";
+    private static final String ETAG_DOC_POLICY_REQUIRED = "{'etagDocPolicy': 'required'}";
+    private static final String WM = "wm";
+    private static final String UPDATE = "update";
+    private static final String CHECK_ETAG = "checkEtag";
+    private static final String WRONG_ETAG = "wrong etag";
+    private static final String CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA = "check response status of create test data";
+    private static final String IF_MATCH = "If-Match";
+    private static final String A_1 = "{'a':1}";
+    private static final String DOCID = "docid";
+    private static final String UPSERT = "upsert";
+    private static final String APPLICATION_JSON = "application/json";
+    private static final String CONTENT_TYPE = "content-type";
+    private static final String DB = TEST_DB_PREFIX + "-etag-db";
+    private static final String DB_REQUIRED = TEST_DB_PREFIX + "-etag-required-db";
+    private static final String COLL_REQUIRED = "coll-required";
+    private static final String COLL = "coll";
 
-    @SuppressWarnings("rawtypes")
-    HttpResponse resp;
-
-    /**
-     *
-     * @throws URISyntaxException
-     */
-    public ETagIT() throws URISyntaxException {
-    }
+    private HttpResponse<String> resp;
 
     /**
      *
@@ -67,8 +70,8 @@ public class ETagIT extends AbstactIT {
         // create test db with required policy
         resp = Unirest.put(url(DB_REQUIRED))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .body("{'etagDocPolicy': 'required'}")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .body(ETAG_DOC_POLICY_REQUIRED)
                 .asString();
 
         assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create db " + DB_REQUIRED);
@@ -79,7 +82,7 @@ public class ETagIT extends AbstactIT {
                 .asString();
 
         assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
-                "create collection " + DB.concat("/").concat(COLL));
+                formatCollectionCreationMessage());
 
         // create collection
         resp = Unirest.put(url(DB_REQUIRED, COLL))
@@ -87,40 +90,41 @@ public class ETagIT extends AbstactIT {
                 .asString();
 
         assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
-                "create collection " + DB.concat("/").concat(COLL));
+                formatCollectionCreationMessage());
 
         // create documents
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
 
         // create documents
-        resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
+        resp = Unirest.put(url(DB_REQUIRED, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .queryString("wm", "upsert")
+                .queryString(WM, UPSERT)
                 .asString();
 
-        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
-                "create document " + DB_REQUIRED.concat("/").concat(COLL).concat("/docid"));
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create document " + DB_REQUIRED + "/" + COLL + "/docid");
 
         // create collection with required etag
         resp = Unirest.put(url(DB, COLL_REQUIRED))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .body("{'etagDocPolicy': 'required'}")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .body(ETAG_DOC_POLICY_REQUIRED)
                 .asString();
 
-        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
-                "create collection " + DB.concat("/").concat(COLL));
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), formatCollectionCreationMessage());
 
         // create document
-        resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
+        resp = Unirest.put(url(DB, COLL_REQUIRED, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .queryString("wm", "upsert")
+                .queryString(WM, UPSERT)
                 .asString();
 
-        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(),
-                "create document " + DB.concat("/").concat(COLL).concat("/docid"));
+        assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create document " + DB + "/" + COLL + "/docid");
+    }
+
+    private String formatCollectionCreationMessage() {
+        return "create collection " + DB + "/" + COLL;
     }
 
     /**
@@ -130,20 +134,20 @@ public class ETagIT extends AbstactIT {
     @Test
     public void testUpdateNotRequired() throws Exception {
         // makes ure docid does not exists
-        resp = Unirest.delete(url(DB, COLL, "docid"))
+        resp = Unirest.delete(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
                 .asString();
 
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("wm", "upsert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(WM, UPSERT)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_CREATED,
-                resp.getStatus(), "check response status of create test data");
+                resp.getStatus(), CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA);
     }
 
     /**
@@ -152,72 +156,72 @@ public class ETagIT extends AbstactIT {
      */
     @Test
     public void testUpdateRequired() throws Exception {
-        resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
+        resp = Unirest.put(url(DB, COLL_REQUIRED, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("wm", "upsert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(WM, UPSERT)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_CONFLICT,
                 resp.getStatus(), "check response status of data with missing etag");
 
-        resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
+        resp = Unirest.put(url(DB, COLL_REQUIRED, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .header("If-Match", "wrong etag")
-                .queryString("wm", "upsert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .header(IF_MATCH, WRONG_ETAG)
+                .queryString(WM, UPSERT)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus(),
                 "check response status of update data with wrong etag");
 
-        String etag = resp.getHeaders().get("ETag").get(0);
+        String etag = resp.getHeaders().get(E_TAG).get(0);
 
-        resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
+        resp = Unirest.put(url(DB, COLL_REQUIRED, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("checkEtag", "")
-                .queryString("wm", "upsert")
-                .header("If-Match", etag)
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, UPSERT)
+                .header(IF_MATCH, etag)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_OK,
                 resp.getStatus(), "check response status of update data with correct etag");
 
         // now use the DB_REQUIRED
-        resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
+        resp = Unirest.put(url(DB_REQUIRED, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("wm", "upsert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(WM, UPSERT)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_CONFLICT,
-                resp.getStatus(), "check response status of create test data");
+                resp.getStatus(), CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA);
 
-        resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
+        resp = Unirest.put(url(DB_REQUIRED, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .header("If-Match", "wrong etag")
-                .queryString("wm", "upsert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .header(IF_MATCH, WRONG_ETAG)
+                .queryString(WM, UPSERT)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_PRECONDITION_FAILED, resp.getStatus(),
                 "check response status of update data without etag");
 
-        etag = resp.getHeaders().get("ETag").get(0);
+        etag = resp.getHeaders().get(E_TAG).get(0);
 
-        resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
+        resp = Unirest.put(url(DB_REQUIRED, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("checkEtag", "")
-                .queryString("wm", "upsert")
-                .header("If-Match", etag)
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, UPSERT)
+                .header(IF_MATCH, etag)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_OK,
@@ -231,48 +235,48 @@ public class ETagIT extends AbstactIT {
     @Test
     public void testUpdateEtagQParam() throws Exception {
         // this makes sure that the document docid exists
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("checkEtag", "")
-                .queryString("wm", "insert")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, "insert")
+                .body(A_1)
                 .asString();
 
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("checkEtag", "")
-                .queryString("wm", "update")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, UPDATE)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_CONFLICT,
-                resp.getStatus(), "check response status of create test data");
+                resp.getStatus(), CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA);
 
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
-                .queryString("checkEtag", "")
-                .queryString("wm", "update")
-                .header("If-Match", "wrong etag")
-                .body("{'a':1 }")
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, UPDATE)
+                .header(IF_MATCH, WRONG_ETAG)
+                .body(A_1)
                 .asString();
 
         assertEquals(HttpStatus.SC_PRECONDITION_FAILED,
-                resp.getStatus(), "check response status of create test data");
+                resp.getStatus(), CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA);
 
-        String etag = resp.getHeaders().get("ETag").get(0);
+        final String etag = resp.getHeaders().get(E_TAG).get(0);
 
-        resp = Unirest.put(url(DB, COLL, "docid"))
+        resp = Unirest.put(url(DB, COLL, DOCID))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .queryString("checkEtag", "")
-                .queryString("wm", "update")
-                .header("content-type", "application/json")
-                .header("If-Match", etag)
-                .body("{'a':1 }")
+                .queryString(CHECK_ETAG, "")
+                .queryString(WM, UPDATE)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .header(IF_MATCH, etag)
+                .body(A_1)
                 .asString();
 
-        assertEquals(HttpStatus.SC_OK, resp.getStatus(), "check response status of create test data");
+        assertEquals(HttpStatus.SC_OK, resp.getStatus(), CHECK_RESPONSE_STATUS_OF_CREATE_TEST_DATA);
     }
 }
