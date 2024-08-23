@@ -35,15 +35,15 @@ import org.restheart.utils.LambdaUtils;
 public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
     private static final long MAX_CACHE_SIZE = 100_000;
 
-    private static final LoadingCache<String, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
-            Cache.EXPIRE_POLICY.NEVER, 0, appURI -> {
-                try {
-                    return AppDefinitionLoader.loadAppDefinition(appURI);
-                } catch (GraphQLIllegalAppDefinitionException e) {
-                    LambdaUtils.throwsSneakyException(e);
-                    return null;
-                }
-            });
+    private static final LoadingCache<String, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.NEVER, 0,
+        appURI -> {
+            try {
+                return AppDefinitionLoader.loadAppDefinition(appURI);
+            } catch (GraphQLIllegalAppDefinitionException e) {
+                LambdaUtils.throwsSneakyException(e);
+                return null;
+            }
+        });
 
     public static LoadingCache<String, GraphQLApp> getCache() {
         return CACHE;
@@ -70,7 +70,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
     }
 
     @Override
-    public LoadingCache get(PluginRecord<?> caller) {
+    public LoadingCache<String, GraphQLApp> get(PluginRecord<?> caller) {
         return CACHE;
     }
 }
