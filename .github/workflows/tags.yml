@@ -99,7 +99,7 @@ jobs:
           file: ./core/Dockerfile.graalvm
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: softinstigate/restheart:graalvm,softinstigate/restheart:latest-graalvm,softinstigate/restheart:8-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
@@ -109,7 +109,7 @@ jobs:
           file: ./core/Dockerfile.distroless
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: softinstigate/restheart:distroless,softinstigate/restheart:latest-distroless,softinstigate/restheart:8-distroless,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+          tags: softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
       - name: Build shaded fat jar
         if: ${{ matrix.deploy }}
