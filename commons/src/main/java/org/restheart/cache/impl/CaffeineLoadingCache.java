@@ -42,7 +42,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private static final Executor threadPerTaskExecutor = ThreadsUtils.virtualThreadsExecutor();
+    private static final Executor virtualThreadsExecutor = ThreadsUtils.virtualThreadsExecutor();
     private final AsyncLoadingCache<K, Optional<V>> wrapped;
 
     public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
@@ -57,11 +57,11 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
         }
 
         wrapped = builder
-            .executor(threadPerTaskExecutor)
+            .executor(virtualThreadsExecutor)
             .buildAsync(new AsyncCacheLoader<K, Optional<V>>() {
                 @Override
                 public CompletableFuture<? extends Optional<V>> asyncLoad(K key, Executor executor) throws Exception {
-                    return CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key)));
+                    return CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key)), virtualThreadsExecutor);
                 }
 
                 @Override
@@ -71,7 +71,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
                         ret.put(key, Optional.ofNullable(loader.apply(key)));
                     });
 
-                    return CompletableFuture.supplyAsync(() -> ret);
+                    return CompletableFuture.supplyAsync(() -> ret, virtualThreadsExecutor);
                 }
             });
     }
