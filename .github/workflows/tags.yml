@@ -111,10 +111,6 @@ jobs:
           pull: true # pull all required images before building
           tags: softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
-      - name: Build shaded fat jar
-        if: ${{ matrix.deploy }}
-        run: mvn -B package -Pshade -DskipTests
-
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
         uses: softprops/action-gh-release@v2
@@ -126,7 +122,5 @@ jobs:
           files: |
             core/target/restheart.tar.gz
             core/target/restheart.zip
-            core/target/restheart-shaded.tar.gz
-            core/target/restheart-shaded.zip
           draft: true
           prerelease: false
