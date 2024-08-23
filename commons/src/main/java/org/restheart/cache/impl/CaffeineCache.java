@@ -22,11 +22,13 @@ package org.restheart.cache.impl;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.restheart.utils.ThreadsUtils;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -39,10 +41,11 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
+    private static final Executor virtualThreadsExecutor = ThreadsUtils.virtualThreadsExecutor();
     private final Cache<K, Optional<V>> wrapped;
 
     public CaffeineCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
-        var builder = Caffeine.newBuilder();
+        var builder = Caffeine.newBuilder().executor(virtualThreadsExecutor);
 
         builder.maximumSize(size);
 
@@ -56,7 +59,7 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
     }
 
     public CaffeineCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
-        var builder = Caffeine.newBuilder();
+        var builder = Caffeine.newBuilder().executor(virtualThreadsExecutor);
 
         builder.maximumSize(size);
 
