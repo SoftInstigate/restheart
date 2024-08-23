@@ -306,7 +306,7 @@
                   </excludes>
                 </filter>
                 <filter>
-                  <artifact>org.restheart:restheart-core</artifact>
+                  <artifact>org.restheart:restheart</artifact>
                   <excludes>
                     <exclude>org/restheart/security/authorizers/package-info.class</exclude>
                     <exclude>org/restheart/utils/package-info.class</exclude>
