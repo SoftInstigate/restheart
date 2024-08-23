@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.MongoException;
+import com.mongodb.MongoInterruptedException;
 import com.mongodb.client.ChangeStreamIterable;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.FullDocument;
@@ -64,6 +65,8 @@ public class ChangeStreamWorker implements Runnable {
     private final String collName;
     private final Set<WebSocketSession> websocketSessions = Collections.synchronizedSet(new HashSet<>());
 
+    private Thread handlingVirtualThread = null;
+
     public ChangeStreamWorker(ChangeStreamWorkerKey key, List<BsonDocument> resolvedStages, String dbName, String collName) {
         super();
         this.key = key;
@@ -84,8 +87,18 @@ public class ChangeStreamWorker implements Runnable {
         return this.collName;
     }
 
+    public Thread handlingVirtualThread() {
+        return this.handlingVirtualThread;
+    }
+
     @Override
     public void run() {
+        if (Thread.currentThread().isVirtual()) {
+            this.handlingVirtualThread = Thread.currentThread();
+        }
+
+        LOGGER.debug("Change stream worker started {}", Thread.currentThread().getName());
+
         try {
             changeStreamEventsLoop();
         } catch(Throwable t) {
@@ -98,6 +111,7 @@ public class ChangeStreamWorker implements Runnable {
             closeAllWebSocketSessions();
         } finally {
             ChangeStreamWorkers.getInstance().remove(key);
+            LOGGER.debug("Change stream worker ended");
         }
     }
 
@@ -110,6 +124,8 @@ public class ChangeStreamWorker implements Runnable {
     private void changeStreamEventsLoop() {
         try {
             _changeStreamEventsLoop();
+        } catch(MongoInterruptedException mie) {
+            close();
         } catch(MongoException mqe) {
             LOGGER.error("MongoDb error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
 
@@ -126,6 +142,7 @@ public class ChangeStreamWorker implements Runnable {
     private void _changeStreamEventsLoop() {
         LOGGER.debug("Change Stream Worker {} started listening for change events", this.key);
         final var changeStream = startChangeStream();
+
         changeStream.forEach(changeEvent -> {
             if (this.websocketSessions.isEmpty()) {
                 // this terminates the ChangeStreamWorker
@@ -171,13 +188,17 @@ public class ChangeStreamWorker implements Runnable {
 
     /**
      * removes the workers form the list of active workers and
-     * close all its websocket sesssions
+     * close all its websocket sesssions and interrupt the handling virtual thread
      *
      * on next change event, the thread will terminate since it has no active websocket sesssions
      */
     void close() {
         ChangeStreamWorkers.getInstance().remove(key);
         closeAllWebSocketSessions();
+
+        if (this.handlingVirtualThread != null && !this.handlingVirtualThread.isInterrupted()) {
+            this.handlingVirtualThread.interrupt();
+        }
     }
 
     void closeAllWebSocketSessions() {

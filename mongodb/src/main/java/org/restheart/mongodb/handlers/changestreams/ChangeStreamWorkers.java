@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ChangeStreamWorkers {
-    // todo use caffeine cache
     private final Map<ChangeStreamWorkerKey, ChangeStreamWorker> CHANGE_STREAM_WORKERS = new ConcurrentHashMap<>();
 
     public static ChangeStreamWorkers getInstance() {
@@ -78,6 +77,13 @@ public class ChangeStreamWorkers {
                 .filter(csw -> db.equals(csw.getDbName()) && coll.equals(csw.getCollName()))
                 .collect(Collectors.toSet());
         }
+    }
+
+    public Optional<ChangeStreamWorker> workerOfSession(WebSocketSession session) {
+        return CHANGE_STREAM_WORKERS.entrySet().stream()
+                .map(e -> e.getValue())
+                .filter(csw -> csw.websocketSessions().contains(session))
+                .findFirst();
     }
 
     private static class SingletonHolder {
