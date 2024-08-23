@@ -47,6 +47,16 @@ public class WebSocketSession {
 
         this.channel.addCloseTask((WebSocketChannel channel1) -> {
             this.changeStreamWorker.websocketSessions().removeIf(s -> s.getId().equals(id));
+
+            if (this.changeStreamWorker.websocketSessions().isEmpty()) {
+                if (this.changeStreamWorker.handlingVirtualThread() != null) {
+                    LOGGER.debug("Terminating worker {}", this.changeStreamWorker.handlingVirtualThread().getName());
+                    this.changeStreamWorker.handlingVirtualThread().interrupt();
+                } else {
+                    LOGGER.warn("Cannot terminate worker since handlingVirtualThread is null");
+                }
+            }
+
             try {
                 this.close();
             } catch (IOException ex) {
