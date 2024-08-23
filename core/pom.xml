@@ -14,10 +14,10 @@
   </properties>
 
   <groupId>org.restheart</groupId>
-  <artifactId>restheart-core</artifactId>
+  <artifactId>restheart</artifactId>
   <packaging>jar</packaging>
 
-  <name>restheart-core</name>
+  <name>restheart</name>
   <description>RESTHeart Core - Core services for RESTHeart</description>
   <url>https://restheart.org</url>
   <inceptionYear>2014</inceptionYear>
@@ -287,7 +287,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
-              <finalName>restheart</finalName>
+              <finalName>restheart-shaded</finalName>
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <filters>
                 <filter>
