@@ -8,7 +8,7 @@
         <format>zip</format>
     </formats>
     <files>
-        <!-- rename restheart-core.jar to restheart.jar -->
+        <!-- rename restheart-shaded.jar to restheart.jar -->
         <file>
             <source>${project.build.directory}/restheart-shaded.jar</source>
             <outputDirectory>.</outputDirectory>

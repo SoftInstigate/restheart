@@ -7,7 +7,7 @@ RUN apt-get update && \
 	apt-get clean
 
 WORKDIR /opt/restheart
-COPY target/restheart-core.jar ./restheart.jar
+COPY target/restheart.jar ./restheart.jar
 COPY target/lib/*.jar lib/
 COPY target/plugins/*.jar plugins/
 COPY target/plugins/lib/*.jar plugins/lib/
