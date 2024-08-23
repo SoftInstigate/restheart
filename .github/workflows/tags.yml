@@ -118,7 +118,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: |
-            Release ${{ github.ref_name }}
+            Release ${{steps.vars.outputs.VERSION}}
           files: |
             core/target/restheart.tar.gz
             core/target/restheart.zip
