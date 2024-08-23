@@ -20,17 +20,16 @@
  */
 package org.restheart.graphql.cache;
 
-import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
-import org.restheart.graphql.models.*;
+import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.builder.AppBuilder;
-
 import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 public class AppDefinitionLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppDefinitionLoader.class);
@@ -50,7 +49,7 @@ public class AppDefinitionLoader {
     }
 
     static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
-        LOGGER.debug("Loading GQL App Definition {} from db", appURI);
+        LOGGER.trace("Loading GQL App Definition {} from db", appURI);
 
         var uriOrNameCond = array()
             .add(document().put(APP_URI_FIELD, appURI))
