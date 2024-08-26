@@ -7,5 +7,5 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # stop the regular jar with complete classpath
 java -server \
-    -cp "$DIR/../target/restheart-core.jar:$DIR/../target/lib/*:$DIR/../target/plugins/*" \
+    -cp "$DIR/../target/restheart.jar:$DIR/../target/lib/*:$DIR/../target/plugins/*" \
     org.restheart.Shutdowner $@
