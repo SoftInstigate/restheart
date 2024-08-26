@@ -1,6 +1,6 @@
 <project basedir=".">
     <target name="start-server">
-        <echo>***** Initializing MongoDB cluster</echo>
+        <echo level="info">***** Initializing MongoDB cluster</echo>
         <!-- mongo shell command is mongo for v <=5.x then mongosh -->
         <condition property="mongoshellcmd" value="mongo" else="mongosh">
             <matches string="${mongodb.version}" pattern="^[1-5].*" />
@@ -16,14 +16,14 @@
             <arg value="rs.initiate()" />
         </exec>
         <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
-        <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-        <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
+        <echo level="info">***** NOTE: in order to execute the integration test suite you need:</echo>
+        <echo level="info">1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
         <exec dir="${basedir}" executable="bin/start.sh">
             <arg value="-o" />
             <arg value="${basedir}/src/test/resources/etc/conf-overrides.yml" />
             <arg value="--fork" />
         </exec>
-        <echo>***** Waiting RESTHeart process to start...</echo>
+        <echo level="info">***** Waiting RESTHeart process to start...</echo>
         <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
             <http url="http://localhost:8080/ping" />
         </waitfor>
