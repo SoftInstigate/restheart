@@ -280,317 +280,318 @@ public class BsonUtilsTest {
      */
     @Test
     public void checkCountOnComplexJson() {
-        String _json = "{\n"
-                + "    \"_id\": \"project-processes\",\n"
-                + "    \"descr\": \"Progetto - Processi\",\n"
-                + "    \"items\": {\n"
-                + "        \"manufactoring\": {\n"
-                + "            \"descr\": \"Lavorazioni e Costruzioni\",\n"
-                + "            \"items\": {\n"
-                + "                \"strobel\": {\n"
-                + "                    \"descr\": \"Strobel\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"double_lasting\": {\n"
-                + "                    \"descr\": \"Sacchetto o Double Lasting\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 2\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"mounted\": {\n"
-                + "                    \"descr\": \"Montato\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"membrane_on_upper\": {\n"
-                + "                    \"descr\": \"Membrana su Tomaia\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"bootie\": {\n"
-                + "                    \"descr\": \"Bootie\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"tubolar\": {\n"
-                + "                    \"descr\": \"Tubolare\",\n"
-                + "                    \"type\": \"boolean\",\n"
-                + "                    \"svalues\": [\n"
-                + "                        0,\n"
-                + "                        1.5\n"
-                + "                    ]\n"
-                + "                },\n"
-                + "                \"others\": {\n"
-                + "                    \"descr\": \"Altro\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"injection\": {\n"
-                + "                    \"descr\": \"Iniezione\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"injection_casting\": {\n"
-                + "                    \"descr\": \"Iniezione per colata\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"glue\": {\n"
-                + "                    \"descr\": \"Incollata\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"blake\": {\n"
-                + "                    \"descr\": \"Blake\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"california\": {\n"
-                + "                    \"descr\": \"California\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"goodyear\": {\n"
-                + "                    \"descr\": \"Goodyear\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"ideal\": {\n"
-                + "                    \"descr\": \"Ideal\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"opanks\": {\n"
-                + "                    \"descr\": \"Opanks\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"vulcanized\": {\n"
-                + "                    \"descr\": \"Vulcanizzata\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"best_process\": {\n"
-                + "                    \"descr\": \"Best process\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 3\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                }\n"
-                + "            }\n"
-                + "        },\n"
-                + "        \"treatments\": {\n"
-                + "            \"descr\": \"Trattamenti\",\n"
-                + "            \"items\": {\n"
-                + "                \"dye\": {\n"
-                + "                    \"descr\": \"Tinta in capo/verniciatura\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"stonewash\": {\n"
-                + "                    \"descr\": \"Stone Wash\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 1.75\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"colours_faded\": {\n"
-                + "                    \"descr\": \"Slavati\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 2.5\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"creams_waxes\": {\n"
-                + "                    \"descr\": \"Cere e Creme\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 3.25\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"spray\": {\n"
-                + "                    \"descr\": \"Spray\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 3.25\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                },\n"
-                + "                \"none\": {\n"
-                + "                    \"descr\": \"Nessun Trattamento\",\n"
-                + "                    \"type\": \"boolean\",\n"
-                + "                    \"values\": {\n"
-                + "                        \"no\": {\n"
-                + "                            \"descr\": \"Si\",\n"
-                + "                            \"svalue\": 0\n"
-                + "                        },\n"
-                + "                        \"yes\": {\n"
-                + "                            \"descr\": \"No\",\n"
-                + "                            \"svalue\": 4\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                }\n"
-                + "            }\n"
-                + "        }\n"
-                + "    }\n"
-                + "}";
+        String _json = """
+                       {
+                           "_id": "project-processes",
+                           "descr": "Progetto - Processi",
+                           "items": {
+                               "manufactoring": {
+                                   "descr": "Lavorazioni e Costruzioni",
+                                   "items": {
+                                       "strobel": {
+                                           "descr": "Strobel",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "double_lasting": {
+                                           "descr": "Sacchetto o Double Lasting",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 2
+                                               }
+                                           }
+                                       },
+                                       "mounted": {
+                                           "descr": "Montato",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "membrane_on_upper": {
+                                           "descr": "Membrana su Tomaia",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "bootie": {
+                                           "descr": "Bootie",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "tubolar": {
+                                           "descr": "Tubolare",
+                                           "type": "boolean",
+                                           "svalues": [
+                                               0,
+                                               1.5
+                                           ]
+                                       },
+                                       "others": {
+                                           "descr": "Altro",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "injection": {
+                                           "descr": "Iniezione",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "injection_casting": {
+                                           "descr": "Iniezione per colata",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "glue": {
+                                           "descr": "Incollata",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "blake": {
+                                           "descr": "Blake",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "california": {
+                                           "descr": "California",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "goodyear": {
+                                           "descr": "Goodyear",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "ideal": {
+                                           "descr": "Ideal",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "opanks": {
+                                           "descr": "Opanks",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "vulcanized": {
+                                           "descr": "Vulcanizzata",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.5
+                                               }
+                                           }
+                                       },
+                                       "best_process": {
+                                           "descr": "Best process",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 3
+                                               }
+                                           }
+                                       }
+                                   }
+                               },
+                               "treatments": {
+                                   "descr": "Trattamenti",
+                                   "items": {
+                                       "dye": {
+                                           "descr": "Tinta in capo/verniciatura",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1
+                                               }
+                                           }
+                                       },
+                                       "stonewash": {
+                                           "descr": "Stone Wash",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 1.75
+                                               }
+                                           }
+                                       },
+                                       "colours_faded": {
+                                           "descr": "Slavati",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 2.5
+                                               }
+                                           }
+                                       },
+                                       "creams_waxes": {
+                                           "descr": "Cere e Creme",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 3.25
+                                               }
+                                           }
+                                       },
+                                       "spray": {
+                                           "descr": "Spray",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 3.25
+                                               }
+                                           }
+                                       },
+                                       "none": {
+                                           "descr": "Nessun Trattamento",
+                                           "type": "boolean",
+                                           "values": {
+                                               "no": {
+                                                   "descr": "Si",
+                                                   "svalue": 0
+                                               },
+                                               "yes": {
+                                                   "descr": "No",
+                                                   "svalue": 4
+                                               }
+                                           }
+                                       }
+                                   }
+                               }
+                           }
+                       }""";
 
         BsonDocument json = BsonDocument.parse(_json);
 
