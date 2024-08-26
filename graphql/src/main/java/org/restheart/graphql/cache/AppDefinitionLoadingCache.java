@@ -39,6 +39,8 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
         appURI -> {
             try {
                 return AppDefinitionLoader.loadAppDefinition(appURI);
+            } catch (GraphQLAppDefNotFoundException e) {
+                return null;
             } catch (GraphQLIllegalAppDefinitionException e) {
                 LambdaUtils.throwsSneakyException(e);
                 return null;
@@ -64,7 +66,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
             if (_app != null && _app.isPresent()) {
                 return _app.get();
             } else {
-                throw new GraphQLAppDefNotFoundException("Valid configuration for " + appURI + " not found. ");
+                throw new GraphQLAppDefNotFoundException("GQL App Definition for uri " + appURI + " not found. ");
             }
         }
     }
