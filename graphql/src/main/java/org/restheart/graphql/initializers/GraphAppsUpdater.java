@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.Configuration;
+import org.restheart.graphql.GraphQLAppDefNotFoundException;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
+import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -74,16 +77,17 @@ public class GraphAppsUpdater implements Initializer {
             .map(entry -> entry.getKey())
             .forEach(appUri -> {
                 try {
+                    var appDef = AppDefinitionLoader.loadAppDefinition(appUri);
+                    this.gqlAppDefCache.put(appUri, appDef);
+                    LOGGER.debug("gql cache entry {} updated", appUri);
+                } catch (GraphQLAppDefNotFoundException e) {
                     this.gqlAppDefCache.invalidate(appUri);
-                    var app$ = this.gqlAppDefCache.getLoading(appUri);
-                    if (app$.isPresent()) {
-                        LOGGER.debug("gql cache entry {} updated", appUri);
-                    } else {
-                        this.gqlAppDefCache.invalidate(appUri);
-                        LOGGER.debug("gql cache entry {} removed", appUri);
-                    }
-
+                    LOGGER.debug("gql cache entry {} removed", appUri);
+                } catch (GraphQLIllegalAppDefinitionException e) {
+                    this.gqlAppDefCache.invalidate(appUri);
+                    LOGGER.warn("gql cache entry {} removed {} due to illegal definition", appUri, e);
                 } catch (Exception e) {
+                    this.gqlAppDefCache.invalidate(appUri);
                     LOGGER.warn("error updaring gql cache entry {}", appUri, e);
                 }
         });

@@ -21,6 +21,7 @@
 package org.restheart.graphql.cache;
 
 import org.bson.BsonDocument;
+import org.restheart.graphql.GraphQLAppDefNotFoundException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.builder.AppBuilder;
@@ -48,7 +49,7 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
+    public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
         LOGGER.trace("Loading GQL App Definition {} from db", appURI);
 
         var uriOrNameCond = array()
@@ -66,7 +67,7 @@ public class AppDefinitionLoader {
         if (appDefinition != null) {
             return AppBuilder.build(appDefinition);
         } else {
-            return null;
+            throw new GraphQLAppDefNotFoundException("GQL App Definition for uri " + appURI + " not found. ");
         }
     }
 }
