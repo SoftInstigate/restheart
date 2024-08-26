@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.bson.BsonDocument;
+import org.apache.commons.jxpath.JXPathContext;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
 
@@ -35,7 +35,7 @@ import io.undertow.predicate.PredicateBuilder;
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class FieldEqPredicate implements PredicateOverBsonValue {
+public class FieldEqPredicate implements PredicateOverJxPathCtx {
     private final String key;
     private final BsonValue value;
 
@@ -49,15 +49,11 @@ public class FieldEqPredicate implements PredicateOverBsonValue {
     }
 
     @Override
-    public boolean resolve(BsonValue value) {
-        if (value instanceof BsonDocument doc) {
-            var _v = BsonUtils.get(doc, key);
+    public boolean resolve(JXPathContext ctx) {
+        var _v = BsonUtils.get(ctx, key);
 
-            if (_v.isPresent()) {
-                return this.value.equals(_v.get());
-            } else {
-                return false;
-            }
+        if (_v.isPresent()) {
+            return this.value.equals(_v.get());
         } else {
             return false;
         }

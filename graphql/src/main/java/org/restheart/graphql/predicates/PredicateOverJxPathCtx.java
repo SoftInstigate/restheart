@@ -29,8 +29,7 @@ import io.undertow.server.HttpServerExchange;
 public interface PredicateOverJxPathCtx extends Predicate {
     @Override
     default boolean resolve(HttpServerExchange exchage) {
-        //return resolve(ExchangeWithBsonValue.jxPathCtx(exchage));
-        return true;
+        return resolve(ExchangeWithBsonValue.jxPathCtx(exchage));
     }
 
     boolean resolve(JXPathContext doc);
