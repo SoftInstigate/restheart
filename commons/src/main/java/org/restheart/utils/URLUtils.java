@@ -19,18 +19,24 @@
  */
 package org.restheart.utils;
 
-import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.regex.Pattern;
 
 import org.bson.BsonValue;
 import org.restheart.exchange.UnsupportedDocumentIdException;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class URLUtils {
+
+    protected URLUtils() {
+        // protected constructor to hide the implicit public one
+    }
 
     /**
      * given string /ciao/this/has/trailings///// returns
@@ -39,7 +45,7 @@ public class URLUtils {
      * @param s
      * @return the string s without the trailing slashes
      */
-    static public String removeTrailingSlashes(String s) {
+    public static String removeTrailingSlashes(String s) {
         if (s == null) {
             return null;
         }
@@ -63,7 +69,7 @@ public class URLUtils {
      * @param qs
      * @return the undecoded string
      */
-    static public String decodeQueryString(String qs) {
+    public static String decodeQueryString(String qs) {
         try {
             return URLDecoder.decode(qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
         } catch (UnsupportedEncodingException ex) {
@@ -76,7 +82,7 @@ public class URLUtils {
      * @param path
      * @return the parent path of path
      */
-    static public String getParentPath(String path) {
+    public static String getParentPath(String path) {
         if (path == null || path.isEmpty() || path.equals("/")) {
             return path;
         }
@@ -97,7 +103,7 @@ public class URLUtils {
      * @param exchange
      * @return the prefix url of the exchange
      */
-    static public String getPrefixUrl(HttpServerExchange exchange) {
+    public static String getPrefixUrl(HttpServerExchange exchange) {
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
     }
 
@@ -119,8 +125,8 @@ public class URLUtils {
 
             if (values != null) {
                 for (String value : values) {
-                    ret = ret.replaceAll(key + "=" + value + "&", "");
-                    ret = ret.replaceAll(key + "=" + value + "$", "");
+                    ret = ret.replaceAll(Pattern.quote(key + "=" + value + "&"), "");
+                    ret = ret.replaceAll(Pattern.quote(key + "=" + value + "$"), "");
                 }
             }
         }
