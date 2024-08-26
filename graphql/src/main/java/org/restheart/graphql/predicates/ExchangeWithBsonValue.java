@@ -21,6 +21,7 @@
 
 package org.restheart.graphql.predicates;
 
+import org.apache.commons.jxpath.JXPathContext;
 import org.bson.BsonValue;
 
 import io.undertow.server.HttpServerExchange;
@@ -44,5 +45,27 @@ public class ExchangeWithBsonValue {
         return exchange.getAttachment(DOC_KEY);
     }
 
+    /**
+     * To enhance the performance of XPath expression evaluations, this method caches the
+     * JXPathContext object. This cached context facilitates quicker lookups and reduces the
+     * overhead associated with creating new contexts for each query.
+     *
+     * For more information, refer to {@link org.restheart.utils.BsonUtils#get(JXPathContext docCtx, String path)}
+     *
+     * @param exchange The exchange containing the BsonValue from which the JXPathContext is constructed.
+     * @return The JXPathContext built from the BsonValue attached to the exchange.
+    */
+    public static JXPathContext jxPathCtx(HttpServerExchange exchange) {
+        var ctx = exchange.getAttachment(JX_PATH_CTX_KEY);
+
+        if (ctx == null) {
+            ctx = JXPathContext.newContext(value(exchange));
+            exchange.putAttachment(JX_PATH_CTX_KEY, ctx);
+        }
+
+        return ctx;
+    }
+
     private static final AttachmentKey<BsonValue> DOC_KEY = AttachmentKey.create(BsonValue.class);
+    private static final AttachmentKey<JXPathContext> JX_PATH_CTX_KEY = AttachmentKey.create(JXPathContext.class);
 }

@@ -295,6 +295,22 @@ public class BsonUtils {
     }
 
     /**
+     *
+     * @param ctx the JxPathContext build from a BsonDocument
+     * @param path the path of the field, can use the dot notation
+     * @return
+     */
+    public static Optional<BsonValue> get(JXPathContext ctx, String path) {
+        final String xpath = dotNotationToXPath(path);
+
+        try {
+            return Optional.of((BsonValue) ctx.getValue(xpath));
+        } catch(Throwable t) {
+            return Optional.empty();
+        }
+    }
+
+    /**
      * converts the dot notation syntax to xpath
      * a.b.c -> /a/b/c
      * a[1].c -> /a[2]/c (xpath indexes are 1-based!)

@@ -172,8 +172,9 @@ public class GraphQLApp {
                         final Optional<Entry<String, Predicate>> match;
 
                         if (obj instanceof BsonValue value) {
+                            final var ex = ExchangeWithBsonValue.exchange(value);
                             match = unionMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                .filter(p -> p.getValue().resolve(ex))
                                 .findFirst();
                         } else {
                             // predicates can only resolve on BsonValues
@@ -199,8 +200,9 @@ public class GraphQLApp {
                         final Optional<Entry<String, Predicate>> match;
 
                         if (obj instanceof BsonValue value) {
+                            final var ex = ExchangeWithBsonValue.exchange(value);
                             match = interfaceMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(ExchangeWithBsonValue.exchange(value)))
+                                .filter(p -> p.getValue().resolve(ex))
                                 .findFirst();
                         } else {
                             // predicates can resolve on BsonValues

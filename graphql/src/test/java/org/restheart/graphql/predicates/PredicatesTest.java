@@ -21,30 +21,33 @@
 
 package org.restheart.graphql.predicates;
 
+import org.apache.commons.jxpath.JXPathContext;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 import static org.restheart.utils.BsonUtils.document;
 
-import org.junit.jupiter.api.Test;
 import io.undertow.predicate.Predicates;
 
 public class PredicatesTest {
     @Test
     public void testNullVsAbsent() {
         var doc = document().put("bar", 1).get();
-        var p = (PredicateOverBsonValue) Predicates.parse("field-exists(bar)");
-        var np = (PredicateOverBsonValue) Predicates.parse("field-exists(foo)");
+        var ctx = JXPathContext.newContext(doc);
+        var p = (PredicateOverJxPathCtx) Predicates.parse("field-exists(bar)");
+        var np = (PredicateOverJxPathCtx) Predicates.parse("field-exists(foo)");
 
-        assertTrue(p.resolve(doc));
-        assertFalse(np.resolve(doc));
+        assertTrue(p.resolve(ctx));
+        assertFalse(np.resolve(ctx));
 
         var nestedDoc = document().put("bar", document().put("foo", 1)).get();
+        var nestedDocCtx = JXPathContext.newContext(nestedDoc);
 
-        var _p = (PredicateOverBsonValue) Predicates.parse("field-exists(bar.foo)");
-        var _np = (PredicateOverBsonValue) Predicates.parse("field-exists(bar.not)");
+        var _p = (PredicateOverJxPathCtx) Predicates.parse("field-exists(bar.foo)");
+        var _np = (PredicateOverJxPathCtx) Predicates.parse("field-exists(bar.not)");
 
-        assertTrue(_p.resolve(nestedDoc));
-        assertFalse(_np.resolve(nestedDoc));
+        assertTrue(_p.resolve(nestedDocCtx));
+        assertFalse(_np.resolve(nestedDocCtx));
     }
 
     @Test
