@@ -24,8 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
+import org.apache.commons.jxpath.JXPathContext;
 import org.restheart.utils.BsonUtils;
 
 import com.google.common.collect.Sets;
@@ -36,7 +35,7 @@ import io.undertow.predicate.PredicateBuilder;
 /**
  * a predicate that resolve to true if the request contains the specified keys
  */
-public class FieldExists implements PredicateOverBsonValue {
+public class FieldExists implements PredicateOverJxPathCtx {
     private final Set<String> fields;
 
     public FieldExists(String[] fields) {
@@ -48,12 +47,8 @@ public class FieldExists implements PredicateOverBsonValue {
     }
 
     @Override
-    public boolean resolve(BsonValue value) {
-        if (value instanceof BsonDocument doc) {
-            return this.fields.stream().allMatch(f -> BsonUtils.get(doc, f).isPresent());
-        } else {
-            return false;
-        }
+    public boolean resolve(JXPathContext ctx) {
+            return this.fields.stream().allMatch(f -> BsonUtils.get(ctx, f).isPresent());
     }
 
     public static class Builder implements PredicateBuilder {

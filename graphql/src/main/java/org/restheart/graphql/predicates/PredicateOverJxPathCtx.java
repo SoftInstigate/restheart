@@ -21,16 +21,16 @@
 
 package org.restheart.graphql.predicates;
 
-import org.bson.BsonValue;
+import org.apache.commons.jxpath.JXPathContext;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 
-public interface PredicateOverBsonValue extends Predicate {
+public interface PredicateOverJxPathCtx extends Predicate {
     @Override
     default boolean resolve(HttpServerExchange exchage) {
-        return resolve(ExchangeWithBsonValue.value(exchage));
+        return resolve(ExchangeWithBsonValue.jxPathCtx(exchage));
     }
 
-   boolean resolve(BsonValue doc);
+    boolean resolve(JXPathContext doc);
 }
