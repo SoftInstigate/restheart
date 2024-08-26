@@ -109,7 +109,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
 
     @Override
     public void put(K key, V value) {
-        wrapped.synchronous().put(key, Optional.ofNullable(value));
+        wrapped.put(key, CompletableFuture.supplyAsync(() -> Optional.ofNullable(value)));
     }
 
     @Override
