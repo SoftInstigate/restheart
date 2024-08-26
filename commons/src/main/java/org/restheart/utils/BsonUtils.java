@@ -68,6 +68,9 @@ import org.bson.json.JsonWriterSettings;
 import org.bson.json.StrictJsonWriter;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.restheart.cache.Cache.EXPIRE_POLICY;
+import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -261,6 +264,9 @@ public class BsonUtils {
         }
     }
 
+    private final static LoadingCache<BsonDocument, JXPathContext> jXPathContextCache = CacheFactory.createLocalLoadingCache(100, EXPIRE_POLICY.AFTER_READ, 5_000, doc -> JXPathContext.newContext(doc));
+    private final static LoadingCache<String, String> xPathCache = CacheFactory.createLocalLoadingCache(1_000, EXPIRE_POLICY.AFTER_READ, 1_000, dotn -> dotNotationToXPath(dotn));
+
     /**
      *
      * @param doc
@@ -268,19 +274,22 @@ public class BsonUtils {
      * @return
      */
     public static Optional<BsonValue> get(BsonDocument doc, String path) {
-        final String xpath = dotNotationToXPath(path);
-
         if (path == null) {
             return Optional.empty();
         } else if (doc.containsKey(path)) {
             return Optional.of(doc.get(path));
         }
 
-        var ctx = JXPathContext.newContext(doc);
+        final var ctx$ = jXPathContextCache.getLoading(doc);
 
-        try {
-            return Optional.of((BsonValue) ctx.getValue(xpath));
-        } catch(Throwable t) {
+        if (ctx$.isPresent()) {
+            try {
+                final var xpath$ = xPathCache.getLoading(path);
+                return Optional.of((BsonValue) ctx$.get().getValue(xpath$.get()));
+            } catch(Throwable t) {
+                return Optional.empty();
+            }
+        } else {
             return Optional.empty();
         }
     }
