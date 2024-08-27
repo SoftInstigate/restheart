@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
+import org.bson.BsonNull;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.AppDescriptor;
 import org.restheart.graphql.models.GraphQLApp;
@@ -72,8 +73,6 @@ public class AppBuilder extends Mappings {
             throw new GraphQLIllegalAppDefinitionException(errorMSg, schemaProblem);
         }
 
-
-
         if (appDef.containsKey("mappings")) {
             if (appDef.get("mappings").isDocument()) {
                 var mappings = appDef.getDocument("mappings");
@@ -106,11 +105,13 @@ public class AppBuilder extends Mappings {
                     });
 
         try {
-            return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema)
+            return GraphQLApp.newBuilder().appDescriptor(descriptor)
+                .schema(schema)
                 .objectsMappings(objectsMappings)
                 .enumsMappings(enumsMappings)
                 .unionMappings(unionsMappings)
                 .interfacesMappings(interfacesMappings)
+                .etag(appDef.get("_etag", BsonNull.VALUE))
                 .build();
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);

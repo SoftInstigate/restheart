@@ -49,6 +49,7 @@ public class GraphQLApp {
     private String schema;
     private Map<String, TypeMapping> objectsMappings;
     private GraphQLSchema executableSchema;
+    private BsonValue etag;
 
     public static Builder newBuilder() {
         return new Builder();
@@ -57,11 +58,12 @@ public class GraphQLApp {
     public GraphQLApp() {
     }
 
-    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> objectsMappings, GraphQLSchema executableSchema) {
+    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> objectsMappings, GraphQLSchema executableSchema, BsonValue etag) {
         this.descriptor = descriptor;
         this.schema = schema;
         this.objectsMappings = objectsMappings;
         this.executableSchema = executableSchema;
+        this.etag = etag;
     }
 
     public AppDescriptor getDescriptor() {
@@ -96,6 +98,14 @@ public class GraphQLApp {
         this.executableSchema = executableSchema;
     }
 
+    public BsonValue getEtag() {
+        return this.etag;
+    }
+
+    public void setEtag(BsonValue etag) {
+        this.etag = etag;
+    }
+
     public static class Builder {
         private AppDescriptor descriptor;
         private String schema;
@@ -103,6 +113,7 @@ public class GraphQLApp {
         private Map<String, Map<String, Object>> enumsMappings;
         private Map<String, Map<String, Predicate>> unionMappings;
         private Map<String, Map<String, Predicate>> interfacesMappings;
+        private BsonValue etag;
 
         private Builder() {
         }
@@ -134,6 +145,11 @@ public class GraphQLApp {
 
         public Builder interfacesMappings(Map<String, Map<String, Predicate>> mappings) {
             this.interfacesMappings = mappings;
+            return this;
+        }
+
+        public Builder etag(BsonValue etag) {
+            this.etag = etag;
             return this;
         }
 
@@ -232,7 +248,7 @@ public class GraphQLApp {
 
                 var execSchema = schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
 
-                return new GraphQLApp(this.descriptor, this.schema, this.objectsMappings, execSchema);
+                return new GraphQLApp(this.descriptor, this.schema, this.objectsMappings, execSchema, this.etag);
             } catch (SchemaProblem schemaProblem) {
                 var errorMSg = schemaProblem.getMessage() != null
                     ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
