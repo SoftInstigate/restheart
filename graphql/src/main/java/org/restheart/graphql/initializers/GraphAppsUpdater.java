@@ -20,6 +20,7 @@
  */
 package org.restheart.graphql.initializers;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -72,12 +73,17 @@ public class GraphAppsUpdater implements Initializer {
     }
 
     private void revalidateCacheEntries() {
-        this.gqlAppDefCache.asMap().entrySet().stream()
+        // work on a copy of the synchronized cache map, to avoid blocking it
+        final var _cacheMap = new HashMap<>(this.gqlAppDefCache.asMap());
+
+        _cacheMap.entrySet().stream()
             .filter(entry -> entry.getValue().isPresent())
+            // filter out not updated documents (same etag than cached entry)
+            .filter(entry -> AppDefinitionLoader.isUpdated(entry.getKey(), entry.getValue().get().getEtag()))
             .map(entry -> entry.getKey())
             .forEach(appUri -> {
                 try {
-                    var appDef = AppDefinitionLoader.loadAppDefinition(appUri);
+                    var appDef = AppDefinitionLoader.load(appUri);
                     this.gqlAppDefCache.put(appUri, appDef);
                     LOGGER.debug("gql cache entry {} updated", appUri);
                 } catch (GraphQLAppDefNotFoundException e) {
@@ -86,7 +92,7 @@ public class GraphAppsUpdater implements Initializer {
                 } catch (GraphQLIllegalAppDefinitionException e) {
                     this.gqlAppDefCache.invalidate(appUri);
                     LOGGER.warn("gql cache entry {} removed {} due to illegal definition", appUri, e);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     this.gqlAppDefCache.invalidate(appUri);
                     LOGGER.warn("error updaring gql cache entry {}", appUri, e);
                 }

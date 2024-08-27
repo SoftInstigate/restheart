@@ -20,30 +20,26 @@
  */
 package org.restheart.graphql.interceptors;
 
+import java.util.Map;
+
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
+import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Inject;
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
-
-import java.util.Map;
-
-import org.bson.BsonDocument;
-import org.restheart.graphql.cache.AppDefinitionLoader;
-import org.restheart.graphql.cache.AppDefinitionLoadingCache;
-
-import com.mongodb.client.MongoClient;
-
-import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 @RegisterPlugin(name="graphAppDefinitionPatchChecker",
         description = "checks GraphQL application definitions on PATCH requests",

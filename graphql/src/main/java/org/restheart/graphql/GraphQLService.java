@@ -460,7 +460,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     }
 
     private GraphQLApp gqlApp(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
-        return AppDefinitionLoadingCache.get(appURI);
+        return AppDefinitionLoadingCache.getLoading(appURI);
     }
 
     @Override

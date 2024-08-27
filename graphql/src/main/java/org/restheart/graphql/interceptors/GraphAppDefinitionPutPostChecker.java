@@ -20,24 +20,23 @@
  */
 package org.restheart.graphql.interceptors;
 
+import java.util.Map;
+
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
+import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Inject;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
-
-import java.util.Map;
-
-import org.restheart.graphql.cache.AppDefinitionLoadingCache;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
