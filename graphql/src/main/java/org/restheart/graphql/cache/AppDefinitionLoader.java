@@ -21,6 +21,7 @@
 package org.restheart.graphql.cache;
 
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.graphql.GraphQLAppDefNotFoundException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.GraphQLApp;
@@ -49,7 +50,34 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
+    /**
+     * @param appURI
+     * @param etag the etag of cached gql app
+     * @return true if the app definition appURI has been updated, i.e. has a different _etag
+     */
+    public static boolean isUpdated(String appURI, BsonValue etag) {
+        var uriOrNameCond = array()
+            .add(document().put(APP_URI_FIELD, appURI))
+            .add(document().put(APP_NAME_FIELD, appURI));
+
+        var conditions = array()
+            .add(document().put("$or", uriOrNameCond))
+            .add(document().put(APP_ENABLED_FIELD, true));
+
+        var findArg = document().put("$and", conditions);
+
+        var gqlApp = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
+
+        if (gqlApp != null) {
+            var newEtag = gqlApp.get("_etag");
+            LOGGER.trace("oldEtag {}, newEtag {}", etag, newEtag);
+            return etag == null || newEtag == null || !etag.equals(newEtag);
+        } else {
+            return true; // app has been deleted
+        }
+    }
+
+    public static GraphQLApp load(String appURI) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
         LOGGER.trace("Loading GQL App Definition {} from db", appURI);
 
         var uriOrNameCond = array()
@@ -62,10 +90,10 @@ public class AppDefinitionLoader {
 
         var findArg = document().put("$and", conditions);
 
-        var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
+        var gqlApp = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
 
-        if (appDefinition != null) {
-            return AppBuilder.build(appDefinition);
+        if (gqlApp != null) {
+            return AppBuilder.build(gqlApp);
         } else {
             throw new GraphQLAppDefNotFoundException("GQL App Definition for uri " + appURI + " not found. ");
         }

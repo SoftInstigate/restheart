@@ -38,7 +38,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
     private static final LoadingCache<String, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.NEVER, 0,
         appURI -> {
             try {
-                return AppDefinitionLoader.loadAppDefinition(appURI);
+                return AppDefinitionLoader.load(appURI);
             } catch (GraphQLAppDefNotFoundException e) {
                 return null;
             } catch (GraphQLIllegalAppDefinitionException e) {
@@ -51,7 +51,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
         return CACHE;
     }
 
-    public static GraphQLApp get(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
+    public static GraphQLApp getLoading(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
         var _app = CACHE.get(appURI);
 
         if (_app != null && _app.isPresent()){
