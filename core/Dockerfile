@@ -2,7 +2,9 @@ FROM eclipse-temurin:21-jre
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-RUN apt-get update && apt-get install -y && apt-get clean
+RUN apt-get update && \
+	apt-get --no-install-recommends install -y && \
+	apt-get clean
 
 WORKDIR /opt/restheart
 COPY target/restheart.jar .
