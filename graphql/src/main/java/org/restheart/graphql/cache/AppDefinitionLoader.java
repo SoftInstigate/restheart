@@ -70,7 +70,6 @@ public class AppDefinitionLoader {
 
         if (gqlApp != null) {
             var newEtag = gqlApp.get("_etag");
-            LOGGER.trace("oldEtag {}, newEtag {}", etag, newEtag);
             return etag == null || newEtag == null || !etag.equals(newEtag);
         } else {
             return true; // app has been deleted
