@@ -20,14 +20,9 @@
  */
 package org.restheart.security.authenticators;
 
-import com.google.common.collect.Sets;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.DigestCredential;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.util.HexConverter;
-import java.io.FileNotFoundException;
 import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.FileNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -39,16 +34,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.restheart.security.FileRealmAccount;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.security.FileRealmAccount;
 import org.restheart.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Sets;
+
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.DigestCredential;
+import io.undertow.security.idm.PasswordCredential;
+import io.undertow.util.HexConverter;
 
 /**
  *
@@ -58,11 +61,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(
-        name = "fileRealmAuthenticator",
-        description = "authenticates clients credentials defined in a configuration file",
-        enabledByDefault = false)
+@RegisterPlugin(name = "fileRealmAuthenticator", description = "authenticates clients credentials defined in a configuration file", enabledByDefault = false)
 public class FileRealmAuthenticator extends FileConfigurablePlugin implements Authenticator {
+    private static final String USERS = "users";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(FileRealmAuthenticator.class);
 
     private final Map<String, FileRealmAccount> accounts = new HashMap<>();
@@ -74,10 +76,10 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
     public void init() throws FileNotFoundException, ConfigurationException {
         if (config.containsKey("conf-file") && config.get("conf-file") != null) {
             // init from conf-file
-            init(config, "users");
-        } else if (config.containsKey("users") && config.get("users") != null) {
+            init(config, USERS);
+        } else if (config.containsKey(USERS) && config.get(USERS) != null) {
             // init from users list property
-            List<Map<String, Object>> users = argOrDefault(config, "users", new ArrayList<>());
+            final List<Map<String, Object>> users = argOrDefault(config, USERS, new ArrayList<>());
             users.stream().forEach(consumeConfiguration());
         } else {
             throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'users' paramenter");
@@ -89,54 +91,57 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
             try {
-                String userid = arg(u, "userid");
-                String _password = arg(u, "password");
+                final String userid = arg(u, "userid");
+                final String _password = arg(u, "password");
 
                 if (_password == null) {
-                    LOGGER.warn("User {} has a null password, disabling it. You can set it with the environment variable RHO=\"/fileRealmAuthenticator/users[userid='admin']/password->'secret'\"", userid);
+                    LOGGER.warn(
+                            "User {} has a null password, disabling it. You can set it with the environment variable RHO=\"/fileRealmAuthenticator/users[userid='admin']/password->'secret'\"",
+                            userid);
                     return;
                 }
 
-                char[] password = ((String) _password).toCharArray();
+                final char[] password = _password.toCharArray();
 
                 @SuppressWarnings("rawtypes")
-                List _roles = arg(u, "roles");
+                final List _roles = arg(u, "roles");
 
                 if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
-                    throw new IllegalArgumentException("wrong configuration. a roles entry is wrong. they all must be strings");
+                    throw new IllegalArgumentException(
+                            "wrong configuration. a roles entry is wrong. they all must be strings");
                 }
 
-                Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
+                final Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
 
                 // remove the password before injecting the account properties in the account
                 u.remove("password");
-                FileRealmAccount a = new FileRealmAccount(userid, password, roles, u);
+                final FileRealmAccount a = new FileRealmAccount(userid, password, roles, u);
 
                 this.accounts.put(userid, a);
-            } catch (ConfigurationException pce) {
+            } catch (final ConfigurationException pce) {
                 LambdaUtils.throwsSneakyException(pce);
             }
         };
     }
 
     @Override
-    public Account verify(Account account) {
+    public Account verify(final Account account) {
         return account;
     }
 
     @Override
-    public Account verify(String id, Credential credential) {
+    public Account verify(final String id, final Credential credential) {
         final Account account = accounts.get(id);
         return account != null && verifyCredential(account, credential) ? account : null;
     }
 
     @Override
-    public Account verify(Credential credential) {
+    public Account verify(final Credential credential) {
         // Auto-generated method stub
         return null;
     }
 
-    private boolean verifyCredential(Account account, Credential credential) {
+    private boolean verifyCredential(final Account account, final Credential credential) {
         if (account instanceof FileRealmAccount) {
             if (credential instanceof PasswordCredential) {
                 return verifyPasswordCredential(account, credential);
@@ -148,32 +153,32 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
         return false;
     }
 
-    private boolean verifyPasswordCredential(Account account, Credential credential) {
-        char[] password = ((PasswordCredential) credential).getPassword();
-        char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
+    private boolean verifyPasswordCredential(final Account account, final Credential credential) {
+        final char[] password = ((PasswordCredential) credential).getPassword();
+        final char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials().getPassword();
 
         return Arrays.equals(password, expectedPassword);
     }
 
-    private boolean verifyDigestCredential(Account account, Credential credential) {
+    private boolean verifyDigestCredential(final Account account, final Credential credential) {
         try {
-            DigestCredential dc = (DigestCredential) credential;
+            final DigestCredential dc = (DigestCredential) credential;
 
-            MessageDigest digest = dc.getAlgorithm().getMessageDigest();
+            final MessageDigest digest = dc.getAlgorithm().getMessageDigest();
 
-            String expectedPassword = new String(
-                    accounts.get(account.getPrincipal().getName()).getCredentials().getPassword());
+            final char[] expectedPassword = accounts.get(account.getPrincipal().getName()).getCredentials()
+                    .getPassword();
 
             digest.update(account.getPrincipal().getName().getBytes(UTF_8));
             digest.update((byte) ':');
             digest.update(dc.getRealm().getBytes(UTF_8));
             digest.update((byte) ':');
-            digest.update(expectedPassword.getBytes(UTF_8));
+            digest.update(new String(expectedPassword).getBytes(UTF_8));
 
-            byte[] ha1 = HexConverter.convertToHexBytes(digest.digest());
+            final byte[] ha1 = HexConverter.convertToHexBytes(digest.digest());
 
             return dc.verifyHA1(ha1);
-        } catch (NoSuchAlgorithmException ne) {
+        } catch (final NoSuchAlgorithmException ne) {
             return false;
         }
     }
