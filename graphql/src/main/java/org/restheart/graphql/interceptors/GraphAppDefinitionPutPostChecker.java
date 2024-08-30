@@ -34,6 +34,7 @@ import org.restheart.plugins.Inject;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
@@ -57,6 +58,9 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
     @Inject("rh-config")
     private Configuration config;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     @OnInit
     public void init() {
         try {
@@ -64,13 +68,18 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled = true;
+                this.enabled = isGQLSrvEnabled();
             } else {
                 this.enabled = false;
             }
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }
+    }
+
+    private boolean isGQLSrvEnabled() {
+        var gql$ = registry.getServices().stream().filter(s -> s.getName().equals("graphql")).findFirst();
+        return gql$.isPresent() && gql$.get().isEnabled();
     }
 
     @Override
