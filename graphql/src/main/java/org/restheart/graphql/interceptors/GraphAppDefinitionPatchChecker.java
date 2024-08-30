@@ -34,6 +34,7 @@ import org.restheart.plugins.Inject;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -60,6 +61,9 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
     @Inject("rh-config")
     private Configuration config;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     @OnInit
     public void init() {
         try {
@@ -69,11 +73,16 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
                 this.coll = arg(graphqlArgs, "collection");
                 this.enabled = true;
             } else {
-                this.enabled = false;
+                this.enabled = isGQLSrvEnabled();
             }
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }
+    }
+
+    private boolean isGQLSrvEnabled() {
+        var gql$ = registry.getServices().stream().filter(s -> s.getName().equals("graphql")).findFirst();
+        return gql$.isPresent() && gql$.get().isEnabled();
     }
 
     @Override

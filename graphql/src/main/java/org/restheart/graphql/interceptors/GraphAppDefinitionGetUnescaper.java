@@ -20,18 +20,20 @@
  */
 package org.restheart.graphql.interceptors;
 
+import java.util.Map;
+
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.plugins.Inject;
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
-import java.util.Map;
-import static org.restheart.plugins.InterceptPoint.RESPONSE;
 
 @RegisterPlugin(name="gaphAppDefinitionGetUnescaper",
         description = "unescapes $ prefixed keys in GraphQL application definitions",
@@ -47,6 +49,9 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
     @Inject("rh-config")
     private Configuration config;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     @OnInit
     public void init() {
         try {
@@ -54,13 +59,18 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled = true;
+                this.enabled = isGQLSrvEnabled();
             } else {
                 this.enabled = false;
             }
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }
+    }
+
+    private boolean isGQLSrvEnabled() {
+        var gql$ = registry.getServices().stream().filter(s -> s.getName().equals("graphql")).findFirst();
+        return gql$.isPresent() && gql$.get().isEnabled();
     }
 
     @Override
