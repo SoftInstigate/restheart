@@ -318,6 +318,8 @@ graphql:
   uri: /graphql
   db: restheart
   collection: gql-apps
+  # app cache can be disabled if needed, such as during testing or development
+  app-cache-enabled: true
   # app cache entries are automatically revalidated every TTR milliseconds
   app-cache-ttr: 60_000 # in msecs
   # default-limit is used for queries that don't not specify a limit

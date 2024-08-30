@@ -34,6 +34,7 @@ import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class GraphAppsUpdater implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppsUpdater.class);
     private static final long DEFAULT_TTR = 60_000; // in milliseconds
     private long TTR = DEFAULT_TTR;
+    private boolean enabled = true;
 
     @Inject("rh-config")
     private Configuration config;
@@ -54,22 +56,33 @@ public class GraphAppsUpdater implements Initializer {
     @Inject("gql-app-definition-cache")
     LoadingCache<String, GraphQLApp> gqlAppDefCache;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     @OnInit
     public void onInit() {
         Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
 
         if (graphqlArgs != null) {
+            this.enabled = isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);
             this.TTR = argOrDefault(graphqlArgs, "app-cache-ttr", 60_000);
         } else {
             this.TTR = DEFAULT_TTR;
         }
     }
 
+    private boolean isGQLSrvEnabled() {
+        var gql$ = registry.getServices().stream().filter(s -> s.getName().equals("graphql")).findFirst();
+        return gql$.isPresent() && gql$.get().isEnabled();
+    }
+
     @Override
     public void init() {
-        Executors.newSingleThreadScheduledExecutor()
-            .scheduleAtFixedRate(() -> ThreadsUtils.virtualThreadsExecutor()
-                .execute(() -> this.revalidateCacheEntries()), TTR, TTR, TimeUnit.MILLISECONDS);
+        if (this.enabled) {
+            Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(() -> ThreadsUtils.virtualThreadsExecutor()
+                    .execute(() -> this.revalidateCacheEntries()), TTR, TTR, TimeUnit.MILLISECONDS);
+        }
     }
 
     private void revalidateCacheEntries() {

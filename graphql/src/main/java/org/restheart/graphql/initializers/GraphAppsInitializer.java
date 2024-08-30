@@ -20,25 +20,24 @@
  */
 package org.restheart.graphql.initializers;
 
-import org.restheart.configuration.Configuration;
-import org.restheart.configuration.ConfigurationException;
-import org.restheart.graphql.GraphQLService;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.RegisterPlugin;
-
 import java.util.Map;
 
 import org.bson.BsonDocument;
+import org.restheart.configuration.Configuration;
+import org.restheart.configuration.ConfigurationException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
+import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Initializer;
-
-import com.mongodb.client.MongoClient;
-
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 @RegisterPlugin(name="graphAppsInitializer",
         description = "initializes and caches all GQL Apps at boot timeGraphQL",
@@ -58,6 +57,9 @@ public class GraphAppsInitializer implements Initializer {
     @Inject("mclient")
     private MongoClient mclient;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     @OnInit
     public void onInit() {
         try {
@@ -65,13 +67,18 @@ public class GraphAppsInitializer implements Initializer {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled = true;
+                this.enabled =  isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);;
             } else {
                 this.enabled = false;
             }
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }
+    }
+
+    private boolean isGQLSrvEnabled() {
+        var gql$ = registry.getServices().stream().filter(s -> s.getName().equals("graphql")).findFirst();
+        return gql$.isPresent() && gql$.get().isEnabled();
     }
 
     @Override
