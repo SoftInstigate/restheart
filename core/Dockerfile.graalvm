@@ -1,4 +1,4 @@
-FROM softinstigate/graalvm:latest
+FROM softinstigate/graalvm:21.0.2-graalce
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
