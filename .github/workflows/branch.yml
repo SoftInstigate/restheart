@@ -48,7 +48,7 @@ jobs:
         if: ${{ ! matrix.deploy }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
+        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
@@ -62,7 +62,7 @@ jobs:
         if: ${{ matrix.deploy }}
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -s settings.xml
+          mvn -B deploy -Pdeploy -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml 
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
@@ -105,6 +105,9 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.graalvm
+          platforms: |
+            linux/amd64,
+            linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "graalvm" in master branch only
