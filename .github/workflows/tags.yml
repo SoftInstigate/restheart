@@ -46,8 +46,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: |
-          mvn -B clean install -Pshade -Dmongodb.version="${{ matrix.mongodb-version }}" \
-           -Dkarate.options="${{ matrix.karate-options }}"
+          mvn -B clean install -Pshade -Dmongodb.version="${{ matrix.mongodb-version }}"
 
       - name: Set up QEMU
         if: ${{ matrix.deploy }}
@@ -69,7 +68,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./core/
-          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le,
+            linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
@@ -84,6 +87,9 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.graalvm
+          platforms: |
+            linux/amd64,
+            linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
@@ -98,6 +104,10 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |

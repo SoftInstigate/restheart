@@ -69,7 +69,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./core/
-          platforms: linux/amd64,linux/arm64/v8,linux/ppc64le,linux/s390x
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le,
+            linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "latest" in master branch only
@@ -81,6 +85,9 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.graalvm
+          platforms: |
+            linux/amd64,
+            linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "graalvm" in master branch only
@@ -92,6 +99,10 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le
           push: true # push all images built
           pull: true # pull all required images before building
           # NOTE: snapshot images must be tagged with "distroless" in master branch only
