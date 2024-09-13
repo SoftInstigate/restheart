@@ -20,8 +20,6 @@
  */
 package org.restheart.handlers;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
@@ -34,6 +32,7 @@ import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -45,7 +44,6 @@ import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
-import io.undertow.util.QueryParameterUtils;
 
 /**
  *
@@ -111,13 +109,8 @@ public class RequestLogger extends PipelinedHandler {
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
 
-            if (exchange.getQueryString() != null
-                    && !exchange.getQueryString().isEmpty()) {
-                try {
-                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange)));
-                } catch (UnsupportedEncodingException | IllegalArgumentException uee) {
-                    sb.append("?").append(exchange.getQueryString());
-                }
+            if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
+                sb.append("?").append(URLUtils.decodeQueryString(exchange));
             }
 
             sb.append(" from ").append(exchange.getSourceAddress());
