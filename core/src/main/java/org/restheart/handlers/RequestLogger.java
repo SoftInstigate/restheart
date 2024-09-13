@@ -32,7 +32,6 @@ import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -110,7 +109,7 @@ public class RequestLogger extends PipelinedHandler {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
 
             if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
-                sb.append("?").append(URLUtils.decodeQueryString(exchange));
+                sb.append("?").append(exchange.getQueryString());
             }
 
             sb.append(" from ").append(exchange.getSourceAddress());
@@ -244,7 +243,7 @@ public class RequestLogger extends PipelinedHandler {
                                 sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
                                         .append("\n");
                             } else {
-                                sb.append("          authType=none" + "\n");
+                                sb.append("          authType=none").append("\n");
                             }
                         }
 
