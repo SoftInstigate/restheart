@@ -27,6 +27,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.QueryParameterUtils;
 
 /**
  *
@@ -67,14 +68,35 @@ public class URLUtils {
      * decode the percent encoded query string
      *
      * @param qs
-     * @return the undecoded string
+     * @return the decoded query string
      */
     public static String decodeQueryString(String qs) {
+        return decodeQueryString(qs, "UTF-8");
+    }
+
+    /**
+     * decode the percent encoded query string
+     *
+     * @param qs
+     * @param enc encoding name
+     * @return the decoded query string
+     */
+    public static String decodeQueryString(String qs, String enc) {
         try {
-            return URLDecoder.decode(qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
-        } catch (UnsupportedEncodingException ex) {
-            return null;
+            return URLDecoder.decode(qs.replace("+", "%2B"), enc).replace("%2B", "+");
+        } catch (UnsupportedEncodingException | IllegalArgumentException ex) {
+            return qs;
         }
+    }
+
+    /**
+     * decode the percent encoded query string
+     *
+     * @param exchange
+     * @return the decoded query string
+     */
+    public static String decodeQueryString(HttpServerExchange exchange) {
+        return decodeQueryString(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange));
     }
 
     /**
