@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -28,6 +27,7 @@ import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.URLUtils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
@@ -86,13 +86,13 @@ public class ChangeStreamWorkerKey {
 
     @Override
     public String toString() {
-        var _url = this.url == null ? null : URLDecoder.decode(this.url, StandardCharsets.UTF_8);
+        var _url = this.url == null ? null : URLUtils.decodeQueryString(this.url);
 
         return "ChangeStreamWorkerKey{url: " + _url + ", avars: " + BsonUtils.toJson(this.avars) + ", jsonMode: " + this.jsonMode + "}";
     }
 
     private static String encode(String queryString) {
-        return URLEncoder.encode(URLDecoder.decode(queryString, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        return URLEncoder.encode(URLUtils.decodeQueryString(queryString), StandardCharsets.UTF_8);
     }
 
     /**
