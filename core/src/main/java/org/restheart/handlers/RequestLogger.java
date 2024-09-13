@@ -20,19 +20,12 @@
  */
 package org.restheart.handlers;
 
-import io.undertow.security.api.SecurityContext;
-import io.undertow.server.ExchangeCompletionListener;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.Cookie;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
-import io.undertow.util.LocaleUtils;
-import io.undertow.util.QueryParameterUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
+
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -44,6 +37,15 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.ExchangeCompletionListener;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
+import io.undertow.util.LocaleUtils;
+import io.undertow.util.QueryParameterUtils;
 
 /**
  *
@@ -112,10 +114,8 @@ public class RequestLogger extends PipelinedHandler {
             if (exchange.getQueryString() != null
                     && !exchange.getQueryString().isEmpty()) {
                 try {
-                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(),
-                            QueryParameterUtils
-                                    .getQueryParamEncoding(exchange)));
-                } catch (UnsupportedEncodingException uee) {
+                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange)));
+                } catch (UnsupportedEncodingException | IllegalArgumentException uee) {
                     sb.append("?").append(exchange.getQueryString());
                 }
             }
