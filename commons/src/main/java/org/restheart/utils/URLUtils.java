@@ -21,11 +21,13 @@ package org.restheart.utils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 import org.bson.BsonValue;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 
+import io.undertow.UndertowOptions;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.QueryParameterUtils;
 
@@ -96,7 +98,9 @@ public class URLUtils {
      * @return the decoded query string
      */
     public static String decodeQueryString(HttpServerExchange exchange) {
-        return decodeQueryString(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange));
+        var enc = QueryParameterUtils.getQueryParamEncoding(exchange);
+        enc = enc == null ? exchange.getConnection().getUndertowOptions().get(UndertowOptions.URL_CHARSET, StandardCharsets.UTF_8.name()) : enc;
+        return decodeQueryString(exchange.getQueryString(), enc);
     }
 
     /**
