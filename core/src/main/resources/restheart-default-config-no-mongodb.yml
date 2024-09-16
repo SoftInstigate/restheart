@@ -342,6 +342,9 @@ graphql:
   query-time-limit: 0
   verbose: false
 
+graphAppsInitializer:
+  enabled: false
+
 cacheInvalidator:
   enabled: false
 
