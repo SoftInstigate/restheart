@@ -34,6 +34,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,14 +91,16 @@ public class GraphAppsInitializer implements Initializer {
                 .withDocumentClass(BsonDocument.class)
                 .find()
                 .forEach(appDef -> {
-                    try {
-                        var app = AppBuilder.build(appDef);
-                        var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
-                        AppDefinitionLoadingCache.getCache().put(appUri, app);
-                        LOGGER.debug("GQL App Definition {} initialized", appUri);
-                    } catch (GraphQLIllegalAppDefinitionException e) {
-                        LOGGER.warn("GQL App Definition {} is invalid", appDef.get("_id"), e);
-                    }
+                    ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                        try {
+                            var app = AppBuilder.build(appDef);
+                            var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
+                            AppDefinitionLoadingCache.getCache().put(appUri, app);
+                            LOGGER.debug("GQL App Definition {} initialized", appUri);
+                        } catch (GraphQLIllegalAppDefinitionException e) {
+                            LOGGER.warn("GQL App Definition {} is invalid", appDef.get("_id"), e);
+                        }
+                    });
                 });
         }
     }
