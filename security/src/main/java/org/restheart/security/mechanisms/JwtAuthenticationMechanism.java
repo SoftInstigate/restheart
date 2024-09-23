@@ -21,8 +21,7 @@
 package org.restheart.security.mechanisms;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -57,6 +56,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import com.google.common.net.HttpHeaders;
+import java.util.regex.Pattern;
 
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
@@ -67,7 +67,7 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="jwtAuthenticationMechanism", description = "handle JSON Web Token authentication", enabledByDefault = false)
+@RegisterPlugin(name = "jwtAuthenticationMechanism", description = "handle JSON Web Token authentication", enabledByDefault = false)
 public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugin<DecodedJWT> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);
@@ -77,13 +77,19 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     private Consumer<DecodedJWT> extraJwtVerifier = null;
 
     private boolean base64Encoded;
-    private String algorithm;
-    private String key;
+
     private String usernameClaim;
     private String rolesClaim;
     private List<String> fixedRoles;
-    private String issuer;
-    private List<String> audience;
+
+    // Regular expression to check for minimum JWT key complexity:
+    // - At least one lowercase letter
+    // - At least one uppercase letter
+    // - At least one digit
+    // - At least one special character
+    // - At least 32 characters long
+    private static final Pattern COMPLEXITY_PATTERN = Pattern.compile(
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{32,}$");
 
     @Inject("config")
     private Map<String, Object> config;
@@ -92,36 +98,31 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     public void init() throws ConfigurationException {
         // get configuration arguments
         base64Encoded = arg(config, "base64Encoded");
-        algorithm = arg(config, "algorithm");
-        key = arg(config, "key");
-        if ("secret".equals(key)) {
-            LOGGER.warn("You should really update the JWT key!");
-        }
+        final String key = arg(config, "key");
+        validateKeyComplexity(key);
         usernameClaim = arg(config, "usernameClaim");
         rolesClaim = argOrDefault(config, "rolesClaim", null);
         fixedRoles = argOrDefault(config, "fixedRoles", null);
-        issuer = argOrDefault(config, "issuer", null);
-        var _audience = argOrDefault(config, "audience", null);
+        final String issuer = argOrDefault(config, "issuer", null);
+        final var _audience = argOrDefault(config, "audience", null);
 
-        audience = new ArrayList<>();
+        final List<String> audience = new ArrayList<>();
 
         if (_audience == null) {
-            this.audience = null;
-        } else if (_audience instanceof String _as) {
-            audience = new ArrayList<>();
-            this.audience.add(_as);
-        } else if (_audience instanceof List<?> _al) {
-            audience = new ArrayList<>();
-            _al.stream().filter(e -> e instanceof String).map(e -> (String)e).forEach(e -> this.audience.add(e));
+            // do nothing
+        } else if (_audience instanceof final String _as) {
+            audience.add(_as);
+        } else if (_audience instanceof final List<?> _al) {
+            _al.stream().filter(String.class::isInstance).map(e -> (String) e).forEach(audience::add);
         } else {
             throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
         }
 
         Algorithm _algorithm;
-
+        final String algorithm = arg(config, "algorithm");
         try {
             _algorithm = getAlgorithm(algorithm, key);
-        } catch (CertificateException | UnsupportedEncodingException ex) {
+        } catch (final CertificateException ex) {
             throw new ConfigurationException("wrong JWT configuration, cannot setup algorithm", ex);
         }
 
@@ -136,14 +137,31 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         }
 
         if (rolesClaim == null && fixedRoles == null) {
-            throw new ConfigurationException("wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
+            throw new ConfigurationException(
+                    "wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
         }
 
         this.jwtVerifier = v.build();
     }
 
+    protected static boolean validateKeyComplexity(final String jwtKey) {
+        if (jwtKey == null || jwtKey.length() < 32) {
+            LOGGER.warn("The JWT key is too short. It should be at least 32 characters long.");
+            return false;
+        }
+
+        if (!COMPLEXITY_PATTERN.matcher(jwtKey).matches()) {
+            LOGGER.warn("The JWT key does not meet complexity requirements. " +
+                    "Ensure it contains uppercase letters, lowercase letters, digits, and special characters.");
+            return false;
+        }
+        LOGGER.info("The JWT key meets the minimum complexity requirements.");
+        return true;
+    }
+
     @Override
-    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange hse, SecurityContext sc) {
+    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(final HttpServerExchange hse,
+            final SecurityContext sc) {
         try {
             var token = getToken(hse);
 
@@ -152,9 +170,9 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                     token = StringUtils.newStringUtf8(Base64.getUrlDecoder().decode(token));
                 }
 
-                var verifiedJwt = jwtVerifier.verify(token);
+                final var verifiedJwt = jwtVerifier.verify(token);
 
-                var subject = verifiedJwt.getClaim(usernameClaim).asString();
+                final var subject = verifiedJwt.getClaim(usernameClaim).asString();
 
                 if (subject == null) {
                     LOGGER.debug("username not specified with claim {}", usernameClaim);
@@ -162,14 +180,14 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                     return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                 }
 
-                Set<String> actualRoles = new LinkedHashSet<>();
+                final Set<String> actualRoles = new LinkedHashSet<>();
 
                 if (rolesClaim != null) {
-                    Claim _roles = verifiedJwt.getClaim(rolesClaim);
+                    final Claim _roles = verifiedJwt.getClaim(rolesClaim);
 
                     if (_roles != null && !_roles.isNull()) {
                         try {
-                            String[] __roles = _roles.asArray(String.class);
+                            final String[] __roles = _roles.asArray(String.class);
 
                             if (__roles != null) {
                                 actualRoles.addAll(Arrays.asList(__roles));
@@ -177,8 +195,9 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                                 LOGGER.debug("roles is not an array: {}", _roles.asString());
                                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                             }
-                        } catch (JWTDecodeException ex) {
-                            LOGGER.warn("Jwt cannot get roles from claim {}, extepected an array of strings: {}", rolesClaim, _roles.toString());
+                        } catch (final JWTDecodeException ex) {
+                            LOGGER.warn("Jwt cannot get roles from claim {}, extepected an array of strings: {}",
+                                    rolesClaim, _roles.toString());
                         }
                     }
                 }
@@ -191,9 +210,10 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                     this.extraJwtVerifier.accept(verifiedJwt);
                 }
 
-                var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()), Charset.forName("UTF-8"));
+                final var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()),
+                        StandardCharsets.UTF_8);
 
-                var account = new JwtAccount(subject, actualRoles, jwtPayload);
+                final var account = new JwtAccount(subject, actualRoles, jwtPayload);
 
                 sc.authenticationComplete(account, "JwtAuthenticationManager", false);
 
@@ -202,7 +222,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                 return AuthenticationMechanismOutcome.AUTHENTICATED;
             }
 
-        } catch (JWTVerificationException ex) {
+        } catch (final JWTVerificationException ex) {
             LOGGER.debug("Jwt not verified: {}", ex.getMessage());
             return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
         }
@@ -222,15 +242,15 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
      * @param extraJwtVerifier
      */
     @Override
-    public void addConsumer(Consumer<DecodedJWT> extraJwtVerifier) {
+    public void addConsumer(final Consumer<DecodedJWT> extraJwtVerifier) {
         this.extraJwtVerifier = extraJwtVerifier;
     }
 
-    private String getToken(HttpServerExchange hse) {
-        var _authHeader = hse.getRequestHeaders().get(HttpHeaders.AUTHORIZATION);
+    private String getToken(final HttpServerExchange hse) {
+        final var _authHeader = hse.getRequestHeaders().get(HttpHeaders.AUTHORIZATION);
 
         if (_authHeader != null && !_authHeader.isEmpty()) {
-            String authHeader = _authHeader.getFirst();
+            final String authHeader = _authHeader.getFirst();
 
             if (authHeader.startsWith(JWT_AUTH_HEADER_PREFIX)) {
                 return authHeader.substring(7);
@@ -240,11 +260,11 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         return null;
     }
 
-    private Algorithm getAlgorithm(String name, String key) throws CertificateException, UnsupportedEncodingException {
+    private Algorithm getAlgorithm(final String name, final String key) throws CertificateException {
         if (name == null || key == null) {
             throw new IllegalArgumentException("algorithm and key are required.");
         } else if (name.startsWith("HMAC") || name.startsWith("HS")) {
-            return getHMAC(name, key.getBytes("UTF-8"));
+            return getHMAC(name, key.getBytes(StandardCharsets.UTF_8));
         } else if (name.startsWith("RS")) {
             return getRSA(name, key);
         } else {
@@ -252,8 +272,8 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         }
     }
 
-    private Algorithm getHMAC(String name, byte[] key) throws IllegalArgumentException {
-        return switch(name) {
+    private Algorithm getHMAC(final String name, final byte[] key) throws IllegalArgumentException {
+        return switch (name) {
             case "HMAC256", "HS256" -> Algorithm.HMAC256(key);
             case "HMAC384", "HS384" -> Algorithm.HMAC384(key);
             case "HMAC512", "HS512" -> Algorithm.HMAC512(key);
@@ -261,10 +281,11 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         };
     }
 
-    private Algorithm getRSA(String name, String key) throws IllegalArgumentException, CertificateException {
-        var rsaKey = getRSAPublicKey(key);
+    private Algorithm getRSA(final String name, final String key)
+            throws IllegalArgumentException, CertificateException {
+        final var rsaKey = getRSAPublicKey(key);
 
-        return switch(name) {
+        return switch (name) {
             case "RSA256", "RS256" -> Algorithm.RSA256(rsaKey, null);
             case "RSA384", "RS384" -> Algorithm.RSA384(rsaKey, null);
             case "RSA512", "RS512" -> Algorithm.RSA512(rsaKey, null);
@@ -272,10 +293,10 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         };
     }
 
-    private RSAPublicKey getRSAPublicKey(String key) throws CertificateException {
-        var fact = CertificateFactory.getInstance("X.509");
-        var is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
-        var cer = (X509Certificate) fact.generateCertificate(is);
+    private RSAPublicKey getRSAPublicKey(final String key) throws CertificateException {
+        final var fact = CertificateFactory.getInstance("X.509");
+        final var is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
+        final var cer = (X509Certificate) fact.generateCertificate(is);
         return (RSAPublicKey) cer.getPublicKey();
     }
 }
