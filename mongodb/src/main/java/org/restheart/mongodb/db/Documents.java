@@ -187,6 +187,7 @@ public class Documents {
      * @param dbName the database name
      * @param collName
      * @param documents
+     * @param filter
      * @param shardKeys
      * @param writeMode
      * @return the BulkOperationResult
@@ -231,7 +232,7 @@ public class Documents {
      * @param dbName the database name
      * @param collName
      * @param filter
-     * @param shardedKeys
+     * @param shardKeys
      * @param data
      * @return the BulkOperationResult
      */
@@ -283,7 +284,7 @@ public class Documents {
      * @param collName
      * @param documentId
      * @param filter
-     * @param shardedKeys
+     * @param shardKeys
      * @param requestEtag
      * @param checkEtag
      * @return the OperationResult
