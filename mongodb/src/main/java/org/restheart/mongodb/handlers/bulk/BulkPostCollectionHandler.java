@@ -73,26 +73,25 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var content = request.getContent();
+        var _content = request.getContent();
 
         // expects an an array
-        if (content == null || !content.isArray()) {
+        if (_content == null || !_content.isArray()) {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
 
-        var documents = content.asArray();
+        var content = _content.asArray();
 
-        if (!checkIds(exchange, documents)) {
+        if (!checkIds(exchange, content)) {
             // if check fails, exchange has been closed
             return;
         }
 
-        var result = this.documents.bulkPostDocuments(
-            Optional.ofNullable(request.getClientSession()),
+        var result = this.documents.bulkPostDocuments(Optional.ofNullable(request.getClientSession()),
             request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
-            documents,
+            content,
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),
             request.getWriteMode());
