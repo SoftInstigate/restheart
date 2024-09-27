@@ -155,7 +155,7 @@ public abstract class AbstractJSPlugin {
 
     /**
      *
-     * @return the Context associated with this thread. If not existing, it instanitates it.
+     * @return the Context
      */
     protected Context ctx() {
         var ret = context(engine, contextOptions);

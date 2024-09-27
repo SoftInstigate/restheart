@@ -47,8 +47,11 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      * @param pluginClass
      * @param description
      * @param interceptPoint
+     * @param handleSource
      * @param mclient
-     * @param modulesReplacements
+     * @param resolveSource
+     * @param contextOptions
+     * @param config
      */
     public AbstractJSInterceptor(String name,
         String pluginClass,
@@ -73,7 +76,9 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      * @param response */
     @Override
     public void handle(R request, S response) {
-        ctx().eval(this.handleSource).executeVoid(request, response);
+        try (final var ctx = ctx()) {
+            ctx.eval(this.handleSource).executeVoid(request, response);
+        }
     }
 
     @Override
