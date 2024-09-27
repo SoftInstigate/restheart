@@ -138,7 +138,7 @@ public class PolyglotDeployer implements Initializer {
                 var services = findServices(pluginPath);
                 var nodeServices = findNodeServices(pluginPath);
                 var interceptors = findInterceptors(pluginPath);
-                deploy(pluginPath, services, nodeServices, interceptors);
+                deploy(services, nodeServices, interceptors);
             } catch (Throwable t) {
                 LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
@@ -163,20 +163,14 @@ public class PolyglotDeployer implements Initializer {
 
                             if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                                 try {
-                                    deploy(pluginPath,
-                                        findServices(pluginPath),
-                                        findNodeServices(pluginPath),
-                                        findInterceptors(pluginPath));
+                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                                 try {
                                     undeploy(pluginPath);
-                                    deploy(pluginPath,
-                                        findServices(pluginPath),
-                                        findNodeServices(pluginPath),
-                                        findInterceptors(pluginPath));
+                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                 }
@@ -350,7 +344,7 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private void deploy(Path pluginPath, List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException {
+    private void deploy(List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException {
         for (Path service: services) {
             deployService(service);
         }
@@ -421,7 +415,6 @@ public class PolyglotDeployer implements Initializer {
                     LOGGER.error("Error deploying node service {}", pluginPath, ex);
                     Thread.currentThread().interrupt();
                     executor.shutdownNow();
-                    return;
                 }
             });
         executor.shutdown();
