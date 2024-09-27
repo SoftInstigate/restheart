@@ -23,9 +23,6 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 import java.util.Optional;
 
-import com.google.common.collect.Maps;
-import com.mongodb.client.MongoClient;
-
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
@@ -36,6 +33,9 @@ import org.restheart.plugins.Interceptor;
 import org.restheart.polyglot.AbstractJSPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
+import com.mongodb.client.MongoClient;
 
 public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> extends AbstractJSPlugin implements Interceptor<R, S> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSInterceptor.class);
@@ -69,9 +69,11 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
 
     /**
      *
-     */
+     * @param request
+     * @param response */
+    @Override
     public void handle(R request, S response) {
-        _handle().executeVoid(request, response);
+        ctx().eval(this.handleSource).executeVoid(request, response);
     }
 
     @Override
