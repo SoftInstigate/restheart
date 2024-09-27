@@ -525,6 +525,10 @@
           <artifactId>restheart-mongoclient-provider</artifactId>
         </dependency>
         <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-metrics</artifactId>
+        </dependency>
+        <dependency>
           <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->
           <artifactId>js-language</artifactId>
           <scope>runtime</scope>
