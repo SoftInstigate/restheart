@@ -169,7 +169,7 @@
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <includeScope>runtime</includeScope>
-              <excludeGroupIds>org.restheart</excludeGroupIds>
+              <excludeArtifactIds>restheart,restheart-security,restheart-mongodb,restheart-graphql,restheart-mongoclient-provider,restheart-polyglot,restheart-metrics</excludeArtifactIds>
             </configuration>
           </execution>
         </executions>
