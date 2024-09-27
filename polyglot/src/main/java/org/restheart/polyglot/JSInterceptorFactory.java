@@ -59,7 +59,7 @@ public class JSInterceptorFactory {
 
     Map<String, String> contextOptions = new HashMap<>();
 
-    private Engine engine = Engine.create();
+    private final Engine engine = Engine.create();
 
     private final Optional<MongoClient> mclient;
 

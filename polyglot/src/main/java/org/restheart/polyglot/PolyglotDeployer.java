@@ -22,6 +22,9 @@ package org.restheart.polyglot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -56,9 +59,11 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.configuration.Configuration;
+import static org.restheart.configuration.Utils.findOrDefault;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
-import static org.restheart.configuration.Utils.findOrDefault;
+import org.restheart.graal.ImageInfo;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +100,8 @@ public class PolyglotDeployer implements Initializer {
         }
 
         pluginsDirectory = getPluginsDirectory(config.toMap());
+
+        LOGGER.trace("pluginsDirectory: {}", pluginsDirectory);
 
         this.mclient = mongoClient(registry);
 
@@ -142,10 +149,9 @@ public class PolyglotDeployer implements Initializer {
         try {
             var watchService = FileSystems.getDefault().newWatchService();
 
-            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
+            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
-            var watchThread = new Thread(() -> { while(true) {
+            ThreadsUtils.virtualThreadsExecutor().execute(() -> { while(true) {
                 try {
                     var key = watchService.take();
                     while (key != null) {
@@ -186,9 +192,6 @@ public class PolyglotDeployer implements Initializer {
                     Thread.currentThread().interrupt();
                 }
             }});
-
-            watchThread.start();
-
         } catch (IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
@@ -197,26 +200,30 @@ public class PolyglotDeployer implements Initializer {
     public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
 
     private Path getPluginsDirectory(Map<String, Object> args) {
-        var _pluginsDir = findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false);
-
-        if (_pluginsDir == null || !(_pluginsDir instanceof String)) {
-            return null;
-        }
-
-        var pluginsDir = (String) _pluginsDir;
+        var pluginsDir = findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false);
 
         if (pluginsDir.startsWith("/")) {
             return Paths.get(pluginsDir);
         } else {
             // this is to allow specifying the plugins directory path
             // relative to the jar (also working when running from classes)
-            var location = PolyglotDeployer.class.getProtectionDomain().getCodeSource().getLocation();
+            var _locOfJarOrNativeImage = this.getClass().getProtectionDomain().getCodeSource().getLocation();
 
-            File locationFile = new File(location.getPath());
+            try {
+                var locOfJarOrNativeImage = URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString());
 
-            pluginsDir = locationFile.getParent();
+                if (ImageInfo.inImageRuntimeCode()) {
+                    // directory relative to the direcotry containing the native image executable
+                    pluginsDir = new File(locOfJarOrNativeImage).getParent() + File.separator + pluginsDir;
+                } else {
+                    // the directory containing the plugin jar is the plugins directory
+                    pluginsDir = new File(locOfJarOrNativeImage).getParent();
+                }
 
-            return FileSystems.getDefault().getPath(pluginsDir);
+                return FileSystems.getDefault().getPath(pluginsDir);
+            } catch(UnsupportedEncodingException uee) {
+                throw new RuntimeException(uee);
+            }
         }
     }
 
