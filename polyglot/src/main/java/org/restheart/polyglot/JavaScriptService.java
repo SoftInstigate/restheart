@@ -25,18 +25,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import com.mongodb.client.MongoClient;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
-import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
-import org.restheart.utils.CleanerUtils;
+import org.restheart.plugins.StringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 /**
  *
@@ -72,9 +72,6 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     """;
 
     JavaScriptService(Path pluginPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
-        // register cleaner
-        CleanerUtils.get().cleaner().register(this, new State(this.ctxs));
-
         this.mclient = mclient;
         this.conf = conf;
         this.isService = true;
@@ -181,8 +178,9 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     /**
      *
      */
+    @Override
     public void handle(StringRequest request, StringResponse response) {
-        _handle().executeVoid(request, response);
+        ctx().eval(this.handleSource).executeVoid(request, response);
     }
 
     /**
@@ -198,16 +196,10 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             contextOptions.remove("js.commonjs-core-modules-replacements");
         }
 
-        var workingThreadName = Thread.currentThread().getName();
+        var ctx = context(engine, contextOptions);
+        addBindings(ctx, this.name, conf, LOGGER, this.mclient);
 
-        if (this.ctxs.get(workingThreadName) == null) {
-            var ctx = context(engine, contextOptions);
-            this.ctxs.put(workingThreadName, ctx);
-
-            addBindings(ctx, this.name, conf, LOGGER, this.mclient);
-        }
-
-        return this.ctxs.get(workingThreadName);
+        return ctx;
     }
 
     public String getModulesReplacements() {
