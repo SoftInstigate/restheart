@@ -55,8 +55,6 @@ import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import graphql.Assert;
-
 /**
  * this class is configured to be initialized at build time by native-image
  * note: we cannot use logging in this class, otherwise native-image will fail
@@ -400,7 +398,6 @@ public class PluginsScanner {
 
                     return FileSystems.getDefault().getPath(pluginsDir);
                 } catch(UnsupportedEncodingException uee) {
-                    Assert.assertShouldNeverHappen();
                     throw new RuntimeException(uee);
                 }
             }
