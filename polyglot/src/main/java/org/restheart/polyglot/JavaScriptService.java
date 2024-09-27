@@ -180,12 +180,14 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
      */
     @Override
     public void handle(StringRequest request, StringResponse response) {
-        ctx().eval(this.handleSource).executeVoid(request, response);
+        try (final var ctx = ctx()) {
+            ctx.eval(this.handleSource).executeVoid(request, response);
+        }
     }
 
     /**
      *
-     * @return the Context associated with this thread. If not existing, it instanitates it.
+     * @return the Context
      */
     @Override
     protected Context ctx() {
