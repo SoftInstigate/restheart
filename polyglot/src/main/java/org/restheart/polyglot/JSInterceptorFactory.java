@@ -20,8 +20,6 @@
  */
 package org.restheart.polyglot;
 
-import static org.restheart.polyglot.AbstractJSPlugin.addBindings;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,14 +27,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import com.google.common.collect.Maps;
-import com.mongodb.client.MongoClient;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.restheart.configuration.Configuration;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
+import static org.restheart.polyglot.AbstractJSPlugin.addBindings;
 import org.restheart.polyglot.interceptors.AbstractJSInterceptor;
 import org.restheart.polyglot.interceptors.ByteArrayJSInterceptor;
 import org.restheart.polyglot.interceptors.ByteArrayProxyJSInterceptor;
@@ -44,11 +44,11 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
-import org.restheart.configuration.Configuration;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
+import com.mongodb.client.MongoClient;
 
 /**
  *
@@ -118,26 +118,26 @@ public class JSInterceptorFactory {
             }
 
             if (options.getMemberKeys().isEmpty()) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + PACKAGE_HINT);
             }
 
             if (!options.getMemberKeys().contains("name")) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + PACKAGE_HINT);
             }
 
             if (!options.getMember("name").isString()) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + PACKAGE_HINT);
             }
 
             var name = options.getMember("name").asString();
 
             if (!options.getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
-                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + packageHint);
+                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + PACKAGE_HINT);
             }
 
             if (!options.getMember("description").isString()) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + PACKAGE_HINT);
             }
 
             var description = options.getMember("description").asString();
@@ -164,14 +164,14 @@ public class JSInterceptorFactory {
             } else {
                 if (!options.getMember("interceptPoint").isString()) {
                     throw new IllegalArgumentException(
-                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + handleResolveHint);
+                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + HANDLE_RESOLVE_HINT);
                 } else {
                     var _interceptPoint = options.getMember("interceptPoint").asString();
                     try {
                         interceptPoint = InterceptPoint.valueOf(_interceptPoint);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                            "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + handleResolveHint);
+                            "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + HANDLE_RESOLVE_HINT);
                     }
                 }
             }
@@ -182,7 +182,7 @@ public class JSInterceptorFactory {
                 pluginClass = "StringInterceptor";
             } else if (!options.getMember("pluginClass").isString()) {
                 throw new IllegalArgumentException(
-                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.pluginClass', " + handleResolveHint);
+                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.pluginClass', " + HANDLE_RESOLVE_HINT);
             } else {
                 pluginClass = options.getMember("pluginClass").asString();
             }
@@ -201,7 +201,7 @@ public class JSInterceptorFactory {
             }
 
             if (!handle.canExecute()) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + handleResolveHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + HANDLE_RESOLVE_HINT);
             }
 
             // ******** evaluate and check resolve
@@ -218,7 +218,7 @@ public class JSInterceptorFactory {
             }
 
             if (!resolve.canExecute()) {
-                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + handleResolveHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + HANDLE_RESOLVE_HINT);
             }
 
             AbstractJSInterceptor<? extends Request<?>, ? extends Response<?>> interceptor;
@@ -236,9 +236,7 @@ public class JSInterceptorFactory {
             }
 
             switch (pluginClass) {
-                case "StringInterceptor":
-                case "org.restheart.plugins.StringInterceptor":
-                    interceptor = new StringJSInterceptor(name,
+                case "StringInterceptor", "org.restheart.plugins.StringInterceptor" -> interceptor = new StringJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -247,10 +245,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "BsonInterceptor":
-                case "org.restheart.plugins.BsonInterceptor":
-                    interceptor = new StringJSInterceptor(name,
+                case "BsonInterceptor", "org.restheart.plugins.BsonInterceptor" -> interceptor = new StringJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -259,10 +254,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "ByteArrayInterceptor":
-                case "org.restheart.plugins.ByteArrayInterceptor":
-                    interceptor = new ByteArrayJSInterceptor(name,
+                case "ByteArrayInterceptor", "org.restheart.plugins.ByteArrayInterceptor" -> interceptor = new ByteArrayJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -271,10 +263,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "ByteArrayProxyInterceptor":
-                case "org.restheart.plugins.ByteArrayProxyInterceptor":
-                    interceptor = new ByteArrayProxyJSInterceptor(name,
+                case "ByteArrayProxyInterceptor", "org.restheart.plugins.ByteArrayProxyInterceptor" -> interceptor = new ByteArrayProxyJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -283,10 +272,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "CsvInterceptor":
-                case "org.restheart.plugins.CsvInterceptor":
-                    interceptor = new CsvJSInterceptor(name,
+                case "CsvInterceptor", "org.restheart.plugins.CsvInterceptor" -> interceptor = new CsvJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -295,10 +281,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "JsonInterceptor":
-                case "org.restheart.plugins.JsonInterceptor":
-                    interceptor = new JsonJSInterceptor(name,
+                case "JsonInterceptor", "org.restheart.plugins.JsonInterceptor" -> interceptor = new JsonJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -307,10 +290,7 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                case "MongoInterceptor":
-                case "org.restheart.plugins.MongoInterceptor":
-                    interceptor = new MongoJSInterceptor(name,
+                case "MongoInterceptor", "org.restheart.plugins.MongoInterceptor" -> interceptor = new MongoJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
@@ -319,12 +299,10 @@ public class JSInterceptorFactory {
                         mclient,
                         config,
                         opts);
-                        break;
-                default:
-                    throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.pluginClass', " + packageHint);
+                default -> throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.pluginClass', " + PACKAGE_HINT);
             }
 
-            return new PluginRecord<Interceptor<? extends Request<?>, ? extends Response<?>>>(interceptor.getName(),
+            return new PluginRecord<>(interceptor.getName(),
                 interceptor.getDescription(),
                 false,
                 true,
@@ -334,7 +312,7 @@ public class JSInterceptorFactory {
         }
     }
 
-    private static final String handleResolveHint = """
+    private static final String HANDLE_RESOLVE_HINT = """
     the interceptor js module must export the functions 'handle' and 'resolve', example:
     export function handle(request, response) {
         const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
@@ -348,7 +326,7 @@ public class JSInterceptorFactory {
     }
     """;
 
-    private static final String packageHint = """
+    private static final String PACKAGE_HINT = """
     the plugin module must export the object 'options', example:
     export const options = {
         name: "mongoCollInterceptor",
