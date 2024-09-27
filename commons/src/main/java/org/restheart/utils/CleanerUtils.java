@@ -24,10 +24,10 @@ import java.lang.ref.Cleaner;
 
 public class CleanerUtils {
     private static CleanerUtils instance = null;
-    private Cleaner cleaner;
+    private final Cleaner cleaner;
 
     private CleanerUtils() {
-        this.cleaner = Cleaner.create();
+        this.cleaner = Cleaner.create(Thread.ofVirtual().factory());
     }
 
     public static CleanerUtils get() {
