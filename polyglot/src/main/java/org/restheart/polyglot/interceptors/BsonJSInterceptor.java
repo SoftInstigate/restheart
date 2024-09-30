@@ -23,24 +23,25 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 import java.util.Optional;
 
-import com.mongodb.client.MongoClient;
-
 import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.InterceptPoint;
 
-public class BsonJSInterceptor extends AbstractJSInterceptor<BsonRequest, BsonResponse> {
+import com.mongodb.client.MongoClient;
+
+public class BsonJSInterceptor extends JSInterceptor<BsonRequest, BsonResponse> {
     public BsonJSInterceptor(String name,
         String pluginClass,
         String description,
         InterceptPoint interceptPoint,
+        String modulesReplacements,
         Source handleSource,
         Source resolveSource,
         Optional<MongoClient> mclient,
         Configuration config,
         Map<String, String> contextOptions) {
-            super(name, pluginClass, description, interceptPoint, handleSource, resolveSource, mclient, config, contextOptions);
+            super(name, pluginClass, description, interceptPoint, modulesReplacements, handleSource, resolveSource, mclient, config, contextOptions);
     }
 }

@@ -18,11 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.polyglot;
+package org.restheart.polyglot.services;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
@@ -33,8 +34,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.StringService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.polyglot.ContextQueue;
 
 import com.mongodb.client.MongoClient;
 
@@ -42,9 +42,7 @@ import com.mongodb.client.MongoClient;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService extends AbstractJSPlugin implements StringService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
-
+public class JSStringService extends JSService implements StringService {
     private static final String HANDLE_HINT = """
     the plugin module must export the function 'handle', example:
     export function handle(request, response) {
@@ -71,13 +69,13 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     }
     """;
 
-    JavaScriptService(Path pluginPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
-        this.mclient = mclient;
-        this.conf = conf;
-        this.isService = true;
-        this.isInterceptor = false;
+    public JSStringService(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException, InterruptedException {
+        super(args(pluginPath, mclient, config));
+    }
 
+    private static JSServiceArgs args(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
         // find plugin root, i.e the parent dir that contains package.json
+        var contextOptions = new HashMap<String, String>();
         var pluginRoot = pluginPath.getParent();
         while(true) {
             var p = pluginRoot.resolve("package.json");
@@ -96,18 +94,15 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // check that the plugin script is js
-        var language = Source.findLanguage(pluginPath.toFile());
+        try (Context ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions)) {
+            // check that the plugin script is js
+            var language = Source.findLanguage(pluginPath.toFile());
 
-        if (!"js".equals(language)) {
-            throw new IllegalArgumentException("wrong js plugin, not javascript");
-        }
+            if (!"js".equals(language)) {
+                throw new IllegalArgumentException("wrong js plugin, not javascript");
+            }
 
-        var sindexPath = pluginPath.toAbsolutePath().toString();
-        try (var ctx = context(engine, contextOptions)) {
-
-            // add bindings to contenxt
-            addBindings(ctx, this.name, conf, LOGGER, this.mclient);
+            var sindexPath = pluginPath.toAbsolutePath().toString();
 
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
             var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
@@ -128,84 +123,59 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
 
             checkOptions(options, pluginPath);
 
-            this.name = options.getMember("name").asString();
-            this.description = options.getMember("description").asString();
-            this.uri = options.getMember("uri").asString();
+            var name = options.getMember("name").asString();
+            var description = options.getMember("description").asString();
+            var uri = options.getMember("uri").asString();
+            var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
+            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ?  MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
+            String modulesReplacements = null;
 
-            if (!options.getMemberKeys().contains("secured")) {
-                this.secured = false;
-            } else {
-                this.secured = options.getMember("secured").asBoolean();
-            }
-
-            if (!options.getMemberKeys().contains("matchPolicy")) {
-                this.matchPolicy = MATCH_POLICY.PREFIX;
-            } else {
-                var _matchPolicy = options.getMember("matchPolicy").asString();
-                this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
-            }
-
-            if (!options.getMemberKeys().contains("modulesReplacements")) {
-                this.modulesReplacements = null;
-            } else {
+            if (options.getMemberKeys().contains("modulesReplacements")) {
                 var sb = new StringBuilder();
 
                 options.getMember("modulesReplacements").getMemberKeys().stream()
-                        .forEach(k -> sb.append(k).append(":")
-                                .append(options.getMember("modulesReplacements").getMember(k))
-                                .append(","));
+                    .forEach(k -> sb.append(k).append(":")
+                        .append(options.getMember("modulesReplacements").getMember(k))
+                        .append(","));
 
-                this.modulesReplacements = sb.toString();
+                modulesReplacements = sb.toString();
             }
 
             // ******** evaluate and check handle
 
-            var handleScript = "import { handle } from '" + sindexPath + "'; handle;";
-            this.handleSource = Source.newBuilder(language, handleScript, "handleScript").mimeType("application/javascript+module").build();
+            var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+            var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
 
             Value handle;
 
             try {
-                handle = ctx.eval(this.handleSource);
+                handle = ctx.eval(handleSource);
             } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
             }
 
             checkHandle(handle, pluginPath);
+
+            return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
         }
     }
+
+
 
     /**
      *
-     */
+     * @throws java.lang.InterruptedException */
     @Override
-    public void handle(StringRequest request, StringResponse response) {
-        try (final var ctx = ctx()) {
-            ctx.eval(this.handleSource).executeVoid(request, response);
+    public void handle(StringRequest request, StringResponse response) throws InterruptedException {
+        Context ctx = null;
+        try {
+            ctx = takeCtx();
+            ctx.eval(handleSource()).executeVoid(request, response);
+        } finally {
+            if (ctx != null) {
+                releaseCtx(ctx);
+            }
         }
-    }
-
-    /**
-     *
-     * @return the Context
-     */
-    @Override
-    protected Context ctx() {
-        if (getModulesReplacements() != null) {
-            LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
-            contextOptions.put("js.commonjs-core-modules-replacements", getModulesReplacements());
-        } else {
-            contextOptions.remove("js.commonjs-core-modules-replacements");
-        }
-
-        var ctx = context(engine, contextOptions);
-        addBindings(ctx, this.name, conf, LOGGER, this.mclient);
-
-        return ctx;
-    }
-
-    public String getModulesReplacements() {
-        return this.modulesReplacements;
     }
 
     static void checkOptions(Value options, Path pluginPath) {
