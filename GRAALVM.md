@@ -2,12 +2,10 @@
 
 ## prerequisites
 
-> GraalVM required version: >= 17.0.9-graal (23.0.2) (https://www.graalvm.org/downloads/)
-
-Also install `native-image`
+> GraalVM required version: >= 21.0.2-graal
 
 ```bash
-$ gu install native-image
+$ sdk install java 21.0.2-graalce
 ```
 
 ## build native image
@@ -114,19 +112,3 @@ $ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectC
 ```
 
 And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
-
-### Get GraalVM sdk version from JDK version
-
-```bash
-$ sdk install java 17.0.9-graal <====
-...
-$ gu install js
-Downloading: Artifacts catalog from gds.oracle.com
-Skipping ULN EE channels, no username provided.
-Downloading: Component catalog from www.graalvm.org
-Processing Component: Graal.js
-Downloading: Component js: Graal.js from gds.oracle.com
-Installing new component: Graal.js (org.graalvm.js, version 23.0.2) <====
-```
-
-So GraalVM JDK v`17.0.9` is about GraalVM v`23.0.2`
