@@ -63,6 +63,11 @@ import static org.restheart.configuration.Utils.findOrDefault;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.graal.ImageInfo;
+import org.restheart.polyglot.interceptors.JSInterceptor;
+import org.restheart.polyglot.interceptors.JSInterceptorFactory;
+import org.restheart.polyglot.services.JSService;
+import org.restheart.polyglot.services.JSStringService;
+import org.restheart.polyglot.services.NodeService;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +85,7 @@ public class PolyglotDeployer implements Initializer {
 
     private Path pluginsDirectory = null;
 
-    private static final Map<Path, AbstractJSPlugin> DEPLOYEES = new HashMap<>();
+    private static final Map<Path, JSPlugin> DEPLOYEES = new HashMap<>();
 
     private JSInterceptorFactory jsInterceptorFactory;
 
@@ -344,7 +349,7 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private void deploy(List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException {
+    private void deploy(List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException, InterruptedException {
         for (Path service: services) {
             deployService(service);
         }
@@ -358,28 +363,28 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private void deployService(Path pluginPath) throws IOException {
+    private void deployService(Path pluginPath) throws IOException, InterruptedException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a CommonJs service, RESTHeart is running on Node");
         }
 
         try {
-            var srv = new JavaScriptService(pluginPath, this.mclient, this.config);
+            var srv = new JSStringService(pluginPath, this.mclient, this.config);
 
-            var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.getName(),
+            var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(),
                 srv.getDescription(),
-                srv.isSecured(),
+                srv.secured(),
                 true,
                 srv.getClass().getName(),
                 srv,
                 new HashMap<>());
 
-            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+            registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
             LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+                srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
         } catch(IllegalArgumentException | IllegalStateException e) {
             LOGGER.error("Error deploying plugin {}", pluginPath, e);
         }
@@ -402,15 +407,15 @@ public class PolyglotDeployer implements Initializer {
 
                     var srv = srvf.get();
 
-                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.getName(), "description", srv.isSecured(), true,
+                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true,
                             srv.getClass().getName(), srv, new HashMap<>());
 
-                    registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+                    registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
 
                     DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
                     LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                        srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+                        srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
                 } catch (IOException | InterruptedException | ExecutionException ex) {
                     LOGGER.error("Error deploying node service {}", pluginPath, ex);
                     Thread.currentThread().interrupt();
@@ -421,7 +426,7 @@ public class PolyglotDeployer implements Initializer {
     }
 
 
-    private void deployInterceptor(Path pluginPath) throws IOException {
+    private void deployInterceptor(Path pluginPath) throws IOException, InterruptedException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a CommonJs interceptor, RESTHeart is running on Node");
         }
@@ -430,7 +435,7 @@ public class PolyglotDeployer implements Initializer {
 
         registry.addInterceptor(interceptorRecord);
 
-        DEPLOYEES.put(pluginPath.toAbsolutePath(), (AbstractJSPlugin) interceptorRecord.getInstance());
+        DEPLOYEES.put(pluginPath.toAbsolutePath(), (JSPlugin) interceptorRecord.getInstance());
 
         LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
             interceptorRecord.getName(),
@@ -444,36 +449,35 @@ public class PolyglotDeployer implements Initializer {
 
     private void undeployServices(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
-            .filter(path -> DEPLOYEES.get(path).isService)
+            .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
             .filter(path -> path.startsWith(pluginPath))
             .collect(Collectors.toList());
 
         for (var pathToUndeploy: pathsToUndeploy) {
-            var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
+            var _toUndeploy = DEPLOYEES.remove(pathToUndeploy);
 
-            if (toUndeploy != null) {
-                registry.unplug(toUndeploy.getUri(), toUndeploy.getMatchPolicy());
+            if (_toUndeploy != null && _toUndeploy instanceof JSService toUndeploy) {
+                registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
 
-                LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
-                toUndeploy.getName(), toUndeploy.getUri());
+                LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(), toUndeploy.name(), toUndeploy.uri());
             }
         }
     }
 
     private void undeployInterceptors(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
-            .filter(path -> DEPLOYEES.get(path).isInterceptor)
+            .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
             .filter(path -> path.startsWith(pluginPath))
             .collect(Collectors.toList());
 
         for (var pathToUndeploy: pathsToUndeploy) {
             var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
-            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.getName()));
+            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
             if (removed) {
-                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), toUndeploy.getName());
+                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), toUndeploy.name());
             } else {
-                LOGGER.warn("interceptor {} was not removed", toUndeploy.getName());
+                LOGGER.warn("interceptor {} was not removed", toUndeploy.name());
             }
         }
     }
