@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.polyglot;
+package org.restheart.polyglot.interceptors;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -36,14 +37,8 @@ import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
-import static org.restheart.polyglot.AbstractJSPlugin.addBindings;
-import org.restheart.polyglot.interceptors.AbstractJSInterceptor;
-import org.restheart.polyglot.interceptors.ByteArrayJSInterceptor;
-import org.restheart.polyglot.interceptors.ByteArrayProxyJSInterceptor;
-import org.restheart.polyglot.interceptors.CsvJSInterceptor;
-import org.restheart.polyglot.interceptors.JsonJSInterceptor;
-import org.restheart.polyglot.interceptors.MongoJSInterceptor;
-import org.restheart.polyglot.interceptors.StringJSInterceptor;
+import org.restheart.polyglot.ContextQueue;
+import org.restheart.polyglot.JSPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +50,7 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JSInterceptorFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JSInterceptorFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
 
     Map<String, String> contextOptions = new HashMap<>();
 
@@ -70,7 +65,7 @@ public class JSInterceptorFactory {
         this.config = config;
     }
 
-    public PluginRecord<Interceptor<? , ?>> create(Path pluginPath) throws IOException {
+    public PluginRecord<Interceptor<? , ?>> create(Path pluginPath) throws IOException, InterruptedException {
         // find plugin root, i.e the parent dir that contains package.json
         var pluginRoot = pluginPath.getParent();
         while(true) {
@@ -100,9 +95,8 @@ public class JSInterceptorFactory {
         // check plugin definition
 
         var sindexPath = pluginPath.toAbsolutePath().toString();
-        try (var ctx = AbstractJSPlugin.context(engine, contextOptions)) {
-            // add bindings to contenxt
-            addBindings(ctx, "foo", null, LOGGER, this.mclient);
+
+        try (Context ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions)) {
 
             // ******** evaluate and check options
 
@@ -150,9 +144,9 @@ public class JSInterceptorFactory {
                 var sb = new StringBuilder();
 
                 options.getMember("modulesReplacements").getMemberKeys().stream()
-                        .forEach(k -> sb.append(k).append(":")
-                                .append(options.getMember("modulesReplacements").getMember(k))
-                                .append(","));
+                    .forEach(k -> sb.append(k).append(":")
+                        .append(options.getMember("modulesReplacements").getMember(k))
+                        .append(","));
 
                 modulesReplacements = sb.toString();
             }
@@ -181,8 +175,7 @@ public class JSInterceptorFactory {
             if (!options.getMemberKeys().contains("pluginClass")) {
                 pluginClass = "StringInterceptor";
             } else if (!options.getMember("pluginClass").isString()) {
-                throw new IllegalArgumentException(
-                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.pluginClass', " + HANDLE_RESOLVE_HINT);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.pluginClass', " + HANDLE_RESOLVE_HINT);
             } else {
                 pluginClass = options.getMember("pluginClass").asString();
             }
@@ -221,18 +214,16 @@ public class JSInterceptorFactory {
                 throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + HANDLE_RESOLVE_HINT);
             }
 
-            AbstractJSInterceptor<? extends Request<?>, ? extends Response<?>> interceptor;
+            JSInterceptor<? extends Request<?>, ? extends Response<?>> interceptor;
 
-
-
-            Map<String, String> opts = Maps.newHashMap();
-            opts.putAll(contextOptions);
+            Map<String, String> contextOpts = Maps.newHashMap();
+            contextOpts.putAll(contextOptions);
 
             if (modulesReplacements != null) {
                 LOGGER.debug("modules-replacements: {} ", modulesReplacements);
-                opts.put("js.commonjs-core-modules-replacements", modulesReplacements);
+                contextOpts.put("js.commonjs-core-modules-replacements", modulesReplacements);
             } else {
-                opts.remove("js.commonjs-core-modules-replacements");
+                contextOpts.remove("js.commonjs-core-modules-replacements");
             }
 
             switch (pluginClass) {
@@ -240,69 +231,76 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "BsonInterceptor", "org.restheart.plugins.BsonInterceptor" -> interceptor = new StringJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "ByteArrayInterceptor", "org.restheart.plugins.ByteArrayInterceptor" -> interceptor = new ByteArrayJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "ByteArrayProxyInterceptor", "org.restheart.plugins.ByteArrayProxyInterceptor" -> interceptor = new ByteArrayProxyJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "CsvInterceptor", "org.restheart.plugins.CsvInterceptor" -> interceptor = new CsvJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "JsonInterceptor", "org.restheart.plugins.JsonInterceptor" -> interceptor = new JsonJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 case "MongoInterceptor", "org.restheart.plugins.MongoInterceptor" -> interceptor = new MongoJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
+                        modulesReplacements,
                         handleSource,
                         resolveSource,
                         mclient,
                         config,
-                        opts);
+                        contextOpts);
                 default -> throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.pluginClass', " + PACKAGE_HINT);
             }
 
-            return new PluginRecord<>(interceptor.getName(),
+            return new PluginRecord<>(interceptor.name(),
                 interceptor.getDescription(),
                 false,
                 true,

@@ -1,6 +1,6 @@
 [
   {
-    "name": "org.restheart.polyglot.AbstractJSPlugin",
+    "name": "org.restheart.polyglot.JSPlugin",
     "fields": [{ "name": "interceptPoint" }, { "name": "name" }]
   },
   {

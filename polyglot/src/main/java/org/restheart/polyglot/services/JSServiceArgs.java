@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-polyglot
+ * restheart-security
  * %%
- * Copyright (C) 2020 - 2024 SoftInstigate
+ * Copyright (C) 2018 - 2024 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,30 +18,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.polyglot.interceptors;
+
+package org.restheart.polyglot.services;
 
 import java.util.Map;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
 import com.mongodb.client.MongoClient;
 
-public class MongoJSInterceptor extends JSInterceptor<MongoRequest, MongoResponse> {
-    public MongoJSInterceptor(String name,
-        String pluginClass,
-        String description,
-        InterceptPoint interceptPoint,
-        String modulesReplacements,
-        Source handleSource,
-        Source resolveSource,
-        Optional<MongoClient> mclient,
-        Configuration config,
-        Map<String, String> contextOptions) {
-            super(name, pluginClass, description, interceptPoint, modulesReplacements, handleSource, resolveSource, mclient, config, contextOptions);
-    }
+/**
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
+public record JSServiceArgs(String name,
+    String description,
+    String uri,
+    boolean secured,
+    String modulesReplacements,
+    MATCH_POLICY matchPolicy,
+    Source handleSource,
+    Configuration configuration,
+    Optional<MongoClient> mclient,
+    Map<String, String> contextOptions) {
 }

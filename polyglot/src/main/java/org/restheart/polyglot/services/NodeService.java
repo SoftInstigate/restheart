@@ -18,11 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.polyglot;
+package org.restheart.polyglot.services;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -37,6 +38,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.polyglot.NodeQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,14 +46,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class NodeService extends AbstractJSPlugin implements StringService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NodeService.class);
-
+public class NodeService extends JSService implements StringService {
     private String source;
-
     private int codeHash = 0;
 
-    private static final String errorHint = """
+    private static final String ERROR_HINT = """
     hint: the last statement in the script something like:
     ({
         options: {
@@ -81,18 +80,18 @@ public class NodeService extends AbstractJSPlugin implements StringService {
         return executor.submit(() -> new NodeService(scriptPath, mclient, conf));
     }
 
-    private NodeService(Path scriptPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
-        this.mclient = mclient;
-        this.conf = conf;
-
+    private NodeService(Path scriptPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
+        super(args(scriptPath, mclient, config));
         this.source = Files.readString(scriptPath);
         this.codeHash = this.source.hashCode();
+    }
 
+    private static JSServiceArgs args(Path scriptPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
         // check plugin definition
-
         var out = new LinkedBlockingDeque<String>();
-        Object[] message = { "parse", this.source, out };
+        Object[] message = { "parse", Files.readString(scriptPath), out };
         NodeQueue.instance().queue().offer(message);
+
         try {
             var result = out.take();
 
@@ -101,105 +100,113 @@ public class NodeService extends AbstractJSPlugin implements StringService {
             var parsed = JsonParser.parseString(result);
 
             if (!parsed.isJsonObject()) {
-                throw new IllegalArgumentException("wrong node plugin, " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, " + ERROR_HINT);
             }
 
             var parsedObj = parsed.getAsJsonObject();
 
             if (!parsedObj.has("options")) {
-                throw new IllegalArgumentException("wrong node plugin, missing member 'options', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, missing member 'options', " + ERROR_HINT);
             }
 
             if (!parsedObj.get("options").isJsonObject()) {
-                throw new IllegalArgumentException("wrong node plugin, wrong member 'options', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, wrong member 'options', " + ERROR_HINT);
             }
 
             var optionsObj = parsedObj.getAsJsonObject("options");
 
             if (!optionsObj.has("name")) {
-                throw new IllegalArgumentException("wrong node plugin, missing member 'options.name', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, missing member 'options.name', " + ERROR_HINT);
             }
 
             if (!optionsObj.get("name").isJsonPrimitive() || !optionsObj.get("name").getAsJsonPrimitive().isString()) {
-                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.name', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.name', " + ERROR_HINT);
             }
 
-            this.name = optionsObj.get("name").getAsString();
+            var name = optionsObj.get("name").getAsString();
 
             if (!optionsObj.has("description")) {
                 throw new IllegalArgumentException(
-                        "wrong node plugin, missing member 'options.description', " + errorHint);
+                        "wrong node plugin, missing member 'options.description', " + ERROR_HINT);
             }
 
             if (!optionsObj.get("description").isJsonPrimitive()
                     || !optionsObj.get("description").getAsJsonPrimitive().isString()) {
                 throw new IllegalArgumentException(
-                        "wrong node plugin, wrong member 'options.description', " + errorHint);
+                        "wrong node plugin, wrong member 'options.description', " + ERROR_HINT);
             }
 
-            this.description = optionsObj.get("description").getAsString();
+            var description = optionsObj.get("description").getAsString();
 
             if (!optionsObj.has("uri")) {
-                throw new IllegalArgumentException("wrong node plugin, missing member 'options.uri', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, missing member 'options.uri', " + ERROR_HINT);
             }
 
             if (!optionsObj.get("uri").isJsonPrimitive() || !optionsObj.get("uri").getAsJsonPrimitive().isString()) {
-                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.uri', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.uri', " + ERROR_HINT);
             }
 
             if (!optionsObj.get("uri").getAsString().startsWith("/")) {
-                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.uri', " + errorHint);
+                throw new IllegalArgumentException("wrong node plugin, wrong member 'options.uri', " + ERROR_HINT);
             }
 
-            this.uri = optionsObj.get("uri").getAsString();
+            var uri = optionsObj.get("uri").getAsString();
+
+            boolean secured;
 
             if (!optionsObj.has("secured")) {
-                this.secured = false;
+                secured = false;
             } else {
                 if (!optionsObj.get("secured").isJsonPrimitive()
                         || !optionsObj.get("secured").getAsJsonPrimitive().isBoolean()) {
                     throw new IllegalArgumentException(
-                            "wrong node plugin, wrong member 'options.secured', " + errorHint);
+                            "wrong node plugin, wrong member 'options.secured', " + ERROR_HINT);
                 } else {
-                    this.secured = optionsObj.get("secured").getAsBoolean();
+                    secured = optionsObj.get("secured").getAsBoolean();
                 }
             }
 
+            MATCH_POLICY matchPolicy;
+
             if (!optionsObj.has("matchPolicy")) {
-                this.matchPolicy = MATCH_POLICY.PREFIX;
+                matchPolicy = MATCH_POLICY.PREFIX;
             } else {
                 if (!optionsObj.get("matchPolicy").isJsonPrimitive()
                         || !optionsObj.get("matchPolicy").getAsJsonPrimitive().isString()) {
                     throw new IllegalArgumentException(
-                            "wrong node plugin, wrong member 'options.secured', " + errorHint);
+                            "wrong node plugin, wrong member 'options.secured', " + ERROR_HINT);
                 } else {
                     var _matchPolicy = optionsObj.get("matchPolicy").getAsString();
                     try {
-                        this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
+                        matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                                "wrong node plugin, wrong member 'options.matchPolicy', " + errorHint);
+                                "wrong node plugin, wrong member 'options.matchPolicy', " + ERROR_HINT);
                     }
                 }
             }
 
             if (!parsedObj.has("handle")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + errorHint);
+                throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + ERROR_HINT);
             }
 
-            if (!parsedObj.get("handle").isJsonPrimitive() || !parsedObj.get("handle").getAsJsonPrimitive().isString()
-                    || !"function".equals(parsedObj.get("handle").getAsString())) {
-                throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
+            if (!parsedObj.get("handle").isJsonPrimitive() || !parsedObj.get("handle").getAsJsonPrimitive().isString() || !"function".equals(parsedObj.get("handle").getAsString())) {
+                throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + ERROR_HINT);
             }
+
+            return new JSServiceArgs(name, description, uri, secured, null, matchPolicy, null, config, mclient, new HashMap<String, String>());
         } catch (InterruptedException ie) {
             LOGGER.debug("Error initializing node plugin", ie);
             Thread.currentThread().interrupt();
         }
+
+        return null;
     }
 
     /**
      *
      */
+    @Override
     public void handle(StringRequest request, StringResponse response) {
         var out = new LinkedBlockingDeque<Object>();
         Object[] message = { "handle",
@@ -207,16 +214,16 @@ public class NodeService extends AbstractJSPlugin implements StringService {
             request, response,
             out,
             LOGGER,                  // pass LOGGER to node runtime
-            this.mclient,            // pass mclient to node runtime
-            this.conf == null        // pass pluginArgs to node runtime
-                ? Maps.newHashMap() : this.conf.getOrDefault(this.name, Maps.newHashMap())
+            mclient(),               // pass mclient to node runtime
+            configuration() == null  // pass pluginArgs to node runtime
+                ? Maps.newHashMap() : configuration().getOrDefault(name(), Maps.newHashMap())
         };
 
         try {
             NodeQueue.instance().queue().offer(message);
             var result = out.take();
-            if (result instanceof RuntimeException) {
-                throw ((RuntimeException) result);
+            if (result instanceof RuntimeException runtimeException) {
+                throw runtimeException;
             } else {
                 LOGGER.debug("handle result: {}", result);
             }

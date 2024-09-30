@@ -23,6 +23,7 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 import java.util.Optional;
 
+import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
@@ -30,16 +31,13 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
-import org.restheart.polyglot.AbstractJSPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.polyglot.JSPlugin;
 
-import com.google.common.collect.Maps;
 import com.mongodb.client.MongoClient;
 
-public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> extends AbstractJSPlugin implements Interceptor<R, S> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSInterceptor.class);
-
+public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends JSPlugin implements Interceptor<R, S> {
+    private final String pluginClass;
+    private final InterceptPoint interceptPoint;
     private final Source resolveSource;
 
     /**
@@ -47,69 +45,80 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      * @param pluginClass
      * @param description
      * @param interceptPoint
+     * @param modulesReplacements
      * @param handleSource
      * @param mclient
      * @param resolveSource
      * @param contextOptions
      * @param config
      */
-    public AbstractJSInterceptor(String name,
+    public JSInterceptor(String name,
         String pluginClass,
         String description,
         InterceptPoint interceptPoint,
+        String modulesReplacements,
         Source handleSource,
         Source resolveSource,
         Optional<MongoClient> mclient,
         Configuration config,
         Map<String, String> contextOptions) {
-            super(name, pluginClass, description, null, false, null, interceptPoint, config, false, true);
-            this.contextOptions = contextOptions;
-            this.mclient = mclient;
-            this.conf = config;
-            this.handleSource = handleSource;
+            super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
+            this.pluginClass = pluginClass;
+            this.interceptPoint = interceptPoint;
             this.resolveSource = resolveSource;
+    }
+
+    public InterceptPoint getInterceptPoint() {
+        return interceptPoint;
     }
 
     /**
      *
      * @param request
-     * @param response */
+     * @param response
+     * @throws java.lang.InterruptedException */
     @Override
-    public void handle(R request, S response) {
-        try (final var ctx = ctx()) {
-            ctx.eval(this.handleSource).executeVoid(request, response);
+    public void handle(R request, S response) throws InterruptedException {
+        Context ctx = null;
+
+        try {
+            ctx = takeCtx();
+            ctx.eval(handleSource()).executeVoid(request, response);
+        } finally {
+            if (ctx != null) {
+                releaseCtx(ctx);
+            }
         }
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        var ret = resolve().execute(request);
+        Context ctx = null;
+        Value ret = null;
 
-        if (ret.isBoolean()) {
+        try {
+            ctx = takeCtx();
+            ret = ctx.eval(this.resolveSource).execute(request);
+        } catch(InterruptedException ie) {
+            LOGGER.error("error on interceptor {} resolve()", name(), ie);
+            request.setInError(true);
+            return false;
+        } finally {
+            if (ctx != null) {
+                releaseCtx(ctx);
+            }
+        }
+
+        if (ret != null && ret.isBoolean()) {
             return ret.asBoolean();
         } else {
-            LOGGER.error("resolve() of interceptor did not returned a boolean", name);
+            LOGGER.error("resolve() of interceptor {} did not returned a boolean", name());
+            request.setInError(true);
             return false;
         }
     }
 
-    // each working thread is associates with one resolve
-    // because js Context does not allow multithreaded access
-    protected Map<String, Value> resolves = Maps.newHashMap();
-
-    /**
-     *
-     * @return the resolve Value associated with this thread. If not existing, it instanitates it.
-     */
-    private Value resolve() {
-        var workingThreadName = Thread.currentThread().getName();
-
-        if (this.resolves.containsKey(workingThreadName)) {
-            return this.resolves.get(workingThreadName);
-        } else {
-            var resolve = ctx().eval(this.resolveSource);
-            this.resolves.put(workingThreadName, resolve);
-            return resolve;
-        }
+    public String getPluginClass() {
+        return pluginClass;
     }
 }
