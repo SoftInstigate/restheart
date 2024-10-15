@@ -265,7 +265,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.8</version>
+                <version>1.5.11</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -300,12 +300,12 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.27</version>
+                <version>4.2.28</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.27</version>
+                <version>4.2.28</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -325,7 +325,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.176</version>
+                <version>4.8.177</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
@@ -376,7 +376,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>5.11.0</version>
+                <version>5.11.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
