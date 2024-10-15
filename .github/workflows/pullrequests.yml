@@ -13,11 +13,8 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        include:
-          - mongodb-version: "5.0"
-          - mongodb-version: "6.0"
-          - mongodb-version: "7.0"
-    timeout-minutes: 20
+        mongodb-version: ["5.0", "6.0", "7.0"]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -36,4 +33,5 @@ jobs:
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+        run: |
+          mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
