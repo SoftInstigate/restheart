@@ -76,8 +76,6 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart:latest,
-            softinstigate/restheart:8,
             softinstigate/restheart:8.0,
             softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
@@ -93,8 +91,6 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart:latest-graalvm,
-            softinstigate/restheart:8-graalvm,
             softinstigate/restheart:8.0-graalvm,
             softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
@@ -111,8 +107,6 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart:latest-distroless,
-            softinstigate/restheart:8-distroless,
             softinstigate/restheart:8.0-distroless,
             softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
