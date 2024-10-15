@@ -8,14 +8,14 @@ on:
       - "*"   # Ignore all tags
 
 jobs:
+  # Build and test the project
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-22.04
     strategy:
       matrix:
         mongodb-version: ["5.0", "6.0"]
-        deploy: [false]  # Added here as part of strategy
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -31,25 +31,19 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Set VERSION and SHA
-        id: vars
-        run: |
-          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
-          echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
-
       - name: Build and Test
-        if: ${{ ! matrix.deploy }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
+  # Deploy the project to Maven Central and DockerHub
   deploy:
-    needs: build
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-22.04
     strategy:
       matrix:
         mongodb-version: ["7.0"]
-        deploy: [true]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -65,12 +59,11 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Set VERSION and SHA
+      - name: Set SHA
         id: vars
         run: |
-          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
           echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
-          
+
       - name: Import private gpg key
         run: |
           printf "%s" "$GPG_PRIVATE_KEY" > private.key
