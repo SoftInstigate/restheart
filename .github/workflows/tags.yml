@@ -115,10 +115,10 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart:latest-graalvm,
-            softinstigate/restheart:8-graalvm,
-            softinstigate/restheart:8.1-graalvm,
-            softinstigate/restheart:${{ env.VERSION }}-graalvm
+            softinstigate/restheart-graalvm:latest,
+            softinstigate/restheart-graalvm:8,
+            softinstigate/restheart-graalvm:8.1,
+            softinstigate/restheart-graalvm:${{ env.VERSION }}
 
       - name: Build and Push distroless docker image
         uses: docker/build-push-action@v6
@@ -132,10 +132,10 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart:latest-distroless,
-            softinstigate/restheart:8-distroless,
-            softinstigate/restheart:8.1-distroless,
-            softinstigate/restheart:${{ env.VERSION }}-distroless
+            softinstigate/restheart-distroless:latest,
+            softinstigate/restheart-distroless:8,
+            softinstigate/restheart-distroless:8.1,
+            softinstigate/restheart-distroless:${{ env.VERSION }}
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v2

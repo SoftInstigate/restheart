@@ -111,8 +111,8 @@ jobs:
           pull: true # pull all required images before building
           # Tag with "graalvm" only if branch is master
           tags: |
-            softinstigate/restheart-snapshot:${{ env.SHA }}-graalvm,
-            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest-graalvm' || '' }}
+            softinstigate/restheart-graalvm-snapshot:${{ env.SHA }},
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-graalvm-snapshot:latest' || '' }}
 
       - name: Build and Push distroless docker image
         uses: docker/build-push-action@v6
@@ -127,5 +127,5 @@ jobs:
           pull: true # pull all required images before building
           # Tag with "distroless" only if branch is master
           tags: |
-            softinstigate/restheart-snapshot:${{ env.SHA }}-distroless,
-            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest-distroless' || '' }}
+            softinstigate/restheart-distroless-snapshot:${{ env.SHA }},
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-distroless-snapshot:latest' || '' }}
