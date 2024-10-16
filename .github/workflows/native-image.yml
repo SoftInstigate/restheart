@@ -1,0 +1,33 @@
+name: Build native Image
+
+on:
+  push:
+    branches:
+      - "*" # All branches for snapshot builds
+    tags-ignore:
+      - "*" # Ignore all tags
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21" # See 'Options' section below for all supported versions
+          distribution: "graalvm" # See 'Options' section below for all available distributions
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: "maven"
+          native-image-job-reports: "true"
+
+      - name: Check GraalVM and Maven
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+          mvn --version
