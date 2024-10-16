@@ -1,33 +1,70 @@
-name: Native Image
+name: Native Image Release
 
 on:
   push:
     branches:
-      - "*" # All branches for snapshot builds
-    tags-ignore:
-      - "*" # Ignore all tags
+      - "!master" # Ignore the master branch
+    tags:
+      - "*" # Trigger on any tag
 
 jobs:
   build:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       matrix:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: "21" # See 'Options' section below for all supported versions
-          distribution: "graalvm" # See 'Options' section below for all available distributions
+          distribution: "graalvm-community" # See 'Options' section below for all available distributions
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: "maven"
           native-image-job-reports: "true"
 
-      - name: Check GraalVM and Maven
+      - name: Build native image
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn --version
+          mvn package -Pnative -DskipTests
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Set VERSION
+        id: vars
+        run: |
+          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
+
+      - name: Build and Push multi-arch native Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.native
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le,
+            linux/s390x
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: |
+            softinstigate/restheart-native:latest,
+            softinstigate/restheart-native:8,
+            softinstigate/restheart-native:8.1,
+            softinstigate/restheart-native:${{ env.VERSION }}
