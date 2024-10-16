@@ -1,6 +1,6 @@
 # This workflow builds stable releases
 
-name: Build stable release
+name: Stable release
 
 on:
   push:
