@@ -1,4 +1,4 @@
-name: Build native Image
+name: Native Image
 
 on:
   push:
