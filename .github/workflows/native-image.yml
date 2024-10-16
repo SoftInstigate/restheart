@@ -14,6 +14,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +49,8 @@ jobs:
       - name: Build and Push multi-arch native Docker images
         uses: docker/build-push-action@v6
         with:
-          context: ./core/Dockerfile.native
+          context: ./core/
+          file: ./core/Dockerfile.native
           platforms: |
             linux/amd64,
             linux/arm64,
@@ -56,6 +58,5 @@ jobs:
             linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
-          # Tag with "latest" only if branch is master
           tags: |
             softinstigate/restheart-native:latest
