@@ -52,14 +52,13 @@ jobs:
       - name: Upload Binary to Release
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs').promises;
 
-            const isWindows = 'ubuntu-latest' === 'windows-latest';
+            const isWindows = '${{ matrix.os }}' === 'windows-latest';
             const filePath = isWindows ? 'core/target/restheart.exe' : 'core/target/restheart';
-            const fileName = `restheart-linux-amd64${isWindows ? '.exe' : ''}`;
-            const releaseTag = '8.1.0';
+            const fileName = `restheart-${{ matrix.arch }}${isWindows ? '.exe' : ''}`;
+            const releaseTag = '8.1.0'; // Consider making this an input parameter
 
             try {
               const content = await fs.readFile(filePath);
@@ -89,8 +88,10 @@ jobs:
               console.log(`Successfully uploaded ${fileName} to release ${releaseTag}`);
             } catch (error) {
               console.error('Error occurred:', error.message);
-              core.setFailed(error.message);
+              process.exit(1);
             }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docker-publish:
     runs-on: ubuntu-latest
