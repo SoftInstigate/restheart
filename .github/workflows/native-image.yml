@@ -1,11 +1,6 @@
 name: Native Image Release
 
-on:
-  push:
-    branches:
-      - "!master" # Ignore the master branch
-    tags:
-      - "*" # Trigger on any tag
+on: workflow_dispatch # Manually trigger the workflow
 
 jobs:
   build:
