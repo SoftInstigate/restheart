@@ -52,11 +52,23 @@ jobs:
       - name: Install GitHub CLI
         run: sudo apt-get install -y gh
 
+      - name: Rename File for Upload
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            mv "core/target/restheart.exe" "core/target/restheart-${{ matrix.arch }}.exe"
+          else
+            mv "core/target/restheart" "core/target/restheart-${{ matrix.arch }}"
+          fi
+
       - name: Upload Binary to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload 8.1.0 core/target/restheart --repo ${{ github.repository }} --clobber --name "restheart-${{ matrix.os }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}"
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            gh release upload 8.1.0 "core/target/restheart-${{ matrix.arch }}.exe" --repo ${{ github.repository }} --clobber
+          else
+            gh release upload 8.1.0 "core/target/restheart-${{ matrix.arch }}" --repo ${{ github.repository }} --clobber
+          fi
 
   docker-publish:
     runs-on: ubuntu-latest
