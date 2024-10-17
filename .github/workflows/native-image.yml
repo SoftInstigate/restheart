@@ -54,8 +54,11 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = "core/target/restheart${{ matrix.os == 'windows-latest' ? '.exe' : '' }}";
-            const content = fs.readFileSync(path);
+            const isWindows = '${{ matrix.os }}' === 'windows-latest';
+            const filePath = isWindows ? 'core/target/restheart.exe' : 'core/target/restheart';
+            const fileName = `restheart-${{ matrix.arch }}${isWindows ? '.exe' : ''}`;
+
+            const content = fs.readFileSync(filePath);
 
             // Retrieve the release by tag name
             const release = await github.repos.getReleaseByTag({
@@ -69,7 +72,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: `restheart-${{ matrix.arch }}${{ matrix.os == 'windows-latest' ? '.exe' : '' }}`,
+              name: fileName,
               data: content,
               headers: {
                 'content-type': 'application/octet-stream',
