@@ -49,26 +49,35 @@ jobs:
           name: restheart
           path: core/target/restheart
 
-      - name: Install GitHub CLI
-        run: sudo apt-get install -y gh
-
-      - name: Rename File for Upload
-        run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            mv "core/target/restheart.exe" "core/target/restheart-${{ matrix.arch }}.exe"
-          else
-            mv "core/target/restheart" "core/target/restheart-${{ matrix.arch }}"
-          fi
-
       - name: Upload Binary to Release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = "core/target/restheart${{ matrix.os == 'windows-latest' ? '.exe' : '' }}";
+            const content = fs.readFileSync(path);
+
+            // Retrieve the release by tag name
+            const release = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: '8.1.0'
+            });
+
+            // Upload the asset to the release
+            await github.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: `restheart-${{ matrix.arch }}${{ matrix.os == 'windows-latest' ? '.exe' : '' }}`,
+              data: content,
+              headers: {
+                'content-type': 'application/octet-stream',
+                'content-length': content.length
+              }
+            });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            gh release upload 8.1.0 "core/target/restheart-${{ matrix.arch }}.exe" --repo ${{ github.repository }} --clobber
-          else
-            gh release upload 8.1.0 "core/target/restheart-${{ matrix.arch }}" --repo ${{ github.repository }} --clobber
-          fi
 
   docker-publish:
     runs-on: ubuntu-latest
