@@ -59,4 +59,4 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart-native:${{ env.SHA }}
+            softinstigate/restheart-snapshot:${{ env.SHA }}-native
