@@ -53,32 +53,43 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const fs = require('fs');
+            const fs = require('fs').promises;
+
             const isWindows = '${{ matrix.os }}' === 'windows-latest';
             const filePath = isWindows ? 'core/target/restheart.exe' : 'core/target/restheart';
             const fileName = `restheart-${{ matrix.arch }}${isWindows ? '.exe' : ''}`;
+            const releaseTag = '8.1.0'; // Consider making this an input parameter
 
-            const content = fs.readFileSync(filePath);
+            try {
+              const content = await fs.readFile(filePath);
 
-            // Retrieve the release by tag name
-            const release = await github.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: '8.1.0'
-            });
+              const { data: releases } = await github.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
 
-            // Upload the asset to the release
-            await github.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: fileName,
-              data: content,
-              headers: {
-                'content-type': 'application/octet-stream',
-                'content-length': content.length
+              const release = releases.find(r => r.tag_name === releaseTag);
+
+              if (!release) {
+                throw new Error(`Release with tag '${releaseTag}' not found.`);
               }
-            });
+
+              await github.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                name: fileName,
+                data: content,
+                headers: {
+                  'content-type': 'application/octet-stream'
+                }
+              });
+
+              console.log(`Successfully uploaded ${fileName} to release ${releaseTag}`);
+            } catch (error) {
+              console.error('Error occurred:', error.message);
+              process.exit(1);
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
