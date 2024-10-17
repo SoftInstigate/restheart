@@ -61,5 +61,4 @@ jobs:
           tags: |
             softinstigate/restheart-native:latest,
             softinstigate/restheart-native:8,
-            softinstigate/restheart-native:8.1,
-            softinstigate/restheart-native:${{ env.VERSION }}
+            softinstigate/restheart-native:8.1
