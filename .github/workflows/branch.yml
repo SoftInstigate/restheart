@@ -94,10 +94,10 @@ jobs:
             linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
-          # NOTE: snapshot images must be tagged with "latest" in master branch only
+          # Tag with "latest" only if branch is master
           tags: |
-            softinstigate/restheart-snapshot:latest,
-            softinstigate/restheart-snapshot:${{ env.SHA }}
+            softinstigate/restheart-snapshot:${{ env.SHA }},
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest' || '' }}
 
       - name: Build and Push GraalVM Docker image
         uses: docker/build-push-action@v6
@@ -109,10 +109,10 @@ jobs:
             linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
-          # NOTE: snapshot images must be tagged with "graalvm" in master branch only
+          # Tag with "graalvm" only if branch is master
           tags: |
-            softinstigate/restheart-graalvm-snapshot:latest,
-            softinstigate/restheart-graalvm-snapshot:${{ env.SHA }}
+            softinstigate/restheart-snapshot:${{ env.SHA }}-graalvm,
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest-graalvm' || '' }}
 
       - name: Build and Push distroless docker image
         uses: docker/build-push-action@v6
@@ -125,7 +125,7 @@ jobs:
             linux/ppc64le
           push: true # push all images built
           pull: true # pull all required images before building
-          # NOTE: snapshot images must be tagged with "distroless" in master branch only
+          # Tag with "distroless" only if branch is master
           tags: |
-            softinstigate/restheart-distroless-snapshot:latest,
-            softinstigate/restheart-distroless-snapshot:${{ env.SHA }}
+            softinstigate/restheart-snapshot:${{ env.SHA }}-distroless,
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest-distroless' || '' }}
