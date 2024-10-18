@@ -30,7 +30,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +67,7 @@ import org.restheart.polyglot.interceptors.JSInterceptorFactory;
 import org.restheart.polyglot.services.JSService;
 import org.restheart.polyglot.services.JSStringService;
 import org.restheart.polyglot.services.NodeService;
+import org.restheart.utils.DirectoryWatcher;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,47 +150,34 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
+    private Path pluginPathFromEvent(Path pluginsDirectory, Path path) {
+        // Get the relative path between pluginsDirectory and subdirectory
+        var relativePath = pluginsDirectory.relativize(path);
+
+        // Return the first element from the relative path (i.e., the pluginDirectory)
+        return pluginsDirectory.resolve(relativePath.getName(0));
+    }
+
     private void watch(Path pluginsDirectory) {
         try {
-            var watchService = FileSystems.getDefault().newWatchService();
-
-            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
-
-            ThreadsUtils.virtualThreadsExecutor().execute(() -> { while(true) {
+            final var watcher = new DirectoryWatcher(pluginsDirectory, (path, kind) -> {
                 try {
-                    var key = watchService.take();
-                    while (key != null) {
-                        for (var event : key.pollEvents()) {
-                            var eventContext = event.context();
-                            var pluginPath = pluginsDirectory.resolve(eventContext.toString());
-
-                            LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
-
-                            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                                try {
-                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                                } catch (Throwable t) {
-                                    LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
-                                }
-                            } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                try {
-                                    undeploy(pluginPath);
-                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                                } catch (Throwable t) {
-                                    LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
-                                }
-                            } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                                undeploy(pluginPath);
-                            }
+                    var pluginPath = pluginPathFromEvent(pluginsDirectory, path);
+                    switch (kind.name()) {
+                        case "ENTRY_CREATE" -> deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
+                        case "ENTRY_DELETE" -> undeploy(pluginPath);
+                        case "ENTRY_MODIFY" -> {
+                            undeploy(pluginPath);
+                            deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
                         }
-
-                        key.reset();
+                        default -> {}
                     }
-                } catch (InterruptedException ex) {
-                    LOGGER.error("Error watching {}", pluginsDirectory.toAbsolutePath(), ex);
-                    Thread.currentThread().interrupt();
+                } catch (IOException | InterruptedException ex) {
+                    LOGGER.error("Error handling fs event {} for file {}", kind, path, ex);
                 }
-            }});
+            });
+
+            ThreadsUtils.virtualThreadsExecutor().execute(watcher);
         } catch (IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
@@ -383,10 +370,13 @@ public class PolyglotDeployer implements Initializer {
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+            LOGGER.info(ansi().fg(GREEN).a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}").reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
         } catch(IllegalArgumentException | IllegalStateException e) {
-            LOGGER.error("Error deploying plugin {}", pluginPath, e);
+            if (e.getMessage().contains("require is not defined")) {
+                LOGGER.error("Error deploying plugin {}. Resolution: Try running 'npm install' for required dependencies.", pluginPath);
+            } else {
+                LOGGER.error("Error deploying plugin {}", pluginPath, e);
+            }
         }
     }
 
@@ -407,15 +397,13 @@ public class PolyglotDeployer implements Initializer {
 
                     var srv = srvf.get();
 
-                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true,
-                            srv.getClass().getName(), srv, new HashMap<>());
+                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
 
                     registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
 
                     DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-                    LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                        srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+                    LOGGER.info(ansi().fg(GREEN).a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}").reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
                 } catch (IOException | InterruptedException | ExecutionException ex) {
                     LOGGER.error("Error deploying node service {}", pluginPath, ex);
                     Thread.currentThread().interrupt();
@@ -437,7 +425,7 @@ public class PolyglotDeployer implements Initializer {
 
         DEPLOYEES.put(pluginPath.toAbsolutePath(), (JSPlugin) interceptorRecord.getInstance());
 
-        LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
+        LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' deployed with description: '{}'").reset().toString(),
             interceptorRecord.getName(),
             interceptorRecord.getDescription());
     }
@@ -459,7 +447,7 @@ public class PolyglotDeployer implements Initializer {
             if (_toUndeploy != null && _toUndeploy instanceof JSService toUndeploy) {
                 registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
 
-                LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(), toUndeploy.name(), toUndeploy.uri());
+                LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(), toUndeploy.name(), toUndeploy.uri());
             }
         }
     }
@@ -475,9 +463,9 @@ public class PolyglotDeployer implements Initializer {
             var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
             if (removed) {
-                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), toUndeploy.name());
+                LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' undeployed").reset().toString(), toUndeploy.name());
             } else {
-                LOGGER.warn("interceptor {} was not removed", toUndeploy.name());
+                LOGGER.warn("Interceptor {} was not undeployed", toUndeploy.name());
             }
         }
     }

@@ -63,7 +63,7 @@ public class ContextQueue {
 
     public static Context newContext(Engine engine, String name, Configuration conf, Logger LOGGER, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
         if (modulesReplacements!= null) {
-            LOGGER.debug("modules-replacements: {} ", modulesReplacements);
+            LOGGER.trace("modules-replacements: {} ", modulesReplacements);
             OPTS.put("js.commonjs-core-modules-replacements", modulesReplacements);
         } else {
             OPTS.remove("js.commonjs-core-modules-replacements");

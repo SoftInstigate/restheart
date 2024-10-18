@@ -38,7 +38,6 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.polyglot.ContextQueue;
-import org.restheart.polyglot.JSPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JSInterceptorFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSInterceptorFactory.class);
 
     Map<String, String> contextOptions = new HashMap<>();
 
@@ -220,7 +219,7 @@ public class JSInterceptorFactory {
             contextOpts.putAll(contextOptions);
 
             if (modulesReplacements != null) {
-                LOGGER.debug("modules-replacements: {} ", modulesReplacements);
+                LOGGER.trace("modules-replacements: {} ", modulesReplacements);
                 contextOpts.put("js.commonjs-core-modules-replacements", modulesReplacements);
             } else {
                 contextOpts.remove("js.commonjs-core-modules-replacements");
@@ -288,6 +287,16 @@ public class JSInterceptorFactory {
                         config,
                         contextOpts);
                 case "MongoInterceptor", "org.restheart.plugins.MongoInterceptor" -> interceptor = new MongoJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        modulesReplacements,
+                        handleSource,
+                        resolveSource,
+                        mclient,
+                        config,
+                        contextOpts);
+                case "WildCardJSInterceptor", "org.restheart.plugins.WildCardJSInterceptor" -> interceptor = new WildCardJSInterceptor(name,
                         pluginClass,
                         description,
                         interceptPoint,
