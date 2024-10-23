@@ -33,7 +33,7 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn package -Pnative -DskipTests -Dnative.gc="--gc=G1" -Dnative.march="-march=x86-64";
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
 
       - name: Build native image on Windows
         if: matrix.os == 'windows-latest'
