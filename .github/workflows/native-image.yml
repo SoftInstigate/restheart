@@ -26,20 +26,23 @@ jobs:
           cache: "maven"
           native-image-job-reports: "true"
 
-      - name: Build native image on ${{ matrix.os }}
+      - name: Build native image on Linux
+        if: matrix.os == 'ubuntu-latest'
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            mvn package -Pnative -DskipTests -Dnative.gc="--gc=G1" -Dnative.march="-march=x86-64";
-          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
-            mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
-          else
-            echo "Unsupported OS: ${{ matrix.os }}";
-            exit 1;
-          fi
+          mvn package -Pnative -DskipTests -Dnative.gc="--gc=G1" -Dnative.march="-march=x86-64";
+
+      - name: Build native image on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
 
       - name: Set Output for Ubuntu
         if: matrix.arch == 'linux-amd64'
