@@ -38,8 +38,8 @@ jobs:
       - name: Build native image on Windows
         if: matrix.os == 'windows-latest'
         run: |
-          echo "GRAALVM_HOME: $GRAALVM_HOME"
-          echo "JAVA_HOME: $JAVA_HOME"
+          echo "GRAALVM_HOME: %GRAALVM_HOME%"
+          echo "JAVA_HOME: %JAVA_HOME%"
           java --version
           native-image.cmd --version
           mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
