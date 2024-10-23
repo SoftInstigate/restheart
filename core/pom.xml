@@ -10,6 +10,7 @@
 
   <properties>
     <native.gc>--gc=serial</native.gc>
+    <native.march>-march=native</native.march>
     <mongodb.port>27017</mongodb.port>
   </properties>
 
@@ -550,6 +551,7 @@
               <imageName>restheart</imageName>
               <buildArgs>
                 <arg>${native.gc}</arg>
+                <arg>${native.march}</arg>
               </buildArgs>
             </configuration>
             <extensions>true</extensions>
