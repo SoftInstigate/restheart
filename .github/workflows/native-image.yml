@@ -33,7 +33,8 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          chmod +x core/target/restheart
 
       - name: Build native image on Windows
         if: matrix.os == 'windows-latest'
@@ -42,7 +43,7 @@ jobs:
           echo "JAVA_HOME: %JAVA_HOME%"
           java --version
           native-image.cmd --version
-          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64";
+          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
 
       - name: Set Output for Ubuntu
         if: matrix.arch == 'linux-amd64'
