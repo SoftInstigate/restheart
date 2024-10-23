@@ -33,9 +33,9 @@ jobs:
           java --version
           native-image --version
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            mvn package -Pnative -DskipTests -Dnative.gc="--gc=G1" -Dnative.march=x86-64;
+            mvn package -Pnative -DskipTests -Dnative.gc="--gc=G1" -Dnative.march="-march=x86-64";
           elif [ "${{ matrix.os }}" == "windows-latest" ]; then
-            mvn package -Pnative -DskipTests -Dnative.march=x86-64;
+            mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64";
           else
             echo "Unsupported OS: ${{ matrix.os }}";
             exit 1;
