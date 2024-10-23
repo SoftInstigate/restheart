@@ -2,7 +2,7 @@ name: restheart-native
 
 services:
   restheart:
-    image: softinstigate/restheart:latest-native
+    image: softinstigate/restheart:8.1-native
     environment:
       RHO: >
           /core/name->"native";
