@@ -550,8 +550,8 @@
             <configuration>
               <imageName>restheart</imageName>
               <buildArgs>
-                <arg>${native.gc}</arg>
-                <arg>${native.march}</arg>
+                <buildArg>${native.gc}</buildArg>
+                <buildArg>${native.march}</buildArg>
               </buildArgs>
             </configuration>
             <extensions>true</extensions>
