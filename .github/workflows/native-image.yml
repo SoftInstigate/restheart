@@ -11,8 +11,6 @@ jobs:
             arch: "linux-amd64"
           - os: windows-latest
             arch: "windows-amd64"
-          - os: macos-latest
-            arch: "macos-arm64"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     outputs:
