@@ -60,3 +60,4 @@ jobs:
           pull: true # pull all required images before building
           tags: |
             softinstigate/restheart-snapshot:${{ env.SHA }}-native
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest' || '' }}
