@@ -158,7 +158,7 @@ jobs:
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
-            softinstigate/restheart-native:latest,
-            softinstigate/restheart-native:8,
-            softinstigate/restheart-native:8.1,
-            softinstigate/restheart-native:8.1.0
+            softinstigate/restheart:latest-native,
+            softinstigate/restheart:8-native,
+            softinstigate/restheart:8.1-native,
+            softinstigate/restheart:8.1.0-native
