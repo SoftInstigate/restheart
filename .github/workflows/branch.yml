@@ -3,9 +3,12 @@ name: Snapshot release
 on:
   push:
     branches:
-      - "*"   # All branches for snapshot builds
+      - "*" # All branches for snapshot builds
     tags-ignore:
-      - "*"   # Ignore all tags
+      - "*" # Ignore all tags
+    paths:
+      - "**/*.java" # Trigger on any Java file change
+      - "pom.xml" # Trigger on pom.xml file change
 
 jobs:
   # Build and test the project
@@ -64,7 +67,7 @@ jobs:
       - name: Deploy to Maven Central
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml 
+          mvn -B deploy -Pdeploy -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
