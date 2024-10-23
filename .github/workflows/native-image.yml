@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: restheart
-          path: core/target/restheart
+          path: core/target/
 
       - name: Upload Binary to Release
         uses: actions/github-script@v7
@@ -104,6 +104,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: restheart
+          path: core/target/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -127,6 +128,7 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.native
+          platforms: linux/amd64
           push: true # push all images built
           pull: true # pull all required images before building
           tags: |
