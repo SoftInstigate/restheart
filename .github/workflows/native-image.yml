@@ -72,6 +72,23 @@ jobs:
                 throw new Error(`Release with tag '${releaseTag}' not found.`);
               }
 
+              // Check if an asset with the same name exists in the release
+              const existingAsset = release.assets.find(asset => asset.name === fileName);
+
+              if (existingAsset) {
+                console.log(`Asset ${fileName} already exists. Deleting it...`);
+
+                // Delete the existing asset
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existingAsset.id
+                });
+
+                console.log(`Deleted asset ${fileName}`);
+              }
+
+              console.log(`Uploading ${fileName} to release ${releaseTag}...`);
               await github.rest.repos.uploadReleaseAsset({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
