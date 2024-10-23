@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "**/*.java" # Trigger on any Java file change
-      - "pom.xml" # Trigger on pom.xml file change
+      - "**/*.xml" # Trigger on any xml file change
 
 jobs:
   build:

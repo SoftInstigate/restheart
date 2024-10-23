@@ -8,7 +8,7 @@ on:
       - "*" # Ignore all tags
     paths:
       - "**/*.java" # Trigger on any Java file change
-      - "pom.xml" # Trigger on pom.xml file change
+      - "**/*.xml" # Trigger on any xml file change
 
 jobs:
   # Build and test the project
