@@ -39,7 +39,7 @@ jobs:
       - name: Set Output for Ubuntu
         if: matrix.arch == 'linux-amd64'
         id: set-output
-        run: echo "ubuntu=true" >> $GITHUB_ENV
+        run: echo "ubuntu=true" >> $GITHUB_OUTPUT
 
       # Upload the binary artifact for linux-amd64 only
       - name: Upload Binary Artifact
@@ -96,7 +96,7 @@ jobs:
   docker-publish:
     runs-on: ubuntu-latest
     needs: build-and-upload
-    if: ${{ needs.build-and-upload.outputs.ubuntu == 'true' }}
+    if: needs.build-and-upload.outputs.ubuntu == 'true'
     steps:
       - uses: actions/checkout@v4
 
