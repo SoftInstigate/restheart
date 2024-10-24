@@ -1,15 +1,24 @@
 name: Native Image Release
 
 on:
-  workflow_run:
-    workflows: ["Stable Release"]
-    branches: ["8.1.x"]
-    types:
-      - completed
+  # Triggered by other workflows using workflow_call
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+        type: string
+  # Also allow manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+        type: string
 
 jobs:
   build-and-upload:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
@@ -17,7 +26,6 @@ jobs:
             arch: "linux-amd64"
           - os: windows-latest
             arch: "windows-amd64"
-    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
@@ -73,7 +81,7 @@ jobs:
             const isWindows = '${{ matrix.os }}' === 'windows-latest';
             const filePath = isWindows ? 'core/target/restheart.exe' : 'core/target/restheart';
             const fileName = `restheart-${{ matrix.arch }}${isWindows ? '.exe' : ''}`;
-            const releaseTag = '8.1.0'; // Consider making this an input parameter
+            const releaseTag = '${{ inputs.version }}'; // Use the passed version input
 
             try {
               const content = await fs.readFile(filePath);
@@ -150,18 +158,12 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Set VERSION
-        id: vars
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: Extract Version Components
         id: extract_version
         run: |
-          MAJOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 1)
-          MINOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 2)
-          PATCH=$(echo "${{ env.VERSION }}" | cut -d '.' -f 3)
+          MAJOR=$(echo "${{ inputs.version }}" | cut -d '.' -f 1)
+          MINOR=$(echo "${{ inputs.version }}" | cut -d '.' -f 2)
+          PATCH=$(echo "${{ inputs.version }}" | cut -d '.' -f 3)
 
           # Export the major, minor, and patch versions as environment variables
           echo "MAJOR=$MAJOR" >> $GITHUB_ENV

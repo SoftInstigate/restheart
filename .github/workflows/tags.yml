@@ -1,5 +1,3 @@
-# This workflow builds stable releases
-
 name: Stable Release
 
 on:
@@ -13,7 +11,7 @@ jobs:
   # Build and test the project
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["5.0", "6.0"]
@@ -37,7 +35,7 @@ jobs:
   # Deploy the project to Maven Central and DockerHub
   deploy:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["7.0"]
@@ -99,7 +97,6 @@ jobs:
           echo "MAJOR=$MAJOR" >> $GITHUB_ENV
           echo "MINOR=$MINOR" >> $GITHUB_ENV
           echo "PATCH=$PATCH" >> $GITHUB_ENV
-
 
       - name: Set Docker Tags for standard images
         id: set_tags
@@ -172,3 +169,10 @@ jobs:
             core/target/restheart.zip
           draft: true
           prerelease: false
+
+      - name: Call Native Image Release
+        uses: ./.github/workflows/native-image.yml
+        with:
+          version: "${{ env.VERSION }}"
+        # Continue the calling workflow even if the called workflow fails
+        continue-on-error: true
