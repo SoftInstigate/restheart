@@ -52,11 +52,6 @@ jobs:
           java-version: "21"
           cache: "maven"
 
-      - name: Set VERSION
-        id: vars
-        run: |
-          echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
-
       - name: Import private gpg key
         run: |
           printf "%s" "$GPG_PRIVATE_KEY" > private.key
@@ -87,6 +82,32 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set VERSION
+        id: vars
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Extract Version Components
+        id: extract_version
+        run: |
+          MAJOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 1)
+          MINOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 2)
+          PATCH=$(echo "${{ env.VERSION }}" | cut -d '.' -f 3)
+
+          # Export the major, minor, and patch versions as environment variables
+          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
+          echo "MINOR=$MINOR" >> $GITHUB_ENV
+          echo "PATCH=$PATCH" >> $GITHUB_ENV
+
+
+      - name: Set Docker Tags for standard images
+        id: set_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS="softinstigate/restheart:latest,softinstigate/restheart:${{ env.MAJOR }},softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }},softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}"
+          echo "TAGS=$TAGS" >> $GITHUB_ENV
+
       - name: Build and Push multi-arch Docker images
         uses: docker/build-push-action@v6
         with:
@@ -98,11 +119,14 @@ jobs:
             linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: |
-            softinstigate/restheart:latest,
-            softinstigate/restheart:8,
-            softinstigate/restheart:8.1,
-            softinstigate/restheart:${{ env.VERSION }}
+          tags: ${{ env.TAGS }}
+
+      - name: Set Docker Tags for GraalVM image
+        id: set_graalvm_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS_GRAALVM="softinstigate/restheart:latest-graalvm,softinstigate/restheart:${{ env.MAJOR }}-graalvm,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-graalvm,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-graalvm"
+          echo "TAGS_GRAALVM=$TAGS_GRAALVM" >> $GITHUB_ENV
 
       - name: Build and Push GraalVM Docker image
         uses: docker/build-push-action@v6
@@ -114,11 +138,14 @@ jobs:
             linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: |
-            softinstigate/restheart:latest-graalvm,
-            softinstigate/restheart:8-graalvm,
-            softinstigate/restheart:8.1-graalvm,
-            softinstigate/restheart:${{ env.VERSION }}-graalvm
+          tags: ${{ env.TAGS_GRAALVM }}
+
+      - name: Set Docker tags for Distroless image
+        id: set_distroless_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS_DISTROLESS="softinstigate/restheart:latest-distroless,softinstigate/restheart:${{ env.MAJOR }}-distroless,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-distroless,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-distroless"
+          echo "TAGS_DISTROLESS=$TAGS_DISTROLESS" >> $GITHUB_ENV
 
       - name: Build and Push distroless docker image
         uses: docker/build-push-action@v6
@@ -131,11 +158,7 @@ jobs:
             linux/ppc64le
           push: true # push all images built
           pull: true # pull all required images before building
-          tags: |
-            softinstigate/restheart:latest-distroless,
-            softinstigate/restheart:8-distroless,
-            softinstigate/restheart:8.1-distroless,
-            softinstigate/restheart:${{ env.VERSION }}-distroless
+          tags: ${{ env.TAGS_DISTROLESS }}
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v2
