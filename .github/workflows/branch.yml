@@ -1,4 +1,4 @@
-name: Snapshot release
+name: Snapshot Release
 
 on:
   push:
