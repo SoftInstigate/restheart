@@ -3,11 +3,13 @@ name: Native Image Release
 on:
   workflow_run:
     workflows: ["Stable Release"]
+    branches: ["8.1.x"]
     types:
       - completed
 
 jobs:
   build-and-upload:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         include:
