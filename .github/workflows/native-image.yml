@@ -1,6 +1,10 @@
 name: Native Image Release
 
-on: workflow_dispatch # Manually trigger the workflow
+on:
+  workflow_run:
+    workflows: ["Stable Release"]
+    types:
+      - completed
 
 jobs:
   build-and-upload:
