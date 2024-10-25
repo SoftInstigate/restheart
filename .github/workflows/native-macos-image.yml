@@ -1,0 +1,114 @@
+name: Native MacOS Image
+
+on:
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+        type: string
+
+jobs:
+  build-and-upload:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            arch: "darwin-amd64"
+          - os: macos-latest
+            arch: "darwin-arm64"
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21"
+          distribution: "graalvm-community"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: "maven"
+          native-image-job-reports: "true"
+
+      - name: Build native image for darwin-amd64 (Intel)
+        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-amd64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          chmod +x core/target/restheart
+
+      - name: Build native image for darwin-arm64 (Apple Silicon)
+        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-arm64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+          mvn package -Pnative -DskipTests -Dnative.march="-march=arm64"
+          chmod +x core/target/restheart
+
+      - name: Upload Binary to Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs').promises;
+
+            const isWindows = '${{ matrix.os }}' === 'windows-latest';
+            const filePath = isWindows ? 'core/target/restheart.exe' : 'core/target/restheart';
+            const fileName = `restheart-${{ matrix.arch }}${isWindows ? '.exe' : ''}`;
+            const releaseTag = '${{ inputs.version }}'; // Use the passed version input
+
+            try {
+              const content = await fs.readFile(filePath);
+
+              const { data: releases } = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+
+              const release = releases.find(r => r.tag_name === releaseTag);
+
+              if (!release) {
+                throw new Error(`Release with tag '${releaseTag}' not found.`);
+              }
+
+              // Check if an asset with the same name exists in the release
+              const existingAsset = release.assets.find(asset => asset.name === fileName);
+
+              if (existingAsset) {
+                console.log(`Asset ${fileName} already exists. Deleting it...`);
+
+                // Delete the existing asset
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existingAsset.id
+                });
+
+                console.log(`Deleted asset ${fileName}`);
+              }
+
+              console.log(`Uploading ${fileName} to release ${releaseTag}...`);
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                name: fileName,
+                data: content,
+                headers: {
+                  'content-type': 'application/octet-stream'
+                }
+              });
+
+              console.log(`Successfully uploaded ${fileName} to release ${releaseTag}`);
+            } catch (error) {
+              console.error('Error occurred:', error.message);
+              process.exit(1);
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
