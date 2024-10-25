@@ -21,13 +21,20 @@ jobs:
           cache: "maven"
           native-image-job-reports: "true"
 
-      - name: Build native image
+      - name: Build native Linux executable
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
           mvn package -Pnative -DskipTests
+
+      - name: Upload native Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: restheart-linux-amd64
+          path: core/target/restheart
+          overwrite: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
