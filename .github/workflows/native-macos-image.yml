@@ -50,7 +50,7 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn package -Pnative -DskipTests -Dnative.march="-march=arm64"
+          mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
           chmod +x core/target/restheart
 
       - name: Upload darwin-arm64 (Apple Silicon) native
