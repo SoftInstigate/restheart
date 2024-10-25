@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-13
             arch: "darwin-amd64"
           - os: macos-latest
             arch: "darwin-arm64"
@@ -26,17 +26,17 @@ jobs:
           native-image-job-reports: "true"
 
       - name: Build darwin-amd64 (Intel) native
-        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-amd64'
+        if: matrix.arch == 'darwin-amd64'
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          mvn package -Pnative -DskipTests
           chmod +x core/target/restheart
 
       - name: Upload darwin-amd64 (Intel) native
-        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-amd64'
+        if: matrix.arch == 'darwin-amd64'
         uses: actions/upload-artifact@v4
         with:
           name: restheart-darwin-amd64
@@ -44,17 +44,17 @@ jobs:
           overwrite: true
 
       - name: Build darwin-arm64 (Apple Silicon) native
-        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-arm64'
+        if: matrix.arch == 'darwin-arm64'
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image --version
-          mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
+          mvn package -Pnative -DskipTests
           chmod +x core/target/restheart
 
       - name: Upload darwin-arm64 (Apple Silicon) native
-        if: matrix.os == 'macos-latest' && matrix.arch == 'darwin-arm64'
+        if: matrix.arch == 'darwin-arm64'
         uses: actions/upload-artifact@v4
         with:
           name: restheart-darwin-arm64
