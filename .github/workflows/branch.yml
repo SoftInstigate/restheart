@@ -9,6 +9,7 @@ on:
     paths:
       - "**/*.java" # Trigger on any Java file change
       - "**/*.xml" # Trigger on any xml file change
+      - "**/Dockerfile*" # Trigger on any Dockerfile change
 
 jobs:
   # Build and test the project
