@@ -33,7 +33,6 @@ jobs:
           java --version
           native-image --version
           mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
-          chmod +x core/target/restheart
 
       - name: Upload darwin-amd64 (Intel) native
         if: matrix.arch == 'darwin-amd64'
@@ -51,7 +50,6 @@ jobs:
           java --version
           native-image --version
           mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
-          chmod +x core/target/restheart
 
       - name: Upload darwin-arm64 (Apple Silicon) native
         if: matrix.arch == 'darwin-arm64'
