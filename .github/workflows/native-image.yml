@@ -26,6 +26,10 @@ jobs:
             arch: linux-amd64
           - os: windows-latest
             arch: windows-amd64
+          - os: macos-13
+            arch: "darwin-amd64"
+          - os: macos-latest
+            arch: "darwin-arm64"
     timeout-minutes: 20
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
@@ -40,8 +44,35 @@ jobs:
           cache: "maven"
           native-image-job-reports: "true"
 
-      - name: Build native image on Linux
-        if: matrix.os == 'ubuntu-latest'
+      - name: Build MacOS Intel native
+        if: matrix.arch == 'darwin-amd64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+
+      - name: Build MacOS Apple Silicon native
+        if: matrix.arch == 'darwin-arm64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
+
+      - name: Build Windows native
+        if: matrix.arch == 'windows-amd64'
+        run: |
+          echo "GRAALVM_HOME: %GRAALVM_HOME%"
+          echo "JAVA_HOME: %JAVA_HOME%"
+          java --version
+          native-image.cmd -march=list
+          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
+
+      - name: Build Linux native
+        if: matrix.arch == 'linux-amd64'
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
@@ -50,28 +81,14 @@ jobs:
           mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
           chmod +x core/target/restheart
 
-      - name: Build native image on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "GRAALVM_HOME: %GRAALVM_HOME%"
-          echo "JAVA_HOME: %JAVA_HOME%"
-          java --version
-          native-image.cmd -march=list
-          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
-
-      - name: Set Output for Ubuntu
-        if: matrix.arch == 'linux-amd64'
-        id: set-output
-        run: echo "ubuntu=true" >> $GITHUB_OUTPUT
-
-      - name: Upload Native Artifact
+      - name: Upload restheart-${{ matrix.arch }} native artifact
         uses: actions/upload-artifact@v4
         with:
           name: restheart-${{ matrix.arch }}
           path: core/target/restheart
           overwrite: true
 
-      - name: Upload Native Artifact to Release
+      - name: Upload restheart-${{ matrix.arch }} to Release
         uses: actions/github-script@v7
         with:
           script: |
@@ -131,6 +148,11 @@ jobs:
             }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Output for docker-publish-linux Job
+        if: matrix.arch == 'linux-amd64'
+        id: set-output
+        run: echo "ubuntu=true" >> $GITHUB_OUTPUT
 
   docker-publish-linux:
     runs-on: ubuntu-latest
