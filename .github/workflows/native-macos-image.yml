@@ -31,7 +31,7 @@ jobs:
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          native-image --version
+          native-image -march=list
           mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
 
       - name: Upload darwin-amd64 (Intel) native
@@ -48,7 +48,7 @@ jobs:
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          native-image --version
+          native-image -march=list
           mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
 
       - name: Upload darwin-arm64 (Apple Silicon) native

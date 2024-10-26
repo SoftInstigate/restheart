@@ -26,7 +26,7 @@ jobs:
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          native-image --version
+          native-image -march=list
           mvn package -Pnative -DskipTests
 
       - name: Upload native Linux executable
