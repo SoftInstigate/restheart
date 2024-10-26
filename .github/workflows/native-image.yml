@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: restheart-${{ matrix.arch }}
-          path: core/target/restheart
+          path: ${{ matrix.arch == 'windows-amd64' && 'core/target/restheart.exe' || 'core/target/restheart' }}
           overwrite: true
 
       - name: Set Output for docker-publish-linux Job
