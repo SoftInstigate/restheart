@@ -46,7 +46,7 @@ jobs:
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          native-image --version
+          native-image -march=list
           mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
           chmod +x core/target/restheart
 
@@ -56,7 +56,7 @@ jobs:
           echo "GRAALVM_HOME: %GRAALVM_HOME%"
           echo "JAVA_HOME: %JAVA_HOME%"
           java --version
-          native-image.cmd --version
+          native-image.cmd -march=list
           mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
 
       - name: Set Output for Ubuntu
@@ -69,8 +69,8 @@ jobs:
         if: matrix.arch == 'linux-amd64'
         uses: actions/upload-artifact@v4
         with:
-          name: restheart
-          path: core/target/
+          name: restheart-linux-amd64
+          path: core/target/restheart
 
       - name: Upload Binary to Release
         uses: actions/github-script@v7
