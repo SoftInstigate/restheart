@@ -11,7 +11,7 @@ COPY target/plugins/lib/*.jar plugins/lib/
 SHELL ["/bin/bash", "-i", "-c"]
 
 RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh"
-ENV PATH /root/.sdkman/candidates/java/current/bin:$PATH
+ENV PATH="/root/.sdkman/candidates/java/current/bin:$PATH"
 
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar" ]
