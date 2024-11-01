@@ -26,10 +26,17 @@ import java.util.stream.Collectors;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import static org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
+import org.restheart.security.AclVarsInterpolator;
+import org.restheart.security.MongoPermissions;
+import org.restheart.security.MongoRealmAccount;
+import org.restheart.security.WithProperties;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.LambdaUtils;
 
@@ -169,5 +176,69 @@ public class StagesInterpolator {
             return elseStage(stageOperator, stage); // null, if no else stage specified
         }
     }
+
+    /**
+     * adds the default variables to the avars document
+     *
+     * Supports accounts handled by MongoRealAuthenticator,
+     * FileRealmAuthenticator and JwtAuthenticationMechanism
+     *
+     * @param request
+     * @param avars
+     */
+    public static void injectAvars(MongoRequest request, BsonDocument avars) {
+        // add @page, @pagesize, @limit and @skip to avars to allow handling
+        // paging in the aggragation via default page and pagesize qparams
+        avars.put("@page", new BsonInt32(request.getPage()));
+        avars.put("@pagesize", new BsonInt32(request.getPagesize()));
+        avars.put("@limit", new BsonInt32(request.getPagesize()));
+        avars.put("@skip", new BsonInt32(request.getPagesize() * (request.getPage() - 1)));
+
+        // add @mongoPermissions to avars
+        var mongoPermissions = MongoPermissions.of(request);
+        if (mongoPermissions != null) {
+            avars.put("@mongoPermissions" ,mongoPermissions.asBson());
+
+            avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
+                ? BsonNull.VALUE
+                : mongoPermissions.getProjectResponse());
+
+            avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
+
+            avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+
+            avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
+        } else {
+            avars.put("@mongoPermissions", new MongoPermissions().asBson());
+            avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
+            avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
+            avars.put("@mongoPermissions.readFilter", BsonNull.VALUE);
+            avars.put("@mongoPermissions.writeFilter", BsonNull.VALUE);
+        }
+
+        // add @user to avars
+        var account = request.getAuthenticatedAccount();
+
+        if (account == null) {
+            avars.put("@user", BsonNull.VALUE);
+        } else if (account instanceof MongoRealmAccount maccount) {
+            var ba = maccount.properties();
+            avars.put("@user", ba);
+            ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
+        } else if (account instanceof WithProperties<?> accountWithProperties) {
+            var ba = BsonUtils.toBsonDocument(accountWithProperties.propertiesAsMap());
+            avars.put("@user", ba);
+            ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
+        } else {
+            avars.put("@user", BsonNull.VALUE);
+        }
+    }
+
 
 }

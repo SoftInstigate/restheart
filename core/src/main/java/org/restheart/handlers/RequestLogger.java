@@ -198,8 +198,7 @@ public class RequestLogger extends PipelinedHandler {
         addExchangeCompleteListener(exchange, logLevel, sb, start);
     }
 
-    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb,
-            final long start) {
+    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb, final long start) {
         exchange.addExchangeCompleteListener(
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
                     if (logLevel < 1) {
