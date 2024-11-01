@@ -91,7 +91,17 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         try {
             if (isWebSocketHandshakeRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
-                exchange.putAttachment(AVARS_ATTACHMENT_KEY, request.getAggregationVars());
+
+                var _avars = request.getAggregationVars();
+
+                if (_avars == null) {
+                    _avars = new BsonDocument();
+                }
+
+                // add the default variables to the avars document
+                StagesInterpolator.injectAvars(request, _avars);
+
+                exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
 
                 initChangeStreamWorker(exchange);
 
@@ -156,7 +166,9 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         var pipeline = _query.get();
 
-        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), request.getAggregationVars());
+        var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
+
+        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
         return resolvedStages;
     }
 
