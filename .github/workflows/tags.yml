@@ -1,0 +1,181 @@
+name: Stable Release
+
+on:
+  push:
+    branches:
+      - "!master" # Ignore the master branch
+    tags:
+      - "*" # Trigger on any tag
+
+jobs:
+  # Build and test the project
+  build:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: ["5.0", "6.0"]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+
+      - name: Build and Test
+        run: |
+          mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+
+  # Deploy the project to Maven Central and DockerHub
+  deploy:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: ["7.0"]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+
+      - name: Build and Test
+        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+
+      - name: Import private gpg key
+        run: |
+          printf "%s" "$GPG_PRIVATE_KEY" > private.key
+          gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
+        continue-on-error: true
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Deploy to Maven Central
+        continue-on-error: true
+        run: |
+          MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
+          mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Set VERSION
+        id: vars
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Extract Version Components
+        id: extract_version
+        run: |
+          MAJOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 1)
+          MINOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 2)
+          PATCH=$(echo "${{ env.VERSION }}" | cut -d '.' -f 3)
+
+          # Export the major, minor, and patch versions as environment variables
+          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
+          echo "MINOR=$MINOR" >> $GITHUB_ENV
+          echo "PATCH=$PATCH" >> $GITHUB_ENV
+
+      - name: Set Docker Tags for standard images
+        id: set_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS="softinstigate/restheart:latest,softinstigate/restheart:${{ env.MAJOR }},softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }},softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}"
+          echo "TAGS=$TAGS" >> $GITHUB_ENV
+
+      - name: Build and Push multi-arch Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: ./core/
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le,
+            linux/s390x
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: ${{ env.TAGS }}
+
+      - name: Set Docker Tags for GraalVM image
+        id: set_graalvm_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS_GRAALVM="softinstigate/restheart:latest-graalvm,softinstigate/restheart:${{ env.MAJOR }}-graalvm,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-graalvm,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-graalvm"
+          echo "TAGS_GRAALVM=$TAGS_GRAALVM" >> $GITHUB_ENV
+
+      - name: Build and Push GraalVM Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.graalvm
+          platforms: |
+            linux/amd64,
+            linux/arm64
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: ${{ env.TAGS_GRAALVM }}
+
+      - name: Set Docker tags for Distroless image
+        id: set_distroless_tags
+        run: |
+          # Construct all tags based on the MAJOR.MINOR.PATCH format
+          TAGS_DISTROLESS="softinstigate/restheart:latest-distroless,softinstigate/restheart:${{ env.MAJOR }}-distroless,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-distroless,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-distroless"
+          echo "TAGS_DISTROLESS=$TAGS_DISTROLESS" >> $GITHUB_ENV
+
+      - name: Build and Push distroless docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.distroless
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: ${{ env.TAGS_DISTROLESS }}
+
+      - name: Upload GitHub release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: |
+            # Release ${{ env.VERSION }}
+          files: |
+            core/target/restheart.tar.gz
+            core/target/restheart.zip
+          draft: true
+          prerelease: false
+
+  # Separate job to call the reusable workflow
+  call-native-image-release:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    needs: deploy
+    uses: softinstigate/restheart/.github/workflows/native-image-release.yml@master
+    with:
+      version: "${{ env.VERSION }}"
