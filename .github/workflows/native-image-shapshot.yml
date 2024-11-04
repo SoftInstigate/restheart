@@ -1,0 +1,126 @@
+name: Native Image Snapshot
+
+on: workflow_dispatch # Manually trigger the workflow
+
+jobs:
+  build-and-upload:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux-amd64
+          - os: windows-latest
+            arch: windows-amd64
+          - os: macos-13
+            arch: "darwin-amd64"
+          - os: macos-latest
+            arch: "darwin-arm64"
+    timeout-minutes: 20
+    outputs:
+      ubuntu: ${{ steps.set-output.outputs.ubuntu }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21"
+          distribution: "graalvm-community"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: "maven"
+          native-image-job-reports: "true"
+
+      - name: Build MacOS Intel native
+        if: matrix.arch == 'darwin-amd64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+
+      - name: Build MacOS Apple Silicon native
+        if: matrix.arch == 'darwin-arm64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
+
+      - name: Build Windows native
+        if: matrix.arch == 'windows-amd64'
+        run: |
+          echo "GRAALVM_HOME: %GRAALVM_HOME%"
+          echo "JAVA_HOME: %JAVA_HOME%"
+          java --version
+          native-image.cmd -march=list
+          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
+
+      - name: Build Linux native
+        if: matrix.arch == 'linux-amd64'
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image -march=list
+          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          chmod +x core/target/restheart
+
+      - name: Upload restheart-${{ matrix.arch }} native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: restheart-${{ matrix.arch }}
+          path: ${{ matrix.arch == 'windows-amd64' && 'core/target/restheart.exe' || 'core/target/restheart' }}
+          overwrite: true
+
+      - name: Set Output for docker-publish-linux Job
+        if: matrix.arch == 'linux-amd64'
+        id: set-output
+        run: echo "ubuntu=true" >> $GITHUB_OUTPUT
+
+  docker-publish-linux:
+    runs-on: ubuntu-latest
+    needs: build-and-upload
+    if: needs.build-and-upload.outputs.ubuntu == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Binary Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: restheart-linux-amd64
+          path: core/target/restheart
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Set SHA
+        id: vars
+        run: |
+          echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
+
+      - name: Build and Push multi-arch native Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.native
+          platforms: |
+            linux/amd64,
+            linux/arm64,
+            linux/ppc64le,
+            linux/s390x
+          push: true # push all images built
+          pull: true # pull all required images before building
+          tags: |
+            softinstigate/restheart-snapshot:${{ env.SHA }}-native
+            ${{ github.ref == 'refs/heads/master' && 'softinstigate/restheart-snapshot:latest-native' || '' }}
