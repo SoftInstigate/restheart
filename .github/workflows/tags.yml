@@ -172,8 +172,9 @@ jobs:
           draft: true
           prerelease: false
 
-      - name: Call Native Image Release
-        uses: softinstigate/restheart/.github/workflows/native-image.yml@${{ github.ref_name }}
-        with:
-          version: "${{ env.VERSION }}"
-        continue-on-error: true
+  # Separate job to call the reusable workflow
+  call-native-image-release:
+    needs: deploy
+    uses: softinstigate/restheart/.github/workflows/native-image.yml@${{ github.ref_name }}
+    with:
+      version: "${{ env.VERSION }}"
