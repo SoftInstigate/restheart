@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         mongodb-version: ["5.0", "6.0"]
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         mongodb-version: ["7.0"]
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
