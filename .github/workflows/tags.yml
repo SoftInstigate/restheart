@@ -174,7 +174,8 @@ jobs:
 
   # Separate job to call the reusable workflow
   call-native-image-release:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: deploy
-    uses: softinstigate/restheart/.github/workflows/native-image.yml@${{ github.ref_name }}
+    uses: softinstigate/restheart/.github/workflows/native-image.yml@8.1.x
     with:
       version: "${{ env.VERSION }}"
