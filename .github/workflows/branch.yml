@@ -31,8 +31,6 @@ jobs:
           cache: "maven"
 
       - name: Build and Test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
   # Deploy the project to Maven Central and DockerHub
