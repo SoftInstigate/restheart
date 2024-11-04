@@ -173,8 +173,7 @@ jobs:
           prerelease: false
 
       - name: Call Native Image Release
-        uses: ./.github/workflows/native-image.yml
+        uses: softinstigate/restheart/.github/workflows/native-image.yml@${{ github.ref_name }}
         with:
           version: "${{ env.VERSION }}"
-        # Continue the calling workflow even if the called workflow fails
         continue-on-error: true
