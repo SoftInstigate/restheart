@@ -176,6 +176,6 @@ jobs:
   call-native-image-release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: deploy
-    uses: softinstigate/restheart/.github/workflows/native-image.yml@8.1.x
+    uses: softinstigate/restheart/.github/workflows/native-image-release.yml@master
     with:
       version: "${{ env.VERSION }}"
