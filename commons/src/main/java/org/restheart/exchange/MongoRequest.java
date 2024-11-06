@@ -508,7 +508,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     private String unmapPathTemplateUri(String mappedUri) {
-        var ret = URLUtils.removeTrailingSlashes(mappedUri);
+        var ret = mappedUri;
         var rewriteUri = replaceParamsWithActualValues();
 
         var replacedWhatUri = replaceParamsWithinWhatUri();
@@ -526,7 +526,7 @@ public class MongoRequest extends BsonRequest {
             ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
         }
 
-        return ret.isEmpty() ? SLASH : ret;
+        return ret.isEmpty() ? SLASH : URLUtils.removeTrailingSlashes(ret);
     }
 
     /**

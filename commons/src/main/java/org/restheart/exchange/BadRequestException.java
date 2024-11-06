@@ -69,7 +69,7 @@ public class BadRequestException extends RuntimeException {
     /**
      *
      * @param message
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      */
     public BadRequestException(String message, boolean jsonMessage) {
         super(message);
@@ -80,7 +80,7 @@ public class BadRequestException extends RuntimeException {
     /**
      *
      * @param message
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      * @param contentType error response content type
      */
     public BadRequestException(String message, boolean jsonMessage, String contentType) {
@@ -105,7 +105,7 @@ public class BadRequestException extends RuntimeException {
      *
      * @param message
      * @param statusCode
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      */
     public BadRequestException(String message, int statusCode, boolean jsonMessage) {
         super(message);
@@ -118,7 +118,7 @@ public class BadRequestException extends RuntimeException {
      *
      * @param message
      * @param statusCode
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      * @param contentType error response content type
      */
     public BadRequestException(String message, int statusCode, boolean jsonMessage, String contentType) {
@@ -136,14 +136,14 @@ public class BadRequestException extends RuntimeException {
     public BadRequestException(String message, Throwable cause) {
         super(message, cause);
         this.jsonMessage = false;
-        this.contentType = Exchange.JSON_MEDIA_TYPE;
+        this.contentType = Exchange.TEXT_PLAIN_CONTENT_TYPE;
     }
 
     /**
      *
      * @param message
      * @param cause
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      */
     public BadRequestException(String message, boolean jsonMessage, Throwable cause) {
         super(message, cause);
@@ -155,7 +155,7 @@ public class BadRequestException extends RuntimeException {
      *
      * @param message
      * @param cause
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      * @param contentType error response content type
      */
     public BadRequestException(String message, boolean jsonMessage, String contentType, Throwable cause) {
@@ -181,7 +181,7 @@ public class BadRequestException extends RuntimeException {
      *
      * @param message
      * @param statusCode
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      * @param cause
      */
     public BadRequestException(String message, int statusCode, boolean jsonMessage, Throwable cause) {
@@ -195,7 +195,7 @@ public class BadRequestException extends RuntimeException {
      *
      * @param message
      * @param statusCode
-     * @param jsonMessage mark message as json
+     * @param jsonMessage mark message as json, i.e. the string is valid json
      * @param contentType error response content type
      * @param cause
      */

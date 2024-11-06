@@ -127,7 +127,7 @@ public class ChangeStreamWorker implements Runnable {
         } catch(MongoInterruptedException mie) {
             close();
         } catch(MongoException mqe) {
-            LOGGER.error("MongoDb error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
+            LOGGER.error("MongoDB error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
 
             try {
                 Thread.sleep(1_000);

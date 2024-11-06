@@ -966,7 +966,7 @@ public final class Bootstrapper {
         @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
         boolean versionRequested;
 
-        @Option(names = { "-s", "--standalone" }, description = "Use an alternate configuration that disables all plugins depending from MongoDb")
+        @Option(names = { "-s", "--standalone" }, description = "Use an alternate configuration that disables all plugins depending from MongoDB")
         boolean standalone;
     }
 }

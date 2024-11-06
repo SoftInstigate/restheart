@@ -20,18 +20,16 @@
 
 package org.restheart.mongodb;
 
-import com.mongodb.MongoCommandException;
-import com.mongodb.MongoTimeoutException;
-import com.mongodb.client.MongoClient;
-
+import org.restheart.cache.Cache.EXPIRE_POLICY;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.cache.Cache.EXPIRE_POLICY;
-
+import static org.restheart.utils.BsonUtils.document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.utils.BsonUtils.document;
+import com.mongodb.MongoCommandException;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.client.MongoClient;
 
 public class ConnectionChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionChecker.class);
@@ -45,7 +43,7 @@ public class ConnectionChecker {
             mclient.getDatabase("admin").runCommand(document().put("ping", 1).get());
             return true;
         } catch(Throwable t) {
-            LOGGER.error("Error checking connection to MongoDb", t);
+            LOGGER.error("Error checking connection to MongoDB", t);
             return false;
         }
     });
