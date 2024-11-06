@@ -121,7 +121,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if (mclient != null) {
             this.pipeline.handleRequest(request.getExchange());
         } else {
-            final var error = "MongoDb is not availabe";
+            final var error = "MongoDB is not availabe";
 
             response.setInError(500, error);
             LOGGER.error(error);
@@ -201,10 +201,10 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             if (mm != null) {
                 MongoRequest.init(e, mm.uri, mm.resource);
             } else {
-                LOGGER.warn("No MongoDb resource bound for {}. "
+                LOGGER.warn("No MongoDB resource bound for {}. "
                         + "Check mongo service configuration: "
                         + "'mongo-mounts' and plugin arg 'uri'", path);
-                throw new BadRequestException(HttpStatus.SC_BAD_GATEWAY);
+                throw new BadRequestException("No MongoDB resource bound for " + path, HttpStatus.SC_BAD_GATEWAY);
             }
         };
     }

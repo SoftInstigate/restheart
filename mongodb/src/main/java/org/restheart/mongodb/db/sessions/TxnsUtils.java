@@ -20,12 +20,6 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import com.mongodb.ClientSessionOptions;
-import com.mongodb.client.MongoClient;
-import com.mongodb.MongoQueryException;
-
-import static com.mongodb.client.model.Filters.eq;
-
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,6 +27,11 @@ import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.RSOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.ClientSessionOptions;
+import com.mongodb.MongoQueryException;
+import com.mongodb.client.MongoClient;
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  *
@@ -175,7 +174,7 @@ public class TxnsUtils {
     private static final String TXN = "txnNumber";
     /**
      * errorMsg can be the transaction number or:
-     * - from MongoDb 6:   with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }
+     * - from MongoDB 6:   with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }
      * - from MongoDB 5:   with { txnNumber: 10 }
      * - from MongoDB < 5: with txnNumber 10
      * @param errorMsg

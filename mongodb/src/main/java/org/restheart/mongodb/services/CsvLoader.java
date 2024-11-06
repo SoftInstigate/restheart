@@ -20,14 +20,12 @@
  */
 package org.restheart.mongodb.services;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
-import io.undertow.server.HttpServerExchange;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -38,11 +36,16 @@ import org.restheart.mongodb.RHMongoClients;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
- * service to upload a csv file in a MongoDb collection
+ * service to upload a csv file in a MongoDB collection
  *
  * query parameters:<br>
  * - db=&lt;db_name&gt; *required<br>
@@ -60,7 +63,7 @@ import org.restheart.utils.BsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @SuppressWarnings("unchecked")
-@RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a MongoDb collection", secure = true, defaultURI = "/csv")
+@RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a MongoDB collection", secure = true, defaultURI = "/csv")
 public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
     /**
      *

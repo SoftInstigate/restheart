@@ -53,6 +53,11 @@ public abstract class Exchange<T> {
     /**
      *
      */
+    public static final String TEXT_PLAIN_CONTENT_TYPE = "text/plain";
+
+    /**
+     *
+     */
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
 
     /**

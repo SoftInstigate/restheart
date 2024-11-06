@@ -53,7 +53,7 @@ public class MongoAclPermission extends BaseAclPermission {
     }
 
     /**
-     * build acl permission from MongoDb document
+     * build acl permission from MongoDB document
      *
      * @param doc
      */
