@@ -43,7 +43,7 @@ import static com.mongodb.client.model.Filters.eq;
  * it also forbids the client to update an existing document
  *
  * it assumes that the user collection is 'users' and the roles property is
- * 'roles' (the default configuration values of mongoRealAuthenticator)
+ * 'roles' (the default configuration values of mongoRealmAuthenticator)
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
