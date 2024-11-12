@@ -64,7 +64,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
     private static final Zxcvbn zxcvbn = new Zxcvbn();
 
-    private String usersDb;
+    private MongoRealmAuthenticator mra;
     private String usersCollection;
     private String propNamePassword;
     private Integer minimumPasswordStrength;
@@ -76,40 +76,38 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        PluginRecord<Authenticator> _mra;
+        PluginRecord<Authenticator> pr;
 
         try {
-            _mra = registry.getAuthenticator("mongoRealmAuthenticator");
+            pr = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
             enabled = false;
             return;
         }
 
-        if (_mra == null || !_mra.isEnabled()) {
+        if (pr == null || !pr.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
+            this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            if (!rhAuth.isEnforceMinimumPasswordStrenght()) {
+            if (!this.mra.isEnforceMinimumPasswordStrenght()) {
                 this.enabled = false;
                 return;
             }
 
-            this.usersDb = rhAuth.getUsersDb();
-            this.usersCollection = rhAuth.getUsersCollection();
-            this.propNamePassword = rhAuth.getPropPassword();
-            this.minimumPasswordStrength = rhAuth.getMinimumPasswordStrength();
+            this.usersCollection = this.mra.getUsersCollection();
+            this.propNamePassword = this.mra.getPropPassword();
+            this.minimumPasswordStrength = this.mra.getMinimumPasswordStrength();
 
-            if (usersDb == null
-                    || usersCollection == null
+            if (usersCollection == null
                     || propNamePassword == null
                     || minimumPasswordStrength == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password field of users documents "
                         + "is not automatically checked for password strenght: "
-                        + "{usersDb: {}, usersCollection: {}, "
+                        + "{usersCollection: {}, "
                         + "propNamePassword: {}, minimumPasswordStrength: {}})",
-                        usersDb, usersCollection, propNamePassword, minimumPasswordStrength);
+                        usersCollection, propNamePassword, minimumPasswordStrength);
                 enabled = false;
             } else {
                 enabled = true;
@@ -198,7 +196,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
             && request.isHandledBy("mongo")
             && request.isWriteDocument()
             && request.isContentTypeJson()
-            && this.usersDb.equalsIgnoreCase(request.getDBName())
+            && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
             && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
 }

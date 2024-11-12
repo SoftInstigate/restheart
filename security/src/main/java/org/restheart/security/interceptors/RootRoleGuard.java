@@ -35,14 +35,16 @@ import org.restheart.security.authenticators.MongoRealmAuthenticator;
 import org.restheart.security.authorizers.MongoAclAuthorizer;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.net.HttpHeaders;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.jayway.jsonpath.JsonPath;
+
 import io.undertow.attribute.ExchangeAttributes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -59,9 +61,9 @@ public class RootRoleGuard implements MongoInterceptor {
     @Inject("registry")
     PluginsRegistry registry;
 
+    private MongoRealmAuthenticator mra;
     private boolean enabled = true;
     private String rootRole = null;
-    private String usersDb = null;
     private String usersCollection = null;
     private String jsonPathRoles = null;
 
@@ -83,11 +85,10 @@ public class RootRoleGuard implements MongoInterceptor {
 
         if (_authorizer.isPresent() && _authenticator.isPresent()) {
             var authorizer = _authorizer.get();
-            var authenticator = _authenticator.get();
+            this.mra = _authenticator.get();
             this.rootRole = authorizer.rootRole();
-            this.usersDb = authenticator.getUsersDb();
-            this.usersCollection = authenticator.getUsersCollection();
-            this.jsonPathRoles = authenticator.getJsonPathRoles();
+            this.usersCollection = this.mra.getUsersCollection();
+            this.jsonPathRoles = this.mra.getJsonPathRoles();
         } else {
             enabled = false;
         }
@@ -108,12 +109,13 @@ public class RootRoleGuard implements MongoInterceptor {
     }
 
     private void logWarning(MongoRequest request) {
+        var db = request.getDBName();
         var clientId = request.isAuthenticated() ? request.getAuthenticatedAccount().getPrincipal().getName() : "unknown";
         var clientRoles = request.isAuthenticated() ? request.getAuthenticatedAccount().getRoles() : "$unauthenticated";
         var remoteIp = ExchangeAttributes.remoteIp().readAttribute(request.getExchange());
         var content = BsonUtils.toJson(request.getContent());
         var xff = request.getHeader(HttpHeaders.X_FORWARDED_FOR);
-        LOGGER.warn("{} with roles {} tried to set an account with roles array ({}) containing the root-role ({}). Remote IP={}, X-Forwared-For Header={}, content={}", clientId, clientRoles, this.jsonPathRoles, this.rootRole, remoteIp, xff, content);
+        LOGGER.warn("{} with roles {} tried to set an account in the collection {}.{} with roles array ({}) containing the root-role ({}). Remote IP={}, X-Forwared-For Header={}, content={}", clientId, clientRoles, db, this.mra.getUsersCollection(), this.jsonPathRoles, this.rootRole, remoteIp, xff, content);
     }
 
     /**
@@ -160,6 +162,11 @@ public class RootRoleGuard implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return enabled && request.isWriteDocument() && request.getDBName().equals(this.usersDb) && request.getCollectionName().equals(this.usersCollection);
+        if (this.mra.overrideUsersDbHeader() == null) {
+            return enabled && request.isWriteDocument() && request.getDBName().equals(this.mra.getUsersDb()) && request.getCollectionName().equals(this.usersCollection);
+        } else {
+            // when users db can be overridden, all dbs must be checked
+            return enabled && request.isWriteDocument() && request.getCollectionName().equals(this.usersCollection);
+        }
     }
 }

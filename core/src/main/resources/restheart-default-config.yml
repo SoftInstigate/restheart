@@ -87,6 +87,7 @@ fileRealmAuthenticator:
 mongoRealmAuthenticator:
   enabled: true
   users-db: restheart
+  override-users-db-header: null # eg. X-Auth-Db; when present override users-db from request header
   users-collection: users
   prop-id: _id
   prop-password: password
@@ -240,7 +241,11 @@ mongo:
   #
   # Special variables {host[n]} can be used in path templates for mounting
   # MongoDB resources based on the request's host name.
-  # Example: If the request is GET test.restheart.org/coll, then {host[0]}="test" and {host[1]}="restheart".
+  # Example:
+  # - what: /{host[0]}/{*}
+  #   where: /{*}
+  #
+  # If the request is GET test.restheart.org/coll, then {host[0]}="test" and {host[1]}="restheart".
   # WARNING: The Host header can be manually altered, potentially allowing unauthorized access to
   # arbitrary MongoDB resources. To secure access, ensure strict validation of authenticated users.
   # It is recommended to implement a veto permission mechanism to restrict resource access.
@@ -268,9 +273,6 @@ mongo:
   #     where: /api
   mongo-mounts:
     - what: /restheart
-      where: /
-
-    - what: /{host[2]}
       where: /
 
   # Default representation format https://restheart.org/docs/mongodb-rest/representation-format/#other-representation-formats

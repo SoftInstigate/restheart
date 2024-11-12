@@ -126,12 +126,12 @@ public class RndTokenManager implements TokenManager {
         PwdCredentialAccount ret;
 
         switch (account) {
-            case MongoRealmAccount maccount -> ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.properties());
+            case MongoRealmAccount maccount -> ret = new MongoRealmAccount(maccount.db(), maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.properties());
             case FileRealmAccount faccount -> ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.properties());
             case JwtAccount jwtAccount -> {
                 var accountDocument = BsonUtils.parse(jwtAccount.properties());
                 if (accountDocument instanceof BsonDocument bad) {
-                    ret = new MongoRealmAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
+                    ret = new MongoRealmAccount(null, jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
                 } else {
                     ret = new PwdCredentialAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()));
                 }

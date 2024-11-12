@@ -20,10 +20,6 @@
  */
 package org.restheart.security.authenticators;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import org.bson.BsonString;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.configuration.ConfigurationException;
@@ -41,6 +37,11 @@ import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -53,7 +54,7 @@ public class UserPwdHasher implements MongoInterceptor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(UserPwdHasher.class);
 
-    private String usersDb;
+    private MongoRealmAuthenticator mra;
     private String usersCollection;
     private String propNamePassword;
     private Integer complexity;
@@ -65,40 +66,38 @@ public class UserPwdHasher implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        PluginRecord<Authenticator> _mra;
+        PluginRecord<Authenticator> pr;
 
         try {
-            _mra = registry.getAuthenticator("mongoRealmAuthenticator");
+            pr = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
             enabled = false;
             return;
         }
 
-        if (_mra == null || !_mra.isEnabled()) {
+        if (pr == null || !pr.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
+            this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            if (!rhAuth.isBcryptHashedPassword()) {
+            if (!this.mra.isBcryptHashedPassword()) {
                 this.enabled = false;
                 return;
             }
 
-            this.usersDb = rhAuth.getUsersDb();
-            this.usersCollection = rhAuth.getUsersCollection();
-            this.propNamePassword = rhAuth.getPropPassword();
-            this.complexity = rhAuth.getBcryptComplexity();
+            this.usersCollection = this.mra.getUsersCollection();
+            this.propNamePassword = this.mra.getPropPassword();
+            this.complexity = this.mra.getBcryptComplexity();
 
-            if (usersDb == null
-                    || usersCollection == null
+            if (usersCollection == null
                     || propNamePassword == null
                     || complexity == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password field of users documents "
                         + "is not automatically entcrypted: "
-                        + "{usersDb: {}, usersCollection: {}, "
+                        + "{usersCollection: {}, "
                         + "propNamePassword: {}, complexity: {}})",
-                        usersDb, usersCollection, propNamePassword, complexity);
+                        usersCollection, propNamePassword, complexity);
                 enabled = false;
             } else {
                 enabled = true;
@@ -139,7 +138,7 @@ public class UserPwdHasher implements MongoInterceptor {
                     content.asDocument().put(this.propNamePassword, new BsonString(hashed));
                 }
             } catch (PathNotFoundException pnfe) {
-                return;
+                // nothing to do
             }
         }
     }
@@ -150,7 +149,7 @@ public class UserPwdHasher implements MongoInterceptor {
                 && request.isHandledBy("mongo")
                 && request.isWriteDocument()
                 && request.isContentTypeJson()
-                && this.usersDb.equalsIgnoreCase(request.getDBName())
+                && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
                 && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
 }

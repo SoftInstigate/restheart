@@ -28,10 +28,8 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +48,8 @@ import org.slf4j.LoggerFactory;
 public class DenyFilterOnUserPwd implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(DenyFilterOnUserPwd.class);
 
+    private MongoRealmAuthenticator mra = null;
     private boolean enabled = false;
-    private String usersDb;
     private String usersCollection;
     private String propNamePassword;
 
@@ -60,27 +58,22 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        PluginRecord<Authenticator> _mra;
-
+        final var pr = registry.getAuthenticator("mongoRealmAuthenticator");
         try {
-            _mra = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
             enabled = false;
             return;
         }
 
-        if (_mra == null || !_mra.isEnabled()) {
+        if (pr == null || !pr.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
+            this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            this.usersDb = rhAuth.getUsersDb();
-            this.usersCollection = rhAuth.getUsersCollection();
-            this.propNamePassword = rhAuth.getPropPassword();
+            this.usersCollection = this.mra.getUsersCollection();
+            this.propNamePassword = this.mra.getPropPassword();
 
-            if (usersDb == null
-                    || usersCollection == null
-                    || propNamePassword == null) {
+            if (usersCollection == null || propNamePassword == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Requests with filters on the password property "
                         + "are not blocked!");
@@ -94,10 +87,10 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-                && request.isGet()
-                && this.usersDb.equalsIgnoreCase(request.getDBName())
-                && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-                && hasFilterOnPassword(request.getFiltersDocument());
+            && request.isGet()
+            && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+            && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
+            && hasFilterOnPassword(request.getFiltersDocument());
     }
 
     @Override

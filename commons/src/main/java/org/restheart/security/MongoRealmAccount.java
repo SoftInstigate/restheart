@@ -22,8 +22,10 @@ package org.restheart.security;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 import org.bson.BsonDocument;
 import org.restheart.utils.BsonUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -36,15 +38,17 @@ public class MongoRealmAccount extends PwdCredentialAccount implements WithPrope
     private static final long serialVersionUID = -5840534832968478775L;
 
     private final BsonDocument properties;
+    private final String db;
 
     /**
      *
      * @param name
+     * @param db
      * @param password
      * @param roles
-     * @param accountDocument
+     * @param properties
      */
-    public MongoRealmAccount(final String name, final char[] password, final Set<String> roles, BsonDocument properties) {
+    public MongoRealmAccount(final String db, final String name, final char[] password, final Set<String> roles, BsonDocument properties) {
         super(name, password, roles);
 
         if (password == null) {
@@ -52,6 +56,7 @@ public class MongoRealmAccount extends PwdCredentialAccount implements WithPrope
         }
 
         this.properties = properties;
+        this.db = db;
     }
 
     @Override
@@ -59,7 +64,11 @@ public class MongoRealmAccount extends PwdCredentialAccount implements WithPrope
         return properties;
     }
 
-    private static Gson GSON = new GsonBuilder().serializeNulls().create();
+    public String db() {
+        return this.db;
+    }
+
+    private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
     @Override
     @SuppressWarnings("unchecked")

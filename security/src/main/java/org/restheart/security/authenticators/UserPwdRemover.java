@@ -20,11 +20,6 @@
  */
 package org.restheart.security.authenticators;
 
-import com.google.gson.JsonElement;
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -40,6 +35,12 @@ import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonElement;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -51,7 +52,7 @@ import org.slf4j.LoggerFactory;
 public class UserPwdRemover implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(UserPwdRemover.class);
 
-    private String usersDb;
+    private MongoRealmAuthenticator mra;
     private String usersCollection;
     private String propNamePassword;
     private boolean enabled = false;
@@ -61,26 +62,24 @@ public class UserPwdRemover implements MongoInterceptor {
 
     @OnInit
     public void init() {
-        PluginRecord<Authenticator> _mra;
+        PluginRecord<Authenticator> pr;
 
         try {
-            _mra = registry.getAuthenticator("mongoRealmAuthenticator");
+            pr = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
             enabled = false;
             return;
         }
 
-        if (_mra == null || !_mra.isEnabled()) {
+        if (pr == null || !pr.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
+            this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            this.usersDb = rhAuth.getUsersDb();
-            this.usersCollection = rhAuth.getUsersCollection();
-            this.propNamePassword = rhAuth.getPropPassword();
+            this.usersCollection = this.mra.getUsersCollection();
+            this.propNamePassword = this.mra.getPropPassword();
 
-            if (usersDb == null
-                    || usersCollection == null
+            if (usersCollection == null
                     || propNamePassword == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password stored in users collection "
@@ -143,7 +142,7 @@ public class UserPwdRemover implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
             && request.isGet()
-            && this.usersDb.equalsIgnoreCase(request.getDBName())
+            && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
             && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
             && !request.isCollectionSize()
             && !request.isCollectionMeta()
