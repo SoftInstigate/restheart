@@ -28,6 +28,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -176,6 +177,17 @@ public class MongoRequest extends BsonRequest {
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
             this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+
+            // add the host variables
+            var params = this.pathTemplateMatch.getParameters();
+            var hostname = this.wrapped.getHostName();
+            if (hostname != null) {
+                params.put("host", hostname );
+
+                var parts = hostname.split("\\.");
+
+                IntStream.range(0, parts.length).forEach(idx -> params.put("host[".concat(String.valueOf(idx)).concat("]"), parts[idx] ));
+            }
         } else {
             this.pathTemplateMatch = null;
         }

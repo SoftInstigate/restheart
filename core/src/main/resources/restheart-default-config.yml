@@ -238,6 +238,13 @@ mongo:
   # - in the 'what' property (e.g. what: /{foo}_db/coll)
   # - programmatically from MongoRequest.getPathTemplateParamenters() method.
   #
+  # Special variables {host[n]} can be used in path templates for mounting
+  # MongoDB resources based on the request's host name.
+  # Example: If the request is GET test.restheart.org/coll, then {host[0]}="test" and {host[1]}="restheart".
+  # WARNING: The Host header can be manually altered, potentially allowing unauthorized access to
+  # arbitrary MongoDB resources. To secure access, ensure strict validation of authenticated users.
+  # It is recommended to implement a veto permission mechanism to restrict resource access.
+  #
   # It is not possible to mix absolute paths and path templates: 'where' URIs
   # need to be either all absolute paths or all path templates.
   #
@@ -261,6 +268,9 @@ mongo:
   #     where: /api
   mongo-mounts:
     - what: /restheart
+      where: /
+
+    - what: /{host[2]}
       where: /
 
   # Default representation format https://restheart.org/docs/mongodb-rest/representation-format/#other-representation-formats
