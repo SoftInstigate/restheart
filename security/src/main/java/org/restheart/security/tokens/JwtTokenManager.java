@@ -231,7 +231,7 @@ public class JwtTokenManager implements TokenManager {
             .withSubject(account.getPrincipal().getName())
             .withExpiresAt(expires)
             .withIssuer(issuer)
-            .withArrayClaim("roles", (String[]) account.getRoles().toArray());
+            .withArrayClaim("roles", account.getRoles().toArray(new String[account.getRoles().size()]));
 
         Builder[] builder = { _builder };
 
@@ -246,7 +246,7 @@ public class JwtTokenManager implements TokenManager {
 
         var raw = builder[0].sign(algo);
 
-        return new Token(raw.toCharArray(), expires, (String[]) account.getRoles().toArray(), properties);
+        return new Token(raw.toCharArray(), expires, account.getRoles().toArray(new String[account.getRoles().size()]), properties);
     }
 
 

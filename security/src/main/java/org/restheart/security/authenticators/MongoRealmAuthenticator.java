@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -146,7 +147,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         if (cacheEnabled) {
             final int cacheSize = arg(config, "cache-size");
             final int cacheTTL = arg(config, "cache-ttl");
-            this.USERS_CACHE = CacheFactory.createLocalLoadingCache(cacheSize, this.cacheExpirePolicy, cacheTTL, key -> findAccount(accountIdTrasformer(key)));
+            this.USERS_CACHE = CacheFactory.createLocalLoadingCache(cacheSize, this.cacheExpirePolicy, cacheTTL, key -> findAccount(key));
         }
 
         try {
@@ -354,7 +355,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         final var cacheKey = new CacheKey(id, usersDb);
 
         if (USERS_CACHE == null) {
-            return findAccount(this.accountIdTrasformer(cacheKey));
+            return findAccount(cacheKey);
         } else {
             final var _account = USERS_CACHE.getLoading(cacheKey);
 
@@ -364,18 +365,6 @@ public class MongoRealmAuthenticator implements Authenticator {
                 return null;
             }
         }
-    }
-
-    /**
-     * Override this method to trasform the account id. By default it returns
-     * the id without any transformation. For example, it could be overridden to
-     * force the id to be lowercase.
-     *
-     * @param key the cache key
-     * @return the trasformed cache key(default is identity)
-     */
-    protected CacheKey accountIdTrasformer(final CacheKey key) {
-        return key;
     }
 
     /**
@@ -448,7 +437,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         return true;
     }
 
-    public long countAccounts() {
+    private long countAccounts() {
         try {
             return mclient.getDatabase(this.getUsersDb()).getCollection(this.getUsersCollection()).estimatedDocumentCount();
         } catch (final Throwable t) {
@@ -457,7 +446,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
-    public void createDefaultAccount() {
+    private void createDefaultAccount() {
         if (this.mclient == null) {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
             return;
@@ -472,7 +461,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
-    public MongoRealmAccount findAccount(final CacheKey key) {
+    private MongoRealmAccount findAccount(final CacheKey key) {
         final var coll = mclient.getDatabase(key.db()).getCollection(this.getUsersCollection()).withDocumentClass(BsonDocument.class);
 
         BsonDocument _account;
@@ -542,9 +531,10 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         });
 
-        return new MongoRealmAccount(key.db(), key.id(), _password.getAsJsonPrimitive().getAsString().toCharArray(), roles,
-                // used this because password has been removed from account
-                BsonDocument.parse(account.toString()));
+        var properties = BsonDocument.parse(account.toString()); // used this because password has been removed from account
+        properties.put("authDb", new BsonString(key.db()));
+
+        return new MongoRealmAccount(key.db(), key.id(), _password.getAsJsonPrimitive().getAsString().toCharArray(), roles, properties);
     }
 
     /**
