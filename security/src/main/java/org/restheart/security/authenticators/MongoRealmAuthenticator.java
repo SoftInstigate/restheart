@@ -32,7 +32,6 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import static org.restheart.mongodb.ConnectionChecker.connected;
 import org.restheart.plugins.Inject;
@@ -85,7 +84,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private int minimumPasswordStrength = 3;
     private BsonDocument createUserDocument = null;
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
-    protected record CacheKey(String id, String db) {};
+    private record CacheKey(String id, String db) {};
     private LoadingCache<CacheKey, MongoRealmAccount> USERS_CACHE = null;
     private static final transient Cache<CacheKey, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000l, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000l);
 

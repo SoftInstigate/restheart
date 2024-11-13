@@ -72,17 +72,18 @@ public class MongoAclAuthorizer implements Authorizer {
 
     public static final String ACL_COLLECTION_NAME = "acl";
 
-    public static final String $UNAUTHENTICATED = "$unauthenticated";
+    public static final String UNAUTHENTICATED = "$unauthenticated";
 
     String aclDb;
     String aclCollection;
+    String overrideAclDbHeader;
     private String rootRole = null;
     private boolean cacheEnabled = false;
     private Integer cacheSize = 1_000; // 1000 entries
     private Integer cacheTTL = 60 * 1_000; // 1 minute
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
-
-    private LoadingCache<String, LinkedHashSet<MongoAclPermission>> acl = null;
+    private record CacheKey(String role, String db) {};
+    private LoadingCache<CacheKey, LinkedHashSet<MongoAclPermission>> acl = null;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -95,9 +96,10 @@ public class MongoAclAuthorizer implements Authorizer {
 
     @OnInit
     public void init() {
-        this.aclDb = arg(config, "acl-db");
-        this.aclCollection = arg(config, "acl-collection");
-        this.rootRole = arg(config, "root-role");
+        this.aclDb = argOrDefault(config, "acl-db", "restheart");
+        this.aclCollection = argOrDefault(config, "acl-collection", "acl");
+        this.overrideAclDbHeader = argOrDefault(config, "override-acl-db-header", null);
+        this.rootRole = argOrDefault(config, "root-role", null);
 
         if (config != null && config.containsKey("cache-enabled")) {
             this.cacheEnabled = arg(config, "cache-enabled");
@@ -147,14 +149,9 @@ public class MongoAclAuthorizer implements Authorizer {
 
         if (this.rootRole != null
                 && exchange.getSecurityContext() != null
-                && exchange.getSecurityContext()
-                    .getAuthenticatedAccount() != null
-                && exchange.getSecurityContext()
-                    .getAuthenticatedAccount()
-                    .getRoles().contains(this.rootRole)) {
-            LOGGER.debug("allow request for root user {}", exchange
-                .getSecurityContext()
-                .getAuthenticatedAccount().getPrincipal().getName());
+                && exchange.getSecurityContext().getAuthenticatedAccount() != null
+                && exchange.getSecurityContext().getAuthenticatedAccount().getRoles().contains(this.rootRole)) {
+            LOGGER.debug("allow request for root user {}", exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
 
             // for root role add a mongo permissions that allows everything
             Set<String> roles = Sets.newHashSet();
@@ -180,8 +177,9 @@ public class MongoAclAuthorizer implements Authorizer {
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role -> {
                 ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
+                final var key = new CacheKey(role, aclDb(request));
 
-                rolePermissions(role)
+                rolePermissions(key)
                     .stream().anyMatch(permission -> {
                         var resolved = permission.allow(request);
 
@@ -208,7 +206,9 @@ public class MongoAclAuthorizer implements Authorizer {
 
         // the applicable permission is the ones that
         // resolves the exchange
-        roles(exchange).forEachOrdered(role -> rolePermissions(role)
+        roles(exchange)
+            .map(role -> new CacheKey(role, aclDb(request)))
+            .forEachOrdered(key -> rolePermissions(key)
             .stream()
             .anyMatch(r -> {
                 if (r.allow(request)) {
@@ -237,7 +237,7 @@ public class MongoAclAuthorizer implements Authorizer {
 
         var exchange = request.getExchange();
 
-        var ps = rolePermissions($UNAUTHENTICATED);
+        var ps = rolePermissions(new CacheKey(UNAUTHENTICATED, aclDb(request)));
 
         if (ps != null) {
             // this fixes undertow bug 377
@@ -257,6 +257,14 @@ public class MongoAclAuthorizer implements Authorizer {
         }
     }
 
+    private String aclDb(Request<?> req) {
+        if (this.overrideAclDbHeader != null && req.getHeaders().contains(this.overrideAclDbHeader)) {
+            return req.getHeader(overrideAclDbHeader);
+        } else {
+            return this.aclDb;
+        }
+    }
+
     private Stream<String> roles(HttpServerExchange exchange) {
         return account(exchange).getRoles().stream();
     }
@@ -271,13 +279,13 @@ public class MongoAclAuthorizer implements Authorizer {
     }
 
     /**
-     * @param role
+     * @param key the CacheKey(id,db)
      * @return the acl
      */
-    public LinkedHashSet<MongoAclPermission> rolePermissions(String role) {
+    public LinkedHashSet<MongoAclPermission> rolePermissions(CacheKey key) {
         if (this.cacheEnabled) {
             // TOFIX pinned thread
-            var _rolePermissions = this.acl.getLoading(role);
+            var _rolePermissions = this.acl.getLoading(key);
 
             if (_rolePermissions != null && _rolePermissions.isPresent()) {
                 return _rolePermissions.get();
@@ -285,7 +293,7 @@ public class MongoAclAuthorizer implements Authorizer {
                 return null;
             }
         } else {
-            return findRolePermissions(role);
+            return findRolePermissions(key);
         }
     }
 
@@ -310,16 +318,16 @@ public class MongoAclAuthorizer implements Authorizer {
     private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1,\"mongo\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
-    private LinkedHashSet<MongoAclPermission> findRolePermissions(final String role) {
+    private LinkedHashSet<MongoAclPermission> findRolePermissions(final CacheKey key) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
         } else {
             var permissions = new LinkedHashSet<BsonDocument>();
-            this.mclient.getDatabase(this.aclDb)
+            this.mclient.getDatabase(key.db)
                 .getCollection(this.aclCollection)
                 .withDocumentClass(BsonDocument.class)
-                .find(eq("roles", role))
+                .find(eq("roles", key.role))
                 .projection(PROJECTION)
                 .sort(SORT)
                 .into(permissions);

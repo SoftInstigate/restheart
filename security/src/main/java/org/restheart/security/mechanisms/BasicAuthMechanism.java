@@ -26,9 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
-import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
@@ -156,7 +154,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                             final AuthenticationMechanismOutcome result;
                             final Account account;
                             if (authenticator instanceof MongoRealmAuthenticator mauth) {
-                                    account = mauth.verify(Request.of(exchange), userName, credential);
+                                account = mauth.verify(Request.of(exchange), userName, credential);
                             } else {
                                 account = this.authenticator.verify(userName, credential);
                             }
