@@ -84,7 +84,17 @@ public class AuthorizersHandler extends PipelinedHandler {
         if (authorizers == null || authorizers.isEmpty()) {
             return false;
         } else {
-            return authorizers.stream()
+            return
+                // no VETOER must deny the request
+                authorizers.stream()
+                .filter(a -> a.isEnabled())
+                .filter(a -> a.getInstance() != null)
+                .map(a -> a.getInstance())
+                // filter out authorizers that requires authentication when the request is not authenticated
+                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
+                .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
+                .allMatch(a -> a.isAllowed(request))
+                && authorizers.stream()
                 // at least one ALLOWER must authorize the request
                 .filter(a -> a.isEnabled())
                 .filter(a -> a.getInstance() != null)
@@ -92,16 +102,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
                 // filter out authorizers that requires authentication when the request is not authenticated
                 .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .anyMatch(a -> a.isAllowed(request))
-                // no VETOER must deny the request
-                && authorizers.stream()
-                .filter(a -> a.isEnabled())
-                .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
-                // filter out authorizers that requires authentication when the request is not authenticated
-                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
-                .allMatch(a -> a.isAllowed(request));
+                .anyMatch(a -> a.isAllowed(request));
         }
     }
 }
