@@ -231,7 +231,7 @@ public class JwtTokenManager implements TokenManager {
             .withSubject(account.getPrincipal().getName())
             .withExpiresAt(expires)
             .withIssuer(issuer)
-            .withArrayClaim("roles", account.getRoles().toArray(new String[account.getRoles().size()]));
+            .withArrayClaim("roles", (String[]) account.getRoles().toArray());
 
         Builder[] builder = { _builder };
 
@@ -246,7 +246,7 @@ public class JwtTokenManager implements TokenManager {
 
         var raw = builder[0].sign(algo);
 
-        return new Token(raw.toCharArray(), expires, account.getRoles().toArray(new String[0]), properties);
+        return new Token(raw.toCharArray(), expires, (String[]) account.getRoles().toArray(), properties);
     }
 
 
@@ -254,37 +254,32 @@ public class JwtTokenManager implements TokenManager {
     private Builder withClaim(Builder b, String k, Object v) {
         if (k == null || v == null) {
             return b;
-        } if (v instanceof String s) {
-            return b.withClaim(k, s);
-        } else if (v instanceof String[] ss) {
-            return b.withArrayClaim(k, ss);
-        }else if (v instanceof Boolean boo) {
-            return b.withClaim(k, boo);
-        } else if (v instanceof Integer i) {
-            return b.withClaim(k, i);
-        } else if (v instanceof Integer[] ii) {
-            return b.withArrayClaim(k, ii);
-        } else if (v instanceof Long l) {
-            return b.withClaim(k, l);
-        } else if (v instanceof Long[] ll) {
-            return b.withArrayClaim(k, ll);
-        } else if (v instanceof Double d) {
-            return b.withClaim(k, d);
-        } else if (v instanceof Date d) {
-            return b.withClaim(k, d);
-        } else if (v instanceof Map m) {
-            try {
-                return b.withClaim(k, (Map<String, ?>) m);
-            } catch(ClassCastException cce) {
-                LOGGER.warn("cannot add claim {} to jwt because of usupported type", k);
-                return b;
-            }
-        } else if (v instanceof List l) {
-            return b.withClaim(k, (List<?>) l);
-        } else {
-            LOGGER.warn("cannot add claim {} to jwt because of usupported type", k, v.getClass().getSimpleName());
-            return b;
         }
+
+        return switch (v) {
+            case String s -> b.withClaim(k, s);
+            case String[] ss -> b.withArrayClaim(k, ss);
+            case Boolean boo -> b.withClaim(k, boo);
+            case Integer i -> b.withClaim(k, i);
+            case Integer[] ii -> b.withArrayClaim(k, ii);
+            case Long l -> b.withClaim(k, l);
+            case Long[] ll -> b.withArrayClaim(k, ll);
+            case Double d -> b.withClaim(k, d);
+            case Date d -> b.withClaim(k, d);
+            case Map m -> {
+                try {
+                    yield b.withClaim(k, (Map<String, ?>) m);
+                } catch(ClassCastException cce) {
+                    LOGGER.warn("cannot add claim {} to jwt because of usupported type", k);
+                    yield b;
+                }
+            }
+            case List l -> b.withClaim(k, (List<?>) l);
+            default -> {
+                LOGGER.warn("cannot add claim {} to jwt because of usupported type", k, v.getClass().getSimpleName());
+                yield b;
+            }
+        };
     }
 
     private Map<String, ? super Object> claimsFromAccountProps(Map<String, ? super Object> properties) {

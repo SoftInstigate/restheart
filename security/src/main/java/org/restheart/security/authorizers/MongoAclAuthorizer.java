@@ -282,7 +282,7 @@ public class MongoAclAuthorizer implements Authorizer {
      * @param key the CacheKey(id,db)
      * @return the acl
      */
-    public LinkedHashSet<MongoAclPermission> rolePermissions(CacheKey key) {
+    private LinkedHashSet<MongoAclPermission> rolePermissions(CacheKey key) {
         if (this.cacheEnabled) {
             // TOFIX pinned thread
             var _rolePermissions = this.acl.getLoading(key);
