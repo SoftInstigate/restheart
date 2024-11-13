@@ -8,6 +8,7 @@
     <packaging>pom</packaging>
 
     <properties>
+        <jdk.version>21</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>${jdk.version}</maven.compiler.release>
         <restheart.version>LATEST</restheart.version>
@@ -41,12 +42,12 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>3.21.12</version>
+                <version>3.25.5</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
-                <version>3.23.4</version>
+                <version>3.25.5</version>
             </dependency>
             <dependency>
                 <groupId>com.konghq</groupId>
