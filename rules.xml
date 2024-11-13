@@ -3,6 +3,10 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0 https://www.mojohaus.org/versions-maven-plugin/xsd/rule-2.0.0.xsd">
 
+    <!-- 
+    rules for the versions-maven-plugin
+    Used when running the mvn versions:display-dependency-updates goal
+    -->
     <!-- General ignore rules -->
     <ignoreVersions>
         <ignoreVersion type="regex">.*-alpha.*</ignoreVersion>
