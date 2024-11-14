@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import org.bson.BsonArray;
@@ -77,7 +77,7 @@ import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.MongoServiceAttachments;
-import org.restheart.utils.URLUtils;
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,8 +124,7 @@ public class MongoRequest extends BsonRequest {
 
     private BsonValue documentId;
 
-    private String mappedUri = null;
-    private String unmappedUri = null;
+    private String mongoResourceUri = null;
 
     private final String etag;
 
@@ -161,19 +160,17 @@ public class MongoRequest extends BsonRequest {
 
     private final Optional<RSOps> rsOps;
 
-    protected MongoRequest(HttpServerExchange exchange, String requestUri, String resourceUri) {
+    protected MongoRequest(HttpServerExchange exchange, String whereUri, String whatUri) {
         super(exchange);
 
-        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null
+        this.whereUri = removeTrailingSlashes(whereUri == null
             ? null
-            : requestUri.startsWith("/") ? requestUri
-            : "/" + requestUri);
+            : whereUri.startsWith("/") ? whereUri
+            : "/" + whereUri);
 
-        this.whatUri = URLUtils.removeTrailingSlashes(resourceUri == null ? null
-            : resourceUri.startsWith("/") || "*".equals(resourceUri) ? resourceUri
-            : "/" + resourceUri);
-
-        this.mappedUri = exchange.getRequestPath();
+        this.whatUri = removeTrailingSlashes(whatUri == null ? null
+            : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
+            : "/" + whatUri);
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
             this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
@@ -182,20 +179,18 @@ public class MongoRequest extends BsonRequest {
             var params = this.pathTemplateMatch.getParameters();
             var hostname = this.wrapped.getHostName();
             if (hostname != null) {
-                params.put("host", hostname );
-
-                var parts = hostname.split("\\.");
-
+                params.put("host", hostname);
+                final var parts = hostname.split("\\.");
                 IntStream.range(0, parts.length).forEach(idx -> params.put("host[".concat(String.valueOf(idx)).concat("]"), parts[idx] ));
             }
         } else {
             this.pathTemplateMatch = null;
         }
 
-        this.unmappedUri = unmapUri(exchange.getRequestPath());
+        this.mongoResourceUri = mongoUriFromRequestPath(exchange.getRequestPath());
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
-        this.pathTokens = this.unmappedUri.split(SLASH);
+        this.pathTokens = this.mongoResourceUri.split(SLASH);
 
         this.type = selectRequestType(pathTokens);
 
@@ -294,30 +289,28 @@ public class MongoRequest extends BsonRequest {
      *
      * @param exchange
      *
-     * the exchange request path (mapped uri) is rewritten replacing the
-     * resourceUri with the requestUri
-     *
-     * the special resourceUri value * means any resource: the requestUri is
-     * mapped to the root resource /
+     * the exchange request path (mapped resolvedTemplate) is rewritten replacing the
+     * whereUri with the whatUri
+     * the special whatUri value * means any resource
      *
      * example 1
      *
-     * resourceUri = /db/mycollection requestUri = /
+     * whatUri=/db/mycollection whereUri=/
      *
-     * then the requestPath / is rewritten to /db/mycollection
+     * then the requestPath / is rewritten as /db/mycollection
      *
      * example 2
      *
-     * resourceUri = * requestUri = /data
+     * whatUri=*, whereUri=/data
      *
-     * then the requestPath /data is rewritten to /
+     * then the requestPath /data is rewritten as /
      *
-     * @param requestUri the request URI to map to the resource URI
-     * @param resourceUri the resource URI identifying a resource in the DB
+     * @param whereUri the where URI
+     * @param whatUri the what URI idenitifying a MongoDB resource, as /db/collection
      * @return the MongoRequest
      */
-    public static MongoRequest init(HttpServerExchange exchange, String requestUri, String resourceUri) {
-        return new MongoRequest(exchange, requestUri, resourceUri);
+    public static MongoRequest init(HttpServerExchange exchange, String whereUri, String whatUri) {
+        return new MongoRequest(exchange, whereUri, whatUri);
     }
 
     public static MongoRequest of(HttpServerExchange exchange) {
@@ -482,63 +475,63 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * given a mapped uri (/some/mapping/coll) returns the canonical uri
-     * (/db/coll) URLs are mapped to mongodb resources by using the mongo-mounts
+     * given a request path (eg. /some/mapped/coll) returns the mongo resource uri
+     * (eg. /db/coll); request paths are mapped to mongodb resources by mongo-mounts
      * configuration properties. note that the mapped uri can make use of path
-     * templates (/some/{path}/template/*)
+     * templates (/some/{path}/template/{*})
      *
-     * @param mappedUri
-     * @return
+     * @param path the request path
+     * @return the mongo resource uri
      */
-    private String unmapUri(String mappedUri) {
+    private String mongoUriFromRequestPath(String path) {
         // don't unmap URIs statring with /_sessions
-        if (mappedUri.startsWith("/".concat(_SESSIONS))) {
-            return mappedUri;
+        if (path.startsWith("/".concat(_SESSIONS))) {
+            return path;
         }
 
         if (this.pathTemplateMatch == null) {
-            return unmapPathUri(mappedUri);
+            return mongoUriFromPathMatch(path);
         } else {
-            return unmapPathTemplateUri(mappedUri);
+            return mongoUruFromPathTemplateMatch(path);
         }
     }
 
-    private String unmapPathUri(String mappedUri) {
-        var ret = URLUtils.removeTrailingSlashes(mappedUri);
+    private String mongoUriFromPathMatch(String requestPath) {
+        var mongoUri = removeTrailingSlashes(requestPath);
 
-        if (whatUri.equals("*")) {
+        if (this.whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + this.whereUri, "");
+                mongoUri = mongoUri.replaceFirst("^" + Pattern.quote(this.whereUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whereUri, this.whatUri));
+            // problem, whereUri can contain regex special chars such as *
+            mongoUri = removeTrailingSlashes(mongoUri.replaceFirst("^" + Pattern.quote(this.whereUri), this.whatUri));
         } else {
-            ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
+            mongoUri = removeTrailingSlashes(removeTrailingSlashes(this.whatUri) + mongoUri);
         }
 
-        return ret.isEmpty() ? SLASH : ret;
+        return mongoUri.isEmpty() ? SLASH : mongoUri;
     }
 
-    private String unmapPathTemplateUri(String mappedUri) {
-        var ret = mappedUri;
-        var rewriteUri = replaceParamsWithActualValues();
+    private String mongoUruFromPathTemplateMatch(String requestPath) {
+        // requestPath=/api/a/b
+        // what=*
+        // where=/api/{*} -> /api/a/b
+        // -> /a/b
+        var mongoUri = removeTrailingSlashes(requestPath);
 
-        var replacedWhatUri = replaceParamsWithinWhatUri();
-        // replace params with in whatUri
-        // eg what: /{account}, where: /{account}/*
+        final var _whatUri = resolveTemplate(this.whatUri);
+        final var _whereUri = resolveTemplate(this.whereUri);
 
-        // now replace mappedUri with resolved path template
-        if (replacedWhatUri.equals("*")) {
-            if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + rewriteUri, "");
-            }
-        } else if (!this.whereUri.equals(SLASH)) {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + rewriteUri, replacedWhatUri));
+        if (_whatUri.equals("*")) {
+            mongoUri = mongoUri.replaceFirst("^" + Pattern.quote(_whereUri), "");
+        } else if (!_whereUri.equals(SLASH)) {
+            mongoUri = removeTrailingSlashes(mongoUri.replaceFirst("^" + Pattern.quote(_whereUri), _whatUri));
         } else {
-            ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
+            mongoUri = removeTrailingSlashes(removeTrailingSlashes(_whatUri) + mongoUri);
         }
 
-        return ret.isEmpty() ? SLASH : URLUtils.removeTrailingSlashes(ret);
+        return mongoUri.isEmpty() ? SLASH : removeTrailingSlashes(mongoUri);
     }
 
     /**
@@ -546,83 +539,65 @@ public class MongoRequest extends BsonRequest {
      * (/some/mapping/uri) relative to this context. URLs are mapped to mongodb
      * resources via the mongo-mounts configuration properties
      *
-     * @param unmappedUri
+     * @param mongoResourceUri
      * @return
      */
-    public String mapUri(String unmappedUri) {
+    public String requestPathFromMongoUri(String mongoResourceUri) {
         if (this.pathTemplateMatch == null) {
-            return mapPathUri(unmappedUri);
+            return requestPathFromPathMatch(mongoResourceUri);
         } else {
-            return mapPathTemplateUri(unmappedUri);
+            return requestPathFromPathTemplateMatch(mongoResourceUri);
         }
     }
 
-    private String mapPathUri(String unmappedUri) {
-        var ret = URLUtils.removeTrailingSlashes(unmappedUri);
+    private String requestPathFromPathMatch(String mongoUri) {
+        var requestPath = removeTrailingSlashes(mongoUri);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                return this.whereUri + unmappedUri;
+                return this.whereUri + mongoUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
+            requestPath = removeTrailingSlashes(requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
-        if (ret.isEmpty()) {
-            ret = SLASH;
+        if (requestPath.isEmpty()) {
+            requestPath = SLASH;
         } else {
-            ret = ret.replaceAll("//", "/");
+            requestPath = requestPath.replaceAll("//", "/");
         }
 
-        return ret;
+        return requestPath;
     }
 
-    private String mapPathTemplateUri(String unmappedUri) {
-        var ret = URLUtils.removeTrailingSlashes(unmappedUri);
-        var rewriteUri = replaceParamsWithActualValues();
-        var replacedWhatUri = replaceParamsWithinWhatUri();
+    private String requestPathFromPathTemplateMatch(String mongoUri) {
+        var requestPath = removeTrailingSlashes(mongoUri);
+        var resolvedWhere = resolveTemplate(this.whereUri);
+        var resolvedWhat = resolveTemplate(this.whatUri);
 
         // now replace mappedUri with resolved path template
-        if (replacedWhatUri.equals("*")) {
+        if (resolvedWhat.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                return rewriteUri + unmappedUri;
+                return resolvedWhere + mongoUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + replacedWhatUri, rewriteUri));
+            requestPath = removeTrailingSlashes(requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
         }
 
-        return ret.isEmpty() ? SLASH : ret;
+        return requestPath.isEmpty() ? SLASH : requestPath;
     }
 
-    private String replaceParamsWithinWhatUri() {
-        String uri = this.whatUri;
+    /**
+     * @return the resolved template with actual paramenters
+     */
+    private String resolveTemplate(String template) {
+        String resolvedTemplate = template;
         // replace params within whatUri
-        // eg what: /{prefix}_db, where: /{prefix}/*
+        // eg _whatUri: /{prefix}_db, _whereUri: /{prefix}/*
         for (var key : this.pathTemplateMatch.getParameters().keySet()) {
-            uri = uri.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
+            resolvedTemplate = resolvedTemplate.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
         }
-        return uri;
-    }
-
-    private String replaceParamsWithActualValues() {
-        // path template with variables resolved to actual values
-        var rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
-        // remove trailing wildcard from template
-        if (rewriteUri.endsWith("/*")) {
-            rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
-        }
-        // collect params
-        this.pathTemplateMatch
-            .getParameters()
-            .keySet()
-            .stream()
-            .filter(key -> !key.equals("*"))
-            .collect(Collectors.toMap(key -> key, key -> this.pathTemplateMatch.getParameters().get(key)));
-        // replace params with actual values
-        for (var key : this.pathTemplateMatch.getParameters().keySet()) {
-            rewriteUri = rewriteUri.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
-        }
-        return rewriteUri;
+        return removeTrailingSlashes(resolvedTemplate);
     }
 
     /**
@@ -638,8 +613,8 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isParentAccessible() {
         return getType() == TYPE.DB
-            ? mappedUri.split(SLASH).length > 1
-            : mappedUri.split(SLASH).length > 2;
+            ? getExchange().getRequestPath().split(SLASH).length > 1
+            : getExchange().getRequestPath().split(SLASH).length > 2;
     }
 
     /**
@@ -732,14 +707,14 @@ public class MongoRequest extends BsonRequest {
     /**
      * @return the whereUri
      */
-    public String getUriPrefix() {
+    public String getWhereUri() {
         return whereUri;
     }
 
     /**
      * @return the whatUri
      */
-    public String getMappingUri() {
+    public String getWhatUri() {
         return whatUri;
     }
 
@@ -1000,23 +975,12 @@ public class MongoRequest extends BsonRequest {
 
     /**
      *
-     * The unmapped uri is the cononical uri of a mongodb resource (e.g.
-     * /db/coll).
+     * Return the uri of the mongodb resource ass /db/coll or /db/coll/docid.
      *
-     * @return the unmappedUri
+     * @return the mongoResourceUri
      */
-    public String getUnmappedRequestUri() {
-        return unmappedUri;
-    }
-
-    /**
-     * The mapped uri is the exchange request uri. This is "mapped" by the
-     * mongo-mounts mapping paramenters.
-     *
-     * @return the mappedUri
-     */
-    public String getMappedRequestUri() {
-        return mappedUri;
+    public String getMongoResourceUri() {
+        return mongoResourceUri;
     }
 
     /**

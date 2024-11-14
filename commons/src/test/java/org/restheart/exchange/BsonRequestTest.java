@@ -20,29 +20,26 @@
 
 package org.restheart.exchange;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatch;
+import io.undertow.util.PathTemplateMatcher;
 
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class BsonRequestTest {
-
-    private static final Logger LOG = LoggerFactory.getLogger(BsonRequestTest.class);
-
     /**
      *
      */
@@ -153,49 +150,49 @@ public class BsonRequestTest {
         String whereUri = "/";
 
         MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/mycollection");
+        assertEquals("/db/mycollection", request.getMongoResourceUri());
 
         whatUri = "*";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/");
+        assertEquals("/", request.getMongoResourceUri());
 
         whatUri = "*";
         whereUri = "/data";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/");
+        assertEquals("/", request.getMongoResourceUri());
 
         whatUri = "/data";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/data");
+        assertEquals("/data", request.getMongoResourceUri());
 
         whatUri = "/db/coll";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
+        assertEquals("/db/coll", request.getMongoResourceUri());
 
         whatUri = "/db/coll/doc";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/coll/doc");
+        assertEquals("/db/coll/doc", request.getMongoResourceUri());
 
         whatUri = "/db/coll/";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
+        assertEquals("/db/coll", request.getMongoResourceUri());
 
         whatUri = "/db/coll////";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/coll");
+        assertEquals("/db/coll", request.getMongoResourceUri());
     }
 
     /**
@@ -211,24 +208,68 @@ public class BsonRequestTest {
         String whereUri = "/";
 
         MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/mycollection/x");
+        assertEquals("/db/mycollection/x", request.getMongoResourceUri());
 
         whatUri = "*";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/x");
+        assertEquals("/x", request.getMongoResourceUri());
 
         whatUri = "db";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/x");
+        assertEquals("/db/x", request.getMongoResourceUri());
 
         whatUri = "db/coll";
         whereUri = "/";
 
         request = MongoRequest.init(ex, whereUri, whatUri);
-        assertEquals( request.getUnmappedRequestUri(), "/db/coll/x");
+        assertEquals("/db/coll/x", request.getMongoResourceUri());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGetMappedRequestUriWithPathTemplate() {
+        // where=/{*}
+        assertEquals("/", request("/", "/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a", request("/a", "/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b", request("/a/b", "/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b/c", request("/a/b/c", "/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b/*", request("/a/b/*", "/{*}", "{*}").getMongoResourceUri());
+
+        assertEquals("/", request("/api/", "/api/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a", request("/api/a", "/api/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b", request("/api/a/b", "/api/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b/c", request("/api/a/b/c", "/api/{*}", "{*}").getMongoResourceUri());
+        assertEquals("/a/b/*", request("/api/a/b/*", "/api/{*}", "{*}").getMongoResourceUri());
+
+        assertEquals("/x/y/z", request("/x/y/z", "/{a}/{b}/{c}", "/{a}/{b}/{c}").getMongoResourceUri());
+        assertEquals("/a/b/c", request("/a/b/c", "/{a}/{b}/{*}", "/{a}/{b}/{*}").getMongoResourceUri());
+        assertEquals("/a/b/*", request("/a/b/*", "/{a}/{b}/{*}", "/{a}/{b}/{*}").getMongoResourceUri());
+
+        assertEquals("/1-2-x", request("/api/1/2", "/api/{a}/{b}", "/{a}-{b}-x").getMongoResourceUri());
+
+        assertEquals("/1-2", request("/1/2", "/{b}/{*}", "/{b}-{*}").getMongoResourceUri());
+
+        // *=don't work well with path templates, matching paths always map to root resource
+        assertEquals("/", request("/api/1/2", "/api/{*}", "*").getMongoResourceUri());
+    }
+
+    private MongoRequest request(String path, String where, String what) {
+        var ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn(path);
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
+
+        var ptm = new PathTemplateMatcher<String>();
+        ptm.add(PathTemplate.create(where), "");
+
+        var match = ptm.match(path);
+        when(ex.getAttachment(PathTemplateMatch.ATTACHMENT_KEY)).thenReturn(match);
+
+        return MongoRequest.init(ex, where, what);
     }
 }

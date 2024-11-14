@@ -19,10 +19,6 @@
  */
 package io.undertow.server;
 
-import io.undertow.security.api.SecurityContext;
-import io.undertow.util.AbstractAttachable;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.HttpString;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayDeque;
@@ -32,6 +28,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.xnio.channels.StreamSourceChannel;
+
+import io.undertow.security.api.SecurityContext;
+import io.undertow.util.AbstractAttachable;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HttpString;
 
 /**
  * A mock for io.undertow.server.HttpServerExchange The original class is final
@@ -184,5 +185,9 @@ public class HttpServerExchange extends AbstractAttachable {
 
     public long getRequestContentLength() {
         return 0;
+    }
+
+    public String getHostName() {
+        return "localhost";
     }
 }

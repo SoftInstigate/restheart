@@ -114,7 +114,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         } catch (QueryNotFoundException ex) {
             response.setInError(HttpStatus.SC_NOT_FOUND, "Change Stream does not exist");
 
-            LOGGER.debug("Requested Change Stream {} does not exist", request.getUnmappedRequestUri());
+            LOGGER.debug("Requested Change Stream {} does not exist", request.getMongoResourceUri());
 
             next(exchange);
         } catch (QueryVariableNotBoundException ex) {
@@ -161,7 +161,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             .findFirst();
 
         if (!_query.isPresent()) {
-            throw new QueryNotFoundException("Stream " + request.getUnmappedRequestUri() + "  does not exist");
+            throw new QueryNotFoundException("Stream " + request.getMongoResourceUri() + "  does not exist");
         }
 
         var pipeline = _query.get();

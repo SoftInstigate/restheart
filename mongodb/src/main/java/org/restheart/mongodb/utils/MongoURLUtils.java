@@ -20,9 +20,9 @@
  */
 package org.restheart.mongodb.utils;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.Objects;
+
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonMaxKey;
@@ -44,6 +44,8 @@ import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -189,7 +191,7 @@ public class MongoURLUtils extends URLUtils {
             sb.append("?id_type=").append(docIdType.name());
         }
 
-        return request.mapUri(sb.toString());
+        return request.requestPathFromMongoUri(sb.toString());
     }
 
     /**
@@ -215,7 +217,7 @@ public class MongoURLUtils extends URLUtils {
             .append("{'$in'").append(":")
             .append(getIdsString(ids)).append("}}");
 
-        return request.mapUri(sb.toString());
+        return request.requestPathFromMongoUri(sb.toString());
     }
 
     /**
@@ -244,7 +246,7 @@ public class MongoURLUtils extends URLUtils {
             .append(getIdString(id))
             .append("}");
 
-        return request.mapUri(sb.toString());
+        return request.requestPathFromMongoUri(sb.toString());
     }
 
     /**
@@ -271,7 +273,7 @@ public class MongoURLUtils extends URLUtils {
             .append("':{").append("'$elemMatch':{'$eq':")
             .append(getIdString(id)).append("}}}");
 
-        return BsonUtils.minify(request.mapUri(sb.toString())).toString();
+        return BsonUtils.minify(request.requestPathFromMongoUri(sb.toString())).toString();
     }
 
     private static BsonNumber getIdAsNumber(String id) throws IllegalArgumentException {

@@ -20,8 +20,8 @@
  */
 package org.restheart.mongodb.hal;
 
-import io.undertow.server.HttpServerExchange;
 import static java.lang.Math.toIntExact;
+
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -33,6 +33,8 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -62,8 +64,7 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
 
-        String requestPath = MongoURLUtils.removeTrailingSlashes(
-                request.getUnmappedRequestUri());
+        String requestPath = MongoURLUtils.removeTrailingSlashes(request.getMongoResourceUri());
 
         String queryString = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
@@ -94,11 +95,7 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
             rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
 
             if (!embeddedData.isEmpty()) {
-                embeddedDocuments(
-                        embeddedData,
-                        requestPath,
-                        rep,
-                        request.isFullHalMode());
+                embeddedDocuments(embeddedData, rep, request.isFullHalMode());
             }
         }
 
@@ -128,7 +125,6 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
 
     private static void embeddedDocuments(
             BsonArray embeddedData,
-            String requestPath,
             Resource rep,
             boolean isHal) {
         embeddedData.stream()

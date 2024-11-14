@@ -20,9 +20,8 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import java.util.UUID;
+
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -35,6 +34,9 @@ import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.db.sessions.TxnsUtils;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.RepresentationUtils.getReferenceLink;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -86,7 +88,7 @@ public class PostTxnsHandler extends PipelinedHandler {
             // propagate the transaction
             TxnsUtils.propagateSession(cs);
 
-            response.getHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(request.getMappedRequestUri(), new BsonString("" + nextTxnId)));
+            response.getHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(request.getMongoResourceUri(), new BsonString("" + nextTxnId)));
 
             response.setStatusCode(HttpStatus.SC_CREATED);
         } else {

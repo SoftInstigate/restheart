@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
@@ -427,7 +428,7 @@ public class Configuration {
                                         var _pwd = cs.getPassword();
                                         if (_pwd != null) {
                                             var pwd = new String(_pwd);
-                                            maskedValue.put(k, svalue.replaceFirst(pwd, MASK));
+                                            maskedValue.put(k, svalue.replaceFirst(Pattern.quote(pwd), MASK));
                                         }
                                     } catch (Throwable t) {
                                         maskedValue.put(k, mapValue);
@@ -444,7 +445,7 @@ public class Configuration {
                         var _pwd = cs.getPassword();
                         if (_pwd != null) {
                             var pwd = new String(_pwd);
-                            LOGGER.info(LOG_PATTERN, o.path(), svalue.replaceFirst(pwd, MASK));
+                            LOGGER.info(LOG_PATTERN, o.path(), svalue.replaceFirst(Pattern.quote(pwd), MASK));
                         }
                     } catch (Throwable t) {
                         LOGGER.info(LOG_PATTERN, o.path(), o.value());
