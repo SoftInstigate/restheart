@@ -257,6 +257,31 @@ public class BsonRequestTest {
 
         // *=don't work well with path templates, matching paths always map to root resource
         assertEquals("/", request("/api/1/2", "/api/{*}", "*").getMongoResourceUri());
+
+        // Case with single document mapping
+        assertEquals("/db/mycollection/doc1", request("/api/coll/doc1", "/api/coll/{id}", "/db/mycollection/{id}").getMongoResourceUri());
+
+        // Case with single document mapping
+        assertEquals("/db/mycollection/doc1", request("/api/coll/doc1", "/api/coll/{id}", "/db/mycollection/{id}").getMongoResourceUri());
+
+        // Case with an additional path segment that matches the wildcard
+        assertEquals("/db/mycollection/subpath", request("/api/coll/subpath", "/api/coll/{*}", "/db/mycollection/{*}").getMongoResourceUri());
+
+        // Case with empty path and wildcard for root mapping
+        assertEquals("/", request("/", "/{*}", "{*}").getMongoResourceUri());
+
+        // Case with variable for a specific document
+        assertEquals("/db/mycollection/doc1", request("/api/coll/doc1", "/api/coll/{id}", "/db/mycollection/{id}").getMongoResourceUri());
+
+        // Case with base path without variables
+        assertEquals("/db/mycollection", request("/api/coll", "/api/coll", "/db/mycollection").getMongoResourceUri());
+
+        // Case with special characters in identifier
+        assertEquals("/db/mycollection/abc%20def", request("/api/coll/abc%20def", "/api/coll/{name}", "/db/mycollection/{name}").getMongoResourceUri());
+
+        // Edge case with identical paths for both request and template
+        assertEquals("/api/coll", request("/api/coll", "/api/coll", "/api/coll").getMongoResourceUri());
+
     }
 
     private MongoRequest request(String path, String where, String what) {
