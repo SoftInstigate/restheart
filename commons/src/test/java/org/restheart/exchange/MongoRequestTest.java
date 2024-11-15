@@ -56,24 +56,6 @@ public class MongoRequestTest {
 
     /**
      *
-     *
-     * public TestRule watcher = new TestWatcher() {
-     *
-     * @Override
-     *           protected void starting(Description description) {
-     *           LOG.info("executing test {}", description.toString());
-     *           }
-     *           };
-     */
-
-    /**
-     *
-     */
-    public BsonRequestTest() {
-    }
-
-    /**
-     *
      */
     @BeforeEach
     public void setUp() {
