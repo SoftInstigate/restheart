@@ -39,7 +39,7 @@ import io.undertow.util.PathTemplateMatcher;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class BsonRequestTest {
+public class MongoRequestTest {
     /**
      *
      */
