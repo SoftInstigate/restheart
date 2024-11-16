@@ -48,9 +48,6 @@ public class PingService implements ByteArrayService {
         this.msg = argOrDefault(this.config, "msg", "Greetings from RESTHeart!");
     }
 
-    /**
-     *
-     */
     @Override
     public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
