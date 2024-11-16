@@ -30,6 +30,8 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
+import io.undertow.server.HttpServerExchange;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -50,22 +52,34 @@ public class PingService implements ByteArrayService {
      *
      */
     @Override
-    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+    public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
-            var accept = request.getHeader("Accept");
-
-            if (accept != null && accept.startsWith("text/html")) {
-                var content = "<div><h2>" + msg + "</h2></div>";
-                response.setContent(content.getBytes());
-                response.setContentType("text/html");
-            } else {
-                response.setContentType("text/plain");
-                response.setContent(msg.getBytes());
-            }
+            final StringBuilder pingMessageBuilder = new StringBuilder();
+            pingMessageBuilder.append("{\"message\": \"")
+                    .append(msg)
+                    .append("\", \"client_ip\": \"")
+                    .append(getClientIp(request.getExchange()))
+                    .append("\"}");
+            final String pingMessage = pingMessageBuilder.toString();
+            response.setContentType("application/json");
+            response.setContent(pingMessage.getBytes());
         } else if (request.isOptions()) {
             handleOptions(request);
         } else {
             response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+        }
+    }
+
+    private String getClientIp(final HttpServerExchange exchange) {
+        // Get the X-Forwarded-For header from the request
+        final String forwardedFor = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isEmpty()) {
+            // The first IP in X-Forwarded-For is typically the client's IP
+            return forwardedFor.split(",")[0].trim();
+        } else {
+            // Fallback to the remote address from the exchange
+            return exchange.getSourceAddress().getAddress().getHostAddress();
         }
     }
 }
