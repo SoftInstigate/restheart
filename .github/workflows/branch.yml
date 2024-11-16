@@ -10,6 +10,7 @@ on:
       - "**/*.java" # Trigger on any Java file change
       - "**/*.xml" # Trigger on any xml file change
       - "**/Dockerfile*" # Trigger on any Dockerfile change
+      - ".github/workflows/*.yml" # Trigger on any workflow file change
 
 jobs:
   # Build and test the project
