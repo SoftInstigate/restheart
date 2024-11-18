@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        mongodb-version: ["5.0", "6.0", "7.0"]
+        mongodb-version: ["5.0", "6.0", "7.0", "8.0"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
