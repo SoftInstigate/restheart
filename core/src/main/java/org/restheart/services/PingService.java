@@ -38,7 +38,9 @@ import io.undertow.server.HttpServerExchange;
  */
 @RegisterPlugin(name = "ping", description = "simple ping service", secure = false, blocking = false)
 public class PingService implements ByteArrayService {
+    private static final String VERSION = PingService.class.getPackage().getImplementationVersion();
     private String msg = null;
+    private boolean isExtendedResponseEnabled = true;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -46,19 +48,29 @@ public class PingService implements ByteArrayService {
     @OnInit
     public void setup() {
         this.msg = argOrDefault(this.config, "msg", "Greetings from RESTHeart!");
+        this.isExtendedResponseEnabled = argOrDefault(this.config, "enable-extended-response", true);
     }
 
     @Override
     public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
             final StringBuilder pingMessageBuilder = new StringBuilder();
-            pingMessageBuilder.append("{\"message\": \"")
-                    .append(msg)
-                    .append("\", \"client_ip\": \"")
-                    .append(getClientIp(request.getExchange()))
-                    .append("\", \"host\": \"")
-                    .append(getHostHeader(request.getExchange()))
-                    .append("\"}");
+            if (this.isExtendedResponseEnabled) {
+                pingMessageBuilder.append("{\"message\": \"")
+                        .append(msg)
+                        .append("\", \"client_ip\": \"")
+                        .append(getClientIp(request.getExchange()))
+                        .append("\", \"host\": \"")
+                        .append(getHostHeader(request.getExchange()))
+                        .append("\", \"version\": \"")
+                        .append(VERSION)
+                        .append("\"}");
+            } else {
+                pingMessageBuilder.append("{\"message\": \"")
+                        .append(msg)
+                        .append("\"}");
+            }
+
             final String pingMessage = pingMessageBuilder.toString();
             response.setContentType("application/json");
             response.setContent(pingMessage.getBytes());
