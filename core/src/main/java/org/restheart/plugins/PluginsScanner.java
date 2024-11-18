@@ -401,7 +401,9 @@ public class PluginsScanner {
                 return null;
             }
 
-            if (pluginsDir.startsWith("/")) {
+            var pluginsPath = Path.of(pluginsDir);
+
+            if (pluginsPath.isAbsolute()) {
                 return Paths.get(pluginsDir);
             } else {
                 // this is to allow specifying the plugins directory path
@@ -409,13 +411,9 @@ public class PluginsScanner {
                 var location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
 
                 try {
-                    var decodedLocation = URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8.toString());
-
-                    var locationFile = new File(decodedLocation);
-
-                    pluginsDir = locationFile.getParent() + File.separator + pluginsDir;
-
-                    return FileSystems.getDefault().getPath(pluginsDir);
+                    return Path.of(URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
+                        .getParent()
+                        .resolve(pluginsPath);
                 } catch(UnsupportedEncodingException uee) {
                     throw new RuntimeException(uee);
                 }

@@ -199,27 +199,26 @@ public class PolyglotDeployer implements Initializer {
     public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
 
     private Path getPluginsDirectory(Map<String, Object> args) {
-        var pluginsDir = findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false);
+        var pluginsPath = Path.of(findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false));
 
-        if (pluginsDir.startsWith("/")) {
-            return Paths.get(pluginsDir);
+        if (pluginsPath.isAbsolute()) {
+            return pluginsPath;
         } else {
             // this is to allow specifying the plugins directory path
             // relative to the jar (also working when running from classes)
             var _locOfJarOrNativeImage = this.getClass().getProtectionDomain().getCodeSource().getLocation();
 
             try {
-                var locOfJarOrNativeImage = URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString());
-
                 if (ImageInfo.inImageRuntimeCode()) {
                     // directory relative to the direcotry containing the native image executable
-                    pluginsDir = new File(locOfJarOrNativeImage).getParent() + File.separator + pluginsDir;
+                    return Path.of(URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
+                        .getParent()
+                        .resolve(pluginsPath);
                 } else {
                     // the directory containing the plugin jar is the plugins directory
-                    pluginsDir = new File(locOfJarOrNativeImage).getParent();
+                    return Path.of(URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
+                        .getParent();
                 }
-
-                return FileSystems.getDefault().getPath(pluginsDir);
             } catch(UnsupportedEncodingException uee) {
                 throw new RuntimeException(uee);
             }
