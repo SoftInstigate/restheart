@@ -1,37 +1,79 @@
 #!/bin/bash
 
+# Display usage if no argument is provided
 if [ -z "$1" ]; then
   cat <<EOF
-This script is used to set the version of the project.
-It only accepts release versions (not SNAPSHOT versions).
-To create a new stable release of RESTHeart, for example 8.2.0:
+This script sets the project version, commits the change, and optionally tags it.
 
-   $ ./setversion.sh 8.2.0
-   # This will automatically create a new release version and set the next version as a SNAPSHOT.
+Usage:
+   ./setversion.sh <version> [--dry-run]
+
+Options:
+   --dry-run  Preview the changes without actually making them.
+
+Examples:
+   To create a new release:
+       ./setversion.sh 8.1.4
+   To set a new SNAPSHOT version:
+       ./setversion.sh 8.1.5-SNAPSHOT
+   To preview the changes:
+       ./setversion.sh 8.1.4 --dry-run
+
+After running the script:
+   git push && git push --tags
 
 EOF
   exit 1
 fi
 
-# Enforce release version only (do not allow "SNAPSHOT" in the version)
-if [[ "$1" == *SNAPSHOT* ]]; then
-  echo "Error: SNAPSHOT versions are not allowed. Please provide a release version (e.g., 8.1.4)." >&2
+set -Eeuo pipefail
+
+VERSION="$1"
+DRY_RUN=false
+
+# Check for dry-run option
+if [[ "${2:-}" == "--dry-run" ]]; then
+  DRY_RUN=true
+fi
+
+# Validate version format
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?$ ]]; then
+  echo "Error: Invalid version format. Use 'major.minor.patch' or 'major.minor.patch-SNAPSHOT'." >&2
   exit 1
 fi
 
-set -Eeuo pipefail
+# Ensure git is configured
+if ! git config user.name &>/dev/null || ! git config user.email &>/dev/null; then
+  echo "Error: Git user.name and user.email are not configured." >&2
+  exit 1
+fi
 
-# Set the release version
-mvn versions:set -DnewVersion="$1"
+# Dry-run output
+if $DRY_RUN; then
+  echo "Dry-run: The following actions would be performed:"
+  echo "1. Set Maven version to $VERSION."
+  if [[ "$VERSION" == *SNAPSHOT ]]; then
+    echo "2. Commit the changes with message: 'Bump version to $VERSION [skip ci]'."
+  else
+    echo "2. Commit the changes with message: 'Release version $VERSION'."
+    echo "3. Tag the release with '$VERSION'."
+  fi
+  echo "No changes were made."
+  exit 0
+fi
 
-# Commit and tag the release version
-echo "This is a Release"
-git commit -am "Release version $1"
-git tag "$1"
+# Set Maven version
+echo "Setting Maven version to $VERSION..."
+mvn versions:set -DnewVersion="$VERSION"
 
-# Set the new version to SNAPSHOT (e.g., if input is 8.1.4, set version to 8.1.4-SNAPSHOT)
-SNAPSHOT_VERSION="${1}-SNAPSHOT"
-mvn versions:set -DnewVersion="$SNAPSHOT_VERSION"
+# Commit and tag based on version type
+if [[ "$VERSION" == *SNAPSHOT ]]; then
+  echo "This is a SNAPSHOT version."
+  git commit -am "Bump version to $VERSION [skip ci]"
+else
+  echo "This is a Release version."
+  git commit -am "Release version $VERSION"
+  git tag "$VERSION"
+fi
 
-# Commit the SNAPSHOT version
-git commit -am "Bump version to $SNAPSHOT_VERSION [skip ci]"
+echo "Version set to $VERSION successfully."
