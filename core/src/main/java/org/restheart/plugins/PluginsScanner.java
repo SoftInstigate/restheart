@@ -29,6 +29,8 @@ import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -359,7 +361,7 @@ public class PluginsScanner {
 
             var libJars = Arrays.stream(this.jars)
                 .map(jar -> jar.getPath())
-                .map(path -> Path.of(path))
+                .map(path -> Paths.get(path))
                 .filter(jar -> isLibJar(jar))
                 .map(path -> path.getFileName().toString())
                 .toArray(String[]::new);
@@ -395,30 +397,26 @@ public class PluginsScanner {
         }
 
         public static Path getPluginsDirectory() {
-            var pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
+            String pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
 
             if (pluginsDir == null) {
                 return null;
             }
 
-            var pluginsPath = Path.of(pluginsDir);
+            Path pluginsPath = Paths.get(pluginsDir);
 
             if (pluginsPath.isAbsolute()) {
-                return Paths.get(pluginsDir);
-            } else {
-                // this is to allow specifying the plugins directory path
-                // relative to the jar (also working when running from classes)
-                var location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
+                return pluginsPath;
+            }
 
-                try {
-                    return Path.of(URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent()
-                        .resolve(pluginsPath);
-                } catch(UnsupportedEncodingException uee) {
-                    throw new RuntimeException(uee);
-                }
+            try {
+                URI locationUri = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+                return Paths.get(locationUri).getParent().resolve(pluginsPath);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("Failed to resolve plugins directory", e);
             }
         }
+
 
         private URL[] findPluginsJars(Path pluginsDirectory) {
             return _findPluginsJars(pluginsDirectory, 0);
