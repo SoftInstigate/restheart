@@ -36,9 +36,9 @@ This collection showcases various RESTHeart plugins, each serving a specific pur
 
 To work with these examples, the following are required:
 
-1. **Java 17**: Install it using [sdkman](https://sdkman.io/):
+1. **Java 21**: Install it using [sdkman](https://sdkman.io/):
    ```bash
-   $ sdk install java 17.0.9-tem
+   $ sdk install java 21.0.5-tem
    ```
 
 2. **Docker**: Necessary for running RESTHeart and MongoDB.
