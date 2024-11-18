@@ -29,9 +29,8 @@ $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 (here we use the brilliant sdkman)
 
 ```bash
-$ sdk install java 17.0.9-graal
-$ sdk use java 17.0.9-graal
-$ gu install nodejs
+$ sdk install java 21.0.2-graalce
+$ sdk use java 21.0.2-graalce
 ```
 
 ## Get the script `restheart.js`
@@ -43,13 +42,15 @@ $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/polyglot/src/js
 
 Where <RH_HOME> is the RESTHeart installation directory.
 
+## Install GraalVM Node
+
+Check [Getting Started with Node.js](https://www.graalvm.org/latest/reference-manual/js/NodeJS/#getting-started-with-nodejs) in GraalVM documentation.
+
 ## Run RESTHeart on Node
 
 ```bash
-$ $(sdk home java 17.0.9-graal)/bin/node --jvm --vm.cp=restheart.jar restheart.js
+$ <graalvm_install_dir>/bin/node --jvm --vm.cp=restheart.jar restheart.js
 ```
-
-(we use `sdk home` to make sure to use the GraalVM's node implementation)
 
 ## Deploy the example Node Plugin
 
