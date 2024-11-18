@@ -20,41 +20,38 @@
  */
 package org.restheart.plugins;
 
-import io.github.classgraph.AnnotationEnumValue;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream.Filter;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.AbstractMap;
-
-import org.restheart.graal.ImageInfo;
 
 import org.restheart.Bootstrapper;
+import org.restheart.graal.ImageInfo;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.github.classgraph.AnnotationEnumValue;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 
 /**
  * this class is configured to be initialized at build time by native-image
@@ -360,11 +357,16 @@ public class PluginsScanner {
             }
 
             var libJars = Arrays.stream(this.jars)
-                .map(jar -> jar.getPath())
-                .map(path -> Paths.get(path))
-                .filter(jar -> isLibJar(jar))
-                .map(path -> path.getFileName().toString())
-                .toArray(String[]::new);
+                    .map(jar -> {
+                        try {
+                            return Paths.get(jar.toURI());
+                        } catch (Exception e) {
+                            throw new RuntimeException("Invalid JAR URL: " + jar, e);
+                        }
+                    })
+                    .filter(this::isLibJar)
+                    .map(path -> path.getFileName().toString())
+                    .toArray(String[]::new);
 
             this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
                 .disableNestedJarScanning()
@@ -403,7 +405,7 @@ public class PluginsScanner {
                 return null;
             }
 
-            Path pluginsPath = Paths.get(pluginsDir);
+            Path pluginsPath = Path.of(pluginsDir);
 
             if (pluginsPath.isAbsolute()) {
                 return pluginsPath;
@@ -411,7 +413,7 @@ public class PluginsScanner {
 
             try {
                 URI locationUri = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-                return Paths.get(locationUri).getParent().resolve(pluginsPath);
+                return Path.of(locationUri).getParent().resolve(pluginsPath);
             } catch (URISyntaxException e) {
                 throw new RuntimeException("Failed to resolve plugins directory", e);
             }
