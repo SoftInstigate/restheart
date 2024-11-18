@@ -240,7 +240,7 @@ public class PluginsFactory {
                 var enabled = PluginRecord.isEnabled(enabledByDefault, pluginConf);
 
                 if (enabled) {
-                    i = instantiatePlugin(clazz, type, name, conf);
+                    i = instantiatePlugin(clazz, type, name);
 
                     var pr = new PluginRecord<>(name, description, secure, enabledByDefault, clazz.getName(), (T) i, pluginConf);
 
@@ -277,7 +277,7 @@ public class PluginsFactory {
         return (Class<Plugin>) PluginsClassloader.getInstance().loadClass(plugin.clazz());
     }
 
-    private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Configuration conf) throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException, SecurityException, ClassNotFoundException {
+    private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName) throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException, SecurityException, ClassNotFoundException {
         try {
             return pc.getDeclaredConstructor().newInstance();
         } catch (NoSuchMethodException nme) {
