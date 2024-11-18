@@ -56,6 +56,8 @@ public class PingService implements ByteArrayService {
                     .append(msg)
                     .append("\", \"client_ip\": \"")
                     .append(getClientIp(request.getExchange()))
+                    .append("\", \"host\": \"")
+                    .append(getHostHeader(request.getExchange()))
                     .append("\"}");
             final String pingMessage = pingMessageBuilder.toString();
             response.setContentType("application/json");
@@ -65,6 +67,10 @@ public class PingService implements ByteArrayService {
         } else {
             response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
+    }
+
+    private String getHostHeader(final HttpServerExchange exchange) {
+        return exchange.getRequestHeaders().getFirst("Host");
     }
 
     private String getClientIp(final HttpServerExchange exchange) {
