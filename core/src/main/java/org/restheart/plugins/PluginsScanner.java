@@ -1,23 +1,23 @@
 /*-
- * ========================LICENSE_START=================================
- * restheart-core
- * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * =========================LICENSE_END==================================
- */
+* ========================LICENSE_START=================================
+* restheart-core
+* %%
+* Copyright (C) 2014 - 2024 SoftInstigate
+* %%
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU Affero General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* =========================LICENSE_END==================================
+*/
 package org.restheart.plugins;
 
 import java.io.File;
@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,12 +80,12 @@ public class PluginsScanner {
 
     static {
         if (!ImageInfo.inImageBuildtimeCode()) {
-            var rtcg = new RuntimeClassGraph();
+            final var rtcg = new RuntimeClassGraph();
             var classGraph = rtcg.get();
             // apply plugins-scanning-verbose configuration option
             classGraph = classGraph.verbose(Bootstrapper.getConfiguration().coreModule().pluginsScanningVerbose());
             // apply plugins-packages configuration option
-            var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
+            final var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!Bootstrapper.getConfiguration().coreModule().pluginsPackages().isEmpty()) {
                 classGraph = classGraph.acceptPackages(pluginsPackages.toArray(String[]::new));
             }
@@ -113,24 +111,27 @@ public class PluginsScanner {
     // generation with GraalVM
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
     public static void initAtBuildTime() {
-         if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!ImageInfo.inImageBuildtimeCode()) {
             throw new IllegalStateException("Called initAtBuildTime() but we are not at build time");
-         }
+        }
 
         // requires PluginsClassloader being initialized
         // this is done by PluginsClassloaderInitFeature
 
         final var cg = new ClassGraph();
 
-        var classGraph = cg
-            .disableDirScanning() // added for GraalVM
-            .disableNestedJarScanning() // added for GraalVM
-            .disableRuntimeInvisibleAnnotations() // added for GraalVM
-            .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
-            .ignoreParentClassLoaders()
-            .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+        final var classGraph = cg
+                .disableDirScanning() // added for GraalVM
+                .disableNestedJarScanning() // added for GraalVM
+                .disableRuntimeInvisibleAnnotations() // added for GraalVM
+                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build
+                                                                        // fails
+                .ignoreParentClassLoaders()
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
+                .initializeLoadedClasses();
 
-        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
+        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg
+                .getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
 
         try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
             INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
@@ -145,7 +146,7 @@ public class PluginsScanner {
     }
 
     public static List<String> allPluginsClassNames() {
-        var ret = new ArrayList<String>();
+        final var ret = new ArrayList<String>();
         INITIALIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
         AUTH_MECHANISMS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
         AUTHORIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
@@ -193,10 +194,10 @@ public class PluginsScanner {
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
-    private static List<PluginDescriptor> collectPlugins(ScanResult scanResult, String className) {
-        var ret = new ArrayList<PluginDescriptor>();
+    private static List<PluginDescriptor> collectPlugins(final ScanResult scanResult, final String className) {
+        final var ret = new ArrayList<PluginDescriptor>();
 
-        var registeredPlugins = scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+        final var registeredPlugins = scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
         if (registeredPlugins == null || registeredPlugins.isEmpty()) {
             return ret;
@@ -205,25 +206,25 @@ public class PluginsScanner {
         ClassInfoList listOfType;
 
         if (className.equals(AUTHENTICATOR_CLASS_NAME)) {
-            var tms = scanResult.getClassesImplementing(TOKEN_MANAGER_CLASS_NAME);
+            final var tms = scanResult.getClassesImplementing(TOKEN_MANAGER_CLASS_NAME);
 
             listOfType = scanResult.getClassesImplementing(className).exclude(tms);
         } else {
             listOfType = scanResult.getClassesImplementing(className);
         }
 
-        var plugins = registeredPlugins.intersect(listOfType);
+        final var plugins = registeredPlugins.intersect(listOfType);
 
         return plugins.stream().map(c -> descriptor(c)).collect(Collectors.toList());
     }
 
     /**
-     *
-     */
-    private static List<PluginDescriptor> collectProviders(ScanResult scanResult) {
-        var ret = new ArrayList<PluginDescriptor>();
+    *
+    */
+    private static List<PluginDescriptor> collectProviders(final ScanResult scanResult) {
+        final var ret = new ArrayList<PluginDescriptor>();
 
-        var providers = scanResult.getClassesImplementing(PROVIDER_CLASS_NAME);
+        final var providers = scanResult.getClassesImplementing(PROVIDER_CLASS_NAME);
 
         if (providers == null || providers.isEmpty()) {
             return ret;
@@ -232,16 +233,16 @@ public class PluginsScanner {
         return providers.stream().map(c -> descriptor(c)).collect(Collectors.toList());
     }
 
-    private static PluginDescriptor descriptor(ClassInfo pluginClassInfo) {
-        var clazz = pluginClassInfo.getName();
-        var name = pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
+    private static PluginDescriptor descriptor(final ClassInfo pluginClassInfo) {
+        final var clazz = pluginClassInfo.getName();
+        final var name = pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
                 .filter(p -> "name".equals(p.getName())).map(p -> p.getValue()).findAny().get().toString();
 
         return new PluginDescriptor(name, clazz, isEnabled(name, pluginClassInfo), collectInjections(pluginClassInfo));
     }
 
-    private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo) {
-        var ret = new ArrayList<InjectionDescriptor>();
+    private static ArrayList<InjectionDescriptor> collectInjections(final ClassInfo pluginClassInfo) {
+        final var ret = new ArrayList<InjectionDescriptor>();
 
         ret.addAll(collectFieldInjections(pluginClassInfo, Inject.class));
         ret.addAll(collectMethodInjections(pluginClassInfo, OnInit.class));
@@ -255,69 +256,76 @@ public class PluginsScanner {
      *
      * @param name
      * @param pluginClassInfo
-     * @return true if the plugin is enabled, taking into account enabledByDefault and its configuration
+     * @return true if the plugin is enabled, taking into account enabledByDefault
+     *         and its configuration
      */
-    private static boolean isEnabled(String name, ClassInfo pluginClassInfo) {
+    private static boolean isEnabled(final String name, final ClassInfo pluginClassInfo) {
         if (ImageInfo.inImageBuildtimeCode()) {
             return true;
         } else {
-            var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
-                .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
+            final var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME)
+                    .getParameterValues().stream()
+                    .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
-            Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
+            final Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
             return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
         }
     }
 
-    private static ArrayList<InjectionDescriptor> collectMethodInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
-        var ret = new ArrayList<InjectionDescriptor>();
+    private static ArrayList<InjectionDescriptor> collectMethodInjections(final ClassInfo pluginClassInfo,
+            final Class<?> clazz) {
+        final var ret = new ArrayList<InjectionDescriptor>();
 
-        var mil = pluginClassInfo.getDeclaredMethodInfo();
+        final var mil = pluginClassInfo.getDeclaredMethodInfo();
 
-        for (var mi : mil) {
+        for (final var mi : mil) {
             if (mi.hasAnnotation(clazz.getName())) {
-                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
-                for (var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
-                    var value = p.getValue();
-                    if (value instanceof AnnotationEnumValue annotationEnumValue) {
+                final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
+                for (final var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
+                    final var value = p.getValue();
+                    if (value instanceof final AnnotationEnumValue annotationEnumValue) {
                         removeRefToScanResult(annotationEnumValue);
                     }
                     annotationParams.add(new AbstractMap.SimpleEntry<>(p.getName(), value));
                 }
 
-                var methodParams = new ArrayList<String>();
+                final var methodParams = new ArrayList<String>();
 
-                Arrays.stream(mi.getParameterInfo()).forEachOrdered(pi -> methodParams.add(pi.getTypeDescriptor().toString()));
+                Arrays.stream(mi.getParameterInfo())
+                        .forEachOrdered(pi -> methodParams.add(pi.getTypeDescriptor().toString()));
 
-                ret.add(new MethodInjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams, mi.hashCode()));
+                ret.add(new MethodInjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams,
+                        mi.hashCode()));
             }
         }
 
         return ret;
     }
 
-    private static ArrayList<InjectionDescriptor> collectFieldInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
-        var ret = new ArrayList<InjectionDescriptor>();
+    private static ArrayList<InjectionDescriptor> collectFieldInjections(final ClassInfo pluginClassInfo,
+            final Class<?> clazz) {
+        final var ret = new ArrayList<InjectionDescriptor>();
 
-        var fil = pluginClassInfo.getDeclaredFieldInfo();
+        final var fil = pluginClassInfo.getDeclaredFieldInfo();
 
-        for (var fi : fil) {
+        for (final var fi : fil) {
             if (fi.hasAnnotation(clazz.getName())) {
-                var annotationParams = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
-                for (var p : fi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
-                    var value = p.getValue();
-                    if (value instanceof AnnotationEnumValue annotationEnumValue) {
+                final var annotationParams = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+                for (final var p : fi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
+                    final var value = p.getValue();
+                    if (value instanceof final AnnotationEnumValue annotationEnumValue) {
                         removeRefToScanResult(annotationEnumValue);
                     }
                     annotationParams.add(new AbstractMap.SimpleEntry<>(p.getName(), value));
                 }
 
                 try {
-                    var fieldClass = PluginsClassloader.getInstance().loadClass(fi.getTypeDescriptor().toString());
+                    final var fieldClass = PluginsClassloader.getInstance()
+                            .loadClass(fi.getTypeDescriptor().toString());
                     ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
-                } catch(ClassNotFoundException cnfe) {
+                } catch (final ClassNotFoundException cnfe) {
                     // should not happen
-                    throw new RuntimeException(cnfe);
+                    throw new IllegalStateException(cnfe);
                 }
             }
         }
@@ -331,9 +339,9 @@ public class PluginsScanner {
      *
      * @param obj
      */
-    private static void removeRefToScanResult(AnnotationEnumValue obj) {
+    private static void removeRefToScanResult(final AnnotationEnumValue obj) {
         try {
-            var f = AnnotationEnumValue.class.getSuperclass().getDeclaredField("scanResult");
+            final var f = AnnotationEnumValue.class.getSuperclass().getDeclaredField("scanResult");
             f.setAccessible(true);
             f.set(obj, null);
         } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
@@ -349,19 +357,29 @@ public class PluginsScanner {
         URL[] jars = null;
 
         public RuntimeClassGraph() {
-            var pdir = getPluginsDirectory();
+            final var pdir = getPluginsDirectory();
             this.jars = findPluginsJars(pdir);
 
             if (!PluginsClassloader.isInitialized()) {
                 PluginsClassloader.init(this.jars);
             }
 
-            var libJars = Arrays.stream(this.jars)
+            final var libJars = Arrays.stream(this.jars)
                     .map(jar -> {
                         try {
-                            return Paths.get(jar.toURI());
-                        } catch (Exception e) {
-                            throw new RuntimeException("Invalid JAR URL: " + jar, e);
+                            URI uri = jar.toURI();
+
+                            // Correct malformed URIs by ensuring a leading "/" in the path
+                            if ("file".equalsIgnoreCase(uri.getScheme()) && uri.getAuthority() == null
+                                    && !uri.getPath().startsWith("/")) {
+                                uri = new URI("file", null, "/" + uri.getPath(), null);
+                            }
+
+                            // Convert the corrected URI to a Path
+                            return Paths.get(uri);
+                        } catch (final Exception e) {
+                            LOGGER.error("Error processing JAR URL: {}", jar, e);
+                            throw new IllegalStateException("Invalid JAR URL: " + jar, e);
                         }
                     })
                     .filter(this::isLibJar)
@@ -369,20 +387,19 @@ public class PluginsScanner {
                     .toArray(String[]::new);
 
             this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                .disableNestedJarScanning()
-                .disableRuntimeInvisibleAnnotations()
-                .addClassLoader(PluginsClassloader.getInstance())
-                .addClassLoader(ClassLoader.getSystemClassLoader())
-                .rejectJars(libJars) // avoids scanning lib jars
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .enableFieldInfo()
-                .ignoreFieldVisibility()
-                .initializeLoadedClasses();
+                    .disableNestedJarScanning()
+                    .disableRuntimeInvisibleAnnotations()
+                    .addClassLoader(PluginsClassloader.getInstance())
+                    .addClassLoader(ClassLoader.getSystemClassLoader())
+                    .rejectJars(libJars) // avoids scanning lib jars
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .enableFieldInfo()
+                    .ignoreFieldVisibility()
+                    .initializeLoadedClasses();
         }
 
         private long starScanTime = 0;
-        private long endScanTime = 0;
 
         public void logStartScan() {
             LOGGER.info("Scanning jars for plugins started");
@@ -390,8 +407,7 @@ public class PluginsScanner {
         }
 
         public void logEndScan() {
-            this.endScanTime = System.currentTimeMillis();
-            LOGGER.info("Scanning jars for plugins completed in {} msec", endScanTime-starScanTime);
+            LOGGER.info("Scanning jars for plugins completed in {} msec", System.currentTimeMillis() - starScanTime);
         }
 
         public ClassGraph get() {
@@ -399,33 +415,46 @@ public class PluginsScanner {
         }
 
         public static Path getPluginsDirectory() {
-            String pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
+            final String pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
 
             if (pluginsDir == null) {
                 return null;
             }
 
-            Path pluginsPath = Path.of(pluginsDir);
+            final Path pluginsPath = Path.of(pluginsDir);
 
             if (pluginsPath.isAbsolute()) {
                 return pluginsPath;
             }
 
             try {
-                URI locationUri = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+                final URL location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
+                URI locationUri;
+
+                // Handle Windows paths correctly
+                if (location.getProtocol().equals("file")) {
+                    String path = location.getPath();
+                    // Remove leading slash from Windows paths
+                    if (path.matches("^/[A-Za-z]:/.*")) {
+                        path = path.substring(1);
+                    }
+                    locationUri = new File(path).toURI();
+                } else {
+                    locationUri = location.toURI();
+                }
+
                 return Path.of(locationUri).getParent().resolve(pluginsPath);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("Failed to resolve plugins directory", e);
+            } catch (final URISyntaxException e) {
+                throw new IllegalStateException("Failed to resolve plugins directory", e);
             }
         }
 
-
-        private URL[] findPluginsJars(Path pluginsDirectory) {
+        private URL[] findPluginsJars(final Path pluginsDirectory) {
             return _findPluginsJars(pluginsDirectory, 0);
         }
 
-        private URL[] _findPluginsJars(Path dir, int depth) {
-            var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
+        private URL[] _findPluginsJars(final Path dir, final int depth) {
+            final var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!pluginsPackages.isEmpty()) {
                 LOGGER.info("Limiting the scanning of plugins to packages {}", pluginsPackages);
             }
@@ -434,59 +463,63 @@ public class PluginsScanner {
             } else {
                 try {
                     checkPluginDirectory(dir);
-                } catch(IllegalStateException ise) {
+                } catch (final IllegalStateException ise) {
                     return new URL[0];
                 }
             }
 
-            var urls = new ArrayList<URL>();
+            final var urls = new ArrayList<URL>();
 
             try (var ds = Files.newDirectoryStream(dir, "*.jar")) {
-                for (Path path : ds) {
-                    var jar = path.toUri().toURL();
+                for (final Path path : ds) {
+                    try {
+                        // Convert to File first to handle Windows paths correctly
+                        final URL jar = path.toFile().toURI().toURL();
 
-                    if (!Files.isReadable(path)) {
-                        LOGGER.error("Plugin jar {} is not readable", jar);
-                        throw new IllegalStateException("Plugin jar " + jar + " is not readable");
-                    }
+                        if (!Files.isReadable(path)) {
+                            LOGGER.error("Plugin jar {} is not readable", jar);
+                            throw new IllegalStateException("Plugin jar " + jar + " is not readable");
+                        }
 
-                    urls.add(jar);
+                        urls.add(jar);
 
-                    if (isLibJar(path)) {
-                        LOGGER.debug("Found lib jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
-                    } else {
-                        LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
+                        if (isLibJar(path)) {
+                            LOGGER.debug("Found lib jar {}", path.toString());
+                        } else {
+                            LOGGER.info("Found plugin jar {}", path.toString());
+                        }
+                    } catch (final Exception e) {
+                        LOGGER.error("Error processing jar file: {}", path, e);
                     }
                 }
-            } catch (IOException ex) {
-                LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
+            } catch (final IOException ex) {
+                LOGGER.error("Cannot read jars in plugins directory {}",
+                        Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex);
             }
 
             // Scans the plugins directory up to two levels deep
             if (depth < 2) {
-                try (var ds = Files.newDirectoryStream(dir, (Filter<Path>) (Path entry) -> Files.isDirectory(entry))) {
-                    for (Path subdir : ds) {
+                try (var ds = Files.newDirectoryStream(dir, (Filter<Path>) Files::isDirectory)) {
+                    for (final Path subdir : ds) {
                         if (Files.isReadable(subdir)) {
-                            var subjars = _findPluginsJars(subdir, depth + 1);
+                            final var subjars = _findPluginsJars(subdir, depth + 1);
                             if (subjars != null && subjars.length > 0) {
-                                Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                                urls.addAll(Arrays.asList(subjars));
                             }
                         } else {
-                            LOGGER.warn("Subdirectory {} of plugins directory {} is not readable", subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
+                            LOGGER.warn("Subdirectory {} of plugins directory {} is not readable",
+                                    subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
                         }
                     }
-                } catch (IOException ex) {
-                    LOGGER.error("Cannot read jars in plugins subdirectory", ex.getMessage());
+                } catch (final IOException ex) {
+                    LOGGER.error("Cannot read jars in plugins subdirectory", ex);
                 }
             }
 
             return urls.toArray(URL[]::new);
         }
 
-        /**
-         *
-         */
-        private void checkPluginDirectory(Path pluginsDirectory) {
+        private void checkPluginDirectory(final Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
                 LOGGER.warn("Plugin directory {} does not exist", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " does not exist");
@@ -500,18 +533,21 @@ public class PluginsScanner {
 
         /**
          * Determines whether the given JAR file is classified as a library.
-         * A JAR is considered a library if it is located within a subdirectory of the plugins direcory
-         * whose relative path contains "lib", "-lib", or "_lib" as part of the directory name.
+         * A JAR is considered a library if it is located within a subdirectory of the
+         * plugins direcory
+         * whose relative path contains "lib", "-lib", or "_lib" as part of the
+         * directory name.
          *
          * @param path the path of the JAR file to be checked
-         * @return {@code true} if the JAR file is under a subdirectory of the plugins directory that contains "lib", "-lib",
+         * @return {@code true} if the JAR file is under a subdirectory of the plugins
+         *         directory that contains "lib", "-lib",
          *         or "_lib" in its relative path; {@code false} otherwise
          */
-        private boolean isLibJar(Path path) {
-            var pluginsDirectory = getPluginsDirectory();
+        private boolean isLibJar(final Path path) {
+            final var pluginsDirectory = getPluginsDirectory();
 
             try {
-                var rpath = pluginsDirectory.relativize(path).toString();
+                final var rpath = pluginsDirectory.relativize(path).toString();
 
                 /*
                  * This regular expression matches paths containing directories with names
@@ -522,29 +558,41 @@ public class PluginsScanner {
                  * The pattern is explained as follows:
                  *
                  * (^|.*[\\/\\\\]) Matches either the beginning of the string
-                 *       (for relative paths like lib/pippo.jar or my-lib/pippo.jar),
-                 *       or any preceding directories in the path for absolute paths.
+                 * (for relative paths like lib/pippo.jar or my-lib/pippo.jar),
+                 * or any preceding directories in the path for absolute paths.
                  *
-                 * ([^\\/\\\\]+[-_])? Optionally matches a prefix consisting of one or more characters,
-                 *       excluding directory separators, followed by either a hyphen ("-") or underscore ("_").
+                 * ([^\\/\\\\]+[-_])? Optionally matches a prefix consisting of one or more
+                 * characters,
+                 * excluding directory separators, followed by either a hyphen ("-") or
+                 * underscore ("_").
                  *
                  * lib Matches the literal string "lib"
                  *
-                 * ([\\/\\\\].*|$) Matches either a directory separator followed by any characters
+                 * ([\\/\\\\].*|$) Matches either a directory separator followed by any
+                 * characters
                  *
                  * ([\\/\\\\].*) or the end of the string ($).
                  */
                 return rpath.matches("(^|.*[\\/\\\\])([^\\/\\\\]+[-_])?lib([\\/\\\\].*|$)");
-            } catch(IllegalArgumentException iae) {
+            } catch (final IllegalArgumentException iae) {
                 return false;
             }
         }
     }
 }
 
-record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {}
-interface InjectionDescriptor {}
+record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {
+}
 
-record MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) implements InjectionDescriptor {}
+interface InjectionDescriptor {
+}
 
-record FieldInjectionDescriptor(String field, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash) implements InjectionDescriptor {}
+record MethodInjectionDescriptor(String method, Class<?> clazz,
+        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams,
+        int methodHash) implements InjectionDescriptor {
+}
+
+record FieldInjectionDescriptor(String field, Class<?> clazz,
+        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash)
+        implements InjectionDescriptor {
+}
