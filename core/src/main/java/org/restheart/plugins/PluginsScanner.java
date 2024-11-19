@@ -363,8 +363,6 @@ public class PluginsScanner {
                 PluginsClassloader.init(this.jars);
             }
 
-            LOGGER.info("@@@ this.jars={}", Arrays.toString(this.jars));
-
             var libJars = Arrays.stream(this.jars)
                     .map(jar -> {
                         try {
