@@ -1,58 +1,57 @@
 /*-
- * ========================LICENSE_START=================================
- * restheart-core
- * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * =========================LICENSE_END==================================
- */
+* ========================LICENSE_START=================================
+* restheart-core
+* %%
+* Copyright (C) 2014 - 2024 SoftInstigate
+* %%
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Affero General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU Affero General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* =========================LICENSE_END==================================
+*/
 package org.restheart.plugins;
-
-import io.github.classgraph.AnnotationEnumValue;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream.Filter;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.AbstractMap;
-
-import org.restheart.graal.ImageInfo;
 
 import org.restheart.Bootstrapper;
+import org.restheart.graal.ImageInfo;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.github.classgraph.AnnotationEnumValue;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 
 /**
  * this class is configured to be initialized at build time by native-image
@@ -114,9 +113,9 @@ public class PluginsScanner {
     // generation with GraalVM
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
     public static void initAtBuildTime() {
-         if (!ImageInfo.inImageBuildtimeCode()) {
+        if (!ImageInfo.inImageBuildtimeCode()) {
             throw new IllegalStateException("Called initAtBuildTime() but we are not at build time");
-         }
+        }
 
         // requires PluginsClassloader being initialized
         // this is done by PluginsClassloaderInitFeature
@@ -124,14 +123,17 @@ public class PluginsScanner {
         final var cg = new ClassGraph();
 
         var classGraph = cg
-            .disableDirScanning() // added for GraalVM
-            .disableNestedJarScanning() // added for GraalVM
-            .disableRuntimeInvisibleAnnotations() // added for GraalVM
-            .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
-            .ignoreParentClassLoaders()
-            .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
+                .disableDirScanning() // added for GraalVM
+                .disableNestedJarScanning() // added for GraalVM
+                .disableRuntimeInvisibleAnnotations() // added for GraalVM
+                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build
+                                                                        // fails
+                .ignoreParentClassLoaders()
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
+                .initializeLoadedClasses();
 
-        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
+        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg
+                .getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
 
         try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
             INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
@@ -219,8 +221,8 @@ public class PluginsScanner {
     }
 
     /**
-     *
-     */
+    *
+    */
     private static List<PluginDescriptor> collectProviders(ScanResult scanResult) {
         var ret = new ArrayList<PluginDescriptor>();
 
@@ -256,14 +258,16 @@ public class PluginsScanner {
      *
      * @param name
      * @param pluginClassInfo
-     * @return true if the plugin is enabled, taking into account enabledByDefault and its configuration
+     * @return true if the plugin is enabled, taking into account enabledByDefault
+     *         and its configuration
      */
     private static boolean isEnabled(String name, ClassInfo pluginClassInfo) {
         if (ImageInfo.inImageBuildtimeCode()) {
             return true;
         } else {
-            var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
-                .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
+            var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME)
+                    .getParameterValues().stream()
+                    .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
             Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
             return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
@@ -288,9 +292,11 @@ public class PluginsScanner {
 
                 var methodParams = new ArrayList<String>();
 
-                Arrays.stream(mi.getParameterInfo()).forEachOrdered(pi -> methodParams.add(pi.getTypeDescriptor().toString()));
+                Arrays.stream(mi.getParameterInfo())
+                        .forEachOrdered(pi -> methodParams.add(pi.getTypeDescriptor().toString()));
 
-                ret.add(new MethodInjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams, mi.hashCode()));
+                ret.add(new MethodInjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams,
+                        mi.hashCode()));
             }
         }
 
@@ -316,7 +322,7 @@ public class PluginsScanner {
                 try {
                     var fieldClass = PluginsClassloader.getInstance().loadClass(fi.getTypeDescriptor().toString());
                     ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
-                } catch(ClassNotFoundException cnfe) {
+                } catch (ClassNotFoundException cnfe) {
                     // should not happen
                     throw new RuntimeException(cnfe);
                 }
@@ -357,24 +363,41 @@ public class PluginsScanner {
                 PluginsClassloader.init(this.jars);
             }
 
+            LOGGER.info("@@@ this.jars={}", Arrays.toString(this.jars));
+
             var libJars = Arrays.stream(this.jars)
-                .map(jar -> jar.getPath())
-                .map(path -> Path.of(path))
-                .filter(jar -> isLibJar(jar))
-                .map(path -> path.getFileName().toString())
-                .toArray(String[]::new);
+                    .map(jar -> {
+                        try {
+                            URI uri = jar.toURI();
+
+                            // Correct malformed URIs by ensuring a leading "/" in the path
+                            if ("file".equalsIgnoreCase(uri.getScheme()) && uri.getAuthority() == null
+                                    && !uri.getPath().startsWith("/")) {
+                                uri = new URI("file", null, "/" + uri.getPath(), null);
+                            }
+
+                            // Convert the corrected URI to a Path
+                            return Paths.get(uri);
+                        } catch (Exception e) {
+                            LOGGER.error("Error processing JAR URL: {}", jar, e);
+                            throw new RuntimeException("Invalid JAR URL: " + jar, e);
+                        }
+                    })
+                    .filter(this::isLibJar)
+                    .map(path -> path.getFileName().toString())
+                    .toArray(String[]::new);
 
             this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                .disableNestedJarScanning()
-                .disableRuntimeInvisibleAnnotations()
-                .addClassLoader(PluginsClassloader.getInstance())
-                .addClassLoader(ClassLoader.getSystemClassLoader())
-                .rejectJars(libJars) // avoids scanning lib jars
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .enableFieldInfo()
-                .ignoreFieldVisibility()
-                .initializeLoadedClasses();
+                    .disableNestedJarScanning()
+                    .disableRuntimeInvisibleAnnotations()
+                    .addClassLoader(PluginsClassloader.getInstance())
+                    .addClassLoader(ClassLoader.getSystemClassLoader())
+                    .rejectJars(libJars) // avoids scanning lib jars
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .enableFieldInfo()
+                    .ignoreFieldVisibility()
+                    .initializeLoadedClasses();
         }
 
         private long starScanTime = 0;
@@ -387,7 +410,7 @@ public class PluginsScanner {
 
         public void logEndScan() {
             this.endScanTime = System.currentTimeMillis();
-            LOGGER.info("Scanning jars for plugins completed in {} msec", endScanTime-starScanTime);
+            LOGGER.info("Scanning jars for plugins completed in {} msec", endScanTime - starScanTime);
         }
 
         public ClassGraph get() {
@@ -395,28 +418,37 @@ public class PluginsScanner {
         }
 
         public static Path getPluginsDirectory() {
-            var pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
+            String pluginsDir = Bootstrapper.getConfiguration().coreModule().pluginsDirectory();
 
             if (pluginsDir == null) {
                 return null;
             }
 
-            var pluginsPath = Path.of(pluginsDir);
+            Path pluginsPath = Path.of(pluginsDir);
 
             if (pluginsPath.isAbsolute()) {
-                return Paths.get(pluginsDir);
-            } else {
-                // this is to allow specifying the plugins directory path
-                // relative to the jar (also working when running from classes)
-                var location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
+                return pluginsPath;
+            }
 
-                try {
-                    return Path.of(URLDecoder.decode(location.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent()
-                        .resolve(pluginsPath);
-                } catch(UnsupportedEncodingException uee) {
-                    throw new RuntimeException(uee);
+            try {
+                URL location = PluginsFactory.class.getProtectionDomain().getCodeSource().getLocation();
+                URI locationUri;
+
+                // Handle Windows paths correctly
+                if (location.getProtocol().equals("file")) {
+                    String path = location.getPath();
+                    // Remove leading slash from Windows paths
+                    if (path.matches("^/[A-Za-z]:/.*")) {
+                        path = path.substring(1);
+                    }
+                    locationUri = new File(path).toURI();
+                } else {
+                    locationUri = location.toURI();
                 }
+
+                return Path.of(locationUri).getParent().resolve(pluginsPath);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("Failed to resolve plugins directory", e);
             }
         }
 
@@ -434,7 +466,7 @@ public class PluginsScanner {
             } else {
                 try {
                     checkPluginDirectory(dir);
-                } catch(IllegalStateException ise) {
+                } catch (IllegalStateException ise) {
                     return new URL[0];
                 }
             }
@@ -443,23 +475,29 @@ public class PluginsScanner {
 
             try (var ds = Files.newDirectoryStream(dir, "*.jar")) {
                 for (Path path : ds) {
-                    var jar = path.toUri().toURL();
+                    try {
+                        // Convert to File first to handle Windows paths correctly
+                        URL jar = path.toFile().toURI().toURL();
 
-                    if (!Files.isReadable(path)) {
-                        LOGGER.error("Plugin jar {} is not readable", jar);
-                        throw new IllegalStateException("Plugin jar " + jar + " is not readable");
-                    }
+                        if (!Files.isReadable(path)) {
+                            LOGGER.error("Plugin jar {} is not readable", jar);
+                            throw new IllegalStateException("Plugin jar " + jar + " is not readable");
+                        }
 
-                    urls.add(jar);
+                        urls.add(jar);
 
-                    if (isLibJar(path)) {
-                        LOGGER.debug("Found lib jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
-                    } else {
-                        LOGGER.info("Found plugin jar {}", URLDecoder.decode(jar.getPath(), StandardCharsets.UTF_8.toString()));
+                        if (isLibJar(path)) {
+                            LOGGER.debug("Found lib jar {}", path.toString());
+                        } else {
+                            LOGGER.info("Found plugin jar {}", path.toString());
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error processing jar file: {}", path, e);
                     }
                 }
             } catch (IOException ex) {
-                LOGGER.error("Cannot read jars in plugins directory {}", Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex.getMessage());
+                LOGGER.error("Cannot read jars in plugins directory {}",
+                        Bootstrapper.getConfiguration().coreModule().pluginsDirectory(), ex);
             }
 
             // Scans the plugins directory up to two levels deep
@@ -469,23 +507,21 @@ public class PluginsScanner {
                         if (Files.isReadable(subdir)) {
                             var subjars = _findPluginsJars(subdir, depth + 1);
                             if (subjars != null && subjars.length > 0) {
-                                Arrays.stream(subjars).forEach(jar -> urls.add(jar));
+                                urls.addAll(Arrays.asList(subjars));
                             }
                         } else {
-                            LOGGER.warn("Subdirectory {} of plugins directory {} is not readable", subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
+                            LOGGER.warn("Subdirectory {} of plugins directory {} is not readable",
+                                    subdir, Bootstrapper.getConfiguration().coreModule().pluginsDirectory());
                         }
                     }
                 } catch (IOException ex) {
-                    LOGGER.error("Cannot read jars in plugins subdirectory", ex.getMessage());
+                    LOGGER.error("Cannot read jars in plugins subdirectory", ex);
                 }
             }
 
             return urls.toArray(URL[]::new);
         }
 
-        /**
-         *
-         */
         private void checkPluginDirectory(Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
                 LOGGER.warn("Plugin directory {} does not exist", pluginsDirectory);
@@ -500,11 +536,14 @@ public class PluginsScanner {
 
         /**
          * Determines whether the given JAR file is classified as a library.
-         * A JAR is considered a library if it is located within a subdirectory of the plugins direcory
-         * whose relative path contains "lib", "-lib", or "_lib" as part of the directory name.
+         * A JAR is considered a library if it is located within a subdirectory of the
+         * plugins direcory
+         * whose relative path contains "lib", "-lib", or "_lib" as part of the
+         * directory name.
          *
          * @param path the path of the JAR file to be checked
-         * @return {@code true} if the JAR file is under a subdirectory of the plugins directory that contains "lib", "-lib",
+         * @return {@code true} if the JAR file is under a subdirectory of the plugins
+         *         directory that contains "lib", "-lib",
          *         or "_lib" in its relative path; {@code false} otherwise
          */
         private boolean isLibJar(Path path) {
@@ -522,29 +561,41 @@ public class PluginsScanner {
                  * The pattern is explained as follows:
                  *
                  * (^|.*[\\/\\\\]) Matches either the beginning of the string
-                 *       (for relative paths like lib/pippo.jar or my-lib/pippo.jar),
-                 *       or any preceding directories in the path for absolute paths.
+                 * (for relative paths like lib/pippo.jar or my-lib/pippo.jar),
+                 * or any preceding directories in the path for absolute paths.
                  *
-                 * ([^\\/\\\\]+[-_])? Optionally matches a prefix consisting of one or more characters,
-                 *       excluding directory separators, followed by either a hyphen ("-") or underscore ("_").
+                 * ([^\\/\\\\]+[-_])? Optionally matches a prefix consisting of one or more
+                 * characters,
+                 * excluding directory separators, followed by either a hyphen ("-") or
+                 * underscore ("_").
                  *
                  * lib Matches the literal string "lib"
                  *
-                 * ([\\/\\\\].*|$) Matches either a directory separator followed by any characters
+                 * ([\\/\\\\].*|$) Matches either a directory separator followed by any
+                 * characters
                  *
                  * ([\\/\\\\].*) or the end of the string ($).
                  */
                 return rpath.matches("(^|.*[\\/\\\\])([^\\/\\\\]+[-_])?lib([\\/\\\\].*|$)");
-            } catch(IllegalArgumentException iae) {
+            } catch (IllegalArgumentException iae) {
                 return false;
             }
         }
     }
 }
 
-record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {}
-interface InjectionDescriptor {}
+record PluginDescriptor(String name, String clazz, boolean enabled, ArrayList<InjectionDescriptor> injections) {
+}
 
-record MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) implements InjectionDescriptor {}
+interface InjectionDescriptor {
+}
 
-record FieldInjectionDescriptor(String field, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash) implements InjectionDescriptor {}
+record MethodInjectionDescriptor(String method, Class<?> clazz,
+        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams,
+        int methodHash) implements InjectionDescriptor {
+}
+
+record FieldInjectionDescriptor(String field, Class<?> clazz,
+        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash)
+        implements InjectionDescriptor {
+}
