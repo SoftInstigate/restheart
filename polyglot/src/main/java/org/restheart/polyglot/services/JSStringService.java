@@ -103,8 +103,8 @@ public class JSStringService extends JSService implements StringService {
                 throw new IllegalArgumentException("wrong js plugin, not javascript");
             }
 
-            var sindexPath = pluginPath.toAbsolutePath().toString();
-
+            var sindexPath = pluginPath.toUri().toString();
+            LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
             var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
 
