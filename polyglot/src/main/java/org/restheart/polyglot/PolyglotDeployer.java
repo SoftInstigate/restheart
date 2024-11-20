@@ -20,8 +20,11 @@
  */
 package org.restheart.polyglot;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -190,20 +193,33 @@ public class PolyglotDeployer implements Initializer {
         } else {
             // this is to allow specifying the plugins directory path
             // relative to the jar (also working when running from classes)
-            var _locOfJarOrNativeImage = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+            var location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+            URI locationUri;
 
             try {
+                // Handle Windows paths correctly
+                if (location.getProtocol().equals("file")) {
+                    String path = location.getPath();
+                    // Remove leading slash from Windows paths
+                    if (path.matches("^/[A-Za-z]:/.*")) {
+                        path = path.substring(1);
+                    }
+                    locationUri = new File(path).toURI();
+                } else {
+                    locationUri = location.toURI();
+                }
+
                 if (ImageInfo.inImageRuntimeCode()) {
                     // directory relative to the direcotry containing the native image executable
-                    return Path.of(URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
+                    return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
                         .getParent()
                         .resolve(pluginsPath);
                 } else {
                     // the directory containing the plugin jar is the plugins directory
-                    return Path.of(URLDecoder.decode(_locOfJarOrNativeImage.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
+                    return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
                         .getParent();
                 }
-            } catch(UnsupportedEncodingException uee) {
+            } catch(UnsupportedEncodingException | URISyntaxException uee) {
                 throw new RuntimeException(uee);
             }
         }
