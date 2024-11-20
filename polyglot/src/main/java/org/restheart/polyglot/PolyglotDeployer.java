@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.fusesource.jansi.Ansi.Color.GREEN;
@@ -64,7 +66,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonIOException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.mongodb.client.MongoClient;
 
 /**
@@ -140,7 +144,7 @@ public class PolyglotDeployer implements Initializer {
                 var nodeServices = findNodeServices(pluginPath);
                 var interceptors = findInterceptors(pluginPath);
                 deploy(services, nodeServices, interceptors);
-            } catch (Throwable t) {
+            } catch (IOException | InterruptedException t) {
                 LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
         }
@@ -340,7 +344,7 @@ public class PolyglotDeployer implements Initializer {
             } else {
                 return Lists.newArrayList();
             }
-        } catch (Throwable t) {
+        } catch (JsonIOException | JsonSyntaxException | IOException t) {
             LOGGER.error("Error reading {}", packagePath, t);
             return Lists.newArrayList();
         }
@@ -401,11 +405,7 @@ public class PolyglotDeployer implements Initializer {
             try {
                 var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
-                while (!srvf.isDone()) {
-                    Thread.sleep(300);
-                }
-
-                var srv = srvf.get();
+                var srv = srvf.get(30, TimeUnit.SECONDS);
 
                 var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
 
@@ -414,7 +414,7 @@ public class PolyglotDeployer implements Initializer {
                 DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
                 LOGGER.info(ansi().fg(GREEN).a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}").reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
-            } catch (IOException | InterruptedException | ExecutionException ex) {
+            } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
                 LOGGER.error("Error deploying node service {}", pluginPath, ex);
                 Thread.currentThread().interrupt();
                 executor.shutdownNow();
