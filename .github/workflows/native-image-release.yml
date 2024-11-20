@@ -34,6 +34,9 @@ jobs:
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
     steps:
+      - name: Debug Version Input
+        run: echo "Version input is ${{ inputs.version }}"
+
       - uses: actions/checkout@v4
 
       - uses: graalvm/setup-graalvm@v1
