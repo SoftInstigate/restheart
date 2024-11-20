@@ -43,6 +43,7 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JSStringService extends JSService implements StringService {
+
     private static final String HANDLE_HINT = """
     the plugin module must export the function 'handle', example:
     export function handle(request, response) {
@@ -77,7 +78,7 @@ public class JSStringService extends JSService implements StringService {
         // find plugin root, i.e the parent dir that contains package.json
         var contextOptions = new HashMap<String, String>();
         var pluginRoot = pluginPath.getParent();
-        while(true) {
+        while (true) {
             var p = pluginRoot.resolve("package.json");
             if (Files.exists(p)) {
                 break;
@@ -127,14 +128,14 @@ public class JSStringService extends JSService implements StringService {
             var description = options.getMember("description").asString();
             var uri = options.getMember("uri").asString();
             var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
-            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ?  MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
+            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
             String modulesReplacements = null;
 
             if (options.getMemberKeys().contains("modulesReplacements")) {
                 var sb = new StringBuilder();
 
                 options.getMember("modulesReplacements").getMemberKeys().stream()
-                    .forEach(k -> sb.append(k).append(":")
+                        .forEach(k -> sb.append(k).append(":")
                         .append(options.getMember("modulesReplacements").getMember(k))
                         .append(","));
 
@@ -142,7 +143,6 @@ public class JSStringService extends JSService implements StringService {
             }
 
             // ******** evaluate and check handle
-
             var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
             var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
 
@@ -160,11 +160,10 @@ public class JSStringService extends JSService implements StringService {
         }
     }
 
-
-
     /**
      *
-     * @throws java.lang.InterruptedException */
+     * @throws java.lang.InterruptedException
+     */
     @Override
     public void handle(StringRequest request, StringResponse response) throws InterruptedException {
         Context ctx = null;
@@ -179,62 +178,62 @@ public class JSStringService extends JSService implements StringService {
     }
 
     static void checkOptions(Value options, Path pluginPath) {
-         // ******** evaluate and check options
+        // ******** evaluate and check options
 
-         if (options.getMemberKeys().isEmpty()) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + " , " + PACKAGE_HINT);
-         }
+        if (options.getMemberKeys().isEmpty()) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + " , " + PACKAGE_HINT);
+        }
 
-         if (!options.getMemberKeys().contains("name")) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + PACKAGE_HINT);
-         }
+        if (!options.getMemberKeys().contains("name")) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMember("name").isString()) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + PACKAGE_HINT);
-         }
+        if (!options.getMember("name").isString()) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMemberKeys().contains("description")) {
-             throw new IllegalArgumentException(
-                 "wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + PACKAGE_HINT);
-         }
+        if (!options.getMemberKeys().contains("description")) {
+            throw new IllegalArgumentException(
+                    "wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMember("description").isString()) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + PACKAGE_HINT);
-         }
+        if (!options.getMember("description").isString()) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMemberKeys().contains("uri")) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.uri', " + PACKAGE_HINT);
-         }
+        if (!options.getMemberKeys().contains("uri")) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.uri', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMember("uri").isString()) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + PACKAGE_HINT);
-         }
+        if (!options.getMember("uri").isString()) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + PACKAGE_HINT);
+        }
 
-         if (!options.getMember("uri").asString().startsWith("/")) {
-             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + PACKAGE_HINT);
-         }
+        if (!options.getMember("uri").asString().startsWith("/")) {
+            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + PACKAGE_HINT);
+        }
 
-         if (options.getMemberKeys().contains("secured") && !options.getMember("secured").isBoolean()) {
+        if (options.getMemberKeys().contains("secured") && !options.getMember("secured").isBoolean()) {
             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.secured', " + PACKAGE_HINT);
-         }
+        }
 
-         if (options.getMemberKeys().contains("matchPolicy")) {
-             if (!options.getMember("matchPolicy").isString()) {
-                 throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + PACKAGE_HINT);
-             } else {
-                 var _matchPolicy = options.getMember("matchPolicy").asString();
-                 try {
-                     MATCH_POLICY.valueOf(_matchPolicy);
-                 } catch (Throwable t) {
-                     throw new IllegalArgumentException(
-                         "wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + PACKAGE_HINT);
-                 }
-             }
-         }
+        if (options.getMemberKeys().contains("matchPolicy")) {
+            if (!options.getMember("matchPolicy").isString()) {
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + PACKAGE_HINT);
+            } else {
+                var _matchPolicy = options.getMember("matchPolicy").asString();
+                try {
+                    MATCH_POLICY.valueOf(_matchPolicy);
+                } catch (Throwable t) {
+                    throw new IllegalArgumentException(
+                            "wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + PACKAGE_HINT);
+                }
+            }
+        }
 
-         if (options.getMemberKeys().contains("modulesReplacements") && !options.getMember("modulesReplacements").isString()) {
+        if (options.getMemberKeys().contains("modulesReplacements") && !options.getMember("modulesReplacements").isString()) {
             throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.modulesReplacements', " + PACKAGE_HINT);
-         }
+        }
     }
 
     static void checkHandle(Value handle, Path pluginPath) {
