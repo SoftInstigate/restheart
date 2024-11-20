@@ -87,6 +87,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$VERSION"
 
       - name: Extract Version Components
         id: extract_version
@@ -178,4 +179,4 @@ jobs:
     needs: deploy
     uses: softinstigate/restheart/.github/workflows/native-image-release.yml@master
     with:
-      version: "${{ env.VERSION }}"
+      version: "${{ needs.deploy.outputs.version }}"
