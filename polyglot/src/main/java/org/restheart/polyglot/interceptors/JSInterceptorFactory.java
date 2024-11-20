@@ -93,7 +93,8 @@ public class JSInterceptorFactory {
         }
 
         // check plugin definition
-        var sindexPath = pluginPath.toAbsolutePath().toString();
+        var sindexPath = pluginPath.toUri().toString();
+        LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
         try (Context ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions)) {
 
