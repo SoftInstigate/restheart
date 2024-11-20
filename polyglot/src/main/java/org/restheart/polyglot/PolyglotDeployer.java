@@ -22,11 +22,8 @@ package org.restheart.polyglot;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -212,16 +209,15 @@ public class PolyglotDeployer implements Initializer {
             }
 
             if (ImageInfo.inImageRuntimeCode()) {
-                // directory relative to the direcotry containing the native image executable
-                return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent()
-                        .resolve(pluginsPath);
+                // directory relative to the one containing the native image executable
+                LOGGER.info("Code is executing at image runtime");
+                return Path.of(locationUri).toAbsolutePath().normalize().getParent().resolve(pluginsPath);
             } else {
                 // the directory containing the plugin jar is the plugins directory
-                return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent();
+                LOGGER.info("Code is executing at development time");
+                return Path.of(locationUri).toAbsolutePath().normalize().getParent();
             }
-        } catch (UnsupportedEncodingException | URISyntaxException uee) {
+        } catch (URISyntaxException uee) {
             throw new RuntimeException(uee);
         }
 
