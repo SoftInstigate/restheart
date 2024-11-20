@@ -34,6 +34,8 @@ jobs:
   deploy:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
     strategy:
       matrix:
         mongodb-version: ["8.0"]
@@ -87,8 +89,8 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "::set-output name=version::$VERSION"
-
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
       - name: Extract Version Components
         id: extract_version
         run: |
