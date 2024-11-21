@@ -229,16 +229,15 @@ public class PolyglotDeployer implements Initializer {
             }
 
             if (ImageInfo.inImageRuntimeCode()) {
-                // directory relative to the direcotry containing the native image executable
-                return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString()))
-                        .getParent()
-                        .resolve(pluginsPath);
+                // directory relative to the one containing the native image executable
+                LOGGER.info("Code is executing at image runtime");
+                return Path.of(locationUri).toAbsolutePath().normalize().getParent().resolve(pluginsPath);
             } else {
                 // the directory containing the plugin jar is the plugins directory
-                return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString()))
-                        .getParent();
+                LOGGER.info("Code is executing at development time");
+                return Path.of(locationUri).toAbsolutePath().normalize().getParent();
             }
-        } catch (UnsupportedEncodingException | URISyntaxException uee) {
+        } catch (URISyntaxException uee) {
             throw new IllegalStateException(uee);
         }
     }
