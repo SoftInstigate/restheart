@@ -197,7 +197,7 @@ public class StagesInterpolator {
         // add @mongoPermissions to avars
         var mongoPermissions = MongoPermissions.of(request);
         if (mongoPermissions != null) {
-            avars.put("@mongoPermissions" ,mongoPermissions.asBson());
+            avars.put("@mongoPermissions", mongoPermissions.asBson());
 
             avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
                 ? BsonNull.VALUE

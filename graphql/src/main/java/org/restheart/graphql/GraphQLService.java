@@ -55,6 +55,8 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.security.MongoRealmAccount;
+import org.restheart.security.WithProperties;
 import org.restheart.utils.BsonUtils;
 import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.HttpStatus;
@@ -178,6 +180,15 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
 
         var localContext = document();
+
+        // add authenticated account properties to local context
+        // used by AggregationMapping to interpolate args as @user and @user._id
+        switch (req.getAuthenticatedAccount()) {
+            case null -> localContext.put("@user", document());
+            case MongoRealmAccount ma -> localContext.put("@user", ma.properties());
+            case WithProperties<?> awp -> localContext.put("@user", BsonUtils.toBsonDocument(awp.propertiesAsMap()));
+            default -> localContext.put("@user", document());
+        }
 
         // add the query-time-limit to the local context;
         if (this.queryTimeLimit > 0) {

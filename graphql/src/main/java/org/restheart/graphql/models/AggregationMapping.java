@@ -27,6 +27,7 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
@@ -95,6 +96,11 @@ public class AggregationMapping extends FieldMapping implements Batchable {
         if (rootDoc != null) { // rootDoc is only available at path level >= 2
             values.put("rootDoc", rootDoc);
         }
+
+        // add the @user args
+        var user = locaLContext.getDocument("@user");
+        values.put("@user", user.isEmpty() ? BsonNull.VALUE : user);
+        user.entrySet().stream().forEach(e -> values.put("@user.".concat(e.getKey()), e.getValue()));
 
         try {
             var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values);
