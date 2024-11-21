@@ -132,13 +132,15 @@ public class MongoRealmAuthenticator implements Authenticator {
         this.propId = arg(config, "prop-id");
 
         if (this.propId.startsWith("$")) {
-            throw new ConfigurationException("prop-id must be a root property name not a json path expression. It can use the dot notation.");
+            throw new ConfigurationException(
+                    "prop-id must be a root property name not a json path expression. It can use the dot notation.");
         }
 
         this.propPassword = arg(config, "prop-password");
 
         if (this.propPassword.contains(".")) {
-            throw new ConfigurationException("prop-password must be a root level property and cannot contain the char '.'");
+            throw new ConfigurationException(
+                    "prop-password must be a root level property and cannot contain the char '.'");
         }
 
         this.jsonPathRoles = arg(config, "json-path-roles");
@@ -278,7 +280,8 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     private boolean verifyDigestCredential(final PwdCredentialAccount ref, final DigestCredential credential) {
         if (this.bcryptHashedPassword) {
-            LOGGER.error("Digest authentication cannot support bcryped stored password, consider using basic authetication over TLS");
+            LOGGER.error(
+                    "Digest authentication cannot support bcryped stored password, consider using basic authetication over TLS");
             return false;
         }
 
@@ -531,7 +534,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         });
 
-        var properties = BsonDocument.parse(account.toString()); // used this because password has been removed from account
+        final var properties = BsonDocument.parse(account.toString()); // used this because password has been removed from account
         properties.put("authDb", new BsonString(key.db()));
 
         return new MongoRealmAccount(key.db(), key.id(), _password.getAsJsonPrimitive().getAsString().toCharArray(), roles, properties);
@@ -549,7 +552,7 @@ public class MongoRealmAuthenticator implements Authenticator {
      * @param req
      * @return the usersDb taking into account the overrideUsersDbHeader option
      */
-    public String getUsersDb(Request<?> req) {
+    public String getUsersDb(final Request<?> req) {
         if (this.overrideUsersDbHeader != null && req.getHeaders().contains(this.overrideUsersDbHeader)) {
             return req.getHeader(this.overrideUsersDbHeader);
         } else {

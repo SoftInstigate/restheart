@@ -26,17 +26,11 @@ import static org.restheart.configuration.Utils.findOrDefault;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.graalvm.home.Version;
@@ -64,29 +60,28 @@ import org.restheart.polyglot.interceptors.JSInterceptorFactory;
 import org.restheart.polyglot.services.JSService;
 import org.restheart.polyglot.services.JSStringService;
 import org.restheart.polyglot.services.NodeService;
+import org.restheart.utils.DirectoryWatcher;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonIOException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.mongodb.client.MongoClient;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "polyglotDeployer",
-        description = "handles GraalVM polyglot plugins",
-        enabledByDefault = true
-)
+@RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true)
 public class PolyglotDeployer implements Initializer {
 
-    private static final String ERROR_DEPLOYING = "Error deploying {}";
-    public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
     private static final Map<Path, JSPlugin> DEPLOYEES = new HashMap<>();
+    private JSInterceptorFactory jsInterceptorFactory;
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -95,7 +90,6 @@ public class PolyglotDeployer implements Initializer {
     private Configuration config;
 
     private Optional<MongoClient> mclient;
-    private JSInterceptorFactory jsInterceptorFactory;
 
     @OnInit
     public void onInit() {
@@ -144,65 +138,54 @@ public class PolyglotDeployer implements Initializer {
                 var nodeServices = findNodeServices(pluginPath);
                 var interceptors = findInterceptors(pluginPath);
                 deploy(services, nodeServices, interceptors);
-            } catch (InterruptedException ie) {
-                LOGGER.error(ERROR_DEPLOYING, pluginPath.toAbsolutePath(), ie);
+            } catch (IOException t) {
+                LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
+            } catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
-            } catch (Exception e) {
-                LOGGER.error(ERROR_DEPLOYING, pluginPath.toAbsolutePath(), e);
+                LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
         }
     }
 
+    private Path pluginPathFromEvent(Path pluginsDirectory, Path path) {
+        // Get the relative path between pluginsDirectory and subdirectory
+        var relativePath = pluginsDirectory.relativize(path);
+
+        // Return the first element from the relative path (i.e., the pluginDirectory)
+        return pluginsDirectory.resolve(relativePath.getName(0));
+    }
+
     private void watch(Path pluginsDirectory) {
         try {
-            var watchService = FileSystems.getDefault().newWatchService();
-
-            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
-
-            ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                while (true) {
-                    try {
-                        var key = watchService.take();
-                        while (key != null) {
-                            for (var event : key.pollEvents()) {
-                                var eventContext = event.context();
-                                var pluginPath = pluginsDirectory.resolve(eventContext.toString());
-
-                                LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
-
-                                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                                    try {
-                                        deploy(findServices(pluginPath), findNodeServices(pluginPath),
-                                                findInterceptors(pluginPath));
-                                    } catch (Throwable t) {
-                                        LOGGER.error(ERROR_DEPLOYING, pluginPath.toAbsolutePath(), t);
-                                    }
-                                } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                    try {
-                                        undeploy(pluginPath);
-                                        deploy(findServices(pluginPath), findNodeServices(pluginPath),
-                                                findInterceptors(pluginPath));
-                                    } catch (Throwable t) {
-                                        LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
-                                    }
-                                } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                                    undeploy(pluginPath);
-                                }
-                            }
-
-                            key.reset();
+            final var watcher = new DirectoryWatcher(pluginsDirectory, (path, kind) -> {
+                try {
+                    var pluginPath = pluginPathFromEvent(pluginsDirectory, path);
+                    switch (kind.name()) {
+                        case "ENTRY_CREATE" ->
+                            deploy(findServices(pluginPath), findNodeServices(pluginPath),
+                                    findInterceptors(pluginPath));
+                        case "ENTRY_DELETE" ->
+                            undeploy(pluginPath);
+                        case "ENTRY_MODIFY" -> {
+                            undeploy(pluginPath);
+                            deploy(findServices(pluginPath), findNodeServices(pluginPath),
+                                    findInterceptors(pluginPath));
                         }
-                    } catch (InterruptedException ex) {
-                        LOGGER.error("Error watching {}", pluginsDirectory.toAbsolutePath(), ex);
-                        Thread.currentThread().interrupt();
+                        default -> {
+                        }
                     }
+                } catch (IOException | InterruptedException ex) {
+                    LOGGER.error("Error handling fs event {} for file {}", kind, path, ex);
                 }
             });
+
+            ThreadsUtils.virtualThreadsExecutor().execute(watcher);
         } catch (IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
     }
+
+    public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
 
     private Path getPluginsDirectory(Map<String, Object> args) {
         var pluginsPath = Path.of(findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false));
@@ -212,20 +195,20 @@ public class PolyglotDeployer implements Initializer {
         }
         // this is to allow specifying the plugins directory path
         // relative to the jar (also working when running from classes)
-        URL locationUrl = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        var location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
         URI locationUri;
 
         try {
             // Handle Windows paths correctly
-            if (locationUrl.getProtocol().equals("file")) {
-                String path = locationUrl.getPath();
+            if (location.getProtocol().equals("file")) {
+                String path = location.getPath();
                 // Remove leading slash from Windows paths
                 if (path.matches("^/[A-Za-z]:/.*")) {
                     path = path.substring(1);
                 }
                 locationUri = new File(path).toURI();
             } else {
-                locationUri = locationUrl.toURI();
+                locationUri = location.toURI();
             }
 
             if (ImageInfo.inImageRuntimeCode()) {
@@ -240,6 +223,7 @@ public class PolyglotDeployer implements Initializer {
         } catch (URISyntaxException uee) {
             throw new IllegalStateException(uee);
         }
+
     }
 
     private List<Path> findJsPluginDirectories(Path pluginsDirectory) {
@@ -360,7 +344,7 @@ public class PolyglotDeployer implements Initializer {
             } else {
                 return Lists.newArrayList();
             }
-        } catch (Throwable t) {
+        } catch (JsonIOException | JsonSyntaxException | IOException t) {
             LOGGER.error("Error reading {}", packagePath, t);
             return Lists.newArrayList();
         }
@@ -402,12 +386,17 @@ public class PolyglotDeployer implements Initializer {
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-            LOGGER.info(
-                    ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset()
-                            .toString(),
-                    srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+            LOGGER.info(ansi().fg(GREEN)
+                    .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                    .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
         } catch (IllegalArgumentException | IllegalStateException e) {
-            LOGGER.error("Error deploying plugin {}", pluginPath, e);
+            if (e.getMessage().contains("require is not defined")) {
+                LOGGER.error(
+                        "Error deploying plugin {}. Resolution: Try running 'npm install' for required dependencies.",
+                        pluginPath);
+            } else {
+                LOGGER.error("Error deploying plugin {}", pluginPath, e);
+            }
         }
     }
 
@@ -422,25 +411,20 @@ public class PolyglotDeployer implements Initializer {
             try {
                 var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
-                while (!srvf.isDone()) {
-                    Thread.sleep(300);
-                }
-
-                var srv = srvf.get();
+                var srv = srvf.get(30, TimeUnit.SECONDS);
 
                 var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
-                        srv.name(), "description", srv.secured(), true,
-                        srv.getClass().getName(), srv, new HashMap<>());
+                        srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
 
                 registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
 
                 DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-                LOGGER.info(
-                        ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}")
-                                .reset().toString(),
-                        srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
-            } catch (IOException | InterruptedException | ExecutionException ex) {
+                LOGGER.info(ansi().fg(GREEN).a(
+                        "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                        .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
+                        srv.matchPolicy());
+            } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
                 LOGGER.error("Error deploying node service {}", pluginPath, ex);
                 Thread.currentThread().interrupt();
                 executor.shutdownNow();
@@ -460,7 +444,7 @@ public class PolyglotDeployer implements Initializer {
 
         DEPLOYEES.put(pluginPath.toAbsolutePath(), (JSPlugin) interceptorRecord.getInstance());
 
-        LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
+        LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' deployed with description: '{}'").reset().toString(),
                 interceptorRecord.getName(),
                 interceptorRecord.getDescription());
     }
@@ -482,7 +466,7 @@ public class PolyglotDeployer implements Initializer {
             if (_toUndeploy != null && _toUndeploy instanceof JSService toUndeploy) {
                 registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
 
-                LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
+                LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(),
                         toUndeploy.name(), toUndeploy.uri());
             }
         }
@@ -500,9 +484,9 @@ public class PolyglotDeployer implements Initializer {
                     .removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
             if (removed) {
-                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), toUndeploy.name());
+                LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' undeployed").reset().toString(), toUndeploy.name());
             } else {
-                LOGGER.warn("interceptor {} was not removed", toUndeploy.name());
+                LOGGER.warn("Interceptor {} was not undeployed", toUndeploy.name());
             }
         }
     }

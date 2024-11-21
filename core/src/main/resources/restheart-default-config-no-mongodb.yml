@@ -81,7 +81,7 @@ fileRealmAuthenticator:
       password: null
       roles: [admin]
 
-# mongoRealAuthenticator authenticates users defined in a MongoDB collection.
+# mongoRealmAuthenticator authenticates users defined in a MongoDB collection.
 # see https://restheart.org/docs/security/authentication#mongo-realm-authenticator
 mongoRealmAuthenticator:
   enabled: false

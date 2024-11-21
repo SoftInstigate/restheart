@@ -19,6 +19,10 @@
  */
 package org.restheart.exchange;
 
+import static org.restheart.exchange.ExchangeKeys.*;
+import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -38,46 +42,14 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.ExchangeKeys.ADMIN;
-import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
-import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
-import static org.restheart.exchange.ExchangeKeys.CONFIG;
-import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
-import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.FS_CHUNKS_SUFFIX;
-import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
-import static org.restheart.exchange.ExchangeKeys.JSON_MODE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.LOCAL;
-import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import static org.restheart.exchange.ExchangeKeys.NO_CACHE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.NO_PROPS_KEY;
-import static org.restheart.exchange.ExchangeKeys.NUL;
-import static org.restheart.exchange.ExchangeKeys.READ_CONCERN_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.READ_PREFERENCE_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import static org.restheart.exchange.ExchangeKeys.RESOURCES_WILDCARD_KEY;
-import static org.restheart.exchange.ExchangeKeys.SYSTEM;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import static org.restheart.exchange.ExchangeKeys.WRITE_CONCERN_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
-import static org.restheart.exchange.ExchangeKeys._INDEXES;
-import static org.restheart.exchange.ExchangeKeys._META;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-import static org.restheart.exchange.ExchangeKeys._SESSIONS;
-import static org.restheart.exchange.ExchangeKeys._SIZE;
-import static org.restheart.exchange.ExchangeKeys._STREAMS;
-import static org.restheart.exchange.ExchangeKeys._TRANSACTIONS;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.MongoServiceAttachments;
-import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,13 +136,13 @@ public class MongoRequest extends BsonRequest {
         super(exchange);
 
         this.whereUri = removeTrailingSlashes(whereUri == null
-            ? null
-            : whereUri.startsWith("/") ? whereUri
-            : "/" + whereUri);
+                ? null
+                : whereUri.startsWith("/") ? whereUri
+                        : "/" + whereUri);
 
         this.whatUri = removeTrailingSlashes(whatUri == null ? null
-            : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
-            : "/" + whatUri);
+                : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
+                        : "/" + whatUri);
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
             this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
@@ -181,7 +153,8 @@ public class MongoRequest extends BsonRequest {
             if (hostname != null) {
                 params.put("host", hostname);
                 final var parts = hostname.split("\\.");
-                IntStream.range(0, parts.length).forEach(idx -> params.put("host[".concat(String.valueOf(idx)).concat("]"), parts[idx] ));
+                IntStream.range(0, parts.length)
+                        .forEach(idx -> params.put("host[".concat(String.valueOf(idx)).concat("]"), parts[idx]));
             }
         } else {
             this.pathTemplateMatch = null;
@@ -189,7 +162,8 @@ public class MongoRequest extends BsonRequest {
 
         this.mongoResourceUri = mongoUriFromRequestPath(exchange.getRequestPath());
 
-        // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
+        // "/db/collection/document" --> { "", "mappedDbName", "collection", "document"
+        // }
         this.pathTokens = this.mongoResourceUri.split(SLASH);
 
         this.type = selectRequestType(pathTokens);
@@ -206,8 +180,8 @@ public class MongoRequest extends BsonRequest {
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
 
         var _jsonMode = exchange.getQueryParameters().containsKey(JSON_MODE_QPARAM_KEY)
-            ? exchange.getQueryParameters().get(JSON_MODE_QPARAM_KEY).getFirst().toUpperCase()
-            : null;
+                ? exchange.getQueryParameters().get(JSON_MODE_QPARAM_KEY).getFirst().toUpperCase()
+                : null;
 
         if (_jsonMode != null) {
             JsonMode mode;
@@ -227,10 +201,10 @@ public class MongoRequest extends BsonRequest {
 
         // writeMode
         var _writeMode = exchange.getQueryParameters().containsKey(WRITE_MODE_QPARAM_KEY)
-            ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
-            : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
-            ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
-            : defaultWriteMode();
+                ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
+                : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
+                        ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
+                        : defaultWriteMode();
 
         WRITE_MODE mode;
 
@@ -258,7 +232,8 @@ public class MongoRequest extends BsonRequest {
         // readPreference
         if (exchange.getQueryParameters().containsKey(READ_PREFERENCE_QPARAM_KEY)) {
             try {
-                _rsOps = _rsOps.withReadPreference(exchange.getQueryParameters().get(READ_PREFERENCE_QPARAM_KEY).getFirst());
+                _rsOps = _rsOps
+                        .withReadPreference(exchange.getQueryParameters().get(READ_PREFERENCE_QPARAM_KEY).getFirst());
                 anyRsSet = true;
             } catch (IllegalArgumentException iae) {
                 // nothing to do
@@ -289,24 +264,26 @@ public class MongoRequest extends BsonRequest {
      *
      * @param exchange
      *
-     * the exchange request path (mapped resolvedTemplate) is rewritten replacing the
-     * whereUri with the whatUri
-     * the special whatUri value * means any resource
+     *                 the exchange request path (mapped resolvedTemplate) is
+     *                 rewritten replacing the
+     *                 whereUri with the whatUri
+     *                 the special whatUri value * means any resource
      *
-     * example 1
+     *                 example 1
      *
-     * whatUri=/db/mycollection whereUri=/
+     *                 whatUri=/db/mycollection whereUri=/
      *
-     * then the requestPath / is rewritten as /db/mycollection
+     *                 then the requestPath / is rewritten as /db/mycollection
      *
-     * example 2
+     *                 example 2
      *
-     * whatUri=*, whereUri=/data
+     *                 whatUri=*, whereUri=/data
      *
-     * then the requestPath /data is rewritten as /
+     *                 then the requestPath /data is rewritten as /
      *
      * @param whereUri the where URI
-     * @param whatUri the what URI idenitifying a MongoDB resource, as /db/collection
+     * @param whatUri  the what URI idenitifying a MongoDB resource, as
+     *                 /db/collection
      * @return the MongoRequest
      */
     public static MongoRequest init(HttpServerExchange exchange, String whereUri, String whatUri) {
@@ -324,12 +301,12 @@ public class MongoRequest extends BsonRequest {
      */
     public static boolean isReservedDbName(String dbName) {
         return dbName == null
-            ? false
-            : "".equals(dbName)
-                || dbName.equalsIgnoreCase(ADMIN)
-                || dbName.equalsIgnoreCase(CONFIG)
-                || dbName.equalsIgnoreCase(LOCAL)
-                || dbName.startsWith(SYSTEM);
+                ? false
+                : "".equals(dbName)
+                        || dbName.equalsIgnoreCase(ADMIN)
+                        || dbName.equalsIgnoreCase(CONFIG)
+                        || dbName.equalsIgnoreCase(LOCAL)
+                        || dbName.startsWith(SYSTEM);
     }
 
     /**
@@ -339,11 +316,11 @@ public class MongoRequest extends BsonRequest {
      */
     public static boolean isReservedCollectionName(String collectionName) {
         return collectionName == null
-            ? false
-            : "".equals(collectionName)
-                || collectionName.startsWith(SYSTEM)
-                || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                || collectionName.equals(META_COLLNAME);
+                ? false
+                : "".equals(collectionName)
+                        || collectionName.startsWith(SYSTEM)
+                        || collectionName.endsWith(FS_CHUNKS_SUFFIX)
+                        || collectionName.equals(META_COLLNAME);
     }
 
     /**
@@ -352,7 +329,6 @@ public class MongoRequest extends BsonRequest {
      * @param documentId
      * @return true if the documentIdRaw is a reserved resource
      */
-    @SuppressWarnings("deprecation")
     public static boolean isReservedDocumentId(TYPE type, BsonValue documentId) {
         if (documentId == null || !documentId.isString()) {
             return false;
@@ -361,13 +337,13 @@ public class MongoRequest extends BsonRequest {
         var sdi = documentId.asString().getValue();
 
         if ((type == TYPE.COLLECTION_META && sdi.startsWith(COLL_META_DOCID_PREFIX))
-            || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
-            || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
-            || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
-            || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
-            || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
-            || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
-            || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
+                || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
+                || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
+                || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
+                || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
+                || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
             return false;
         } else {
             return DB_META_DOCID.equalsIgnoreCase(sdi) || sdi.startsWith(COLL_META_DOCID_PREFIX);
@@ -382,7 +358,6 @@ public class MongoRequest extends BsonRequest {
         return type;
     }
 
-    @SuppressWarnings("deprecation")
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
@@ -418,9 +393,11 @@ public class MongoRequest extends BsonRequest {
             type = TYPE.SESSIONS;
         } else if (pathTokens.length == 3 && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_SESSIONS)) {
             type = TYPE.SESSION;
-        } else if (pathTokens.length == 4 && pathTokens[pathTokens.length - 3].equalsIgnoreCase(_SESSIONS) && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_TRANSACTIONS)) {
+        } else if (pathTokens.length == 4 && pathTokens[pathTokens.length - 3].equalsIgnoreCase(_SESSIONS)
+                && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_TRANSACTIONS)) {
             type = TYPE.TRANSACTIONS;
-        } else if (pathTokens.length == 5 && pathTokens[pathTokens.length - 4].equalsIgnoreCase(_SESSIONS) && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_TRANSACTIONS)) {
+        } else if (pathTokens.length == 5 && pathTokens[pathTokens.length - 4].equalsIgnoreCase(_SESSIONS)
+                && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_TRANSACTIONS)) {
             type = TYPE.TRANSACTION;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
@@ -429,13 +406,15 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.FILES_BUCKET;
             } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES)
+                    && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;
             } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
             } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
                 type = TYPE.AGGREGATION;
-            } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+            } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES)
+                    && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 type = TYPE.FILE;
             } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.filePath/xxx/binary
@@ -558,7 +537,8 @@ public class MongoRequest extends BsonRequest {
                 return this.whereUri + mongoUri;
             }
         } else {
-            requestPath = removeTrailingSlashes(requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
+            requestPath = removeTrailingSlashes(
+                    requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
         if (requestPath.isEmpty()) {
@@ -581,7 +561,8 @@ public class MongoRequest extends BsonRequest {
                 return resolvedWhere + mongoUri;
             }
         } else {
-            requestPath = removeTrailingSlashes(requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
+            requestPath = removeTrailingSlashes(
+                    requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
         }
 
         return requestPath.isEmpty() ? SLASH : requestPath;
@@ -595,7 +576,8 @@ public class MongoRequest extends BsonRequest {
         // replace params within whatUri
         // eg _whatUri: /{prefix}_db, _whereUri: /{prefix}/*
         for (var key : this.pathTemplateMatch.getParameters().keySet()) {
-            resolvedTemplate = resolvedTemplate.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
+            resolvedTemplate = resolvedTemplate.replace("{".concat(key).concat("}"),
+                    this.pathTemplateMatch.getParameters().get(key));
         }
         return removeTrailingSlashes(resolvedTemplate);
     }
@@ -613,8 +595,8 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isParentAccessible() {
         return getType() == TYPE.DB
-            ? getExchange().getRequestPath().split(SLASH).length > 1
-            : getExchange().getRequestPath().split(SLASH).length > 2;
+                ? getExchange().getRequestPath().split(SLASH).length > 1
+                : getExchange().getRequestPath().split(SLASH).length > 2;
     }
 
     /**
@@ -652,7 +634,7 @@ public class MongoRequest extends BsonRequest {
     /**
      *
      * @return the txn id or null if request type is not SESSIONS, TRANSACTIONS
-     * or TRANSACTION
+     *         or TRANSACTION
      */
     public String getSid() {
         return isTxn() || isTxns() || isSessions() ? getPathTokenAt(2) : null;
@@ -688,8 +670,8 @@ public class MongoRequest extends BsonRequest {
      */
     public URI getUri() throws URISyntaxException {
         return new URI(Arrays.asList(pathTokens)
-            .stream()
-            .reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
+                .stream()
+                .reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
     }
 
     /**
@@ -701,7 +683,8 @@ public class MongoRequest extends BsonRequest {
             return false;
         }
 
-        return isReservedDbName(getDBName()) || isReservedCollectionName(getCollectionName()) || isReservedDocumentId(getType(), getDocumentId());
+        return isReservedDbName(getDBName()) || isReservedCollectionName(getCollectionName())
+                || isReservedDocumentId(getType(), getDocumentId());
     }
 
     /**
@@ -767,10 +750,10 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isCount() {
         return count
-            || getType() == TYPE.ROOT_SIZE
-            || getType() == TYPE.COLLECTION_SIZE
-            || getType() == TYPE.FILES_BUCKET_SIZE
-            || getType() == TYPE.SCHEMA_STORE_SIZE;
+                || getType() == TYPE.ROOT_SIZE
+                || getType() == TYPE.COLLECTION_SIZE
+                || getType() == TYPE.FILES_BUCKET_SIZE
+                || getType() == TYPE.SCHEMA_STORE_SIZE;
     }
 
     /**
@@ -823,7 +806,8 @@ public class MongoRequest extends BsonRequest {
 
                 filterQuery.put("$and", _filters);
             } else if (filter.size() == 1) {
-                filterQuery.putAll(BsonDocument.parse(filter.getFirst()));  // this can throw JsonParseException for invalid filter parameters
+                // this can throw JsonParseException for invalid filter parameters
+                filterQuery.putAll(BsonDocument.parse(filter.getFirst())); 
             } else {
                 return filterQuery;
             }
@@ -860,7 +844,7 @@ public class MongoRequest extends BsonRequest {
                     } else {
                         ret.put(s, 1);
                     }
-                } catch(BsonInvalidOperationException biop) {
+                } catch (BsonInvalidOperationException biop) {
                     throw new JsonParseException("Invalid sort parameter", biop);
                 }
             });
@@ -1083,13 +1067,14 @@ public class MongoRequest extends BsonRequest {
         // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
         var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(wrapped);
         return attacheBsonContent == null
-            ? MongoRequestContentInjector.inject(wrapped)
-            : attacheBsonContent;
+                ? MongoRequestContentInjector.inject(wrapped)
+                : attacheBsonContent;
     }
 
     /**
      *
-     * @return the fileInputStream in case of a file resouces the fileInputStream, null othewise
+     * @return the fileInputStream in case of a file resouces the fileInputStream,
+     *         null othewise
      * @throws org.restheart.exchange.BadRequestException
      * @throws java.io.IOException
      */
@@ -1101,7 +1086,6 @@ public class MongoRequest extends BsonRequest {
 
         return fileInputStream;
     }
-
 
     /**
      * @param fileInputStream the fileInputStream to set
@@ -1149,6 +1133,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * 
      * @return
      */
     public boolean isDbNameInvalid() {
@@ -1165,24 +1150,25 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     *               Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalid(String dbName) {
         return (dbName == null
-            || dbName.contains(NUL)
-            || dbName.contains(" ")
-            || dbName.contains("/")
-            || dbName.contains("\\")
-            || dbName.contains(".")
-            || dbName.contains("\"")
-            || dbName.contains("$")
-            || dbName.length() > 64
-            || dbName.length() == 0);
+                || dbName.contains(NUL)
+                || dbName.contains(" ")
+                || dbName.contains("/")
+                || dbName.contains("\\")
+                || dbName.contains(".")
+                || dbName.contains("\"")
+                || dbName.contains("$")
+                || dbName.length() > 64
+                || dbName.length() == 0);
     }
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * 
      * @return
      */
     public boolean isDbNameInvalidOnWindows() {
@@ -1191,22 +1177,23 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     *               Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalidOnWindows(String dbName) {
         return (isDbNameInvalid()
-            || dbName.contains("*")
-            || dbName.contains("<")
-            || dbName.contains(">")
-            || dbName.contains(":")
-            || dbName.contains(".")
-            || dbName.contains("|")
-            || dbName.contains("?"));
+                || dbName.contains("*")
+                || dbName.contains("<")
+                || dbName.contains(">")
+                || dbName.contains(":")
+                || dbName.contains(".")
+                || dbName.contains("|")
+                || dbName.contains("?"));
     }
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * 
      * @return
      */
     public boolean isCollectionNameInvalid() {
@@ -1215,16 +1202,16 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param collectionName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     *                       Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isCollectionNameInvalid(String collectionName) {
         // collection starting with system. will return FORBIDDEN
 
         return (collectionName == null
-            || collectionName.contains(NUL)
-            || collectionName.contains("$")
-            || collectionName.length() == 64);
+                || collectionName.contains(NUL)
+                || collectionName.contains("$")
+                || collectionName.length() == 64);
     }
 
     /**
@@ -1371,7 +1358,7 @@ public class MongoRequest extends BsonRequest {
         return getType() == TYPE.SESSIONS;
     }
 
-     /**
+    /**
      * helper method to check request resource type
      *
      * @return true if type is TYPE.SESSION
@@ -1505,8 +1492,8 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isWriteDocument() {
         return (((isPut() || isPatch()) && (isFile() || isDocument() || isSchema()))
-            || isPost()
-            && (isCollection() || isFilesBucket() || isSchemaStore()));
+                || isPost()
+                        && (isCollection() || isFilesBucket() || isSchemaStore()));
     }
 
     /**

@@ -41,7 +41,7 @@ import static com.mongodb.client.model.Updates.set;
  *
  * It assumes that the user collection is 'restheart.users', the roles property
  * is 'roles' and the id of the user is "_id" (the default configuration values
- * of mongoRealAuthenticator)
+ * of mongoRealmAuthenticator)
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
