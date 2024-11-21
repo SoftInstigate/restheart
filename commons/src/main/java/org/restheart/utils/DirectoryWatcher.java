@@ -20,13 +20,14 @@
  */
 package org.restheart.utils;
 
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
@@ -82,7 +83,7 @@ public class DirectoryWatcher implements Runnable {
             WatchKey key;
 
             try {
-                key = watchService.take();  // This will block until an event occurs
+                key = watchService.take(); // This will block until an event occurs
             } catch (InterruptedException e) {
                 return;
             }
@@ -112,10 +113,10 @@ public class DirectoryWatcher implements Runnable {
                         LambdaUtils.throwsSneakyException(e);
                     }
                     this.onEvent.accept(child, ENTRY_CREATE);
-                } else if  (kind.equals(ENTRY_MODIFY) && Files.isRegularFile(child)) {
+                } else if (kind.equals(ENTRY_MODIFY) && Files.isRegularFile(child)) {
                     LOGGER.debug("File modified: {}", child);
                     this.onEvent.accept(child, ENTRY_MODIFY);
-                } else  if (kind.equals(ENTRY_DELETE)) {
+                } else if (kind.equals(ENTRY_DELETE)) {
                     LOGGER.debug("File or directory deleted: {}", child);
                     this.onEvent.accept(child, ENTRY_DELETE);
 
