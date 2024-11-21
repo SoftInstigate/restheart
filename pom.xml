@@ -32,7 +32,7 @@
             MongoDB default version to test with
             mvn clean verify -Dmongodb.version="6.0"  (to test with mongo:6.0 container)
         -->
-        <mongodb.version>7.0</mongodb.version>
+        <mongodb.version>8.0</mongodb.version>
         <jdk.version>21</jdk.version>
         <graalvm.version>24.1.1</graalvm.version>
         <truffle.version>24.1.1</truffle.version> <!-- Truffle and Graal languages are compatible with the latest version of the GraalVM JDK as well as the latest LTS release.-->
