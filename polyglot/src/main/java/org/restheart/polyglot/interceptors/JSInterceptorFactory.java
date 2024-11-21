@@ -38,7 +38,6 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.polyglot.ContextQueue;
-import org.restheart.polyglot.JSPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +50,7 @@ import com.mongodb.client.MongoClient;
  */
 public class JSInterceptorFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSInterceptorFactory.class);
 
     Map<String, String> contextOptions = new HashMap<>();
 
@@ -94,7 +93,8 @@ public class JSInterceptorFactory {
         }
 
         // check plugin definition
-        var sindexPath = pluginPath.toAbsolutePath().toString();
+        var sindexPath = pluginPath.toUri().toString();
+        LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
         try (Context ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions)) {
 
@@ -144,8 +144,8 @@ public class JSInterceptorFactory {
 
                 options.getMember("modulesReplacements").getMemberKeys().stream()
                         .forEach(k -> sb.append(k).append(":")
-                        .append(options.getMember("modulesReplacements").getMember(k))
-                        .append(","));
+                                .append(options.getMember("modulesReplacements").getMember(k))
+                                .append(","));
 
                 modulesReplacements = sb.toString();
             }
@@ -301,6 +301,17 @@ public class JSInterceptorFactory {
                             mclient,
                             config,
                             contextOpts);
+                case "WildCardJSInterceptor", "org.restheart.plugins.WildCardJSInterceptor" ->
+                    interceptor = new WildCardJSInterceptor(name,
+                            pluginClass,
+                            description,
+                            interceptPoint,
+                            modulesReplacements,
+                            handleSource,
+                            resolveSource,
+                            mclient,
+                            config,
+                            contextOpts);
                 default ->
                     throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.pluginClass', " + PACKAGE_HINT);
             }
@@ -316,26 +327,26 @@ public class JSInterceptorFactory {
     }
 
     private static final String HANDLE_RESOLVE_HINT = """
-    the interceptor js module must export the functions 'handle' and 'resolve', example:
-    export function handle(request, response) {
-        const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
-        var bson = response.getContent();
+            the interceptor js module must export the functions 'handle' and 'resolve', example:
+            export function handle(request, response) {
+                const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
+                var bson = response.getContent();
 
-        bson.asDocument().put("injectedDoc", BsonUtils.parse("{ 'n': 1, 's': 'foo' }"));
-    }
+                bson.asDocument().put("injectedDoc", BsonUtils.parse("{ 'n': 1, 's': 'foo' }"));
+            }
 
-    export function resolve(request) {
-        return request.isGet() && request.isDocument() && "coll" === request.getCollectionName();
-    }
-    """;
+            export function resolve(request) {
+                return request.isGet() && request.isDocument() && "coll" === request.getCollectionName();
+            }
+            """;
 
     private static final String PACKAGE_HINT = """
-    the plugin module must export the object 'options', example:
-    export const options = {
-        name: "mongoCollInterceptor",
-        description: "modifies the response of GET /coll/<docid>",
-        interceptPoint: "RESPONSE",
-        pluginClass: "MongoInterceptor"
-    }
-    """;
+            the plugin module must export the object 'options', example:
+            export const options = {
+                name: "mongoCollInterceptor",
+                description: "modifies the response of GET /coll/<docid>",
+                interceptPoint: "RESPONSE",
+                pluginClass: "MongoInterceptor"
+            }
+            """;
 }
