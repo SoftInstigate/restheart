@@ -41,17 +41,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
-import com.google.gson.JsonParser;
-import com.mongodb.client.MongoClient;
-
-import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
-
+import static org.fusesource.jansi.Ansi.ansi;
 import org.graalvm.home.Version;
-
 import org.graalvm.polyglot.Source;
+import org.restheart.configuration.Configuration;
+import static org.restheart.configuration.Utils.findOrDefault;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
+import org.restheart.graal.ImageInfo;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -59,11 +57,6 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.configuration.Configuration;
-import static org.restheart.configuration.Utils.findOrDefault;
-import org.restheart.exchange.ServiceRequest;
-import org.restheart.exchange.ServiceResponse;
-import org.restheart.graal.ImageInfo;
 import org.restheart.polyglot.interceptors.JSInterceptor;
 import org.restheart.polyglot.interceptors.JSInterceptorFactory;
 import org.restheart.polyglot.services.JSService;
@@ -73,15 +66,21 @@ import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
+import com.google.gson.JsonParser;
+import com.mongodb.client.MongoClient;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "polyglotDeployer",
-    description = "handles GraalVM polyglot plugins",
-    enabledByDefault = true
+        description = "handles GraalVM polyglot plugins",
+        enabledByDefault = true
 )
 public class PolyglotDeployer implements Initializer {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
     private Path pluginsDirectory = null;
@@ -117,18 +116,18 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private Optional<MongoClient> mongoClient(PluginsRegistry registry) {
-         return registry.getProviders().stream()
-            .filter(pd -> pd.isEnabled())
-            .map(pd -> pd.getInstance())
-            .filter(p -> MongoClient.class.getName().equals(p.rawType().getName()))
-            .map(p -> (MongoClient) p.get(null))
-            .findFirst();
+        return registry.getProviders().stream()
+                .filter(pd -> pd.isEnabled())
+                .map(pd -> pd.getInstance())
+                .filter(p -> MongoClient.class.getName().equals(p.rawType().getName()))
+                .map(p -> (MongoClient) p.get(null))
+                .findFirst();
     }
 
     private boolean isRunningOnGraalVM() {
         try {
             return Version.getCurrent().isRelease();
-        } catch(Throwable cnfe) {
+        } catch (Throwable cnfe) {
             return false;
         }
     }
@@ -157,41 +156,43 @@ public class PolyglotDeployer implements Initializer {
 
             pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
-            ThreadsUtils.virtualThreadsExecutor().execute(() -> { while(true) {
-                try {
-                    var key = watchService.take();
-                    while (key != null) {
-                        for (var event : key.pollEvents()) {
-                            var eventContext = event.context();
-                            var pluginPath = pluginsDirectory.resolve(eventContext.toString());
+            ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                while (true) {
+                    try {
+                        var key = watchService.take();
+                        while (key != null) {
+                            for (var event : key.pollEvents()) {
+                                var eventContext = event.context();
+                                var pluginPath = pluginsDirectory.resolve(eventContext.toString());
 
-                            LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
+                                LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
 
-                            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                                try {
-                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                                } catch (Throwable t) {
-                                    LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
-                                }
-                            } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                try {
+                                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                                    try {
+                                        deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
+                                    } catch (Throwable t) {
+                                        LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
+                                    }
+                                } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+                                    try {
+                                        undeploy(pluginPath);
+                                        deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
+                                    } catch (Throwable t) {
+                                        LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
+                                    }
+                                } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
                                     undeploy(pluginPath);
-                                    deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                                } catch (Throwable t) {
-                                    LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                 }
-                            } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                                undeploy(pluginPath);
                             }
-                        }
 
-                        key.reset();
+                            key.reset();
+                        }
+                    } catch (InterruptedException ex) {
+                        LOGGER.error("Error watching {}", pluginsDirectory.toAbsolutePath(), ex);
+                        Thread.currentThread().interrupt();
                     }
-                } catch (InterruptedException ex) {
-                    LOGGER.error("Error watching {}", pluginsDirectory.toAbsolutePath(), ex);
-                    Thread.currentThread().interrupt();
                 }
-            }});
+            });
         } catch (IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
@@ -226,14 +227,14 @@ public class PolyglotDeployer implements Initializer {
                 if (ImageInfo.inImageRuntimeCode()) {
                     // directory relative to the direcotry containing the native image executable
                     return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent()
-                        .resolve(pluginsPath);
+                            .getParent()
+                            .resolve(pluginsPath);
                 } else {
                     // the directory containing the plugin jar is the plugins directory
                     return Path.of(URLDecoder.decode(locationUri.getPath(), StandardCharsets.UTF_8.toString())) // url -> path
-                        .getParent();
+                            .getParent();
                 }
-            } catch(UnsupportedEncodingException | URISyntaxException uee) {
+            } catch (UnsupportedEncodingException | URISyntaxException uee) {
                 throw new RuntimeException(uee);
             }
         }
@@ -322,9 +323,9 @@ public class PolyglotDeployer implements Initializer {
             var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
 
             if (p.isJsonObject()
-                && p.getAsJsonObject().has(prop)
-                && p.getAsJsonObject().get(prop).isJsonArray()
-                && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
+                    && p.getAsJsonObject().has(prop)
+                    && p.getAsJsonObject().get(prop).isJsonArray()
+                    && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
                 List<Path> ret = Lists.newArrayList();
 
                 p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
@@ -356,22 +357,22 @@ public class PolyglotDeployer implements Initializer {
             } else {
                 return Lists.newArrayList();
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             LOGGER.error("Error reading {}", packagePath, t);
             return Lists.newArrayList();
         }
     }
 
     private void deploy(List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException, InterruptedException {
-        for (Path service: services) {
+        for (Path service : services) {
             deployService(service);
         }
 
-        for (Path nodeService: nodeServices) {
+        for (Path nodeService : nodeServices) {
             deployNodeService(nodeService);
         }
 
-        for (Path interceptor: interceptors) {
+        for (Path interceptor : interceptors) {
             deployInterceptor(interceptor);
         }
     }
@@ -385,20 +386,20 @@ public class PolyglotDeployer implements Initializer {
             var srv = new JSStringService(pluginPath, this.mclient, this.config);
 
             var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(),
-                srv.getDescription(),
-                srv.secured(),
-                true,
-                srv.getClass().getName(),
-                srv,
-                new HashMap<>());
+                    srv.getDescription(),
+                    srv.secured(),
+                    true,
+                    srv.getClass().getName(),
+                    srv,
+                    new HashMap<>());
 
             registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
             LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
-        } catch(IllegalArgumentException | IllegalStateException e) {
+                    srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+        } catch (IllegalArgumentException | IllegalStateException e) {
             LOGGER.error("Error deploying plugin {}", pluginPath, e);
         }
     }
@@ -410,34 +411,33 @@ public class PolyglotDeployer implements Initializer {
 
         LOGGER.warn("Node JS plugins are experimental and are likely to change in future");
         var executor = Executors.newSingleThreadExecutor();
-            executor.submit(() -> {
-                try {
-                    var srvf = NodeService.get(pluginPath, this.mclient, this.config);
+        executor.submit(() -> {
+            try {
+                var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
-                    while (!srvf.isDone()) {
-                        Thread.sleep(300);
-                    }
-
-                    var srv = srvf.get();
-
-                    var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true,
-                            srv.getClass().getName(), srv, new HashMap<>());
-
-                    registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
-
-                    DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
-
-                    LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                        srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
-                } catch (IOException | InterruptedException | ExecutionException ex) {
-                    LOGGER.error("Error deploying node service {}", pluginPath, ex);
-                    Thread.currentThread().interrupt();
-                    executor.shutdownNow();
+                while (!srvf.isDone()) {
+                    Thread.sleep(300);
                 }
-            });
+
+                var srv = srvf.get();
+
+                var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true,
+                        srv.getClass().getName(), srv, new HashMap<>());
+
+                registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
+
+                DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+
+                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+                        srv.uri(), srv.name(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+            } catch (IOException | InterruptedException | ExecutionException ex) {
+                LOGGER.error("Error deploying node service {}", pluginPath, ex);
+                Thread.currentThread().interrupt();
+                executor.shutdownNow();
+            }
+        });
         executor.shutdown();
     }
-
 
     private void deployInterceptor(Path pluginPath) throws IOException, InterruptedException {
         if (isRunningOnNode()) {
@@ -451,8 +451,8 @@ public class PolyglotDeployer implements Initializer {
         DEPLOYEES.put(pluginPath.toAbsolutePath(), (JSPlugin) interceptorRecord.getInstance());
 
         LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
-            interceptorRecord.getName(),
-            interceptorRecord.getDescription());
+                interceptorRecord.getName(),
+                interceptorRecord.getDescription());
     }
 
     private void undeploy(Path pluginPath) {
@@ -462,11 +462,11 @@ public class PolyglotDeployer implements Initializer {
 
     private void undeployServices(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
-            .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
-            .filter(path -> path.startsWith(pluginPath))
-            .collect(Collectors.toList());
+                .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
+                .filter(path -> path.startsWith(pluginPath))
+                .collect(Collectors.toList());
 
-        for (var pathToUndeploy: pathsToUndeploy) {
+        for (var pathToUndeploy : pathsToUndeploy) {
             var _toUndeploy = DEPLOYEES.remove(pathToUndeploy);
 
             if (_toUndeploy != null && _toUndeploy instanceof JSService toUndeploy) {
@@ -479,11 +479,11 @@ public class PolyglotDeployer implements Initializer {
 
     private void undeployInterceptors(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
-            .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
-            .filter(path -> path.startsWith(pluginPath))
-            .collect(Collectors.toList());
+                .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
+                .filter(path -> path.startsWith(pluginPath))
+                .collect(Collectors.toList());
 
-        for (var pathToUndeploy: pathsToUndeploy) {
+        for (var pathToUndeploy : pathsToUndeploy) {
             var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
             var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
