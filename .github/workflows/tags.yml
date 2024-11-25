@@ -85,7 +85,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Set VERSION
-        id: vars
+        id: set_version
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
