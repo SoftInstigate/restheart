@@ -54,12 +54,9 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
 
-    @Inject("registry")
-    private PluginsRegistry pluginsRegistry;
-
     // include is a set because we want to check all path templates that match the request
-    private Set<PathTemplateMatcher<Boolean>> include = new HashSet<>();
-    private PathTemplateMatcher<Boolean> exclude = new PathTemplateMatcher<>();
+    private final Set<PathTemplateMatcher<Boolean>> include = new HashSet<>();
+    private final PathTemplateMatcher<Boolean> exclude = new PathTemplateMatcher<>();
 
     @OnInit
     public void onInit() {

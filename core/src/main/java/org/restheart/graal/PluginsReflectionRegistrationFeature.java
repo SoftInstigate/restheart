@@ -102,8 +102,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
      * selects methods annotated with @OnInit
      *
      * @param fields
-     * @return an array of methods that are annotated
-     *         with @OnInit, @InjectMongoClient, @InjectConfiguration, @InjectPluginsRegistry
+     * @return an array of methods that are annotated with @OnInit
      */
     private Method[] annotated(Method... methods) {
         var list = Arrays.stream(methods)

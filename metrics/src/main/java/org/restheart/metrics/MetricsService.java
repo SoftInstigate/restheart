@@ -20,9 +20,14 @@
  */
 package org.restheart.metrics;
 
+import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Map;
+
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
 import static org.restheart.utils.BsonUtils.array;
@@ -38,7 +43,7 @@ import io.prometheus.client.exporter.common.TextFormat;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true)
+@RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true, defaultURI="/metrics")
 public class MetricsService implements StringService {
     /**
      *
@@ -46,13 +51,22 @@ public class MetricsService implements StringService {
      */
     public static String METRICS_REGISTRIES_PREFIX = "METRICS-";
 
+    @Inject("config")
+    private Map<String, Object> config;
+    private String serviceUri = "/metrics";
+
+    @OnInit
+    public void onInit() {
+        this.serviceUri = argOrDefault(config, "uri", "/metrics");
+    }
+
     /**
-     *
-     * @param exchange
-     * @throws Exception
+     * @param request
+     * @param response
+     * @throws java.io.IOException
      */
     @Override
-    public void handle(StringRequest request, StringResponse response) throws Exception {
+    public void handle(StringRequest request, StringResponse response) throws IOException {
         if (request.isOptions()) {
             handleOptions(request);
             return;
@@ -61,7 +75,7 @@ public class MetricsService implements StringService {
             return;
         }
 
-        var params = request.getPathParams("/{servicename}/{*}");
+        var params = request.getPathParams(serviceUri.concat("/{*}"));
 
         if (!params.containsKey("*")) {
             var content = array();
@@ -82,7 +96,6 @@ public class MetricsService implements StringService {
                 response.setContent(writer.toString());
             } else {
                 response.setInError(HttpStatus.SC_NOT_FOUND, "metric not found");
-                return;
             }
         }
     }
