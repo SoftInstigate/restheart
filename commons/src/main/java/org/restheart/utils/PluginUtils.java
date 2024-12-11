@@ -226,13 +226,12 @@ public class PluginUtils {
     /**
      *
      * @param <P>
-     * @param conf         the plugin configuration got from @InjectConfiguration
+     * @param conf         the plugin configuration got from @Inject("conf")
      * @param serviceClass the class of the service
      * @return the actual service uri set in cofiguration or the defaultURI
      */
     @SuppressWarnings("rawtypes")
     public static <P extends Service> String actualUri(Map<String, Object> conf, Class<P> serviceClass) {
-
         if (conf != null && conf.get("uri") != null && conf.get("uri") instanceof String) {
             return (String) conf.get("uri");
         } else {
