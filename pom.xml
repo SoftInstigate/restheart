@@ -453,6 +453,8 @@
                                     <requireJavaVersion>
                                         <version>21</version>
                                     </requireJavaVersion>
+                                    <DependencyConvergence />
+                                    <banDuplicatePomDependencyVersions />
                                 </rules>
                                 <fail>true</fail>
                             </configuration>
