@@ -29,8 +29,8 @@ $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 (here we use the brilliant sdkman)
 
 ```bash
-$ sdk install java 21.0.2-graalce
-$ sdk use java 21.0.2-graalce
+$ sdk install java 24.1.1-graalce
+$ sdk use java 24.1.1-graalce
 ```
 
 ## Get the script `restheart.js`
