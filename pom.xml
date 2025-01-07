@@ -425,7 +425,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
-                    <version>2.4.0</version>
+                    <version>2.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -542,7 +542,7 @@
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.10.3</version>
+                    <version>0.10.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -552,7 +552,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>versions-maven-plugin</artifactId>
-                    <version>2.17.1</version>
+                    <version>2.18.0</version>
                     <configuration>
                         <rulesUri>file://${session.executionRootDirectory}/rules.xml</rulesUri>
                     </configuration>
@@ -609,7 +609,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.11.1</version>
+                        <version>3.11.2</version>
                         <configuration>
                             <doclint>none</doclint>
                             <failOnError>false</failOnError>
