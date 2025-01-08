@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -74,6 +73,7 @@ import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import static org.restheart.exchange.ExchangeKeys._TRANSACTIONS;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
+import static org.restheart.utils.BsonUtils.array;
 import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.MongoServiceAttachments;
 import org.restheart.utils.URLUtils;
@@ -883,35 +883,36 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     *
-     * @return @throws JsonParseException
+     * hints can be either an index document as {"key":1} or an index name
+     * the compact format is allowed, eg. +key means {"key":1}
+     * if the value is a string (not starting with + or -) than it is taken into account as an index name
+     * @return an array of hints, either documents or strings (index names)
      */
-    public BsonDocument getHintDocument() throws JsonParseException {
+    public BsonArray getHintValue() {
         if (hint == null || hint.isEmpty()) {
             return null;
         } else {
-            var ret = new BsonDocument();
+            var ret = array();
+
             hint.stream().forEach(s -> {
                 var _s = s.strip(); // the + sign is decoded into a space, in case remove it
 
                 // manage the case where hint is a json object
                 try {
-                    var _hint = BsonDocument.parse(_s);
-
-                    ret.putAll(_hint);
+                    ret.add(BsonDocument.parse(_s));
                 } catch (JsonParseException e) {
                     // ret is just a string, i.e. an index name
                     if (_s.startsWith("-")) {
-                        ret.put(_s.substring(1), new BsonInt32(-1));
+                        ret.add(document().put(_s.substring(1), -1));
                     } else if (_s.startsWith("+")) {
-                        ret.put(_s.substring(1), new BsonInt32(11));
+                        ret.add(document().put(_s.substring(1), 1));
                     } else {
-                        ret.put(_s, new BsonInt32(1));
+                        ret.add(_s);
                     }
                 }
             });
 
-            return ret;
+            return ret.get();
         }
     }
 

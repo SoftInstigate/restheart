@@ -20,11 +20,6 @@
  */
 package org.restheart.test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.net.URI;
 
 import org.apache.http.HttpEntity;
@@ -33,6 +28,10 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
@@ -42,6 +41,7 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+
 import kong.unirest.Unirest;
 
 /**
@@ -211,7 +211,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     @SuppressWarnings("rawtypes")
     public void testGetHintStringFormat() throws Exception {
         kong.unirest.HttpResponse resp = Unirest.get(url(DB, COLL))
-                .queryString("hint", "a")
+                .queryString("hint", "+a")
                 .queryString("sort", "{}")
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();

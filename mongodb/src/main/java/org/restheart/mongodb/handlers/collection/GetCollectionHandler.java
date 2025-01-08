@@ -126,7 +126,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                 request.getPagesize(),
                 sort,
                 filter,
-                request.getHintDocument(),
+                request.getHintValue(),
                 request.getProjectionDocument(),
                 request.isCache() && isGetCollectionCacheEnabled);
         }
