@@ -19,10 +19,6 @@
  */
 package org.restheart.exchange;
 
-import static org.restheart.exchange.ExchangeKeys.*;
-import static org.restheart.utils.BsonUtils.document;
-import static org.restheart.utils.URLUtils.removeTrailingSlashes;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -36,20 +32,52 @@ import java.util.stream.IntStream;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
+import static org.restheart.exchange.ExchangeKeys.ADMIN;
+import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
+import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
+import static org.restheart.exchange.ExchangeKeys.CONFIG;
+import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
+import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.FS_CHUNKS_SUFFIX;
+import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
+import static org.restheart.exchange.ExchangeKeys.JSON_MODE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.LOCAL;
+import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
+import static org.restheart.exchange.ExchangeKeys.NO_CACHE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.NO_PROPS_KEY;
+import static org.restheart.exchange.ExchangeKeys.NUL;
+import static org.restheart.exchange.ExchangeKeys.READ_CONCERN_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.READ_PREFERENCE_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import static org.restheart.exchange.ExchangeKeys.RESOURCES_WILDCARD_KEY;
+import static org.restheart.exchange.ExchangeKeys.SYSTEM;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import static org.restheart.exchange.ExchangeKeys.WRITE_CONCERN_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY;
+import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
+import static org.restheart.exchange.ExchangeKeys._INDEXES;
+import static org.restheart.exchange.ExchangeKeys._META;
+import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+import static org.restheart.exchange.ExchangeKeys._SESSIONS;
+import static org.restheart.exchange.ExchangeKeys._SIZE;
+import static org.restheart.exchange.ExchangeKeys._STREAMS;
+import static org.restheart.exchange.ExchangeKeys._TRANSACTIONS;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.utils.MongoServiceAttachments;
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -807,7 +835,7 @@ public class MongoRequest extends BsonRequest {
                 filterQuery.put("$and", _filters);
             } else if (filter.size() == 1) {
                 // this can throw JsonParseException for invalid filter parameters
-                filterQuery.putAll(BsonDocument.parse(filter.getFirst())); 
+                filterQuery.putAll(BsonDocument.parse(filter.getFirst()));
             } else {
                 return filterQuery;
             }
@@ -854,35 +882,36 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     *
-     * @return @throws JsonParseException
+     * hints can be either an index document as {"key":1} or an index name
+     * the compact format is allowed, eg. +key means {"key":1}
+     * if the value is a string (not starting with + or -) than it is taken into account as an index name
+     * @return an array of hints, either documents or strings (index names)
      */
-    public BsonDocument getHintDocument() throws JsonParseException {
+    public BsonArray getHintValue() {
         if (hint == null || hint.isEmpty()) {
             return null;
         } else {
-            var ret = new BsonDocument();
+            var ret = array();
+
             hint.stream().forEach(s -> {
                 var _s = s.strip(); // the + sign is decoded into a space, in case remove it
 
                 // manage the case where hint is a json object
                 try {
-                    var _hint = BsonDocument.parse(_s);
-
-                    ret.putAll(_hint);
+                    ret.add(BsonDocument.parse(_s));
                 } catch (JsonParseException e) {
                     // ret is just a string, i.e. an index name
                     if (_s.startsWith("-")) {
-                        ret.put(_s.substring(1), new BsonInt32(-1));
+                        ret.add(document().put(_s.substring(1), -1));
                     } else if (_s.startsWith("+")) {
-                        ret.put(_s.substring(1), new BsonInt32(11));
+                        ret.add(document().put(_s.substring(1), 1));
                     } else {
-                        ret.put(_s, new BsonInt32(1));
+                        ret.add(_s);
                     }
                 }
             });
 
-            return ret;
+            return ret.get();
         }
     }
 
@@ -1133,7 +1162,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
-     * 
+     *
      * @return
      */
     public boolean isDbNameInvalid() {
@@ -1168,7 +1197,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
-     * 
+     *
      * @return
      */
     public boolean isDbNameInvalidOnWindows() {
@@ -1193,7 +1222,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
-     * 
+     *
      * @return
      */
     public boolean isCollectionNameInvalid() {

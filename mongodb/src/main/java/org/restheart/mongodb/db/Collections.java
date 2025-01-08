@@ -166,18 +166,29 @@ class Collections {
         final MongoCollection<BsonDocument> coll,
         final BsonDocument sortBy,
         final BsonDocument filters,
-        final BsonDocument hint,
+        final BsonArray hints,
         final BsonDocument keys,
         final int batchSize) throws JsonParseException {
         var ret = cs.isPresent()
             ? coll.find(cs.get(), filters)
             : coll.find(filters);
 
-        return ret.projection(keys)
+        var find = ret.projection(keys)
             .sort(sortBy)
             .batchSize(batchSize)
-            .hint(hint)
             .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+
+        if (hints != null) {
+            for (var hint : hints) {
+                find = switch(hint) {
+                    case BsonString hintStr -> find.hintString(hintStr.getValue());
+                    case BsonDocument hintDoc -> find.hint(hintDoc);
+                    default -> find;
+                };
+            }
+        }
+
+        return find;
     }
 
     /**
@@ -190,7 +201,7 @@ class Collections {
      * @param pagesize
      * @param sortBy
      * @param filter
-     * @param hint
+     * @param hints
      * @param keys
      * @param cursorAllocationPolicy
      * @return the documents in the collection as a BsonArray
@@ -204,7 +215,7 @@ class Collections {
         final int pagesize,
         final BsonDocument sortBy,
         final BsonDocument filters,
-        final BsonDocument hint,
+        final BsonArray hints,
         final BsonDocument keys,
         final boolean useCache)
         throws JsonParseException {
@@ -212,15 +223,15 @@ class Collections {
         var ret = new BsonArray();
 
         if (!useCache) {
-            return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
+            return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hints, keys, useCache);
         } else {
             var from = pagesize * (page - 1);
             var to = from + pagesize;
 
-            var match = GetCollectionCache.getInstance().find(new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, 0, false));
+            var match = GetCollectionCache.getInstance().find(new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, to, 0, false));
 
             if (match == null) {
-                return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
+                return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hints, keys, useCache);
             } else {
                 var maxToIndex = match.getKey().to() - match.getKey().from();
                 var fromIndex = from - match.getKey().from();
@@ -279,7 +290,7 @@ class Collections {
         final int pagesize,
         final BsonDocument sortBy,
         final BsonDocument filters,
-        final BsonDocument hint,
+        final BsonArray hints,
         final BsonDocument keys,
         final boolean useCache) {
         var ret = new BsonArray();
@@ -287,7 +298,7 @@ class Collections {
 
         var batchSize = useCache ? GET_COLLECTION_CACHE_BATCH_SIZE : pagesize;
 
-        try (var cursor = findIterable(cs, coll, sortBy, filters, hint, keys, batchSize).skip(from).cursor()) {
+        try (var cursor = findIterable(cs, coll, sortBy, filters, hints, keys, batchSize).skip(from).cursor()) {
             int added = 0;
             while(added < pagesize) {
                 var next = cursor.tryNext();
@@ -304,7 +315,8 @@ class Collections {
                 var count = cursorCount(cursor);
                 var to = from + count;
                 var exhausted = count < GET_COLLECTION_CACHE_BATCH_SIZE;
-                var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, hint, keys, from, to, System.nanoTime(), exhausted);
+
+                var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, to, System.nanoTime(), exhausted);
                 LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
 
                 var cursorDocs = cursorDocs(cursor);

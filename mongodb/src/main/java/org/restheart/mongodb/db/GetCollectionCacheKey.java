@@ -20,12 +20,15 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Optional;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.restheart.utils.BsonUtils;
+
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
 
 /**
  *
@@ -37,7 +40,7 @@ public record GetCollectionCacheKey(
     BsonDocument sort,
     BsonDocument filter,
     BsonDocument keys,
-    BsonDocument hint,
+    BsonArray hints,
     int from,
     int to,
     long cursorId,
@@ -50,10 +53,10 @@ public record GetCollectionCacheKey(
         return new GetCollectionCacheKey(
             key.session,
             key.collection,
+            key.sort,
             key.filter,
             key.keys,
-            key.hint,
-            key.sort,
+            key.hints,
             key.from,
             key.to,
             key.cursorId,
@@ -66,7 +69,7 @@ public record GetCollectionCacheKey(
                     + " - "
                     + (sort == null ? "no sort" : sort.toString())
                     + " - "
-                    + (hint == null ? "no hint" : hint.toString())
+                    + (hints == null ? "no hints" : BsonUtils.toJson(hints))
                     + " - "
                     + f.format("%10d", from)
                     + " - "
@@ -77,13 +80,13 @@ public record GetCollectionCacheKey(
     @Override
     public String toString() {
         return String.format(
-            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hint=%s, from=%s, to=%s, cursorId=%s, exhausted=%s]",
+            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hints=%s, from=%s, to=%s, cursorId=%s, exhausted=%s]",
             session,
             collection.getNamespace(),
             sort,
             filter,
             keys,
-            hint,
+            hints,
             from,
             to,
             cursorId,

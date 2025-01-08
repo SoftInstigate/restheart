@@ -476,7 +476,7 @@ public class Databases {
      * @param pagesize
      * @param sortBy
      * @param filters
-     * @param hint
+     * @param hints
      * @param keys
      * @param useCache
      * @return the documents in the collection as a BsonArray
@@ -490,11 +490,11 @@ public class Databases {
         final int pagesize,
         final BsonDocument sortBy,
         final BsonDocument filters,
-        final BsonDocument hint,
+        final BsonArray hints,
         final BsonDocument keys,
         final boolean useCache)
         throws JsonParseException {
-        return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, useCache);
+        return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hints, keys, useCache);
     }
 
     /**
@@ -600,7 +600,7 @@ public class Databases {
      * @param collName the collection name
      * @param sortBy
      * @param filters
-     * @param hint
+     * @param hints
      * @param keys
      * @param batchSize
      * @return the FindIterable
@@ -612,7 +612,7 @@ public class Databases {
         final String collName,
         final BsonDocument sortBy,
         final BsonDocument filters,
-        final BsonDocument hint,
+        final BsonArray hints,
         final BsonDocument keys,
         final int batchSize) {
         return collections.findIterable(
@@ -620,7 +620,7 @@ public class Databases {
             collections.collection(rsOps, dbName, collName),
             sortBy,
             filters,
-            hint,
+            hints,
             keys,
             batchSize);
     }
