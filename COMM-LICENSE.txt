@@ -1,12 +1,12 @@
 RESTHeart COMMERCIAL LICENSE AGREEMENT
-VERSION 2018-21-11
+VERSION 2023-12-01
 
-IMPORTANT: THIS SOFTWARE LICENSE AGREEMENT IS A LEGAL AGREEMENT ("Agreement") BETWEEN YOU (THE CUSTOMER, EITHER AS AN INDIVIDUAL OR, IF PURCHASED OR OTHERWISE ACQUIRED BY OR FOR AN ENTITY, AS AN ENTITY) AND SOFTINSTIGATE SRL.
+IMPORTANT: THIS SOFTWARE LICENSE AGREEMENT IS A LEGAL AGREEMENT ("Agreement") BETWEEN YOU (THE CUSTOMER, EITHER AS AN INDIVIDUAL OR, IF PURCHASED OR OTHERWISE ACQUIRED BY OR FOR AN ENTITY, AS AN ENTITY) AND SOFTINSTIGATE SRL SOCIETÀ' BENEFIT.
 READ IT CAREFULLY BEFORE COMPLETING THE LICENSE KEY ACTIVATION PROCESS AND USING RESTHeart AND RELATED SOFTWARE COMPONENTS ("SOFTWARE"). IT PROVIDES A LICENSE TO USE THE SOFTWARE AND CONTAINS WARRANTY INFORMATION AND LIABILITY DISCLAIMERS. BY INSTALLING AND USING THE SOFTWARE, YOU ARE CONFIRMING YOUR ACCEPTANCE OF THE SOFTWARE AND AGREEING TO BECOME BOUND BY THE TERMS OF THIS AGREEMENT.
 
 Between
 
-SoftInstigate Srl, VAT 01664640669, with registered office in L'Aquila, Via G. D'Annunzio 28, later also known as the "Licensor",
+SoftInstigate Srl Società Benefit, VAT 01664640669, with registered office in L'Aquila, Via G. D'Annunzio 28, later also known as the "Licensor",
 
 and
 
@@ -18,7 +18,7 @@ all jointly defined, if necessary, as the "Parties";
 This preamble is part of this Agreement.
 
 1.0. In order to use the Software under the Terms and Conditions of this Agreement, you must purchase, receive and activate a "License Key", in accordance with the scope of use and other terms and as set forth in this Agreement. Without a valid and activated License Key, the Terms and Condition of the free software license published at https://github.com/SoftInstigate/restheart/blob/master/LICENSE.txt are in force.
-1.1. SoftInstigate Srl carries out software production activities and recognizes itself as the owner of the Intellectual Work "RESTHeart", of which holds all the rights of economic exploitation, hereafter simply called RESTHeart, subject of the present commercial license;
+1.1. SoftInstigate Srl Società Benefit carries out software production activities and recognizes itself as the owner of the Intellectual Work "RESTHeart", of which holds all the rights of economic exploitation, hereafter simply called RESTHeart, subject of the present commercial license;
 1.2. RESTHeart is dual licensed, i.e. distributed according to two licenses: the free software license published at https://github.com/SoftInstigate/restheart/blob/master/LICENSE.txt hereafter referred to as Free License, and this commercial license that grants to the Licensee of additional permits to use RESTHeart with respect to the Free License as detailed art. 4 and art.5;
 1.3. The Licensee has been able to ascertain the functionality and usefulness of RESTHeart and has assessed it as suitable for its needs and is therefore interested in obtaining, for the payment of a fee, a license for the use of RESTHeart, hereinafter, for brevity, also referred to as the "License" or "Agreement";
 1.4. Licensee intends to use as many RESTHeart Instances as allowed by the purchased License Keys.
@@ -33,14 +33,14 @@ This preamble is part of this Agreement.
 
 2. SUBJECT
 2.1. For the payment of the fee established in art. 8 and under the terms and conditions below, the Licensor:
-   a. grants the Licensee a license to use the latest release of RESTHeart available "as it is" at the time of acceptance of this License at https://restheart.org;
+   a. grants the Licensee a license to use the latest release of RESTHeart available "as it is" at the time of acceptance of this License at https://restheart.org; 
    b. during the Subscription period, provides to the Licensee the Updates and Bug Fixing as described in more detail in art. 5.
 2.2. The Licensor grants the Licensee a non-exclusive, non-assignable, non-transferable, non-sublicensable license to use RESTHeart without any of the limitations set forth in the Free License described in more detail in art. 4.
 2.3. The License grants the Licensee the right to install and use as many RESTHeart instances as specified by the purchased License Keys.
 2.4. The License grants the Licensee the right to modify RESTHeart or part of it in accordance with the provisions of art. 4, also through authorized third parties.
 
 3. ACCEPTANCE OF THE LICENSE
-The provisions of this License are accepted during the License Key Activation process by first checking the two checkboxes "I Accept the Agreement" and "I explicitly accept..." and then clicking on the button "Activate the License Key" placed under the bottom of a window displaying the text of this License or equivalently by specifying the program startup option "ACCEPT_LICENSE_AGREEMENT=true" or by affirming consent in any other similar way, in accordance with the rules of applicable law. The execution of the License Key Activation process indicates your clear and irrevocable acceptance of this License and all of its terms and conditions.
+The provisions of this License are accepted during the License Key Activation process by first checking the two checkboxes "I Accept the Agreement" and "I explicitly accept..." and then clicking on the button "Activate the License Key" placed under the bottom of a window displaying the text of this Licence or by affirming consent in any other similar way, in accordance with the rules of applicable law. Clicking on that button indicates your clear and irrevocable acceptance of this Licence and all of its terms and conditions.
 
 4. USE OF RESTHeart
 4.1. The Licensee holds the right to install and use as many RESTHeart instances (including Derivative Works) as defined in the purchased License Keys, under the conditions established by the Free License with express exemption from the following conditions:
@@ -58,8 +58,8 @@ The provisions of this License are accepted during the License Key Activation pr
    b. request priority bug fixing.
 
 6. INTELLECTUAL PROPERTY OF RESTHEART
-6.1. Except for the limited license rights expressly provided herein, SoftInstigate Srl has and will retain the exclusive property of RESTHeart and all rights, title and interest (including, without limitation, all patent, copyright, trademark, logo, trade secret and other intellectual property rights) in and to RESTHeart and all documentation, copies, modifications and derivative works thereof (including any changes which incorporate any of the Licensee ideas, feedback or suggestions).
-6.2. The Licensee acknowledges that it is obtaining only a limited license right to RESTHeart, and that irrespective of any use of the words "purchase", "sale" or like terms hereunder no ownership rights are being conveyed to you under this Agreement or otherwise.
+6.1. Except for the limited license rights expressly provided herein, SoftInstigate Srl Società Benefit has and will retain the exclusive property of RESTHeart and all rights, title and interest (including, without limitation, all patent, copyright, trademark, logo, trade secret and other intellectual property rights) in and to RESTHeart and all documentation, copies, modifications and derivative works thereof (including any changes which incorporate any of the Licensee ideas, feedback or suggestions).
+6.2. The Licensee acknowledges that it is obtaining only a limited license right to RESTHeart, and that irrespective of any use of the words "purchase", "sale" or like terms hereunder no ownership rights are being conveyed to you under this Agreement or otherwise. 
 
 7. DURATION AND TERMINATION
 This Agreement shall remain in effect between the Parties for ten (10) years starting from the date of acceptance of the same, without prejudice to the right of termination of the Licensee by means of written communication with no obligation to advance notification.
@@ -71,7 +71,7 @@ The exercise of the right of withdrawal will have no effect on the Licensee's ob
 8.3. The license fees will be due and payable in full as set forth in the applicable invoice or at the time of purchase.
 8.4. The payment of the invoices must be made by direct remittance;
 8.5. The fees defined therein are meant excluding VAT;
-8.6. The Licensee shall be responsible for all taxes, withholdings, duties and levies arising from the order (excluding taxes based on the net income of SoftInstigate Srl);
+8.6. The Licensee shall be responsible for all taxes, withholdings, duties and levies arising from the order (excluding taxes based on the net income of SoftInstigate Srl Società Benefit);
 8.7. The fees defined on the website https://restheart.org can be modified by the Licensor at any time.
 
 9. DISCLAIMER OF WARRANTY
@@ -84,14 +84,14 @@ The exercise of the right of withdrawal will have no effect on the Licensee's ob
 
 10. LIMITATION OF LIABILITY
 10.1. The Licensor is not liable for damages, direct or indirect (including damages due to business interruption, loss of profit and the like resulting from RESTHeart defects not considered in itself, but to the use of the malfunctioning program within the company organization) in any case suffered by the Licensee or by third parties due to the use or non-use of RESTHeart, without prejudice to what is required by law.
-10.2. In no event will SoftInstigate Srl' liability exceed the License price as indicated in the invoice. The existence of more than one claim will not enlarge or extend this limit.
+10.2. In no event will SoftInstigate Srl Società Benefit' liability exceed the License price as indicated in the invoice. The existence of more than one claim will not enlarge or extend this limit.
 10.3. The Licensee exclusive remedy and Licensor’ entire liability for breach of this Agreement shall be limited, at Licensor’ sole and exclusive discretion, to (a) replacement of any defective software or documentation; or (b) refund of the license fee paid to the Licensor, payable in accordance with art. 10.2.
 10.4. The Licensee undertakes to use RESTHeart within the terms agreed in the art. 4, and also endeavor to ensure compliance of the terms and conditions of this Agreement by its employees and/or consultants and/or agents and/or any third party using the licensed RESTHeart Instances.
 10.5. The Licensee shall be directly responsible for the acts committed in violation of the terms and conditions  of this Agreement, made by its employees and/or consultants and/or agents and/or any third party using the licensed RESTHeart Instances.
-10.6. The Licensee agrees to defend, indemnify, and hold harmless SoftInstigate Srl from and against any lawsuits, claims, losses, damages, fines and expenses (including attorneys' fees and costs) arising out of your use of RESTHeart or breach of this Agreement.
+10.6. The Licensee agrees to defend, indemnify, and hold harmless SoftInstigate Srl Società Benefit from and against any lawsuits, claims, losses, damages, fines and expenses (including attorneys' fees and costs) arising out of your use of RESTHeart or breach of this Agreement.
 
 11. CONTRACT RELEASE
-The Licensee may not transfer this Agreement to third party without the express and written consent of SoftInstigate Srl.
+The Licensee may not transfer this Agreement to third party without the express and written consent of SoftInstigate Srl Società Benefit.
 
 12. EXPRESS TERMINATION CLAUSE
 Without prejudice to any other right of the Licensor, any failure - even minor - by the Licensee of the obligations under Articles 2, 3, 4, 5, 6, 8, 9, 10, 11, of this Agreement will entail the immediate termination of the right, pursuant to art. 1456 c.c. (Italian Civil Code).
@@ -99,7 +99,7 @@ The Licensor may, in particular, make use of the express termination clause if t
    a. grant to third party, in any capacity and for any reason, the use of RESTHeart, according to the terms and conditions set forth in this License;
    b. grant to third party, in any capacity and for any reason, the use of RESTHeart in any case in contravention of the permitted uses indicated in art. 4.
    c. uses a License Key in more RESTHeart instances than allowed and in any case in contravention of the permitted uses indicated in the License Key itself.
-   d.  transfers this Agreement to third party without the express and written consent of SoftInstigate Srl.
+   d.  transfers this Agreement to third party without the express and written consent of SoftInstigate Srl Società Benefit.
 However, the right of the Licensor for compensation for any further damage remains.
 
 13. OTHER LICENSES
@@ -120,8 +120,8 @@ http://softinstigate.github.io/restheart/dependencies.html.
 
 16. FINAL CLAUSES
 16.1. This Agreement replaces any previous agreement, even verbal, between the Parties and constitutes the only one existing in relation to the matters dealt with in it.
-16.2. SoftInstigate Srl reserves the right, in its sole discretion, to amend this Agreement from time.
-16.3. SoftInstigate Srl reserves the right, in its sole discretion, to modify the free software license with which RESTHeart is traditionally distributed.
+16.2. SoftInstigate Srl Società Benefit reserves the right, in its sole discretion, to amend this Agreement from time.
+16.3. SoftInstigate Srl Società Benefit reserves the right, in its sole discretion, to modify the free software license with which RESTHeart is traditionally distributed.
 16.4. The possible tolerance of one party to the breach of the other cannot in any way be considered as a waiver of the rights deriving from this agreement.
 16.5. For anything not provided in this Agreement, the Parties refer to the provisions of the law, with particular reference to the Italian Civil Code and also to the Italian Law 633/1941, as subsequently integrated and amended.
 16.6. The headings of sections and paragraphs of this Agreement are for convenience of reference only and are not intended to restrict, affect or be of any weight in the interpretation or construction of the provisions of such sections or paragraphs.
@@ -129,4 +129,4 @@ http://softinstigate.github.io/restheart/dependencies.html.
 
 In any case, pursuant to and for the purposes of art. 1341 and 1342 c.c. (Italian Civil Code) the parties declare to approve specifically, after reading, the following clauses: art. 3 (ACCEPTANCE OF THE LICENSE), art. 4 (USE OF RESTHEART), art. 5 (UPDATES AND BUG FIXING SERVICES), art. 6 (INTELLECTUAL PROPERTY OF RESTHEART), art. 7 (DURATION AND TERMINATION), art. 8 (FEES AND PAYMENTS), art. 9 (DISCLAIMER OF WARRANTY), art. 10 (LIMITATION OF LIABILITY), art. 11 (CONTRACT RELEASE), art. 12 (EXPRESS TERMINATION CLAUSE), art. 14 (PERSONAL DATA PROCESSING), art. 15 (LANGUAGE, APPLICABLE LAW AND JURISDICTION), art. 16 (FINAL CLAUSES).
 
-If you have any questions about this Agreement, or if you want to contact SoftInstigate Srl for any reason, please direct correspondence to info@softinstigate.com.
+If you have any questions about this Agreement, or if you want to contact SoftInstigate Srl Società Benefit for any reason, please direct correspondence to info@softinstigate.com.
