@@ -205,7 +205,7 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.2.1</version>
+                <version>5.3.0</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -300,12 +300,12 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.29</version>
+                <version>4.2.30</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.29</version>
+                <version>4.2.30</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -365,7 +365,7 @@
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
-                <version>21.5</version>
+                <version>22.3</version>
             </dependency>
             <dependency>
                 <groupId>com.nulab-inc</groupId>
