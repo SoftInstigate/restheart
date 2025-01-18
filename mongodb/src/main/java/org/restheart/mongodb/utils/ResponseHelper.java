@@ -175,6 +175,8 @@ public class ResponseHelper {
             case 17287, 31254 -> HttpStatus.SC_BAD_REQUEST;
             // 241 ConversionFailure
             case 241 -> HttpStatus.SC_BAD_REQUEST;
+            // wrong $sort value (must be 1 or -1)
+            case 15975 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -248,6 +250,7 @@ public class ResponseHelper {
             case 40323 -> "A pipeline stage specification object must contain exactly one field.";
             case 15998 -> "FieldPath field names may not be empty strings";
             case 241 ->  "Failed to parse number in $convert";
+            case 15975 -> "Wrong sort parameter, key ordering must be 1 (for ascending) or -1 (for descending)";
             default -> "Error handling the request, see log for more information";
         };
     }
