@@ -34,8 +34,8 @@
         -->
         <mongodb.version>8.0</mongodb.version>
         <jdk.version>21</jdk.version>
-        <graalvm.version>24.1.1</graalvm.version>
-        <truffle.version>24.1.1</truffle.version> <!-- Truffle and Graal languages are compatible with the latest version of the GraalVM JDK as well as the latest LTS release.-->
+        <graalvm.version>24.1.2</graalvm.version>
+        <truffle.version>24.1.2</truffle.version> <!-- Truffle and Graal languages are compatible with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -205,7 +205,7 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.3.0</version>
+                <version>5.3.1</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -225,7 +225,7 @@
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>3.1.8</version>
+                <version>3.2.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
@@ -250,7 +250,7 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.17.2</version>
+                <version>1.18.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-jxpath</groupId>
