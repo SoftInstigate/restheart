@@ -4,7 +4,7 @@
   <parent>
     <artifactId>restheart-parent</artifactId>
     <groupId>org.restheart</groupId>
-    <version>8.3.2</version>
+    <version>8.3.3-SNAPSHOT</version>
   </parent>
 
   <groupId>org.restheart</groupId>
