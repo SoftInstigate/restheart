@@ -43,6 +43,15 @@ MongoDB has [officially announced](https://www.mongodb.com/docs/atlas/app-servic
 
 > (*) Might be partially compatibile with MongoDB.
 
+## Default Configuration
+
+- The [default configuration](https://restheart.org/docs/default-configuration) connects to a local MongoDB instance using the connection string `mongodb://127.0.0.1`.  
+- To prevent unintentional exposure of all your data, the API root (`"/"`) is, by default, mapped to a database named `"restheart"`. If you want to expose existing databases and collections through the API, you must [update your configuration](https://restheart.org/docs/configuration) by replacing the default admin password and explicitly mapping your own databases to API endpoints.
+
+## Ask Sophia AI!
+
+Before digging the [full documentation](https://restheart.org/docs/), our AI assistant [Sophia](https://sophia.restheart.com/) can quickly help you with any question about RESTHeart. 
+
 ## Quick Start with Docker Compose
 
 1. Run both RESTHeart and MongoDB with Docker Compose using the following one-liner:
