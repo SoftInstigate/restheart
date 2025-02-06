@@ -86,6 +86,11 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
             if (_app != null && _app.isPresent()){
                 return _app.get();
             } else {
+                // Remove key if null was cached (previous request missed it, but it may exist now)
+                if (_app != null && _app.isEmpty()) {
+                    CACHE.remove(appURI);
+                }
+
                 try {
                     _app = CACHE.getLoading(appURI);
                 } catch (Exception e) {
