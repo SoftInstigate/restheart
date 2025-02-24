@@ -492,21 +492,15 @@ public class MongoRequest extends BsonRequest {
         }
     }
 
-    Pattern SPECIAL_REGEX_CHARS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
-
-    String escapeSpecialRegexChars(String str) {
-        return SPECIAL_REGEX_CHARS.matcher(str).replaceAll("\\\\$0");
-    }
-
     private String unmapPathUri(String mappedUri) {
         var ret = URLUtils.removeTrailingSlashes(mappedUri);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + escapeSpecialRegexChars(this.whereUri), "");
+                ret = ret.replaceFirst("^" + Pattern.quote(this.whereUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + escapeSpecialRegexChars(this.whereUri), this.whatUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(this.whereUri), this.whatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(this.whatUri) + ret);
         }
@@ -525,11 +519,11 @@ public class MongoRequest extends BsonRequest {
         // now replace mappedUri with resolved path template
         if (replacedWhatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + escapeSpecialRegexChars(rewriteUri), "");
+                ret = ret.replaceFirst("^" + Pattern.quote(rewriteUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
             var x = rewriteUri;
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + escapeSpecialRegexChars(rewriteUri), replacedWhatUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(rewriteUri), replacedWhatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
         }
@@ -561,7 +555,7 @@ public class MongoRequest extends BsonRequest {
                 return this.whereUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + escapeSpecialRegexChars(this.whatUri), this.whereUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
         if (ret.isEmpty()) {
@@ -584,7 +578,7 @@ public class MongoRequest extends BsonRequest {
                 return rewriteUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + escapeSpecialRegexChars(replacedWhatUri), rewriteUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(replacedWhatUri), rewriteUri));
         }
 
         return ret.isEmpty() ? SLASH : ret;
