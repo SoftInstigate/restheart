@@ -276,12 +276,12 @@ public class AclVarsInterpolator {
         // interpolate primitive values
         flatten.keySet().stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonPrimitive(flatten.get(key)))
-                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+                .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)), quote(jsonPrimitiveValue(flatten.get(key)))));
 
         // interpolate arrays
         flatten.keySet().stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonArray(flatten.get(key)))
-                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), jsonArrayValue(flatten.get(key).asArray())));
+                .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)), jsonArrayValue(flatten.get(key).asArray())));
 
         // remove unboud variables
         flatten.keySet().stream().forEach(key -> ret[0] = removeUnboundVariables(prefix, ret[0]));
