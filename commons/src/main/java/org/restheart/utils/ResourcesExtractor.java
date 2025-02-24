@@ -34,6 +34,8 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +79,7 @@ public class ResourcesExtractor {
 
     /**
      *
+     * @param clazz
      * @param resourcePath
      * @return
      * @throws java.io.IOException
@@ -127,7 +130,7 @@ public class ResourcesExtractor {
                             return FileVisitResult.CONTINUE;
                         }
 
-                        Path destination = Paths.get(destinationDir.toString(), fileOrDir.toString().replaceAll(resourcePath + "/", ""));
+                        Path destination = Paths.get(destinationDir.toString(), fileOrDir.toString().replaceAll(Pattern.quote(resourcePath) + "/", ""));
 
                         Files.copy(fileOrDir, destination, StandardCopyOption.REPLACE_EXISTING);
                         return FileVisitResult.CONTINUE;

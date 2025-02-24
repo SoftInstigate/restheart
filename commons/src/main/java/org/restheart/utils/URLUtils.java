@@ -130,7 +130,7 @@ public class URLUtils {
      * @return the prefix url of the exchange
      */
     public static String getPrefixUrl(HttpServerExchange exchange) {
-        return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
+        return exchange.getRequestURL().replaceAll(Pattern.quote(exchange.getRelativePath()), "");
     }
 
     /**
