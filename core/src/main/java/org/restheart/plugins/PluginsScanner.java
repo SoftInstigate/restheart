@@ -386,17 +386,18 @@ public class PluginsScanner {
                     .map(path -> path.getFileName().toString())
                     .toArray(String[]::new);
 
-            this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
-                    .disableNestedJarScanning()
-                    .disableRuntimeInvisibleAnnotations()
-                    .addClassLoader(PluginsClassloader.getInstance())
-                    .addClassLoader(ClassLoader.getSystemClassLoader())
-                    .rejectJars(libJars) // avoids scanning lib jars
-                    .enableAnnotationInfo()
-                    .enableMethodInfo()
-                    .enableFieldInfo()
-                    .ignoreFieldVisibility()
-                    .initializeLoadedClasses();
+            this.classGraph = new ClassGraph()
+                .disableModuleScanning()
+                .disableNestedJarScanning()
+                .disableRuntimeInvisibleAnnotations()
+                .addClassLoader(PluginsClassloader.getInstance())
+                .addClassLoader(ClassLoader.getSystemClassLoader())
+                .rejectJars(libJars) // avoids scanning lib jars
+                .enableAnnotationInfo()
+                .enableMethodInfo()
+                .enableFieldInfo()
+                .ignoreFieldVisibility()
+                .initializeLoadedClasses();
         }
 
         private long starScanTime = 0;

@@ -121,7 +121,7 @@ public class Metrics {
     }
 
 
-    private static AttachmentKey<List<MetricLabel>> CUSTOM_METRIC_LABELS = AttachmentKey.create(List.class);
+    private static final AttachmentKey<List<MetricLabel>> CUSTOM_METRIC_LABELS = AttachmentKey.create(List.class);
 
     /**
      * attach metrics labels to request
@@ -141,7 +141,7 @@ public class Metrics {
      * RequestsMetricsCollector adds labels to the collected metrics
      *
      * @param request
-     * @param labels
+     * @param label
      */
     public static void attachMetricLabel(Request<?> request, MetricLabel label) {
         var labels = new ArrayList<MetricLabel>();
@@ -153,7 +153,7 @@ public class Metrics {
      * retrives the metrics labels attached to request
      *
      * @param request
-     * @param labels
+     * @return
      */
     public static List<MetricLabel> getMetricLabels(Request<?> request) {
         return request.getExchange().getAttachment(CUSTOM_METRIC_LABELS);

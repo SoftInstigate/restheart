@@ -29,6 +29,7 @@ import org.restheart.plugins.RegisterPlugin;
 
 @RegisterPlugin(name = "rh-config", description = "provides the RESTHeart configuration")
 public class RHConfigurationProvider implements Provider<Configuration> {
+    @Override
     public Configuration get(PluginRecord<?> caller) {
         return Bootstrapper.getConfiguration();
     }
