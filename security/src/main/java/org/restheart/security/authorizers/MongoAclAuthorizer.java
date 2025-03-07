@@ -76,7 +76,6 @@ public class MongoAclAuthorizer implements Authorizer {
 
     String aclDb;
     String aclCollection;
-    String overrideAclDbHeader;
     private String rootRole = null;
     private boolean cacheEnabled = false;
     private Integer cacheSize = 1_000; // 1000 entries
@@ -98,7 +97,6 @@ public class MongoAclAuthorizer implements Authorizer {
     public void init() {
         this.aclDb = argOrDefault(config, "acl-db", "restheart");
         this.aclCollection = argOrDefault(config, "acl-collection", "acl");
-        this.overrideAclDbHeader = argOrDefault(config, "override-acl-db-header", null);
         this.rootRole = argOrDefault(config, "root-role", null);
 
         if (config != null && config.containsKey("cache-enabled")) {
@@ -257,12 +255,10 @@ public class MongoAclAuthorizer implements Authorizer {
         }
     }
 
+
     private String aclDb(Request<?> req) {
-        if (this.overrideAclDbHeader != null && req.getHeaders().contains(this.overrideAclDbHeader)) {
-            return req.getHeader(overrideAclDbHeader);
-        } else {
-            return this.aclDb;
-        }
+        String overrideAclDb = req.attachedParam("override-acl-db");
+        return overrideAclDb != null ? overrideAclDb : this.aclDb;
     }
 
     private Stream<String> roles(HttpServerExchange exchange) {

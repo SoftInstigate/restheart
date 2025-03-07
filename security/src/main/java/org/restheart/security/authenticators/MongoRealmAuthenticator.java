@@ -75,7 +75,6 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     private String propId = "_id";
     private String usersDb;
-    private String overrideUsersDbHeader = null;
     private String usersCollection;
     private String propPassword = "password";
     private String jsonPathRoles = "$.roles";
@@ -102,7 +101,6 @@ public class MongoRealmAuthenticator implements Authenticator {
     public void init() {
         this.usersDb = argOrDefault(config, "users-db", "restheart");
         this.usersCollection = argOrDefault(config, "users-collection", "users");
-        this.overrideUsersDbHeader = argOrDefault(config, "override-users-db-header", null);
 
         final String _cacheExpirePolicy = arg(config, "cache-expire-policy");
         if (_cacheExpirePolicy != null) {
@@ -550,14 +548,11 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     /**
      * @param req
-     * @return the usersDb taking into account the overrideUsersDbHeader option
+     * @return the usersDb taking into account the override-users-db attached parameter
      */
     public String getUsersDb(final Request<?> req) {
-        if (this.overrideUsersDbHeader != null && req.getHeaders().contains(this.overrideUsersDbHeader)) {
-            return req.getHeader(this.overrideUsersDbHeader);
-        } else {
-            return this.usersDb;
-        }
+        String overrideUsersDb = req.attachedParam("override-users-db");
+        return overrideUsersDb != null ? overrideUsersDb : this.usersDb;
     }
 
     /**
@@ -565,13 +560,6 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     public void setUsersDb(final String usersDb) {
         this.usersDb = usersDb;
-    }
-
-    /**
-     * @return the overrideUsersDbHeader
-     */
-    public String overrideUsersDbHeader() {
-        return this.overrideUsersDbHeader;
     }
 
     /**

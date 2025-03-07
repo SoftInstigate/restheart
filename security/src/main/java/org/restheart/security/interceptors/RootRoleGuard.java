@@ -162,7 +162,7 @@ public class RootRoleGuard implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (this.mra.overrideUsersDbHeader() == null) {
+        if (request.attachedParam("override-users-db") == null) {
             return enabled && request.isWriteDocument() && request.getDBName().equals(this.mra.getUsersDb()) && request.getCollectionName().equals(this.usersCollection);
         } else {
             // when users db can be overridden, all dbs must be checked

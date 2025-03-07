@@ -88,7 +88,6 @@ mongoRealmAuthenticator:
   enabled: true
   users-db: restheart 
   users-collection: users
-  override-users-db-header: null # eg. X-Auth-Db; when present override users-db from request header
   prop-id: _id
   prop-password: password
   json-path-roles: $.roles
@@ -160,7 +159,6 @@ mongoAclAuthorizer:
   enabled: true
   acl-db: restheart
   acl-collection: acl
-  override-acl-db-header: null # eg. X-Auth-Db; when present override acl-db from request header
   # clients with root-role can execute any request
   root-role: admin
   cache-enabled: true

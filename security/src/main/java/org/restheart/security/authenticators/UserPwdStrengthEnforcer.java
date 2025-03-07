@@ -196,7 +196,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
             && request.isHandledBy("mongo")
             && request.isWriteDocument()
             && request.isContentTypeJson()
-            && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+            && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
             && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
 }

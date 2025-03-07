@@ -142,7 +142,7 @@ public class UserPwdRemover implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
             && request.isGet()
-            && (this.mra.overrideUsersDbHeader() != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+            && (request.attachedParam("override-users-db")  != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
             && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
             && !request.isCollectionSize()
             && !request.isCollectionMeta()
