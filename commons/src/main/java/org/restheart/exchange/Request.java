@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 
 /**
@@ -53,6 +54,8 @@ public abstract class Request<T> extends Exchange<T> {
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
 
+    private static final AttachmentKey<Map<String, Object>> ATTACHED_PARAMS_KEY = AttachmentKey.create(Map.class);
+
     public static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);
 
     private static final AttachmentKey<Long> START_TIME_KEY = AttachmentKey.create(Long.class);
@@ -63,6 +66,10 @@ public abstract class Request<T> extends Exchange<T> {
 
     protected Request(HttpServerExchange exchange) {
         super(exchange);
+        // init attached params
+        if (exchange.getAttachment(ATTACHED_PARAMS_KEY) == null) {
+            exchange.putAttachment(ATTACHED_PARAMS_KEY, new HashMap<>());
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -464,5 +471,56 @@ public abstract class Request<T> extends Exchange<T> {
         var block = getWrappedExchange().getAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS);
 
         return block == null ? false : block;
+    }
+
+    /**
+     * Retrieves the key-value entries attached to the current request.
+     * <p>
+     * This method always returns a non-null map. If no parameters were previously attached,
+     * an empty map is returned.
+     *
+     * @return a non-null map containing the attached parameters.
+     */
+    public Map<String, Object> attachedParams() {
+        return getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY);
+    }
+
+    /**
+     * Retrieves the value of a specific attached parameter from the request, cast to the expected type.
+     *
+     * @param <T> the expected type of the parameter value.
+     * @param key the key of the parameter to retrieve; must not be {@code null}.
+     * @return the value associated with the given key, cast to type {@code T}, or {@code null} if the key is not present.
+     * @throws NullPointerException if {@code key} is {@code null}.
+     * @throws ClassCastException if the value cannot be cast to type {@code T}.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T attachedParam(String key) {
+        Objects.requireNonNull(key, "Key must not be null");
+        var val = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY).get(key);
+
+        return val == null ? null : (T) attachedParams().get(key);
+    }
+
+    /**
+     * Adds a key-value entry to the attached parameters of the current request.
+     * <p>
+     * If no parameters exist, this method ensures that a new map is created before adding the entry.
+     *
+     * @param key   the key of the parameter to attach; must not be {@code null}.
+     * @param value the value of the parameter to attach; can be {@code null}.
+     * @throws NullPointerException if {@code key} is {@code null}.
+     */
+    public void attachParam(String key, Object value) {
+        Objects.requireNonNull(key, "Key must not be null");
+
+        Map<String, Object> attachedParams = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY);
+
+        // Ensure the map is initialized if not already present
+        if (attachedParams == null) {
+            throw new IllegalStateException("Attached parameters map is unexpectedly null");
+        }
+
+        attachedParams.put(key, value);
     }
 }
