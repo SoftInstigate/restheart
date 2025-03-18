@@ -183,7 +183,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             return null;
         }
 
-        LOGGER.debug("verifying credentials for credentials against account {}.{}->{}", usersDb, this.usersCollection, id);
+        LOGGER.debug("Verifying credentials for user {} in {}.{} collection", id, usersDb, this.usersCollection);
 
         final var ref = getAccount(usersDb, id);
 
