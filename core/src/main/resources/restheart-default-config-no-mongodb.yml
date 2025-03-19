@@ -384,6 +384,7 @@ authTokenService:
 ping:
   enabled: true
   msg: Greetings from RESTHeart!
+  enable-extended-response: true
 
 # Returns the roles of the authenticated user
 roles:
