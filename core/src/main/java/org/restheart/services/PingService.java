@@ -30,13 +30,17 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
+import io.undertow.server.HttpServerExchange;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "ping", description = "simple ping service", secure = false, blocking = false)
 public class PingService implements ByteArrayService {
+    private static final String VERSION = PingService.class.getPackage().getImplementationVersion();
     private String msg = null;
+    private boolean isExtendedResponseEnabled = true;
 
     @Inject("config")
     private Map<String, Object> config;
@@ -44,28 +48,51 @@ public class PingService implements ByteArrayService {
     @OnInit
     public void setup() {
         this.msg = argOrDefault(this.config, "msg", "Greetings from RESTHeart!");
+        this.isExtendedResponseEnabled = argOrDefault(this.config, "enable-extended-response", true);
     }
 
-    /**
-     *
-     */
     @Override
-    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+    public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
-            var accept = request.getHeader("Accept");
+            final var pingMessageBuilder = new StringBuilder();
+            pingMessageBuilder.append("{\"message\": \"").append(msg).append("\"");
 
-            if (accept != null && accept.startsWith("text/html")) {
-                var content = "<div><h2>" + msg + "</h2></div>";
-                response.setContent(content.getBytes());
-                response.setContentType("text/html");
-            } else {
-                response.setContentType("text/plain");
-                response.setContent(msg.getBytes());
+            if (this.isExtendedResponseEnabled) {
+                pingMessageBuilder.append(", \"client_ip\": \"")
+                        .append(getClientIp(request.getExchange()))
+                        .append("\", \"host\": \"")
+                        .append(getHostHeader(request.getExchange()))
+                        .append("\", \"version\": \"")
+                        .append(VERSION)
+                        .append("\"");
             }
+
+            pingMessageBuilder.append("}");
+
+            final String pingMessage = pingMessageBuilder.toString();
+            response.setContentType("application/json");
+            response.setContent(pingMessage.getBytes());
         } else if (request.isOptions()) {
             handleOptions(request);
         } else {
             response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+        }
+    }
+
+    private String getHostHeader(final HttpServerExchange exchange) {
+        return exchange.getRequestHeaders().getFirst("Host");
+    }
+
+    private String getClientIp(final HttpServerExchange exchange) {
+        // Get the X-Forwarded-For header from the request
+        final String forwardedFor = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isEmpty()) {
+            // The first IP in X-Forwarded-For is typically the client's IP
+            return forwardedFor.split(",")[0].trim();
+        } else {
+            // Fallback to the remote address from the exchange
+            return exchange.getSourceAddress().getAddress().getHostAddress();
         }
     }
 }
