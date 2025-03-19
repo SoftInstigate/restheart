@@ -55,21 +55,19 @@ public class PingService implements ByteArrayService {
     public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
             final var pingMessageBuilder = new StringBuilder();
+            pingMessageBuilder.append("{\"message\": \"").append(msg).append("\"");
+
             if (this.isExtendedResponseEnabled) {
-                pingMessageBuilder.append("{\"message\": \"")
-                    .append(msg)
-                    .append("\", \"client_ip\": \"")
-                    .append(getClientIp(request.getExchange()))
-                    .append("\", \"host\": \"")
-                    .append(getHostHeader(request.getExchange()))
-                    .append("\", \"version\": \"")
-                    .append(VERSION)
-                    .append("\"}");
-            } else {
-                pingMessageBuilder.append("{\"message\": \"")
-                    .append(msg)
-                    .append("\"}");
+                pingMessageBuilder.append(", \"client_ip\": \"")
+                        .append(getClientIp(request.getExchange()))
+                        .append("\", \"host\": \"")
+                        .append(getHostHeader(request.getExchange()))
+                        .append("\", \"version\": \"")
+                        .append(VERSION)
+                        .append("\"");
             }
+
+            pingMessageBuilder.append("}");
 
             final String pingMessage = pingMessageBuilder.toString();
             response.setContentType("application/json");
