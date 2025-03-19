@@ -371,6 +371,14 @@ authTokenService:
   uri: /tokens
 
 # Simple ping service
+# Must respond with HTTP 200 OK
+# if enable-extended-response is true, returns the following JSON response
+# {
+#    "client_ip": "<caller ip>",
+#    "host": "<hostname>",
+#    "message": "Greetings from RESTHeart!",
+#    "version": "<RESTHeart version>"
+# }
 ping:
   enabled: true
   msg: Greetings from RESTHeart!
