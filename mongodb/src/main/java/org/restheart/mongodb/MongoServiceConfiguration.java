@@ -20,6 +20,14 @@
  */
 package org.restheart.mongodb;
 
+import static org.restheart.configuration.Utils.asBoolean;
+import static org.restheart.configuration.Utils.asInteger;
+import static org.restheart.configuration.Utils.asListOfMaps;
+import static org.restheart.configuration.Utils.asLong;
+import static org.restheart.configuration.Utils.asMap;
+import static org.restheart.configuration.Utils.asString;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,48 +35,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.restheart.configuration.ConfigurationException;
-import static org.restheart.configuration.Utils.asBoolean;
-import static org.restheart.configuration.Utils.asInteger;
-import static org.restheart.configuration.Utils.asListOfMaps;
-import static org.restheart.configuration.Utils.asLong;
-import static org.restheart.configuration.Utils.asMap;
-import static org.restheart.configuration.Utils.asString;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.AGGREGATION_CHECK_OPERATORS;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.AGGREGATION_TIME_LIMIT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.CURSOR_BATCH_SIZE_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_COLL_ETAG_CHECK_POLICY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DB_ETAG_CHECK_POLICY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DEFAULT_PAGESIZE;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_DOC_ETAG_CHECK_POLICY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MAX_PAGESIZE;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_MOUNT_WHAT;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_MOUNT_WHERE;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_MONGO_URI;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_PAGESIZE_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_REPRESENTATION_FORMAT;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_COLL_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_DB_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_DOC_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.ETAG_CHECK_POLICY_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_DOCS_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_ENABLED_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_SIZE_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.GET_COLLECTION_CACHE_TTL_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.INSTANCE_BASE_URL_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.LOCAL_CACHE_ENABLED_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.LOCAL_CACHE_TTL_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MAX_PAGESIZE_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNTS_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_URI_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.QUERY_TIME_LIMIT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.REPRESENTATION_FORMAT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_ENABLED_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.SCHEMA_CACHE_TTL_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +47,10 @@ import com.mongodb.ConnectionString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@SuppressWarnings("deprecation")
 public class MongoServiceConfiguration {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
+
     private static MongoServiceConfiguration INSTANCE = null;
 
     /**
@@ -90,10 +60,7 @@ public class MongoServiceConfiguration {
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 
-    /**
-     *
-     */
-    public final static Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
+    private static final String WRONG_VALUE_FOR_PARAMETER_SETTING_IT_TO_DEFAULT_VALUE = "wrong value for parameter {} setting it to default value {}";
 
     private final String uri;
     private final String instanceBaseURL;
@@ -123,13 +90,12 @@ public class MongoServiceConfiguration {
         return INSTANCE;
     }
 
-    public static MongoServiceConfiguration init(Map<String, Object> confs) {
+    public static MongoServiceConfiguration init(final Map<String, Object> confs) {
         return init(confs, true);
     }
 
-    public static MongoServiceConfiguration init(Map<String, Object> confs, boolean silent) {
+    public static MongoServiceConfiguration init(final Map<String, Object> confs, final boolean silent) {
         INSTANCE = new MongoServiceConfiguration(confs, silent);
-
         return INSTANCE;
     }
 
@@ -154,21 +120,23 @@ public class MongoServiceConfiguration {
      * @throws org.restheart.configuration.ConfigurationException
      */
     @SuppressWarnings("deprecated")
-    private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+    private MongoServiceConfiguration(final Map<String, Object> conf, final boolean silent) throws ConfigurationException {
         this.mongoSrvConfiguration = conf;
 
         uri = asString(conf, "uri", null, silent);
 
         instanceBaseURL = asString(conf, INSTANCE_BASE_URL_KEY, null, silent);
 
-        var _representationFormat = asString(conf, REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name(), silent);
+        final var _representationFormat = asString(conf, REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name(),
+                silent);
 
         var rf = REPRESENTATION_FORMAT.STANDARD;
 
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
-        } catch (IllegalArgumentException iar) {
-            LOGGER.warn("wrong value for {}. allowed values are {}; " + "setting it to {}", REPRESENTATION_FORMAT_KEY, REPRESENTATION_FORMAT.values(), REPRESENTATION_FORMAT.STANDARD);
+        } catch (final IllegalArgumentException iar) {
+            LOGGER.warn("wrong value for {}. allowed values are {}; " + "setting it to {}", REPRESENTATION_FORMAT_KEY,
+                    REPRESENTATION_FORMAT.values(), REPRESENTATION_FORMAT.STANDARD);
         } finally {
             defaultRepresentationFormat = rf;
         }
@@ -178,16 +146,18 @@ public class MongoServiceConfiguration {
         try {
             // check the mongo uri
             _mongoUri = new ConnectionString(asString(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI, silent));
-        } catch (IllegalArgumentException iae) {
-            LOGGER.error("Wrong parameter {} in the configuration file: {}, using its default value {}", MONGO_URI_KEY, iae.getMessage(), DEFAULT_MONGO_URI);
-            //throw new ConfigurationException("Wrong  group {} not specified in the configuration file, using its default value {}" + MONGO_URI_KEY, iae);
+        } catch (final IllegalArgumentException iae) {
+            LOGGER.error("Wrong parameter {} in the configuration file: {}, using its default value {}", MONGO_URI_KEY,
+                    iae.getMessage(), DEFAULT_MONGO_URI);
+            // throw new ConfigurationException("Wrong group {} not specified in the
+            // configuration file, using its default value {}" + MONGO_URI_KEY, iae);
             _mongoUri = new ConnectionString(DEFAULT_MONGO_URI);
         }
 
         mongoUri = _mongoUri;
 
-        List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
-        Map<String, Object> defaultMongoMounts = new HashMap<>();
+        final List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
+        final Map<String, Object> defaultMongoMounts = new HashMap<>();
         defaultMongoMounts.put(MONGO_MOUNT_WHAT_KEY, DEFAULT_MONGO_MOUNT_WHAT);
         defaultMongoMounts.put(MONGO_MOUNT_WHERE_KEY, DEFAULT_MONGO_MOUNT_WHERE);
         mongoMountsDefault.add(defaultMongoMounts);
@@ -209,14 +179,17 @@ public class MongoServiceConfiguration {
         getCollectionCacheTTL = asInteger(conf, GET_COLLECTION_CACHE_TTL_KEY, 10_000, silent);
         getCollectionCacheDocs = asInteger(conf, GET_COLLECTION_CACHE_DOCS_KEY, 1_000, silent);
 
-        Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, null, silent);
+        final Map<String, Object> etagCheckPolicies = asMap(conf, ETAG_CHECK_POLICY_KEY, null, silent);
 
         if (etagCheckPolicies != null) {
-            var _dbEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY.name(), silent);
+            final var _dbEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_DB_KEY,
+                    DEFAULT_DB_ETAG_CHECK_POLICY.name(), silent);
 
-            var _collEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY.name(), silent);
+            final var _collEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_COLL_KEY,
+                    DEFAULT_COLL_ETAG_CHECK_POLICY.name(), silent);
 
-            var _docEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_DOC_KEY, DEFAULT_DOC_ETAG_CHECK_POLICY.name(), silent);
+            final var _docEtagCheckPolicy = asString(etagCheckPolicies, ETAG_CHECK_POLICY_DOC_KEY,
+                    DEFAULT_DOC_ETAG_CHECK_POLICY.name(), silent);
 
             ETAG_CHECK_POLICY validDbValue;
             ETAG_CHECK_POLICY validCollValue;
@@ -224,8 +197,8 @@ public class MongoServiceConfiguration {
 
             try {
                 validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_DB_KEY,
+            } catch (final IllegalArgumentException iae) {
+                LOGGER.warn(WRONG_VALUE_FOR_PARAMETER_SETTING_IT_TO_DEFAULT_VALUE, ETAG_CHECK_POLICY_DB_KEY,
                         DEFAULT_DB_ETAG_CHECK_POLICY);
                 validDbValue = DEFAULT_DB_ETAG_CHECK_POLICY;
             }
@@ -234,8 +207,8 @@ public class MongoServiceConfiguration {
 
             try {
                 validCollValue = ETAG_CHECK_POLICY.valueOf(_collEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_COLL_KEY,
+            } catch (final IllegalArgumentException iae) {
+                LOGGER.warn(WRONG_VALUE_FOR_PARAMETER_SETTING_IT_TO_DEFAULT_VALUE, ETAG_CHECK_POLICY_COLL_KEY,
                         DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validCollValue = DEFAULT_COLL_ETAG_CHECK_POLICY;
             }
@@ -244,8 +217,8 @@ public class MongoServiceConfiguration {
 
             try {
                 validDocValue = ETAG_CHECK_POLICY.valueOf(_docEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_COLL_KEY,
+            } catch (final IllegalArgumentException iae) {
+                LOGGER.warn(WRONG_VALUE_FOR_PARAMETER_SETTING_IT_TO_DEFAULT_VALUE, ETAG_CHECK_POLICY_COLL_KEY,
                         DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validDocValue = DEFAULT_DOC_ETAG_CHECK_POLICY;
             }
@@ -273,8 +246,10 @@ public class MongoServiceConfiguration {
                 + ", mongoMounts=" + mongoMounts + ", localCacheEnabled="
                 + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl
-                + ", cacheEnabled=" + getCollectionCacheEnabled + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL" + getCollectionCacheTTL
-                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
+                + ", cacheEnabled=" + getCollectionCacheEnabled + ", cacheSize=" + getCollectionCacheSize + ", cacheTTL"
+                + getCollectionCacheTTL
+                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy
+                + ", docEtagCheckPolicy="
                 + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
                 + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
