@@ -33,7 +33,10 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BsonRequest extends ServiceRequest<BsonValue> {
+public class BsonRequest extends ServiceRequest<BsonValue> implements RawBodyAccessor<String> {
+
+    private String rawBody;
+
     protected BsonRequest(HttpServerExchange exchange) {
         super(exchange);
     }
@@ -49,9 +52,15 @@ public class BsonRequest extends ServiceRequest<BsonValue> {
     @Override
     public BsonValue parseContent() throws IOException, BadRequestException {
         try {
-            return BsonUtils.parse(ChannelReader.readString(wrapped));
-        } catch(JsonParseException jpe) {
+            rawBody = ChannelReader.readString(wrapped);
+            return BsonUtils.parse(rawBody);
+        } catch (JsonParseException jpe) {
             throw new BadRequestException(jpe.getMessage(), jpe);
         }
+    }
+
+    @Override
+    public final String getRawBody() {
+        return rawBody;
     }
 }
