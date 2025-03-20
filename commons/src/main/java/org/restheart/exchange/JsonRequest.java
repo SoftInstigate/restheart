@@ -33,7 +33,10 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonRequest extends ServiceRequest<JsonElement> {
+public class JsonRequest extends ServiceRequest<JsonElement> implements RawBodyAccessor<String> {
+
+    private String rawBody;
+
     protected JsonRequest(HttpServerExchange exchange) {
         super(exchange);
     }
@@ -50,12 +53,18 @@ public class JsonRequest extends ServiceRequest<JsonElement> {
     public JsonElement parseContent() throws IOException, BadRequestException {
         if (wrapped.getRequestContentLength() > 0) {
             try {
-                return JsonParser.parseString(ChannelReader.readString(wrapped));
+                rawBody = ChannelReader.readString(wrapped);
+                return JsonParser.parseString(rawBody);
             } catch(JsonSyntaxException jse) {
                 throw new BadRequestException(jse.getMessage(), jse);
             }
         } else {
             return null;
         }
+    }
+
+    @Override
+    public String getRawBody() {
+        return rawBody;
     }
 }
