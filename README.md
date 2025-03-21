@@ -73,11 +73,11 @@ Access-Control-Allow-Origin: *
 X-Powered-By: restheart.org
 Access-Control-Allow-Credentials: true
 Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By
-Content-Type: text/plain
-Content-Length: 25
-Date: Wed, 07 Aug 2024 10:48:23 GMT
+Content-Type: application/json
+Content-Length: 112
+Date: Fri, 21 Mar 2025 10:27:26 GMT
 
-Greetings from RESTHeart!
+{"message": "Greetings from RESTHeart!", "client_ip": "127.0.0.1", "host": "localhost:8080", "version": "8.4.0"}
 ```
 
 ## Running Without Docker
