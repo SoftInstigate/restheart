@@ -91,6 +91,10 @@ Date: Fri, 21 Mar 2025 10:27:26 GMT
 java -jar restheart.jar
 ```
 
+## Native executables
+
+Or CI/CD pipeline builds native executables for main MacOS, Linux and Windows. Have a look at the [Native Executables](/native-executables.md) document for more information.
+
 > To connect to a MongoDB server running in a remote host, you can quickly [modify the configuration with the RHO env var](https://restheart.org/docs/configuration#modify-the-configuration-with-the-rho-env-var).
 
 ## Build from Source
