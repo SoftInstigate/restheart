@@ -172,7 +172,7 @@ originVetoer:
   whitelist:
     - https://restheart.org
     - http://localhost
-  # optional list of paths for whose the Origin header
+  # Optional list of paths for which the Origin header
   # is not checked. values can be absolute paths
   # or patterns like /{var}/path/to/resource/*
   # ignore-paths:
@@ -191,7 +191,7 @@ fullAuthorizer:
 # and verify auth tokens.
 # If more than one token-manager are defined, the first one will be used
 # The token is returned to the caller via auth-token header when the user
-# autheticates successfully. The token can be used by Authentication Mechanisms.
+# authenticates successfully. The token can be used by Authentication Mechanisms.
 
 # rndTokenService generates auth tokens using a random number generator.
 rndTokenManager:
@@ -233,10 +233,10 @@ mongo:
   # Use the wildcard '*' to expose all dbs.
   #
   # The parameter 'where' defines the URI to bind the resource to.
-  # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
+  # It can be an absolute path (e.g. /api) or path template (e.g. /{foo}/bar/*).
   # The values of the path templates properties are available:
   # - in the 'what' property (e.g. what: /{foo}_db/coll)
-  # - programmatically from MongoRequest.getPathTemplateParamenters() method.
+  # - programmatically from MongoRequest.getPathTemplateParameters() method.
   #
   # Special variables {host[n]} can be used in path templates for mounting
   # MongoDB resources based on the request's host name.
@@ -294,12 +294,12 @@ mongo:
   default-pagesize: 100
 
   # max-pagesize sets the maximum allowed value of the pagesize query parameter
-  # generally, the greater the pagesize, the more json serializan overhead occurs
-  # the rule of thumb is not exeeding 1000
+  # generally, the greater the pagesize, the more json serialization overhead occurs
+  # the rule of thumb is not exceeding 1000
   max-pagesize: 1_000
 
-  # local-cache allows to cache the db and collection properties to drammatically
-  # improve performaces. Without caching, a GET on a document would requires
+  # local-cache allows to cache the db and collection properties to
+  # improve performances. Without caching, a GET on a document would require
   # two additional queries to retrieve the db and the collection properties.
   # Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
   # In this case a change in a db or collection properties would reflect on other
@@ -341,7 +341,7 @@ graphql:
   app-cache-enabled: true
   # app cache entries are automatically revalidated every TTR milliseconds
   app-cache-ttr: 60_000 # in msecs
-  # default-limit is used for queries that don't not specify a limit
+  # default-limit is used for queries that don't specify a limit
   default-limit: 100
   # max-limit is the maximum value for a Query limit
   max-limit: 1000
@@ -358,7 +358,7 @@ cacheInvalidator:
 csvLoader:
   enabled: false
 
-# Proxied resources - expose exrernal API with RESTHeart acting as a reverese proxy
+# Proxied resources - expose external API with RESTHeart acting as a reverse proxy
 # see https://restheart.org/docs/proxy
 # options:#
 #  - location (required) The location URI to bound to the HTTP proxied server.
@@ -420,7 +420,7 @@ bruteForceAttackGuard:
   # before returning 429 Too Many Requests
   max-failed-attempts: 5
   # if true, the source ip is obtained from X-Forwarded-For header
-  # this requires that header beeing set by the proxy, dangerous otherwise
+  # this requires that header being set by the proxy, dangerous otherwise
   trust-x-forwarded-for: false
   # when X-Forwarded-For has multiple values,
   # take into account the n-th from last element
@@ -488,9 +488,9 @@ core:
 
   # The directory containing the plugins jars.
   # The path is either absolute (starts with /) or relative to the restheart.jar file
-  # Just add the plugins jar to plugins-directory and they will be automatically
+  # Just add the plugins jar to plugins-directory, and they will be automatically
   # added to the classpath and registered.
-  # Alsways add the package org.restheart to the list
+  # Always add the package org.restheart to the list
   plugins-directory: plugins
 
   # Set to true for verbose logging of jar scanning for plugins
@@ -530,7 +530,7 @@ core:
   # Virtual working threads always use heap buffers because they are faster for their operations.
   direct-buffers: true
 
-  # In order to save bandwitdth, force requests to support the giz encoding (if not, requests will be rejected)
+  # In order to save bandwidth, force requests to support the giz encoding (if not, requests will be rejected)
   force-gzip-encoding:
     false
 
@@ -545,7 +545,7 @@ connection-options:
   # How to check HTTP/2 protocol https://stackoverflow.com/a/54164719/4481670
   ENABLE_HTTP2: true
 
-  # The maximum size of a HTTP header block, in bytes.
+  # The maximum size of an HTTP header block, in bytes.
   # If a client sends more data that this as part of the request header then the connection will be closed.
   # Defaults to 1Mbyte.
   MAX_HEADER_SIZE: 1048576
@@ -554,8 +554,8 @@ connection-options:
   # Defaults to unlimited.
   MAX_ENTITY_SIZE: -1
 
-  #The default maximum size of the HTTP entity body when using the mutiltipart parser.
-  # Generall this will be larger than MAX_ENTITY_SIZE
+  #The default maximum size of the HTTP entity body when using the multipart parser.
+  # Generally this will be larger than MAX_ENTITY_SIZE
   # If this is not specified it will be the same as MAX_ENTITY_SIZE
   MULTIPART_MAX_ENTITY_SIZE: -1
 
@@ -576,19 +576,19 @@ connection-options:
 
   # The maximum number of query parameters that are permitted in a request.
   # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
+  # This limit is necessary to protect against hash based denial-of-service attacks.
   # Defaults to 1000.
   MAX_PARAMETERS: 1000
 
   # The maximum number of headers that are permitted in a request.
   # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
+  # This limit is necessary to protect against hash based denial-of-service attacks.
   # Defaults to 200.
   MAX_HEADERS: 200
 
   # The maximum number of cookies that are permitted in a request.
   # If a client sends more than this number the connection will be closed.
-  # This limit is necessary to protect against hash based denial of service attacks.
+  # This limit is necessary to protect against hash based denial-of-service attacks.
   # Defaults to 200.
   MAX_COOKIES: 200
 
