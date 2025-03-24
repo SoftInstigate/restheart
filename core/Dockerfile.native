@@ -26,7 +26,7 @@ COPY target/restheart ./restheart
 RUN chmod +x restheart && mkdir -p etc plugins
 
 # Set environment variables
-ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
+ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart native is up and running"'
 
 EXPOSE 8009 8080 4443
 ENTRYPOINT ["./restheart"]

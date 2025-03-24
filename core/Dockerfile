@@ -26,7 +26,7 @@ COPY target/plugins/*.jar plugins/
 COPY target/plugins/lib/*.jar plugins/lib/
 
 # Set environment variables
-ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
+ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart is up and running"'
 
 ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar" ]
 EXPOSE 8009 8080 4443
