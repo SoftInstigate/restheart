@@ -34,7 +34,7 @@ Native executables are available in the [project releases](https://github.com/So
    ./restheart-darwin-amd64  # or ./restheart-darwin-arm64
    ```
 
-**Note about macOS Security:** The first time you run the executable, macOS might show a security warning stating "Apple cannot check app for malicious software". You have two options:
+⚠️ **Note about macOS Security:** The first time you run the executable, macOS might show a security warning stating "Apple cannot check app for malicious software". You have two options:
 
 - **Option 1**: Right-click (or Control+click) on the file in Finder and select "Open". When prompted, click "Open" again.
 
@@ -76,17 +76,11 @@ This will allow you to run the application without security warnings.
    restheart-windows-amd64.exe
    ```
 
-**Note about Windows Security:** If Windows SmartScreen blocks the execution, you can click "More info" and then "Run anyway" if you trust the source.
+⚠️ **Note about Windows Security:** If Windows SmartScreen blocks the execution, you can click "More info" and then "Run anyway" if you trust the source.
 
 ### Configuration
 
-The native executables use the same configuration approach as the Java version. By default, they look for a file named `restheart.yml` in the current directory.
-
-To specify a different configuration file:
-
-```bash
-./restheart-[platform] etc/restheart.yml
-```
+The native executables use the same [configuration approach](https://restheart.org/docs/configuration) as the Java version.
 
 ### Common Command-Line Options
 
