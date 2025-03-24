@@ -997,12 +997,21 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
+     * this method has a typo and will be removed
+     * use getPathTemplateParameters() instead
+     */
+    @Deprecated(forRemoval = true)
+    public Map<String, String> getPathTemplateParamenters() {
+        return getPathTemplateParameters();
+    }
+
+    /**
      * if mongo-mounts specifies a path template (i.e. /{foo}/*) this returns
      * the request template parameters {@literal (/x/y => foo=x, *=y) }
      *
      * @return
      */
-    public Map<String, String> getPathTemplateParamenters() {
+    public Map<String, String> getPathTemplateParameters() {
         if (this.pathTemplateMatch == null) {
             return null;
         } else {
