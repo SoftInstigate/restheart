@@ -25,7 +25,7 @@ import static java.lang.Math.toIntExact;
 import java.util.TreeMap;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.RepresentationUtils;
@@ -42,13 +42,13 @@ abstract class AbstractRepresentationFactory {
      * @param embeddedData
      * @param size
      * @return the resource HAL representation
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     public abstract Resource getRepresentation(
             HttpServerExchange exchange,
             BsonArray embeddedData,
             long size)
-            throws IllegalQueryParamenterException;
+            throws IllegalQueryParameterException;
 
     /**
      *
@@ -143,13 +143,13 @@ abstract class AbstractRepresentationFactory {
      * @param exchange
      * @param size
      * @param rep
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     protected void addPaginationLinks(
             HttpServerExchange exchange,
             long size,
             final Resource rep)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
         if (request.getPagesize() > 0) {
             TreeMap<String, String> links;

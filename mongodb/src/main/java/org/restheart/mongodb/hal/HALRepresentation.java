@@ -25,7 +25,7 @@ import java.nio.channels.IllegalSelectorException;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoService;
@@ -110,7 +110,7 @@ public class HALRepresentation implements MongoInterceptor {
                 return factory
                         .getRepresentation(MongoURLUtils.removeTrailingSlashes(request.getPath()), request.getExchange(), content == null ? null : content.asDocument())
                         .asBsonDocument();
-            } catch (IllegalQueryParamenterException iqpe) {
+            } catch (IllegalQueryParameterException iqpe) {
                 //shoudn't happen
                 throw new IllegalStateException(iqpe);
             }
@@ -125,7 +125,7 @@ public class HALRepresentation implements MongoInterceptor {
             try {
                 return factory.getRepresentation(request.getExchange(),
                     (BulkOperationResult) response.getDbOperationResult()).asBsonDocument();
-            } catch (IllegalQueryParamenterException iqpe) {
+            } catch (IllegalQueryParameterException iqpe) {
                 // shoudn't happen
                 throw new IllegalStateException(iqpe);
             }
@@ -151,7 +151,7 @@ public class HALRepresentation implements MongoInterceptor {
                 return factory
                         .getRepresentation(request.getExchange(), content == null ? null : content.asArray(), response.getCount())
                         .asBsonDocument();
-            } catch (IllegalQueryParamenterException iqpe) {
+            } catch (IllegalQueryParameterException iqpe) {
                 // shoudn't happen
                 throw new IllegalStateException(iqpe);
             }

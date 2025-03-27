@@ -23,7 +23,7 @@ package org.restheart.exchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class IllegalQueryParamenterException extends Exception {
+public class IllegalQueryParameterException extends Exception {
 
 	private static final long serialVersionUID = 3012988294234123826L;
 
@@ -31,7 +31,7 @@ public class IllegalQueryParamenterException extends Exception {
      *
      * @param message
      */
-    public IllegalQueryParamenterException(String message) {
+    public IllegalQueryParameterException(String message) {
         super(message);
     }
 
@@ -40,7 +40,7 @@ public class IllegalQueryParamenterException extends Exception {
      * @param message
      * @param cause
      */
-    public IllegalQueryParamenterException(String message, Throwable cause) {
+    public IllegalQueryParameterException(String message, Throwable cause) {
         super(message, cause);
     }
 }

@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -147,7 +147,7 @@ public class GetCollectionHandler extends PipelinedHandler {
 
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
-        } catch (IllegalQueryParamenterException ex) {
+        } catch (IllegalQueryParameterException ex) {
             MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange);
         }

@@ -44,7 +44,7 @@ import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.RHMongoClients;
 import org.restheart.mongodb.RSOps;
@@ -194,7 +194,7 @@ public class Databases {
      * @param pagesize
      * @param noCache
      * @return the db data
-     * @throws org.restheart.exchange.IllegalQueryParamenterException
+     * @throws org.restheart.exchange.IllegalQueryParameterException
      *
      */
     public BsonArray getDatabaseData(
@@ -204,7 +204,7 @@ public class Databases {
         final List<String> colls,
         final int page,
         final int pagesize,
-        boolean noCache) throws IllegalQueryParamenterException {
+        boolean noCache) throws IllegalQueryParameterException {
         // filter out reserved resources
         var _colls = colls.stream()
             .filter(coll -> !MongoRequest.isReservedCollectionName(coll))

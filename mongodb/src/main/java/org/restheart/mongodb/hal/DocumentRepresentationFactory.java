@@ -28,7 +28,7 @@ import org.bson.BsonString;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -127,12 +127,12 @@ class DocumentRepresentationFactory {
      * @param exchange
      * @param data
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     public Resource getRepresentation(String href,
             HttpServerExchange exchange,
             BsonDocument data)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 

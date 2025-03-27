@@ -28,7 +28,7 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
@@ -52,10 +52,10 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      * @param exchange
      * @param result
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     public Resource getRepresentation(HttpServerExchange exchange, BulkOperationResult result)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, null);
 
@@ -69,10 +69,10 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      * @param exchange
      * @param mbwe
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, exchange.getRequestPath());
 
@@ -215,12 +215,12 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      * @param embeddedData
      * @param size
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
             BsonArray embeddedData, long size)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }
 }

@@ -28,7 +28,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
@@ -54,14 +54,14 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
      * @param embeddedData
      * @param size
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     @Override
      public Resource getRepresentation(
             HttpServerExchange exchange,
             BsonArray embeddedData,
             long size)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
         String requestPath = MongoURLUtils.removeTrailingSlashes(request.getMongoResourceUri());

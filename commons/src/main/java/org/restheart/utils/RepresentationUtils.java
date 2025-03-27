@@ -39,7 +39,7 @@ import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
@@ -60,11 +60,11 @@ public class RepresentationUtils {
      * @param exchange
      * @param size
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     public static TreeMap<String, String> getPaginationLinks(
             HttpServerExchange exchange,
-            long size) throws IllegalQueryParamenterException {
+            long size) throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());

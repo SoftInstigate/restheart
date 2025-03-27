@@ -32,7 +32,7 @@ import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
 import static org.restheart.exchange.ExchangeKeys._STREAMS;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.utils.MongoURLUtils;
@@ -103,14 +103,14 @@ class CollectionRepresentationFactory
      * @param embeddedData
      * @param size
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
             BsonArray embeddedData,
             long size)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
         final String requestPath = buildRequestPath(exchange);
@@ -158,7 +158,7 @@ class CollectionRepresentationFactory
             final Resource rep,
             final String requestPath,
             final HttpServerExchange exchange)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
 
@@ -285,7 +285,7 @@ class CollectionRepresentationFactory
             String requestPath,
             HttpServerExchange exchange,
             Resource rep)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
         for (BsonValue _d : embeddedData) {
