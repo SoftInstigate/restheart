@@ -84,7 +84,7 @@ public class RepresentationUtils {
         TreeMap<String, String> links = new TreeMap<>();
 
         if (queryString == null || queryString.isEmpty()) {
-            // i.e. the url contains the count paramenter and there is a next page
+            // i.e. the url contains the count parameter and there is a next page
             if (totalPages > 0 && page < totalPages) {
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
             }
@@ -97,7 +97,7 @@ public class RepresentationUtils {
                 links.put("first", requestPath + "?pagesize=" + pagesize);
                 links.put("next", requestPath + "?page=" + (page + 1) + "&pagesize=" + pagesize);
 
-                // i.e. the url contains the count paramenter
+                // i.e. the url contains the count parameter
                 if (totalPages > 0) {
                     if (page < totalPages) {
                         links.put("last", requestPath
@@ -122,7 +122,7 @@ public class RepresentationUtils {
                             + "&pagesize=" + pagesize + "&" + queryStringNoPagingProps);
                 }
 
-                // i.e. the url contains the count paramenter
+                // i.e. the url contains the count parameter
                 if (totalPages > 0) {
                     if (page < totalPages) {
                         links.put("last", requestPath + (totalPages != 1 ? "?page=" + totalPages : "")

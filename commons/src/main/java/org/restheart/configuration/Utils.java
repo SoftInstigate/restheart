@@ -76,7 +76,7 @@ public class Utils {
 
         try {
             if (!silent) {
-                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
+                LOGGER.trace("configuration parameter \"{}\" set to \"{}\"", key, conf.get(key));
             }
             return (V) conf.get(key);
         } catch (Throwable t) {
@@ -108,7 +108,7 @@ public class Utils {
                 return defaultValue;
             } else {
                 if (!silent) {
-                    LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", xpath, value);
+                    LOGGER.trace("configuration parameter \"{}\" set to \"{}\"", xpath, value);
                 }
 
                 return value;
@@ -280,7 +280,7 @@ public class Utils {
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
             if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+                LOGGER.debug("parameter {} set to {}", key, conf.get(key));
             }
 
             try {
@@ -329,7 +329,7 @@ public class Utils {
             return defaultValue;
         } else if (conf.get(key) instanceof Number) {
             if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+                LOGGER.debug("parameter {} set to {}", key, conf.get(key));
             }
             try {
                 return Long.parseLong(conf.get(key).toString());

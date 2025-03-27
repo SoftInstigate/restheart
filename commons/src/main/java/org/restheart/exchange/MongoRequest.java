@@ -597,7 +597,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * @return the resolved template with actual paramenters
+     * @return the resolved template with actual parameters
      */
     private String resolveTemplate(String template) {
         String resolvedTemplate = template;
