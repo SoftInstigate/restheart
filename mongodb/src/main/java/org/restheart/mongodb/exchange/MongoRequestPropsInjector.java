@@ -71,7 +71,7 @@ public class MongoRequestPropsInjector {
         var response = MongoResponse.of(exchange);
 
         // skip parameters injection if method is OPTIONS
-        // this makes sure OPTIONS works even on wrong paramenter
+        // this makes sure OPTIONS works even on wrong parameter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
         if (request.isOptions()) {
             return;
@@ -135,7 +135,7 @@ public class MongoRequestPropsInjector {
             try {
                 pagesize = Integer.parseInt(__pagesize.getFirst());
             } catch (NumberFormatException ex) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal pagesize paramenter, it is not a number", ex);
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal pagesize parameter, it is not a number", ex);
                 return;
             }
         }
@@ -153,13 +153,13 @@ public class MongoRequestPropsInjector {
             try {
                 page = Integer.parseInt(__page.getFirst());
             } catch (NumberFormatException ex) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is not a number", ex);
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal page parameter, it is not a number", ex);
                 return;
             }
         }
 
         if (page < 1) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal page paramenter, it is < 1");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal page parameter, it is < 1");
             return;
         } else {
             request.setPage(page);
@@ -183,7 +183,7 @@ public class MongoRequestPropsInjector {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal sort paramenter");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal sort parameter");
                 return;
             }
 
@@ -207,7 +207,7 @@ public class MongoRequestPropsInjector {
 
         if (hint != null) {
             if (hint.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal hint paramenter");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal hint parameter");
                 return;
             }
 
@@ -219,7 +219,7 @@ public class MongoRequestPropsInjector {
         if (keys != null) {
             if (keys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys paramenter (empty)");
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys parameter (empty)");
                     return true;
                 }
 
@@ -227,11 +227,11 @@ public class MongoRequestPropsInjector {
                     var _keys = BsonUtils.parse(f);
 
                     if (!_keys.isDocument()) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys parameter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
                         return true;
                     }
                 } catch (Throwable t) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys paramenter: " + f, t);
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal keys parameter: " + f, t);
                     return true;
                 }
 
@@ -248,7 +248,7 @@ public class MongoRequestPropsInjector {
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter (empty)");
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter (empty)");
                     return true;
                 }
 
@@ -256,15 +256,15 @@ public class MongoRequestPropsInjector {
                     BsonValue _filter = BsonUtils.parse(f);
 
                     if (!_filter.isDocument()) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
                         return true;
                     } else if (_filter.asDocument().keySet().isEmpty()) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter (empty json object)");
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter (empty json object)");
                         return true;
                     }
 
                 } catch (Throwable t) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter paramenter: " + f + ", " + t.getMessage(), t);
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter: " + f + ", " + t.getMessage(), t);
                     return true;
                 }
 
@@ -278,7 +278,7 @@ public class MongoRequestPropsInjector {
 
         // filter qparam is mandatory for bulk DELETE and PATCH
         if (request.getType() == TYPE.BULK_DOCUMENTS && (request.isDelete() || request.isPatch()) && (filters == null || filters.isEmpty())) {
-            response.setInError( HttpStatus.SC_BAD_REQUEST, "filter paramenter is mandatory for bulk write requests");
+            response.setInError( HttpStatus.SC_BAD_REQUEST, "filter parameter is mandatory for bulk write requests");
             return;
         }
 
@@ -289,7 +289,7 @@ public class MongoRequestPropsInjector {
             Optional<String> _qvars = avars.stream().findFirst();
 
             if (!_qvars.isPresent()) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal avars paramenter (empty)");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal avars parameter (empty)");
                 return;
             }
 
@@ -299,7 +299,7 @@ public class MongoRequestPropsInjector {
                 try {
                     qvars = BsonDocument.parse(_qvars.get());
                 } catch (JsonParseException jpe) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars paramenter, it is not a json object: " + _qvars.get());
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars parameter, it is not a json object: " + _qvars.get());
                     return;
                 }
 
@@ -310,7 +310,7 @@ public class MongoRequestPropsInjector {
 
                 request.setAggregationVars(qvars);
             } catch (SecurityException t) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars paramenter: " + _qvars.get(), t);
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal avars parameter: " + _qvars.get(), t);
                 return;
             }
         }
@@ -328,7 +328,7 @@ public class MongoRequestPropsInjector {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.strip().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_QPARAM_KEY + " paramenter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + DOC_ID_TYPE_QPARAM_KEY + " parameter; must be " + Arrays.toString(DOC_ID_TYPE.values()));
                     return;
                 }
             }
@@ -361,7 +361,7 @@ public class MongoRequestPropsInjector {
             try {
                 request.setHalMode(HAL_MODE.valueOf(_halMode.strip().toUpperCase()));
             } catch (IllegalArgumentException iae) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " paramenter; valid values are " + Arrays.toString(HAL_MODE.values()));
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal " + HAL_QPARAM_KEY + " parameter; valid values are " + Arrays.toString(HAL_MODE.values()));
                 return;
             }
 
@@ -379,7 +379,7 @@ public class MongoRequestPropsInjector {
         if (shardKeys != null) {
             if (shardKeys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey paramenter (empty)");
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey parameter (empty)");
                     return true;
                 }
 
@@ -387,14 +387,14 @@ public class MongoRequestPropsInjector {
                     var _shardKeys = BsonDocument.parse(f);
 
                     if (_shardKeys.keySet().isEmpty()) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey paramenter (empty json object)");
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey parameter (empty json object)");
                         return true;
                     }
 
                     request.setShardKey(_shardKeys);
 
                 } catch (Throwable t) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey paramenter: " + f, t);
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey parameter: " + f, t);
                     return true;
                 }
 

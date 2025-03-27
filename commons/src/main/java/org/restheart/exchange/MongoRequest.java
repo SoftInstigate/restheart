@@ -1002,7 +1002,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * The mapped uri is the exchange request uri. This is "mapped" by the
-     * mongo-mounts mapping paramenters.
+     * mongo-mounts mapping parameters.
      *
      * @return the mappedUri
      */

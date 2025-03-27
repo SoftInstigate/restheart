@@ -54,7 +54,7 @@ public record ProxiedResource(String name,
         this(getOrDefault(conf, PROXY_NAME, null, silent),
             getOrDefault(conf, PROXY_LOCATION_KEY, null, silent),
             _proxyPass(conf, silent),
-            // following are optional paramenter, so get them always in silent mode
+            // following are optional parameter, so get them always in silent mode
             getOrDefault(conf, PROXY_REWRITE_HOST_HEADER, true, true),
             getOrDefault(conf, PROXY_CONNECTIONS_PER_THREAD, 10, true),
             getOrDefault(conf, PROXY_MAX_QUEUE_SIZE, 0, true),

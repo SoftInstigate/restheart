@@ -83,7 +83,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
             List<Map<String, Object>> _permissions = argOrDefault(config, "permissions", new ArrayList<>());
             _permissions.stream().forEach(consumeConfiguration());
         } else {
-            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'permissions' paramenter");
+            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'permissions' parameter");
         }
 
         // reverse oreder, the first permission in the acl.yml must be on top

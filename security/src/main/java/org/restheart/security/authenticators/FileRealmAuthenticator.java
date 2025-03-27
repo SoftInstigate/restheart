@@ -82,7 +82,7 @@ public class FileRealmAuthenticator extends FileConfigurablePlugin implements Au
             final List<Map<String, Object>> users = argOrDefault(config, USERS, new ArrayList<>());
             users.stream().forEach(consumeConfiguration());
         } else {
-            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'users' paramenter");
+            throw new IllegalArgumentException("The configuration requires either 'conf-file' or 'users' parameter");
         }
     }
 
