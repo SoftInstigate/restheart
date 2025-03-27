@@ -4413,7 +4413,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.IllegalQueryParamenterException",
+    "name": "org.restheart.exchange.IllegalQueryParameterException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,

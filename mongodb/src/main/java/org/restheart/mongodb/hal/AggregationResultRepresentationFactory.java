@@ -23,7 +23,7 @@ package org.restheart.mongodb.hal;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
-import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParameterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.MongoURLUtils;
 
@@ -46,13 +46,13 @@ class AggregationResultRepresentationFactory
      * @param embeddedData
      * @param size
      * @return
-     * @throws IllegalQueryParamenterException
+     * @throws IllegalQueryParameterException
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
             BsonArray embeddedData,
             long size)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
         final String requestPath = buildRequestPath(exchange);
@@ -77,7 +77,7 @@ class AggregationResultRepresentationFactory
 
     private void addEmbeddedData(BsonArray embeddedData,
             final Resource rep)
-            throws IllegalQueryParamenterException {
+            throws IllegalQueryParameterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
 
@@ -96,7 +96,7 @@ class AggregationResultRepresentationFactory
     }
 
     private void embeddedDocuments(BsonArray embeddedData,
-            Resource rep) throws IllegalQueryParamenterException {
+            Resource rep) throws IllegalQueryParameterException {
         embeddedData.stream()
                 .filter(d -> d != null)
                 .filter(d -> d.isDocument())

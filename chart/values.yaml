@@ -189,7 +189,7 @@ restHeartConfiguration:
   # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
   # The values of the path templates properties are available:
   # - in the 'what' property (e.g. what: /{foo}_db/coll)
-  # - programmatically from MongoRequest.getPathTemplateParamenters() method.
+  # - programmatically from MongoRequest.getPathTemplateParameters() method.
   #
   # It is not possible to mix absolute paths and path templates: 'where' URIs
   # need to be either all absolute paths or all path templates.

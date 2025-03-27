@@ -1016,7 +1016,7 @@ public class MongoRequest extends BsonRequest {
      *
      * @return
      */
-    public Map<String, String> getPathTemplateParamenters() {
+    public Map<String, String> getPathTemplateParameters() {
         if (this.pathTemplateMatch == null) {
             return null;
         } else {
