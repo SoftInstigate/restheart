@@ -64,7 +64,7 @@ public class RESTHeartDaemon extends Daemon {
             var args = JavaVMArguments.current();
             args.setSystemProperty(RESTHeartDaemon.class.getName(), "daemonized");
 
-            String _args[] = args.toArray(new String[args.size()]);
+            String _args[] = args.toArray(new String[0]);
 
             if (isExecutable()) {
                 _args[0] = FileUtils.getFileAbsolutePath(_args[0]).toString();
@@ -88,7 +88,7 @@ public class RESTHeartDaemon extends Daemon {
         try {
             return ImageInfo.isExecutable();
         } catch(Throwable cnfe) {
-            // this happen when not running GraalVM. ImageInfo would not be available.
+            // this happens when not running GraalVM. ImageInfo would not be available.
             return false;
         }
     }
