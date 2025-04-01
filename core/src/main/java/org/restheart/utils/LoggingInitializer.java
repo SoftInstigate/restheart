@@ -97,7 +97,7 @@ public class LoggingInitializer {
             PatternLayoutEncoder encoder = new PatternLayoutEncoder();
             encoder.setContext(loggerContext);
 
-            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{full}");
             encoder.start();
 
             newAppender.setEncoder(encoder);
@@ -147,9 +147,9 @@ public class LoggingInitializer {
         encoder.setContext(loggerContext);
 
         if (fullStacktrace) {
-            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+            encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{full}");
         }  else {
-            encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{short}");
+            encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{short}");
         }
         encoder.start();
 
