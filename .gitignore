@@ -287,3 +287,4 @@ $RECYCLE.BIN/
 # infer- http://fbinfer.com/
 infer-out
 /commons/nbproject/
+/core/Dockerfile.jbr

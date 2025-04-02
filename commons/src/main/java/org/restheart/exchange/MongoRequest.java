@@ -266,7 +266,7 @@ public class MongoRequest extends BsonRequest {
         }
 
         this.rsOps = anyRsSet ? Optional.of(_rsOps) : Optional.empty();
-        LOGGER.debug("ReplicaSet connection options: {}", _rsOps);
+        LOGGER.trace("ReplicaSet connection options: {}", _rsOps);
     }
 
     private String defaultWriteMode() {
@@ -476,24 +476,24 @@ public class MongoRequest extends BsonRequest {
      * configuration properties. note that the mapped uri can make use of path
      * templates (/some/{path}/template/*)
      *
-     * @param mappedUri
-     * @return
+     * @param requestPath the mapped uri, e.g. /api/tenant/coll
+     * @return the canonical mongodb resource uri (/db/coll)
      */
-    private String unmapUri(String mappedUri) {
-        // don't unmap URIs statring with /_sessions
-        if (mappedUri.startsWith("/".concat(_SESSIONS))) {
-            return mappedUri;
+    private String unmapUri(String requestPath) {
+        // don't unmap URIs starting with /_sessions
+        if (requestPath.startsWith("/".concat(_SESSIONS))) {
+            return requestPath;
         }
 
         if (this.pathTemplateMatch == null) {
-            return unmapPathUri(mappedUri);
+            return unmapPathUri(requestPath);
         } else {
-            return unmapPathTemplateUri(mappedUri);
+            return unmapPathTemplateUri(requestPath);
         }
     }
 
-    private String unmapPathUri(String mappedUri) {
-        var ret = URLUtils.removeTrailingSlashes(mappedUri);
+    private String unmapPathUri(String requestPath) {
+        var ret = URLUtils.removeTrailingSlashes(requestPath);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
@@ -508,13 +508,15 @@ public class MongoRequest extends BsonRequest {
         return ret.isEmpty() ? SLASH : ret;
     }
 
-    private String unmapPathTemplateUri(String mappedUri) {
-        var ret = mappedUri;
+    private String unmapPathTemplateUri(String requestPath) {
+        var ret = requestPath;
+
+        // replace path template params in matched path template
         var rewriteUri = replaceParamsWithActualValues();
 
-        var replacedWhatUri = replaceParamsWithinWhatUri();
-        // replace params with in whatUri
+        // replace params within whatUri
         // eg what: /{account}, where: /{account}/*
+        var replacedWhatUri = replaceParamsWithinWhatUri();
 
         // now replace mappedUri with resolved path template
         if (replacedWhatUri.equals("*")) {
@@ -522,7 +524,6 @@ public class MongoRequest extends BsonRequest {
                 ret = ret.replaceFirst("^" + Pattern.quote(rewriteUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            var x = rewriteUri;
             ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(rewriteUri), replacedWhatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
@@ -578,7 +579,8 @@ public class MongoRequest extends BsonRequest {
                 return rewriteUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + Pattern.quote(replacedWhatUri), rewriteUri));
+            ret = URLUtils.removeTrailingSlashes(
+                    ret.replaceFirst("^" + Pattern.quote(replacedWhatUri), rewriteUri));
         }
 
         return ret.isEmpty() ? SLASH : ret;
@@ -597,19 +599,22 @@ public class MongoRequest extends BsonRequest {
     private String replaceParamsWithActualValues() {
         // path template with variables resolved to actual values
         var rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
+
         // remove trailing wildcard from template
         if (rewriteUri.endsWith("/*")) {
             rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
         }
+
         // collect params
-        this.pathTemplateMatch
+        var parameters = this.pathTemplateMatch
             .getParameters()
             .keySet()
             .stream()
             .filter(key -> !key.equals("*"))
             .collect(Collectors.toMap(key -> key, key -> this.pathTemplateMatch.getParameters().get(key)));
+
         // replace params with actual values
-        for (var key : this.pathTemplateMatch.getParameters().keySet()) {
+        for (var key: parameters.keySet()) {
             rewriteUri = rewriteUri.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
         }
         return rewriteUri;

@@ -98,9 +98,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
-                .stream()
-                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-                .allMatch(url -> isPathTemplate(url));
+            .stream()
+            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+            .allMatch(MongoService::isPathTemplate);
 
         if (!allPathTemplates) {
             // init mongoMounts
@@ -121,7 +121,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if (mclient != null) {
             this.pipeline.handleRequest(request.getExchange());
         } else {
-            final var error = "MongoDB is not availabe";
+            final var error = "MongoDB is not available";
 
             response.setInError(500, error);
             LOGGER.error(error);
