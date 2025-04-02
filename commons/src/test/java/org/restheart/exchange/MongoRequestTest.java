@@ -20,14 +20,17 @@
 
 package org.restheart.exchange;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -37,9 +40,12 @@ import io.undertow.util.PathTemplateMatcher;
 
 /**
  *
- * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}, Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoRequestTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MongoRequestTest.class);
+
     /**
      *
      */
@@ -209,6 +215,65 @@ public class MongoRequestTest {
 
         request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll/x", request.getMongoResourceUri());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testPathTemplatedMappedRequest() {
+        var requestPath = "/acme/coll";
+
+        // Here mimic MongoService that attach PathTemplateMatch to the exchange
+        PathTemplateMatcher<MongoMount> templateMongoMounts = new PathTemplateMatcher<>();
+        String whatUri = "/restheart/{tenant}_{coll}";
+        String whereUri = "/{tenant}/{coll}";
+        var mongoMount = new MongoMount(whatUri,whereUri);
+        templateMongoMounts.add(mongoMount.uri, mongoMount);
+
+        var tmm = templateMongoMounts.match(requestPath);
+
+        HttpServerExchange ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn(requestPath);
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
+        when(ex.getAttachment(PathTemplateMatch.ATTACHMENT_KEY)).thenReturn(tmm);
+
+        MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
+
+        assertEquals("/restheart/acme_coll", request.getMongoResourceUri());
+        assertEquals("restheart", request.getDBName());
+        assertEquals("acme_coll", request.getCollectionName());
+    }
+
+    /**
+     * helper class to store mongo mounts info
+     */
+    private static record MongoMount(String resource, String uri) {
+        public MongoMount(String resource, String uri) {
+            if (uri == null) {
+                throw new IllegalArgumentException("'where' cannot be null. check your 'mongo-mounts'.");
+            }
+
+            if (!uri.startsWith("/")) {
+                throw new IllegalArgumentException("'where' must start with \"/\". check your 'mongo-mounts'");
+            }
+
+            if (resource == null) {
+                throw new IllegalArgumentException("'what' cannot be null. check your 'mongo-mounts'.");
+            }
+
+            if (!uri.startsWith("/") && !uri.equals("*")) {
+                throw new IllegalArgumentException("'what' must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your 'mongo-mounts'");
+            }
+
+            this.resource = resource;
+            this.uri = org.restheart.utils.URLUtils.removeTrailingSlashes(uri);
+        }
+
+        @Override
+        public String toString() {
+            return "MongoMount(" + uri + " -> " + resource + ")";
+        }
     }
 
     /**

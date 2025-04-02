@@ -275,7 +275,7 @@ public class MongoRequest extends BsonRequest {
         }
 
         this.rsOps = anyRsSet ? Optional.of(_rsOps) : Optional.empty();
-        LOGGER.debug("ReplicaSet connection options: {}", _rsOps);
+        LOGGER.trace("ReplicaSet connection options: {}", _rsOps);
     }
 
     private String defaultWriteMode() {
@@ -330,11 +330,11 @@ public class MongoRequest extends BsonRequest {
     public static boolean isReservedDbName(String dbName) {
         return dbName == null
                 ? false
-                : "".equals(dbName)
-                        || dbName.equalsIgnoreCase(ADMIN)
-                        || dbName.equalsIgnoreCase(CONFIG)
-                        || dbName.equalsIgnoreCase(LOCAL)
-                        || dbName.startsWith(SYSTEM);
+                : dbName.isEmpty()
+                    || dbName.equalsIgnoreCase(ADMIN)
+                    || dbName.equalsIgnoreCase(CONFIG)
+                    || dbName.equalsIgnoreCase(LOCAL)
+                    || dbName.startsWith(SYSTEM);
     }
 
     /**
@@ -345,10 +345,10 @@ public class MongoRequest extends BsonRequest {
     public static boolean isReservedCollectionName(String collectionName) {
         return collectionName == null
                 ? false
-                : "".equals(collectionName)
-                        || collectionName.startsWith(SYSTEM)
-                        || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                        || collectionName.equals(META_COLLNAME);
+                : collectionName.isEmpty()
+                    || collectionName.startsWith(SYSTEM)
+                    || collectionName.endsWith(FS_CHUNKS_SUFFIX)
+                    || collectionName.equals(META_COLLNAME);
     }
 
     /**
@@ -491,7 +491,7 @@ public class MongoRequest extends BsonRequest {
      * @return the mongo resource uri
      */
     private String mongoUriFromRequestPath(String path) {
-        // don't unmap URIs statring with /_sessions
+        // don't unmap URIs starting with /_sessions
         if (path.startsWith("/".concat(_SESSIONS))) {
             return path;
         }
@@ -499,7 +499,7 @@ public class MongoRequest extends BsonRequest {
         if (this.pathTemplateMatch == null) {
             return mongoUriFromPathMatch(path);
         } else {
-            return mongoUruFromPathTemplateMatch(path);
+            return mongoUriFromPathTemplateMatch(path);
         }
     }
 
@@ -520,7 +520,7 @@ public class MongoRequest extends BsonRequest {
         return mongoUri.isEmpty() ? SLASH : mongoUri;
     }
 
-    private String mongoUruFromPathTemplateMatch(String requestPath) {
+    private String mongoUriFromPathTemplateMatch(String requestPath) {
         // requestPath=/api/a/b
         // what=*
         // where=/api/{*} -> /api/a/b
@@ -566,7 +566,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             requestPath = removeTrailingSlashes(
-                    requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
+                requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
         if (requestPath.isEmpty()) {
@@ -590,7 +590,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             requestPath = removeTrailingSlashes(
-                    requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
+                requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
         }
 
         return requestPath.isEmpty() ? SLASH : requestPath;
