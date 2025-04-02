@@ -250,12 +250,12 @@ public class MongoRequestTest {
      */
     @Test
     public void testPathTemplatedMappedRequestWithWildcard() {
-        var requestPath = "/acme/coll/docid";
+        var requestPath = "/acme/coll/docid/foo";
 
         // Here mimic MongoService that attach PathTemplateMatch to the exchange
         PathTemplateMatcher<MongoMount> templateMongoMounts = new PathTemplateMatcher<>();
-        String whatUri = "/restheart/{tenant}_{coll}";
-        String whereUri = "/{tenant}/{coll}/*";
+        String whatUri = "/restheart/{tenant}_{coll}/{*}";
+        String whereUri = "/{tenant}/{coll}/{*}";
         var mongoMount = new MongoMount(whatUri,whereUri);
         templateMongoMounts.add(mongoMount.uri, mongoMount);
 
@@ -268,7 +268,7 @@ public class MongoRequestTest {
 
         MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
 
-        assertEquals("/restheart/acme_coll/docid", request.getUnmappedRequestUri());
+        assertEquals("/restheart/acme_coll/docid/foo", request.getMongoResourceUri());
         assertEquals("restheart", request.getDBName());
         assertEquals("acme_coll", request.getCollectionName());
     }
