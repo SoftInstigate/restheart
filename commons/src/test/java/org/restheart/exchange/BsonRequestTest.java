@@ -251,6 +251,34 @@ public class BsonRequestTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testPathTemplatedMappedRequestWithWildcard() {
+        var requestPath = "/acme/coll/docid";
+
+        // Here mimic MongoService that attach PathTemplateMatch to the exchange
+        PathTemplateMatcher<MongoMount> templateMongoMounts = new PathTemplateMatcher<>();
+        String whatUri = "/restheart/{tenant}_{coll}";
+        String whereUri = "/{tenant}/{coll}/*";
+        var mongoMount = new MongoMount(whatUri,whereUri);
+        templateMongoMounts.add(mongoMount.uri, mongoMount);
+
+        var tmm = templateMongoMounts.match(requestPath);
+
+        HttpServerExchange ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn(requestPath);
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
+        when(ex.getAttachment(PathTemplateMatch.ATTACHMENT_KEY)).thenReturn(tmm);
+
+        MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
+
+        assertEquals("/restheart/acme_coll/docid", request.getUnmappedRequestUri());
+        assertEquals("restheart", request.getDBName());
+        assertEquals("acme_coll", request.getCollectionName());
+    }
+
+    /**
      * helper class to store mongo mounts info
      */
     private static record MongoMount(String resource, String uri) {
