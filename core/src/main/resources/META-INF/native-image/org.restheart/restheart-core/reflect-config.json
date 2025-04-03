@@ -287,13 +287,6 @@
   "allDeclaredConstructors":true
 },
 {
-  "name":"com.sun.akuma.CLibrary",
-  "methods":[
-    {"name":"execv","parameterTypes":["java.lang.String","com.sun.jna.StringArray"] }, 
-    {"name":"readlink","parameterTypes":["java.lang.String","com.sun.jna.Memory","com.sun.jna.NativeLong"] }
-  ]
-},
-{
   "name":"com.sun.crypto.provider.AESCipher$General",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },

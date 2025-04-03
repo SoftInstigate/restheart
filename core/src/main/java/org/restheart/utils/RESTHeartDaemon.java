@@ -20,20 +20,22 @@
  */
 package org.restheart.utils;
 
-/**
- * utility class to help daemonizing process
- *
- * See<a href="http://akuma.kohsuke.org">Akuma</a>
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- */
-import com.sun.akuma.Daemon;
-import com.sun.akuma.JavaVMArguments;
-
 import org.restheart.graal.ImageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RESTHeartDaemon extends Daemon {
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+
+/**
+ * utility class to help daemonizing process
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
+public class RESTHeartDaemon {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RESTHeartDaemon.class);
 
@@ -43,7 +45,6 @@ public class RESTHeartDaemon extends Daemon {
      *
      * @return
      */
-    @Override
     public boolean isDaemonized() {
         return System.getProperty(RESTHeartDaemon.class.getName()) != null;
     }
@@ -52,7 +53,6 @@ public class RESTHeartDaemon extends Daemon {
      * Relaunches the JVM as a daemon.
      *
      */
-    @Override
     public void daemonize() {
         if (isDaemonized()) {
             throw new IllegalStateException("Already running as a daemon");
@@ -61,19 +61,43 @@ public class RESTHeartDaemon extends Daemon {
         try {
             LOGGER.info("Forking...");
 
-            var args = JavaVMArguments.current();
-            args.setSystemProperty(RESTHeartDaemon.class.getName(), "daemonized");
+            var processInfo = ProcessHandle.current().info();
+            var __args = processInfo.arguments();
 
-            String _args[] = args.toArray(new String[0]);
+            var args = new LinkedList<>(Arrays.asList(__args.orElseGet(() -> new String[0])));
 
-            if (isExecutable()) {
-                _args[0] = FileUtils.getFileAbsolutePath(_args[0]).toString();
-            } else {
-                _args[0] = getCurrentExecutable();
+            LOGGER.info("args: {}", (Object) args);
+
+            if (processInfo.command().isEmpty()) {
+                throw new IllegalStateException("Command not available");
             }
 
+            var command = processInfo.command().get();
+
+            // add system property to identify daemon process
+            args.addFirst("-D".concat(RESTHeartDaemon.class.getName()).concat("=daemonized"));
+
             // create child process
-            var p = new ProcessBuilder().command(_args).start();
+            if (isExecutable()) {
+                args.addFirst(FileUtils.getFileAbsolutePath(command).toString());
+            } else {
+                args.addFirst(command);
+            }
+
+            LOGGER.info("newArgs: {}", args);
+
+            var p = new ProcessBuilder()
+                .command(args.toArray(new String[0]))
+                .directory(new File(System.getProperty("user.dir")))
+                .inheritIO()
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start();
+
+            // disconnect std io
+            p.getInputStream().close();
+            p.getOutputStream().close();
+            p.getErrorStream().close();
 
             LOGGER.info("Forked process: {}", p.pid());
             // parent exists

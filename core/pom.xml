@@ -38,17 +38,6 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>akuma</artifactId>
-      <!-- Will be removed due to https://github.com/SoftInstigate/restheart/issues/548
-           When done, also remove <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access> in maven-jar-plugin configuration
-      -->
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
     </dependency>
@@ -192,8 +181,6 @@
             </manifest>
             <manifestEntries>
               <Build-Time>${maven.build.timestamp}</Build-Time>
-              <!-- akuma required JNA that logs warnings with Java 24. The following avoids it: -->
-              <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
             </manifestEntries>
           </archive>
         </configuration>
