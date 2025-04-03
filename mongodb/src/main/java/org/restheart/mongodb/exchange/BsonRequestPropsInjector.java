@@ -226,7 +226,7 @@ public class BsonRequestPropsInjector {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal sort paramenter");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal sort parameter");
                 return;
             }
 
@@ -234,16 +234,14 @@ public class BsonRequestPropsInjector {
                     .anyMatch(s -> s.trim().equals("_last_updated_on")
                     || s.trim().equals("+_last_updated_on")
                     || s.trim().equals("-_last_updated_on"))) {
-                response.addWarning("unexepecting sorting; "
+                response.addWarning("unexpected sorting; "
                         + "the _last_updated_on timestamp is generated "
                         + "from the _etag property if present");
             }
 
             if (sort_by.stream()
-                    .anyMatch(s -> s.trim().equals("_created_on")
-                    || s.trim().equals("_created_on")
-                    || s.trim().equals("_created_on"))) {
-                response.addWarning("unexepecting sorting; "
+                    .anyMatch(s -> s.trim().equals("_created_on"))) {
+                response.addWarning("unexpected sorting; "
                         + "the _created_on timestamp is generated "
                         + "from the _id property if it is an ObjectId");
             }
@@ -331,7 +329,7 @@ public class BsonRequestPropsInjector {
                                 + " => "
                                 + f.getClass().getSimpleName());
                         return true;
-                    } else if (_filter.asDocument().keySet().isEmpty()) {
+                    } else if (_filter.asDocument().isEmpty()) {
                         response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter (empty json object)");
@@ -370,10 +368,10 @@ public class BsonRequestPropsInjector {
         if (avars != null) {
             Optional<String> _qvars = avars.stream().findFirst();
 
-            if (!_qvars.isPresent()) {
+            if (_qvars.isEmpty()) {
                 response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
-                        "Illegal avars paramenter (empty)");
+                        "Illegal avars parameter (empty)");
 
                 return;
             }
@@ -386,7 +384,7 @@ public class BsonRequestPropsInjector {
                 } catch (JsonParseException jpe) {
                     response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal avars paramenter, it is not a json object: "
+                            "illegal avars parameter, it is not a json object: "
                             + _qvars.get());
 
                     return;
@@ -517,7 +515,7 @@ public class BsonRequestPropsInjector {
                 if (f == null || f.isEmpty()) {
                     response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal shardkey paramenter (empty)");
+                            "illegal shardkey parameter (empty)");
 
                     return true;
                 }
@@ -525,10 +523,10 @@ public class BsonRequestPropsInjector {
                 try {
                     BsonDocument _shardKeys = BsonDocument.parse(f);
 
-                    if (_shardKeys.keySet().isEmpty()) {
+                    if (_shardKeys.isEmpty()) {
                         response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
-                                "illegal shardkey paramenter (empty json object)");
+                                "illegal shardkey parameter (empty json object)");
 
                         return true;
                     }
@@ -538,7 +536,7 @@ public class BsonRequestPropsInjector {
                 } catch (Throwable t) {
                     response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal shardkey paramenter: "
+                            "illegal shardkey parameter: "
                             + f,
                             t);
 

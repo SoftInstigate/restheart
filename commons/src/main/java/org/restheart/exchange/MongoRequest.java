@@ -1216,7 +1216,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalid() {
@@ -1233,7 +1233,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalid(String dbName) {
@@ -1250,7 +1250,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalidOnWindows() {
@@ -1259,7 +1259,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isDbNameInvalidOnWindows(String dbName) {
@@ -1274,7 +1274,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isCollectionNameInvalid() {
@@ -1283,16 +1283,12 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param collectionName
-     * Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     * See https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
      * @return
      */
     public boolean isCollectionNameInvalid(String collectionName) {
         // collection starting with system. will return FORBIDDEN
-
-        return (collectionName == null
-                || collectionName.contains(NUL)
-                || collectionName.contains("$")
-                || collectionName.length() == 64);
+        return (collectionName == null  || collectionName.contains(NUL)  || collectionName.contains("$"));
     }
 
     /**
