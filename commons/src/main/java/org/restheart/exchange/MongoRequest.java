@@ -1083,7 +1083,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * @return the jsonMode as specified by jsonMode query paramter
+     * @return the jsonMode as specified by jsonMode query parameter
      */
     public JsonMode getJsonMode() {
         return jsonMode;
@@ -1179,7 +1179,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     *               Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     *              See <a href="https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions">mongodb naming restrictions</a>
      * @return
      */
     public boolean isDbNameInvalid(String dbName) {
@@ -1192,7 +1192,7 @@ public class MongoRequest extends BsonRequest {
                 || dbName.contains("\"")
                 || dbName.contains("$")
                 || dbName.length() > 64
-                || dbName.length() == 0);
+                || dbName.isEmpty());
     }
 
     /**
@@ -1206,7 +1206,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param dbName
-     *               Seehttps://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions
+     *               See <a href="https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions">mongodb naming restrictions</a>
      * @return
      */
     public boolean isDbNameInvalidOnWindows(String dbName) {
@@ -1221,7 +1221,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * See https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions
+     * See <a href="https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions">mongodb naming restrictions</a>
      *
      * @return
      */
@@ -1231,7 +1231,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * @param collectionName
-     *                       See https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions
+     *                       See <a href="https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions">mongodb naming restrictions</a>
      * @return
      */
     public boolean isCollectionNameInvalid(String collectionName) {

@@ -64,7 +64,7 @@ public class MongoRequestPropsInjector {
 
     /**
      *
-     * @param exchange
+     * @param exchange the exchange to inject the properties to
      */
     public static void inject(HttpServerExchange exchange) {
         var request = MongoRequest.of(exchange);
@@ -258,7 +258,7 @@ public class MongoRequestPropsInjector {
                     if (!_filter.isDocument()) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter, it is not a json object: " + f + " => " + f.getClass().getSimpleName());
                         return true;
-                    } else if (_filter.asDocument().keySet().isEmpty()) {
+                    } else if (_filter.asDocument().isEmpty()) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal filter parameter (empty json object)");
                         return true;
                     }
@@ -288,7 +288,7 @@ public class MongoRequestPropsInjector {
         if (avars != null) {
             Optional<String> _qvars = avars.stream().findFirst();
 
-            if (!_qvars.isPresent()) {
+            if (_qvars.isEmpty()) {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal avars parameter (empty)");
                 return;
             }
@@ -386,7 +386,7 @@ public class MongoRequestPropsInjector {
                 try {
                     var _shardKeys = BsonDocument.parse(f);
 
-                    if (_shardKeys.keySet().isEmpty()) {
+                    if (_shardKeys.isEmpty()) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal shardkey parameter (empty json object)");
                         return true;
                     }
