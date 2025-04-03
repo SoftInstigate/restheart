@@ -365,13 +365,13 @@ public class MongoRequest extends BsonRequest {
         var sdi = documentId.asString().getValue();
 
         if ((type == TYPE.COLLECTION_META && sdi.startsWith(COLL_META_DOCID_PREFIX))
-                || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
-                || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
-                || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
-                || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
-                || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
-                || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
-                || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
+            || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
+            || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
+            || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
+            || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
+            || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
+            || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
+            || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
             return false;
         } else {
             return DB_META_DOCID.equalsIgnoreCase(sdi) || sdi.startsWith(COLL_META_DOCID_PREFIX);
@@ -511,7 +511,7 @@ public class MongoRequest extends BsonRequest {
                 mongoUri = mongoUri.replaceFirst("^" + Pattern.quote(this.whereUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            // problem, whereUri can contain regex special chars such as *
+            // whereUri can contain regex special chars such as *
             mongoUri = removeTrailingSlashes(mongoUri.replaceFirst("^" + Pattern.quote(this.whereUri), this.whatUri));
         } else {
             mongoUri = removeTrailingSlashes(removeTrailingSlashes(this.whatUri) + mongoUri);
@@ -547,7 +547,7 @@ public class MongoRequest extends BsonRequest {
      * resources via the mongo-mounts configuration properties
      *
      * @param mongoResourceUri
-     * @return
+     * @return the mapped uri relative to this context.
      */
     public String requestPathFromMongoUri(String mongoResourceUri) {
         if (this.pathTemplateMatch == null) {
@@ -605,7 +605,7 @@ public class MongoRequest extends BsonRequest {
         // eg _whatUri: /{prefix}_db, _whereUri: /{prefix}/*
         for (var key : this.pathTemplateMatch.getParameters().keySet()) {
             resolvedTemplate = resolvedTemplate.replace("{".concat(key).concat("}"),
-                    this.pathTemplateMatch.getParameters().get(key));
+                this.pathTemplateMatch.getParameters().get(key));
         }
         return removeTrailingSlashes(resolvedTemplate);
     }
@@ -623,8 +623,8 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isParentAccessible() {
         return getType() == TYPE.DB
-                ? getExchange().getRequestPath().split(SLASH).length > 1
-                : getExchange().getRequestPath().split(SLASH).length > 2;
+            ? getExchange().getRequestPath().split(SLASH).length > 1
+            : getExchange().getRequestPath().split(SLASH).length > 2;
     }
 
     /**
