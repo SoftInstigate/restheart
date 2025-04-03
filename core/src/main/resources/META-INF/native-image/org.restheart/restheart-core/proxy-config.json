@@ -1,8 +1,5 @@
 [
   {
-    "interfaces":["com.sun.akuma.CLibrary"]
-  },
-  {
     "interfaces":["java.security.PrivilegedAction"]
   },
   {

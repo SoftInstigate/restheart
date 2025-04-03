@@ -38,14 +38,6 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>akuma</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
     </dependency>

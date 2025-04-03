@@ -20,7 +20,6 @@
  */
 package org.restheart.utils;
 
-import static com.sun.akuma.CLibrary.LIBC;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -129,7 +128,7 @@ public class FileUtils {
             throw new IllegalStateException("createPidFile() is not supported on Windows.");
         }
         try (FileWriter fw = new FileWriter(pidFile.toFile())) {
-            fw.write(String.valueOf(LIBC.getpid()));
+            fw.write(String.valueOf(ProcessHandle.current().pid()));
         } catch (IOException e) {
             LOGGER.warn("error writing pid file", e);
         }

@@ -20,7 +20,7 @@
  */
 package org.restheart;
 
-import com.sun.akuma.CLibrary;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.restheart.configuration.Configuration;
@@ -80,7 +80,8 @@ public class Shutdowner {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
-        CLibrary.LIBC.kill(pid, 15); // 15 is SIGTERM
+        // destroy process
+        ProcessHandle.of(pid).ifPresent(ProcessHandle::destroy);
 
         LOGGER.info("SIGTERM signal sent to RESTHeart instance with pid {} ", pid);
 

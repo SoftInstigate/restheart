@@ -255,7 +255,7 @@ public final class Bootstrapper {
                 System.exit(-1);
             }
 
-            // RHSecDaemon only works on POSIX OSes
+            // RESTHeartDaemon only works on POSIX OSes
             final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
@@ -265,7 +265,6 @@ public final class Bootstrapper {
             var d = new RESTHeartDaemon();
             if (d.isDaemonized()) {
                 try {
-                    d.init();
                     initLogging(configuration, d, IS_FORKED);
                 } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
