@@ -29,7 +29,10 @@ public class OSChecker {
     private static final String OS = System.getProperty("os.name").toLowerCase();
 
     public static boolean isWindows() {
-        return OS.contains("win");
+        // TODO remove this. We want to check if --fork works with Windows
+        // now that it uses the Java Process API
+        return false;
+        //return OS.contains("win");
     }
 
     public static boolean isMac() {
