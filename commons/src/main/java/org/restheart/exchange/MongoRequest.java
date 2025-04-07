@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -520,11 +521,11 @@ public class MongoRequest extends BsonRequest {
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + this.whereUri, "");
+                ret = ret.replaceFirst("^" + Pattern.quote(this.whereUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
             ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + this.whereUri, this.whatUri));
+                    ret.replaceFirst("^" + Pattern.quote(this.whereUri), this.whatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(
                     URLUtils.removeTrailingSlashes(this.whatUri) + ret);
@@ -548,11 +549,11 @@ public class MongoRequest extends BsonRequest {
         // now replace mappedUri with resolved path template
         if (replacedWhatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
-                ret = ret.replaceFirst("^" + rewriteUri, "");
+                ret = ret.replaceFirst("^" + Pattern.quote(rewriteUri), "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
             ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + rewriteUri, replacedWhatUri));
+                    ret.replaceFirst("^" + Pattern.quote(rewriteUri), replacedWhatUri));
         } else {
             ret = URLUtils.removeTrailingSlashes(
                     URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
@@ -590,7 +591,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + this.whatUri, this.whereUri));
+                    ret.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
         if (ret.isEmpty()) {
@@ -614,7 +615,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + replacedWhatUri, rewriteUri));
+                    ret.replaceFirst("^" + Pattern.quote(replacedWhatUri), rewriteUri));
         }
 
         if (ret.isEmpty()) {
@@ -628,12 +629,10 @@ public class MongoRequest extends BsonRequest {
         String uri = this.whatUri;
         // replace params within whatUri
         // eg what: /{prefix}_db, where: /{prefix}/*
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
+        for (String key : this.pathTemplateMatch.getParameters().keySet()) {
             uri = uri.replace(
                     "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
+                    this.pathTemplateMatch.getParameters().get(key));
         }
         return uri;
     }
@@ -647,22 +646,19 @@ public class MongoRequest extends BsonRequest {
             rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
         }
         // collect params
-        this.pathTemplateMatch
+        var paramsWithoutWildcard = this.pathTemplateMatch
                 .getParameters()
                 .keySet()
                 .stream()
                 .filter(key -> !key.equals("*"))
                 .collect(Collectors.toMap(
                         key -> key,
-                        key -> this.pathTemplateMatch
-                                .getParameters().get(key)));
+                        key -> this.pathTemplateMatch.getParameters().get(key)));
         // replace params with actual values
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
+        for (var key: paramsWithoutWildcard.keySet()) {
             rewriteUri = rewriteUri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
+                "{".concat(key).concat("}"),
+                this.pathTemplateMatch.getParameters().get(key));
         }
         return rewriteUri;
     }
@@ -755,8 +751,8 @@ public class MongoRequest extends BsonRequest {
      */
     public URI getUri() throws URISyntaxException {
         return new URI(Arrays.asList(pathTokens)
-                .stream()
-                .reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
+            .stream()
+            .reduce(SLASH, (t1, t2) -> t1 + SLASH + t2));
     }
 
     /**
