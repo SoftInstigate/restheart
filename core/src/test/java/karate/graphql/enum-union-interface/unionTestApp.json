@@ -6,7 +6,7 @@
       "enabled": true,
       "uri": "test-union"
     },
-    "schema": "enum Level { ENTRY, MEDIUM, ADVANCED } union Course = InternalCourse | ExternalCourse type InternalCourse { _id: ObjectId, title: String, level: Level } type ExternalCourse { _id: ObjectId, title: String, level: Level, deliveredBy: String } type Query { AllCourses: [Course], AllInteranalCourses: [InternalCourse], AllExternalCourses: [ExternalCourse] }",
+    "schema": "enum Level { ENTRY, MEDIUM, ADVANCED } union Course = InternalCourse | ExternalCourse type InternalCourse { _id: ObjectId, title: String, level: Level } type ExternalCourse { _id: ObjectId, title: String, level: Level, deliveredBy: String } type Query { AllCourses: [Course], AllInternalCourses: [InternalCourse], AllExternalCourses: [ExternalCourse] }",
     "mappings":{
       "Course": {
           "$typeResolver": {
@@ -20,7 +20,7 @@
           "ADVANCED": 2
       },
       "Query": {
-        "AllInteranalCourses":{
+        "AllInternalCourses":{
           "db": "test-graphql",
           "collection": "courses",
           "find": { "sub" : { "external": null } },
