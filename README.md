@@ -18,12 +18,6 @@ RESTHeart is designed for:
 
 ---
 
-### ⚠ NEWS
-
-MongoDB has [officially announced](https://www.mongodb.com/docs/atlas/app-services/data-api/data-api-deprecation/) the **deprecation of the Atlas Data API and HTTPS Endpoints** for Atlas App Services, with complete removal scheduled for September 30, 2025. If your applications rely on these features, [RESTHeart is an alternative solutions](https://www.softinstigate.com/en/blog/posts/mongodb-deprecates-data-api/) to ensure uninterrupted service.
-
----
-
 ## Key Features
 
 ✅ **Low-Code Development**: Create APIs with minimal coding effort.  
