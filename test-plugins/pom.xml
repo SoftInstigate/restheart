@@ -48,7 +48,7 @@
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>
         <configuration>
-          <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+          <skipPublishing>true</skipPublishing>
         </configuration>
       </plugin>
       <plugin>
