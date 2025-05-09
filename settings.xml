@@ -8,6 +8,11 @@
             <password>${GITHUB_TOKEN}</password>
         </server>
         <server>
+            <id>central</id>
+            <username>${CENTRAL_USERNAME}</username>
+            <password>${CENTRAL_PASSWORD}</password>
+        </server>
+        <server>
             <id>ossrh</id>
             <username>${OSSRH_USERNAME}</username>
             <password>${OSSRH_PASSWORD}</password>
