@@ -21,10 +21,16 @@
 package org.restheart.utils;
 
 /**
- *
- * Use BsonUtils instead
+ * Deprecated utility class for JSON operations.
+ * 
+ * <p>This class has been deprecated in favor of {@link BsonUtils}, which provides
+ * the same functionality with better BSON integration and performance.</p>
+ * 
+ * <p><strong>Migration:</strong> Replace all usages of JsonUtils with BsonUtils.
+ * All method signatures and behavior remain the same.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @deprecated Use {@link BsonUtils} instead for all JSON and BSON operations
  */
 @Deprecated
 public class JsonUtils extends BsonUtils {}

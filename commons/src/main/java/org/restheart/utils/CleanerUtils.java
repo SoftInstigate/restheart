@@ -22,14 +22,37 @@ package org.restheart.utils;
 
 import java.lang.ref.Cleaner;
 
+/**
+ * Utility class providing access to a shared Cleaner instance for resource management.
+ * This class implements a singleton pattern to provide a single Cleaner that uses
+ * virtual threads for efficient cleanup operations.
+ *
+ * <p>The Cleaner is useful for automatic cleanup of resources when objects become
+ * unreachable, providing a safer alternative to finalization.</p>
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class CleanerUtils {
+    /** Singleton instance of CleanerUtils. */
     private static CleanerUtils instance = null;
+    
+    /** The Cleaner instance that uses virtual threads for cleanup operations. */
     private final Cleaner cleaner;
 
+    /**
+     * Private constructor to prevent direct instantiation.
+     * Creates a Cleaner instance that uses virtual threads for efficient cleanup.
+     */
     private CleanerUtils() {
         this.cleaner = Cleaner.create(Thread.ofVirtual().factory());
     }
 
+    /**
+     * Returns the singleton instance of CleanerUtils.
+     * Creates the instance if it doesn't exist yet.
+     *
+     * @return the singleton CleanerUtils instance
+     */
     public static CleanerUtils get() {
         if (instance == null) {
             instance = new CleanerUtils();
@@ -37,6 +60,12 @@ public class CleanerUtils {
         return instance;
     }
 
+    /**
+     * Returns the Cleaner instance for registering cleanup actions.
+     * The returned Cleaner uses virtual threads for efficient cleanup operations.
+     *
+     * @return the Cleaner instance
+     */
     public Cleaner cleaner() {
         return cleaner;
     }

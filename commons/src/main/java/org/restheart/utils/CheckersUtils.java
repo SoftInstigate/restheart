@@ -26,23 +26,33 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 
 /**
+ * Utility class providing validation and checking methods for MongoDB requests.
+ * This class contains methods to analyze request content and determine characteristics
+ * such as whether a request is a bulk operation, uses update operators, or employs
+ * dot notation in field names.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
     /**
+     * Determines if the given MongoDB request is a bulk request.
+     * A request is considered bulk if it either explicitly declares bulk documents
+     * or if its content is an array of documents.
      *
-     * @param request
-     * @return if the request is a bulk request
+     * @param request the MongoDB request to check
+     * @return true if the request is a bulk request, false otherwise
      */
     public static boolean isBulkRequest(MongoRequest request) {
         return request.isBulkDocuments() || request.getContent().isArray();
     }
 
     /**
+     * Determines if the request content includes MongoDB update operators.
+     * This method checks both single documents and arrays of documents for
+     * the presence of update operators like $set, $unset, $inc, etc.
      *
-     * @param content
-     * @return true if the request content includes update operators
+     * @param content the BSON content to analyze (document or array)
+     * @return true if the content includes update operators, false otherwise
      */
     public static boolean doesRequestUseUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
@@ -63,10 +73,13 @@ public class CheckersUtils {
     }
 
     /**
+     * Determines if the request content includes properties identified with dot notation.
+     * Dot notation is used in MongoDB to reference nested fields (e.g., "address.street").
+     * This method checks both single documents and arrays of documents for field names
+     * containing dots.
      *
-     * @param content
-     * @return true if the request content includes properties identified with
-     * the dot notation
+     * @param content the BSON content to analyze (document or array)
+     * @return true if the content includes properties with dot notation, false otherwise
      */
     public static boolean doesRequestUseDotNotation(BsonValue content) {
         if (content.isDocument()) {

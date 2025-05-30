@@ -66,19 +66,44 @@ import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * JSON minification utility class that removes unnecessary whitespace and formatting
+ * from JSON strings while preserving their functional integrity.
+ * 
+ * <p>This class is adapted from JSMin.java by John Reilly, which is itself
+ * a translation of jsmin.c by Douglas Crockford. It removes comments, excess
+ * whitespace, and line breaks to reduce the size of JSON content.</p>
+ * 
+ * @author Charles Bihis (www.whoischarles.com)
+ * @author John Reilly (www.inconspicuous.org)
+ * @author Douglas Crockford (www.crockford.com)
+ */
 public class Minify {
 
+    /** End-of-file marker constant. */
     private static final int EOF = -1;
 
+    /** Input stream for reading characters to be minified. */
     private PushbackInputStream in;
+    
+    /** Output stream for writing minified content. */
     private OutputStream out;
+    
+    /** Current character being processed. */
     private int currChar;
+    
+    /** Next character to be processed. */
     private int nextChar;
+    
+    /** Current line number in the input. */
     private int line;
+    
+    /** Current column number in the input. */
     private int column;
 
     /**
-     *
+     * Creates a new Minify instance with uninitialized input and output streams.
+     * The streams will be set when calling the minify methods.
      */
     public Minify() {
         this.in = null;
@@ -112,13 +137,30 @@ public class Minify {
         return ret;
     }
 
+    /**
+     * A custom OutputStream implementation that writes to a StringBuilder.
+     * This allows the minification process to output directly to a string buffer
+     * for easy string manipulation.
+     */
     private static class StringBufferOutputStream extends OutputStream {
+        /** The StringBuilder that receives the output. */
         protected StringBuilder sb;
 
+        /**
+         * Creates a new StringBufferOutputStream that writes to the specified StringBuilder.
+         * 
+         * @param sb the StringBuilder to write output to
+         */
         public StringBufferOutputStream(StringBuilder sb) {
             this.sb = sb;
         }
 
+        /**
+         * Writes a single byte to the StringBuilder as a character.
+         * 
+         * @param ch the byte to write as a character
+         * @throws IOException if an I/O error occurs (not used in this implementation)
+         */
         @Override
         public void write(int ch) throws IOException {
             this.sb.append((char)ch);
@@ -126,23 +168,20 @@ public class Minify {
     }
 
     /**
-     * Takes an input stream to a JSON string and outputs minified JSON to the
-     * output stream.
+     * Takes an input stream containing JSON and outputs minified JSON to the output stream.
      *
-     * Takes the input JSON via the input stream and deletes the characters
-     * which are insignificant to JavaScript. Comments will be removed, tabs
-     * will be replaced with spaaces, carriage returns will be replaced with
-     * line feeds, and most spaces and line feeds will be removed. The result is
-     * streamed to the output stream.
+     * <p>This method processes the input JSON by removing characters that are
+     * insignificant to JavaScript parsing. Comments will be removed, tabs will be
+     * replaced with spaces, carriage returns will be replaced with line feeds,
+     * and most spaces and line feeds will be removed. The result is streamed
+     * to the output stream.</p>
      *
-     * @param in The <code>InputStream</code> from which to get the un-minified
-     * JSON
-     * @param out The <code>OutputStream</code> where the resulting minified
-     * JSON will be streamed to
-     * @throws java.io.IOException
-     * @throws UnterminatedRegExpLiteralException
-     * @throws UnterminatedCommentException
-     * @throws UnterminatedStringLiteralException
+     * @param in the InputStream from which to read the un-minified JSON
+     * @param out the OutputStream where the resulting minified JSON will be written
+     * @throws IOException if an I/O error occurs during reading or writing
+     * @throws UnterminatedRegExpLiteralException if a regular expression literal is not properly terminated
+     * @throws UnterminatedCommentException if a comment is not properly terminated
+     * @throws UnterminatedStringLiteralException if a string literal is not properly terminated
      */
     public void minify(InputStream in, OutputStream out) throws IOException, UnterminatedRegExpLiteralException, UnterminatedCommentException, UnterminatedStringLiteralException {
 
@@ -412,22 +451,24 @@ public class Minify {
     }
 
     /**
-     *
+     * Enumeration of actions that can be performed during the minification process.
+     * These actions control how characters are processed and whether they should
+     * be included in the output or discarded.
      */
     public static enum Action {
 
         /**
-         *
+         * Output the current character to the minified result.
          */
         OUTPUT_CURR,
 
         /**
-         *
+         * Delete the current character without outputting it.
          */
         DELETE_CURR,
 
         /**
-         *
+         * Delete the next character without outputting it.
          */
         DELETE_NEXT
     }
@@ -437,15 +478,14 @@ public class Minify {
      */
     public static class UnterminatedCommentException extends Exception {
 
-        /**
-         *
-         */
+        /** Serial version UID for serialization compatibility. */
         private static final long serialVersionUID = -6883462093707704791L;
 
         /**
-         *
-         * @param line
-         * @param column
+         * Creates a new UnterminatedCommentException with location information.
+         * 
+         * @param line the line number where the unterminated comment was found
+         * @param column the column number where the unterminated comment was found
          */
         public UnterminatedCommentException(int line, int column) {
             super("Unterminated comment at line " + line + " and column " + column);
@@ -458,15 +498,14 @@ public class Minify {
      */
     public static class UnterminatedStringLiteralException extends Exception {
 
-        /**
-         *
-         */
+        /** Serial version UID for serialization compatibility. */
         private static final long serialVersionUID = 4074245780159866501L;
 
         /**
-         *
-         * @param line
-         * @param column
+         * Creates a new UnterminatedStringLiteralException with location information.
+         * 
+         * @param line the line number where the unterminated string literal was found
+         * @param column the column number where the unterminated string literal was found
          */
         public UnterminatedStringLiteralException(int line, int column) {
             super("Unterminated string literal at line " + line + " and column " + column);
@@ -479,15 +518,14 @@ public class Minify {
      */
     public static class UnterminatedRegExpLiteralException extends Exception {
 
-        /**
-         *
-         */
+        /** Serial version UID for serialization compatibility. */
         private static final long serialVersionUID = -3296214957230186243L;
 
         /**
-         *
-         * @param line
-         * @param column
+         * Creates a new UnterminatedRegExpLiteralException with location information.
+         * 
+         * @param line the line number where the unterminated regular expression literal was found
+         * @param column the column number where the unterminated regular expression literal was found
          */
         public UnterminatedRegExpLiteralException(int line, int column) {
             super("Unterminated regular expression at line " + line + " and column " + column);

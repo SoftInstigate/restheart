@@ -26,27 +26,38 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 
 /**
- * Util class for exchange attachments related to the MongoService
+ * Utility class for managing HTTP server exchange attachments related to MongoDB services.
+ * This class provides methods to attach and retrieve BSON content from HTTP server exchanges,
+ * enabling efficient sharing of parsed MongoDB request data across request processing components.
+ *
+ * <p>The class uses Undertow's attachment mechanism to store BSON values that can be
+ * accessed by different parts of the request processing pipeline without re-parsing.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoServiceAttachments {
+    /** Attachment key for storing BSON content in HTTP server exchanges. */
     private static final AttachmentKey<BsonValue> MONGO_REQUEST_CONTENT_KEY = AttachmentKey.create(BsonValue.class);
 
     /**
+     * Retrieves the BSON content attached to the HTTP server exchange.
+     * This method returns the parsed BSON value that was previously attached
+     * to the exchange during request processing.
      *
-     * @param exchange
-     * @return the BsonValue attached to the exchange
+     * @param exchange the HTTP server exchange to retrieve BSON content from
+     * @return the BsonValue attached to the exchange, or null if no content is attached
      */
     public static BsonValue attachedBsonContent(HttpServerExchange exchange) {
         return exchange.getAttachment(MONGO_REQUEST_CONTENT_KEY);
     }
 
     /**
-     * set the intialized flag for MongoRequest
+     * Attaches BSON content to the HTTP server exchange for later retrieval.
+     * This method stores the parsed BSON value in the exchange so it can be
+     * accessed by other components in the request processing pipeline.
      *
-     * @param exchange
-     * @param value the BsonValue to attache to the exchange
+     * @param exchange the HTTP server exchange to attach BSON content to
+     * @param value the BsonValue to attach to the exchange
      */
     public static void attachBsonContent(HttpServerExchange exchange, BsonValue value) {
         exchange.putAttachment(MONGO_REQUEST_CONTENT_KEY, value);

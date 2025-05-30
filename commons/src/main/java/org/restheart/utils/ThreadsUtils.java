@@ -23,9 +23,24 @@ package org.restheart.utils;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Utility class for managing thread execution services.
+ * Provides access to virtual thread executors for improved concurrency
+ * performance in high-throughput scenarios.
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class ThreadsUtils {
+    /** Virtual threads executor service that creates a new virtual thread for each task. */
     private static final ExecutorService VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
 
+    /**
+     * Returns the shared virtual threads executor service.
+     * This executor creates lightweight virtual threads for each submitted task,
+     * providing better scalability for I/O-bound operations.
+     *
+     * @return the virtual threads executor service
+     */
     public static ExecutorService virtualThreadsExecutor() {
         return VIRTUAL_THREADS_EXECUTOR;
     }

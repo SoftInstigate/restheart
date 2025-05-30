@@ -47,20 +47,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Utility class for creating HTTP representation elements such as pagination links
+ * and reference links for MongoDB resources. This class provides methods to generate
+ * HATEOAS-compliant links for REST API responses.
+ * 
+ * <p>The class handles pagination link generation for collections and reference
+ * link creation for individual documents and related resources, supporting
+ * various document ID types and URL structures.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RepresentationUtils {
 
+    /** Logger instance for this class. */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RepresentationUtils.class);
 
     /**
+     * Generates pagination links for a collection response based on the current request
+     * and collection size. Creates HATEOAS-compliant navigation links including
+     * first, previous, next, and last page links as appropriate.
+     * 
+     * <p>The method considers the current page, page size, and total collection size
+     * to determine which pagination links should be included in the response.
+     * Query parameters other than page and pagesize are preserved in the links.</p>
      *
-     * @param exchange
-     * @param size
-     * @return
-     * @throws IllegalQueryParameterException
+     * @param exchange the HTTP server exchange containing request information
+     * @param size the total number of items in the collection (-1 if unknown)
+     * @return a TreeMap containing pagination link names as keys and URLs as values
+     * @throws IllegalQueryParameterException if the request contains invalid query parameters
      */
     public static TreeMap<String, String> getPaginationLinks(
             HttpServerExchange exchange,
@@ -148,11 +163,17 @@ public class RepresentationUtils {
     }
 
     /**
+     * Creates a reference link URL for a MongoDB document within a collection.
+     * This method generates a properly formatted URL that points to a specific
+     * document, handling different document ID types appropriately.
+     * 
+     * <p>The method constructs the URL by combining the parent collection URL
+     * with the document ID, ensuring proper URL encoding and format.</p>
      *
-     * @param response
-     * @param parentUrl
-     * @param docId
-     * @return
+     * @param response the MongoDB response context
+     * @param parentUrl the base URL of the parent collection
+     * @param docId the BSON value representing the document ID
+     * @return the complete reference link URL for the document
      */
     public static String getReferenceLink(
             MongoResponse response,
@@ -254,10 +275,18 @@ public class RepresentationUtils {
     }
 
     /**
+     * Creates a reference link URL for a document using a generic Object document ID.
+     * This overloaded method handles various Java object types as document IDs,
+     * including strings, ObjectIds, and other primitive types, converting them
+     * to appropriate URL representations.
+     * 
+     * <p>The method automatically detects ObjectId strings and handles them specially,
+     * adding appropriate query parameters to indicate the document ID type.
+     * Other object types are converted to their string representation.</p>
      *
-     * @param parentUrl
-     * @param docId
-     * @return
+     * @param parentUrl the base URL of the parent collection
+     * @param docId the document ID as a generic Object (String, ObjectId, etc.)
+     * @return the complete reference link URL for the document, or empty string if parentUrl is null
      */
     public static String getReferenceLink(String parentUrl, Object docId) {
         if (parentUrl == null) {
