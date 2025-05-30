@@ -40,30 +40,52 @@ import java.util.Objects;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 
 /**
- *
  * The root class for implementing a Request providing the implementation for
- * common methods
+ * common methods.
+ * <p>
+ * This abstract class wraps Undertow's HttpServerExchange to provide simplified
+ * access to HTTP request elements such as headers, query parameters, path parameters,
+ * cookies, and authentication information. It serves as the base class for all
+ * specific request types in the RESTHeart framework.
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T> generic type
+ * @param <T> the generic type representing the request content
  */
 public abstract class Request<T> extends Exchange<T> {
 
-    // other constants
+    /** String constant for forward slash character. */
     public static final String SLASH = "/";
+
+    /** String constant for HTTP PATCH method. */
     public static final String PATCH = "PATCH";
+
+    /** String constant for underscore character. */
     public static final String UNDERSCORE = "_";
 
+    /** Attachment key for storing request-specific parameters. */
     private static final AttachmentKey<Map<String, Object>> ATTACHED_PARAMS_KEY = AttachmentKey.create(Map.class);
 
+    /** Attachment key for storing pipeline information. */
     public static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);
 
+    /** Attachment key for storing request start time. */
     private static final AttachmentKey<Long> START_TIME_KEY = AttachmentKey.create(Long.class);
 
+    /** Attachment key for storing X-Forwarded headers. */
     private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS = AttachmentKey.create(Map.class);
 
+    /** Attachment key for blocking authentication due to too many requests. */
     private static final AttachmentKey<Boolean> BLOCK_AUTH_FOR_TOO_MANY_REQUESTS = AttachmentKey.create(Boolean.class);
 
+    /**
+     * Constructs a Request wrapping the provided HttpServerExchange.
+     * <p>
+     * Initializes the attached parameters map if it doesn't already exist.
+     * </p>
+     *
+     * @param exchange the HttpServerExchange to wrap
+     */
     protected Request(HttpServerExchange exchange) {
         super(exchange);
         // init attached params
@@ -72,6 +94,16 @@ public abstract class Request<T> extends Exchange<T> {
         }
     }
 
+    /**
+     * Factory method to create an appropriate Request instance based on the pipeline type.
+     * <p>
+     * Creates either a ServiceRequest for service pipelines or a ByteArrayProxyRequest
+     * for other pipeline types.
+     * </p>
+     *
+     * @param exchange the HttpServerExchange to create a Request for
+     * @return a Request instance appropriate for the pipeline type
+     */
     @SuppressWarnings("rawtypes")
     public static Request of(HttpServerExchange exchange) {
         var pi = pipelineInfo(exchange);
@@ -83,11 +115,22 @@ public abstract class Request<T> extends Exchange<T> {
         }
     }
 
+    /**
+     * Retrieves the Content-Type header from the HTTP request.
+     *
+     * @param exchange the HttpServerExchange to extract the content type from
+     * @return the Content-Type header value, or null if not present
+     */
     public static String getContentType(HttpServerExchange exchange) {
         return exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
 
     /**
+     * Returns the request path portion of the URL.
+     * <p>
+     * For example, if the full URL is "http://example.com/api/users?id=123",
+     * this method returns "/api/users".
+     * </p>
      *
      * @return the request path
      */
@@ -96,38 +139,62 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * Returns the complete request URL including protocol, host, port, and path.
+     * <p>
+     * For example: "http://example.com:8080/api/users"
+     * </p>
      *
-     * @return the request URL
+     * @return the complete request URL
      */
     public String getURL() {
         return wrapped.getRequestURL();
     }
 
     /**
+     * Returns the query string portion of the URL.
+     * <p>
+     * For example, if the URL is "http://example.com/api/users?id=123&name=john",
+     * this method returns "id=123&name=john".
+     * </p>
      *
-     * @return the query string
+     * @return the query string, or null if no query string is present
      */
     public String getQueryString() {
         return wrapped.getQueryString();
     }
 
     /**
+     * Returns the HTTP method of the request as a METHOD enum value.
+     * <p>
+     * Supports standard HTTP methods: GET, POST, PUT, DELETE, PATCH, OPTIONS.
+     * Unknown methods are returned as METHOD.OTHER.
+     * </p>
      *
-     * @return the request method
+     * @return the HTTP request method
      */
     public METHOD getMethod() {
         return selectMethod(getWrappedExchange().getRequestMethod());
     }
 
     /**
+     * Returns the content length of the request body.
+     * <p>
+     * This is determined from the Content-Length header if present.
+     * </p>
      *
-     * @return a content lenght
+     * @return the content length in bytes, or -1 if unknown
      */
     public long getRequestContentLength() {
         return wrapped.getRequestContentLength();
     }
 
     /**
+     * Returns a mutable map of query parameters from the request URL.
+     * <p>
+     * Each parameter name maps to a Deque of values, allowing for multiple
+     * values with the same parameter name. For example, "?id=1&id=2&name=john"
+     * would result in {"id": ["1", "2"], "name": ["john"]}.
+     * </p>
      *
      * @return a mutable map of query parameters
      */
@@ -150,9 +217,15 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * Returns the first value of a query parameter, or a default value if not present.
+     * <p>
+     * If the parameter has multiple values, only the first one is returned.
+     * Use {@link #getQueryParameters()} to access all values.
+     * </p>
+     *
      * @param name the name of the query parameter
      * @param defaultValue the default value to return if the query parameter is not present
-     * @return the value of the query parameter or defaultValue if not present
+     * @return the first value of the query parameter or defaultValue if not present
      */
     public String getQueryParameterOrDefault(String name, String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
@@ -161,6 +234,11 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * Returns the HTTP headers of the request.
+     * <p>
+     * The returned HeaderMap allows for multiple values per header name
+     * and provides case-insensitive header name matching.
+     * </p>
      *
      * @return the request headers
      */
@@ -169,22 +247,30 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * note: an header can have multiple values. This only returns the first one.
-     * use getHeaders() to get all the header's values
+     * Returns the first value of the specified header.
+     * <p>
+     * Note: An HTTP header can have multiple values. This method only returns
+     * the first one. Use {@link #getHeaders()} to access all header values.
+     * Header name matching is case-insensitive.
+     * </p>
      *
      * @param name the name of the header to return
-     * @return the first value of the header
+     * @return the first value of the header, or null if the header is not present
      */
     public String getHeader(String name) {
         return getHeaders().getFirst(HttpString.tryFromString(name));
     }
 
     /**
-     * note: an header can have multiple values. This sets the given value clearing
-     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     * Sets a header value, replacing any existing values for that header.
+     * <p>
+     * Note: An HTTP header can have multiple values. This method sets the given
+     * value while clearing any existing ones. Use {@code getHeaders().add(name, value)}
+     * to add a value without clearing existing ones.
+     * </p>
      *
-     * @param name the name of the header to return
-     * @param value
+     * @param name the name of the header to set
+     * @param value the value to set for the header
      */
     public void setHeader(HttpString name, String value) {
         if (getHeaders().get(name) == null) {
@@ -196,11 +282,15 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * note: an header can have multiple values. This sets the given value clearing
-     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     * Sets a header value, replacing any existing values for that header.
+     * <p>
+     * Note: An HTTP header can have multiple values. This method sets the given
+     * value while clearing any existing ones. Use {@code getHeaders().add(name, value)}
+     * to add a value without clearing existing ones.
+     * </p>
      *
-     * @param name the name of the header to return
-     * @param value
+     * @param name the name of the header to set
+     * @param value the value to set for the header
      */
     public void setHeader(String name, String value) {
         if (getHeaders().get(name) == null) {
@@ -212,20 +302,26 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * Retrieves a cookie from the request by name.
+     *
      * @param name the name of the cookie to return
-     * @return a the cookie
+     * @return the cookie with the specified name, or null if not found
      */
     public Cookie getCookie(String name) {
         return wrapped.getRequestCookie(name);
     }
 
     /**
-     * get path parameters using a template
+     * Extracts path parameters from the request path using a path template.
+     * <p>
+     * Example: If pathTemplate is "/users/{id}/posts/{postId}" and the request
+     * path is "/users/123/posts/456", this method returns a map containing
+     * {"id": "123", "postId": "456"}.
+     * </p>
      *
-     * {@literal pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar }
-     *
-     * @param pathTemplate the path template
-     * @return the path parameters
+     * @param pathTemplate the path template with parameter placeholders in curly braces
+     * @return a map of parameter names to values, or an empty map if no match
+     * @throws IllegalArgumentException if the path template is malformed
      */
     public Map<String, String> getPathParams(String pathTemplate) {
         var ptm = new PathTemplateMatcher<String>();
@@ -242,13 +338,16 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * get a path parameter using a path template
+     * Extracts a specific path parameter from the request path using a path template.
+     * <p>
+     * Example: If pathTemplate is "/users/{id}", paramName is "id", and the
+     * request path is "/users/123", this method returns "123".
+     * </p>
      *
-     * eg {@literal pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar }
-     *
-     * @param pathTemplate the path template
-     * @param paramName name of parameter
-     * @return the path parameter
+     * @param pathTemplate the path template with parameter placeholders in curly braces
+     * @param paramName the name of the parameter to extract
+     * @return the value of the specified path parameter, or null if not found
+     * @throws IllegalArgumentException if the path template is malformed
      */
     public String getPathParam(String pathTemplate, String paramName) {
         var params = getPathParams(pathTemplate);
@@ -257,7 +356,9 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * @return the request ContentType
+     * Returns the Content-Type header of the request.
+     *
+     * @return the request Content-Type, or null if not specified
      */
     @Override
     public String getContentType() {
@@ -265,39 +366,56 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * @param responseContentType the responseContentType to set
+     * Sets the Content-Type header for the request.
+     *
+     * @param responseContentType the Content-Type to set
      */
     public void setContentType(String responseContentType) {
         getHeaders().put(Headers.CONTENT_TYPE, responseContentType);
     }
 
     /**
-     * sets Content-Type=application/json
+     * Convenience method to set the Content-Type header to "application/json".
      */
     public void setContentTypeAsJson() {
         setContentType("application/json");
     }
 
+    /**
+     * Sets the Content-Length header for the request.
+     *
+     * @param length the content length in bytes
+     */
     protected void setContentLength(int length) {
         getHeaders().put(Headers.CONTENT_LENGTH, length);
     }
 
     /**
-     * @return the requestStartTime
+     * Returns the timestamp when request processing started.
+     *
+     * @return the request start time in milliseconds since epoch, or null if not set
      */
     public Long getStartTime() {
         return getWrappedExchange().getAttachment(START_TIME_KEY);
     }
 
     /**
-     * @param requestStartTime the requestStartTime to set
+     * Sets the timestamp when request processing started.
+     *
+     * @param requestStartTime the request start time in milliseconds since epoch
      */
     public void setStartTime(Long requestStartTime) {
         getWrappedExchange().putAttachment(START_TIME_KEY, requestStartTime);
     }
 
     /**
-     * @return the authenticatedAccount
+     * Returns the authenticated account associated with this request.
+     * <p>
+     * This method checks the security context to retrieve the authenticated account.
+     * Returns null if no authentication has occurred or if authentication failed.
+     * </p>
+     *
+     * @return the authenticated account, or null if not authenticated
      */
     public Account getAuthenticatedAccount() {
         return getWrappedExchange().getSecurityContext() != null
@@ -306,7 +424,9 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * @return true if account is authenticated
+     * Checks if the request is from an authenticated user.
+     *
+     * @return true if the request has an authenticated account, false otherwise
      */
     @Override
     public boolean isAuthenticated() {
@@ -314,11 +434,15 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * Add the header X-Forwarded-[key] to the proxied request; use it to pass to
-     * the backend information otherwise lost proxying the request.
+     * Adds an X-Forwarded header to be included in proxied requests.
+     * <p>
+     * X-Forwarded headers are used to pass information about the original request
+     * to backend services when proxying. Common examples include X-Forwarded-For,
+     * X-Forwarded-Host, and X-Forwarded-Proto.
+     * </p>
      *
-     * @param key
-     * @param value
+     * @param key the header suffix (e.g., "For" for X-Forwarded-For)
+     * @param value the header value to add
      */
     public void addXForwardedHeader(String key, String value) {
         if (wrapped.getAttachment(XFORWARDED_HEADERS) == null) {
@@ -336,108 +460,139 @@ public abstract class Request<T> extends Exchange<T> {
         values.add(value);
     }
 
+    /**
+     * Returns all X-Forwarded headers that have been added to this request.
+     *
+     * @return a map of X-Forwarded header keys to their values, or null if none exist
+     */
     public Map<String, List<String>> getXForwardedHeaders() {
         return getWrappedExchange().getAttachment(XFORWARDED_HEADERS);
     }
 
     /**
+     * Retrieves the pipeline information for a given exchange.
+     * <p>
+     * Pipeline information identifies which type of pipeline (service, proxy,
+     * or static resource) is handling the request.
+     * </p>
      *
-     * @param exchange
-     * @return the PipelineInfo that allows to know which pipeline (service, proxy
-     *         or static resource) is handling the exchange
+     * @param exchange the HttpServerExchange to get pipeline info for
+     * @return the PipelineInfo, or null if not set
      */
     public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
         return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
     /**
-     * @param exchange the exchange to bind the pipelineInfo to
-     * @param pipelineInfo the pipelineInfo to set
+     * Sets the pipeline information for a given exchange.
+     *
+     * @param exchange the exchange to bind the pipeline info to
+     * @param pipelineInfo the pipeline information to set
      */
     public static void setPipelineInfo(HttpServerExchange exchange, PipelineInfo pipelineInfo) {
         exchange.putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
     }
 
     /**
+     * Returns the pipeline information for this request.
+     * <p>
+     * Pipeline information identifies which type of pipeline (service, proxy,
+     * or static resource) is handling the request.
+     * </p>
      *
-     * @return the PipelineInfo that allows to know which pipeline (service, proxy
-     *         or static resource) is handling the exchange
+     * @return the PipelineInfo, or null if not set
      */
     public PipelineInfo getPipelineInfo() {
         return getWrappedExchange().getAttachment(PIPELINE_INFO_KEY);
     }
 
     /**
+     * Retrieves the pipeline information for a given exchange.
+     * <p>
+     * Pipeline information identifies which type of pipeline (service, proxy,
+     * or static resource) is handling the request.
+     * </p>
      *
-     * @param exchange
-     * @return the PipelineInfo that allows to know which pipeline (service, proxy
-     *         or static resource) is handling the exchange
+     * @param exchange the HttpServerExchange to get pipeline info for
+     * @return the PipelineInfo, or null if not set
      */
     public static PipelineInfo getPipelineInfo(HttpServerExchange exchange) {
         return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
     /**
-     * @param pipelineInfo the pipelineInfo to set
+     * Sets the pipeline information for this request.
+     *
+     * @param pipelineInfo the pipeline information to set
      */
     public void setPipelineInfo(PipelineInfo pipelineInfo) {
         getWrappedExchange().putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is DELETE.
      *
-     * @return true if method is METHOD.DELETE
+     * @return true if the request method is DELETE, false otherwise
      */
     public boolean isDelete() {
         return getMethod() == METHOD.DELETE;
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is GET.
      *
-     * @return true if method is METHOD.GET
+     * @return true if the request method is GET, false otherwise
      */
     public boolean isGet() {
         return getMethod() == METHOD.GET;
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is OPTIONS.
      *
-     * @return true if method is METHOD.OPTIONS
+     * @return true if the request method is OPTIONS, false otherwise
      */
     public boolean isOptions() {
         return getMethod() == METHOD.OPTIONS;
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is PATCH.
      *
-     * @return true if method is METHOD.PATCH
+     * @return true if the request method is PATCH, false otherwise
      */
     public boolean isPatch() {
         return getMethod() == METHOD.PATCH;
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is POST.
      *
-     * @return true if method is METHOD.POST
+     * @return true if the request method is POST, false otherwise
      */
     public boolean isPost() {
         return getMethod() == METHOD.POST;
     }
 
     /**
-     * helper method to check request method
+     * Checks if the request method is PUT.
      *
-     * @return true if method is METHOD.PUT
+     * @return true if the request method is PUT, false otherwise
      */
     public boolean isPut() {
         return getMethod() == METHOD.PUT;
     }
 
+    /**
+     * Converts an Undertow HttpString method to a RESTHeart METHOD enum.
+     * <p>
+     * Maps standard HTTP methods to their corresponding METHOD enum values.
+     * Unknown methods are mapped to METHOD.OTHER.
+     * </p>
+     *
+     * @param _method the HttpString representation of the HTTP method
+     * @return the corresponding METHOD enum value
+     */
     private static METHOD selectMethod(HttpString _method) {
         if (Methods.GET.equals(_method)) {
             return METHOD.GET;
@@ -457,15 +612,25 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * Marks this request to be blocked due to too many requests.
+     * <p>
      * If called BEFORE authentication, the request will be aborted
-     * with a 429 Too Many Requests response.
+     * with a 429 Too Many Requests response. This is typically used
+     * by rate limiting mechanisms to prevent abuse.
+     * </p>
      */
     public void blockForTooManyRequests() {
         getWrappedExchange().putAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS, true);
     }
 
     /**
-     * @return true if the request is blocked for too many requests
+     * Checks if this request has been marked for blocking due to too many requests.
+     * <p>
+     * This method is used by authentication mechanisms to determine if a request
+     * should be rejected before processing.
+     * </p>
+     *
+     * @return true if the request is blocked for too many requests, false otherwise
      */
     public boolean isBlockForTooManyRequests() {
         var block = getWrappedExchange().getAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS);

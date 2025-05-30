@@ -54,10 +54,32 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 
 /**
- *
- * Injects the request content to MongoRequest
- *
- * also check the Content-Type header in case the content is not empty
+ * Utility class for injecting and processing request content for MongoDB operations.
+ * <p>
+ * This class provides static methods for parsing and validating HTTP request content
+ * specifically for MongoDB operations through RESTHeart. It handles various content
+ * types including JSON, form data, and multipart uploads, ensuring proper content
+ * injection into MongoRequest instances.
+ * </p>
+ * <p>
+ * The injector supports multiple content types:
+ * <ul>
+ *   <li><strong>application/json</strong> and <strong>application/hal+json</strong> - for JSON document operations</li>
+ *   <li><strong>application/x-www-form-urlencoded</strong> - for form-based document creation</li>
+ *   <li><strong>multipart/form-data</strong> - for file uploads with metadata</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Content type validation and appropriate parser selection</li>
+ *   <li>JSON document validation and BSON conversion</li>
+ *   <li>GridFS file upload handling with metadata extraction</li>
+ *   <li>Reserved document ID validation</li>
+ *   <li>Update operator validation for POST/PUT operations</li>
+ *   <li>Form data parsing and JSON field conversion</li>
+ * </ul>
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -66,6 +88,17 @@ public class MongoRequestContentInjector {
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: " + Exchange.JSON_MEDIA_TYPE + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
 
+    /**
+     * Checks if the content type is JSON or HAL+JSON.
+     * <p>
+     * This method validates that the Content-Type header indicates JSON content
+     * that can be parsed by the JSON content injector. It accepts both standard
+     * JSON and HAL+JSON formats, as well as requests with no content type specified.
+     * </p>
+     *
+     * @param contentTypes the Content-Type header values from the request
+     * @return true if the content type is JSON, HAL+JSON, or not specified; false otherwise
+     */
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return (contentTypes == null
                 || contentTypes.isEmpty())
@@ -73,6 +106,17 @@ public class MongoRequestContentInjector {
                 || ct.startsWith(Exchange.JSON_MEDIA_TYPE)));
     }
 
+    /**
+     * Checks if the content type is form-encoded or multipart.
+     * <p>
+     * This method validates that the Content-Type header indicates form data
+     * that requires special parsing (either URL-encoded forms or multipart uploads).
+     * This is typically used for file uploads or form-based document creation.
+     * </p>
+     *
+     * @param contentTypes the Content-Type header values from the request
+     * @return true if the content type is form-encoded or multipart; false otherwise
+     */
     private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
         return contentTypes != null
                 && !contentTypes.isEmpty()
@@ -80,12 +124,24 @@ public class MongoRequestContentInjector {
     }
 
     /**
-     * Checks the _id in POST requests; it cannot be a string having a special
-     * meaning e.g _null, since the URI /db/coll/_null refers to the document
-     * with _id: null
+     * Validates that document IDs do not use reserved string values.
+     * <p>
+     * This method checks that document _id fields in POST requests do not use
+     * string values that have special meaning in RESTHeart URL paths. For example,
+     * the string "_null" is reserved because the URI "/db/coll/_null" refers to
+     * the document with _id: null, not _id: "_null".
+     * </p>
+     * <p>
+     * Reserved ID strings include:
+     * <ul>
+     *   <li>"_null" - represents null document ID</li>
+     *   <li>"_true" and "_false" - represent boolean document IDs</li>
+     *   <li>"_MaxKey" and "_MinKey" - represent MongoDB special key types</li>
+     * </ul>
+     * </p>
      *
-     * @param content
-     * @return null if ok, or the first not valid id
+     * @param content the BSON content to validate (document or array of documents)
+     * @return null if all IDs are valid, or the first invalid ID string found
      */
     public static String checkReservedId(BsonValue content) {
         if (content == null) {
@@ -136,12 +192,21 @@ public class MongoRequestContentInjector {
     }
 
     /**
-     * Search the request for a field named 'metadata' (or 'properties') which
-     * must contain valid JSON
+     * Extracts metadata from multipart form data for file upload operations.
+     * <p>
+     * This method searches the form data for a field named 'metadata' or 'properties'
+     * which should contain valid JSON describing the file's metadata. This is typically
+     * used in GridFS file uploads where metadata needs to be associated with the file.
+     * </p>
+     * <p>
+     * The metadata field is parsed as JSON and converted to a BsonDocument. If no
+     * metadata field is present, an empty BsonDocument is returned. If the metadata
+     * field contains invalid JSON or is not a JSON object, a BadRequestException is thrown.
+     * </p>
      *
-     * @param formData
-     * @return the parsed BsonDocument from the form data or an empty
-     * BsonDocument
+     * @param formData the parsed multipart form data from the request
+     * @return the parsed BsonDocument containing file metadata, or an empty BsonDocument if no metadata provided
+     * @throws BadRequestException if the metadata field contains invalid JSON or is not a JSON object
      */
     protected static BsonDocument extractMetadata(final FormData formData) throws BadRequestException {
         var metadataString = formData.getFirst(FILE_METADATA) != null
@@ -166,10 +231,15 @@ public class MongoRequestContentInjector {
     }
 
     /**
-     * Find the name of the first file field in this request
+     * Finds the name of the first file field in multipart form data.
+     * <p>
+     * This method iterates through the form data fields to locate the first field
+     * that contains a file upload. This is used in GridFS operations where the
+     * actual file content needs to be identified among other form fields.
+     * </p>
      *
-     * @param formData
-     * @return the first file field name or null
+     * @param formData the parsed multipart form data from the request
+     * @return the name of the first file field found, or null if no file fields are present
      */
     private static String extractFileField(final FormData formData) {
         String fileField = null;
@@ -185,11 +255,30 @@ public class MongoRequestContentInjector {
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().withDefaultCharset(StandardCharsets.UTF_8.name()).build();
 
     /**
+     * Injects request content into a MongoRequest based on the Content-Type header.
+     * <p>
+     * This is the main entry point for content injection. It analyzes the request's
+     * Content-Type header and delegates to the appropriate parsing method:
+     * </p>
+     * <ul>
+     *   <li>JSON/HAL+JSON content is parsed by {@link #injectBson(HttpServerExchange)}</li>
+     *   <li>Form/multipart content is parsed by {@link #injectMultipart(HttpServerExchange, MongoRequest, MongoResponse)}</li>
+     *   <li>No content type defaults to JSON parsing</li>
+     * </ul>
+     * <p>
+     * The method also performs validation:
+     * <ul>
+     *   <li>Ensures array content is only used in appropriate contexts</li>
+     *   <li>Validates document ID types and reserved ID values</li>
+     *   <li>Prohibits update operators in POST/PUT requests</li>
+     *   <li>Unflattens dot notation for POST/PUT operations</li>
+     * </ul>
+     * </p>
      *
-     * @param exchange
-     * @return the parsed bson
-     * @throws org.restheart.exchange.BadRequestException
-     * @throws java.io.IOException
+     * @param exchange the HTTP server exchange containing the request
+     * @return the parsed BSON content as a BsonValue, or an empty BsonDocument if no content
+     * @throws BadRequestException if the content is invalid, has wrong content type, or violates MongoDB rules
+     * @throws IOException if there is an error reading the request content
      */
     public static BsonValue inject(final HttpServerExchange exchange) throws BadRequestException, IOException {
         var request = MongoRequest.of(exchange);
@@ -263,6 +352,23 @@ public class MongoRequestContentInjector {
         return content;
     }
 
+    /**
+     * Parses JSON content from the request body into BSON format.
+     * <p>
+     * This method handles the parsing of JSON content (application/json or application/hal+json)
+     * from the request body. It first checks if content has already been buffered by a proxy
+     * request, and if not, reads it directly from the request channel.
+     * </p>
+     * <p>
+     * The method validates that the parsed content is either a JSON object or array,
+     * as primitive values are not supported for MongoDB document operations.
+     * </p>
+     *
+     * @param exchange the HTTP server exchange containing the JSON request
+     * @return the parsed JSON content as a BsonValue, or null if no content is present
+     * @throws BadRequestException if the JSON is malformed or contains unsupported data types
+     * @throws IOException if there is an error reading the request content
+     */
     private static BsonValue injectBson(HttpServerExchange exchange) throws BadRequestException, IOException {
         BsonValue content;
         final String contentString;
@@ -296,12 +402,48 @@ public class MongoRequestContentInjector {
         return content;
     }
 
+    /**
+     * Creates a form data parser for the given HTTP exchange.
+     * <p>
+     * This method creates a FormDataParser configured with UTF-8 encoding for processing
+     * multipart form data or URL-encoded form data. The parser requires the exchange to
+     * be in blocking mode, which should be handled by the WorkingThreadsPoolDispatcher.
+     * </p>
+     *
+     * @param exchange the HTTP server exchange to create a parser for
+     * @return a FormDataParser instance configured for the exchange, or null if no suitable parser exists
+     */
     private static FormDataParser parser(HttpServerExchange exchange) {
         // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         return FORM_PARSER.createParser(exchange);
     }
 
+    /**
+     * Processes multipart form data for document operations or file uploads.
+     * <p>
+     * This method handles multipart form data by determining if it's a file upload operation
+     * (for GridFS) or a regular document operation with form fields. For file operations,
+     * it delegates to {@link #injectMultiparForFiles(HttpServerExchange, MongoRequest, MongoResponse)}.
+     * For regular operations, it processes form fields and attempts to parse them as JSON.
+     * </p>
+     * <p>
+     * Each form field is processed as follows:
+     * <ul>
+     *   <li>File fields are ignored in non-file operations</li>
+     *   <li>Empty values become BsonNull</li>
+     *   <li>Blank strings remain as BsonString</li>
+     *   <li>Other values are parsed as JSON, falling back to strings if parsing fails</li>
+     * </ul>
+     * </p>
+     *
+     * @param exchange the HTTP server exchange containing the multipart request
+     * @param request the MongoRequest being processed
+     * @param response the MongoResponse for error handling
+     * @return a BsonDocument containing the processed form fields, or the result of file processing
+     * @throws BadRequestException if no form parser is available or JSON parsing fails
+     * @throws IOException if there is an error reading the form data
+     */
     private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) throws BadRequestException, IOException {
         // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
@@ -350,6 +492,30 @@ public class MongoRequestContentInjector {
         return errored[0] ? null : ret;
     }
 
+    /**
+     * Processes multipart form data specifically for GridFS file upload operations.
+     * <p>
+     * This method handles file uploads by extracting both the file content and associated
+     * metadata from the multipart form data. The metadata is extracted from a 'metadata'
+     * or 'properties' field and must be valid JSON. The actual file content is identified
+     * as the first file field in the form data.
+     * </p>
+     * <p>
+     * The method sets up the request for file processing by:
+     * <ul>
+     *   <li>Parsing and validating the metadata JSON</li>
+     *   <li>Locating the file field in the form data</li>
+     *   <li>Setting the file input stream on the MongoRequest for later processing</li>
+     * </ul>
+     * </p>
+     *
+     * @param exchange the HTTP server exchange containing the multipart file upload
+     * @param request the MongoRequest to configure with file input stream
+     * @param response the MongoResponse for warning messages
+     * @return a BsonDocument containing the parsed file metadata
+     * @throws BadRequestException if no form parser is available, metadata is invalid, or no file is present
+     * @throws IOException if there is an error accessing the file input stream
+     */
     private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
         BsonValue content;
 

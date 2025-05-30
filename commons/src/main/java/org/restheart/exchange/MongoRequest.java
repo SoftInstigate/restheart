@@ -86,78 +86,146 @@ import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 
 /**
- *
- * Request implementation used by MongoService and backed by BsonValue that
- * provides simplified methods to deal with headers and query parameters
- * specific to mongo requests
+ * Request implementation specialized for MongoDB operations through RESTHeart.
+ * <p>
+ * This class extends BsonRequest to provide comprehensive support for MongoDB-specific
+ * HTTP requests, including database, collection, and document operations. It handles
+ * the parsing and validation of MongoDB-specific query parameters, path parsing,
+ * and provides convenient access methods for MongoDB resource operations.
+ * </p>
+ * <p>
+ * MongoRequest supports all MongoDB resource types including:
+ * <ul>
+ *   <li>Databases and collections</li>
+ *   <li>Documents and bulk operations</li>
+ *   <li>Indexes and aggregations</li>
+ *   <li>GridFS files and buckets</li>
+ *   <li>Schemas and metadata</li>
+ *   <li>Sessions and transactions</li>
+ *   <li>Change streams</li>
+ * </ul>
+ * </p>
+ * <p>
+ * The class automatically parses request paths to determine the MongoDB resource
+ * type and extracts relevant parameters such as database names, collection names,
+ * document IDs, and operation-specific parameters. It also handles query parameter
+ * parsing for pagination, filtering, sorting, and other MongoDB operations.
+ * </p>
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Automatic MongoDB resource type detection from request paths</li>
+ *   <li>Query parameter parsing for MongoDB operations (filter, sort, page, etc.)</li>
+ *   <li>Support for MongoDB-specific headers and content types</li>
+ *   <li>Integration with MongoDB sessions and transactions</li>
+ *   <li>GridFS file upload and download support</li>
+ *   <li>HAL (Hypertext Application Language) formatting options</li>
+ *   <li>Comprehensive validation for MongoDB resource names and parameters</li>
+ * </ul>
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoRequest extends BsonRequest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoRequest.class);
 
+    /** The URI pattern that matches this request (from path template matching). */
     private final String whereUri;
+    
+    /** The specific resource URI that this request targets. */
     private final String whatUri;
 
+    /** Array of path segments extracted from the MongoDB resource URI. */
     private final String[] pathTokens;
 
+    /** Database properties/metadata document. */
     private BsonDocument dbProps;
+    
+    /** Collection properties/metadata document. */
     private BsonDocument collectionProps;
 
+    /** Input stream for GridFS file uploads. */
     private InputStream fileInputStream;
 
+    /** Current page number for paginated results (1-based). */
     private int page = 1;
+    
+    /** Number of items per page for paginated results. */
     private int pagesize = 100;
+    
+    /** Whether to include count information in the response. */
     private boolean count = false;
+    
+    /** Whether ETag validation is required for this request. */
     private boolean etagCheckRequired = false;
+    
+    /** The write mode for document operations (insert, update, upsert). */
     private WRITE_MODE writeMode = null;
+    
+    /** Whether response caching is enabled. */
     private boolean cache;
+    
+    /** Filter criteria for MongoDB queries. */
     private Deque<String> filter = null;
-    private BsonDocument aggregationVars = null; // aggregation vars
+    
+    /** Variables for aggregation pipeline operations. */
+    private BsonDocument aggregationVars = null;
+    
+    /** Field projection keys for limiting returned document fields. */
     private Deque<String> keys = null;
+    
+    /** Sort criteria for MongoDB queries. */
     private Deque<String> sortBy = null;
+    
+    /** Query optimization hints for MongoDB operations. */
     private Deque<String> hint = null;
+    
+    /** Expected document ID type for validation and parsing. */
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
+    
+    /** The MongoDB resource type determined from the request path. */
     private final TYPE type;
 
+    /** The response representation format (HAL, Standard, etc.). */
     private REPRESENTATION_FORMAT representationFormat;
 
+    /** The parsed document ID for document-level operations. */
     private BsonValue documentId;
 
+    /** The MongoDB resource URI extracted from the request path. */
     private String mongoResourceUri = null;
 
+    /** The ETag value from the If-Match header for optimistic concurrency control. */
     private final String etag;
 
+    /** Whether to force ETag checking regardless of policy. */
     private boolean forceEtagCheck = false;
 
+    /** Shard key document for sharded collection operations. */
     private BsonDocument shardKey = null;
 
+    /** Whether to exclude properties from the response. */
     private boolean noProps = false;
 
+    /** Client session for multi-document transactions. */
     private ClientSessionImpl clientSession = null;
 
-    /**
-     * the HAL mode
-     */
+    /** The HAL (Hypertext Application Language) formatting mode. */
     private HAL_MODE halMode = HAL_MODE.FULL;
 
+    /** Timestamp when request processing started. */
     private final long requestStartTime = System.currentTimeMillis();
 
-    /**
-     * path template match
-     */
+    /** Path template match information for parameterized routes. */
     private final PathTemplateMatch pathTemplateMatch;
 
-    /**
-     * the json mode
-     */
+    /** JSON parsing mode for MongoDB extended JSON support. */
     private final JsonMode jsonMode;
 
-    /**
-     * noCache switch, e.g.: ?nocache=true
-     */
+    /** Whether to disable caching for this specific request. */
     final boolean noCache;
 
+    /** Optional MongoDB resource operations helper. */
     private final Optional<RSOps> rsOps;
 
     protected MongoRequest(HttpServerExchange exchange, String whereUri, String whatUri) {

@@ -30,23 +30,54 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADE
 import io.undertow.util.HttpString;
 
 /**
+ * Interface defining Cross-Origin Resource Sharing (CORS) headers for HTTP responses.
+ * <p>
+ * This interface provides methods for configuring CORS headers that allow web browsers
+ * to make cross-origin requests to RESTHeart services. CORS is essential for web
+ * applications running on different domains to interact with RESTHeart APIs.
+ * </p>
+ * <p>
+ * The interface defines standard CORS headers including:
+ * <ul>
+ *   <li>Access-Control-Allow-Origin - specifies allowed origins</li>
+ *   <li>Access-Control-Allow-Methods - specifies allowed HTTP methods</li>
+ *   <li>Access-Control-Allow-Headers - specifies allowed request headers</li>
+ *   <li>Access-Control-Allow-Credentials - controls credential sharing</li>
+ *   <li>Access-Control-Expose-Headers - specifies exposed response headers</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Default implementations are provided that work well for most use cases, but can
+ * be overridden for specific security requirements or application needs.
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- *
- *         Defines the CORS headers to be added to the response
  */
 public interface CORSHeaders {
+    /** CORS header for specifying which response headers can be accessed by client-side scripts. */
     public static final HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString
             .tryFromString("Access-Control-Expose-Headers");
+    
+    /** CORS header for controlling whether credentials can be included in cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString
             .tryFromString("Access-Control-Allow-Credentials");
+    
+    /** CORS header for specifying which origins are allowed to access the resource. */
     public static final HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString
             .tryFromString("Access-Control-Allow-Origin");
+    
+    /** CORS header for specifying which HTTP methods are allowed for cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_METHODS = HttpString
             .tryFromString("Access-Control-Allow-Methods");
+    
+    /** CORS header for specifying which request headers are allowed in cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_HEADERS = HttpString
             .tryFromString("Access-Control-Allow-Headers");
 
+    /** 
+     * Default list of response headers that are exposed to client-side scripts.
+     * Includes location, etag, authentication token headers, and server identification.
+     */
     public static final String DEFAULT_ACCESS_CONTROL_EXPOSE_HEADERS = LOCATION_STRING
             + ", " + ETAG.toString()
             + ", " + AUTH_TOKEN_HEADER.toString()
@@ -55,25 +86,57 @@ public interface CORSHeaders {
             + ", " + X_POWERED_BY;
 
     /**
-     * @return the values of the Access-Control-Expose-Headers
+     * Returns the headers that should be exposed to client-side scripts.
+     * <p>
+     * These headers will be accessible via JavaScript in the browser for cross-origin
+     * requests. The default implementation includes common RESTHeart headers like
+     * Location, ETag, and authentication-related headers.
+     * </p>
+     *
+     * @param r the request context for determining exposed headers
+     * @return a comma-separated list of header names to expose to clients
      */
     default String accessControlExposeHeaders(Request<?> r) {
         return DEFAULT_ACCESS_CONTROL_EXPOSE_HEADERS;
     }
 
+    /** Default setting for credential sharing in cross-origin requests (enabled). */
     public static final String DEFAULT_ACCESS_CONTROL_ALLOW_CREDENTIALS = "true";
 
     /**
-     * @return the values of the Access-Control-Allow-Credentials
+     * Determines whether credentials (cookies, authorization headers, etc.) can be included
+     * in cross-origin requests.
+     * <p>
+     * When set to "true", browsers will include credentials in cross-origin requests
+     * and allow client-side scripts to access the response. This is typically needed
+     * for authenticated API access from web applications.
+     * </p>
+     *
+     * @param r the request context for determining credential policy
+     * @return "true" to allow credentials, "false" to disallow them
      */
     default String accessControlAllowCredentials(Request<?> r) {
         return DEFAULT_ACCESS_CONTROL_ALLOW_CREDENTIALS;
     }
 
+    /** Default allowed origin pattern (allows all origins). */
     public static final String DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN = "*";
 
     /**
-     * @return the values of the Access-Control-Allow-Origin
+     * Determines which origins are allowed to access the resource.
+     * <p>
+     * The default implementation checks for an Origin header in the request and
+     * echoes it back, falling back to "*" (allow all origins) if no origin is present.
+     * This approach provides flexibility while maintaining security for credentialed
+     * requests.
+     * </p>
+     * <p>
+     * For production environments, consider restricting this to specific trusted origins
+     * rather than using the wildcard "*" pattern.
+     * </p>
+     *
+     * @param r the request context containing origin information
+     * @return the origin value to allow, either the request origin or "*"
      */
     default String accessControlAllowOrigin(Request<?> r) {
         var requestHeaders = r.getHeaders();
@@ -84,21 +147,47 @@ public interface CORSHeaders {
         }
     }
 
+    /** Default list of HTTP methods allowed for cross-origin requests. */
     public static final String DEFAULT_ACCESS_CONTROL_ALLOW_METHODS = "GET, PUT, POST, PATCH, DELETE, OPTIONS";
 
     /**
-     * @return the values of the Access-Control-Allow-Methods
+     * Specifies which HTTP methods are allowed for cross-origin requests.
+     * <p>
+     * The default implementation allows all standard RESTful methods including
+     * GET, PUT, POST, PATCH, DELETE, and OPTIONS. The OPTIONS method is included
+     * to support preflight requests that browsers send for complex cross-origin
+     * requests.
+     * </p>
+     *
+     * @param r the request context for determining allowed methods
+     * @return a comma-separated list of allowed HTTP methods
      */
     default String accessControlAllowMethods(Request<?> r) {
         return DEFAULT_ACCESS_CONTROL_ALLOW_METHODS;
     }
 
+    /** 
+     * Default list of request headers allowed in cross-origin requests.
+     * Includes standard HTTP headers and RESTHeart-specific headers.
+     */
     public static final String DEFAULT_ACCESS_CONTROL_ALLOW_HEADERS = "Accept, Accept-Encoding, Authorization, "
             + "Content-Length, Content-Type, Host, If-Match, "
             + "Origin, X-Requested-With, User-Agent, No-Auth-Challenge";
 
     /**
-     * @return the values of the Access-Control-Allow-Methods
+     * Specifies which request headers are allowed in cross-origin requests.
+     * <p>
+     * The default implementation includes common HTTP headers needed for RESTful
+     * operations, including authorization headers, content type specifications,
+     * and RESTHeart-specific headers like No-Auth-Challenge.
+     * </p>
+     * <p>
+     * This list should include any custom headers that client applications need
+     * to send with their requests to ensure proper CORS handling.
+     * </p>
+     *
+     * @param r the request context for determining allowed headers
+     * @return a comma-separated list of allowed request header names
      */
     default String accessControlAllowHeaders(Request<?> r) {
         return DEFAULT_ACCESS_CONTROL_ALLOW_HEADERS;
