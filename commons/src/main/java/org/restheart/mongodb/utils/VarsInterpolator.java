@@ -31,21 +31,89 @@ import org.restheart.utils.BsonUtils;
  * Utility class for interpolating variables within a BsonDocument or BsonArray by using a specific format,
  * such as <code>{ [operator]: "name"}</code>, and replacing placeholders with provided values.
  * The class facilitates the dynamic substitution of placeholders in BSON documents and arrays.
+ * 
+ * <p>This class is a core component of RESTHeart's dynamic query and aggregation system, allowing
+ * BSON documents to contain variable placeholders that are replaced with actual values at runtime.
+ * It supports both simple variable substitution and variables with default values.</p>
+ * 
+ * <p>Variable formats supported:</p>
+ * <ul>
+ *   <li>{@code { "$var": "variableName" }} - Simple variable reference</li>
+ *   <li>{@code { "$var": ["variableName", defaultValue] }} - Variable with default value</li>
+ *   <li>{@code { "$arg": "argumentName" }} - GraphQL argument reference</li>
+ *   <li>{@code { "$arg": ["argumentName", defaultValue] }} - GraphQL argument with default</li>
+ * </ul>
+ * 
+ * <p>The interpolation process:</p>
+ * <ol>
+ *   <li>Traverses the BSON structure recursively</li>
+ *   <li>Identifies variable placeholders by the operator pattern</li>
+ *   <li>Looks up values in the provided values document</li>
+ *   <li>Replaces placeholders with actual values or defaults</li>
+ *   <li>Throws QueryVariableNotBoundException if required variables are missing</li>
+ * </ol>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Input document with variables
+ * BsonDocument query = new BsonDocument("name", new BsonDocument("$var", new BsonString("userName")))
+ *     .append("age", new BsonDocument("$var", 
+ *         new BsonArray(Arrays.asList(new BsonString("userAge"), new BsonInt32(18)))));
+ * 
+ * // Values to interpolate
+ * BsonDocument values = new BsonDocument("userName", new BsonString("John"));
+ * 
+ * // Interpolate
+ * BsonValue result = VarsInterpolator.interpolate(VAR_OPERATOR.$var, query, values);
+ * // Result: { "name": "John", "age": 18 } (age uses default since userAge not provided)
+ * }</pre>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class VarsInterpolator {
+    /**
+     * Enum defining the variable operators supported by the interpolator.
+     * <ul>
+     *   <li>{@code $var} - Used for standard query and aggregation variable interpolation</li>
+     *   <li>{@code $arg} - Used for GraphQL argument interpolation in mappings</li>
+     * </ul>
+     */
     public enum VAR_OPERATOR { $var, $arg };
     /**
-     * @param operator
-     * @param bson the BsonDocument or BsonArray containing variables
-     * @param values the BsonDocument containing the values of the variables, as RequestContext.getAggregationVars()
-     * @return the BsonValue where the variables <code>{"$var": "name" }</code>
-     * or <code>{"$var": [ "name", "defaultValue" ] }</code> are
-     * replaced with the values defined in the avars BsonDocument
-     *
-     * <br><br>Example: if <code>bson = {"$var": "name" }</code> and <code>avars = { "name": "Andrea"}</code>
-     * then it returns  <code>{"$var": "Andrea" }</code>
-     * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.exchange.QueryVariableNotBoundException
+     * Interpolates variables in a BSON structure by replacing variable placeholders with actual values.
+     * <p>
+     * This method recursively traverses the BSON structure (document or array) and replaces
+     * any variable placeholders with their corresponding values from the provided values document.
+     * It supports two formats of variable references:
+     * </p>
+     * <ol>
+     *   <li><b>Simple variable:</b> {@code {"$var": "variableName"}} - Replaced with the value
+     *       of "variableName" from the values document. Throws exception if not found.</li>
+     *   <li><b>Variable with default:</b> {@code {"$var": ["variableName", defaultValue]}} - 
+     *       Replaced with the value of "variableName" if found, otherwise uses defaultValue.</li>
+     * </ol>
+     * 
+     * <p>The method handles nested structures, preserving the original structure while only
+     * replacing the variable placeholders. Variable names can use dot notation to access
+     * nested values (e.g., "user.name" accesses the "name" field within "user").</p>
+     * 
+     * <p>Example:</p>
+     * <pre>{@code
+     * // Input: {"filter": {"status": {"$var": "status"}}, "limit": {"$var": ["limit", 10]}}
+     * // Values: {"status": "active"}
+     * // Result: {"filter": {"status": "active"}, "limit": 10}
+     * }</pre>
+     * 
+     * @param operator the variable operator to use ($var for queries/aggregations, $arg for GraphQL)
+     * @param bson the BsonDocument or BsonArray containing variable placeholders to interpolate
+     * @param values the BsonDocument containing the variable values, typically from 
+     *               RequestContext.getAggregationVars() or GraphQL arguments
+     * @return a new BsonValue with all variable placeholders replaced by their actual values.
+     *         The original bson structure is not modified
+     * @throws InvalidMetadataException if a variable reference has invalid format (e.g., non-string
+     *         variable name, array with wrong number of elements)
+     * @throws QueryVariableNotBoundException if a required variable (without default) is not found
+     *         in the values document
      */
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {

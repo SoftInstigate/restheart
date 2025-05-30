@@ -45,9 +45,61 @@ import org.restheart.utils.LambdaUtils;
  * Utility class for interpolating aggregation stages with a specified format, e.g., <code>{ [operator]: "name"}</code>,
  * and replacing placeholders with provided values. It also supports conditional stages using
  * <code>{ "$ifvar": [var] }</code>, which are removed if the variable is missing.
+ * 
+ * <p>This class provides sophisticated variable interpolation for MongoDB aggregation pipelines,
+ * supporting both simple variable substitution and conditional stage inclusion. It's designed
+ * to work with RESTHeart's dynamic aggregation system, allowing aggregation pipelines to be
+ * parameterized and customized at runtime.</p>
+ * 
+ * <p>Key features:</p>
+ * <ul>
+ *   <li>Variable interpolation using {@code $var} or {@code $arg} operators</li>
+ *   <li>Conditional stages using {@code $ifvar} or {@code $ifarg} operators</li>
+ *   <li>Support for default values when variables are not bound</li>
+ *   <li>Security checks to prevent operator injection</li>
+ *   <li>Integration with RESTHeart's authentication and permission system</li>
+ * </ul>
+ * 
+ * <p>Example of variable interpolation:</p>
+ * <pre>{@code
+ * // Pipeline with variable
+ * [
+ *   { "$match": { "status": { "$var": "status" } } },
+ *   { "$limit": { "$var": ["limit", 10] } }  // with default value
+ * ]
+ * 
+ * // With values: { "status": "active", "limit": 20 }
+ * // Results in:
+ * [
+ *   { "$match": { "status": "active" } },
+ *   { "$limit": 20 }
+ * ]
+ * }</pre>
+ * 
+ * <p>Example of conditional stages:</p>
+ * <pre>{@code
+ * [
+ *   { "$ifvar": ["includeStats", 
+ *     { "$group": { "_id": "$category", "count": { "$sum": 1 } } }
+ *   ]},
+ *   { "$ifvar": ["sortField", 
+ *     { "$sort": { "$var": "sortField" } },
+ *     { "$sort": { "_id": 1 } }  // else clause
+ *   ]}
+ * ]
+ * }</pre>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 
 public class StagesInterpolator {
+    /**
+     * Enum defining the conditional stage operators.
+     * <ul>
+     *   <li>{@code $ifvar} - Used in standard aggregation pipelines</li>
+     *   <li>{@code $ifarg} - Used in GraphQL mappings</li>
+     * </ul>
+     */
     public enum STAGE_OPERATOR { $ifvar, $ifarg };
 
     /**
@@ -89,10 +141,19 @@ public class StagesInterpolator {
     }
 
     /**
-     * checks if values contain operators. this is not allowed by default since
-     * the client would be able to modify the query or aggregation stages
-     *
-     * @param values RequestContext.getAggregationVars()
+     * Checks if values contain MongoDB operators (fields starting with '$').
+     * <p>
+     * This is a security measure to prevent clients from injecting operators into
+     * aggregation pipelines, which could potentially bypass access controls or
+     * execute unintended operations. Any field starting with '$' in the values
+     * will cause a SecurityException to be thrown.
+     * </p>
+     * 
+     * <p>The check is performed recursively on all nested documents and arrays
+     * within the values structure.</p>
+     * 
+     * @param values the aggregation variables to check, typically from RequestContext.getAggregationVars()
+     * @throws SecurityException if any field name starts with '$', indicating an operator
      */
     public static void shouldNotContainOperators(BsonValue values) throws SecurityException {
         if (values == null) {
@@ -117,18 +178,39 @@ public class StagesInterpolator {
         }
     }
     /**
-     * @param stage
-     * @return true if stage is optional
-     * @throws InvalidMetadataException
+     * Checks if a stage is optional (conditional).
+     * <p>
+     * A stage is considered optional if it contains a conditional operator
+     * ({@code $ifvar} or {@code $ifarg}). Optional stages are only included
+     * in the pipeline if their condition is met.
+     * </p>
+     * 
+     * @param stageOperator the stage operator to check for ($ifvar or $ifarg)
+     * @param stage the stage document to check
+     * @return {@code true} if the stage contains the conditional operator, {@code false} otherwise
      */
     private static boolean optional(STAGE_OPERATOR stageOperator, BsonDocument stage) {
         return stage.containsKey(stageOperator.name());
     }
 
     /**
-     * @param stage
-     * @return true if optional stage is valid
-     * @throws InvalidMetadataException
+     * Validates the structure of a conditional stage.
+     * <p>
+     * A valid conditional stage must have the following structure:
+     * </p>
+     * <pre>{@code
+     * { "$ifvar": [condition, thenStage, elseStage?] }
+     * }</pre>
+     * <p>Where:</p>
+     * <ul>
+     *   <li>condition: a string variable name or array of variable names</li>
+     *   <li>thenStage: the stage to include if condition is true (must be a document)</li>
+     *   <li>elseStage: optional stage to include if condition is false (must be a document)</li>
+     * </ul>
+     * 
+     * @param stageOperator the stage operator being validated ($ifvar or $ifarg)
+     * @param stage the stage document to validate
+     * @throws InvalidMetadataException if the stage structure is invalid
      */
     private static void checkIfVar(STAGE_OPERATOR stageOperator, BsonDocument stage) throws InvalidMetadataException {
         if (stage.containsKey(stageOperator.name())) {
@@ -144,6 +226,21 @@ public class StagesInterpolator {
         }
     }
 
+    /**
+     * Determines whether a conditional stage should be included based on available variables.
+     * <p>
+     * A conditional stage applies if:
+     * </p>
+     * <ul>
+     *   <li>The avars parameter is not null (query includes aggregation variables)</li>
+     *   <li>All required variables specified in the condition are present in avars</li>
+     * </ul>
+     * 
+     * @param stageOperator the stage operator ($ifvar or $ifarg)
+     * @param stage the conditional stage to evaluate
+     * @param avars the available aggregation variables
+     * @return {@code true} if the stage should be included, {@code false} otherwise
+     */
     private static boolean stageApplies(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
         // false if request does not include the ?avars qparam
         // see issue https://github.com/SoftInstigate/restheart/issues/500
@@ -160,6 +257,17 @@ public class StagesInterpolator {
         }
     }
 
+    /**
+     * Extracts the else clause from a conditional stage if present.
+     * <p>
+     * The else clause is the third element in the conditional array and is
+     * included when the condition evaluates to false.
+     * </p>
+     * 
+     * @param stageOperator the stage operator ($ifvar or $ifarg)
+     * @param stage the conditional stage containing the else clause
+     * @return the else stage document, or null if no else clause is specified
+     */
     private static BsonDocument elseStage(STAGE_OPERATOR stageOperator, BsonDocument stage) {
         return stage.get(stageOperator.name()).asArray().size() > 2
             ? stage.get(stageOperator.name()).asArray().get(2).asDocument()
@@ -167,6 +275,22 @@ public class StagesInterpolator {
     }
 
 
+    /**
+     * Resolves a stage based on its type and available variables.
+     * <p>
+     * This method handles three cases:
+     * </p>
+     * <ul>
+     *   <li>Non-conditional stages: returned as-is</li>
+     *   <li>Conditional stages with met conditions: returns the then clause</li>
+     *   <li>Conditional stages with unmet conditions: returns the else clause or null</li>
+     * </ul>
+     * 
+     * @param stageOperator the stage operator ($ifvar or $ifarg)
+     * @param stage the stage to resolve
+     * @param avars the available aggregation variables
+     * @return the resolved stage document, or null if the stage should be excluded
+     */
     private static BsonDocument _stage(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
         if (!optional(stageOperator, stage)) {
             return stage;
@@ -178,13 +302,33 @@ public class StagesInterpolator {
     }
 
     /**
-     * adds the default variables to the avars document
-     *
-     * Supports accounts handled by MongoRealAuthenticator,
-     * FileRealmAuthenticator and JwtAuthenticationMechanism
-     *
-     * @param request
-     * @param avars
+     * Injects default variables into the aggregation variables document.
+     * <p>
+     * This method adds system-provided variables that can be used in aggregation pipelines
+     * without being explicitly passed by the client. These include pagination parameters,
+     * user information, and MongoDB permissions.
+     * </p>
+     * 
+     * <p>The following variables are injected:</p>
+     * <ul>
+     *   <li>{@code @page} - Current page number from request</li>
+     *   <li>{@code @pagesize} - Page size from request</li>
+     *   <li>{@code @limit} - Same as pagesize, for convenience</li>
+     *   <li>{@code @skip} - Calculated skip value for pagination</li>
+     *   <li>{@code @user} - Authenticated user information (if available)</li>
+     *   <li>{@code @user.*} - Individual user properties accessible via dot notation</li>
+     *   <li>{@code @mongoPermissions} - MongoDB permissions for the current user</li>
+     *   <li>{@code @mongoPermissions.projectResponse} - Response projection filter</li>
+     *   <li>{@code @mongoPermissions.mergeRequest} - Request merge filter</li>
+     *   <li>{@code @mongoPermissions.readFilter} - Read access filter</li>
+     *   <li>{@code @mongoPermissions.writeFilter} - Write access filter</li>
+     * </ul>
+     * 
+     * <p>Supports accounts handled by MongoRealmAuthenticator, FileRealmAuthenticator,
+     * and JwtAuthenticationMechanism.</p>
+     * 
+     * @param request the MongoDB request containing authentication and pagination information
+     * @param avars the aggregation variables document to inject defaults into
      */
     public static void injectAvars(MongoRequest request, BsonDocument avars) {
         // add @page, @pagesize, @limit and @skip to avars to allow handling

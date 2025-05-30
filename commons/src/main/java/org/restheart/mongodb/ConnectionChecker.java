@@ -31,9 +31,26 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.MongoTimeoutException;
 import com.mongodb.client.MongoClient;
 
+/**
+ * Utility class for checking MongoDB connection status and replica set configuration.
+ * <p>
+ * This class provides methods to verify if a MongoDB client is connected to a MongoDB instance
+ * and whether the MongoDB instance is configured as a replica set. It uses a cache mechanism
+ * to avoid frequent connection checks and improve performance.
+ * </p>
+ * 
+ * <p>The connection status is cached for 5 seconds to reduce the overhead of repeated
+ * connection checks. The cache can hold up to 10 different MongoClient instances.</p>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class ConnectionChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionChecker.class);
 
+    /**
+     * Cache for storing connection status of MongoClient instances.
+     * The cache expires entries 5 seconds after write to ensure fresh connection status.
+     */
     private static LoadingCache<MongoClient, Boolean> CACHE = CacheFactory.createLocalLoadingCache(10, EXPIRE_POLICY.AFTER_WRITE, 5_000, mclient -> {
         if (mclient == null) {
             return false;
@@ -48,14 +65,37 @@ public class ConnectionChecker {
         }
     });
 
+    /**
+     * Checks if the given MongoClient is connected to a MongoDB instance.
+     * <p>
+     * This method uses a cached result to avoid performing the connection check
+     * on every call. The cache entry expires after 5 seconds, ensuring that
+     * connection status is reasonably up-to-date.
+     * </p>
+     * 
+     * @param mclient the MongoClient instance to check
+     * @return {@code true} if the client is connected to MongoDB, {@code false} otherwise
+     */
     public static boolean connected(MongoClient mclient) {
         return CACHE.getLoading(mclient).orElse(false);
     }
 
 
-     /**
-     * @throws MongoTimeoutException
-     * @return the initialized
+    /**
+     * Checks if the MongoDB instance is configured as a replica set.
+     * <p>
+     * This method executes the {@code replSetGetStatus} command to determine if MongoDB
+     * is running as part of a replica set. If the user lacks authorization to execute
+     * this command, a warning is logged and the method returns {@code false}.
+     * </p>
+     * 
+     * <p>Note: The MongoDB user must have the 'clusterMonitor' role to execute
+     * the replSetGetStatus command. Without this permission, the method will
+     * return {@code false} even if MongoDB is configured as a replica set.</p>
+     * 
+     * @param mclient the MongoClient instance to use for checking
+     * @return {@code true} if MongoDB is configured as a replica set, {@code false} otherwise
+     * @throws MongoTimeoutException if the client is not connected to MongoDB
      */
     public static boolean replicaSet(MongoClient mclient) {
         if (!connected(mclient)) {
