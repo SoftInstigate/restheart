@@ -32,8 +32,7 @@ import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Utility class for buffer manipulation.
  */
 public class BuffersUtils {
 

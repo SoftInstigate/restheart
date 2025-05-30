@@ -26,8 +26,7 @@ import java.nio.charset.StandardCharsets;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Utility class for reading data from channels.
  */
 public class ChannelReader {
     /**

@@ -22,6 +22,9 @@ package org.restheart.utils;
 
 import java.lang.ref.Cleaner;
 
+/**
+ * Utility class for managing Cleaner instances.
+ */
 public class CleanerUtils {
     private static CleanerUtils instance = null;
     private final Cleaner cleaner;

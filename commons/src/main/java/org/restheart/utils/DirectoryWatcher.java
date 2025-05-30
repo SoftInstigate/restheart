@@ -37,6 +37,9 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Watches a directory and its subdirectories for changes.
+ */
 public class DirectoryWatcher implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectoryWatcher.class);
 

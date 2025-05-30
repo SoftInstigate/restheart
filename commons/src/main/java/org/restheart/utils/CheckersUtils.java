@@ -26,8 +26,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Utility class for various checks.
  */
 public class CheckersUtils {
     /**
