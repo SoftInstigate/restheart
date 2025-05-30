@@ -23,8 +23,22 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 
 /**
+ * Specialized Interceptor interface for services implementing ByteArrayService.
+ * 
+ * This interface provides a type-safe way to intercept byte array-based requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for ByteArrayRequest and ByteArrayResponse types.
+ * 
+ * Interceptors implementing this interface can process raw byte array data before it is
+ * handled by the service or before the response is sent back to the client. This is
+ * particularly useful for binary data processing, file uploads, and other scenarios
+ * where raw byte manipulation is required.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see ByteArrayRequest
+ * @see ByteArrayResponse
+ * @see ByteArrayService
  */
 public interface ByteArrayInterceptor extends Interceptor<ByteArrayRequest, ByteArrayResponse> {
 

@@ -23,9 +23,20 @@ import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 
 /**
- * Specialized Interceptor interface for services implementing BsonService
+ * Specialized Interceptor interface for services implementing BsonService.
+ * 
+ * This interface provides a type-safe way to intercept BSON-based requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for BsonRequest and BsonResponse types.
+ * 
+ * Interceptors implementing this interface can process BSON documents before they are
+ * handled by the service or before the response is sent back to the client.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see BsonRequest
+ * @see BsonResponse
+ * @see BsonService
  */
 public interface BsonInterceptor extends Interceptor<BsonRequest, BsonResponse> {
 

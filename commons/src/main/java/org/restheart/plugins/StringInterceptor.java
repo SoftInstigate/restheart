@@ -23,8 +23,22 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 
 /**
- *
+ * Specialized Interceptor interface for services implementing StringService.
+ * 
+ * This interface provides a type-safe way to intercept string-based requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for StringRequest and StringResponse types.
+ * 
+ * Interceptors implementing this interface can process string content before it is
+ * handled by the service or before the response is sent back to the client.
+ * This is particularly useful for text processing, content validation, transformation,
+ * logging, or applying business rules to string-based payloads.
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see StringRequest
+ * @see StringResponse
+ * @see StringService
  */
 public interface StringInterceptor extends Interceptor<StringRequest, StringResponse> {
 

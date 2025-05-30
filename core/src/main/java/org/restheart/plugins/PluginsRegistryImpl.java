@@ -73,14 +73,51 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.PathMatcher;
 
 /**
- *
+ * Implementation of the PluginsRegistry interface that manages all RESTHeart plugins.
+ * 
+ * This singleton class serves as the central registry for all plugin types including
+ * services, interceptors, security components, initializers, and providers. It handles
+ * plugin instantiation, dependency management, and provides access to registered
+ * plugins throughout the application lifecycle.
+ * 
+ * <p>
+ * Key responsibilities include:
+ * <ul>
+ * <li>Managing the root path handler for HTTP request routing</li>
+ * <li>Registering and retrieving all plugin types</li>
+ * <li>Handling service and pipeline plugging/unplugging</li>
+ * <li>Managing interceptor chains for services and proxy requests</li>
+ * <li>Providing access to security components (auth mechanisms, authenticators, authorizers)</li>
+ * <li>Caching plugin instances and interceptor chains for performance</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * The registry uses lazy initialization and caching to ensure optimal performance.
+ * Plugins are instantiated through the PluginsFactory when first accessed, and
+ * subsequent requests return cached instances.
+ * </p>
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see PluginsRegistry
+ * @see PluginsFactory
+ * @see PluginRecord
+ * @see PipelineInfo
  */
 public class PluginsRegistryImpl implements PluginsRegistry {
 
     private static final PathHandler ROOT_PATH_HANDLER = path();
     private static final PathMatcher<PipelineInfo> PIPELINE_INFOS = new PathMatcher<>();
 
+    /**
+     * Returns the singleton instance of the PluginsRegistryImpl.
+     * 
+     * This method provides access to the single registry instance that manages
+     * all plugins throughout the application lifecycle. The instance is created
+     * using the singleton holder pattern for thread-safe lazy initialization.
+     * 
+     * @return the singleton PluginsRegistryImpl instance
+     */
     public static PluginsRegistryImpl getInstance() {
         return SingletonHolder.INSTANCE;
     }

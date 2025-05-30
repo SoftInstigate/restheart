@@ -36,12 +36,46 @@ import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
 
 /**
- * NOTE: LOGGER is an argument of the class static methods
- * because adding a LOGGER field breaks native image compilation
+ * Utility class for validating provider dependencies and checking for circular dependencies.
+ * 
+ * This class provides methods to validate that all provider dependencies can be resolved
+ * and that there are no circular dependencies in the provider dependency graph. It ensures
+ * that plugins with @Inject annotations have access to the required providers and that
+ * those providers are properly enabled and configured.
+ * 
+ * <p>
+ * The validation process includes:
+ * <ul>
+ * <li>Checking that all required providers exist and are enabled</li>
+ * <li>Validating type compatibility between providers and injection points</li>
+ * <li>Detecting and preventing circular dependencies between providers</li>
+ * <li>Building and analyzing the provider dependency graph</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * <strong>Note:</strong> LOGGER is passed as an argument to static methods rather than
+ * being a class field because adding a LOGGER field breaks GraalVM native image compilation.
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Provider
+ * @see Inject
+ * @see PluginDescriptor
+ * @see FieldInjectionDescriptor
  */
 public class ProvidersChecker {
+    /**
+     * Filters the list of providers to return only those that are enabled.
+     * 
+     * This method checks each provider's enabled state based on its default configuration
+     * and any runtime configuration overrides. Disabled providers are logged and excluded
+     * from the returned list.
+     * 
+     * @param LOGGER the logger instance for reporting disabled providers
+     * @param providers the list of all provider descriptors to filter
+     * @return a list containing only the enabled provider descriptors
+     */
     private static List<PluginDescriptor> enabledProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         return providers.stream()
             .filter(p -> p != null)
@@ -50,14 +84,30 @@ public class ProvidersChecker {
             .collect(Collectors.toList());
     }
 
-    /*
-     * @return true if the plugin is actually enabled, taking into account enabledByDefault and configuration
+    /**
+     * Determines if a plugin is enabled based on its default setting and configuration.
+     * 
+     * This method checks the plugin's enabledByDefault setting and any configuration
+     * overrides to determine the final enabled state.
+     * 
+     * @param plugin the plugin descriptor to check
+     * @return true if the plugin is enabled, false otherwise
      */
     private static boolean enabled(PluginDescriptor plugin) {
         Map<String, Object> pluginConf = getOrDefault(Bootstrapper.getConfiguration(), plugin.name(), null, true);
         return PluginRecord.isEnabled(plugin.enabled(), pluginConf);
     }
 
+    /**
+     * Removes providers from the graph that have invalid dependencies.
+     * 
+     * This method identifies and removes providers that depend on non-existent providers,
+     * disabled providers, or providers with incompatible types. It performs type checking
+     * to ensure that the provided object type is assignable to the injection field type.
+     * 
+     * @param LOGGER the logger instance for reporting dependency issues
+     * @param providersGraph the mutable graph of provider dependencies to modify
+     */
     private static void removeIfWrongDependency(Logger LOGGER, MutableGraph<PluginDescriptor> providersGraph) {
         var toRemove = new ArrayList<PluginDescriptor>();
         providersGraph.nodes().forEach(thisProvider -> {
@@ -90,6 +140,16 @@ public class ProvidersChecker {
         toRemove.stream().forEach(providersGraph::removeNode);
     }
 
+    /**
+     * Removes providers from the graph that are involved in circular dependencies.
+     * 
+     * This method analyzes the provider dependency graph to detect cycles and removes
+     * providers that participate in circular dependency chains. Each provider is checked
+     * by examining its reachable nodes and testing for cycles in the induced subgraph.
+     * 
+     * @param LOGGER the logger instance for reporting circular dependency issues
+     * @param providersGraph the mutable graph of provider dependencies to modify
+     */
     private static void removeIfCircularDependency(Logger LOGGER, MutableGraph<PluginDescriptor> providersGraph) {
         var toRemove = new ArrayList<PluginDescriptor>();
         providersGraph.nodes().stream().forEach(provider -> {
@@ -105,8 +165,26 @@ public class ProvidersChecker {
     }
 
     /**
-     * WIP
-     * checks if there are cycles in the providers graph (mutual dependencies)
+     * Validates provider dependencies and returns the set of valid providers.
+     * 
+     * This method builds a directed graph of provider dependencies and performs validation
+     * to ensure that all dependencies can be resolved without circular references. It
+     * iteratively removes providers with invalid dependencies until the graph stabilizes.
+     * 
+     * <p>
+     * The validation process:
+     * <ol>
+     * <li>Creates a directed graph with enabled providers as nodes</li>
+     * <li>Adds edges representing dependency relationships</li>
+     * <li>Removes providers with missing, disabled, or type-incompatible dependencies</li>
+     * <li>Removes providers involved in circular dependencies</li>
+     * <li>Repeats until no more changes occur</li>
+     * </ol>
+     * </p>
+     * 
+     * @param LOGGER the logger instance for reporting validation issues
+     * @param providers the list of all provider descriptors to validate
+     * @return a set of provider descriptors that have valid, resolvable dependencies
      */
     static Set<PluginDescriptor> validProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         MutableGraph<PluginDescriptor> providersGraph = GraphBuilder.directed().allowsSelfLoops(true).build();
@@ -147,19 +225,38 @@ public class ProvidersChecker {
         return providersGraph.nodes();
     }
 
+    /**
+     * Finds a provider descriptor by its class name.
+     * 
+     * @param className the fully qualified class name of the provider to find
+     * @return the provider descriptor with the matching class name, or null if not found
+     */
     static PluginDescriptor providerDescriptorFromClass(String className) {
         return PluginsScanner.providers().stream().filter(p -> p.clazz().equals(className)).findFirst().orElse(null);
     }
 
+    /**
+     * Finds a provider descriptor by its plugin name.
+     * 
+     * @param name the plugin name of the provider to find
+     * @return the provider descriptor with the matching name, or null if not found
+     */
     static PluginDescriptor providerDescriptorFromName(String name) {
         return PluginsScanner.providers().stream().filter(p -> p.name().equals(name)).findFirst().orElse(null);
     }
 
     /**
-     * checks that a Provider exists and is enabled for each plugin @Inject field
-     *
-     * @param plugin
-     * @return true if all the plugin dependencies can be resolved
+     * Checks that all dependencies for a plugin can be resolved.
+     * 
+     * This method validates that each @Inject field in the plugin has a corresponding
+     * provider that exists, is enabled, and is not the plugin itself (to prevent
+     * self-dependency). This is used to determine if a plugin should be instantiated
+     * or disabled due to unresolvable dependencies.
+     * 
+     * @param LOGGER the logger instance for reporting dependency issues
+     * @param validProviders the set of validated provider descriptors available for injection
+     * @param plugin the plugin descriptor to check dependencies for
+     * @return true if all plugin dependencies can be resolved, false otherwise
      */
     static boolean checkDependencies(Logger LOGGER, Set<PluginDescriptor> validProviders, PluginDescriptor plugin) {
         // don't check disabled plugins

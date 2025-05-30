@@ -52,30 +52,74 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 
 /**
- * this class is configured to be initialized at build time by native-image
- * note: we cannot use logging in this class, otherwise native-image will fail
+ * Scans and discovers all RESTHeart plugins in the classpath and plugin directories.
+ * 
+ * This class is responsible for discovering and cataloging all available plugins during
+ * application startup. It uses ClassGraph to scan the classpath for classes annotated
+ * with @RegisterPlugin and categorizes them by type (services, interceptors, security
+ * components, etc.).
+ * 
+ * <p>
+ * The scanner is configured to be initialized at build time for GraalVM native-image
+ * support. Plugin discovery happens during static initialization to ensure all plugins
+ * are identified before the application starts processing requests.
+ * </p>
+ * 
+ * <p>
+ * Key features:
+ * <ul>
+ * <li>Automatic discovery of all plugin types through classpath scanning</li>
+ * <li>Support for plugins in external JAR files in the plugins directory</li>
+ * <li>Dependency injection metadata collection for @Inject annotations</li>
+ * <li>GraalVM native-image compatibility</li>
+ * <li>Configurable package scanning and verbosity</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><strong>Note:</strong> Logging cannot be used in this class during static 
+ * initialization as it would cause native-image generation to fail.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see RegisterPlugin
+ * @see PluginDescriptor
+ * @see PluginsFactory
  */
 public class PluginsScanner {
+    /** The fully qualified class name of the RegisterPlugin annotation. */
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class.getName();
 
+    /** The fully qualified class name of the Initializer interface. */
     private static final String INITIALIZER_CLASS_NAME = Initializer.class.getName();
+    /** The fully qualified class name of the AuthMechanism interface. */
     private static final String AUTHMECHANISM_CLASS_NAME = AuthMechanism.class.getName();
+    /** The fully qualified class name of the Authorizer interface. */
     private static final String AUTHORIZER_CLASS_NAME = Authorizer.class.getName();
+    /** The fully qualified class name of the TokenManager interface. */
     private static final String TOKEN_MANAGER_CLASS_NAME = TokenManager.class.getName();
+    /** The fully qualified class name of the Authenticator interface. */
     private static final String AUTHENTICATOR_CLASS_NAME = Authenticator.class.getName();
+    /** The fully qualified class name of the Interceptor interface. */
     private static final String INTERCEPTOR_CLASS_NAME = Interceptor.class.getName();
+    /** The fully qualified class name of the Service interface. */
     private static final String SERVICE_CLASS_NAME = Service.class.getName();
+    /** The fully qualified class name of the Provider interface. */
     private static final String PROVIDER_CLASS_NAME = Provider.class.getName();
 
+    /** List of discovered initializer plugin descriptors. */
     private static final ArrayList<PluginDescriptor> INITIALIZERS = new ArrayList<>();
+    /** List of discovered authentication mechanism plugin descriptors. */
     private static final ArrayList<PluginDescriptor> AUTH_MECHANISMS = new ArrayList<>();
+    /** List of discovered authorizer plugin descriptors. */
     private static final ArrayList<PluginDescriptor> AUTHORIZERS = new ArrayList<>();
+    /** List of discovered token manager plugin descriptors. */
     private static final ArrayList<PluginDescriptor> TOKEN_MANAGERS = new ArrayList<>();
+    /** List of discovered authenticator plugin descriptors. */
     private static final ArrayList<PluginDescriptor> AUTHENTICATORS = new ArrayList<>();
+    /** List of discovered interceptor plugin descriptors. */
     private static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
+    /** List of discovered service plugin descriptors. */
     private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
+    /** List of discovered provider plugin descriptors. */
     private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
     static {
@@ -107,6 +151,17 @@ public class PluginsScanner {
         }
     }
 
+    /**
+     * Initializes plugin scanning at build time for GraalVM native-image support.
+     * 
+     * This method performs plugin discovery during the native-image build process
+     * to ensure all plugins are properly registered in the native executable.
+     * It must be called during the build phase and uses the PluginsClassloader
+     * to scan for plugins.
+     * 
+     * @throws IllegalStateException if called outside of the build-time context
+     * @see <a href="https://github.com/SoftInstigate/classgraph-on-graalvm">ClassGraph on GraalVM</a>
+     */
     // ClassGraph.scan() at class initialization time to support native image
     // generation with GraalVM
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
@@ -145,6 +200,15 @@ public class PluginsScanner {
         }
     }
 
+    /**
+     * Returns a list of all discovered plugin class names.
+     * 
+     * This method aggregates the class names of all discovered plugins across
+     * all plugin types (initializers, services, interceptors, security components,
+     * and providers) into a single list.
+     * 
+     * @return a list containing the fully qualified class names of all discovered plugins
+     */
     public static List<String> allPluginsClassNames() {
         final var ret = new ArrayList<String>();
         INITIALIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
@@ -159,34 +223,74 @@ public class PluginsScanner {
         return ret;
     }
 
+    /**
+     * Returns the list of discovered provider plugin descriptors.
+     * 
+     * @return an unmodifiable list of provider plugin descriptors
+     */
     static final List<PluginDescriptor> providers() {
         return PROVIDERS;
     }
 
+    /**
+     * Returns the list of discovered initializer plugin descriptors.
+     * 
+     * @return an unmodifiable list of initializer plugin descriptors
+     */
     static final List<PluginDescriptor> initializers() {
         return INITIALIZERS;
     }
 
+    /**
+     * Returns the list of discovered authentication mechanism plugin descriptors.
+     * 
+     * @return an unmodifiable list of authentication mechanism plugin descriptors
+     */
     static final List<PluginDescriptor> authMechanisms() {
         return AUTH_MECHANISMS;
     }
 
+    /**
+     * Returns the list of discovered authorizer plugin descriptors.
+     * 
+     * @return an unmodifiable list of authorizer plugin descriptors
+     */
     static final List<PluginDescriptor> authorizers() {
         return AUTHORIZERS;
     }
 
+    /**
+     * Returns the list of discovered token manager plugin descriptors.
+     * 
+     * @return an unmodifiable list of token manager plugin descriptors
+     */
     static final List<PluginDescriptor> tokenManagers() {
         return TOKEN_MANAGERS;
     }
 
+    /**
+     * Returns the list of discovered authenticator plugin descriptors.
+     * 
+     * @return an unmodifiable list of authenticator plugin descriptors
+     */
     static final List<PluginDescriptor> authenticators() {
         return AUTHENTICATORS;
     }
 
+    /**
+     * Returns the list of discovered interceptor plugin descriptors.
+     * 
+     * @return an unmodifiable list of interceptor plugin descriptors
+     */
     static final List<PluginDescriptor> interceptors() {
         return INTERCEPTORS;
     }
 
+    /**
+     * Returns the list of discovered service plugin descriptors.
+     * 
+     * @return an unmodifiable list of service plugin descriptors
+     */
     static final List<PluginDescriptor> services() {
         return SERVICES;
     }

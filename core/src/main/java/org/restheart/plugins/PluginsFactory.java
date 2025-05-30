@@ -42,8 +42,36 @@ import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
- *
+ * Factory class responsible for creating, configuring, and managing all RESTHeart plugins.
+ * 
+ * This singleton factory handles the instantiation and dependency injection of all plugin types
+ * including services, interceptors, security components (authentication mechanisms, authenticators,
+ * authorizers, token managers), initializers, and providers. It implements lazy loading with
+ * caching to ensure plugins are only created when needed and reused thereafter.
+ * 
+ * <p>
+ * The factory performs several key operations:
+ * <ul>
+ * <li>Validates plugin dependencies through the ProvidersChecker</li>
+ * <li>Handles plugin configuration from the application configuration</li>
+ * <li>Performs dependency injection for fields annotated with @Inject</li>
+ * <li>Invokes @OnInit methods after plugin instantiation</li>
+ * <li>Manages plugin priority and ordering</li>
+ * <li>Caches instantiated plugins for performance</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * The factory works in conjunction with PluginsScanner to discover available plugins
+ * and ProvidersChecker to validate that all required dependencies are available
+ * before attempting plugin instantiation.
+ * </p>
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see PluginsScanner
+ * @see ProvidersChecker
+ * @see PluginRecord
+ * @see Plugin
  */
 public class PluginsFactory {
 
@@ -51,6 +79,14 @@ public class PluginsFactory {
 
     private static final PluginsFactory SINGLETON = new PluginsFactory();
 
+    /**
+     * Returns the singleton instance of the PluginsFactory.
+     * 
+     * This method provides access to the single factory instance that manages
+     * all plugin creation and configuration throughout the application lifecycle.
+     * 
+     * @return the singleton PluginsFactory instance
+     */
     public static PluginsFactory getInstance() {
         return SINGLETON;
     }
@@ -61,8 +97,13 @@ public class PluginsFactory {
     private Set<PluginRecord<AuthMechanism>> authMechanismsCache = null;
 
     /**
-     *
-     * @return the AuthenticationMechanisms
+     * Returns all configured and enabled authentication mechanisms.
+     * 
+     * Authentication mechanisms are responsible for extracting credentials from
+     * HTTP requests and creating authentication contexts. This method performs
+     * lazy loading and caches the results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled authentication mechanisms
      */
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
         if (authMechanismsCache == null) {
@@ -76,8 +117,13 @@ public class PluginsFactory {
     private Set<PluginRecord<Authenticator>> authenticatorsCache = null;
 
     /**
-     *
-     * @return the Authenticators
+     * Returns all configured and enabled authenticators.
+     * 
+     * Authenticators are responsible for verifying user credentials and establishing
+     * user identity within the security pipeline. This method performs lazy loading
+     * and caches the results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled authenticators
      */
     Set<PluginRecord<Authenticator>> authenticators() {
         if (authenticatorsCache == null) {
@@ -91,8 +137,13 @@ public class PluginsFactory {
     private Set<PluginRecord<Authorizer>> authorizersCache = null;
 
     /**
-     *
-     * @return the Authorizers
+     * Returns all configured and enabled authorizers.
+     * 
+     * Authorizers determine whether an authenticated user has permission to perform
+     * a specific operation on a resource. This method performs lazy loading and
+     * caches the results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled authorizers
      */
     Set<PluginRecord<Authorizer>> authorizers() {
         if (authorizersCache == null) {
@@ -106,8 +157,15 @@ public class PluginsFactory {
     private PluginRecord<TokenManager> tokenManagerCache = null;
 
     /**
-     *
-     * @return the Token Manager
+     * Returns the configured and enabled token manager.
+     * 
+     * The token manager is responsible for creating, validating, and managing
+     * authentication tokens used for stateless authentication. Only one token
+     * manager can be active at a time. This method performs lazy loading and
+     * caches the result for subsequent calls.
+     * 
+     * @return the PluginRecord instance containing the enabled token manager,
+     *         or null if no token manager is configured or enabled
      */
     PluginRecord<TokenManager> tokenManager() {
         if (tokenManagerCache == null) {
@@ -129,7 +187,14 @@ public class PluginsFactory {
     private Set<PluginRecord<Initializer>> initializersCache = null;
 
     /**
-     * create the initializers
+     * Returns all configured and enabled initializers.
+     * 
+     * Initializers are executed during the RESTHeart startup process to perform
+     * initialization tasks such as setting up resources, connections, or other
+     * prerequisites. This method performs lazy loading and caches the results
+     * for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled initializers
      */
     Set<PluginRecord<Initializer>> initializers() {
         if (initializersCache == null) {
@@ -143,7 +208,14 @@ public class PluginsFactory {
     private Set<PluginRecord<Interceptor<?, ?>>> interceptorsCache = null;
 
     /**
-     * creates the interceptors
+     * Returns all configured and enabled interceptors.
+     * 
+     * Interceptors provide cross-cutting functionality that can be applied to
+     * services or proxy requests at various points in the request/response
+     * processing pipeline. This method performs lazy loading and caches the
+     * results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled interceptors
      */
     Set<PluginRecord<Interceptor<?, ?>>> interceptors() {
         if (interceptorsCache == null) {
@@ -157,7 +229,13 @@ public class PluginsFactory {
     private Set<PluginRecord<Service<?, ?>>> servicesCache = null;
 
     /**
-     * creates the services
+     * Returns all configured and enabled services.
+     * 
+     * Services are the main business logic components that handle HTTP requests
+     * and generate responses in the RESTHeart framework. This method performs
+     * lazy loading and caches the results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all enabled services
      */
     Set<PluginRecord<Service<?, ?>>> services() {
         if (this.servicesCache == null) {
@@ -172,7 +250,15 @@ public class PluginsFactory {
     private Set<PluginRecord<Provider<?>>> providersCache = null;
 
     /**
-     * creates the providers
+     * Returns all configured and enabled providers.
+     * 
+     * Providers supply instances of various objects and services that can be
+     * injected into other plugins using the dependency injection mechanism.
+     * This method also validates provider dependencies and registers provider
+     * types for dependency injection. This method performs lazy loading and
+     * caches the results for subsequent calls.
+     * 
+     * @return a set of PluginRecord instances containing all valid and enabled providers
      */
     Set<PluginRecord<Provider<?>>> providers() {
         if (this.providersCache == null) {
@@ -198,8 +284,18 @@ public class PluginsFactory {
     private static final Map<String, Class<?>> providersTypes = new HashMap<>();
 
     /**
-     * NOTE: this is availabe only after providers instantiation happening in method providers()
-     * @return a Map whose keys are the provider's name and values are the classes of the provided objects
+     * Returns a map of provider names to the classes of objects they provide.
+     * 
+     * This method is used by the dependency injection mechanism to determine
+     * the types of objects that providers can supply. The map is populated
+     * during provider instantiation.
+     * 
+     * <p><strong>Note:</strong> This method is only available after provider
+     * instantiation, which happens in the {@link #providers()} method.</p>
+     * 
+     * @return a Map whose keys are provider names and values are the classes
+     *         of the provided objects
+     * @throws IllegalStateException if called before providers have been instantiated
      */
     static Map<String, Class<?>> providersTypes() {
         if (!PluginsScanner.providers().isEmpty() && providersTypes.keySet().isEmpty()) {
@@ -209,7 +305,18 @@ public class PluginsFactory {
     }
 
     /**
-     * @param type the class of the plugin , e.g. Initializer.class
+     * Creates plugin instances from their descriptors.
+     * 
+     * This method is responsible for instantiating plugins from their descriptors,
+     * performing dependency injection, invoking initialization methods, and
+     * creating PluginRecord instances. It handles plugin configuration, sorting
+     * by priority, and error handling during the instantiation process.
+     * 
+     * @param <T> the type of plugin to create
+     * @param pluginDescriptors the list of plugin descriptors to instantiate
+     * @param type the human-readable name of the plugin type for logging
+     * @param conf the application configuration containing plugin settings
+     * @return a set of PluginRecord instances containing the successfully created plugins
      */
     @SuppressWarnings("unchecked")
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(List<PluginDescriptor> pluginDescriptors, String type, Configuration conf) {

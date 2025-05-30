@@ -23,8 +23,21 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 
 /**
- * Specialized Interceptor interface for MongoService
+ * Specialized Interceptor interface for MongoService.
+ * 
+ * This interface provides a type-safe way to intercept MongoDB-related requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for MongoRequest and MongoResponse types.
+ * 
+ * Interceptors implementing this interface can process MongoDB operations before they are
+ * handled by the MongoService or before the response is sent back to the client. This
+ * enables custom validation, transformation, logging, security checks, or other
+ * cross-cutting concerns specific to MongoDB operations.
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see MongoRequest
+ * @see MongoResponse
  */
 public interface MongoInterceptor extends Interceptor<MongoRequest, MongoResponse> {
 

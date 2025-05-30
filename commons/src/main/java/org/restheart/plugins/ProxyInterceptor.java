@@ -23,8 +23,22 @@ import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 
 /**
- *
+ * Specialized Interceptor interface for proxy requests and responses.
+ * 
+ * This interface provides a type-safe way to intercept requests and responses
+ * that are being proxied to external services through RESTHeart. It extends
+ * the generic Interceptor interface with specific parameterization for
+ * ByteArrayProxyRequest and ByteArrayProxyResponse types.
+ * 
+ * Interceptors implementing this interface can process requests before they
+ * are forwarded to the target service and responses before they are sent
+ * back to the client. This is useful for adding headers, logging, authentication,
+ * content transformation, or other cross-cutting concerns for proxied requests.
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see ByteArrayProxyRequest
+ * @see ByteArrayProxyResponse
  */
 public interface ProxyInterceptor extends Interceptor<ByteArrayProxyRequest, ByteArrayProxyResponse> {
 

@@ -30,20 +30,50 @@ import java.util.List;
 import org.restheart.utils.LambdaUtils;
 
 /**
- * Loads a class, including searching within all plugin JAR files.
+ * Custom class loader for loading classes from plugin JAR files.
+ * 
+ * This class loader extends URLClassLoader to provide the ability to load classes
+ * from plugin JAR files that may not be available in the standard classpath.
+ * It implements a singleton pattern to ensure there's only one instance managing
+ * all plugin class loading throughout the application lifecycle.
+ * 
  * <p>
- * This method is essential for the {@code collectFieldInjections()} method, which processes field injections
- * annotated with {@code @Inject}. Specifically, it addresses cases where the {@code @Inject} annotation
- * references a {@link org.restheart.plugins.Provider} that returns an object. The class of this object may reside
- * in a plugin JAR file, necessitating a comprehensive search to locate and load the class correctly.
+ * This class loader is essential for the dependency injection mechanism, particularly
+ * for the {@code collectFieldInjections()} method, which processes field injections
+ * annotated with {@code @Inject}. It addresses cases where the {@code @Inject} annotation
+ * references a {@link org.restheart.plugins.Provider} that returns an object whose class
+ * may reside in a plugin JAR file, necessitating a comprehensive search to locate and
+ * load the class correctly.
  * </p>
+ * 
+ * <p>
+ * The class loader uses a hierarchical approach: it first attempts to load classes
+ * using the standard class loader, and only falls back to searching plugin JARs
+ * if the class is not found in the standard classpath.
+ * </p>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see URLClassLoader
+ * @see PluginsScanner
+ * @see org.restheart.plugins.Provider
+ * @see org.restheart.plugins.Inject
  */
 public class PluginsClassloader extends URLClassLoader {
+    /**
+     * Singleton instance of the plugins class loader.
+     */
     private static PluginsClassloader SINGLETON = null;
 
     /**
-     * call after PluginsScanner.jars array is populated
-     * @param jars
+     * Initializes the singleton PluginsClassloader with the given JAR URLs.
+     * 
+     * This method must be called after the PluginsScanner.jars array is populated
+     * and before any attempt to use the class loader. It can only be called once
+     * during the application lifecycle.
+     * 
+     * @param jars array of URLs pointing to plugin JAR files to be included in the classpath
+     * @throws IllegalStateException if the class loader has already been initialized
+     * @throws RuntimeException if an I/O error occurs during initialization
      */
     public static void init(URL[] jars) {
         if (SINGLETON != null) {
@@ -57,6 +87,17 @@ public class PluginsClassloader extends URLClassLoader {
         }
     }
 
+    /**
+     * Initializes the singleton PluginsClassloader with the given file paths.
+     * 
+     * This convenience method converts a list of file paths to URLs and initializes
+     * the class loader. It must be called before any attempt to use the class loader
+     * and can only be called once during the application lifecycle.
+     * 
+     * @param paths list of file paths pointing to plugin JAR files to be included in the classpath
+     * @throws IllegalStateException if the class loader has already been initialized
+     * @throws RuntimeException if an I/O error occurs during initialization or if a path cannot be converted to a URL
+     */
     public static void init(List<Path> paths) {
         if (SINGLETON != null) {
             throw new IllegalStateException("already initialized");
@@ -77,14 +118,38 @@ public class PluginsClassloader extends URLClassLoader {
         }
     }
 
+    /**
+     * Checks whether the PluginsClassloader singleton has been initialized.
+     * 
+     * @return true if the class loader has been initialized, false otherwise
+     */
     public static boolean isInitialized() {
         return SINGLETON != null;
     }
 
+    /**
+     * Private constructor that creates a new PluginsClassloader with the given JAR URLs.
+     * 
+     * This constructor is private to enforce the singleton pattern. Use the static
+     * {@link #init(URL[])} or {@link #init(List)} methods to initialize the class loader.
+     * 
+     * @param jars array of URLs pointing to plugin JAR files
+     * @throws IOException if an I/O error occurs during initialization
+     */
     private PluginsClassloader(URL[] jars) throws IOException {
         super(jars);
     }
 
+    /**
+     * Returns the singleton instance of the PluginsClassloader.
+     * 
+     * This method provides access to the initialized class loader instance.
+     * The class loader must be initialized using one of the {@code init()} methods
+     * before calling this method.
+     * 
+     * @return the singleton PluginsClassloader instance
+     * @throws IllegalStateException if the class loader has not been initialized
+     */
     public static PluginsClassloader getInstance() {
         if (SINGLETON == null) {
             throw new IllegalStateException("not initialized");
@@ -93,6 +158,24 @@ public class PluginsClassloader extends URLClassLoader {
         }
     }
 
+    /**
+     * Loads the class with the specified binary name.
+     * 
+     * This method implements a hierarchical class loading strategy:
+     * <ol>
+     * <li>First attempts to load the class using the PluginsScanner's class loader</li>
+     * <li>If the class is not found, falls back to searching in the plugin JAR files
+     *     using the parent URLClassLoader implementation</li>
+     * </ol>
+     * 
+     * This approach ensures that standard classes are loaded efficiently while
+     * still providing access to classes that exist only in plugin JARs.
+     * 
+     * @param name the binary name of the class to load
+     * @return the resulting Class object
+     * @throws ClassNotFoundException if the class was not found in either the
+     *         standard classpath or the plugin JAR files
+     */
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         try {

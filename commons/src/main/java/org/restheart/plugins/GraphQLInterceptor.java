@@ -23,9 +23,21 @@ import org.restheart.exchange.GraphQLRequest;
 import org.restheart.exchange.GraphQLResponse;
 
 /**
- * Specialized Interceptor interface for the GraphQL service
+ * Specialized Interceptor interface for the GraphQL service.
+ * 
+ * This interface provides a type-safe way to intercept GraphQL requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for GraphQLRequest and GraphQLResponse types.
+ * 
+ * Interceptors implementing this interface can process GraphQL queries, mutations,
+ * and subscriptions before they are handled by the GraphQL service or before the
+ * response is sent back to the client. This allows for custom validation, logging,
+ * authentication, or transformation of GraphQL operations.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see GraphQLRequest
+ * @see GraphQLResponse
  */
 public interface GraphQLInterceptor extends Interceptor<GraphQLRequest, GraphQLResponse> {
 

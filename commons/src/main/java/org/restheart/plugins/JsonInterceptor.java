@@ -23,8 +23,22 @@ import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 
 /**
+ * Specialized Interceptor interface for services implementing JsonService.
+ * 
+ * This interface provides a type-safe way to intercept JSON-based requests and responses
+ * in the RESTHeart framework. It extends the generic Interceptor interface with specific
+ * parameterization for JsonRequest and JsonResponse types.
+ * 
+ * Interceptors implementing this interface can process JSON data before it is
+ * handled by the service or before the response is sent back to the client.
+ * This is particularly useful for JSON validation, transformation, logging,
+ * or applying business rules to JSON payloads.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see Interceptor
+ * @see JsonRequest
+ * @see JsonResponse
+ * @see JsonService
  */
 public interface JsonInterceptor extends Interceptor<JsonRequest, JsonResponse> {
 }
