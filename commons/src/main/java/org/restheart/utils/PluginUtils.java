@@ -43,15 +43,23 @@ import org.restheart.plugins.security.Authorizer;
 import io.undertow.server.HttpServerExchange;
 
 /**
+ * Utility class providing helper methods for plugin management and introspection.
+ * This class contains methods to extract metadata from plugins, handle plugin
+ * annotations, retrieve plugin configurations, and manage plugin lifecycle operations.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginUtils {
     /**
+     * Retrieves the intercept point for the given interceptor.
+     * First checks the @RegisterPlugin annotation, then falls back to looking
+     * for an interceptPoint field in the class.
      *
-     * @param interceptor
-     * @return the interceptPoint as defined by the @RegisterPlugin annotation if
-     *         annotated or the value of the field interceptPoint if exists
+     * @param interceptor the interceptor to analyze
+     * @return the intercept point as defined by the @RegisterPlugin annotation
+     *         or the value of the interceptPoint field
+     * @throws IllegalArgumentException if the intercept point is ANY (which is only
+     *         allowed in the dontIntercept attribute)
      */
     @SuppressWarnings("rawtypes")
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
@@ -75,9 +83,11 @@ public class PluginUtils {
 
 
     /**
+     * Determines if the interceptor is required based on the @RegisterPlugin annotation.
      *
-     * @param interceptor
-     * @return the requiredinterceptor as defined by the @RegisterPlugin annotation
+     * @param interceptor the interceptor to check
+     * @return true if the interceptor is required, false otherwise, or null if
+     *         the annotation is not present
      */
     public static Boolean requiredinterceptor(Interceptor interceptor) {
         var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
@@ -90,12 +100,12 @@ public class PluginUtils {
     }
 
     /**
-     * this is used to retrieve the interceptPoint of an Interceptor that is not annotated
-     * with @RegisterPlugin
+     * Retrieves the interceptPoint field value from an Interceptor that is not
+     * annotated with @RegisterPlugin. Uses reflection to find the field.
      *
-     * @param clazz
-     * @param o
-     * @return
+     * @param clazz the class to search for the interceptPoint field
+     * @param o the object instance to get the field value from
+     * @return the InterceptPoint value from the field, or null if not found
      */
     private static InterceptPoint findInterceptPointField(Class<?> clazz, Object o) {
         try {
@@ -119,6 +129,13 @@ public class PluginUtils {
         }
     }
 
+    /**
+     * Retrieves the initialization point for the given initializer from the
+     * @RegisterPlugin annotation.
+     *
+     * @param initializer the initializer to analyze
+     * @return the initialization point, or null if the annotation is not present
+     */
     public static InitPoint initPoint(Initializer initializer) {
         var a = initializer.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
@@ -129,6 +146,12 @@ public class PluginUtils {
         }
     }
 
+    /**
+     * Determines if the interceptor requires content based on the @RegisterPlugin annotation.
+     *
+     * @param interceptor the interceptor to check
+     * @return true if the interceptor requires content, false otherwise
+     */
     public static boolean requiresContent(Interceptor<? extends Request<?>, ? extends Response<?>> interceptor) {
         var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
@@ -140,8 +163,10 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the name of the plugin from the @RegisterPlugin annotation
+     * or from a 'name' field if the annotation is not present.
      *
-     * @param plugin
+     * @param plugin the plugin to get the name from
      * @return the plugin name
      */
     public static String name(Plugin plugin) {
@@ -155,12 +180,12 @@ public class PluginUtils {
     }
 
     /**
-     * this is used to retrieve the name of a plugin that is not annotated
-     * with @RegisterPlugin. Assumes the existance of the field 'name'.
+     * Retrieves the name field value from a plugin that is not annotated
+     * with @RegisterPlugin. Uses reflection to find the 'name' field.
      *
-     * @param clazz
-     * @param o
-     * @return
+     * @param clazz the class to search for the name field
+     * @param o the object instance to get the field value from
+     * @return the name value from the field, or null if not found
      */
     private static String findNameField(Class<?> clazz, Object o) {
         try {
@@ -185,10 +210,11 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the default URI for the service from the @RegisterPlugin annotation.
+     * If not explicitly set via defaultUri attribute, it defaults to /[service-name].
      *
-     * @param service
-     * @return the service default URI. If not explicitly set via defaulUri
-     *         attribute, it is /[service-name]
+     * @param service the service to get the default URI from
+     * @return the service default URI, or null if the annotation is not present
      */
     @SuppressWarnings("rawtypes")
     public static String defaultURI(Service service) {
@@ -199,9 +225,10 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the URI match policy for the service from the @RegisterPlugin annotation.
      *
-     * @param service
-     * @return uri match policy.
+     * @param service the service to get the match policy from
+     * @return the URI match policy
      */
     @SuppressWarnings("rawtypes")
     public static MATCH_POLICY uriMatchPolicy(Service service) {
@@ -209,11 +236,12 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the default URI for the service class from the @RegisterPlugin annotation.
+     * If not explicitly set via defaultUri attribute, it defaults to /[service-name].
      *
-     * @param <P>
-     * @param serviceClass
-     * @return the service default URI. If not explicitly set via defaulUri
-     *         attribute, it is /[service-name]
+     * @param <P> the service type
+     * @param serviceClass the service class to get the default URI from
+     * @return the service default URI, or null if the annotation is not present
      */
     @SuppressWarnings("rawtypes")
     public static <P extends Service> String defaultURI(Class<P> serviceClass) {
@@ -224,11 +252,13 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the actual URI for the service, either from configuration or
+     * falling back to the default URI from the annotation.
      *
-     * @param <P>
-     * @param conf         the plugin configuration got from @Inject("conf")
+     * @param <P> the service type
+     * @param conf the plugin configuration obtained from @Inject("conf")
      * @param serviceClass the class of the service
-     * @return the actual service uri set in cofiguration or the defaultURI
+     * @return the actual service URI set in configuration or the defaultURI
      */
     @SuppressWarnings("rawtypes")
     public static <P extends Service> String actualUri(Map<String, Object> conf, Class<P> serviceClass) {
@@ -240,10 +270,12 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the intercept points that should be excluded when processing
+     * requests handled by the given service.
      *
-     * @param service
-     * @return the intercept points of interceptors that must not be executed on
-     *         requests handled by service
+     * @param service the service to check
+     * @return array of intercept points that must not be executed on requests
+     *         handled by this service
      */
     @SuppressWarnings("rawtypes")
     public static InterceptPoint[] dontIntercept(Service service) {
@@ -261,9 +293,11 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the authorizer type from the @RegisterPlugin annotation.
+     * Defaults to ALLOWER if the annotation is not present or authorizer is null.
      *
-     * @param authorizer
-     * @return the Authorizer type
+     * @param authorizer the authorizer to check
+     * @return the authorizer type (ALLOWER by default)
      */
     public static Authorizer.TYPE authorizerType(Authorizer authorizer) {
         if (authorizer == null) {
@@ -279,6 +313,13 @@ public class PluginUtils {
         }
     }
 
+    /**
+     * Determines if the service is blocking based on the @RegisterPlugin annotation.
+     * Defaults to true (blocking) if the annotation is not present or service is null.
+     *
+     * @param service the service to check
+     * @return true if the service is blocking, false if non-blocking
+     */
     public static boolean blocking(Service<?,?> service) {
         if (service == null) {
             return true;
@@ -294,10 +335,11 @@ public class PluginUtils {
     }
 
     /**
+     * Finds the service that is handling the given HTTP server exchange.
      *
-     * @param registry
-     * @param exchange
-     * @return the service handling the exchange or null if the request is not
+     * @param registry the plugins registry containing all registered services
+     * @param exchange the HTTP server exchange to analyze
+     * @return the service handling the exchange, or null if the request is not
      *         handled by a service
      */
     public static Service<?, ?> handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
@@ -307,11 +349,12 @@ public class PluginUtils {
     }
 
     /**
+     * Finds the plugin record of the service that is handling the given HTTP server exchange.
      *
-     * @param registry
-     * @param exchange
-     * @return the plugin record of the service handling the exchange or null if the request is not
-     *         handled by a service
+     * @param registry the plugins registry containing all registered services
+     * @param exchange the HTTP server exchange to analyze
+     * @return the plugin record of the service handling the exchange, or null if
+     *         the request is not handled by a service
      */
     public static PluginRecord<Service<?, ?>> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
         var pi = Request.getPipelineInfo(exchange);
@@ -332,11 +375,12 @@ public class PluginUtils {
     }
 
     /**
+     * Retrieves the intercept points that should be excluded when processing
+     * the given HTTP server exchange.
      *
-     * @param registry
-     * @param exchange
-     * @return the intercept points of interceptors that must not be executed on the
-     *         exchange
+     * @param registry the plugins registry containing all registered services
+     * @param exchange the HTTP server exchange to analyze
+     * @return array of intercept points that must not be executed on this exchange
      */
     public static InterceptPoint[] dontIntercept(PluginsRegistry registry, HttpServerExchange exchange) {
         var hs = handlingService(registry, exchange);
@@ -344,18 +388,21 @@ public class PluginUtils {
         return hs == null ? new InterceptPoint[0] : dontIntercept(hs);
     }
 
+    /** Cache for plugin request types to improve performance of type resolution. */
     @SuppressWarnings("rawtypes")
     private static final LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.requestType());
 
+    /** Cache for plugin response types to improve performance of type resolution. */
     @SuppressWarnings("rawtypes")
     private static final LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.responseType());
 
     /**
-     * Plugin.requestType() is heavy. This helper methods speeds up invocation using
-     * a cache
+     * Retrieves the request type for the plugin using a cache for improved performance.
+     * Plugin.requestType() is computationally expensive, so this helper method
+     * speeds up invocation by caching results.
      *
-     * @param plugin
-     * @return
+     * @param plugin the plugin to get the request type from
+     * @return the cached request type
      */
     @SuppressWarnings("rawtypes")
     public static Type cachedRequestType(ExchangeTypeResolver plugin) {
@@ -363,11 +410,12 @@ public class PluginUtils {
     }
 
     /**
-     * Plugin.responseType() is heavy. This helper methods speeds up invocation
-     * using a cache
+     * Retrieves the response type for the plugin using a cache for improved performance.
+     * Plugin.responseType() is computationally expensive, so this helper method
+     * speeds up invocation by caching results.
      *
-     * @param plugin
-     * @return
+     * @param plugin the plugin to get the response type from
+     * @return the cached response type
      */
     @SuppressWarnings("rawtypes")
     public static Type cachedResponseType(ExchangeTypeResolver plugin) {

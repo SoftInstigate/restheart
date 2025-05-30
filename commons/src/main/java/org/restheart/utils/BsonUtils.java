@@ -75,32 +75,56 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Utility class providing comprehensive BSON document manipulation operations.
+ * This class contains methods for parsing, converting, escaping, and manipulating
+ * BSON documents and values. It supports operations like key escaping/unescaping,
+ * path-based property access, document flattening/unflattening, and JSON conversion.
+ *
+ * <p>Key features include:</p>
+ * <ul>
+ * <li>Key escaping for MongoDB compatibility (handles $ and . characters)</li>
+ * <li>XPath-style property access using dot notation</li>
+ * <li>Document flattening and unflattening operations</li>
+ * <li>JSON parsing and serialization</li>
+ * <li>Update operator detection and validation</li>
+ * <li>Builder patterns for document and array construction</li>
+ * </ul>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BsonUtils {
 
+    /** Logger instance for this class. */
     static final Logger LOGGER = LoggerFactory.getLogger(BsonUtils.class);
 
+    /** Codec for encoding/decoding BSON arrays. */
     private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(CodecRegistries.fromProviders(new BsonValueCodecProvider()));
+    
+    /** Codec registry for document encoding/decoding operations. */
     private static final CodecRegistry REGISTRY = CodecRegistries.fromCodecs(new DocumentCodec());
 
+    /** Escaped representation of the dollar sign character. */
     private static final String ESCAPED_DOLLAR = "_$";
+    
+    /** Escaped representation of the dot character. */
     private static final String ESCAPED_DOT = "::";
+    
+    /** The dollar sign character. */
     private static final String DOLLAR = "$";
 
     /**
-     * replaces the underscore prefixed keys (eg _$exists) with the
-     * corresponding key (eg $exists) and the dot (.) in property names. This is
-     * needed because MongoDB does not allow to store keys that starts with $
-     * and with dots in it
+     * Replaces the underscore prefixed keys (e.g., _$exists) with the
+     * corresponding key (e.g., $exists) and replaces escaped dots (::) with 
+     * actual dots (.) in property names. This operation reverses the escaping
+     * applied by {@link #escapeKeys(BsonValue)} method.
      *
-     * See
-     * https://docs.mongodb.org/manual/reference/limits/#Restrictions-on-Field-Names
+     * <p>This is needed because MongoDB does not allow storing keys that start with $
+     * and contain dots in them.</p>
      *
-     * @param json
-     * @return the json object where the underscore prefixed keys are replaced
-     * with the corresponding keys
+     * @param json the BSON value to process (can be document, array, or primitive)
+     * @return the BSON value where the underscore prefixed keys are replaced
+     *         with the corresponding unescaped keys, or null if input is null
+     * @see <a href="https://docs.mongodb.org/manual/reference/limits/#Restrictions-on-Field-Names">MongoDB Field Name Restrictions</a>
      */
     public static BsonValue unescapeKeys(BsonValue json) {
         if (json == null) {
@@ -156,14 +180,15 @@ public class BsonUtils {
     }
 
     /**
-     * replaces the dollar prefixed keys (eg $exists) with the corresponding
-     * underscore prefixed key (eg _$exists). Also replaces dots if escapeDots
-     * is true. This is needed because MongoDB does not allow to store keys that
-     * starts with $ and that contains dots.
+     * Replaces the dollar prefixed keys (e.g., $exists) with the corresponding
+     * underscore prefixed key (e.g., _$exists). Also replaces dots with escaped
+     * dots (::) if escapeDots is true. This is needed because MongoDB does not 
+     * allow storing keys that start with $ and contain dots.
      *
-     * @param json
-     * @param escapeDots
-     * @return the json object where the keys are escaped
+     * @param json the BSON value to process (can be document, array, or primitive)
+     * @param escapeDots if true, dots in keys will be replaced with "::"
+     * @return the BSON value where the keys are escaped for MongoDB compatibility,
+     *         or null if input is null
      */
     public static BsonValue escapeKeys(BsonValue json, boolean escapeDots) {
         return escapeKeys(json, escapeDots, false);
@@ -738,10 +763,12 @@ public class BsonUtils {
     }
 
     /**
+     * Converts a BSON value representing an ID to its string representation.
+     * Handles different BSON types appropriately and can optionally quote string values.
      *
-     * @param id
-     * @param quote
-     * @return the String representation of the id
+     * @param id the BSON value to convert to string
+     * @param quote if true, string values will be wrapped in single quotes
+     * @return the string representation of the ID, or null if id is null
      */
     public static String getIdAsString(BsonValue id, boolean quote) {
         if (id == null) {
@@ -757,12 +784,14 @@ public class BsonUtils {
         }
     }
 
+    /** Default codec registry from MongoDB client settings for BSON encoding/decoding operations. */
     public static final CodecRegistry DEFAULT_CODEC_REGISTRY = MongoClientSettings.getDefaultCodecRegistry();
 
     /**
+     * Converts a Map to a BsonDocument using the default codec registry.
      *
-     * @param map
-     * @return
+     * @param map the map to convert to BSON document
+     * @return the BsonDocument representation of the map, or null if map is null
      */
     public static BsonDocument toBsonDocument(Map<String, ? super Object> map) {
         if (map == null) {

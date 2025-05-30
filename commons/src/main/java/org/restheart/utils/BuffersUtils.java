@@ -32,17 +32,25 @@ import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 
 /**
+ * Utility class for handling buffer operations and conversions.
+ * Provides methods for converting between different buffer types, managing
+ * pooled byte buffers, and performing buffer operations safely with size limits.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BuffersUtils {
 
+    /** Logger instance for this class. */
     private static final Logger LOGGER = LoggerFactory.getLogger(BuffersUtils.class);
 
     /**
-     * @param srcs
-     * @return
-     * @throws java.io.IOException
+     * Converts an array of pooled byte buffers to a single ByteBuffer.
+     * This method consolidates multiple pooled buffers into one continuous buffer,
+     * respecting the maximum content size limit.
+     *
+     * @param srcs array of pooled byte buffers to convert
+     * @return a ByteBuffer containing all the data from the source buffers, or null if srcs is null
+     * @throws IOException if the total content exceeds the maximum allowed size
      */
     public static ByteBuffer toByteBuffer(final PooledByteBuffer[] srcs) throws IOException {
         if (srcs == null) {
@@ -72,6 +80,15 @@ public class BuffersUtils {
         return dst.flip();
     }
 
+    /**
+     * Converts an array of pooled byte buffers to a byte array.
+     * This method first converts the pooled buffers to a ByteBuffer and then
+     * extracts the data as a byte array.
+     *
+     * @param srcs array of pooled byte buffers to convert
+     * @return a byte array containing all the data from the source buffers
+     * @throws IOException if the conversion fails or content exceeds size limits
+     */
     public static byte[] toByteArray(final PooledByteBuffer[] srcs) throws IOException {
         var content = toByteBuffer(srcs);
 
@@ -82,21 +99,38 @@ public class BuffersUtils {
         return ret;
     }
 
+    /**
+     * Converts an array of pooled byte buffers to a string using the specified charset.
+     *
+     * @param srcs array of pooled byte buffers to convert
+     * @param cs the charset to use for string conversion
+     * @return a string representation of the buffer content
+     * @throws IOException if the conversion fails or content exceeds size limits
+     */
     public static String toString(final PooledByteBuffer[] srcs, Charset cs) throws IOException {
         return new String(toByteArray(srcs), cs);
     }
 
+    /**
+     * Converts a byte array to a string using the specified charset.
+     *
+     * @param src the byte array to convert
+     * @param cs the charset to use for string conversion
+     * @return a string representation of the byte array content
+     * @throws IOException if the conversion fails
+     */
     public static String toString(final byte[] src, Charset cs) throws IOException {
         return new String(src, cs);
     }
 
     /**
-     * transfer the src data to the pooled buffers overwriting the exising data
+     * Transfers data from a source ByteBuffer to pooled byte buffers, overwriting existing data.
+     * This method allocates new pooled buffers as needed and clears existing ones before copying.
      *
-     * @param src
-     * @param dest
-     * @param exchange
-     * @return
+     * @param src the source ByteBuffer containing data to transfer
+     * @param dest array of pooled byte buffers to receive the data
+     * @param exchange the HTTP server exchange for accessing the byte buffer pool
+     * @return the number of bytes copied
      */
     public static int transfer(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
         var byteBufferPool = exchange.getConnection().getByteBufferPool();
@@ -132,6 +166,13 @@ public class BuffersUtils {
         return copied;
     }
 
+    /**
+     * Dumps the content of pooled byte buffers to the debug log for debugging purposes.
+     * This method logs the hexadecimal representation of each buffer's content.
+     *
+     * @param msg a message to include in the log output
+     * @param data array of pooled byte buffers to dump
+     */
     public static void dump(String msg, PooledByteBuffer[] data) {
         int nbuf = 0;
         for (PooledByteBuffer dest : data) {
@@ -151,12 +192,13 @@ public class BuffersUtils {
     }
 
     /**
-     * append the src data to the pooled buffers
+     * Appends data from a source ByteBuffer to pooled byte buffers.
+     * Unlike transfer(), this method appends to existing buffer content rather than overwriting it.
      *
-     * @param src
-     * @param dest
-     * @param exchange
-     * @return
+     * @param src the source ByteBuffer containing data to append
+     * @param dest array of pooled byte buffers to append data to
+     * @param exchange the HTTP server exchange for accessing the byte buffer pool
+     * @return the number of bytes copied
      */
     public static int append(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
         var byteBufferPool = exchange.getConnection().getByteBufferPool();
@@ -192,6 +234,16 @@ public class BuffersUtils {
         return copied;
     }
 
+    /**
+     * Transfers data from source pooled byte buffers to destination pooled byte buffers.
+     * This method copies data between two arrays of pooled buffers, allocating destination
+     * buffers as needed.
+     *
+     * @param src array of source pooled byte buffers
+     * @param dest array of destination pooled byte buffers
+     * @param exchange the HTTP server exchange for accessing the byte buffer pool
+     * @return the number of bytes copied
+     */
     public static int transfer(final PooledByteBuffer[] src, final PooledByteBuffer[] dest, final HttpServerExchange exchange) {
         var byteBufferPool = exchange.getConnection().getByteBufferPool();
         int copied = 0;

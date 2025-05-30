@@ -25,7 +25,12 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 /**
- * this duplicates si-lka Utils class
+ * Network utility class providing methods for network interface operations.
+ * This class contains utilities for determining the local host's LAN address,
+ * which is particularly useful on Linux systems where the default JDK method
+ * may return ambiguous results.
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class NetUtils {
     /**

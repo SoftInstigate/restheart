@@ -40,19 +40,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Utility class for extracting resources from JAR files and file systems.
+ * This class provides methods to extract resources from the classpath, whether they
+ * are located within JAR files or in expanded directory structures. It handles
+ * temporary directory creation and cleanup for JAR-based resource extraction.
+ * 
+ * <p>The class is particularly useful for extracting static files, configuration
+ * templates, or other resources that need to be accessed as physical files
+ * rather than through input streams.</p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResourcesExtractor {
 
+    /** Logger instance for this class. */
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
 
     /**
+     * Determines if a resource is located within a JAR file.
+     * This method checks whether the specified resource path points to a resource
+     * that is packaged inside a JAR file rather than existing as a regular file
+     * in the file system.
      *
      * @param clazz the class to get the classloader from
-     * @param resourcePath
-     * @return
-     * @throws URISyntaxException
+     * @param resourcePath the path to the resource to check
+     * @return true if the resource is inside a JAR file, false otherwise
+     * @throws URISyntaxException if the resource URI cannot be parsed
      */
     @SuppressWarnings("rawtypes")
     public static boolean isResourceInJar(Class clazz, String resourcePath) throws URISyntaxException {
@@ -63,12 +76,16 @@ public class ResourcesExtractor {
     }
 
     /**
+     * Deletes a temporary directory if the resource was extracted from a JAR file.
+     * This method provides cleanup functionality for temporary directories created
+     * during resource extraction from JAR files. If the resource is not from a JAR
+     * or the directory doesn't exist, no action is taken.
      *
      * @param clazz the class to get the classloader from
-     * @param resourcePath
-     * @param tempDir
-     * @throws URISyntaxException
-     * @throws java.io.IOException
+     * @param resourcePath the path to the resource that was extracted
+     * @param tempDir the temporary directory to delete
+     * @throws URISyntaxException if the resource URI cannot be parsed
+     * @throws IOException if an I/O error occurs during directory deletion
      */
     @SuppressWarnings("rawtypes")
     public static void deleteTempDir(Class clazz, String resourcePath, File tempDir) throws URISyntaxException, IOException {
@@ -78,13 +95,22 @@ public class ResourcesExtractor {
     }
 
     /**
+     * Extracts a resource from the classpath to the file system.
+     * This method handles both JAR-based resources and file system resources.
+     * For JAR resources, it creates a temporary directory and extracts the entire
+     * resource tree. For file system resources, it returns the existing file reference.
+     * 
+     * <p>When extracting from a JAR, the method creates a temporary directory and
+     * recursively copies all files and subdirectories from the resource path.
+     * The caller is responsible for cleaning up the temporary directory using
+     * {@link #deleteTempDir(Class, String, File)}.</p>
      *
-     * @param clazz
-     * @param resourcePath
-     * @return
-     * @throws java.io.IOException
-     * @throws URISyntaxException
-     * @throws IllegalStateException
+     * @param clazz the class to get the classloader from
+     * @param resourcePath the path to the resource to extract
+     * @return a File object pointing to the extracted resource (temporary directory for JARs)
+     * @throws IOException if an I/O error occurs during extraction
+     * @throws URISyntaxException if the resource URI cannot be parsed
+     * @throws IllegalStateException if the specified resource path does not exist
      */
     @SuppressWarnings("rawtypes")
     public static File extract(Class clazz, String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
@@ -149,6 +175,14 @@ public class ResourcesExtractor {
         }
     }
 
+    /**
+     * Recursively deletes a file or directory and all its contents.
+     * This method handles both files and directories, recursively deleting
+     * directory contents before deleting the directory itself.
+     * 
+     * @param file the file or directory to delete
+     * @throws IOException if an I/O error occurs during deletion
+     */
     private static void delete(File file) throws IOException {
         if (file.isDirectory()) {
             //directory is empty, then delete it
@@ -190,6 +224,14 @@ public class ResourcesExtractor {
         }
     }
 
+    /**
+     * Gets the class loader for the specified class.
+     * This helper method provides a consistent way to retrieve the class loader
+     * from a given class for resource loading operations.
+     * 
+     * @param clazz the class to get the class loader from
+     * @return the ClassLoader associated with the specified class
+     */
     @SuppressWarnings("rawtypes")
     private static ClassLoader getClassLoader(Class clazz) {
         return clazz.getClassLoader();

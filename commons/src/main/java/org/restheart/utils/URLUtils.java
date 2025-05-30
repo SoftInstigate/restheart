@@ -32,6 +32,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.QueryParameterUtils;
 
 /**
+ * Utility class for URL manipulation and processing operations.
+ * Provides methods for URL decoding, path manipulation, query string processing,
+ * and parameter handling for HTTP server exchanges.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -42,11 +45,12 @@ public class URLUtils {
     }
 
     /**
-     * given string /ciao/this/has/trailings///// returns
-     * /ciao/this/has/trailings
+     * Removes trailing slashes from a given string path.
+     * For example, given string "/ciao/this/has/trailings/////" returns
+     * "/ciao/this/has/trailings".
      *
-     * @param s
-     * @return the string s without the trailing slashes
+     * @param s the string to process
+     * @return the string without trailing slashes, or null if input is null
      */
     public static String removeTrailingSlashes(String s) {
         if (s == null) {
@@ -67,9 +71,10 @@ public class URLUtils {
     }
 
     /**
-     * decode the percent encoded query string
+     * Decodes the percent-encoded query string using UTF-8 encoding.
+     * This method properly handles the '+' character encoding.
      *
-     * @param qs
+     * @param qs the query string to decode
      * @return the decoded query string
      */
     public static String decodeQueryString(String qs) {
@@ -77,11 +82,13 @@ public class URLUtils {
     }
 
     /**
-     * decode the percent encoded query string
+     * Decodes the percent-encoded query string using the specified encoding.
+     * This method properly handles the '+' character encoding and falls back
+     * to returning the original string if decoding fails.
      *
-     * @param qs
-     * @param enc encoding name
-     * @return the decoded query string
+     * @param qs the query string to decode
+     * @param enc the encoding name to use for decoding
+     * @return the decoded query string, or the original string if decoding fails
      */
     public static String decodeQueryString(String qs, String enc) {
         try {
@@ -92,9 +99,10 @@ public class URLUtils {
     }
 
     /**
-     * decode the percent encoded query string
+     * Decodes the percent-encoded query string from an HTTP server exchange.
+     * Uses the encoding specified in the exchange, or falls back to UTF-8.
      *
-     * @param exchange
+     * @param exchange the HTTP server exchange containing the query string
      * @return the decoded query string
      */
     public static String decodeQueryString(HttpServerExchange exchange) {
@@ -104,9 +112,11 @@ public class URLUtils {
     }
 
     /**
+     * Gets the parent path of the given path by removing the last path segment.
+     * For example, "/a/b/c" returns "/a/b", and "/a" returns "/".
      *
-     * @param path
-     * @return the parent path of path
+     * @param path the path to get the parent of
+     * @return the parent path, or the original path if it's null, empty, or "/"
      */
     public static String getParentPath(String path) {
         if (path == null || path.isEmpty() || path.equals("/")) {
@@ -125,19 +135,24 @@ public class URLUtils {
     }
 
     /**
+     * Gets the prefix URL of the HTTP server exchange by removing the relative path
+     * from the full request URL.
      *
-     * @param exchange
-     * @return the prefix url of the exchange
+     * @param exchange the HTTP server exchange
+     * @return the prefix URL (scheme, host, port, and context path)
      */
     public static String getPrefixUrl(HttpServerExchange exchange) {
         return exchange.getRequestURL().replaceAll(Pattern.quote(exchange.getRelativePath()), "");
     }
 
     /**
+     * Gets the query string from the exchange with specified parameters removed.
+     * This method removes all occurrences of the specified parameter names and
+     * their values from the query string.
      *
-     * @param exchange
-     * @param paramsToRemove
-     * @return
+     * @param exchange the HTTP server exchange containing the query string
+     * @param paramsToRemove array of parameter names to remove from the query string
+     * @return the query string with specified parameters removed
      */
     public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
         var ret = exchange.getQueryString();
@@ -161,10 +176,13 @@ public class URLUtils {
     }
 
     /**
+     * Converts a BSON value ID to its string representation for URL usage.
+     * String values are wrapped in single quotes, while other types are
+     * converted to their JSON representation.
      *
-     * @param id
-     * @return
-     * @throws UnsupportedDocumentIdException
+     * @param id the BSON value representing the document ID
+     * @return the string representation of the ID suitable for URLs
+     * @throws UnsupportedDocumentIdException if the ID type is not supported
      */
     public static String getIdString(BsonValue id) throws UnsupportedDocumentIdException {
         if (id == null) {

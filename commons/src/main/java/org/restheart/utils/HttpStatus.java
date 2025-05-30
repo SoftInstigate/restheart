@@ -20,15 +20,32 @@
 package org.restheart.utils;
 
 /**
- * Constants enumerating the HTTP status codes. All status codes defined in
- * RFC1945 (HTTP/1.0, RFC2616 (HTTP/1.1), and RFC2518 (WebDAV) are supported.
+ * Constants enumerating the HTTP status codes with their corresponding reason phrases.
+ * This class provides comprehensive coverage of HTTP status codes defined in multiple RFCs:
+ * 
+ * <ul>
+ * <li>RFC 1945 (HTTP/1.0)</li>
+ * <li>RFC 2616 (HTTP/1.1)</li>
+ * <li>RFC 2518 (WebDAV)</li>
+ * <li>RFC 6585 (Additional HTTP Status Codes)</li>
+ * </ul>
+ * 
+ * <p>Each status code is defined as a public static final integer constant with the
+ * naming convention SC_[STATUS_NAME]. The class also provides a lookup mechanism
+ * to retrieve the standard English reason phrase for any supported status code.</p>
+ * 
+ * <p>The status codes are organized into the standard HTTP categories:</p>
+ * <ul>
+ * <li><strong>1xx Informational:</strong> Request received, continuing process</li>
+ * <li><strong>2xx Success:</strong> The action was successfully received, understood, and accepted</li>
+ * <li><strong>3xx Redirection:</strong> Further action must be taken to complete the request</li>
+ * <li><strong>4xx Client Error:</strong> The request contains bad syntax or cannot be fulfilled</li>
+ * <li><strong>5xx Server Error:</strong> The server failed to fulfill an apparently valid request</li>
+ * </ul>
  *
- * SeeStatusLine
  * @author Unascribed
  * @author <a href="mailto:mbowler@GargoyleSoftware.com">Mike Bowler</a>
  * @author <a href="mailto:jsdever@apache.org">Jeff Dever</a>
- *
- *
  * @version $Id: HttpStatus.java 155418 2005-02-26 13:01:52Z dirkv $
  */
 public class HttpStatus {

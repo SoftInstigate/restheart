@@ -38,13 +38,40 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A directory watcher that monitors file system changes in a directory tree.
+ * This class implements Runnable and continuously watches for file and directory
+ * creation, modification, and deletion events. It automatically registers
+ * subdirectories and excludes "node_modules" directories from monitoring.
+ *
+ * <p>The watcher uses Java NIO WatchService to efficiently monitor file system
+ * events and executes a callback function when events occur.</p>
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class DirectoryWatcher implements Runnable {
+    /** Logger instance for this class. */
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectoryWatcher.class);
 
+    /** The watch service used to monitor file system events. */
     private final WatchService watchService;
+    
+    /** Mapping of watch keys to their corresponding directory paths. */
     private final Map<WatchKey, Path> keys;
+    
+    /** Callback function executed when file system events occur. */
     private final BiConsumer<Path, Kind<Path>> onEvent;
 
+    /**
+     * Creates a new DirectoryWatcher for the specified root directory.
+     * The watcher will monitor the root directory and all its subdirectories
+     * (except "node_modules" directories) for file system events.
+     *
+     * @param rootDir the root directory to watch
+     * @param onEvent callback function to execute when events occur, receives the
+     *               affected path and the event kind
+     * @throws IOException if an I/O error occurs while setting up the watch service
+     */
     public DirectoryWatcher(Path rootDir, BiConsumer<Path, Kind<Path>> onEvent) throws IOException {
         this.watchService = FileSystems.getDefault().newWatchService();
         this.keys = new HashMap<>(); // Mapping WatchKeys to the corresponding directory
@@ -52,6 +79,14 @@ public class DirectoryWatcher implements Runnable {
         registerDirectoryAndSubdirectories(rootDir);
     }
 
+    /**
+     * Registers a directory and all its subdirectories for monitoring.
+     * This method recursively walks through the directory tree and registers
+     * each directory with the watch service, excluding "node_modules" directories.
+     *
+     * @param dir the directory to register for monitoring
+     * @throws IOException if an I/O error occurs during registration
+     */
     private void registerDirectoryAndSubdirectories(Path dir) throws IOException {
         // Skip directories named "node_modules"
         if (dir.getFileName().toString().equals("node_modules")) {
@@ -76,6 +111,15 @@ public class DirectoryWatcher implements Runnable {
         });
     }
 
+    /**
+     * Runs the directory watcher in a continuous loop.
+     * This method blocks waiting for file system events and processes them
+     * when they occur. It handles directory creation by automatically registering
+     * new directories for monitoring, and directory deletion by unregistering them.
+     *
+     * <p>The method will continue running until interrupted or all watched
+     * directories become invalid.</p>
+     */
     @Override
     public void run() {
         while (true) {

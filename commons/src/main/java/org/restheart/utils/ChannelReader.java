@@ -26,15 +26,21 @@ import java.nio.charset.StandardCharsets;
 import io.undertow.server.HttpServerExchange;
 
 /**
+ * Utility class for reading data from HTTP server exchange channels.
+ * Provides convenient methods to read request body content as strings or byte arrays
+ * using Undertow's asynchronous receiver API.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ChannelReader {
     /**
+     * Reads the complete request body as a string using UTF-8 encoding.
+     * This method uses Undertow's asynchronous receiver to read the full request
+     * content and convert it to a string.
      *
-     * @param exchange
-     * @return
-     * @throws java.io.IOException
+     * @param exchange the HTTP server exchange containing the request body
+     * @return the complete request body as a UTF-8 encoded string
+     * @throws IOException if an I/O error occurs during reading
      */
     public static String readString(HttpServerExchange exchange) throws IOException {
         final var receiver = exchange.getRequestReceiver();
@@ -49,10 +55,13 @@ public class ChannelReader {
     }
 
     /**
+     * Reads the complete request body as a byte array.
+     * This method uses Undertow's asynchronous receiver to read the full request
+     * content as raw bytes.
      *
-     * @param exchange
-     * @return
-     * @throws java.io.IOException
+     * @param exchange the HTTP server exchange containing the request body
+     * @return the complete request body as a byte array
+     * @throws IOException if an I/O error occurs during reading
      */
     public static byte[] readBytes(HttpServerExchange exchange) throws IOException {
         final var receiver = exchange.getRequestReceiver();

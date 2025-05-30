@@ -27,14 +27,37 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.slf4j.Logger;
 
 /**
+ * Utility class for enhanced logging operations with colored console output.
+ * Provides methods for logging at different levels and creating boxed messages
+ * for better visual presentation in console output.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LogUtils {
+    /**
+     * Enumeration of logging levels supported by this utility.
+     */
     public static enum Level {
-        TRACE, DEBUG, INFO, WARN, ERROR
+        /** Trace level logging */
+        TRACE, 
+        /** Debug level logging */
+        DEBUG, 
+        /** Info level logging */
+        INFO, 
+        /** Warning level logging */
+        WARN, 
+        /** Error level logging */
+        ERROR
     }
 
+    /**
+     * Logs a message at the specified level using the provided logger.
+     *
+     * @param logger the SLF4J logger to use for logging
+     * @param level the logging level to use
+     * @param format the message format string
+     * @param argArray arguments for the format string
+     */
     public static void log(Logger logger, Level level, String format, Object... argArray) {
         if (logger != null && level != null) {
             switch (level) {
@@ -57,24 +80,51 @@ public class LogUtils {
         }
     }
 
+    /**
+     * Logs an error message in a colored box format for better visibility.
+     *
+     * @param LOGGER the SLF4J logger to use
+     * @param rows the message rows to display in the box
+     */
     public static void boxedError(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.ERROR, RED, GREEN, rows);
     }
 
+    /**
+     * Logs a warning message in a colored box format for better visibility.
+     *
+     * @param LOGGER the SLF4J logger to use
+     * @param rows the message rows to display in the box
+     */
     public static void boxedWarn(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.WARN, RED, GREEN, rows);
     }
 
+    /**
+     * Logs an info message in a colored box format for better visibility.
+     *
+     * @param LOGGER the SLF4J logger to use
+     * @param rows the message rows to display in the box
+     */
     public static void boxedInfo(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.INFO, GREEN, GREEN, rows);
     }
 
+    /**
+     * Logs a message in a colored box format with customizable colors.
+     *
+     * @param LOGGER the SLF4J logger to use
+     * @param level the logging level to use
+     * @param firstRowColor the color for the first row of the message
+     * @param rowsColor the color for subsequent rows of the message
+     * @param rows the message rows to display in the box
+     */
     public static void boxedMessage(
             Logger LOGGER,
             Level level,
@@ -99,14 +149,29 @@ public class LogUtils {
         LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
     }
 
+    /**
+     * Creates the start row formatting for boxed messages.
+     *
+     * @return Ansi object with start row formatting
+     */
     private static Ansi sr() {
         return ansi().fg(GREEN).a("| ").reset();
     }
 
+    /**
+     * Creates the end row formatting for boxed messages.
+     *
+     * @return Ansi object with end row formatting
+     */
     private static Ansi er() {
         return ansi().fg(GREEN).a("|\n").reset();
     }
 
+    /**
+     * Creates the header formatting for boxed messages.
+     *
+     * @return Ansi object with header formatting
+     */
     private static Ansi header() {
         return ansi().a("\n").fg(GREEN).a(
                 "*-------------------------------------------------------------------*\n"
@@ -114,6 +179,11 @@ public class LogUtils {
                 .reset();
     }
 
+    /**
+     * Creates the footer formatting for boxed messages.
+     *
+     * @return Ansi object with footer formatting
+     */
     private static Ansi footer() {
         return ansi().fg(GREEN).a(
                 "|                                                                   |\n"
@@ -122,6 +192,13 @@ public class LogUtils {
 
     }
 
+    /**
+     * Pads a string to the specified length with spaces.
+     *
+     * @param s the string to pad
+     * @param length the target length
+     * @return the padded string
+     */
     private static String pad(String s, int length) {
         while (s.length() < length) {
             s = s.concat(" ");
