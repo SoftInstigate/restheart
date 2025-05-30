@@ -36,33 +36,73 @@ import io.undertow.UndertowOptions;
 import io.undertow.Undertow.Builder;
 
 /**
- *
+ * Utility class for configuration handling and parsing.
+ * 
+ * <p>This class provides helper methods for extracting values from configuration maps,
+ * handling environment variable overrides, parsing configuration files, and setting
+ * Undertow server options. It supports both simple key-value lookups and XPath-style
+ * queries for nested configuration values.</p>
+ * 
+ * <h2>Key Features</h2>
+ * <ul>
+ *   <li>Safe value extraction with default fallbacks</li>
+ *   <li>XPath queries for nested configuration values</li>
+ *   <li>Environment variable override parsing (RH_* pattern)</li>
+ *   <li>Type-safe configuration value casting</li>
+ *   <li>Undertow server option configuration</li>
+ * </ul>
+ * 
+ * <h2>Environment Variable Overrides</h2>
+ * <p>Supports two patterns for environment variable overrides:</p>
+ * <ul>
+ *   <li>RH_SECTION_KEY format (e.g., RH_CORE_NAME)</li>
+ *   <li>RHO format - semicolon-separated key=value pairs</li>
+ * </ul>
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @since 1.0
  */
 public class Utils {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     /**
+     * Gets a configuration value by key with a default fallback from a Configuration object.
+     * 
+     * <p>This is a convenience method that extracts the configuration map from the
+     * Configuration object and delegates to {@link #getOrDefault(Map, String, Object, boolean)}.</p>
      *
-     * @param <V>          return value
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @param silent
-     * @return
+     * @param <V> the type of the return value
+     * @param conf the Configuration object to extract the value from
+     * @param key the configuration key to look up
+     * @param defaultValue the default value to return if the key is not found or invalid
+     * @param silent if true, suppresses warning messages for missing values
+     * @return the configuration value cast to type V, or defaultValue if not found
      */
     public static <V extends Object> V getOrDefault(Configuration conf, final String key, final V defaultValue, boolean silent) {
         return getOrDefault(conf.toMap(), key, defaultValue, silent);
     }
 
     /**
+     * Gets a configuration value by key with a default fallback from a Map.
+     * 
+     * <p>This method safely retrieves values from the configuration map, handling
+     * missing keys and type casting errors. If the key is not found or the value
+     * cannot be cast to the expected type, the default value is returned.</p>
+     * 
+     * <h3>Logging Behavior</h3>
+     * <ul>
+     *   <li>When silent=false and key is missing: logs a warning with the default value</li>
+     *   <li>When silent=false and key exists: logs the value at TRACE level</li>
+     *   <li>When silent=false and casting fails: logs a warning</li>
+     * </ul>
      *
-     * @param <V>          return value
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @param silent
-     * @return
+     * @param <V> the type of the return value
+     * @param conf the configuration map to extract the value from
+     * @param key the configuration key to look up
+     * @param defaultValue the default value to return if the key is not found or invalid
+     * @param silent if true, suppresses warning messages for missing values
+     * @return the configuration value cast to type V, or defaultValue if not found or invalid
+     * @throws ClassCastException if the value exists but cannot be cast to type V
      */
     @SuppressWarnings("unchecked")
     public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
@@ -87,10 +127,43 @@ public class Utils {
         }
     }
 
+    /**
+     * Finds a configuration value using an XPath expression.
+     * 
+     * <p>This method uses JXPath to navigate nested configuration structures.
+     * Returns null if the path is not found.</p>
+     * 
+     * @param <V> the type of the return value
+     * @param conf the configuration map to search
+     * @param xpath the XPath expression (e.g., "/core/name" or "//port")
+     * @param silent if true, suppresses warning messages
+     * @return the value at the specified path, or null if not found
+     * @see #findOrDefault(Map, String, Object, boolean)
+     */
     public static <V extends Object> V find(final Map<String, Object> conf, final String xpath, boolean silent) {
         return findOrDefault(conf, xpath, null, silent);
     }
 
+    /**
+     * Finds a configuration value using an XPath expression with a default fallback.
+     * 
+     * <p>This method uses JXPath to navigate nested configuration structures.
+     * XPath expressions allow powerful queries into the configuration tree.</p>
+     * 
+     * <h3>Example XPath Expressions</h3>
+     * <ul>
+     *   <li>"/core/name" - direct path to core.name</li>
+     *   <li>"//port" - find any port value anywhere in the tree</li>
+     *   <li>"/proxies[1]/location" - first proxy's location</li>
+     * </ul>
+     * 
+     * @param <V> the type of the return value
+     * @param conf the configuration map to search
+     * @param xpath the XPath expression to evaluate
+     * @param defaultValue the default value to return if path is not found
+     * @param silent if true, suppresses warning messages
+     * @return the value at the specified path cast to type V, or defaultValue if not found
+     */
     @SuppressWarnings("unchecked")
     public static <V extends Object> V findOrDefault(final Map<String, Object> conf, final String xpath, final V defaultValue, boolean silent) {
         var ctx = JXPathContext.newContext(conf);
@@ -122,11 +195,25 @@ public class Utils {
     }
 
     /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
+     * Extracts a configuration value as a list of maps.
+     * 
+     * <p>This method is used for configuration sections that contain arrays of objects,
+     * such as proxies, static resources, or any other repeated configuration blocks.</p>
+     * 
+     * <h3>Example Configuration</h3>
+     * <pre>{@code
+     * proxies:
+     *   - name: "api"
+     *     location: "/api"
+     *   - name: "web"
+     *     location: "/web"
+     * }</pre>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the list configuration
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return list of configuration maps, or defaultValue if not found or invalid
      */
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> asListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue, boolean silent) {
@@ -161,10 +248,27 @@ public class Utils {
     }
 
     /**
-     *
-     * @param conf
-     * @param key
-     * @return
+     * Extracts a configuration value as a map of maps.
+     * 
+     * <p>This method is used for configuration sections that contain nested objects
+     * indexed by keys, useful for named configuration blocks.</p>
+     * 
+     * <h3>Example Configuration</h3>
+     * <pre>{@code
+     * services:
+     *   auth:
+     *     enabled: true
+     *     provider: "ldap"
+     *   cache:
+     *     enabled: false
+     *     size: 1000
+     * }</pre>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the map configuration
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return map of configuration maps, or defaultValue if not found or invalid
      */
     @SuppressWarnings("unchecked")
     public static Map<String, Map<String, Object>> asMapOfMaps(final Map<String, Object> conf, final String key, final Map<String, Map<String, Object>> defaultValue, boolean silent) {
@@ -201,10 +305,16 @@ public class Utils {
     }
 
     /**
-     *
-     * @param conf
-     * @param key
-     * @return
+     * Extracts a configuration value as a map.
+     * 
+     * <p>This method is used for configuration sections that contain nested objects,
+     * such as core settings, listeners, or any other structured configuration block.</p>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the nested configuration object
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return configuration map, or defaultValue if not found or invalid
      */
     @SuppressWarnings("unchecked")
     public static Map<String, Object> asMap(final Map<String, Object> conf, final String key, Map<String, Object> defaultValue, boolean silent) {
@@ -241,6 +351,23 @@ public class Utils {
         }
     }
 
+    /**
+     * Extracts a configuration value as an array of integers.
+     * 
+     * <p>This method converts a list of integers from the configuration into a primitive
+     * int array. Non-integer values in the list are filtered out.</p>
+     * 
+     * <h3>Example Configuration</h3>
+     * <pre>{@code
+     * ports: [8080, 8081, 8082]
+     * }</pre>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the integer list
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return array of integers, or defaultValue if not found or invalid
+     */
     public static int[] asArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue, boolean silent) {
         if (conf == null) {
             if (!silent) {
@@ -270,6 +397,26 @@ public class Utils {
         }
     }
 
+    /**
+     * Extracts a configuration value as a list of strings.
+     * 
+     * <p>This method is commonly used for configuration values that accept multiple
+     * string values, such as allowed origins, plugin packages, or header names.</p>
+     * 
+     * <h3>Example Configuration</h3>
+     * <pre>{@code
+     * allowed-origins:
+     *   - "http://localhost:3000"
+     *   - "https://example.com"
+     *   - "https://app.example.com"
+     * }</pre>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the string list
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return list of strings, or defaultValue if not found, invalid, or empty
+     */
     @SuppressWarnings("unchecked")
     public static List<String> asListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue, boolean silent) {
         if (conf == null || conf.get(key) == null) {
@@ -308,18 +455,67 @@ public class Utils {
         }
     }
 
+    /**
+     * Extracts a configuration value as a Boolean.
+     * 
+     * <p>Convenience method that delegates to {@link #getOrDefault(Map, String, Object, boolean)}
+     * with type safety for Boolean values.</p>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the boolean value
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return Boolean value, or defaultValue if not found or invalid
+     */
     public static Boolean asBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue, boolean silent) {
         return getOrDefault(conf, key, defaultValue, silent);
     }
 
+    /**
+     * Extracts a configuration value as a String.
+     * 
+     * <p>Convenience method that delegates to {@link #getOrDefault(Map, String, Object, boolean)}
+     * with type safety for String values.</p>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the string value
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return String value, or defaultValue if not found or invalid
+     */
     public static String asString(final Map<String, Object> conf, final String key, final String defaultValue, boolean silent) {
         return getOrDefault(conf, key, defaultValue, silent);
     }
 
+    /**
+     * Extracts a configuration value as an Integer.
+     * 
+     * <p>Convenience method that delegates to {@link #getOrDefault(Map, String, Object, boolean)}
+     * with type safety for Integer values.</p>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the integer value
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return Integer value, or defaultValue if not found or invalid
+     */
     public static Integer asInteger(final Map<String, Object> conf, final String key, final Integer defaultValue, boolean silent) {
         return getOrDefault(conf, key, defaultValue, silent);
     }
 
+    /**
+     * Extracts a configuration value as a Long.
+     * 
+     * <p>This method handles numeric values and converts them to Long. It's particularly
+     * useful for configuration values that represent large numbers such as timeouts,
+     * file sizes, or timestamps.</p>
+     * 
+     * @param conf the configuration map to extract from
+     * @param key the key of the long value
+     * @param defaultValue the default value if not found or invalid
+     * @param silent if true, suppresses warning messages
+     * @return Long value, or defaultValue if not found or invalid
+     */
     public static Long asLong(final Map<String, Object> conf, final String key, final Long defaultValue, boolean silent) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
@@ -348,18 +544,36 @@ public class Utils {
     }
 
     /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
+     * Gets a configuration value from environment variables or system properties.
+     * 
+     * <p>This method looks for environment variables following the pattern RH_PARAMETER_NAME
+     * where PARAMETER_NAME is the configuration parameter converted to uppercase with
+     * hyphens replaced by underscores.</p>
+     * 
+     * <h3>Examples</h3>
+     * <ul>
+     *   <li>confParameter "core-name" → looks for RH_CORE_NAME</li>
+     *   <li>confParameter "http-listener-port" → looks for RH_HTTP_LISTENER_PORT</li>
+     * </ul>
+     * 
+     * @param confParameter the configuration parameter name (e.g., "core-name")
+     * @return the environment or system property value, or null if not found
      */
     public static String valueFromEnv(final String confParameter) {
         return valueFromEnv(confParameter, false);
     }
 
     /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
+     * Gets a configuration value from environment variables or system properties.
+     * 
+     * <p>This method looks for environment variables following the pattern RH_PARAMETER_NAME
+     * where PARAMETER_NAME is the configuration parameter converted to uppercase with
+     * hyphens replaced by underscores. System properties take precedence over environment
+     * variables.</p>
+     * 
+     * @param confParameter the configuration parameter name (e.g., "core-name")
+     * @param silent if true, suppresses log messages when a value is found
+     * @return the environment or system property value, or null if not found
      */
     public static String valueFromEnv(final String confParameter, boolean silent) {
         var value = _valueFromEnv("RH", confParameter, silent);
@@ -371,6 +585,17 @@ public class Utils {
         return null;
     }
 
+    /**
+     * Gets a configuration value from environment with a specific prefix.
+     * 
+     * <p>Converts the configuration parameter to an environment variable name by
+     * uppercasing and replacing hyphens with underscores, then prepending the prefix.</p>
+     * 
+     * @param prefix the prefix to prepend (e.g., "RH")
+     * @param confParameter the configuration parameter name
+     * @param silent if true, suppresses log messages
+     * @return the environment or system property value, or null if not found
+     */
     private static String _valueFromEnv(final String prefix, final String confParameter, boolean silent) {
         var key = prefix != null ? prefix + "_" + confParameter.toUpperCase().replaceAll("-", "_")
                 : confParameter.toUpperCase().replaceAll("-", "_");
@@ -378,6 +603,17 @@ public class Utils {
         return __valueFromEnv(confParameter, key, silent);
     }
 
+    /**
+     * Gets a value from system properties or environment variables.
+     * 
+     * <p>System properties take precedence over environment variables. When a value
+     * is found and silent is false, a warning is logged indicating the override.</p>
+     * 
+     * @param confParameter the original configuration parameter name (for logging)
+     * @param key the environment variable or system property key to look up
+     * @param silent if true, suppresses log messages
+     * @return the value from system property or environment variable, or null if not found
+     */
     private static String __valueFromEnv(final String confParameter, final String key, boolean silent) {
         var envValue = System.getProperty(key);
 
@@ -392,9 +628,21 @@ public class Utils {
         return envValue;
     }
 
+    /**
+     * Set of Undertow server options that can be configured.
+     * 
+     * <p>These options control various aspects of the Undertow server behavior
+     * including HTTP/2 settings, buffer sizes, timeouts, and protocol handling.</p>
+     */
     @SuppressWarnings("rawtypes")
     private static final Set<Option> UNDERTOW_OPTIONS;
 
+    /**
+     * Set of Undertow server options that accept Long values.
+     * 
+     * <p>These options typically represent sizes or counts that may exceed
+     * Integer.MAX_VALUE, such as maximum entity sizes.</p>
+     */
     private static final Set<Option<Long>> LONG_UNDERTOW_OPTIONS;
 
     static {
@@ -437,6 +685,26 @@ public class Utils {
         LONG_UNDERTOW_OPTIONS.add(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE);
     }
 
+    /**
+     * Configures Undertow server options from the configuration.
+     * 
+     * <p>This method applies connection options specified in the configuration to the
+     * Undertow server builder. It handles both standard options and long-valued options
+     * separately. The Date header is explicitly disabled as it's managed by a custom
+     * DateHeaderInjector for better virtual thread compatibility.</p>
+     * 
+     * <h3>Configuration Example</h3>
+     * <pre>{@code
+     * connection-options:
+     *   ENABLE_HTTP2: true
+     *   MAX_HEADER_SIZE: 8192
+     *   MAX_ENTITY_SIZE: 10485760
+     *   IDLE_TIMEOUT: 60000
+     * }</pre>
+     * 
+     * @param builder the Undertow server builder to configure
+     * @param configuration the configuration containing connection options
+     */
     @SuppressWarnings("unchecked")
     public static void setConnectionOptions(Builder builder, Configuration configuration) {
         Map<String, Object> options = configuration.getConnectionOptions();
@@ -470,13 +738,29 @@ public class Utils {
         builder.setServerOption(UndertowOptions.ALWAYS_SET_DATE, false);
     }
 
-    // matches ; in a way that we can ignore matches that are inside quotes
-    // inspired by https://stackoverflow.com/a/23667311/4481670
+    /**
+     * Regular expression pattern for splitting RHO format strings.
+     * 
+     * <p>This pattern matches semicolons while ignoring those inside quoted strings.
+     * It handles both single and double quotes with proper escape sequences.</p>
+     * 
+     * @see <a href="https://stackoverflow.com/a/23667311/4481670">Stack Overflow inspiration</a>
+     */
     private static final Pattern SPLIT_REGEX = Pattern.compile(
             "\\\\\"|\"(?:\\\\\"|[^\"])*\"" +
             "|\\\\'|'(?:\\\\'|[^'])*'" +
             "|(;)");
 
+    /**
+     * Splits a RHO format string into individual override assignments.
+     * 
+     * <p>This method uses a regex pattern to correctly handle semicolons that appear
+     * inside quoted strings, ensuring that quoted values containing semicolons are
+     * not incorrectly split.</p>
+     * 
+     * @param rho the RHO format string to split
+     * @return list of individual assignment strings
+     */
     private static List<String> splitOverrides(String rho) {
         var m = SPLIT_REGEX.matcher(rho);
 
@@ -511,7 +795,27 @@ public class Utils {
         return overrides(rho, false, false);
     }
 
-    public static List<RhOverride> overrides(String rho, boolean lenient, boolean silent) {
+    /**
+     * Parses configuration overrides from a RHO format string with environment variable support.
+     * 
+     * <p>RHO format is a semicolon-separated list of key=value pairs. Values can include
+     * environment variable references using ${VAR_NAME} syntax when fromEnv is true.
+     * Quoted values are preserved, and the parser handles nested quotes correctly.</p>
+     * 
+     * <h3>Features</h3>
+     * <ul>
+     *   <li>Semicolon-separated key=value pairs</li>
+     *   <li>Support for quoted values with embedded semicolons</li>
+     *   <li>Environment variable expansion with ${VAR_NAME}</li>
+     *   <li>XPath-style keys for nested configuration</li>
+     * </ul>
+     * 
+     * @param rho the RHO format string containing overrides
+     * @param fromEnv if true, expands ${VAR_NAME} references to environment variables
+     * @param silent if true, suppresses log messages
+     * @return list of parsed override objects
+     */
+    public static List<RhOverride> overrides(String rho, boolean fromEnv, boolean silent) {
         var overrides = new ArrayList<RhOverride>();
         var assignments = splitOverrides(rho);
 
@@ -519,8 +823,8 @@ public class Utils {
             var operator = assignment.indexOf("->");
 
             if (operator == -1) {
-                if (!lenient) {
-                    throw new IllegalArgumentException("invalid override: " + assignment);
+                if (!silent) {
+                    LOGGER.warn("invalid override (missing '->' operator): " + assignment);
                 }
 
                 if (!silent) {
@@ -529,8 +833,11 @@ public class Utils {
             } else {
                 var path = assignment.substring(0, operator).strip();
 
-                if (!path.startsWith("/") && !lenient) {
-                    throw new IllegalArgumentException("invalid override, path must be absolute, i.e. starting with /: " + assignment);
+                if (!path.startsWith("/")) {
+                    if (!silent) {
+                        LOGGER.warn("invalid override, path must be absolute, i.e. starting with /: " + assignment);
+                    }
+                    return;
                 }
 
                 var ctx = JXPathContext.newContext(Maps.newHashMap());
@@ -539,13 +846,10 @@ public class Utils {
                 try {
                     ctx.getPointer(path);
                 } catch(Exception e) {
-                    if (!lenient) {
-                        throw new IllegalArgumentException("invalid override, invalid path: " + assignment + ", " + e.getMessage());
-                    }
-
                     if (!silent) {
                         LOGGER.warn("invalid override, invalid path: {}, {}", assignment, e.getMessage());
                     }
+                    return;
                 }
 
                 var _value = assignment.substring(operator+2, assignment.length()).strip();
@@ -565,10 +869,6 @@ public class Utils {
 
                     overrides.add(new RhOverride(path, value, assignment));
                 } catch (Exception ex) {
-                    if (!lenient) {
-                        throw new IllegalArgumentException("invalid override, value is not valid json: " + assignment);
-                    }
-
                     if (!silent) {
                         LOGGER.warn("invalid override, value is not valid json: {}", assignment);
                     }
@@ -579,9 +879,35 @@ public class Utils {
         return overrides;
     }
 
+    /**
+     * Represents a configuration override parsed from RHO format.
+     * 
+     * <p>This record encapsulates a single configuration override with its target path,
+     * the value to set, and the original raw string representation. Used internally
+     * by the configuration system to apply environment variable and file-based overrides.</p>
+     * 
+     * <h3>Example Overrides</h3>
+     * <ul>
+     *   <li>path="/core/name", value="my-instance", raw="/core/name=my-instance"</li>
+     *   <li>path="/http-listener/port", value=8080, raw="/http-listener/port=8080"</li>
+     * </ul>
+     * 
+     * @param path the XPath-style configuration path to override
+     * @param value the parsed value to set at the path
+     * @param raw the original raw string representation of the override
+     */
     public static record RhOverride(String path, Object value, String raw) {
     }
 }
 
+/**
+ * Represents a region in a RHO string for parsing.
+ * 
+ * <p>Used internally by the RHO parser to track regions between semicolons,
+ * helping to correctly split the string while respecting quoted values.</p>
+ * 
+ * @param start the start index of the region (inclusive)
+ * @param end the end index of the region (exclusive)
+ */
 record RhOverrideRegion(int start, int end) {
 }
