@@ -27,19 +27,57 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
- * wraps a HttpHandler into a PipelinedHttpHandler
+ * A specialized PipelinedHandler that wraps standard HttpHandler or Service instances
+ * to integrate them into a handler pipeline.
+ * 
+ * <p>This class acts as an adapter, allowing non-pipelined handlers (standard Undertow
+ * {@link HttpHandler} implementations or RESTHeart {@link Service} implementations)
+ * to be used within a {@link PipelinedHandler} chain. This is particularly useful when:</p>
+ * <ul>
+ *   <li>Integrating existing HttpHandler implementations into a pipeline</li>
+ *   <li>Using RESTHeart services as part of a processing chain</li>
+ *   <li>Mixing pipelined and non-pipelined handlers in the same flow</li>
+ * </ul>
+ * 
+ * <p>The wrapper ensures that after the wrapped handler completes its processing,
+ * the request is automatically forwarded to the next handler in the pipeline
+ * (unless the response has already been completed).</p>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Wrap a standard HttpHandler
+ * HttpHandler standardHandler = exchange -> {
+ *     exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain");
+ *     exchange.getResponseSender().send("Hello");
+ * };
+ * 
+ * PipelinedHandler pipeline = PipelinedHandler.pipe(
+ *     new AuthHandler(),
+ *     PipelinedWrappingHandler.wrap(standardHandler),
+ *     new LoggingHandler()
+ * );
+ * }</pre>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see PipelinedHandler
+ * @see HttpHandler
+ * @see Service
  */
 public class PipelinedWrappingHandler extends PipelinedHandler {
 
+    /**
+     * The wrapped handler that will be executed when this handler processes a request.
+     */
     private final HttpHandler wrapped;
 
     /**
-     * Creates a new instance of PipedWrappingHandler
+     * Creates a new instance of PipelinedWrappingHandler with a specified next handler.
+     * 
+     * <p>This constructor wraps an HttpHandler and links it to the next handler
+     * in the pipeline chain.</p>
      *
-     * @param next
-     * @param handler
+     * @param next the next handler in the pipeline to execute after the wrapped handler
+     * @param handler the HttpHandler to wrap and integrate into the pipeline
      */
     private PipelinedWrappingHandler(PipelinedHandler next, HttpHandler handler) {
         super(next);
@@ -47,10 +85,16 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     }
 
     /**
-     * Creates a new instance of PipedWrappingHandler
+     * Creates a new instance of PipelinedWrappingHandler that wraps a Service.
+     * 
+     * <p>This constructor wraps a RESTHeart Service implementation and links it
+     * to the next handler in the pipeline chain. The Service is internally
+     * wrapped in a ServiceWrapper that adapts it to the HttpHandler interface.</p>
      *
-     * @param next
-     * @param service
+     * @param <R> the type of ServiceRequest the service handles
+     * @param <S> the type of ServiceResponse the service produces
+     * @param next the next handler in the pipeline to execute after the service
+     * @param service the Service to wrap and integrate into the pipeline
      */
     private <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler(PipelinedHandler next, Service<R, S> service) {
         super(next);
@@ -58,9 +102,12 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     }
 
     /**
-     * Creates a new instance of PipedWrappingHandler
+     * Creates a new instance of PipelinedWrappingHandler without a next handler.
+     * 
+     * <p>This constructor creates a terminal wrapper that doesn't forward
+     * requests to any subsequent handler after the wrapped handler completes.</p>
      *
-     * @param handler
+     * @param handler the HttpHandler to wrap
      */
     private PipelinedWrappingHandler(HttpHandler handler) {
         super(null);
@@ -68,51 +115,97 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     }
 
     /**
+     * Creates a PipelinedWrappingHandler that wraps an HttpHandler.
+     * 
+     * <p>This factory method creates a wrapper with no next handler,
+     * making it suitable as the last handler in a pipeline.</p>
      *
-     * @param handler
-     * @return the wrapping handler
+     * @param handler the HttpHandler to wrap
+     * @return a new PipelinedWrappingHandler wrapping the provided handler
      */
     public static PipelinedWrappingHandler wrap(HttpHandler handler) {
         return wrap(null, handler);
     }
 
     /**
+     * Creates a PipelinedWrappingHandler that wraps a Service.
+     * 
+     * <p>This factory method creates a wrapper with no next handler,
+     * making it suitable as the last handler in a pipeline. The Service
+     * is adapted to work within the HttpHandler interface.</p>
      *
-     * @param <R> Request
-     * @param <S> Response
-     * @param service
-     * @return the wrapping handler
+     * @param <R> the type of ServiceRequest the service handles
+     * @param <S> the type of ServiceResponse the service produces
+     * @param service the Service to wrap
+     * @return a new PipelinedWrappingHandler wrapping the provided service
      */
     public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(Service<R, S> service) {
         return wrap(null, service);
     }
 
     /**
+     * Creates a PipelinedWrappingHandler that wraps an HttpHandler with a specified next handler.
+     * 
+     * <p>This factory method creates a wrapper that will forward requests to the
+     * specified next handler after the wrapped handler completes (unless the
+     * response is already complete).</p>
      *
-     * @param next
-     * @param handler
-     * @return the wrapping handler
+     * @param next the next handler in the pipeline
+     * @param handler the HttpHandler to wrap
+     * @return a new PipelinedWrappingHandler wrapping the provided handler
      */
     public static PipelinedWrappingHandler wrap(PipelinedHandler next, HttpHandler handler) {
         return new PipelinedWrappingHandler(next, handler);
     }
 
     /**
+     * Creates a PipelinedWrappingHandler that wraps a Service with a specified next handler.
+     * 
+     * <p>This factory method creates a wrapper that will forward requests to the
+     * specified next handler after the service completes (unless the response
+     * is already complete). The Service is adapted to work within the
+     * HttpHandler interface.</p>
      *
-     * @param <R> Request
-     * @param <S> Response
-     * @param next
-     * @param service
-     * @return the wrapping handler
+     * @param <R> the type of ServiceRequest the service handles
+     * @param <S> the type of ServiceResponse the service produces
+     * @param next the next handler in the pipeline
+     * @param service the Service to wrap
+     * @return a new PipelinedWrappingHandler wrapping the provided service
      */
     public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(PipelinedHandler next, Service<R, S> service) {
         return new PipelinedWrappingHandler(next, service);
     }
 
     /**
+     * Handles the HTTP request by delegating to the wrapped handler.
+     * 
+     * <p>This method executes the wrapped handler and then, if the response
+     * is not already complete, forwards the request to the next handler
+     * in the pipeline. This allows wrapped handlers to:</p>
+     * <ul>
+     *   <li>Process and modify the request before it continues down the pipeline</li>
+     *   <li>Complete the response entirely, stopping further processing</li>
+     *   <li>Add headers or other modifications that subsequent handlers can use</li>
+     * </ul>
+     * 
+     * <p>The response is considered complete if the wrapped handler has
+     * already sent response data or explicitly marked it as complete.</p>
      *
-     * @param exchange
-     * @throws Exception
+     * @param exchange the HTTP server exchange to process
+     * @throws Exception if the wrapped handler or next handler throws an exception
+     */
+    /**
+     * Handles the request by converting it to the service's expected types.
+     * 
+     * <p>This method:
+     * <ol>
+     *   <li>Applies the service's request transformer to create a typed request object</li>
+     *   <li>Applies the service's response transformer to create a typed response object</li>
+     *   <li>Invokes the service's handle method with the typed objects</li>
+     * </ol>
+     * 
+     * @param exchange the HTTP server exchange to process
+     * @throws Exception if the service or its transformers throw an exception
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -128,9 +221,28 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     }
 }
 
+/**
+ * Internal adapter class that wraps a RESTHeart Service as a PipelinedHandler.
+ * 
+ * <p>This class bridges the gap between the Service interface (which uses
+ * typed request/response objects) and the HttpHandler interface (which uses
+ * HttpServerExchange). It applies the service's request and response
+ * transformers to convert between the two models.</p>
+ * 
+ * @param <R> the type of ServiceRequest the service handles
+ * @param <S> the type of ServiceResponse the service produces
+ */
 class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends PipelinedHandler {
+    /**
+     * The wrapped service instance.
+     */
     final Service<R, S> service;
 
+    /**
+     * Creates a new ServiceWrapper for the specified service.
+     * 
+     * @param service the service to wrap
+     */
     ServiceWrapper(Service<R, S> service) {
         this.service = service;
     }
