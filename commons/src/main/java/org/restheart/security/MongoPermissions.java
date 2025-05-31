@@ -33,11 +33,11 @@ import org.restheart.utils.BsonUtils;
 
 /**
  * Encapsulates MongoDB-specific permissions for fine-grained access control over database operations.
- * 
+ *
  * <p>This class represents the MongoDB-specific portion of ACL permissions, defined by the `mongo`
  * property in permission configurations. It provides granular control over various aspects of
  * MongoDB operations including read/write filtering, request manipulation, and operation restrictions.</p>
- * 
+ *
  * <h2>Permission Components</h2>
  * <ul>
  *   <li><strong>Read/Write Filters:</strong> MongoDB query filters that restrict which documents
@@ -47,7 +47,7 @@ import org.restheart.utils.BsonUtils;
  *   <li><strong>Operation Flags:</strong> Boolean flags controlling specific operations like bulk
  *       updates or management requests</li>
  * </ul>
- * 
+ *
  * <h2>Filter Interpolation</h2>
  * <p>Filters support variable interpolation using {@link AclVarsInterpolator}, allowing dynamic
  * filters based on user context:</p>
@@ -57,7 +57,7 @@ import org.restheart.utils.BsonUtils;
  *   "writeFilter": { "owner": "@user", "created": { "$gte": "@now" } }
  * }
  * }</pre>
- * 
+ *
  * <h2>Usage Example</h2>
  * <pre>{@code
  * // Create permissions from configuration
@@ -68,17 +68,17 @@ import org.restheart.utils.BsonUtils;
  *         "allowBulkDelete", false
  *     )
  * );
- * 
+ *
  * // Access permissions in a service
  * if (permissions.isAllowBulkDelete()) {
  *     // Process bulk delete request
  * }
- * 
+ *
  * // Apply read filter
  * var filter = permissions.getReadFilter();
  * collection.find(filter);
  * }</pre>
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 5.0.0
  * @see BaseAclPermission
@@ -96,14 +96,14 @@ public class MongoPermissions {
 
     /**
      * A predefined instance that allows all MongoDB operations without restrictions.
-     * 
+     *
      * <p>This constant provides a convenient way to grant unrestricted MongoDB access. It has:</p>
      * <ul>
      *   <li>No read or write filters (all documents accessible)</li>
      *   <li>All operation flags set to true (all operations allowed)</li>
      *   <li>No request merging or response projection</li>
      * </ul>
-     * 
+     *
      * <p><strong>Security Warning:</strong> Use with caution. This should only be assigned to
      * highly privileged administrative roles.</p>
      */
@@ -114,13 +114,13 @@ public class MongoPermissions {
 
     /**
      * Constructs a new MongoPermissions instance with all operations disabled.
-     * 
+     *
      * <p>This default constructor creates the most restrictive permissions where:</p>
      * <ul>
      *   <li>All operation flags are set to false</li>
      *   <li>No filters, merging, or projections are defined</li>
      * </ul>
-     * 
+     *
      * <p>This is suitable as a base for building up specific permissions or when
      * MongoDB access should be completely restricted.</p>
      */
@@ -134,31 +134,30 @@ public class MongoPermissions {
         this.mergeRequest = null;
         this.projectResponse = null;
     }
-</end_text>
 
-<old_text>
     /**
      * Retrieves the MongoPermissions associated with the given request.
-     * 
+     *
      * <p>This method extracts MongoDB-specific permissions from the ACL permission that
      * authorized the request. It looks for the raw permission data attached to the request
      * and converts it to a MongoPermissions instance.</p>
-     * 
+     *
      * <p>The method handles various formats of permission data:</p>
      * <ul>
      *   <li>BsonDocument: Direct BSON representation of permissions</li>
      *   <li>Map: Configuration map containing permission settings</li>
      *   <li>null: Returns default (restrictive) permissions</li>
      * </ul>
-     * 
+     *
      * @param request The request to extract permissions from
      * @return The MongoPermissions for this request, or default permissions if none are found
      * @throws ConfigurationException if the permission data is malformed
      * @throws IllegalArgumentException if the permission data type is not supported
      * @see BaseAclPermission#getRaw(Request)
      */
-    public static MongoPermissions of(Request<?> request) throws ConfigurationException, IllegalArgumentException {
-    public static MongoPermissions of(Request<?> request) {
+     public static MongoPermissions of(Request<?> request) throws ConfigurationException, IllegalArgumentException {
+      return from(BaseAclPermission.getRaw(request));
+    }
 
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
             boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
@@ -178,17 +177,14 @@ public class MongoPermissions {
         this.projectResponse = projectResponse;
     }
 
-    public static MongoPermissions of(Request<?> request) throws ConfigurationException, IllegalArgumentException {
-        return from(BaseAclPermission.getRaw(request));
-    }
 
     /**
      * Creates MongoPermissions from a BaseAclPermission instance.
-     * 
+     *
      * <p>This method extracts the raw permission data from the ACL permission and converts
      * it to MongoDB-specific permissions. This is useful when working directly with permission
      * objects rather than requests.</p>
-     * 
+     *
      * @param p The ACL permission containing MongoDB permission data in its raw field
      * @return The MongoPermissions extracted from the ACL permission
      * @throws ConfigurationException if the permission data is malformed
@@ -201,19 +197,19 @@ public class MongoPermissions {
 
     /**
      * Creates MongoPermissions from raw permission data.
-     * 
+     *
      * <p>This factory method handles conversion from various data formats to MongoPermissions.
      * It serves as the central parsing point for all permission data sources.</p>
-     * 
+     *
      * <p>Supported input formats:</p>
      * <ul>
      *   <li><strong>null:</strong> Returns default (most restrictive) permissions</li>
      *   <li><strong>BsonDocument:</strong> Direct BSON representation with permission fields</li>
      *   <li><strong>Map:</strong> Configuration map, typically from YAML/JSON config files</li>
      * </ul>
-     * 
+     *
      * <p>Any other type will result in an IllegalArgumentException.</p>
-     * 
+     *
      * @param raw The raw permission data in one of the supported formats
      * @return A MongoPermissions instance based on the input data
      * @throws ConfigurationException if the data structure is invalid or contains bad values
@@ -236,11 +232,11 @@ public class MongoPermissions {
 
     /**
      * Creates MongoPermissions from a BSON document.
-     * 
+     *
      * <p>This method parses a BSON document containing MongoDB permission settings. The document
      * should have a "mongo" field containing the permission configuration. If the "mongo" field
      * is missing or null, default permissions are returned.</p>
-     * 
+     *
      * <h3>Expected Document Structure</h3>
      * <pre>{@code
      * {
@@ -252,10 +248,10 @@ public class MongoPermissions {
      *   }
      * }
      * }</pre>
-     * 
+     *
      * <p>The method handles BSON type conversions and validates boolean fields. Invalid
      * configurations will result in a ConfigurationException with details about the error.</p>
-     * 
+     *
      * @param doc The BSON document containing permission configuration
      * @return A MongoPermissions instance based on the document
      * @throws ConfigurationException if the document structure is invalid or contains invalid values
@@ -344,11 +340,11 @@ public class MongoPermissions {
 
     /**
      * Converts this MongoPermissions instance to a BSON document representation.
-     * 
+     *
      * <p>This method creates a BSON document containing all permission settings, which can be
      * used for serialization, logging, or passing permissions to other components. Only non-null
      * values and non-false boolean flags are included in the output.</p>
-     * 
+     *
      * @return A BsonDocument representation of these permissions
      */
     public BsonDocument asBson() {
@@ -366,10 +362,10 @@ public class MongoPermissions {
 
     /**
      * Creates MongoPermissions from a configuration map.
-     * 
+     *
      * <p>This method parses MongoDB permission settings from a map structure, typically
      * loaded from configuration files. It supports the following properties:</p>
-     * 
+     *
      * <table border="1">
      *   <tr><th>Property</th><th>Type</th><th>Description</th><th>Default</th></tr>
      *   <tr><td>readFilter</td><td>String/Doc</td><td>MongoDB filter for read operations</td><td>null</td></tr>
@@ -381,19 +377,19 @@ public class MongoPermissions {
      *   <tr><td>allowBulkDelete</td><td>Boolean</td><td>Allow bulk DELETE operations</td><td>false</td></tr>
      *   <tr><td>allowWriteMode</td><td>Boolean</td><td>Allow ?wm query parameter</td><td>false</td></tr>
      * </table>
-     * 
+     *
      * <p>Filter and document properties can be specified as:</p>
      * <ul>
      *   <li>JSON strings: {@code "{ 'status': 'active' }"}</li>
      *   <li>Nested maps/documents: {@code { status: "active" }}</li>
      * </ul>
-     * 
+     *
      * @param args The configuration map containing MongoDB permission settings
      * @return A new MongoPermissions instance based on the configuration
      * @throws ConfigurationException if the configuration contains invalid values
      */
     @SuppressWarnings("unchecked")
-    public static MongoPermissions from(Map<String, ?> args) throws ConfigurationException {
+    public static MongoPermissions from(Map<String, Object> args) throws ConfigurationException {
         if (args == null || args.isEmpty() || !args.containsKey("mongo") || !(args.get("mongo") instanceof Map<?,?>)) {
             // return default values
             return new MongoPermissions();
@@ -530,10 +526,10 @@ public class MongoPermissions {
 
     /**
      * Parses a boolean value from a configuration map.
-     * 
+     *
      * <p>This helper method extracts and validates boolean configuration values from a Map-based
      * permission configuration. It provides consistent error handling and default values.</p>
-     * 
+     *
      * @param args The configuration map containing permission settings
      * @param key The key to look up in the configuration map
      * @return The boolean value if present and valid, false if not present (default)
@@ -556,10 +552,10 @@ public class MongoPermissions {
 
     /**
      * Parses a boolean value from a BSON document.
-     * 
+     *
      * <p>This helper method extracts and validates boolean configuration values from a BSON-based
      * permission configuration. It handles BSON type checking and provides consistent error messages.</p>
-     * 
+     *
      * @param args The BSON document containing permission settings
      * @param key The key to look up in the BSON document
      * @return The boolean value if present and valid, false if not present (default)
@@ -582,11 +578,11 @@ public class MongoPermissions {
 
     /**
      * Returns the MongoDB filter applied to read operations.
-     * 
+     *
      * <p>This filter is automatically combined with user queries to restrict which documents
      * can be read. For example, a filter of {@code { "status": "published" }} ensures users
      * can only read published documents.</p>
-     * 
+     *
      * @return The read filter as a BsonDocument, or null if no read filter is defined
      */
     public BsonDocument getReadFilter() {
@@ -595,11 +591,11 @@ public class MongoPermissions {
 
     /**
      * Returns the MongoDB filter applied to write operations.
-     * 
+     *
      * <p>This filter restricts which documents can be modified or deleted. Write operations
      * that would affect documents not matching this filter are rejected. For example, a filter
      * of {@code { "owner": "@user" }} ensures users can only modify their own documents.</p>
-     * 
+     *
      * @return The write filter as a BsonDocument, or null if no write filter is defined
      */
     public BsonDocument getWriteFilter() {
@@ -609,7 +605,7 @@ public class MongoPermissions {
 
     /**
      * Returns the document to merge into incoming requests.
-     * 
+     *
      * <p>This document is merged with request bodies before processing, allowing permissions
      * to inject required fields. Common uses include:</p>
      * <ul>
@@ -617,7 +613,7 @@ public class MongoPermissions {
      *   <li>Adding timestamps: {@code { "created": "@now" }}</li>
      *   <li>Enforcing defaults: {@code { "status": "draft" }}</li>
      * </ul>
-     * 
+     *
      * @return The merge document as a BsonDocument, or null if no merging is configured
      */
     public BsonDocument getMergeRequest() {
@@ -626,14 +622,14 @@ public class MongoPermissions {
 
     /**
      * Returns the projection applied to response documents.
-     * 
+     *
      * <p>This projection controls which fields are included or excluded in responses, following
      * MongoDB projection syntax. Examples:</p>
      * <ul>
      *   <li>Include only specific fields: {@code { "name": 1, "email": 1 }}</li>
      *   <li>Exclude sensitive fields: {@code { "password": 0, "ssn": 0 }}</li>
      * </ul>
-     * 
+     *
      * @return The projection as a BsonDocument, or null if no projection is configured
      */
     public BsonDocument getProjectResponse() {
@@ -642,7 +638,7 @@ public class MongoPermissions {
 
     /**
      * Returns whether management requests are allowed.
-     * 
+     *
      * <p>Management requests include operations that create, modify, or delete databases
      * and collections. This flag must be true to allow:</p>
      * <ul>
@@ -651,12 +647,12 @@ public class MongoPermissions {
      *   <li>Creating/dropping indexes</li>
      *   <li>Modifying collection options</li>
      * </ul>
-     * 
+     *
      * @return Boolean indicating if management requests are allowed
      */
     /**
      * Checks if management requests are allowed.
-     * 
+     *
      * @return true if management requests are allowed, false otherwise
      */
     public boolean isAllowManagementRequests() {
@@ -665,16 +661,16 @@ public class MongoPermissions {
 
     /**
      * Returns whether bulk PATCH operations are allowed.
-     * 
+     *
      * <p>Bulk PATCH operations allow updating multiple documents in a single request using
      * MongoDB's bulk write API. This is more efficient than individual updates but requires
      * additional permissions due to its potential impact.</p>
-     * 
+     *
      * @return Boolean indicating if bulk PATCH operations are allowed
      */
     /**
      * Checks if bulk PATCH operations are allowed.
-     * 
+     *
      * @return true if bulk PATCH operations are allowed, false otherwise
      */
     public boolean isAllowBulkPatch() {
@@ -683,16 +679,16 @@ public class MongoPermissions {
 
     /**
      * Returns whether bulk DELETE operations are allowed.
-     * 
+     *
      * <p>Bulk DELETE operations allow removing multiple documents matching a filter in a
      * single request. This flag must be true to allow operations that could potentially
      * delete large numbers of documents.</p>
-     * 
+     *
      * @return Boolean indicating if bulk DELETE operations are allowed
      */
     /**
      * Checks if bulk DELETE operations are allowed.
-     * 
+     *
      * @return true if bulk DELETE operations are allowed, false otherwise
      */
     public boolean isAllowBulkDelete() {
@@ -701,21 +697,21 @@ public class MongoPermissions {
 
     /**
      * Returns whether the write mode query parameter is allowed.
-     * 
+     *
      * <p>The write mode parameter (?wm) allows clients to control how writes are handled:</p>
      * <ul>
      *   <li>INSERT: Only allow new document creation</li>
      *   <li>UPDATE: Only allow updates to existing documents</li>
      *   <li>UPSERT: Allow both inserts and updates</li>
      * </ul>
-     * 
+     *
      * <p>When false, the server's default write mode is used.</p>
-     * 
+     *
      * @return Boolean indicating if the write mode parameter is allowed
      */
     /**
      * Checks if the write mode query parameter is allowed.
-     * 
+     *
      * @return true if the write mode parameter is allowed, false otherwise
      */
     public boolean isAllowWriteMode() {

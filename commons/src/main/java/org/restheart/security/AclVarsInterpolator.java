@@ -54,11 +54,11 @@ import io.undertow.predicate.PredicateParser;
 
 /**
  * Helper class that provides variable interpolation capabilities for Access Control List (ACL) permissions.
- * 
+ *
  * <p>This class enables dynamic substitution of runtime variables within ACL configurations, allowing
  * for context-aware authorization rules. It supports interpolation in various formats including BSON
  * documents, JSON strings, and Undertow predicates.</p>
- * 
+ *
  * <h2>Supported Variables</h2>
  * <p>The interpolator recognizes the following variable patterns:</p>
  * <ul>
@@ -70,7 +70,7 @@ import io.undertow.predicate.PredicateParser;
  *   <li><strong>@now</strong> - Current timestamp as epoch milliseconds</li>
  *   <li><strong>@mongoPermissions</strong> - MongoDB-specific permissions object</li>
  * </ul>
- * 
+ *
  * <h2>Legacy Support</h2>
  * <p>For backward compatibility, the following legacy variables are also supported:</p>
  * <ul>
@@ -78,7 +78,7 @@ import io.undertow.predicate.PredicateParser;
  *   <li><strong>%ROLES</strong> - Equivalent to @user.roles</li>
  *   <li><strong>%NOW</strong> - Equivalent to @now</li>
  * </ul>
- * 
+ *
  * <h2>Authentication Support</h2>
  * <p>The interpolator supports various authentication mechanisms:</p>
  * <ul>
@@ -86,20 +86,20 @@ import io.undertow.predicate.PredicateParser;
  *   <li>{@link FileRealmAccount} - File-based authentication</li>
  *   <li>{@link JwtAccount} - JWT token authentication</li>
  * </ul>
- * 
+ *
  * <h2>Example Usage</h2>
  * <pre>{@code
  * // BSON document with variables
  * BsonDocument permission = BsonDocument.parse(
  *     "{ 'owner': '@user', 'timestamp': { '$lte': '@now' } }"
  * );
- * 
+ *
  * // Interpolate variables
  * BsonDocument interpolated = AclVarsInterpolator.interpolateBson(
  *     request, permission
  * );
  * }</pre>
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 5.0.0
  */
@@ -132,7 +132,7 @@ public class AclVarsInterpolator {
      * @throws IllegalArgumentException if request is null
      * @see #interpolatePropValue(Request, String)
      */
-    public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
+    public static BsonValue interpolateBson(final MongoRequest request, final BsonValue bson) {
         if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
@@ -333,6 +333,19 @@ public class AclVarsInterpolator {
         }
     }
 
+    private static BsonDocument getAccountDocument(Request<?> request) {
+      if (request == null || request.getAuthenticatedAccount() == null) {
+          return null;
+      }
+
+      return switch (request.getAuthenticatedAccount()) {
+          case MongoRealmAccount maccount -> maccount.properties();
+          case FileRealmAccount faccount -> toBson(faccount.properties()).asDocument();
+          case JwtAccount jwtAccount -> toBson(jwtAccount.propertiesAsMap()).asDocument();
+          default -> null;
+      };
+    }
+
     /**
      * Extracts the account properties as a BSON document from the authenticated account.
      *
@@ -461,7 +474,7 @@ public class AclVarsInterpolator {
      * @param val The BSON primitive value to convert
      * @return The string representation of the value
      */
-    private static String jsonPrimitiveValue(BsonValue val) {
+    private static String jsonPrimitiveValue(BsonValue value) {
         return switch (value.getBsonType()) {
             case NULL -> "null";
             case BOOLEAN -> value.asBoolean().toString();
