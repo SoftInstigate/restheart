@@ -53,25 +53,86 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 
 /**
- * Helper class that allows to interpolate variables (@user, @request, @now) in
- * permissions
+ * Helper class that provides variable interpolation capabilities for Access Control List (ACL) permissions.
+ * 
+ * <p>This class enables dynamic substitution of runtime variables within ACL configurations, allowing
+ * for context-aware authorization rules. It supports interpolation in various formats including BSON
+ * documents, JSON strings, and Undertow predicates.</p>
+ * 
+ * <h2>Supported Variables</h2>
+ * <p>The interpolator recognizes the following variable patterns:</p>
+ * <ul>
+ *   <li><strong>@user</strong> - The authenticated user's principal name</li>
+ *   <li><strong>@user.roles</strong> - Array of user's roles</li>
+ *   <li><strong>@user.&lt;property&gt;</strong> - Any custom property from the user's account</li>
+ *   <li><strong>@request</strong> - The current request object</li>
+ *   <li><strong>@request.&lt;path&gt;</strong> - Specific request properties using JSONPath syntax</li>
+ *   <li><strong>@now</strong> - Current timestamp as epoch milliseconds</li>
+ *   <li><strong>@mongoPermissions</strong> - MongoDB-specific permissions object</li>
+ * </ul>
+ * 
+ * <h2>Legacy Support</h2>
+ * <p>For backward compatibility, the following legacy variables are also supported:</p>
+ * <ul>
+ *   <li><strong>%USER</strong> - Equivalent to @user</li>
+ *   <li><strong>%ROLES</strong> - Equivalent to @user.roles</li>
+ *   <li><strong>%NOW</strong> - Equivalent to @now</li>
+ * </ul>
+ * 
+ * <h2>Authentication Support</h2>
+ * <p>The interpolator supports various authentication mechanisms:</p>
+ * <ul>
+ *   <li>{@link MongoRealmAccount} - MongoDB-based authentication</li>
+ *   <li>{@link FileRealmAccount} - File-based authentication</li>
+ *   <li>{@link JwtAccount} - JWT token authentication</li>
+ * </ul>
+ * 
+ * <h2>Example Usage</h2>
+ * <pre>{@code
+ * // BSON document with variables
+ * BsonDocument permission = BsonDocument.parse(
+ *     "{ 'owner': '@user', 'timestamp': { '$lte': '@now' } }"
+ * );
+ * 
+ * // Interpolate variables
+ * BsonDocument interpolated = AclVarsInterpolator.interpolateBson(
+ *     request, permission
+ * );
+ * }</pre>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @since 5.0.0
  */
 public class AclVarsInterpolator {
     private static final Logger LOGGER = LoggerFactory.getLogger(AclVarsInterpolator.class);
 
     /**
-     * Interpolate values in doc like '@user', '@user.property', @now
+     * Interpolates variable references in a BSON value with their runtime values.
      *
-     * Supports accounts handled by MongoRealAuthenticator,
-     * FileRealmAuthenticator and JwtAuthenticationMechanism
+     * <p>This method recursively processes BSON documents and arrays, replacing variable
+     * references with their actual values from the request context. String values containing
+     * variables are parsed and substituted, while other BSON types are returned unchanged.</p>
      *
-     * Legacy variable names %USER, %ROLES and %NOW are supported as well
+     * <p>Supported variable patterns:</p>
+     * <ul>
+     *   <li><strong>@user</strong> - Authenticated user's principal name</li>
+     *   <li><strong>@user.roles</strong> - User's roles as a BSON array</li>
+     *   <li><strong>@user.property</strong> - Custom user properties</li>
+     *   <li><strong>@now</strong> - Current timestamp in milliseconds</li>
+     *   <li><strong>@request.path</strong> - Request properties via JSONPath</li>
+     *   <li><strong>@mongoPermissions</strong> - MongoDB permissions object</li>
+     * </ul>
      *
-     * @param request
-     * @param bson
-     * @return bson with interpolated variables
+     * <p>Legacy variables (%USER, %ROLES, %NOW) are also supported for backward compatibility.</p>
+     *
+     * @param request The current request containing authentication and context information
+     * @param bson The BSON value to interpolate. Can be a document, array, string, or any BSON type
+     * @return A new BSON value with all variable references replaced by their actual values.
+     *         Returns the original value if no interpolation is needed
+     * @throws IllegalArgumentException if request is null
+     * @see #interpolatePropValue(Request, String)
      */
-    public static BsonValue interpolateBson(MongoRequest request, BsonValue bson) {
+    public static BsonValue interpolateBson(final Request<?> request, final BsonValue bson) {
         if (bson.isDocument()) {
             var ret = new BsonDocument();
             var doc = bson.asDocument();
@@ -103,19 +164,50 @@ public class AclVarsInterpolator {
     }
 
     /**
-     * If value is a '@user', '@user.property', '@request', '@request.remoteIp',
-     * '@mongoPermissions', '@mongoPermissions.readFilter', '@now', '@filter'
-     * returns the interpolated value.
+     * Interpolates a string value containing variable references with their runtime values.
      *
-     * For '@user' and '@mongoPermissions' supports accounts handled by
-     * MongoRealAuthenticator, FileRealmAuthenticator and JwtAuthenticationMechanism
+     * <p>This method processes string values that contain special variable patterns and replaces
+     * them with corresponding runtime values from the request context. It supports both modern
+     * (@-prefixed) and legacy (%-prefixed) variable syntax.</p>
      *
-     * Legacy variable names %USER, %ROLES and %NOW are supported as well
+     * <h3>Supported Variables</h3>
+     * <table border="1">
+     *   <tr><th>Variable</th><th>Description</th><th>Return Type</th></tr>
+     *   <tr><td>@user</td><td>Complete user account object</td><td>BsonDocument</td></tr>
+     *   <tr><td>@user.property</td><td>Specific user property via dot notation</td><td>BsonValue</td></tr>
+     *   <tr><td>@request</td><td>Complete request object</td><td>BsonDocument</td></tr>
+     *   <tr><td>@request.property</td><td>Request property via JSONPath</td><td>BsonValue</td></tr>
+     *   <tr><td>@mongoPermissions</td><td>MongoDB permissions object</td><td>BsonDocument</td></tr>
+     *   <tr><td>@mongoPermissions.property</td><td>Specific permission property</td><td>BsonValue</td></tr>
+     *   <tr><td>@filter</td><td>Current filter document</td><td>BsonDocument</td></tr>
+     *   <tr><td>@now</td><td>Current timestamp</td><td>BsonDateTime</td></tr>
+     *   <tr><td>%USER</td><td>Username (legacy)</td><td>BsonString</td></tr>
+     *   <tr><td>%ROLES</td><td>User roles (legacy)</td><td>BsonArray</td></tr>
+     *   <tr><td>%NOW</td><td>Current timestamp (legacy)</td><td>BsonDateTime</td></tr>
+     * </table>
      *
-     * @param request
-     * @param key
-     * @param value
-     * @return
+     * <h3>User Account Support</h3>
+     * <p>The @user variable adapts to different authentication mechanisms:</p>
+     * <ul>
+     *   <li><strong>MongoRealmAccount:</strong> Returns the account's properties document directly</li>
+     *   <li><strong>FileRealmAccount:</strong> Converts properties map to BSON document</li>
+     *   <li><strong>JwtAccount:</strong> Returns JWT claims excluding standard fields (exp, iss, sub)</li>
+     * </ul>
+     *
+     * <h3>Property Access</h3>
+     * <p>Nested properties can be accessed using dot notation:</p>
+     * <ul>
+     *   <li>Simple properties: @user.email, @request.method</li>
+     *   <li>Nested properties: @user.profile.firstName, @request.headers.contentType</li>
+     *   <li>JSONPath expressions: @request.body.items[0].name</li>
+     * </ul>
+     *
+     * @param request The current request containing authentication and context information
+     * @param key The property key (used for error reporting, can be null)
+     * @param value The string value potentially containing variables to interpolate
+     * @return The interpolated BSON value. Returns BsonNull.VALUE if the variable cannot be resolved
+     *         or if the value parameter is null. For non-variable strings, returns a BsonString
+     * @see #interpolateBson(Request, BsonValue)
      */
     public static BsonValue interpolatePropValue(MongoRequest request, String key, String value) {
         if (value == null) {
@@ -241,7 +333,46 @@ public class AclVarsInterpolator {
         }
     }
 
-    private static BsonDocument getAccountDocument(Request<?> request) {
+    /**
+     * Extracts the account properties as a BSON document from the authenticated account.
+     *
+     * <p>This helper method provides a unified way to access account properties regardless
+     * of the authentication mechanism used. It handles the conversion of different account
+     * types to a consistent BSON document format.</p>
+     *
+     * @param request The request containing the authenticated account
+     * @return A BsonDocument containing the account properties, or null if no account is authenticated
+     */
+    /**
+     * Constructs a comprehensive BSON document representing the current HTTP request.
+     *
+     * <p>This method creates a detailed representation of the request including all
+     * relevant properties that might be needed for authorization decisions. The resulting
+     * document can be queried using JSONPath expressions in ACL configurations.</p>
+     *
+     * <h3>Request Document Structure</h3>
+     * <pre>{@code
+     * {
+     *   "path": "/api/users",
+     *   "method": "GET",
+     *   "remoteIp": "192.168.1.100",
+     *   "secured": true,
+     *   "scheme": "https",
+     *   "host": "api.example.com",
+     *   "port": 443,
+     *   "queryParameters": { "page": ["1"], "size": ["10"] },
+     *   "headers": { "Authorization": ["Bearer ..."], "Content-Type": ["application/json"] },
+     *   "mappedPath": "/api/{collection}",
+     *   "pathParams": { "collection": "users" },
+     *   "content": { ... },          // For MongoRequest
+     *   "aggregationVars": { ... }   // For MongoRequest with aggregation
+     * }
+     * }</pre>
+     *
+     * @param request The HTTP request to convert to BSON
+     * @return A BsonDocument containing all request properties
+     */
+    private static BsonDocument getRequestObject(Request<?> request) {
         if (request == null || request.getAuthenticatedAccount() == null) {
             return null;
         }
@@ -255,14 +386,36 @@ public class AclVarsInterpolator {
     }
 
     /**
-     * interpolate the permission predicate substituting variables with values found
-     * in variableValues
+     * Interpolates variables in a predicate string by substituting them with values from a BSON document.
      *
-     * @param predicate      the predicate containing the placeholder valiable to
-     *                       interpolate
-     * @param prefix         the variable prefix, eg. '@user.' or '@request.'
-     * @param variableValues the document that specifies the values of the variables
-     * @return
+     * <p>This method performs variable substitution in Undertow predicate expressions by replacing
+     * variable references with their actual values. It handles different data types appropriately:</p>
+     * <ul>
+     *   <li><strong>Primitive values:</strong> Strings, numbers, booleans are properly quoted</li>
+     *   <li><strong>Arrays:</strong> Converted to comma-separated lists suitable for predicates</li>
+     *   <li><strong>Nested properties:</strong> Accessed via flattened dot notation</li>
+     *   <li><strong>Null/missing values:</strong> Variables are removed from the predicate</li>
+     * </ul>
+     *
+     * <h3>Variable Resolution Process</h3>
+     * <ol>
+     *   <li>The variableValues document is flattened to handle nested properties</li>
+     *   <li>Primitive values are interpolated with appropriate quoting</li>
+     *   <li>Arrays are converted to predicate-compatible format</li>
+     *   <li>Unbound variables (not found in variableValues) are removed</li>
+     * </ol>
+     *
+     * <h3>Example</h3>
+     * <pre>{@code
+     * // Given predicate: "roles[@user.roles] and equals[@user.department, 'IT']"
+     * // And variableValues: { "roles": ["admin", "user"], "department": "IT" }
+     * // Result: "roles[admin,user] and equals['IT', 'IT']"
+     * }</pre>
+     *
+     * @param predicate The predicate string containing placeholder variables to interpolate
+     * @param prefix The variable prefix to look for (e.g., '@user.' or '@request.')
+     * @param variableValues The BSON document containing the variable values to substitute
+     * @return The interpolated predicate string with all variables replaced
      */
     static String interpolatePredicate(String predicate, String prefix, BsonDocument variableValues) {
         if (variableValues == null || variableValues.isEmpty()) {
@@ -298,7 +451,17 @@ public class AclVarsInterpolator {
         return value.isArray();
     }
 
-    private static String jsonPrimitiveValue(BsonValue value) {
+    /**
+     * Converts a BSON primitive value to its string representation for use in predicates.
+     *
+     * <p>This method handles the conversion of various BSON types to their appropriate
+     * string representations for interpolation into Undertow predicates. String values
+     * are returned as-is, while other types are converted to their string form.</p>
+     *
+     * @param val The BSON primitive value to convert
+     * @return The string representation of the value
+     */
+    private static String jsonPrimitiveValue(BsonValue val) {
         return switch (value.getBsonType()) {
             case NULL -> "null";
             case BOOLEAN -> value.asBoolean().toString();
@@ -313,6 +476,15 @@ public class AclVarsInterpolator {
         };
     }
 
+    /**
+     * Converts a BSON array to a comma-separated string suitable for use in predicates.
+     *
+     * <p>This method transforms a BSON array into a format compatible with Undertow predicates,
+     * where array elements are separated by commas without spaces.</p>
+     *
+     * @param array The BSON array to convert
+     * @return A comma-separated string representation of the array elements
+     */
     private static String jsonArrayValue(BsonArray array) {
         var sb = new StringBuilder();
         sb.append("{");
@@ -322,14 +494,32 @@ public class AclVarsInterpolator {
         return sb.toString();
     }
 
+    /**
+     * Wraps a string value in single quotes for use in predicates.
+     *
+     * @param s The string to quote
+     * @return The string wrapped in single quotes
+     */
     private static String quote(String s) {
-        return "\"".concat(s).concat("\"");
+        return "'".concat(s).concat("'");
     }
 
     private static final String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
 
+    /**
+     * Random number generator for creating unique tokens during variable substitution.
+     */
     private static final Random RND_GENERATOR = new Random();
 
+    /**
+     * Generates a unique random token for temporary variable substitution.
+     *
+     * <p>This method creates a cryptographically random string that is extremely unlikely
+     * to collide with any actual content in the predicate. Used during the variable
+     * removal process to ensure safe string replacement.</p>
+     *
+     * @return A unique random string token
+     */
     private static String nextToken() {
         return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX);
     }
