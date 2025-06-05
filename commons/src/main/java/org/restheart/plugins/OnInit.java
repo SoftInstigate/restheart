@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
  * <pre>{@code
  * @RegisterPlugin(name = "data-service")
  * public class DataService implements JsonService {
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *     
  *     @Inject("mclient")

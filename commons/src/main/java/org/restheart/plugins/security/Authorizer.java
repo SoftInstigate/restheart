@@ -54,7 +54,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  *     authorizerType = Authorizer.TYPE.ALLOWER
  * )
  * public class RoleBasedAuthorizer implements Authorizer {
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *     
  *     private Map<String, Set<String>> rolePermissions;

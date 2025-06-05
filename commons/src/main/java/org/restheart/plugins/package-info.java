@@ -88,6 +88,18 @@
  *   <li>{@link org.restheart.plugins.InterceptorException} - Exception for interceptor errors</li>
  * </ul>
  * 
+ * <h2>Dependency Injection</h2>
+ * <p>RESTHeart provides dependency injection for plugins via the {@link org.restheart.plugins.Inject} annotation.
+ * Available providers include:</p>
+ * <ul>
+ *   <li>{@code @Inject("config")} - Plugin-specific configuration from plugins-args</li>
+ *   <li>{@code @Inject("rh-config")} - Global RESTHeart configuration</li>
+ *   <li>{@code @Inject("registry")} - Plugins registry</li>
+ *   <li>{@code @Inject("mclient")} - MongoDB client</li>
+ *   <li>{@code @Inject("acl-registry")} - ACL registry</li>
+ *   <li>{@code @Inject("gql-app-definition-cache")} - GraphQL app cache (v8.0.9+)</li>
+ * </ul>
+ * 
  * <h2>Plugin Development Guidelines</h2>
  * <p>When developing plugins:</p>
  * <ul>
@@ -106,6 +118,7 @@
  *     description = "A simple greeting service"
  * )
  * public class HelloService implements JsonService {
+ *     // Inject plugin-specific configuration from plugins-args section
  *     @Inject("config")
  *     private Map<String, Object> config;
  *     

@@ -57,7 +57,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  * public class FileAuthenticator implements Authenticator {
  *     private Map<String, UserData> users;
  *     
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *     
  *     @OnInit

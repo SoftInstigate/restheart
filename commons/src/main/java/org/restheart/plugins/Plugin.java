@@ -56,7 +56,7 @@ package org.restheart.plugins;
  *     description = "A simple greeting service"
  * )
  * public class HelloService implements JsonService {
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *     
  *     @OnInit

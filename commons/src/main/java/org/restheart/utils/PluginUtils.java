@@ -256,7 +256,7 @@ public class PluginUtils {
      * falling back to the default URI from the annotation.
      *
      * @param <P> the service type
-     * @param conf the plugin configuration obtained from @Inject("conf")
+     * @param conf the plugin configuration obtained from @Inject("config")
      * @param serviceClass the class of the service
      * @return the actual service URI set in configuration or the defaultURI
      */

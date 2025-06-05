@@ -34,10 +34,12 @@ import java.lang.annotation.Target;
  * <h2>Supported Injection Types</h2>
  * <p>The following values can be used with {@code @Inject}:</p>
  * <ul>
- *   <li><strong>"config"</strong> - Injects the global RESTHeart configuration</li>
- *   <li><strong>"conf"</strong> - Injects plugin-specific configuration from plugins-args</li>
+ *   <li><strong>"config"</strong> - Injects plugin-specific configuration from the plugins-args section</li>
+ *   <li><strong>"rh-config"</strong> - Injects the global RESTHeart {@link org.restheart.configuration.Configuration} object</li>
  *   <li><strong>"registry"</strong> - Injects the {@link PluginsRegistry} instance</li>
  *   <li><strong>"mclient"</strong> - Injects the MongoDB client (if MongoDB is enabled)</li>
+ *   <li><strong>"acl-registry"</strong> - Injects the {@link org.restheart.security.ACLRegistry} for programmatic permission definition</li>
+ *   <li><strong>"gql-app-definition-cache"</strong> - Injects the GraphQL app definition cache as {@code LoadingCache<String, GraphQLApp>} (available from v8.0.9)</li>
  * </ul>
  *
  * <h2>Usage Examples</h2>
@@ -45,7 +47,7 @@ import java.lang.annotation.Target;
  * @RegisterPlugin(name = "my-service")
  * public class MyService implements JsonService {
  *     // Inject plugin-specific configuration
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *
  *     // Inject the plugins registry
@@ -99,10 +101,12 @@ public @interface Inject {
      *
      * <p>Common values include:</p>
      * <ul>
-     *   <li>"config" - Global configuration</li>
-     *   <li>"conf" - Plugin-specific configuration</li>
+     *   <li>"config" - Plugin-specific configuration from plugins-args</li>
+     *   <li>"rh-config" - Global RESTHeart configuration</li>
      *   <li>"registry" - Plugins registry</li>
      *   <li>"mclient" - MongoDB client</li>
+     *   <li>"acl-registry" - ACL registry</li>
+     *   <li>"gql-app-definition-cache" - GraphQL app definition cache</li>
      * </ul>
      *
      * @return the identifier of the dependency to inject

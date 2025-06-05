@@ -48,7 +48,7 @@ import org.restheart.utils.PluginUtils;
  * <pre>{@code
  * @RegisterPlugin(name = "my-plugin")
  * public class MyPlugin implements ConfigurablePlugin, Service<Request<?>, Response<?>> {
- *     @Inject("conf")
+ *     @Inject("config")
  *     private Map<String, Object> config;
  *     
  *     @OnInit
