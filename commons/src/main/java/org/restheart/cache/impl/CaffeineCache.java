@@ -86,7 +86,7 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
      * 
      * @param size the maximum number of entries the cache can hold
      * @param expirePolicy the expiration policy determining when entries are automatically removed
-     * @param ttl the time-to-live in milliseconds; if <= 0, time-based expiration is disabled
+     * @param ttl the time-to-live in milliseconds; if &lt;= 0, time-based expiration is disabled
      */
     public CaffeineCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
         var builder = Caffeine.newBuilder().executor(virtualThreadsExecutor);
@@ -115,7 +115,7 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
      * 
      * @param size the maximum number of entries the cache can hold
      * @param expirePolicy the expiration policy determining when entries are automatically removed
-     * @param ttl the time-to-live in milliseconds; if <= 0, time-based expiration is disabled
+     * @param ttl the time-to-live in milliseconds; if &lt;= 0, time-based expiration is disabled
      * @param remover the consumer to invoke when entries are removed from the cache
      * @throws NullPointerException if remover is null
      */

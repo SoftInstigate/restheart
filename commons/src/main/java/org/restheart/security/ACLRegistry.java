@@ -73,8 +73,7 @@ import org.restheart.exchange.Request;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 6.0.0
- * @see org.restheart.security.plugins.authorizers.ACLRegistryVetoer
- * @see org.restheart.security.plugins.authorizers.ACLRegistryAllower
+ * @see org.restheart.plugins.security.Authorizer
  */
 public interface ACLRegistry {
     /**

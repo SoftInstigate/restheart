@@ -89,7 +89,7 @@ public class CacheFactory {
      * @param size         the maximum number of entries the cache may contain
      * @param expirePolicy specifies how and when each entry should be automatically
      *                     removed from the cache (NEVER, AFTER_WRITE, or AFTER_READ)
-     * @param ttl          Time To Live in milliseconds; if <= 0, entries won't expire based on time
+     * @param ttl          Time To Live in milliseconds; if &lt;= 0, entries won't expire based on time
      * @param loader       the function used to compute values for missing keys; may return null
      * @return a new {@link LoadingCache} instance with the specified configuration
      * @throws NullPointerException if loader is null
@@ -101,7 +101,7 @@ public class CacheFactory {
     /**
      * Creates a simple HashMap-based loading cache without size limits or expiration.
      * 
-     * <p>This method creates a basic cache implementation backed by a {@link HashMap}.
+     * <p>This method creates a basic cache implementation backed by a {@link java.util.HashMap}.
      * Unlike the Caffeine-based caches, this implementation:</p>
      * <ul>
      *   <li>Has no size limits (entries are never evicted)</li>
@@ -153,7 +153,7 @@ public class CacheFactory {
      * @param size the maximum number of entries the cache may contain
      * @param expirePolicy specifies how and when each entry should be automatically 
      *                     removed from the cache (NEVER, AFTER_WRITE, or AFTER_READ)
-     * @param ttl Time To Live in milliseconds; if <= 0, entries won't expire based on time
+     * @param ttl Time To Live in milliseconds; if &lt;= 0, entries won't expire based on time
      * @return a new {@link Cache} instance with the specified configuration
      */
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl) {
@@ -196,7 +196,7 @@ public class CacheFactory {
      * @param size the maximum number of entries the cache may contain
      * @param expirePolicy specifies how and when each entry should be automatically 
      *                     removed from the cache (NEVER, AFTER_WRITE, or AFTER_READ)
-     * @param ttl Time To Live in milliseconds; if <= 0, entries won't expire based on time
+     * @param ttl Time To Live in milliseconds; if &lt;= 0, entries won't expire based on time
      * @param remover the consumer to invoke each time a value is automatically removed 
      *                from the cache; receives entries with keys and optional values
      * @return a new {@link Cache} instance with the specified configuration and removal listener

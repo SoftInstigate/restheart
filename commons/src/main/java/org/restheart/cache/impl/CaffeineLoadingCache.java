@@ -92,7 +92,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      * 
      * @param size the maximum number of entries the cache can hold
      * @param expirePolicy the expiration policy determining when entries are automatically removed
-     * @param ttl the time-to-live in milliseconds; if <= 0, time-based expiration is disabled
+     * @param ttl the time-to-live in milliseconds; if &lt;= 0, time-based expiration is disabled
      * @param loader the function used to compute values for missing keys; may return null
      * @throws NullPointerException if loader is null
      */

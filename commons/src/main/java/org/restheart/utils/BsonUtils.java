@@ -116,7 +116,7 @@ public class BsonUtils {
      * Replaces the underscore prefixed keys (e.g., _$exists) with the
      * corresponding key (e.g., $exists) and replaces escaped dots (::) with 
      * actual dots (.) in property names. This operation reverses the escaping
-     * applied by {@link #escapeKeys(BsonValue)} method.
+     * applied by {@link #escapeKeys(BsonValue, boolean)} method.
      *
      * <p>This is needed because MongoDB does not allow storing keys that start with $
      * and contain dots in them.</p>

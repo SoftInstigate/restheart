@@ -96,7 +96,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  * <h2>Multiple Authenticators</h2>
  * <p>RESTHeart supports multiple authenticators working together. They are tried in order
  * until one successfully authenticates the user or all fail. Configure the order using
- * the priority attribute in {@link RegisterPlugin}.</p>
+ * the priority attribute in {@link org.restheart.plugins.RegisterPlugin}.</p>
  * 
  * <h2>Built-in Implementations</h2>
  * <p>RESTHeart provides several authenticator implementations:</p>

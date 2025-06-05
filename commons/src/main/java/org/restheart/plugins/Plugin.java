@@ -33,10 +33,10 @@ package org.restheart.plugins;
  *   <li>{@link Interceptor} - Process requests/responses in the pipeline</li>
  *   <li>{@link Initializer} - Perform startup initialization tasks</li>
  *   <li>{@link Provider} - Supply dependencies for injection</li>
- *   <li>{@link AuthMechanism} - Implement authentication mechanisms</li>
- *   <li>{@link Authenticator} - Verify user credentials</li>
- *   <li>{@link Authorizer} - Control access to resources</li>
- *   <li>{@link TokenManager} - Manage authentication tokens</li>
+ *   <li>{@link org.restheart.plugins.security.AuthMechanism} - Implement authentication mechanisms</li>
+ *   <li>{@link org.restheart.plugins.security.Authenticator} - Verify user credentials</li>
+ *   <li>{@link org.restheart.plugins.security.Authorizer} - Control access to resources</li>
+ *   <li>{@link org.restheart.plugins.security.TokenManager} - Manage authentication tokens</li>
  * </ul>
  * 
  * <h2>Plugin Development</h2>

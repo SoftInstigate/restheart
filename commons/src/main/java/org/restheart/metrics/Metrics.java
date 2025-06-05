@@ -318,17 +318,10 @@ public class Metrics {
      * only the provided label. To preserve existing labels, use {@link #attachMetricLabels(Request, List)}
      * with a combined list.</p>
      *
-<<<<<<< HEAD
-     * RequestsMetricsCollector adds labels to the collected metrics
-     *
-     * @param request
-     * @param labels
-=======
      * @param request the request to attach the label to
      * @param label the label to attach
      * @see #attachMetricLabels(Request, List)
      * @see #getMetricLabels(Request)
->>>>>>> ed0f6e03e (:memo: Add comprehensive JavaDoc to org.restheart.graal, org.restheart.handlers and org.restheart.metrics packages of module commons)
      */
     public static void attachMetricLabel(Request<?> request, MetricLabel label) {
         var labels = new ArrayList<MetricLabel>();
@@ -354,15 +347,10 @@ public class Metrics {
      * }
      * }</pre>
      *
-<<<<<<< HEAD
-     * @param request
-     * @param labels
-=======
      * @param request the request from which to retrieve labels
      * @return the list of attached labels, or null if no labels have been attached
      * @see #attachMetricLabels(Request, List)
      * @see #attachMetricLabel(Request, MetricLabel)
->>>>>>> ed0f6e03e (:memo: Add comprehensive JavaDoc to org.restheart.graal, org.restheart.handlers and org.restheart.metrics packages of module commons)
      */
     public static List<MetricLabel> getMetricLabels(Request<?> request) {
         return request.getExchange().getAttachment(CUSTOM_METRIC_LABELS);

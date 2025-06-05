@@ -83,7 +83,7 @@ public class UninitializedResponse extends ServiceResponse<Object> {
      * If a customResponseInitializer is set (not null), the ServiceExchangeInitializer will
      * delegate to customResponseInitializer.accept(exchange) the responsability to initialize the response
      *
-     * @param customSender
+     * @param customResponseInitializer the custom response initializer
      */
     public void setCustomResponseInitializer(Consumer<HttpServerExchange> customResponseInitializer) {
         this.wrapped.putAttachment(CUSTOM_RESPONSE_INITIALIZER_KEY, customResponseInitializer);

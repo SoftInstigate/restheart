@@ -111,9 +111,6 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
 
         /**
          * helper BiConsumer to handle OPTIONS requests
-         *
-         * @param request
-         * @throws Exception
          */
         default BiConsumer<R, S> handleOptions() {
             return (r,s) -> handleOptions(r);

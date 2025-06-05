@@ -83,7 +83,7 @@ import com.google.gson.GsonBuilder;
  * @since 5.0.0
  * @see PwdCredentialAccount
  * @see WithProperties
- * @see org.restheart.plugins.security.authenticators.MongoRealmAuthenticator
+ * @see org.restheart.plugins.security.Authenticator
  */
 public class MongoRealmAccount extends PwdCredentialAccount implements WithProperties<BsonDocument> {
     private static final long serialVersionUID = -5840534832968478775L;
@@ -103,8 +103,6 @@ public class MongoRealmAccount extends PwdCredentialAccount implements WithPrope
      * to minimize the time sensitive data remains in memory. The properties BsonDocument may
      * contain sensitive information and should be handled accordingly.</p>
      *
-     * @param db The MongoDB database name where this user account is stored. Used for multi-tenant
-     *           scenarios and database-scoped operations
      * @param name The username for this account. Must not be null
      * @param password The password as a char array. Must not be null. Should be cleared after use
      * @param roles The set of roles assigned to this account. Can be null or empty
