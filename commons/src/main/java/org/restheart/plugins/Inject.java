@@ -25,11 +25,87 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotation for dependency injection in RESTHeart plugins.
  *
+ * <p>The {@code @Inject} annotation marks fields in plugin classes for automatic dependency
+ * injection by the RESTHeart plugin framework. This enables plugins to access shared
+ * resources, configuration, and other objects hold by Providers without manual instantiation.</p>
+ *
+ * <h2>Supported Injection Types</h2>
+ * <p>The following values can be used with {@code @Inject}:</p>
+ * <ul>
+ *   <li><strong>"config"</strong> - Injects the global RESTHeart configuration</li>
+ *   <li><strong>"conf"</strong> - Injects plugin-specific configuration from plugins-args</li>
+ *   <li><strong>"registry"</strong> - Injects the {@link PluginsRegistry} instance</li>
+ *   <li><strong>"mclient"</strong> - Injects the MongoDB client (if MongoDB is enabled)</li>
+ * </ul>
+ *
+ * <h2>Usage Examples</h2>
+ * <pre>{@code
+ * @RegisterPlugin(name = "my-service")
+ * public class MyService implements JsonService {
+ *     // Inject plugin-specific configuration
+ *     @Inject("conf")
+ *     private Map<String, Object> config;
+ *
+ *     // Inject the plugins registry
+ *     @Inject("registry")
+ *     private PluginsRegistry registry;
+ *
+ *     // Inject MongoDB client
+ *     @Inject("mclient")
+ *     private MongoClient mongoClient;
+ *
+ *     @OnInit
+ *     public void init() {
+ *         // Injected fields are available here
+ *         String dbName = config.get("database").toString();
+ *     }
+ * }
+ * }</pre>
+ *
+ * <h2>Injection Timing</h2>
+ * <p>Field injection occurs after plugin instantiation but before {@link OnInit} methods
+ * are called. This ensures all dependencies are available during initialization.</p>
+ *
+ * <h2>Best Practices</h2>
+ * <ul>
+ *   <li>Declare injected fields as private to maintain encapsulation</li>
+ *   <li>Avoid circular dependencies between plugins</li>
+ *   <li>Check for null values when injecting optional dependencies</li>
+ *   <li>Use specific types rather than Object when possible</li>
+ *   <li>Document which injections your plugin requires</li>
+ * </ul>
+ *
+ * <h2>Error Handling</h2>
+ * <p>If an injected dependency cannot be resolved, RESTHeart will:</p>
+ * <ul>
+ *   <li>Log an error message with details</li>
+ *   <li>Skip the plugin initialization</li>
+ *   <li>Continue loading other plugins</li>
+ * </ul>
+ *
+ * @see Provider
+ * @see RegisterPlugin
+ * @see OnInit
+ * @see PluginsRegistry
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Inject {
+    /**
+     * Specifies the name or type of the dependency to inject.
+     *
+     * <p>Common values include:</p>
+     * <ul>
+     *   <li>"config" - Global configuration</li>
+     *   <li>"conf" - Plugin-specific configuration</li>
+     *   <li>"registry" - Plugins registry</li>
+     *   <li>"mclient" - MongoDB client</li>
+     * </ul>
+     *
+     * @return the identifier of the dependency to inject
+     */
     String value();
 }

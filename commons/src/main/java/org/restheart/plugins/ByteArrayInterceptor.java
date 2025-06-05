@@ -23,7 +23,48 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 
 /**
- *
+ * Interceptor interface for handling binary data exchanges.
+ * 
+ * <p>ByteArrayInterceptor is a specialized interceptor that processes requests and responses
+ * containing binary data (byte arrays). It extends the generic {@link Interceptor} interface
+ * with {@link ByteArrayRequest} and {@link ByteArrayResponse} type parameters.</p>
+ * 
+ * <p>This interceptor is useful for:</p>
+ * <ul>
+ *   <li>Processing binary file uploads and downloads</li>
+ *   <li>Implementing binary data transformations</li>
+ *   <li>Adding binary data validation or compression</li>
+ *   <li>Logging or auditing binary data exchanges</li>
+ *   <li>Implementing security checks on binary content</li>
+ * </ul>
+ * 
+ * <h2>Example Usage</h2>
+ * <pre>{@code
+ * @RegisterPlugin(
+ *     name = "binaryValidator",
+ *     description = "Validates binary file uploads",
+ *     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH
+ * )
+ * public class BinaryValidatorInterceptor implements ByteArrayInterceptor {
+ *     @Override
+ *     public void handle(ByteArrayRequest request, ByteArrayResponse response) {
+ *         byte[] content = request.getContent();
+ *         if (content != null && content.length > MAX_SIZE) {
+ *             response.setStatusCode(413); // Payload Too Large
+ *         }
+ *     }
+ *     
+ *     @Override
+ *     public boolean resolve(ByteArrayRequest request, ByteArrayResponse response) {
+ *         return request.isUpload();
+ *     }
+ * }
+ * }</pre>
+ * 
+ * @see Interceptor
+ * @see ByteArrayRequest
+ * @see ByteArrayResponse
+ * @see InterceptPoint
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface ByteArrayInterceptor extends Interceptor<ByteArrayRequest, ByteArrayResponse> {

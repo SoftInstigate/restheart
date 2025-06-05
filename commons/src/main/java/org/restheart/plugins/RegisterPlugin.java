@@ -91,8 +91,54 @@ public @interface RegisterPlugin {
      */
     MATCH_POLICY uriMatchPolicy() default MATCH_POLICY.PREFIX;
 
+    /**
+     * Defines how a service's URI should be matched against incoming requests.
+     * 
+     * <p>This enum determines whether a service handles requests for an exact URI path
+     * or for all URIs that start with a specified prefix.</p>
+     * 
+     * <h3>Usage Example</h3>
+     * <pre>{@code
+     * @RegisterPlugin(
+     *     name = "exact-service",
+     *     defaultURI = "/api/users/profile",
+     *     uriMatchPolicy = MATCH_POLICY.EXACT
+     * )
+     * // This service only handles: /api/users/profile
+     * 
+     * @RegisterPlugin(
+     *     name = "prefix-service", 
+     *     defaultURI = "/api/users",
+     *     uriMatchPolicy = MATCH_POLICY.PREFIX
+     * )
+     * // This service handles: /api/users, /api/users/123, /api/users/123/orders, etc.
+     * }</pre>
+     */
     public enum MATCH_POLICY {
-        EXACT, PREFIX
+        /**
+         * Match only the exact URI path.
+         * 
+         * <p>The service will only handle requests where the path exactly matches
+         * the service's URI. No sub-paths will be handled.</p>
+         * 
+         * <p>Example: A service with URI "/api/status" and EXACT policy will handle
+         * requests to "/api/status" but not to "/api/status/health".</p>
+         */
+        EXACT,
+        
+        /**
+         * Match the URI path as a prefix.
+         * 
+         * <p>The service will handle requests where the path starts with the service's URI.
+         * This includes the exact URI and any sub-paths.</p>
+         * 
+         * <p>Example: A service with URI "/api/data" and PREFIX policy will handle
+         * requests to "/api/data", "/api/data/users", "/api/data/users/123", etc.</p>
+         * 
+         * <p>This is the default policy and is commonly used for RESTful services that
+         * manage resources with hierarchical URIs.</p>
+         */
+        PREFIX
     };
 
     /**
