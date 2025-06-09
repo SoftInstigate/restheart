@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2024 SoftInstigate
+ * Copyright (C) 2018 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,16 +257,13 @@ public class MongoPermissions {
      */
     @SuppressWarnings("unchecked")
     public static MongoPermissions from(Object raw) throws ConfigurationException, IllegalArgumentException {
-        if (raw == null) {
-            return new MongoPermissions();
-        } else if (raw instanceof BsonDocument) {
-            return from((BsonDocument) raw);
-        } else if (raw instanceof Map) {
-            return from((Map<String, Object>) raw);
-        } else {
-            throw new IllegalArgumentException(
-                    "MongoPemissions cannot be built from " + raw.getClass().getSimpleName());
-        }
+	  return switch (raw) {
+		case null -> new MongoPermissions();
+		case BsonDocument bsonDocument -> from(bsonDocument);
+		case Map map -> from((Map<String, Object>) raw);
+		default -> throw new IllegalArgumentException(
+			"MongoPemissions cannot be built from " + raw.getClass().getSimpleName());
+	  };
     }
 
     /**
