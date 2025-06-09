@@ -46,11 +46,9 @@ import io.undertow.predicate.PredicateParser;
 /**
  * Helper class that provides variable interpolation capabilities for Access Control List (ACL) permissions.
  *
- * <p>
- * This class enables dynamic substitution of runtime variables within ACL configurations, allowing
+ * <p>This class enables dynamic substitution of runtime variables within ACL configurations, allowing
  * for context-aware authorization rules. It supports interpolation in various formats including BSON
- * documents, JSON strings, and Undertow predicates.
- * </p>
+ * documents, JSON strings, and Undertow predicates.</p>
  *
  * <h2>Supported Variables</h2>
  * <p>
@@ -91,7 +89,8 @@ import io.undertow.predicate.PredicateParser;
  * <pre>{@code
  * // BSON document with variables
  * BsonDocument permission = BsonDocument.parse(
- *         "{ 'owner': '@user', 'timestamp': { '$lte': '@now' } }");
+ *     "{ 'owner': '@user', 'timestamp': { '$lte': '@now' } }"
+ * );
  *
  * // Interpolate variables
  * BsonDocument interpolated = AclVarsInterpolator.interpolateBson(
@@ -135,8 +134,7 @@ public class AclVarsInterpolator {
      *            The BSON value to interpolate. Can be a document, array, string, or any BSON type
      * @return A new BSON value with all variable references replaced by their actual values.
      *         Returns the original value if no interpolation is needed
-     * @throws IllegalArgumentException
-     *             if request is null
+     * @throws IllegalArgumentException if request is null
      * @see #interpolatePropValue(MongoRequest, String, String)
      */
     public static BsonValue interpolateBson(final MongoRequest request, final BsonValue bson) {
