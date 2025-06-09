@@ -848,10 +848,8 @@ public final class Bootstrapper {
                 File file;
 
                 if (sr.embedded()) {
-                    if (sr.what() == null || sr.what().startsWith("/")) {
-                        LOGGER.error("Cannot bind embedded static resources {}. parameter 'what'"
-                                + "cannot start with /. the path is relative to the jar root dir"
-                                + " or classpath directory", sr);
+                    if (sr.what() == null) {
+                        LOGGER.error("Cannot bind embedded static resources {}. parameter 'what' is missing", sr);
                         return;
                     }
 
