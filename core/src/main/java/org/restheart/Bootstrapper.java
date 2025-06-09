@@ -848,11 +848,6 @@ public final class Bootstrapper {
                 File file;
 
                 if (sr.embedded()) {
-                    if (sr.what() == null) {
-                        LOGGER.error("Cannot bind embedded static resources {}. parameter 'what' is missing", sr);
-                        return;
-                    }
-
                     try {
                         file = ResourcesExtractor.extract(Bootstrapper.class, sr.what());
 
