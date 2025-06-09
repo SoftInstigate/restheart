@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import java.util.UUID;
  * MongoDB operations. It handles session lifecycle, transaction support, and causal consistency
  * for database operations.
  * </p>
- * 
+ *
  * <p>Key features:</p>
  * <ul>
  *   <li>Session pooling and management through {@link ServerSessionPool}</li>
@@ -44,12 +44,12 @@ import java.util.UUID;
  *   <li>Transaction state tracking</li>
  *   <li>Custom session ID management</li>
  * </ul>
- * 
+ *
  * <p>Note: This implementation provides limited transaction support. The transaction
  * methods ({@link #startTransaction()}, {@link #commitTransaction()}, {@link #abortTransaction()})
  * throw {@link UnsupportedOperationException} as transactions are handled differently
  * in RESTHeart's architecture.</p>
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @see ClientSession
  * @see BaseClientSessionImpl
@@ -62,7 +62,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Used to track transaction state and ensure proper transaction semantics.
      */
     protected boolean messageSentInCurrentTransaction;
-    
+
     /**
      * Flag indicating whether this session should enforce causal consistency.
      * When true, read operations will see the results of preceding write operations.
@@ -72,7 +72,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Constructs a new ClientSessionImpl with the specified parameters.
-     * 
+     *
      * @param serverSessionPool the pool from which to acquire server sessions.
      *                          Manages the lifecycle and reuse of server-side sessions
      * @param originator the object that created this session, typically a MongoClient instance.
@@ -91,7 +91,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * It simply executes the transaction body without actual transaction semantics.
      * This is intentional as RESTHeart handles transactions at a different layer.
      * </p>
-     * 
+     *
      * @param <T> the return type of the transaction body
      * @param tb the transaction body to execute
      * @return the result of executing the transaction body
@@ -108,7 +108,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * full transaction support. It simply executes the transaction body.
      * This is intentional as RESTHeart handles transactions at a different layer.
      * </p>
-     * 
+     *
      * @param <T> the return type of the transaction body
      * @param tb the transaction body to execute
      * @param to the transaction options (ignored in this implementation)
@@ -121,7 +121,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Checks if this session has an active transaction.
-     * 
+     *
      * @return always returns {@code false} as this implementation does not support
      *         traditional MongoDB transactions
      */
@@ -137,7 +137,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * write operations. This provides a global partial order of operations that preserves
      * causality.
      * </p>
-     * 
+     *
      * @return {@code true} if this session enforces causal consistency, {@code false} otherwise
      */
     @Override
@@ -152,7 +152,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * message sent in the current transaction. This information is used to properly
      * manage transaction state.
      * </p>
-     * 
+     *
      * @return {@code true} if this was the first message in the current transaction,
      *         {@code false} if a message has already been sent
      */
@@ -165,7 +165,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Gets the transaction options for this session.
-     * 
+     *
      * @return never returns as this implementation does not support transactions
      * @throws UnsupportedOperationException always thrown as transactions are not supported
      */
@@ -176,7 +176,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Starts a new transaction on this session.
-     * 
+     *
      * @throws UnsupportedOperationException always thrown as this implementation
      *         does not support traditional MongoDB transactions
      */
@@ -187,7 +187,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Starts a new transaction on this session with the given options.
-     * 
+     *
      * @param transactionOptions the options to apply to the transaction (ignored)
      * @throws UnsupportedOperationException always thrown as this implementation
      *         does not support traditional MongoDB transactions
@@ -199,7 +199,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Commits the current transaction.
-     * 
+     *
      * @throws UnsupportedOperationException always thrown as this implementation
      *         does not support traditional MongoDB transactions
      */
@@ -210,7 +210,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Aborts the current transaction.
-     * 
+     *
      * @throws UnsupportedOperationException always thrown as this implementation
      *         does not support traditional MongoDB transactions
      */
@@ -245,7 +245,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * The session ID is extracted from the server session's BSON document
      * identifier. This ID uniquely identifies the session across the cluster.
      * </p>
-     * 
+     *
      * @return the session UUID, or null if the session ID cannot be extracted
      */
     public UUID getSid() {
@@ -258,7 +258,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * When enabled, read operations will reflect the results of preceding write
      * operations, providing a causally consistent view of the data.
      * </p>
-     * 
+     *
      * @param causallyConsistent {@code true} to enable causal consistency,
      *                           {@code false} to disable it
      */
@@ -272,7 +272,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * This method is used internally to track transaction state and ensure
      * proper transaction semantics.
      * </p>
-     * 
+     *
      * @param messageSentInCurrentTransaction {@code true} if a message has been sent,
      *                                        {@code false} otherwise
      */
@@ -282,7 +282,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
 
     /**
      * Checks if a message has been sent in the current transaction.
-     * 
+     *
      * @return {@code true} if a message has been sent in the current transaction,
      *         {@code false} otherwise
      */
@@ -297,7 +297,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * session's BSON document. It handles null checks and type verification to
      * ensure safe extraction.
      * </p>
-     * 
+     *
      * @param cs the client session from which to extract the ID
      * @return the session UUID, or null if the session is null or the ID cannot be extracted
      */
@@ -326,7 +326,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * This implementation does not perform any action as operation tracking
      * is handled elsewhere in RESTHeart.
      * </p>
-     * 
+     *
      * @param operation the operation being initiated (ignored in this implementation)
      */
     @Override
@@ -342,7 +342,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * originator to the value of MongoClient.delegate. This utility method uses
      * reflection to extract the delegate field value.
      * </p>
-     * 
+     *
      * @param o the object (typically a MongoClient) from which to extract the delegate
      * @return the value of the delegate field if it exists and is accessible,
      *         otherwise returns the original object

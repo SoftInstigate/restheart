@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import org.restheart.exchange.ByteArrayResponse;
 
 /**
  * Interceptor interface for handling binary data exchanges.
- * 
+ *
  * <p>ByteArrayInterceptor is a specialized interceptor that processes requests and responses
  * containing binary data (byte arrays). It extends the generic {@link Interceptor} interface
  * with {@link ByteArrayRequest} and {@link ByteArrayResponse} type parameters.</p>
- * 
+ *
  * <p>This interceptor is useful for:</p>
  * <ul>
  *   <li>Processing binary file uploads and downloads</li>
@@ -37,7 +37,7 @@ import org.restheart.exchange.ByteArrayResponse;
  *   <li>Logging or auditing binary data exchanges</li>
  *   <li>Implementing security checks on binary content</li>
  * </ul>
- * 
+ *
  * <h2>Example Usage</h2>
  * <pre>{@code
  * @RegisterPlugin(
@@ -53,14 +53,14 @@ import org.restheart.exchange.ByteArrayResponse;
  *             response.setStatusCode(413); // Payload Too Large
  *         }
  *     }
- *     
+ *
  *     @Override
  *     public boolean resolve(ByteArrayRequest request, ByteArrayResponse response) {
  *         return request.isUpload();
  *     }
  * }
  * }</pre>
- * 
+ *
  * @see Interceptor
  * @see ByteArrayRequest
  * @see ByteArrayResponse

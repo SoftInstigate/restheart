@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ package org.restheart.plugins;
 
 /**
  * Defines the execution point in the request/response pipeline where an {@link Interceptor} executes.
- * 
+ *
  * <p>InterceptPoint determines when an interceptor will be invoked during the processing
  * of an HTTP request. This allows interceptors to modify requests and responses at
  * different stages of the pipeline, enabling powerful middleware capabilities.</p>
- * 
+ *
  * <h2>Request/Response Pipeline</h2>
  * <p>The RESTHeart pipeline processes requests in this order:</p>
  * <ol>
@@ -37,7 +37,7 @@ package org.restheart.plugins;
  *   <li>Service handler execution</li>
  *   <li>Response processing (RESPONSE or RESPONSE_ASYNC)</li>
  * </ol>
- * 
+ *
  * <h2>Choosing an Intercept Point</h2>
  * <p>Select the appropriate intercept point based on your needs:</p>
  * <ul>
@@ -46,7 +46,7 @@ package org.restheart.plugins;
  *   <li>Need authenticated user info? Use REQUEST_AFTER_AUTH</li>
  *   <li>Need to modify responses? Use RESPONSE or RESPONSE_ASYNC</li>
  * </ul>
- * 
+ *
  * <h2>Example Usage</h2>
  * <pre>{@code
  * @RegisterPlugin(
@@ -56,13 +56,13 @@ package org.restheart.plugins;
  * public class RequestLogger implements MongoInterceptor {
  *     @Override
  *     public void handle(MongoRequest request, MongoResponse response) {
- *         logger.info("User {} accessing {}", 
+ *         logger.info("User {} accessing {}",
  *             request.getAuthenticatedAccount().getPrincipal(),
  *             request.getPath());
  *     }
  * }
  * }</pre>
- * 
+ *
  * @see Interceptor
  * @see RegisterPlugin
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -84,7 +84,7 @@ public enum InterceptPoint {
 
     /**
      * Intercepts the request before authentication occurs.
-     * 
+     *
      * <p>At this point:</p>
      * <ul>
      *   <li>The exchange has been initialized with proper request/response types</li>
@@ -92,7 +92,7 @@ public enum InterceptPoint {
      *   <li>No authentication has been performed yet</li>
      *   <li>User identity is not available</li>
      * </ul>
-     * 
+     *
      * <p>Common use cases:</p>
      * <ul>
      *   <li>Request validation that doesn't require authentication</li>
@@ -106,7 +106,7 @@ public enum InterceptPoint {
 
     /**
      * Intercepts the request after authentication and authorization.
-     * 
+     *
      * <p>At this point:</p>
      * <ul>
      *   <li>Authentication has been performed (if required)</li>
@@ -114,7 +114,7 @@ public enum InterceptPoint {
      *   <li>Authorization has been checked</li>
      *   <li>Request will proceed to the service handler</li>
      * </ul>
-     * 
+     *
      * <p>Common use cases:</p>
      * <ul>
      *   <li>Audit logging with user information</li>
@@ -128,7 +128,7 @@ public enum InterceptPoint {
 
     /**
      * Intercepts the response synchronously, blocking until completion.
-     * 
+     *
      * <p>At this point:</p>
      * <ul>
      *   <li>The service handler has completed execution</li>
@@ -136,7 +136,7 @@ public enum InterceptPoint {
      *   <li>Response headers can be added or modified</li>
      *   <li>The interceptor blocks the response from being sent</li>
      * </ul>
-     * 
+     *
      * <p>Common use cases:</p>
      * <ul>
      *   <li>Response transformation or filtering</li>
@@ -145,7 +145,7 @@ public enum InterceptPoint {
      *   <li>Removing sensitive data from responses</li>
      *   <li>Response caching logic</li>
      * </ul>
-     * 
+     *
      * <p><strong>Performance Note:</strong> Use RESPONSE_ASYNC for long-running
      * operations to avoid blocking the response pipeline.</p>
      */
@@ -153,7 +153,7 @@ public enum InterceptPoint {
 
     /**
      * Intercepts the response asynchronously without blocking the response.
-     * 
+     *
      * <p>At this point:</p>
      * <ul>
      *   <li>The service handler has completed execution</li>
@@ -161,7 +161,7 @@ public enum InterceptPoint {
      *   <li>Interceptor runs in parallel, cannot modify the response</li>
      *   <li>Useful for fire-and-forget operations</li>
      * </ul>
-     * 
+     *
      * <p>Common use cases:</p>
      * <ul>
      *   <li>Asynchronous logging or metrics collection</li>
@@ -170,7 +170,7 @@ public enum InterceptPoint {
      *   <li>Background data processing</li>
      *   <li>Analytics event tracking</li>
      * </ul>
-     * 
+     *
      * <p><strong>Important:</strong> Cannot modify the response as it has already
      * been sent to the client. Use RESPONSE for response modification.</p>
      */
@@ -178,10 +178,10 @@ public enum InterceptPoint {
 
     /**
      * Special value used only in the {@code dontIntercept} attribute of {@link RegisterPlugin}.
-     * 
+     *
      * <p><strong>IMPORTANT:</strong> This is not a valid intercept point for interceptors.
      * Setting {@code interceptPoint=ANY} will result in an {@link IllegalArgumentException}.</p>
-     * 
+     *
      * <h3>Usage</h3>
      * <p>Use ANY in service plugins to exclude all interceptors:</p>
      * <pre>{@code
@@ -193,7 +193,7 @@ public enum InterceptPoint {
      *     // This service will skip all optional interceptors
      * }
      * }</pre>
-     * 
+     *
      * <h3>Behavior</h3>
      * <ul>
      *   <li>Prevents all standard interceptors from processing the service's requests</li>
@@ -201,7 +201,7 @@ public enum InterceptPoint {
      *   <li>Useful for performance-critical endpoints that need minimal overhead</li>
      *   <li>Security interceptors may still run if marked as required</li>
      * </ul>
-     * 
+     *
      * @see RegisterPlugin#dontIntercept()
      */
     ANY

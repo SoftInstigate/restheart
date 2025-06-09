@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * csv-interceptor
  * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
+ * Copyright (C) 2014 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

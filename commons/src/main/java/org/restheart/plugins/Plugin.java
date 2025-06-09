@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ package org.restheart.plugins;
 
 /**
  * Base interface for all RESTHeart plugins.
- * 
+ *
  * <p>Plugin is the root interface in the RESTHeart plugin hierarchy. All plugin types
  * (services, interceptors, initializers, providers, etc.) extend this interface.
  * It serves as a marker interface that identifies a class as a RESTHeart plugin.</p>
- * 
+ *
  * <h2>Plugin Types</h2>
  * <p>RESTHeart supports several plugin types, each extending this interface:</p>
  * <ul>
@@ -38,7 +38,7 @@ package org.restheart.plugins;
  *   <li>{@link org.restheart.plugins.security.Authorizer} - Control access to resources</li>
  *   <li>{@link org.restheart.plugins.security.TokenManager} - Manage authentication tokens</li>
  * </ul>
- * 
+ *
  * <h2>Plugin Development</h2>
  * <p>To create a plugin:</p>
  * <ol>
@@ -48,7 +48,7 @@ package org.restheart.plugins;
  *   <li>Use {@link OnInit} for initialization logic</li>
  *   <li>Package as a JAR and place in the plugins directory</li>
  * </ol>
- * 
+ *
  * <h2>Example Plugin</h2>
  * <pre>{@code
  * @RegisterPlugin(
@@ -58,12 +58,12 @@ package org.restheart.plugins;
  * public class HelloService implements JsonService {
  *     @Inject("config")
  *     private Map<String, Object> config;
- *     
+ *
  *     @OnInit
  *     public void init() {
  *         logger.info("HelloService initialized");
  *     }
- *     
+ *
  *     @Override
  *     public void handle(JsonRequest request, JsonResponse response) {
  *         response.setContent(new JsonObject()
@@ -72,7 +72,7 @@ package org.restheart.plugins;
  *     }
  * }
  * }</pre>
- * 
+ *
  * <h2>Plugin Lifecycle</h2>
  * <p>Plugins follow this lifecycle:</p>
  * <ol>
@@ -83,7 +83,7 @@ package org.restheart.plugins;
  *   <li><strong>Initialization:</strong> Methods marked with {@code @OnInit} are called</li>
  *   <li><strong>Activation:</strong> Plugin becomes available for handling requests</li>
  * </ol>
- * 
+ *
  * <h2>Plugin Discovery</h2>
  * <p>Plugins are discovered through:</p>
  * <ul>
@@ -91,12 +91,12 @@ package org.restheart.plugins;
  *   <li>JAR files in the plugins directory</li>
  *   <li>Classes in the RESTHeart core</li>
  * </ul>
- * 
+ *
  * <h2>Thread Safety</h2>
  * <p>Plugin instances are singletons and must be thread-safe. Multiple threads may
  * call plugin methods concurrently. Use appropriate synchronization or thread-safe
  * data structures when maintaining state.</p>
- * 
+ *
  * @see RegisterPlugin
  * @see Service
  * @see Interceptor

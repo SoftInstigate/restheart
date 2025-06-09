@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,10 +77,10 @@ public final class JsonUnflattener {
 
     /** The separator character used in dot notation (period). */
     private static final Character separator = '.';
-    
+
     /** The left bracket character used for array index notation. */
     private static final Character leftBracket = '[';
-    
+
     /** The right bracket character used for array index notation. */
     private static final Character rightBracket = ']';
 

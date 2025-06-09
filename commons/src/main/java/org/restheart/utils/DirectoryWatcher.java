@@ -2,14 +2,14 @@
  * ========================LICENSE_START=================================
  * restheart-polyglot
  * %%
- * Copyright (C) 2020 - 2024 SoftInstigate
+ * Copyright (C) 2020 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,10 +55,10 @@ public class DirectoryWatcher implements Runnable {
 
     /** The watch service used to monitor file system events. */
     private final WatchService watchService;
-    
+
     /** Mapping of watch keys to their corresponding directory paths. */
     private final Map<WatchKey, Path> keys;
-    
+
     /** Callback function executed when file system events occur. */
     private final BiConsumer<Path, Kind<Path>> onEvent;
 

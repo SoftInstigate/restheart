@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,16 @@
  */
 /**
  * Root package for RESTHeart commons library.
- * 
+ *
  * <p>This package contains the core common classes and interfaces that are shared across
  * the RESTHeart ecosystem. The commons library provides fundamental building blocks for
  * developing RESTHeart plugins, services, and extensions.</p>
- * 
+ *
  * <h2>Key Components</h2>
  * <ul>
  *   <li>{@link org.restheart.Version} - Provides version information for RESTHeart</li>
  * </ul>
- * 
+ *
  * <h2>Sub-packages</h2>
  * <ul>
  *   <li><strong>cache</strong> - Flexible caching abstraction layer</li>
@@ -43,7 +43,7 @@
  *   <li><strong>security</strong> - Security and authentication components</li>
  *   <li><strong>utils</strong> - General-purpose utility classes</li>
  * </ul>
- * 
+ *
  * <p>The commons library is designed to be lightweight, modular, and extensible,
  * enabling developers to build powerful RESTful web services with minimal boilerplate.</p>
  *

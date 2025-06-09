@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2024 SoftInstigate
+ * Copyright (C) 2019 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a method to be called during plugin initialization.
- * 
+ *
  * <p>The {@code @OnInit} annotation identifies methods that should be invoked after a plugin
  * is instantiated and all dependencies have been injected via {@link Inject}. This provides
  * a hook for plugins to perform initialization logic that requires access to injected
  * dependencies.</p>
- * 
+ *
  * <h2>Execution Order</h2>
  * <p>The plugin initialization lifecycle follows this sequence:</p>
  * <ol>
@@ -40,35 +40,35 @@ import java.lang.annotation.Target;
  *   <li>Methods marked with {@code @OnInit} are called</li>
  *   <li>Plugin is registered and ready for use</li>
  * </ol>
- * 
+ *
  * <h2>Usage Example</h2>
  * <pre>{@code
  * @RegisterPlugin(name = "data-service")
  * public class DataService implements JsonService {
  *     @Inject("config")
  *     private Map<String, Object> config;
- *     
+ *
  *     @Inject("mclient")
  *     private MongoClient mongoClient;
- *     
+ *
  *     private MongoDatabase database;
  *     private boolean cacheEnabled;
- *     
+ *
  *     @OnInit
  *     public void initialize() {
  *         // Access injected configuration
  *         String dbName = config.get("database").toString();
  *         cacheEnabled = (Boolean) config.getOrDefault("cache", true);
- *         
+ *
  *         // Initialize using injected dependencies
  *         database = mongoClient.getDatabase(dbName);
- *         
+ *
  *         // Perform other initialization tasks
  *         validateConfiguration();
  *         setupCache();
  *         logger.info("DataService initialized with database: {}", dbName);
  *     }
- *     
+ *
  *     @OnInit
  *     public void validateConfiguration() {
  *         // Multiple @OnInit methods are supported
@@ -78,7 +78,7 @@ import java.lang.annotation.Target;
  *     }
  * }
  * }</pre>
- * 
+ *
  * <h2>Method Requirements</h2>
  * <p>Methods annotated with {@code @OnInit} must:</p>
  * <ul>
@@ -87,12 +87,12 @@ import java.lang.annotation.Target;
  *   <li>Return void</li>
  *   <li>Not be static</li>
  * </ul>
- * 
+ *
  * <h2>Multiple Init Methods</h2>
  * <p>A plugin can have multiple methods annotated with {@code @OnInit}. They will be
  * called in the order they are declared in the class. This allows for modular
  * initialization logic.</p>
- * 
+ *
  * <h2>Error Handling</h2>
  * <p>If an {@code @OnInit} method throws an exception:</p>
  * <ul>
@@ -101,7 +101,7 @@ import java.lang.annotation.Target;
  *   <li>The plugin is not registered</li>
  *   <li>RESTHeart continues to start (unless critical)</li>
  * </ul>
- * 
+ *
  * <h2>Best Practices</h2>
  * <ul>
  *   <li>Keep initialization logic focused and fast</li>
@@ -111,7 +111,7 @@ import java.lang.annotation.Target;
  *   <li>Avoid blocking operations when possible</li>
  *   <li>Clean up resources if initialization fails</li>
  * </ul>
- * 
+ *
  * @see Inject
  * @see RegisterPlugin
  * @see Plugin

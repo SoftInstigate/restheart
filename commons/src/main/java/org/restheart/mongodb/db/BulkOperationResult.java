@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2014 - 2024 SoftInstigate
+ * Copyright (C) 2014 - 2025 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,22 +28,22 @@ import com.mongodb.bulk.BulkWriteResult;
  * bulk write operations. It encapsulates both the HTTP status code and the MongoDB
  * {@link BulkWriteResult} containing details about the executed bulk operation.
  * </p>
- * 
+ *
  * <p>Bulk operations in MongoDB allow multiple write operations (inserts, updates, deletes)
  * to be executed in a single request, improving performance when dealing with multiple
  * documents.</p>
- * 
+ *
  * <p>Example usage:</p>
  * <pre>{@code
  * BulkWriteResult mongoResult = // result from MongoDB bulk operation
  * BulkOperationResult result = new BulkOperationResult(200, etag, mongoResult);
- * 
+ *
  * // Access bulk operation details
  * int insertedCount = result.getBulkResult().getInsertedCount();
  * int modifiedCount = result.getBulkResult().getModifiedCount();
  * int deletedCount = result.getBulkResult().getDeletedCount();
  * }</pre>
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @see OperationResult
  * @see BulkWriteResult
@@ -53,7 +53,7 @@ public class BulkOperationResult extends OperationResult {
 
     /**
      * Constructs a new BulkOperationResult with the specified HTTP status code, ETag, and bulk write result.
-     * 
+     *
      * @param httpCode the HTTP status code representing the outcome of the operation
      *                 (e.g., 200 for success, 400 for bad request, etc.)
      * @param etag the entity tag for cache validation and optimistic concurrency control.
@@ -80,7 +80,7 @@ public class BulkOperationResult extends OperationResult {
      *   <li>Number of documents deleted</li>
      *   <li>List of upserted document IDs (if any)</li>
      * </ul>
-     * 
+     *
      * @return the MongoDB {@link BulkWriteResult} containing details of the bulk operation
      */
     public BulkWriteResult getBulkResult() {
