@@ -20,13 +20,14 @@
  */
 package org.restheart.mongodb;
 
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
+import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
 import static org.restheart.mongodb.ConnectionChecker.connected;
 import static org.restheart.mongodb.ConnectionChecker.replicaSet;
+
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public class MongoClientSingleton {
      *
      * @param uri
      */
-    public static void init(ConnectionString uri) {
+    public static void init(final ConnectionString uri) {
         mongoUri = uri;
         initialized = true;
     }
@@ -64,9 +65,9 @@ public class MongoClientSingleton {
         return initialized;
     }
 
-
     /**
      * alias for getInstance()
+     * 
      * @return the MongoClientSingleton
      */
     public static MongoClientSingleton get() {
@@ -104,14 +105,14 @@ public class MongoClientSingleton {
         LOGGER.info("Connecting to MongoDB...");
 
         // TODO add minSize and maxSize to configuration
-        var settings = MongoClientSettings.builder()
-            .applyToConnectionPoolSettings((final ConnectionPoolSettings.Builder builder) -> {
-                // default mongodb values: min=0 and max=100
-                builder.minSize(0).maxSize(128);
-            })
-            .applicationName("restheart (sync)")
-            .applyConnectionString(mongoUri)
-            .build();
+        final var settings = MongoClientSettings.builder()
+                .applyToConnectionPoolSettings((final ConnectionPoolSettings.Builder builder) -> {
+                    // default mongodb values: min=0 and max=100
+                    builder.minSize(0).maxSize(128);
+                })
+                .applicationName("restheart (sync)")
+                .applyConnectionString(mongoUri)
+                .build();
 
         mclient = MongoClients.create(settings);
 
@@ -119,9 +120,10 @@ public class MongoClientSingleton {
         if (connected(mclient)) {
             // get the db version
             try {
-                var res = mclient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
+                final var res = mclient.getDatabase("admin")
+                        .runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
 
-                var _version = res.get("version");
+                final var _version = res.get("version");
 
                 if (_version != null && _version instanceof String) {
                     serverVersion = (String) _version;
@@ -131,10 +133,10 @@ public class MongoClientSingleton {
                 }
 
                 LOGGER.info("MongoDB version {}", ansi()
-                    .fg(MAGENTA)
-                    .a(getServerVersion())
-                    .reset()
-                    .toString());
+                        .fg(MAGENTA)
+                        .a(getServerVersion())
+                        .reset()
+                        .toString());
 
                 if (replicaSet(this.mclient)) {
                     LOGGER.info("MongoDB is a replica set.");
@@ -142,24 +144,25 @@ public class MongoClientSingleton {
                     LOGGER.warn("MongoDB is a standalone instance.");
                 }
 
-            } catch (Throwable t) {
+            } catch (final Throwable t) {
                 LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
-                    + "Check that MongoDB is running and "
-                    + "the configuration property '/mclient/connection-string' "
-                    + "is set properly");
+                        + "Check that MongoDB is running and "
+                        + "the configuration property '/mclient/connection-string' "
+                        + "is set properly");
                 serverVersion = "?";
             }
         } else {
             LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
-                + "Check that MongoDB is running and "
-                + "the configuration property '/mclient/connection-string' "
-                + "is set properly");
+                    + "Check that MongoDB is running and "
+                    + "the configuration property '/mclient/connection-string' "
+                    + "is set properly");
             serverVersion = "?";
         }
     }
 
     /**
      * alias for getClient()
+     * 
      * @return the MongoClient
      */
     public MongoClient client() {
@@ -183,9 +186,11 @@ public class MongoClientSingleton {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         // it is a singleton!
-        return obj == null ? false : getClass().getName().equals(obj.getClass().getName());
+        return obj == null
+            ? false
+            : getClass().getName().equals(obj.getClass().getName());
     }
 
     private static class MongoClientSingletonHolder {
@@ -196,16 +201,15 @@ public class MongoClientSingleton {
         // https://stackoverflow.com/a/47445573/4481670
         static {
             // There should be just one system class loader object in the whole JVM.
-            synchronized(ClassLoader.getSystemClassLoader()) {
-                var sysProps = System.getProperties();
+            synchronized (ClassLoader.getSystemClassLoader()) {
+                final var sysProps = System.getProperties();
                 // The key is a String, because the .class object would be different across classloaders.
-                var singleton = (MongoClientSingleton) sysProps.get(MongoClientSingleton.class.getName());
+                final var singleton = (MongoClientSingleton) sysProps.get(MongoClientSingleton.class.getName());
 
                 // Some other class loader loaded MongoClientSingleton earlier.
                 if (singleton != null) {
                     INSTANCE = singleton;
-                }
-                else {
+                } else {
                     // Otherwise this classloader is the first one, let's create a singleton.
                     // Make sure not to do any locking within this.
                     INSTANCE = new MongoClientSingleton();

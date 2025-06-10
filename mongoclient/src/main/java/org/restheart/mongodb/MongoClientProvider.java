@@ -31,25 +31,26 @@ import org.restheart.plugins.RegisterPlugin;
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 
-@RegisterPlugin(name = "mclient", description = "provides the MongoClient", priority = 11)
+@RegisterPlugin(
+    name = "mclient",
+    description = "provides the MongoClient",
+    priority = 11)
 public class MongoClientProvider implements Provider<MongoClient> {
     @Inject("config")
     private Map<String, Object> config;
 
     @OnInit
     public void init() {
-        String mongoUri = argOrDefault(config, "connection-string", "mongodb://127.0.0.1");
+        final String mongoUri = argOrDefault(config, "connection-string", "mongodb://127.0.0.1");
 
-        var mongoConnetion = new ConnectionString(mongoUri);
-
-        MongoClientSingleton.init(mongoConnetion);
+        MongoClientSingleton.init(new ConnectionString(mongoUri));
 
         // force first connection to MongoDB
         MongoClientSingleton.getInstance().client();
     }
 
     @Override
-    public MongoClient get(PluginRecord<?> caller) {
+    public MongoClient get(final PluginRecord<?> caller) {
         return MongoClientSingleton.get().client();
     }
 }
