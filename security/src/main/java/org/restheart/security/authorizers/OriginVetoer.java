@@ -20,6 +20,8 @@
  */
 package org.restheart.security.authorizers;
 
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +33,6 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
-import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,7 @@ public class OriginVetoer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(OriginVetoer.class);
 
     private List<String> whitelist = null;
+    private List<String> whitelistPatterns = null;
     private PathTemplateMatcher<Boolean> ignoreLists = new PathTemplateMatcher<>();
 
     @Inject("config")
@@ -55,67 +57,116 @@ public class OriginVetoer implements Authorizer {
     @OnInit
     public void init() {
         try {
-            List<String> _whitelist = arg(config, "whitelist");
+            final List<String> _whitelist = arg(config, "whitelist");
             this.whitelist = _whitelist.stream()
-                .filter(item -> item != null)
-                .map(item -> item.strip())
-                .map(item -> item.toLowerCase())
-                .map(item -> removeTrailingSlashes(item))
-                .map(item -> item.concat("/"))
-                .collect(Collectors.toList());
+                    .filter(item -> item != null)
+                    .map(item -> item.strip())
+                    .map(item -> item.toLowerCase())
+                    .map(item -> removeTrailingSlashes(item))
+                    .map(item -> item.concat("/"))
+                    .collect(Collectors.toList());
 
-            LOGGER.info("whitelist defined for originVetoer, requests will be accepted with Origin header in {}", this.whitelist);
-        } catch(ConfigurationException ce) {
+            LOGGER.info("whitelist defined for originVetoer, requests will be accepted with Origin header in {}",
+                    this.whitelist);
+        } catch (final ConfigurationException ce) {
             this.whitelist = null;
             LOGGER.info("No whitelist defined for originVetoer, all Origin headers are accepted");
         }
 
+        // New: Support for origin patterns
         try {
-            List<String> _ingoreList = arg(config, "ignore-paths");
-            _ingoreList.stream()
-                .filter(item -> item != null)
-                .map(item -> item.strip())
-                .map(item -> item.toLowerCase())
-                .map(item -> PathTemplate.create(item))
-                .forEach(item -> this.ignoreLists.add(item, true));
+            final List<String> _whitelistPatterns = arg(config, "whitelist-patterns");
+            this.whitelistPatterns = _whitelistPatterns.stream()
+                    .filter(item -> item != null)
+                    .map(item -> item.strip())
+                    .map(item -> item.toLowerCase())
+                    .collect(Collectors.toList());
 
-            LOGGER.info("ignore list defined for originVetoer, requests will be accepted without checking the Origin header for paths in {}", _ingoreList);
-        } catch(ConfigurationException ce) {
+            LOGGER.info(
+                    "whitelist patterns defined for originVetoer, requests will be accepted with Origin header matching patterns {}",
+                    this.whitelistPatterns);
+        } catch (final ConfigurationException ce) {
+            this.whitelistPatterns = null;
+            LOGGER.info("No whitelist patterns defined for originVetoer");
+        }
+
+        try {
+            final List<String> _ingoreList = arg(config, "ignore-paths");
+            _ingoreList.stream()
+                    .filter(item -> item != null)
+                    .map(item -> item.strip())
+                    .map(item -> item.toLowerCase())
+                    .map(item -> PathTemplate.create(item))
+                    .forEach(item -> this.ignoreLists.add(item, true));
+
+            LOGGER.info(
+                    "ignore list defined for originVetoer, requests will be accepted without checking the Origin header for paths in {}",
+                    _ingoreList);
+        } catch (final ConfigurationException ce) {
             this.ignoreLists = null;
             LOGGER.info("No ignoreLists defined for originVetoer, all paths are checked");
         }
     }
 
     @Override
-    public boolean isAllowed(Request<?> request) {
+    public boolean isAllowed(final Request<?> request) {
         if (ignoreLists != null && ignoreLists.match(request.getPath()) != null) {
             LOGGER.debug("originVetoer: request is accepted since path is in ignore list");
             return true;
         }
 
-        if (this.whitelist == null || this.whitelist.isEmpty()) {
+        // If neither whitelist nor patterns are defined, allow all
+        if ((this.whitelist == null || this.whitelist.isEmpty()) &&
+                (this.whitelistPatterns == null || this.whitelistPatterns.isEmpty())) {
             return true;
-        } else {
-            var origin = request.getHeader("Origin");
+        }
 
-            if (origin == null) {
-                LOGGER.warn("request forbidden by originVetoer due to missing Origin header, whitelist is {}", whitelist);
-                return false;
-            } else {
-                var allowed = this.whitelist.stream().anyMatch(wl -> removeTrailingSlashes(origin.toLowerCase()).concat("/").startsWith(wl));
+        final var origin = request.getHeader("Origin");
+        if (origin == null) {
+            LOGGER.warn("request forbidden by originVetoer due to missing Origin header");
+            return false;
+        }
 
-                if (!allowed) {
-                    LOGGER.warn("request forbidden by originVetoer due to Origin header {} not in whitelist {}", origin, whitelist);
-                }
+        final var normalizedOrigin = removeTrailingSlashes(origin.toLowerCase()).concat("/");
 
-                return allowed;
+        // Check exact/prefix matches first
+        if (this.whitelist != null && !this.whitelist.isEmpty()) {
+            final boolean exactMatch = this.whitelist.stream().anyMatch(wl -> normalizedOrigin.startsWith(wl));
+            if (exactMatch) {
+                return true;
             }
+        }
+
+        // Check pattern matches
+        if (this.whitelistPatterns != null && !this.whitelistPatterns.isEmpty()) {
+            final boolean patternMatch = this.whitelistPatterns.stream()
+                    .anyMatch(pattern -> matchesPattern(origin, pattern));
+            if (patternMatch) {
+                return true;
+            }
+        }
+
+        LOGGER.warn("request forbidden by originVetoer due to Origin header {} not in whitelist or patterns", origin);
+        return false;
+    }
+
+    private boolean matchesPattern(final String origin, final String pattern) {
+        // Convert glob-like patterns to regex
+        final String regex = pattern
+                .replace(".", "\\.") // Escape dots
+                .replace("*", ".*"); // Convert * to .*
+
+        try {
+            return origin.toLowerCase().matches(regex);
+        } catch (final Exception e) {
+            LOGGER.warn("Invalid pattern '{}': {}", pattern, e.getMessage());
+            return false;
         }
     }
 
     @Override
     @SuppressWarnings("rawtypes")
-    public boolean isAuthenticationRequired(Request request) {
+    public boolean isAuthenticationRequired(final Request request) {
         return false;
     }
 }
