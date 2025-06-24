@@ -20,12 +20,12 @@
 package org.restheart.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.restheart.configuration.Utils.overrides;
 
 import java.util.List;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 public class ConfigurationUtilsTest {
@@ -49,28 +49,34 @@ public class ConfigurationUtilsTest {
 
     @Test
     public void testNoOperator() {
-        assertThrows(IllegalArgumentException.class, () -> overrides("/a/b/c"));
+        var os = overrides("/a/b/c");
+        assertEquals(0, os.size());
     }
 
     @Test
     public void testNoPath() {
-        assertThrows(IllegalArgumentException.class, () -> overrides("->1"));
+        var os = overrides("->1");
+        assertEquals(0, os.size());
     }
 
     @Test
     public void testWrongPath() {
-        assertThrows(IllegalArgumentException.class, () -> overrides("/@@@@->1"));
-        assertThrows(IllegalArgumentException.class, () -> overrides("/---->1"));
+        var os1 = overrides("/@@@@->1");
+        var os2 = overrides("/---->1");
+        assertEquals(0, os1.size());
+        assertEquals(0, os2.size());
     }
 
     @Test
     public void testWrongValue() {
-        assertThrows(IllegalArgumentException.class, () -> overrides("/a->[1,2"));
+        var os = overrides("/a->[1,2");
+        assertEquals(0, os.size());
     }
 
     @Test
     public void testPathNotAbsolute() {
-        assertThrows(IllegalArgumentException.class, () -> overrides("a->[1,2"));
+        var os = overrides("a->[1,2");
+        assertEquals(0, os.size());
     }
 
     @Test
