@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["5.0", "6.0", "7.0"]
+        mongodb-version: ["5.0", "6.0", "7.0", "8.0"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +29,17 @@ jobs:
       - name: Build and Test
         run: |
           mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+
+      - name: Upload build artifacts for Docker jobs
+        if: matrix.mongodb-version == '8.0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: restheart-artifacts
+          path: |
+            core/target/restheart.jar
+            core/target/lib/*.jar
+            core/target/plugins/*.jar
+            core/target/plugins/lib/*.jar
 
   # Release the project on GitHub
   release:
@@ -85,16 +96,6 @@ jobs:
             core/target/restheart.zip
           draft: true
           prerelease: false
-
-      - name: Upload build artifacts for Docker jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: restheart-artifacts
-          path: |
-            core/target/restheart.jar
-            core/target/lib/*.jar
-            core/target/plugins/*.jar
-            core/target/plugins/lib/*.jar
 
   build-docker-standard:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
