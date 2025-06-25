@@ -35,27 +35,15 @@ jobs:
       - name: Build and Test
         run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
-  # Deploy the project to Maven Central and DockerHub
-  deploy:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
-    needs: build
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        mongodb-version: ["8.0"]
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Upload build artifacts for Docker jobs
+        uses: actions/upload-artifact@v4
         with:
-          distribution: "temurin"
-          java-version: "21"
-          cache: "maven"
-      - name: Set SHA
-        id: vars
-        run: |
-          echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
+          name: restheart-artifacts
+          path: |
+            core/target/restheart.jar
+            core/target/lib/*.jar
+            core/target/plugins/*.jar
+            core/target/plugins/lib/*.jar
 
   deploy-maven-central:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
@@ -99,6 +87,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: restheart-artifacts
+          path: core/target/
       - name: Set SHA
         run: |
           echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
@@ -136,6 +129,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: restheart-artifacts
+          path: core/target/
       - name: Set SHA
         run: |
           echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
@@ -172,6 +170,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: restheart-artifacts
+          path: core/target/
       - name: Set SHA
         run: |
           echo "SHA=$(echo ${GITHUB_SHA:0:7})" >> $GITHUB_ENV
