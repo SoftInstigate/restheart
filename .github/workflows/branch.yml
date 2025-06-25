@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["5.0", "6.0", "7.0", "8.0"]
@@ -45,7 +45,7 @@ jobs:
   deploy-maven-central:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["8.0"]
@@ -76,7 +76,7 @@ jobs:
   build-docker-standard:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["8.0"]
@@ -117,7 +117,7 @@ jobs:
   build-docker-graalvm:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["8.0"]
@@ -157,7 +157,7 @@ jobs:
   build-docker-distroless:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["8.0"]
