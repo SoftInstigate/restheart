@@ -7,13 +7,10 @@ on:
     branches:
       - "*"
     types: [opened, synchronize, reopened]
-    paths:
-      - "**/*.java" # Trigger on any Java file change
-      - "**/*.xml" # Trigger on any xml file change
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         mongodb-version: ["5.0", "6.0", "7.0", "8.0"]
