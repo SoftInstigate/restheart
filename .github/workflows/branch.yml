@@ -7,9 +7,11 @@ on:
     tags-ignore:
       - "*" # Ignore all tags
     paths:
-      - "**/*.java" # Trigger on any Java file change
-      - "**/*.xml" # Trigger on any xml file change
-      - "**/Dockerfile*" # Trigger on any Dockerfile change
+      - "**/*.java"
+      - "**/*.xml"
+      - "**/Dockerfile*"
+      - "**/pom.xml"
+      - ".github/workflows/*.yml"
 
 jobs:
   # Build and test the project
