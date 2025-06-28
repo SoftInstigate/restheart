@@ -108,6 +108,9 @@
     }, 
     {
       "pattern":"\\Qrestheart-default-config.yml\\E"
+    },
+    {
+      "pattern": "\\QMETA-INF/services/org.apache.commons.jxpath.JXPathContextFactory\\E"
     }
   ]},
   "bundles":[
