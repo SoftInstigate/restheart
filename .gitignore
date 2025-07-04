@@ -288,3 +288,5 @@ $RECYCLE.BIN/
 infer-out
 /commons/nbproject/
 /core/Dockerfile.jbr
+
+.zed/
