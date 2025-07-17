@@ -76,7 +76,10 @@ import com.mongodb.client.MongoClient;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true)
+@RegisterPlugin(
+    name = "polyglotDeployer",
+    description = "handles GraalVM polyglot plugins",
+    enabledByDefault = true)
 public class PolyglotDeployer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
@@ -159,19 +162,18 @@ public class PolyglotDeployer implements Initializer {
         try {
             final var watcher = new DirectoryWatcher(pluginsDirectory, (path, kind) -> {
                 try {
-                    var pluginPath = pluginPathFromEvent(pluginsDirectory, path);
-                    switch (kind.name()) {
-                        case "ENTRY_CREATE" ->
-                            deploy(findServices(pluginPath), findNodeServices(pluginPath),
-                                    findInterceptors(pluginPath));
-                        case "ENTRY_DELETE" ->
-                            undeploy(pluginPath);
-                        case "ENTRY_MODIFY" -> {
-                            undeploy(pluginPath);
-                            deploy(findServices(pluginPath), findNodeServices(pluginPath),
-                                    findInterceptors(pluginPath));
-                        }
-                        default -> {
+                    if (Files.isDirectory(path)) {
+                        return;
+                    }
+                    if (path.toString().endsWith(".mjs")) {
+                        switch (kind.name()) {
+                            case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
+                                undeploy(path);
+                                deployService(path);
+                            }
+                            case "ENTRY_DELETE" -> undeploy(path);
+                            default -> {
+                            }
                         }
                     }
                 } catch (IOException | InterruptedException ex) {
@@ -457,7 +459,7 @@ public class PolyglotDeployer implements Initializer {
     private void undeployServices(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
-                .filter(path -> path.startsWith(pluginPath))
+                .filter(path -> path.equals(pluginPath))
                 .collect(Collectors.toList());
 
         for (var pathToUndeploy : pathsToUndeploy) {
@@ -475,7 +477,7 @@ public class PolyglotDeployer implements Initializer {
     private void undeployInterceptors(Path pluginPath) {
         var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
-                .filter(path -> path.startsWith(pluginPath))
+                .filter(path -> path.equals(pluginPath))
                 .collect(Collectors.toList());
 
         for (var pathToUndeploy : pathsToUndeploy) {
