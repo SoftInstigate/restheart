@@ -20,6 +20,10 @@
  */
 package org.restheart.polyglot;
 
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.restheart.configuration.Utils.findOrDefault;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -38,12 +42,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.ansi;
 import org.graalvm.home.Version;
 import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
-import static org.restheart.configuration.Utils.findOrDefault;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.graal.ImageInfo;
@@ -75,18 +76,14 @@ import com.mongodb.client.MongoClient;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "polyglotDeployer",
-        description = "handles GraalVM polyglot plugins",
-        enabledByDefault = true
-)
+@RegisterPlugin(
+    name = "polyglotDeployer",
+    description = "handles GraalVM polyglot plugins",
+    enabledByDefault = true)
 public class PolyglotDeployer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
-
-    private Path pluginsDirectory = null;
-
     private static final Map<Path, JSPlugin> DEPLOYEES = new HashMap<>();
-
     private JSInterceptorFactory jsInterceptorFactory;
 
     @Inject("registry")
@@ -104,7 +101,7 @@ public class PolyglotDeployer implements Initializer {
             return;
         }
 
-        pluginsDirectory = getPluginsDirectory(config.toMap());
+        final Path pluginsDirectory = getPluginsDirectory(config.toMap());
 
         LOGGER.trace("pluginsDirectory: {}", pluginsDirectory);
 
@@ -115,7 +112,7 @@ public class PolyglotDeployer implements Initializer {
         watch(pluginsDirectory);
     }
 
-    private Optional<MongoClient> mongoClient(PluginsRegistry registry) {
+    private Optional<MongoClient> mongoClient(final PluginsRegistry registry) {
         return registry.getProviders().stream()
                 .filter(pd -> pd.isEnabled())
                 .map(pd -> pd.getInstance())
@@ -127,7 +124,7 @@ public class PolyglotDeployer implements Initializer {
     private boolean isRunningOnGraalVM() {
         try {
             return Version.getCurrent().isRelease();
-        } catch (Throwable cnfe) {
+        } catch (final Throwable cnfe) {
             return false;
         }
     }
@@ -137,42 +134,62 @@ public class PolyglotDeployer implements Initializer {
         // nothing to do
     }
 
-    private void deployAll(Path pluginsDirectory) {
-        for (var pluginPath : findJsPluginDirectories(pluginsDirectory)) {
+    private void deployAll(final Path pluginsDirectory) {
+        for (final var pluginPath : findJsPluginDirectories(pluginsDirectory)) {
             try {
-                var services = findServices(pluginPath);
-                var nodeServices = findNodeServices(pluginPath);
-                var interceptors = findInterceptors(pluginPath);
+                final var services = findServices(pluginPath);
+                final var nodeServices = findNodeServices(pluginPath);
+                final var interceptors = findInterceptors(pluginPath);
                 deploy(services, nodeServices, interceptors);
-            } catch (IOException | InterruptedException t) {
+            } catch (final IOException t) {
+                LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
+            } catch (final InterruptedException t) {
+                Thread.currentThread().interrupt();
                 LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
         }
     }
 
-    private Path pluginPathFromEvent(Path pluginsDirectory, Path path) {
+    private Path pluginPathFromEvent(final Path pluginsDirectory, final Path path) {
         // Get the relative path between pluginsDirectory and subdirectory
-        var relativePath = pluginsDirectory.relativize(path);
+        final var relativePath = pluginsDirectory.relativize(path);
 
         // Return the first element from the relative path (i.e., the pluginDirectory)
         return pluginsDirectory.resolve(relativePath.getName(0));
     }
 
-    private void watch(Path pluginsDirectory) {
+    private void watch(final Path pluginsDirectory) {
         try {
             final var watcher = new DirectoryWatcher(pluginsDirectory, (path, kind) -> {
                 try {
-                    var pluginPath = pluginPathFromEvent(pluginsDirectory, path);
-                    switch (kind.name()) {
-                        case "ENTRY_CREATE" ->
-                            deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                        case "ENTRY_DELETE" ->
-                            undeploy(pluginPath);
-                        case "ENTRY_MODIFY" -> {
-                            undeploy(pluginPath);
-                            deploy(findServices(pluginPath), findNodeServices(pluginPath), findInterceptors(pluginPath));
-                        }
-                        default -> {
+                    if (Files.isDirectory(path)) {
+                        return;
+                    }
+                    if (path.toString().endsWith(".mjs")) {
+                        switch (kind.name()) {
+                            case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
+                                undeploy(path);
+                                final var pluginDir = pluginPathFromEvent(pluginsDirectory, path);
+                                final var services = findServices(pluginDir);
+                                final var interceptors = findInterceptors(pluginDir);
+
+                                // Deploy all services
+                                for (final Path service : services) {
+                                    if (service.equals(path)) {
+                                        deployService(path);
+                                    }
+                                }
+
+                                // Deploy all interceptors
+                                for (final Path interceptor : interceptors) {
+                                    if (interceptor.equals(path)) {
+                                        deployInterceptor(path);
+                                    }
+                                }
+                            }
+                            case "ENTRY_DELETE" -> undeploy(path);
+                            default -> {
+                            }
                         }
                     }
                 } catch (IOException | InterruptedException ex) {
@@ -181,22 +198,22 @@ public class PolyglotDeployer implements Initializer {
             });
 
             ThreadsUtils.virtualThreadsExecutor().execute(watcher);
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             LOGGER.error("Error watching: {}", pluginsDirectory.toAbsolutePath(), ex);
         }
     }
 
     public static final String PLUGINS_DIRECTORY_XPATH = "/core/plugins-directory";
 
-    private Path getPluginsDirectory(Map<String, Object> args) {
-        var pluginsPath = Path.of(findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false));
+    private Path getPluginsDirectory(final Map<String, Object> args) {
+        final var pluginsPath = Path.of(findOrDefault(args, PLUGINS_DIRECTORY_XPATH, "plugins", false));
 
         if (pluginsPath.isAbsolute()) {
             return pluginsPath;
         }
         // this is to allow specifying the plugins directory path
         // relative to the jar (also working when running from classes)
-        var location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        final var location = this.getClass().getProtectionDomain().getCodeSource().getLocation();
         URI locationUri;
 
         try {
@@ -221,38 +238,38 @@ public class PolyglotDeployer implements Initializer {
                 LOGGER.info("Code is executing at development time");
                 return Path.of(locationUri).toAbsolutePath().normalize().getParent();
             }
-        } catch (URISyntaxException uee) {
-            throw new RuntimeException(uee);
+        } catch (final URISyntaxException uee) {
+            throw new IllegalStateException(uee);
         }
 
     }
 
-    private List<Path> findJsPluginDirectories(Path pluginsDirectory) {
+    private List<Path> findJsPluginDirectories(final Path pluginsDirectory) {
         if (!checkPluginDirectory(pluginsDirectory)) {
             LOGGER.error("js plugins will not be deployed");
             return Lists.newArrayList();
         }
 
-        var paths = new ArrayList<Path>();
+        final var paths = new ArrayList<Path>();
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory)) {
-            for (Path path : directoryStream) {
-                var services = findServices(path, false);
-                var interceptors = findInterceptors(path, false);
-                var nodeServices = findNodeServices(path, false);
+            for (final Path path : directoryStream) {
+                final var services = findServices(path, false);
+                final var interceptors = findInterceptors(path, false);
+                final var nodeServices = findNodeServices(path, false);
                 if (!services.isEmpty() || !nodeServices.isEmpty() || !interceptors.isEmpty()) {
                     paths.add(path);
                     LOGGER.info("Found js plugin directory {}", path);
                 }
             }
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             LOGGER.error("Cannot read js plugin directory {}", pluginsDirectory, ex);
         }
 
         return paths;
     }
 
-    private boolean checkPluginDirectory(Path pluginsDirectory) {
+    private boolean checkPluginDirectory(final Path pluginsDirectory) {
         if (pluginsDirectory == null) {
             LOGGER.error("Plugin directory {} configuration option not set");
             return false;
@@ -271,68 +288,69 @@ public class PolyglotDeployer implements Initializer {
         return true;
     }
 
-    private List<Path> findServices(Path path) {
+    private List<Path> findServices(final Path path) {
         return findServices(path, true);
     }
 
-    private List<Path> findServices(Path path, boolean checkPluginFiles) {
+    private List<Path> findServices(final Path path, final boolean checkPluginFiles) {
         return findDeclaredPlugins(path, "rh:services", checkPluginFiles);
     }
 
-    private List<Path> findNodeServices(Path path) {
+    private List<Path> findNodeServices(final Path path) {
         return findNodeServices(path, true);
     }
 
-    private List<Path> findNodeServices(Path path, boolean checkPluginFiles) {
+    private List<Path> findNodeServices(final Path path, final boolean checkPluginFiles) {
         return findDeclaredPlugins(path, "rh:node-services", checkPluginFiles);
     }
 
-    private List<Path> findInterceptors(Path path) {
+    private List<Path> findInterceptors(final Path path) {
         return findInterceptors(path, true);
     }
 
-    private List<Path> findInterceptors(Path path, boolean checkPluginFiles) {
+    private List<Path> findInterceptors(final Path path, final boolean checkPluginFiles) {
         return findDeclaredPlugins(path, "rh:interceptors", checkPluginFiles);
     }
 
-    private List<Path> findDeclaredPlugins(Path path, String prop, boolean checkPluginFiles) {
+    private List<Path> findDeclaredPlugins(final Path path, final String prop, final boolean checkPluginFiles) {
         if (!Files.isDirectory(path)) {
             return Lists.newArrayList();
         }
 
-        var packagePath = path.resolve("package.json");
+        final var packagePath = path.resolve("package.json");
 
         if (!Files.isRegularFile(packagePath)) {
             return Lists.newArrayList();
         }
 
         try {
-            var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
+            final var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
 
             if (p.isJsonObject()
                     && p.getAsJsonObject().has(prop)
                     && p.getAsJsonObject().get(prop).isJsonArray()
                     && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
-                List<Path> ret = Lists.newArrayList();
+                final List<Path> ret = Lists.newArrayList();
 
                 p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
                     if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
-                        var pluginPath = path.resolve(item.getAsString());
+                        final var pluginPath = path.resolve(item.getAsString());
 
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
                                 try {
-                                    var language = Source.findLanguage(pluginPath.toFile());
+                                    final var language = Source.findLanguage(pluginPath.toFile());
                                     if ("js".equals(language)) {
                                         ret.add(pluginPath);
                                     } else {
                                         LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
                                     }
-                                } catch (IOException e) {
+                                } catch (final IOException e) {
                                     LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
                                 }
                             } else {
-                                LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(), packagePath.toAbsolutePath());
+                                LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),
+                                        packagePath.toAbsolutePath());
                             }
                         } else {
                             ret.add(pluginPath);
@@ -350,29 +368,31 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private void deploy(List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException, InterruptedException {
-        for (Path service : services) {
+    private void deploy(final List<Path> services, final List<Path> nodeServices, final List<Path> interceptors)
+            throws IOException, InterruptedException {
+        for (final Path service : services) {
             deployService(service);
         }
 
-        for (Path nodeService : nodeServices) {
+        for (final Path nodeService : nodeServices) {
             deployNodeService(nodeService);
         }
 
-        for (Path interceptor : interceptors) {
+        for (final Path interceptor : interceptors) {
             deployInterceptor(interceptor);
         }
     }
 
-    private void deployService(Path pluginPath) throws IOException, InterruptedException {
+    private void deployService(final Path pluginPath) throws IOException, InterruptedException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a CommonJs service, RESTHeart is running on Node");
         }
 
         try {
-            var srv = new JSStringService(pluginPath, this.mclient, this.config);
+            final var srv = new JSStringService(pluginPath, this.mclient, this.config);
 
-            var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(),
+            final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
+                    srv.name(),
                     srv.getDescription(),
                     srv.secured(),
                     true,
@@ -380,40 +400,48 @@ public class PolyglotDeployer implements Initializer {
                     srv,
                     new HashMap<>());
 
-            registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
+            registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-            LOGGER.info(ansi().fg(GREEN).a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}").reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+            LOGGER.info(ansi().fg(GREEN)
+                    .a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                    .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
         } catch (IllegalArgumentException | IllegalStateException e) {
             if (e.getMessage().contains("require is not defined")) {
-                LOGGER.error("Error deploying plugin {}. Resolution: Try running 'npm install' for required dependencies.", pluginPath);
+                LOGGER.error(
+                        "Error deploying plugin {}. Resolution: Try running 'npm install' for required dependencies.",
+                        pluginPath);
             } else {
                 LOGGER.error("Error deploying plugin {}", pluginPath, e);
             }
         }
     }
 
-    private void deployNodeService(Path pluginPath) throws IOException {
+    private void deployNodeService(final Path pluginPath) throws IOException {
         if (!isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a node service, RESTHeart is not running on Node");
         }
 
         LOGGER.warn("Node JS plugins are experimental and are likely to change in future");
-        var executor = Executors.newSingleThreadExecutor();
+        final var executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             try {
-                var srvf = NodeService.get(pluginPath, this.mclient, this.config);
+                final var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
-                var srv = srvf.get(30, TimeUnit.SECONDS);
+                final var srv = srvf.get(30, TimeUnit.SECONDS);
 
-                var record = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
+                final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
+                        srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
 
-                registry.plugService(record, srv.uri(), srv.matchPolicy(), srv.secured());
+                registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
 
                 DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-                LOGGER.info(ansi().fg(GREEN).a("Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}").reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(), srv.matchPolicy());
+                LOGGER.info(ansi().fg(GREEN).a(
+                        "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                        .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
+                        srv.matchPolicy());
             } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
                 LOGGER.error("Error deploying node service {}", pluginPath, ex);
                 Thread.currentThread().interrupt();
@@ -423,12 +451,12 @@ public class PolyglotDeployer implements Initializer {
         executor.shutdown();
     }
 
-    private void deployInterceptor(Path pluginPath) throws IOException, InterruptedException {
+    private void deployInterceptor(final Path pluginPath) throws IOException, InterruptedException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("Cannot deploy a CommonJs interceptor, RESTHeart is running on Node");
         }
 
-        var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
+        final var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
 
         registry.addInterceptor(interceptorRecord);
 
@@ -439,37 +467,39 @@ public class PolyglotDeployer implements Initializer {
                 interceptorRecord.getDescription());
     }
 
-    private void undeploy(Path pluginPath) {
+    private void undeploy(final Path pluginPath) {
         undeployServices(pluginPath);
         undeployInterceptors(pluginPath);
     }
 
-    private void undeployServices(Path pluginPath) {
-        var pathsToUndeploy = DEPLOYEES.keySet().stream()
+    private void undeployServices(final Path pluginPath) {
+        final var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
-                .filter(path -> path.startsWith(pluginPath))
+                .filter(path -> path.equals(pluginPath))
                 .collect(Collectors.toList());
 
-        for (var pathToUndeploy : pathsToUndeploy) {
-            var _toUndeploy = DEPLOYEES.remove(pathToUndeploy);
+        for (final var pathToUndeploy : pathsToUndeploy) {
+            final var _toUndeploy = DEPLOYEES.remove(pathToUndeploy);
 
-            if (_toUndeploy != null && _toUndeploy instanceof JSService toUndeploy) {
+            if (_toUndeploy != null && _toUndeploy instanceof final JSService toUndeploy) {
                 registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
 
-                LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(), toUndeploy.name(), toUndeploy.uri());
+                LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(),
+                        toUndeploy.name(), toUndeploy.uri());
             }
         }
     }
 
-    private void undeployInterceptors(Path pluginPath) {
-        var pathsToUndeploy = DEPLOYEES.keySet().stream()
+    private void undeployInterceptors(final Path pluginPath) {
+        final var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
-                .filter(path -> path.startsWith(pluginPath))
+                .filter(path -> path.equals(pluginPath))
                 .collect(Collectors.toList());
 
-        for (var pathToUndeploy : pathsToUndeploy) {
-            var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
-            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
+        for (final var pathToUndeploy : pathsToUndeploy) {
+            final var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
+            final var removed = registry
+                    .removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.name()));
 
             if (removed) {
                 LOGGER.info(ansi().fg(GREEN).a("Interceptor '{}' undeployed").reset().toString(), toUndeploy.name());
