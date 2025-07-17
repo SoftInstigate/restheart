@@ -169,7 +169,23 @@ public class PolyglotDeployer implements Initializer {
                         switch (kind.name()) {
                             case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
                                 undeploy(path);
-                                deployService(path);
+                                var pluginDir = pluginPathFromEvent(pluginsDirectory, path);
+                                var services = findServices(pluginDir);
+                                var interceptors = findInterceptors(pluginDir);
+
+                                // Deploy all services
+                                for (Path service : services) {
+                                    if (service.equals(path)) {
+                                        deployService(path);
+                                    }
+                                }
+
+                                // Deploy all interceptors
+                                for (Path interceptor : interceptors) {
+                                    if (interceptor.equals(path)) {
+                                        deployInterceptor(path);
+                                    }
+                                }
                             }
                             case "ENTRY_DELETE" -> undeploy(path);
                             default -> {
