@@ -80,7 +80,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private String jsonPathRoles = "$.roles";
     private boolean bcryptHashedPassword = false;
     private int bcryptComplexity = 12;
-    private boolean enforceMinimumPasswordStrenght = false;
+    private boolean enforceMinimumPasswordStrength = false;
     private int minimumPasswordStrength = 3;
     private BsonDocument createUserDocument = null;
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
@@ -111,7 +111,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.enforceMinimumPasswordStrenght = argOrDefault(config, "enforce-minimum-password-strength", false);
+        this.enforceMinimumPasswordStrength= argOrDefault(config, "enforce-minimum-password-strength", false);
         this.minimumPasswordStrength = argOrDefault(config, "minimum-password-strength", 3);
 
         this.bcryptHashedPassword = arg(config, "bcrypt-hashed-password");
@@ -244,15 +244,15 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * @return true if the password must be hashed
+     * @return true if the password st be hashed
      */
-    public boolean isEnforceMinimumPasswordStrenght() {
-        return enforceMinimumPasswordStrenght;
+    public boolean isEnforceMinimumPasswordStrength() {
+        return enforceMinimumPasswordStrength;
     }
 
     /**
      *
-     * @param expectedPassword
+     * @param ref
      * @param credential
      * @return true if credential verifies successfully against ref account
      */
@@ -271,8 +271,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     /**
      *
-     * @param principalName
-     * @param expectedPassword
+     * @param ref
      * @param credential
      * @return true if password verified successfully
      */
@@ -308,7 +307,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.error(ne.getMessage(), ne);
             return false;
         }
-    }
+	}
 
     private boolean checkPassword(final String usersDb, final String username, final boolean hashed, final char[] password, final char[] expected) {
         if (hashed) {

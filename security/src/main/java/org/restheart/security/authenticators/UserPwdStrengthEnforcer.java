@@ -90,7 +90,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
         } else {
             this.mra = (MongoRealmAuthenticator) pr.getInstance();
 
-            if (!this.mra.isEnforceMinimumPasswordStrenght()) {
+            if (!mra.isEnforceMinimumPasswordStrength()) {
                 this.enabled = false;
                 return;
             }
@@ -104,8 +104,8 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
                     || minimumPasswordStrength == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password field of users documents "
-                        + "is not automatically checked for password strenght: "
-                        + "{usersCollection: {}, "
+                        + "is not automatically checked for password strength: "
+                        + "usersCollection: {}, "
                         + "propNamePassword: {}, minimumPasswordStrength: {}})",
                         usersCollection, propNamePassword, minimumPasswordStrength);
                 enabled = false;
@@ -181,7 +181,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
         if (suggestions != null && !suggestions.isEmpty()) {
             var _suggestions = array();
-            suggestions.stream().forEach(suggestion -> _suggestions.add(suggestion));
+            suggestions.forEach(_suggestions::add);
             error.put("suggestions", _suggestions);
         }
 
