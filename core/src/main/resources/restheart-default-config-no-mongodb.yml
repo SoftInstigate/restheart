@@ -303,7 +303,7 @@ graphql:
   app-cache-enabled: true
   # app cache entries are automatically revalidated every TTR milliseconds
   app-cache-ttr: 60_000 # in milliseconds
-  # default-limit is used for queries that don't not specify a limit
+  # default-limit is used for queries that don't specify a limit
   default-limit: 100
   # max-limit is the maximum value for a Query limit
   max-limit: 1000
