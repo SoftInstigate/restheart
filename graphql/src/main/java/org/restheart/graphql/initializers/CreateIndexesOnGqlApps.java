@@ -40,8 +40,8 @@ import java.util.stream.StreamSupport;
 import static org.restheart.utils.BsonUtils.document;
 
 @RegisterPlugin(name="createIndexesOnGqlApps",
-        description = "initializes the indexes on the gql-apps collection to speedup fetching of graphql app definitions",
-        enabledByDefault = false
+                description = "initializes the indexes on the gql-apps collection to speedup fetching of graphql app definitions",
+                enabledByDefault = false
 )
 public class CreateIndexesOnGqlApps implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateIndexesOnGqlApps.class);

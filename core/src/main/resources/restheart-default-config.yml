@@ -330,6 +330,12 @@ graphql:
   query-time-limit: 0 # in msecs
   verbose: false
 
+# Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
+# for GraphQL applications to improve query performance when fetching app definitions
+# at scale. Enable if you have many GraphQL applications.
+createIndexesOnGqlApps:
+  enabled: false
+
 # Proxied resources - expose exrernal API with RESTHeart acting as a reverese proxy
 # see https://restheart.org/docs/proxy
 # options:#
