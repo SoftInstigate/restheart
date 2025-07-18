@@ -92,7 +92,8 @@ public class PolyglotDeployer implements Initializer {
     @Inject("rh-config")
     private Configuration config;
 
-    private Optional<MongoClient> mclient;
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+	private Optional<MongoClient> mclient;
 
     @OnInit
     public void onInit() {
@@ -114,8 +115,8 @@ public class PolyglotDeployer implements Initializer {
 
     private Optional<MongoClient> mongoClient(final PluginsRegistry registry) {
         return registry.getProviders().stream()
-                .filter(pd -> pd.isEnabled())
-                .map(pd -> pd.getInstance())
+                .filter(PluginRecord::isEnabled)
+                .map(PluginRecord::getInstance)
                 .filter(p -> MongoClient.class.getName().equals(p.rawType().getName()))
                 .map(p -> (MongoClient) p.get(null))
                 .findFirst();
@@ -271,7 +272,7 @@ public class PolyglotDeployer implements Initializer {
 
     private boolean checkPluginDirectory(final Path pluginsDirectory) {
         if (pluginsDirectory == null) {
-            LOGGER.error("Plugin directory {} configuration option not set");
+            LOGGER.error("Plugin directory {} configuration option not set", pluginsDirectory);
             return false;
         }
 
@@ -329,7 +330,7 @@ public class PolyglotDeployer implements Initializer {
             if (p.isJsonObject()
                     && p.getAsJsonObject().has(prop)
                     && p.getAsJsonObject().get(prop).isJsonArray()
-                    && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
+                    && !p.getAsJsonObject().getAsJsonArray(prop).isEmpty()) {
                 final List<Path> ret = Lists.newArrayList();
 
                 p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
@@ -424,31 +425,32 @@ public class PolyglotDeployer implements Initializer {
         }
 
         LOGGER.warn("Node JS plugins are experimental and are likely to change in future");
-        final var executor = Executors.newSingleThreadExecutor();
-        executor.submit(() -> {
-            try {
-                final var srvf = NodeService.get(pluginPath, this.mclient, this.config);
+        try (final var executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(() -> {
+                try {
+                    final var srvf = NodeService.get(pluginPath, this.mclient, this.config);
 
-                final var srv = srvf.get(30, TimeUnit.SECONDS);
+                    final var srv = srvf.get(30, TimeUnit.SECONDS);
 
-                final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
+                    final var pluginRecord = new PluginRecord<Service<? extends ServiceRequest<?>, ? extends ServiceResponse<?>>>(
                         srv.name(), "description", srv.secured(), true, srv.getClass().getName(), srv, new HashMap<>());
 
-                registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
+                    registry.plugService(pluginRecord, srv.uri(), srv.matchPolicy(), srv.secured());
 
-                DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+                    DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-                LOGGER.info(ansi().fg(GREEN).a(
-                        "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
-                        .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
+                    LOGGER.info(ansi().fg(GREEN).a(
+                                "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                            .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
                         srv.matchPolicy());
-            } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
-                LOGGER.error("Error deploying node service {}", pluginPath, ex);
-                Thread.currentThread().interrupt();
-                executor.shutdownNow();
-            }
-        });
-        executor.shutdown();
+                } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
+                    LOGGER.error("Error deploying node service {}", pluginPath, ex);
+                    Thread.currentThread().interrupt();
+                    executor.shutdownNow();
+                }
+            });
+            executor.shutdown();
+        }
     }
 
     private void deployInterceptor(final Path pluginPath) throws IOException, InterruptedException {
@@ -476,12 +478,12 @@ public class PolyglotDeployer implements Initializer {
         final var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> (DEPLOYEES.get(path) instanceof JSService))
                 .filter(path -> path.equals(pluginPath))
-                .collect(Collectors.toList());
+                .toList();
 
         for (final var pathToUndeploy : pathsToUndeploy) {
             final var _toUndeploy = DEPLOYEES.remove(pathToUndeploy);
 
-            if (_toUndeploy != null && _toUndeploy instanceof final JSService toUndeploy) {
+            if (_toUndeploy instanceof final JSService toUndeploy) {
                 registry.unplug(toUndeploy.uri(), toUndeploy.matchPolicy());
 
                 LOGGER.info(ansi().fg(GREEN).a("Service '{}' bound to '{}' undeployed").reset().toString(),
@@ -494,7 +496,7 @@ public class PolyglotDeployer implements Initializer {
         final var pathsToUndeploy = DEPLOYEES.keySet().stream()
                 .filter(path -> DEPLOYEES.get(path) instanceof JSInterceptor)
                 .filter(path -> path.equals(pluginPath))
-                .collect(Collectors.toList());
+                .toList();
 
         for (final var pathToUndeploy : pathsToUndeploy) {
             final var toUndeploy = DEPLOYEES.remove(pathToUndeploy);

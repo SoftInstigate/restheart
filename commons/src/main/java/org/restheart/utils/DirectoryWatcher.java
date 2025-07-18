@@ -142,7 +142,7 @@ public class DirectoryWatcher implements Runnable {
                 var kind = event.kind();
 
                 // Context for the event is the file or directory that was affected
-                var ev = (WatchEvent<Path>) event;
+                @SuppressWarnings("unchecked") var ev = (WatchEvent<Path>) event;
                 var name = ev.context();
                 var child = dir.resolve(name);
 
