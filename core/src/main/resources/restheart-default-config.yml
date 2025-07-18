@@ -72,8 +72,8 @@ identityAuthMechanism:
     - admin
     - user
 
-# fileRealmAuthenticator defines users credentials and roles in a simple yml file.
-# see https://restheart.org/docs/security/authentication#file-realm-authenticator
+# fileRealmAuthenticator defines user credentials and roles inline or in a simple YAML con-file.
+# See https://restheart.org/docs/security/authentication#file-realm-authenticator
 fileRealmAuthenticator:
   enabled: false
   #conf-file: ./users.yml
@@ -286,7 +286,7 @@ mongo:
   # get collection cache speedups GET /coll?cache requests
   get-collection-cache-enabled: true
   get-collection-cache-size: 100
-  get-collection-cache-ttl: 10_000 # Time To Live, in msecs default 10 seconds
+  get-collection-cache-ttl: 10_000 # Time To Live, in milliseconds default 10 seconds
   get-collection-cache-docs: 1_000 # number of documents to cache for each request
 
   # Check if aggregation variables use operators. https://restheart.org/docs/mongodb-rest/aggregations/#security-considerations
@@ -332,7 +332,7 @@ graphql:
   # app cache can be disabled if needed, such as during testing or development
   app-cache-enabled: true
   # app cache entries are automatically revalidated every TTR milliseconds
-  app-cache-ttr: 60_000 # in msecs
+  app-cache-ttr: 60_000 # in milliseconds
   # default-limit is used for queries that don't specify a limit
   default-limit: 100
   # max-limit is the maximum value for a Query limit
