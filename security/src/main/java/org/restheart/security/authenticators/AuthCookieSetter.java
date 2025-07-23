@@ -88,26 +88,24 @@ public class AuthCookieSetter implements WildcardInterceptor {
         var authTokenHeader = res.getHeader("Auth-Token");
 
         // if the token is issued by jwtTokenManager and the jwtAuthenticationMechanism is enabled
-        // use JWT authetication (i.e. Bearer...)
+        // use JWT authentication (i.e. Bearer...)
         // otherwise rely on tokenBasicAuthMechanism (i.e. Basic...)
         var authToken = jwtAuthWithJwtAuthMechanism
             ? "Bearer ".concat(authTokenHeader)
             : "Basic ".concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
 
-        if (authToken != null) {
-            var expiry = LocalDateTime.now()
-                .plusSeconds(this.secondsUntilExpiration)
-                .toInstant(ZoneOffset.UTC);
+        var expiry = LocalDateTime.now()
+            .plusSeconds(this.secondsUntilExpiration)
+            .toInstant(ZoneOffset.UTC);
 
-            res.getExchange().setResponseCookie(new CookieImpl(this.name, authToken)
-                .setSecure(this.secure)
-                .setHttpOnly(this.httpOnly)
-                .setDomain(this.domain)
-                .setPath(this.path)
-                .setSameSite(this.sameSite)
-                .setSameSiteMode(this.sameSiteMode)
-                .setExpires(Date.from(expiry)));
-        }
+        res.getExchange().setResponseCookie(new CookieImpl(this.name, authToken)
+            .setSecure(this.secure)
+            .setHttpOnly(this.httpOnly)
+            .setDomain(this.domain)
+            .setPath(this.path)
+            .setSameSite(this.sameSite)
+            .setSameSiteMode(this.sameSiteMode)
+            .setExpires(Date.from(expiry)));
     }
 
     @Override
