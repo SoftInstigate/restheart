@@ -67,7 +67,7 @@ public class CreateIndexesOnGqlApps implements Initializer {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled =  isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);
+                this.enabled =  isGQLSrvEnabled();
             } else {
                 this.enabled = false;
             }
