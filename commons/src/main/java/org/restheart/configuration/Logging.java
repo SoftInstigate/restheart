@@ -262,7 +262,27 @@ public record Logging(Level logLevel,
                 // following is optional, so get it always in silent mode
                 getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true),
                 // following is optional, so get it always in silent mode
-                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL, DEFAULT_LOGGING.requestsLogExcludeInterval(), true));
+                convertToLong(getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL,
+                        DEFAULT_LOGGING.requestsLogExcludeInterval(), true)));
+    }
+
+    /**
+     * Converts a configuration value to Long, handling Integer to Long conversion.
+     * 
+     * @param value
+     *            the value to convert
+     * @return the value as Long
+     */
+    private static long convertToLong(Object value) {
+        if (value instanceof Long longValue) {
+            return longValue;
+        } else if (value instanceof Integer intValue) {
+            return intValue.longValue();
+        } else if (value instanceof Number numberValue) {
+            return numberValue.longValue();
+        } else {
+            throw new ClassCastException("Cannot convert " + value.getClass().getSimpleName() + " to Long");
+        }
     }
 
     /**

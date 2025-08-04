@@ -144,6 +144,19 @@ logging:
 
 **Behavior**: All requests are logged normally, exactly like the original behavior.
 
+### Configuration Value Types
+
+The `requests-log-exclude-interval` accepts numeric values and handles type conversion automatically:
+
+```yaml
+logging:
+  requests-log-exclude-interval: 100    # Integer (automatically converted to Long)
+  # or
+  requests-log-exclude-interval: 100L   # Explicit Long notation (not needed)
+```
+
+Both formats work correctly thanks to automatic type conversion in the configuration parser.
+
 ## Backward Compatibility
 
 This feature is fully backward compatible. If `requests-log-exclude-patterns` is not specified in your configuration, all requests will be logged as before.
