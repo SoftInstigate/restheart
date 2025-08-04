@@ -162,7 +162,7 @@ public class Configuration {
      * @throws ConfigurationException if required configuration properties are missing
      *         or invalid
      */
-    private Configuration(Map<String, Object> conf, final Path confFilePath, boolean silent)
+    private Configuration(final Map<String, Object> conf, final Path confFilePath, final boolean silent)
             throws ConfigurationException {
         PATH = confFilePath;
 
@@ -208,14 +208,14 @@ public class Configuration {
      */
     @Override
     public String toString() {
-        var dumpOpts = new DumperOptions();
+        final var dumpOpts = new DumperOptions();
         dumpOpts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         dumpOpts.setPrettyFlow(true);
         dumpOpts.setIndent(2);
         dumpOpts.setCanonical(false);
         dumpOpts.setExplicitStart(true);
 
-        var sw = new StringWriter();
+        final var sw = new StringWriter();
         new Yaml(dumpOpts).dump(conf, sw);
 
         return sw.toString();
@@ -333,10 +333,10 @@ public class Configuration {
      * @return the current log level for org.restheart package
      */
     public Level getLogLevel() {
-        var logbackConfigurationFile = System.getProperty("logback.configurationFile");
+        final var logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            var logger = loggerContext.getLogger("org.restheart");
+            final var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            final var logger = loggerContext.getLogger("org.restheart");
             return logger.getLevel();
         }
 
@@ -425,7 +425,7 @@ public class Configuration {
          * @return the default configuration instance
          * @throws ConfigurationException if the default configuration cannot be loaded
          */
-        public static Configuration build(boolean standaloneConfiguration, boolean silent) {
+        public static Configuration build(final boolean standaloneConfiguration, final boolean silent) {
             return build(null, null, standaloneConfiguration, silent);
         }
 
@@ -457,23 +457,23 @@ public class Configuration {
          * @return configured Configuration instance with all overrides applied
          * @throws ConfigurationException if configuration files cannot be read or are invalid
          */
-        public static Configuration build(Path confFilePath, Path confOverridesFilePath,
-                boolean standaloneConfiguration, boolean silent) throws ConfigurationException {
+        public static Configuration build(final Path confFilePath, final Path confOverridesFilePath,
+                final boolean standaloneConfiguration, final boolean silent) throws ConfigurationException {
             if (confFilePath == null) {
-                var defaultConfFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml"
+                final var defaultConfFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml"
                         : "/restheart-default-config.yml";
-                var stream = Configuration.class.getResourceAsStream(defaultConfFilePath);
+                final var stream = Configuration.class.getResourceAsStream(defaultConfFilePath);
                 try (var confReader = new InputStreamReader(stream)) {
                     return build(confReader, null, confOverridesFilePath, silent);
-                } catch (IOException ieo) {
+                } catch (final IOException ieo) {
                     throw new ConfigurationException("Error reading default configuration file", ieo);
                 }
             } else {
                 try (var confReader = new BufferedReader(new FileReader(confFilePath.toFile()))) {
                     return build(confReader, confFilePath, confOverridesFilePath, silent);
-                } catch (FileNotFoundException ex) {
+                } catch (final FileNotFoundException ex) {
                     throw new ConfigurationException("Configuration file not found: " + confFilePath, ex, false);
-                } catch (IOException ieo) {
+                } catch (final IOException ieo) {
                     throw new ConfigurationException("Error reading configuration file " + confFilePath, ieo);
                 }
             }
@@ -497,8 +497,8 @@ public class Configuration {
          * @return configured Configuration instance
          * @throws ConfigurationException if configuration is invalid or cannot be parsed
          */
-        private static Configuration build(Reader confReader, Path confFilePath, Path confOverridesFilePath,
-                boolean silent) throws ConfigurationException {
+        private static Configuration build(final Reader confReader, final Path confFilePath, final Path confOverridesFilePath,
+                final boolean silent) throws ConfigurationException {
             Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(confReader);
 
             if (confOverridesFilePath != null) {
@@ -510,7 +510,7 @@ public class Configuration {
                         // YML format
                         try {
                             overrides = fromYmlToRho(Files.newBufferedReader(confOverridesFilePath));
-                        } catch (JsonParseException jpe) {
+                        } catch (final JsonParseException jpe) {
                             throw new ConfigurationException(
                                     "Wrong configuration override YML file: " + jpe.getLocalizedMessage(), jpe, false);
                         }
@@ -519,7 +519,7 @@ public class Configuration {
                         // JSON format
                         try {
                             overrides = fromJsonToRho(Files.newBufferedReader(confOverridesFilePath));
-                        } catch (JsonParseException jpe) {
+                        } catch (final JsonParseException jpe) {
                             throw new ConfigurationException(
                                     "Wrong configuration override JSON file: " + jpe.getLocalizedMessage(), jpe, false);
                         }
@@ -539,7 +539,7 @@ public class Configuration {
                     }
 
                     confMap = overrideConfiguration(confMap, overrides(overrides, true, silent), silent);
-                } catch (IOException ioe) {
+                } catch (final IOException ioe) {
                     throw new ConfigurationException("Configuration override file not found: " + confOverridesFilePath,
                             ioe, false);
                 }
@@ -581,15 +581,15 @@ public class Configuration {
      * @return RHO format string with semicolon-separated key->value pairs
      * @throws JsonParseException if the JSON is invalid or not an object
      */
-    private static String fromJsonToRho(Reader jsonReader) throws JsonParseException {
-        var gson = new GsonBuilder().setStrictness(Strictness.LENIENT).create(); // setStrictness(Strictness.LENIENT) allows JSON with comments
-        var _json = gson.fromJson(jsonReader, JsonObject.class);
+    private static String fromJsonToRho(final Reader jsonReader) throws JsonParseException {
+        final var gson = new GsonBuilder().setStrictness(Strictness.LENIENT).create(); // setStrictness(Strictness.LENIENT) allows JSON with comments
+        final var _json = gson.fromJson(jsonReader, JsonObject.class);
 
         if (_json == null || !_json.isJsonObject()) {
             throw new JsonParseException("json is not an object");
         }
 
-        var obj = _json.getAsJsonObject();
+        final var obj = _json.getAsJsonObject();
 
         return obj.entrySet().stream()
                 .map(e -> e.getKey() + "->" + e.getValue().toString())
@@ -617,8 +617,8 @@ public class Configuration {
      * @return RHO format string with semicolon-separated key->value pairs
      * @throws JsonParseException if the YAML is invalid or cannot be parsed
      */
-    private static String fromYmlToRho(Reader yml) throws JsonParseException {
-        Map<String, Object> _yml = new Yaml(new SafeConstructor(new LoaderOptions())).load(yml);
+    private static String fromYmlToRho(final Reader yml) throws JsonParseException {
+        final Map<String, Object> _yml = new Yaml(new SafeConstructor(new LoaderOptions())).load(yml);
 
         if (_yml == null) {
             throw new JsonParseException("json is not an object");
@@ -654,9 +654,9 @@ public class Configuration {
      * @param silent if true, suppresses log messages
      * @return the modified configuration map with overrides applied
      */
-    private static Map<String, Object> overrideConfiguration(Map<String, Object> confMap, List<RhOverride> overrides,
+    private static Map<String, Object> overrideConfiguration(final Map<String, Object> confMap, final List<RhOverride> overrides,
             final boolean silent) {
-        var ctx = JXPathContext.newContext(confMap);
+        final var ctx = JXPathContext.newContext(confMap);
         ctx.setLenient(true);
 
         // this logs the overrides trying to mask sensite data
@@ -666,8 +666,8 @@ public class Configuration {
         // hide nested properties)
         overrides.stream().forEachOrdered(o -> {
             if (!silent) {
-                if (o.value() instanceof HashMap<?, ?> mapValue) {
-                    var maskedValue = new HashMap<String, Object>();
+                if (o.value() instanceof final HashMap<?, ?> mapValue) {
+                    final var maskedValue = new HashMap<String, Object>();
                     mapValue.keySet().stream()
                             .filter(k -> k instanceof String)
                             .map(k -> (String) k)
@@ -677,14 +677,14 @@ public class Configuration {
                                     maskedValue.put(k, MASK);
                                 } else if (k.contains("connection-string")) {
                                     try {
-                                        var svalue = mapValue.get(k).toString();
-                                        var cs = new ConnectionString(svalue);
-                                        var _pwd = cs.getPassword();
+                                        final var svalue = mapValue.get(k).toString();
+                                        final var cs = new ConnectionString(svalue);
+                                        final var _pwd = cs.getPassword();
                                         if (_pwd != null) {
-                                            var pwd = new String(_pwd);
+                                            final var pwd = new String(_pwd);
                                             maskedValue.put(k, svalue.replaceFirst(Pattern.quote(pwd), MASK));
                                         }
-                                    } catch (Throwable t) {
+                                    } catch (final Throwable t) {
                                         maskedValue.put(k, mapValue);
                                     }
                                 }
@@ -693,15 +693,15 @@ public class Configuration {
                 } else if (o.path().contains("password") || o.path().contains("pwd") || o.path().contains("secret")
                         || o.path().contains("key")) {
                     LOGGER.info(LOG_PATTERN, o.path(), MASK);
-                } else if (o.path().endsWith("connection-string") && o.value() instanceof String svalue) {
+                } else if (o.path().endsWith("connection-string") && o.value() instanceof final String svalue) {
                     try {
-                        var cs = new ConnectionString(svalue);
-                        var _pwd = cs.getPassword();
+                        final var cs = new ConnectionString(svalue);
+                        final var _pwd = cs.getPassword();
                         if (_pwd != null) {
-                            var pwd = new String(_pwd);
+                            final var pwd = new String(_pwd);
                             LOGGER.info(LOG_PATTERN, o.path(), svalue.replaceFirst(Pattern.quote(pwd), MASK));
                         }
-                    } catch (Throwable t) {
+                    } catch (final Throwable t) {
                         LOGGER.info(LOG_PATTERN, o.path(), o.value());
                     }
                 } else {
@@ -714,7 +714,7 @@ public class Configuration {
             } else {
                 try {
                     createPathAndSetValue(ctx, o.path(), o.value());
-                } catch (Throwable ise) {
+                } catch (final Throwable ise) {
                     LOGGER.error("Wrong configuration override {}, {}", o.raw(), ise.getMessage());
                 }
             }
@@ -732,7 +732,7 @@ public class Configuration {
      * @param path the path to create (e.g., "/core/name")
      * @param value the value to set at the path
      */
-    private static void createPathAndSetValue(JXPathContext ctx, String path, Object value) {
+    private static void createPathAndSetValue(final JXPathContext ctx, final String path, final Object value) {
         createParents(ctx, path);
         ctx.createPathAndSetValue(path, value);
     }
@@ -747,18 +747,18 @@ public class Configuration {
      * @param ctx the JXPath context wrapping the configuration
      * @param path the full path whose parents need to be created
      */
-    private static void createParents(JXPathContext ctx, String path) {
-        var parentPath = path.substring(0, path.lastIndexOf("/"));
+    private static void createParents(final JXPathContext ctx, final String path) {
+        final var parentPath = path.substring(0, path.lastIndexOf("/"));
 
         if (!parentPath.equals("")) {
             createParents(ctx, parentPath);
         }
 
-        var array = path.strip().endsWith("]");
+        final var array = path.strip().endsWith("]");
 
         if (array) {
             // /a/b[2] -> /a/b
-            var arrayPath = path.substring(0, path.lastIndexOf("["));
+            final var arrayPath = path.substring(0, path.lastIndexOf("["));
             if (ctx.getValue(arrayPath) == null) {
                 ctx.createPathAndSetValue(arrayPath, new ArrayList<>());
             }
