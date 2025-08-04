@@ -28,6 +28,8 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.restheart.Bootstrapper;
@@ -53,6 +55,9 @@ import io.undertow.util.LocaleUtils;
 public class RequestLogger extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLogger.class);
+
+    // Counters for excluded requests per pattern
+    private static final ConcurrentHashMap<String, AtomicLong> EXCLUDED_COUNTERS = new ConcurrentHashMap<>();
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
@@ -83,16 +88,69 @@ public class RequestLogger extends PipelinedHandler {
         if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
             // Check if the request path should be excluded from logging
             final String requestPath = exchange.getRequestPath();
-            final boolean shouldExclude = configuration.logging().requestsLogExcludePatterns()
-                    .stream()
-                    .anyMatch(pattern -> matchesPattern(requestPath, pattern));
+            final String matchedPattern = findMatchingPattern(requestPath);
 
-            if (!shouldExclude) {
+            if (matchedPattern != null) {
+                // Request matches an exclusion pattern
+                handleExcludedRequest(exchange, requestPath, matchedPattern);
+            } else {
+                // Normal request - log it
                 dumpExchange(exchange, configuration.logging().requestsLogMode());
             }
         }
 
         next(exchange);
+    }
+
+    /**
+     * Finds the first pattern that matches the request path
+     * 
+     * @param requestPath
+     *            the request path to check
+     * @return the matching pattern or null if no match
+     */
+    private String findMatchingPattern(final String requestPath) {
+        return configuration.logging().requestsLogExcludePatterns()
+                .stream()
+                .filter(pattern -> matchesPattern(requestPath, pattern))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Handles an excluded request with counting logic
+     * 
+     * @param exchange
+     *            the HTTP exchange
+     * @param requestPath
+     *            the request path
+     * @param matchedPattern
+     *            the pattern that matched
+     */
+    private void handleExcludedRequest(final HttpServerExchange exchange, final String requestPath,
+            final String matchedPattern) {
+        // Get or create counter for this pattern
+        final AtomicLong counter = EXCLUDED_COUNTERS.computeIfAbsent(matchedPattern, k -> new AtomicLong(0));
+        final long count = counter.incrementAndGet();
+
+        // Get the configured log interval
+        final long logInterval = configuration.logging().requestsLogExcludeInterval();
+
+        // Log first occurrence and then every nth occurrence with full request details
+        if (count == 1) {
+            if (logInterval <= 0) {
+                LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (logging disabled after first occurrence):",
+                        count, matchedPattern);
+            } else {
+                LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (will log every {}th occurrence):",
+                        count, matchedPattern, logInterval);
+            }
+            dumpExchange(exchange, configuration.logging().requestsLogMode());
+        } else if (logInterval > 0 && count % logInterval == 0) {
+            LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (total excluded: {}):",
+                    count, matchedPattern, count);
+            dumpExchange(exchange, configuration.logging().requestsLogMode());
+        }
     }
 
     /**

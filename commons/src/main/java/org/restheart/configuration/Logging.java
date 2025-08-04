@@ -98,6 +98,19 @@ import ch.qos.logback.classic.Level;
  * <li>Prefix patterns: {@code /monitoring/*} - excludes all paths starting with "/monitoring/"</li>
  * </ul>
  * 
+ * <h2>Excluded Request Counting</h2>
+ * <p>
+ * To maintain visibility into excluded requests, the system logs:
+ * </p>
+ * <ul>
+ * <li>The first excluded request for each pattern</li>
+ * <li>Every nth excluded request (configurable via {@code requests-log-exclude-interval})</li>
+ * <li>The total count of excluded requests for each pattern</li>
+ * </ul>
+ * <p>
+ * This provides insight into the frequency of excluded requests without overwhelming the logs.
+ * </p>
+ * 
  * @param logLevel
  *            the minimum log level to output
  * @param logToFile
@@ -118,6 +131,8 @@ import ch.qos.logback.classic.Level;
  *            list of header names to include in tracing logs
  * @param requestsLogExcludePatterns
  *            list of request path patterns to exclude from logging
+ * @param requestsLogExcludeInterval
+ *            interval for logging excluded requests (log every nth excluded request)
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 1.0
@@ -131,7 +146,8 @@ public record Logging(Level logLevel,
         boolean fullStacktrace,
         int requestsLogMode,
         List<String> tracingHeaders,
-        List<String> requestsLogExcludePatterns) {
+        List<String> requestsLogExcludePatterns,
+        long requestsLogExcludeInterval) {
     /**
      * Configuration key for the logging section.
      */
@@ -188,6 +204,11 @@ public record Logging(Level logLevel,
     public static final String REQUESTS_LOG_EXCLUDE_PATTERNS = "requests-log-exclude-patterns";
 
     /**
+     * Configuration key for the interval of logging excluded requests.
+     */
+    public static final String REQUESTS_LOG_EXCLUDE_INTERVAL = "requests-log-exclude-interval";
+
+    /**
      * Default packages to include in logging output.
      */
     private static final List<String> DEFAULT_PACKAGES = List.of("org.restheart", "com.restheart");
@@ -206,10 +227,11 @@ public record Logging(Level logLevel,
      * <li>requests-log-mode: 1 (summary only)</li>
      * <li>full-stacktrace: false</li>
      * <li>requests-log-exclude-patterns: empty list</li>
+     * <li>requests-log-exclude-interval: 100</li>
      * </ul>
      */
     private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true, true, DEFAULT_PACKAGES, false,
-            1, new ArrayList<>(), new ArrayList<>());
+            1, new ArrayList<>(), new ArrayList<>(), 100L);
 
     /**
      * Creates a Logging configuration from a configuration map.
@@ -238,7 +260,9 @@ public record Logging(Level logLevel,
                 // following is optional, so get it always in silent mode
                 getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true),
                 // following is optional, so get it always in silent mode
-                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true));
+                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL, DEFAULT_LOGGING.requestsLogExcludeInterval(), true));
     }
 
     /**
