@@ -57,9 +57,17 @@ public class RequestLogger extends PipelinedHandler {
 
     // Last logged time for excluded requests per pattern (in milliseconds)
     private static final ConcurrentHashMap<String, Long> LAST_LOGGED_TIME = new ConcurrentHashMap<>();
-    
+
     // Cache compiled regex patterns to avoid recompilation
     private static final ConcurrentHashMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
+
+    // Constants for time calculations to avoid repeated multiplication
+    private static final long MINUTES_TO_MS = 60 * 1000;
+
+    // Cache color formatting strings to avoid repeated ansi() object creation
+    private static final String RED_BOLD_FORMAT = ansi().fg(RED).bold().toString();
+    private static final String GREEN_BOLD_FORMAT = ansi().fg(GREEN).bold().toString();
+    private static final String RESET_FORMAT = ansi().reset().toString();
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
@@ -113,19 +121,21 @@ public class RequestLogger extends PipelinedHandler {
      */
     private String findMatchingPattern(final String requestPath) {
         final var patterns = configuration.logging().requestsLogExcludePatterns();
-        
-        // Early exit if no patterns configured
+
+        // Early exit optimization for empty patterns
         if (patterns.isEmpty()) {
             return null;
         }
-        
-        // Optimize for single pattern case (common scenario)
+
+        // Optimize for single pattern case (very common scenario)
         if (patterns.size() == 1) {
             final String pattern = patterns.get(0);
-            return matchesPattern(requestPath, pattern) ? pattern : null;
+            return matchesPattern(requestPath, pattern)
+                ? pattern
+                : null;
         }
-        
-        // Multiple patterns - use stream
+
+        // Multiple patterns - use stream for flexibility
         return patterns.stream()
                 .filter(pattern -> matchesPattern(requestPath, pattern))
                 .findFirst()
@@ -146,25 +156,26 @@ public class RequestLogger extends PipelinedHandler {
             final String matchedPattern) {
         final long now = System.currentTimeMillis();
         final long logIntervalMinutes = configuration.logging().requestsLogExcludeInterval();
-        final long logIntervalMs = logIntervalMinutes * 60 * 1000; // convert minutes to milliseconds
-        
+        final long logIntervalMs = logIntervalMinutes * MINUTES_TO_MS; // convert minutes to milliseconds
+
         final Long lastLogged = LAST_LOGGED_TIME.get(matchedPattern);
-        
+
         if (lastLogged == null) {
             // First occurrence of this pattern
             if (logIntervalMinutes <= 0) {
-                LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):", matchedPattern);
+                LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):",
+                        matchedPattern);
             } else {
-                LOGGER.info("First excluded request for pattern '{}' (will log again every {} minutes):", 
-                           matchedPattern, logIntervalMinutes);
+                LOGGER.info("First excluded request for pattern '{}' (will log again every {} minutes):",
+                        matchedPattern, logIntervalMinutes);
             }
             dumpExchange(exchange, configuration.logging().requestsLogMode());
             LAST_LOGGED_TIME.put(matchedPattern, now);
         } else if (logIntervalMinutes > 0 && (now - lastLogged) >= logIntervalMs) {
             // Time interval has elapsed
-            final long minutesElapsed = (now - lastLogged) / (60 * 1000);
-            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):", 
-                       matchedPattern, minutesElapsed);
+            final long minutesElapsed = (now - lastLogged) / MINUTES_TO_MS;
+            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
+                    matchedPattern, minutesElapsed);
             dumpExchange(exchange, configuration.logging().requestsLogMode());
             LAST_LOGGED_TIME.put(matchedPattern, now);
         }
@@ -185,7 +196,11 @@ public class RequestLogger extends PipelinedHandler {
         if (pattern.equals(requestPath)) {
             // Exact match
             return true;
-        } else if (pattern.contains("*")) {
+        }
+
+        // Check for wildcard patterns more efficiently using indexOf instead of contains
+        final int wildcardIndex = pattern.indexOf('*');
+        if (wildcardIndex >= 0) {
             // Use cached compiled patterns to avoid recompilation
             final Pattern compiledPattern = PATTERN_CACHE.computeIfAbsent(pattern, p -> {
                 final String regexPattern = p
@@ -216,7 +231,9 @@ public class RequestLogger extends PipelinedHandler {
         final var request = JsonProxyRequest.of(exchange);
 
         // Pre-allocate StringBuilder with appropriate capacity based on log level
-        final StringBuilder sb = new StringBuilder(logLevel == 1 ? 256 : 2048);
+        final StringBuilder sb = new StringBuilder(logLevel == 1
+            ? 256
+            : 2048);
         final long start = request != null && request.getStartTime() != null
             ? request.getStartTime()
             : System.currentTimeMillis();
@@ -343,9 +360,9 @@ public class RequestLogger extends PipelinedHandler {
                         sb.append(" =>").append(" status=");
 
                         if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {
-                            sb.append(ansi().fg(RED).bold().a(exchange.getStatusCode()).reset().toString());
+                            sb.append(RED_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
                         } else {
-                            sb.append(ansi().fg(GREEN).bold().a(exchange.getStatusCode()).reset().toString());
+                            sb.append(GREEN_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
                         }
 
                         sb.append(" elapsed=").append(System.currentTimeMillis() - start).append("ms")
@@ -394,9 +411,9 @@ public class RequestLogger extends PipelinedHandler {
                         sb.append("            status=");
 
                         if (exchange.getStatusCode() >= 300) {
-                            sb.append(ansi().fg(RED).bold().a(exchange1.getStatusCode()).reset().toString());
+                            sb.append(RED_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
                         } else {
-                            sb.append(ansi().fg(GREEN).bold().a(exchange1.getStatusCode()).reset().toString());
+                            sb.append(GREEN_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
                         }
 
                         sb.append("\n");
