@@ -57,6 +57,9 @@ public class RequestLogger extends PipelinedHandler {
 
     // Last logged time for excluded requests per pattern (in milliseconds)
     private static final ConcurrentHashMap<String, Long> LAST_LOGGED_TIME = new ConcurrentHashMap<>();
+    
+    // Cache compiled regex patterns to avoid recompilation
+    private static final ConcurrentHashMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
@@ -109,8 +112,21 @@ public class RequestLogger extends PipelinedHandler {
      * @return the matching pattern or null if no match
      */
     private String findMatchingPattern(final String requestPath) {
-        return configuration.logging().requestsLogExcludePatterns()
-                .stream()
+        final var patterns = configuration.logging().requestsLogExcludePatterns();
+        
+        // Early exit if no patterns configured
+        if (patterns.isEmpty()) {
+            return null;
+        }
+        
+        // Optimize for single pattern case (common scenario)
+        if (patterns.size() == 1) {
+            final String pattern = patterns.get(0);
+            return matchesPattern(requestPath, pattern) ? pattern : null;
+        }
+        
+        // Multiple patterns - use stream
+        return patterns.stream()
                 .filter(pattern -> matchesPattern(requestPath, pattern))
                 .findFirst()
                 .orElse(null);
@@ -170,11 +186,14 @@ public class RequestLogger extends PipelinedHandler {
             // Exact match
             return true;
         } else if (pattern.contains("*")) {
-            // Simple wildcard support - convert to regex
-            final String regexPattern = pattern
-                    .replace(".", "\\.")
-                    .replace("*", ".*");
-            return Pattern.compile(regexPattern).matcher(requestPath).matches();
+            // Use cached compiled patterns to avoid recompilation
+            final Pattern compiledPattern = PATTERN_CACHE.computeIfAbsent(pattern, p -> {
+                final String regexPattern = p
+                        .replace(".", "\\.")
+                        .replace("*", ".*");
+                return Pattern.compile(regexPattern);
+            });
+            return compiledPattern.matcher(requestPath).matches();
         }
         return false;
     }
@@ -196,7 +215,8 @@ public class RequestLogger extends PipelinedHandler {
 
         final var request = JsonProxyRequest.of(exchange);
 
-        final StringBuilder sb = new StringBuilder();
+        // Pre-allocate StringBuilder with appropriate capacity based on log level
+        final StringBuilder sb = new StringBuilder(logLevel == 1 ? 256 : 2048);
         final long start = request != null && request.getStartTime() != null
             ? request.getStartTime()
             : System.currentTimeMillis();
