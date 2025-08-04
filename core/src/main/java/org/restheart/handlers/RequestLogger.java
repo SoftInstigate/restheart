@@ -27,6 +27,7 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -71,12 +72,27 @@ public class RequestLogger extends PipelinedHandler {
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
+    // Cache immutable configuration values to avoid repeated access
+    private final int requestsLogMode;
+    private final List<String> requestsLogExcludePatterns;
+    private final long requestsLogExcludeInterval;
+    private final long requestsLogExcludeIntervalMs; // Pre-calculated interval in milliseconds
+
+    // Optimization flag: true if there are exclusion patterns to check
+    private final boolean hasExclusionPatterns;
+
     /**
      * Creates a new instance of RequestLoggerHandler
      *
      */
     public RequestLogger() {
         super();
+        // Cache immutable configuration values at startup
+        this.requestsLogMode = configuration.logging().requestsLogMode();
+        this.requestsLogExcludePatterns = configuration.logging().requestsLogExcludePatterns();
+        this.requestsLogExcludeInterval = configuration.logging().requestsLogExcludeInterval();
+        this.requestsLogExcludeIntervalMs = requestsLogExcludeInterval * MINUTES_TO_MS; // Pre-calculate
+        this.hasExclusionPatterns = !requestsLogExcludePatterns.isEmpty();
     }
 
     /**
@@ -86,6 +102,12 @@ public class RequestLogger extends PipelinedHandler {
      */
     public RequestLogger(final PipelinedHandler next) {
         super(next);
+        // Cache immutable configuration values at startup
+        this.requestsLogMode = configuration.logging().requestsLogMode();
+        this.requestsLogExcludePatterns = configuration.logging().requestsLogExcludePatterns();
+        this.requestsLogExcludeInterval = configuration.logging().requestsLogExcludeInterval();
+        this.requestsLogExcludeIntervalMs = requestsLogExcludeInterval * MINUTES_TO_MS; // Pre-calculate
+        this.hasExclusionPatterns = !requestsLogExcludePatterns.isEmpty();
     }
 
     /**
@@ -95,17 +117,23 @@ public class RequestLogger extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
-            // Check if the request path should be excluded from logging
-            final String requestPath = exchange.getRequestPath();
-            final String matchedPattern = findMatchingPattern(requestPath);
+        if (requestsLogMode > 0 && LOGGER.isInfoEnabled()) {
+            // Optimization: only check for exclusion patterns if any are configured
+            if (hasExclusionPatterns) {
+                // Check if the request path should be excluded from logging
+                final String requestPath = exchange.getRequestPath();
+                final String matchedPattern = findMatchingPattern(requestPath);
 
-            if (matchedPattern != null) {
-                // Request matches an exclusion pattern
-                handleExcludedRequest(exchange, requestPath, matchedPattern);
+                if (matchedPattern != null) {
+                    // Request matches an exclusion pattern
+                    handleExcludedRequest(exchange, requestPath, matchedPattern);
+                } else {
+                    // Normal request - log it
+                    dumpExchange(exchange, requestsLogMode);
+                }
             } else {
-                // Normal request - log it
-                dumpExchange(exchange, configuration.logging().requestsLogMode());
+                // No exclusion patterns configured - always log
+                dumpExchange(exchange, requestsLogMode);
             }
         }
 
@@ -120,23 +148,21 @@ public class RequestLogger extends PipelinedHandler {
      * @return the matching pattern or null if no match
      */
     private String findMatchingPattern(final String requestPath) {
-        final var patterns = configuration.logging().requestsLogExcludePatterns();
-
-        // Early exit optimization for empty patterns
-        if (patterns.isEmpty()) {
+        // Early exit optimization for empty patterns (should not happen due to hasExclusionPatterns check)
+        if (requestsLogExcludePatterns.isEmpty()) {
             return null;
         }
 
         // Optimize for single pattern case (very common scenario)
-        if (patterns.size() == 1) {
-            final String pattern = patterns.get(0);
+        if (requestsLogExcludePatterns.size() == 1) {
+            final String pattern = requestsLogExcludePatterns.get(0);
             return matchesPattern(requestPath, pattern)
                 ? pattern
                 : null;
         }
 
         // Multiple patterns - use stream for flexibility
-        return patterns.stream()
+        return requestsLogExcludePatterns.stream()
                 .filter(pattern -> matchesPattern(requestPath, pattern))
                 .findFirst()
                 .orElse(null);
@@ -155,28 +181,26 @@ public class RequestLogger extends PipelinedHandler {
     private void handleExcludedRequest(final HttpServerExchange exchange, final String requestPath,
             final String matchedPattern) {
         final long now = System.currentTimeMillis();
-        final long logIntervalMinutes = configuration.logging().requestsLogExcludeInterval();
-        final long logIntervalMs = logIntervalMinutes * MINUTES_TO_MS; // convert minutes to milliseconds
 
         final Long lastLogged = LAST_LOGGED_TIME.get(matchedPattern);
 
         if (lastLogged == null) {
             // First occurrence of this pattern
-            if (logIntervalMinutes <= 0) {
+            if (requestsLogExcludeInterval <= 0) {
                 LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):",
                         matchedPattern);
             } else {
                 LOGGER.info("First excluded request for pattern '{}' (will log again every {} minutes):",
-                        matchedPattern, logIntervalMinutes);
+                        matchedPattern, requestsLogExcludeInterval);
             }
-            dumpExchange(exchange, configuration.logging().requestsLogMode());
+            dumpExchange(exchange, requestsLogMode);
             LAST_LOGGED_TIME.put(matchedPattern, now);
-        } else if (logIntervalMinutes > 0 && (now - lastLogged) >= logIntervalMs) {
+        } else if (requestsLogExcludeInterval > 0 && (now - lastLogged) >= requestsLogExcludeIntervalMs) {
             // Time interval has elapsed
             final long minutesElapsed = (now - lastLogged) / MINUTES_TO_MS;
             LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
                     matchedPattern, minutesElapsed);
-            dumpExchange(exchange, configuration.logging().requestsLogMode());
+            dumpExchange(exchange, requestsLogMode);
             LAST_LOGGED_TIME.put(matchedPattern, now);
         }
         // Otherwise, request is silently excluded
