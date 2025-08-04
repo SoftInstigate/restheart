@@ -1,0 +1,38 @@
+# Example RESTHeart configuration with request logging exclusion patterns
+
+# The instance name, logged at startup
+/core/name: default
+
+# HTTP Listener
+/http-listener:
+  enabled: true
+  host: "localhost" # Set to 0.0.0.0 to allow remote systems to connect to this server
+  port: 8080
+
+# MongoDB connection string - see https://docs.mongodb.com/manual/reference/connection-string/.
+/mclient/connection-string: mongodb://127.0.0.1
+
+# MongoDb resources exposed by the Mongo REST API
+/mongo/mongo-mounts[1]:
+  what: /restheart
+  where: /
+
+# Logging configuration with request exclusion patterns
+/logging:
+  log-level: INFO
+  log-to-console: true
+  ansi-console: true
+  log-to-file: false
+  log-file-path: restheart.log # with --fork use an absolute path of a writable file
+  packages: [ "org.restheart", "com.restheart" ] # only messages from these packages are logged
+  requests-log-mode: 1 # 0=no logging, 1=summary, 2=headers, 3=headers+body
+  tracing-headers: [ "X-Request-Id", "X-Correlation-Id" ]
+  
+  # NEW: Request path patterns to exclude from logging
+  # This helps reduce log noise from health checks and monitoring endpoints
+  requests-log-exclude-patterns:
+    - "/ping"              # Exact match for load balancer health checks
+    - "/health"            # Exact match for health endpoint
+    - "/_ping"             # Exact match for internal ping
+    - "/monitoring/*"      # Wildcard: excludes all paths starting with /monitoring/
+    - "/api/*/status"      # Wildcard: excludes /api/v1/status, /api/v2/status, etc.

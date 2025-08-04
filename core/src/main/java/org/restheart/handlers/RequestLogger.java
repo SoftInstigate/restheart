@@ -28,6 +28,7 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
@@ -80,10 +81,42 @@ public class RequestLogger extends PipelinedHandler {
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
-            dumpExchange(exchange, configuration.logging().requestsLogMode());
+            // Check if the request path should be excluded from logging
+            final String requestPath = exchange.getRequestPath();
+            final boolean shouldExclude = configuration.logging().requestsLogExcludePatterns()
+                    .stream()
+                    .anyMatch(pattern -> matchesPattern(requestPath, pattern));
+
+            if (!shouldExclude) {
+                dumpExchange(exchange, configuration.logging().requestsLogMode());
+            }
         }
 
         next(exchange);
+    }
+
+    /**
+     * Checks if a request path matches an exclusion pattern.
+     * Supports exact matches and simple wildcard patterns with '*'.
+     * 
+     * @param requestPath
+     *            the request path to check
+     * @param pattern
+     *            the exclusion pattern
+     * @return true if the path matches the pattern
+     */
+    private boolean matchesPattern(final String requestPath, final String pattern) {
+        if (pattern.equals(requestPath)) {
+            // Exact match
+            return true;
+        } else if (pattern.contains("*")) {
+            // Simple wildcard support - convert to regex
+            final String regexPattern = pattern
+                    .replace(".", "\\.")
+                    .replace("*", ".*");
+            return Pattern.compile(regexPattern).matcher(requestPath).matches();
+        }
+        return false;
     }
 
     /**
@@ -150,8 +183,7 @@ public class RequestLogger extends PipelinedHandler {
                     .append("\n");
 
             @SuppressWarnings("removal")
-            final
-            Map<String, Cookie> cookies = exchange.getRequestCookies();
+            final Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
                     sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue())
@@ -204,7 +236,8 @@ public class RequestLogger extends PipelinedHandler {
         addExchangeCompleteListener(exchange, logLevel, sb, start);
     }
 
-    private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel, final StringBuilder sb,
+    private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel,
+            final StringBuilder sb,
             final long start) {
         exchange.addExchangeCompleteListener(
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
@@ -258,8 +291,7 @@ public class RequestLogger extends PipelinedHandler {
                                 .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
 
                         @SuppressWarnings("removal")
-                        final
-                        Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+                        final Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                         if (cookies1 != null) {
                             cookies1.values().stream().forEach((cookie) -> {
                                 sb.append("            cookie=").append(cookie.getName()).append("=")
