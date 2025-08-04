@@ -20,18 +20,19 @@
  */
 package org.restheart.handlers;
 
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -67,7 +68,7 @@ public class RequestLogger extends PipelinedHandler {
      *
      * @param next
      */
-    public RequestLogger(PipelinedHandler next) {
+    public RequestLogger(final PipelinedHandler next) {
         super(next);
     }
 
@@ -77,7 +78,7 @@ public class RequestLogger extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
         if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
             dumpExchange(exchange, configuration.logging().requestsLogMode());
         }
@@ -90,20 +91,22 @@ public class RequestLogger extends PipelinedHandler {
      *
      * Log a complete dump of the HttpServerExchange (both Request and Response)
      *
-     * @param exchange the HttpServerExchange
-     * @param logLevel it can be 0, 1 or 2
+     * @param exchange
+     *            the HttpServerExchange
+     * @param logLevel
+     *            it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange, Integer logLevel) {
+    protected void dumpExchange(final HttpServerExchange exchange, final Integer logLevel) {
         if (logLevel < 1) {
             return;
         }
 
-        var request = JsonProxyRequest.of(exchange);
+        final var request = JsonProxyRequest.of(exchange);
 
         final StringBuilder sb = new StringBuilder();
         final long start = request != null && request.getStartTime() != null
-                ? request.getStartTime()
-                : System.currentTimeMillis();
+            ? request.getStartTime()
+            : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
@@ -118,7 +121,9 @@ public class RequestLogger extends PipelinedHandler {
 
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
 
-            var pb = request == null ? null :request.getPipelineInfo();
+            final var pb = request == null
+                ? null
+                : request.getPipelineInfo();
 
             if (pb != null) {
                 sb.append("          servedBy=")
@@ -145,6 +150,7 @@ public class RequestLogger extends PipelinedHandler {
                     .append("\n");
 
             @SuppressWarnings("removal")
+            final
             Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
@@ -152,7 +158,7 @@ public class RequestLogger extends PipelinedHandler {
                             .append("\n");
                 });
             }
-            for (HeaderValues header : exchange.getRequestHeaders()) {
+            for (final HeaderValues header : exchange.getRequestHeaders()) {
                 header.stream().forEach((value) -> {
                     if (header.getHeaderName() != null
                             && "Authorization".equalsIgnoreCase(header
@@ -168,10 +174,10 @@ public class RequestLogger extends PipelinedHandler {
                     .append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)))
                     .append("\n");
             sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
-            Map<String, Deque<String>> pnames = exchange.getQueryParameters();
+            final Map<String, Deque<String>> pnames = exchange.getQueryParameters();
             pnames.entrySet().stream().map((entry) -> {
-                String pname = entry.getKey();
-                Iterator<String> pvalues = entry.getValue().iterator();
+                final String pname = entry.getKey();
+                final Iterator<String> pvalues = entry.getValue().iterator();
                 sb.append("         parameter=");
                 sb.append(pname);
                 sb.append('=');
@@ -198,7 +204,8 @@ public class RequestLogger extends PipelinedHandler {
         addExchangeCompleteListener(exchange, logLevel, sb, start);
     }
 
-    private void addExchangeCompleteListener(HttpServerExchange exchange, Integer logLevel, final StringBuilder sb, final long start) {
+    private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel, final StringBuilder sb,
+            final long start) {
         exchange.addExchangeCompleteListener(
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
                     if (logLevel < 1) {
@@ -210,7 +217,7 @@ public class RequestLogger extends PipelinedHandler {
                     // A thread switch in the request handling pipeline loses the MDC context.
                     // TracingInstrumentationHandler adds it to the
                     // exchange as an Attachment
-                    var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
+                    final var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
                     if (mdcCtx != null) {
                         MDC.setContextMap(mdcCtx);
                     }
@@ -251,6 +258,7 @@ public class RequestLogger extends PipelinedHandler {
                                 .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
 
                         @SuppressWarnings("removal")
+                        final
                         Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                         if (cookies1 != null) {
                             cookies1.values().stream().forEach((cookie) -> {
@@ -259,12 +267,11 @@ public class RequestLogger extends PipelinedHandler {
                                         .append("; path=").append(cookie.getPath()).append("\n");
                             });
                         }
-                        for (HeaderValues header : exchange1.getResponseHeaders()) {
+                        for (final HeaderValues header : exchange1.getResponseHeaders()) {
                             header.stream().forEach((value) -> {
                                 if (header.getHeaderName() != null
-                                        && AUTH_TOKEN_HEADER.toString().
-                                                equalsIgnoreCase(header
-                                                        .getHeaderName().toString())) {
+                                        && AUTH_TOKEN_HEADER.toString().equalsIgnoreCase(header
+                                                .getHeaderName().toString())) {
                                     value = "**********";
                                 }
 
