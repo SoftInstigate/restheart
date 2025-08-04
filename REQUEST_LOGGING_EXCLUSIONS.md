@@ -20,10 +20,10 @@ logging:
     - "/monitoring/*"      # Wildcard: excludes all paths starting with /monitoring/
     - "/api/*/status"      # Wildcard: excludes /api/v1/status, /api/v2/status, etc.
   
-  # Optional: Interval for logging excluded requests (default: 100)
-  # Logs the 1st, 100th, 200th, etc. excluded request for each pattern
+  # Optional: Interval in minutes for logging excluded requests (default: 10)
+  # Logs the first excluded request, then again every 10 minutes
   # Set to 0 or negative to log only the first occurrence and disable further logging
-  requests-log-exclude-interval: 100
+  requests-log-exclude-interval: 10
 ```
 
 ## Pattern Types
@@ -83,40 +83,40 @@ INFO  o.restheart.handlers.RequestLogger - POST http://10.0.1.47:8080/api/users 
 INFO  o.restheart.handlers.RequestLogger - GET http://10.0.1.47:8080/ping from /10.0.2.65:34644 => status=200 elapsed=1ms contentLength=140
 ```
 
-### After (Clean Logs with Excluded Request Counting)
+### After (Clean Logs with Time-Based Excluded Request Logging)
 
 ```log
-INFO  o.restheart.handlers.RequestLogger - EXCLUDED REQUEST #1 for pattern '/ping' (will log every 100th occurrence):
+INFO  o.restheart.handlers.RequestLogger - First excluded request for pattern '/ping' (will log again every 10 minutes):
 INFO  o.restheart.handlers.RequestLogger - GET http://10.0.1.47:8080/ping from /10.0.2.65:34640 => status=200 elapsed=2ms contentLength=140
 INFO  o.restheart.handlers.RequestLogger - POST http://10.0.1.47:8080/api/users from /10.0.2.65:34643 => status=201 elapsed=45ms contentLength=256
 
-... (99 /ping requests are silently excluded) ...
+... (all /ping requests are silently excluded for 10 minutes) ...
 
-INFO  o.restheart.handlers.RequestLogger - EXCLUDED REQUEST #100 for pattern '/ping' (total excluded: 100):
+INFO  o.restheart.handlers.RequestLogger - Excluded request for pattern '/ping' (last logged 10 minutes ago):
 INFO  o.restheart.handlers.RequestLogger - GET http://10.0.1.47:8080/ping from /10.0.2.65:44640 => status=200 elapsed=1ms contentLength=140
 
-... (another 99 /ping requests are silently excluded) ...
+... (all /ping requests are silently excluded for another 10 minutes) ...
 
-INFO  o.restheart.handlers.RequestLogger - EXCLUDED REQUEST #200 for pattern '/ping' (total excluded: 200):
+INFO  o.restheart.handlers.RequestLogger - Excluded request for pattern '/ping' (last logged 10 minutes ago):
 INFO  o.restheart.handlers.RequestLogger - GET http://10.0.1.47:8080/ping from /10.0.2.65:54640 => status=200 elapsed=2ms contentLength=140
 ```
 
-## Excluded Request Counting
+## Excluded Request Time-Based Logging
 
-To maintain visibility into the frequency of excluded requests while reducing log noise, the system implements a counting mechanism:
+To maintain visibility into the health of excluded endpoints while reducing log noise, the system implements a time-based logging mechanism:
 
 - **First occurrence**: Always logged with full request details to confirm the pattern is working
-- **Periodic logging**: Every nth occurrence is logged with complete request information (configurable via `requests-log-exclude-interval`)
+- **Periodic logging**: After the configured time interval (in minutes), the next excluded request is logged with complete request information
 - **Full request details**: When logged, excluded requests show the same information as regular requests (method, URL, status, timing, etc.)
-- **Total count**: Shows the cumulative number of excluded requests for each pattern
+- **Time elapsed**: Shows how long since the last excluded request was logged for this pattern
 
 This provides insight into:
 
 - Whether load balancer health checks are working correctly
 - The exact timing and response details of periodic health checks
-- The frequency of monitoring requests
-- Potential issues if excluded request counts are unexpectedly high or low
+- Confirmation that monitoring endpoints are still being called regularly
 - Performance characteristics of excluded endpoints (response times, status codes)
+- The time intervals between health check activities
 
 ## Configuration Edge Cases
 
@@ -129,7 +129,7 @@ logging:
   requests-log-exclude-interval: 0  # Log only the first excluded request
 ```
 
-**Behavior**: Only the first excluded request for each pattern will be logged with the message "logging disabled after first occurrence". Subsequent excluded requests will be counted but not logged.
+**Behavior**: Only the first excluded request for each pattern will be logged with the message "logging disabled for subsequent requests". All subsequent excluded requests will be completely silent.
 
 **Use case**: When you want to confirm that exclusion patterns are working but don't want any periodic logging of excluded requests.
 
@@ -146,16 +146,18 @@ logging:
 
 ### Configuration Value Types
 
-The `requests-log-exclude-interval` accepts numeric values and handles type conversion automatically:
+The `requests-log-exclude-interval` accepts numeric values in minutes and handles type conversion automatically:
 
 ```yaml
 logging:
-  requests-log-exclude-interval: 100    # Integer (automatically converted to Long)
+  requests-log-exclude-interval: 10     # Log every 10 minutes
   # or
-  requests-log-exclude-interval: 100L   # Explicit Long notation (not needed)
+  requests-log-exclude-interval: 5      # Log every 5 minutes
+  # or
+  requests-log-exclude-interval: 60     # Log every hour
 ```
 
-Both formats work correctly thanks to automatic type conversion in the configuration parser.
+Both integer and long formats work correctly thanks to automatic type conversion in the configuration parser.
 
 ## Backward Compatibility
 
@@ -163,4 +165,4 @@ This feature is fully backward compatible. If `requests-log-exclude-patterns` is
 
 ## Performance Impact
 
-The pattern matching is performed only when request logging is enabled (`requests-log-mode > 0`). The matching uses efficient string operations and compiled regex patterns for wildcard matching, so the performance impact is minimal.
+The pattern matching is performed only when request logging is enabled (`requests-log-mode > 0`). The matching uses efficient string operations and compiled regex patterns for wildcard matching. The time-based logging uses a lightweight `ConcurrentHashMap` to track last logged times per pattern, so the performance impact is minimal.

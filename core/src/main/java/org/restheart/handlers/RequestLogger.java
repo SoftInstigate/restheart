@@ -29,7 +29,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.restheart.Bootstrapper;
@@ -56,8 +55,8 @@ public class RequestLogger extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLogger.class);
 
-    // Counters for excluded requests per pattern
-    private static final ConcurrentHashMap<String, AtomicLong> EXCLUDED_COUNTERS = new ConcurrentHashMap<>();
+    // Last logged time for excluded requests per pattern (in milliseconds)
+    private static final ConcurrentHashMap<String, Long> LAST_LOGGED_TIME = new ConcurrentHashMap<>();
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
@@ -118,7 +117,7 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     /**
-     * Handles an excluded request with counting logic
+     * Handles an excluded request with time-based logging
      * 
      * @param exchange
      *            the HTTP exchange
@@ -129,28 +128,31 @@ public class RequestLogger extends PipelinedHandler {
      */
     private void handleExcludedRequest(final HttpServerExchange exchange, final String requestPath,
             final String matchedPattern) {
-        // Get or create counter for this pattern
-        final AtomicLong counter = EXCLUDED_COUNTERS.computeIfAbsent(matchedPattern, k -> new AtomicLong(0));
-        final long count = counter.incrementAndGet();
-
-        // Get the configured log interval
-        final long logInterval = configuration.logging().requestsLogExcludeInterval();
-
-        // Log first occurrence and then every nth occurrence with full request details
-        if (count == 1) {
-            if (logInterval <= 0) {
-                LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (logging disabled after first occurrence):",
-                        count, matchedPattern);
+        final long now = System.currentTimeMillis();
+        final long logIntervalMinutes = configuration.logging().requestsLogExcludeInterval();
+        final long logIntervalMs = logIntervalMinutes * 60 * 1000; // convert minutes to milliseconds
+        
+        final Long lastLogged = LAST_LOGGED_TIME.get(matchedPattern);
+        
+        if (lastLogged == null) {
+            // First occurrence of this pattern
+            if (logIntervalMinutes <= 0) {
+                LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):", matchedPattern);
             } else {
-                LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (will log every {}th occurrence):",
-                        count, matchedPattern, logInterval);
+                LOGGER.info("First excluded request for pattern '{}' (will log again every {} minutes):", 
+                           matchedPattern, logIntervalMinutes);
             }
             dumpExchange(exchange, configuration.logging().requestsLogMode());
-        } else if (logInterval > 0 && count % logInterval == 0) {
-            LOGGER.info("EXCLUDED REQUEST #{} for pattern '{}' (total excluded: {}):",
-                    count, matchedPattern, count);
+            LAST_LOGGED_TIME.put(matchedPattern, now);
+        } else if (logIntervalMinutes > 0 && (now - lastLogged) >= logIntervalMs) {
+            // Time interval has elapsed
+            final long minutesElapsed = (now - lastLogged) / (60 * 1000);
+            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):", 
+                       matchedPattern, minutesElapsed);
             dumpExchange(exchange, configuration.logging().requestsLogMode());
+            LAST_LOGGED_TIME.put(matchedPattern, now);
         }
+        // Otherwise, request is silently excluded
     }
 
     /**

@@ -104,7 +104,7 @@ import ch.qos.logback.classic.Level;
  * </p>
  * <ul>
  * <li>The first excluded request for each pattern</li>
- * <li>Every nth excluded request (configurable via {@code requests-log-exclude-interval})</li>
+ * <li>Every nth minute occurrence is logged with complete request information (configurable via {@code requests-log-exclude-interval})</li>
  * <li>The total count of excluded requests for each pattern</li>
  * </ul>
  * <p>
@@ -132,7 +132,7 @@ import ch.qos.logback.classic.Level;
  * @param requestsLogExcludePatterns
  *            list of request path patterns to exclude from logging
  * @param requestsLogExcludeInterval
- *            interval for logging excluded requests (log every nth excluded request)
+ *            interval in minutes for logging excluded requests (log every nth minute)
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 1.0
@@ -204,7 +204,7 @@ public record Logging(Level logLevel,
     public static final String REQUESTS_LOG_EXCLUDE_PATTERNS = "requests-log-exclude-patterns";
 
     /**
-     * Configuration key for the interval of logging excluded requests.
+     * Configuration key for the interval in minutes of logging excluded requests.
      */
     public static final String REQUESTS_LOG_EXCLUDE_INTERVAL = "requests-log-exclude-interval";
 
@@ -227,11 +227,11 @@ public record Logging(Level logLevel,
      * <li>requests-log-mode: 1 (summary only)</li>
      * <li>full-stacktrace: false</li>
      * <li>requests-log-exclude-patterns: empty list</li>
-     * <li>requests-log-exclude-interval: 100</li>
+     * <li>requests-log-exclude-interval: 10</li>
      * </ul>
      */
     private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true, true, DEFAULT_PACKAGES, false,
-            1, new ArrayList<>(), new ArrayList<>(), 100L);
+            1, new ArrayList<>(), new ArrayList<>(), 10L);
 
     /**
      * Creates a Logging configuration from a configuration map.
