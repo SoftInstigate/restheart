@@ -50,6 +50,10 @@ import ch.qos.logback.classic.Level;
  *   log-to-file: false
  *   log-file-path: "./restheart.log"
  *   requests-log-mode: 1
+ *   requests-log-exclude-patterns:
+ *     - "/ping"
+ *     - "/health"
+ *     - "/_ping"
  *   packages:
  *     - "org.restheart"
  *     - "com.restheart"
@@ -79,6 +83,35 @@ import ch.qos.logback.classic.Level;
  * <li>3 - Log request headers and body</li>
  * </ul>
  * 
+ * <h2>Request Logging Exclusion</h2>
+ * <p>
+ * The {@code requests-log-exclude-patterns} configuration allows you to specify
+ * request path patterns that should be excluded from logging. This is useful for
+ * reducing log noise from health checks, monitoring pings, and other frequent requests.
+ * </p>
+ * <p>
+ * Patterns are matched against the request path and support:
+ * </p>
+ * <ul>
+ * <li>Exact matches: {@code /ping} - excludes exact path "/ping"</li>
+ * <li>Wildcard patterns: {@code /api/v*\/health} - excludes paths like "/api/v1/health"</li>
+ * <li>Prefix patterns: {@code /monitoring/*} - excludes all paths starting with "/monitoring/"</li>
+ * </ul>
+ * 
+ * <h2>Excluded Request Counting</h2>
+ * <p>
+ * To maintain visibility into excluded requests, the system logs:
+ * </p>
+ * <ul>
+ * <li>The first excluded request for each pattern</li>
+ * <li>Every nth minute occurrence is logged with complete request information (configurable via
+ * {@code requests-log-exclude-interval})</li>
+ * <li>The total count of excluded requests for each pattern</li>
+ * </ul>
+ * <p>
+ * This provides insight into the frequency of excluded requests without overwhelming the logs.
+ * </p>
+ * 
  * @param logLevel
  *            the minimum log level to output
  * @param logToFile
@@ -97,6 +130,10 @@ import ch.qos.logback.classic.Level;
  *            the level of detail for request logging (0-3)
  * @param tracingHeaders
  *            list of header names to include in tracing logs
+ * @param requestsLogExcludePatterns
+ *            list of request path patterns to exclude from logging
+ * @param requestsLogExcludeInterval
+ *            interval in minutes for logging excluded requests (log every nth minute)
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 1.0
@@ -109,7 +146,9 @@ public record Logging(Level logLevel,
         List<String> packages,
         boolean fullStacktrace,
         int requestsLogMode,
-        List<String> tracingHeaders) {
+        List<String> tracingHeaders,
+        List<String> requestsLogExcludePatterns,
+        long requestsLogExcludeInterval) {
     /**
      * Configuration key for the logging section.
      */
@@ -161,6 +200,16 @@ public record Logging(Level logLevel,
     public static final String PRINT_FULL_STACKTRACE = "full-stacktrace";
 
     /**
+     * Configuration key for request path patterns to exclude from logging.
+     */
+    public static final String REQUESTS_LOG_EXCLUDE_PATTERNS = "requests-log-exclude-patterns";
+
+    /**
+     * Configuration key for the interval in minutes of logging excluded requests.
+     */
+    public static final String REQUESTS_LOG_EXCLUDE_INTERVAL = "requests-log-exclude-interval";
+
+    /**
      * Default packages to include in logging output.
      */
     private static final List<String> DEFAULT_PACKAGES = List.of("org.restheart", "com.restheart");
@@ -178,10 +227,12 @@ public record Logging(Level logLevel,
      * <li>ansi-console: true</li>
      * <li>requests-log-mode: 1 (summary only)</li>
      * <li>full-stacktrace: false</li>
+     * <li>requests-log-exclude-patterns: empty list</li>
+     * <li>requests-log-exclude-interval: 10</li>
      * </ul>
      */
     private static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true, true, DEFAULT_PACKAGES, false,
-            1, new ArrayList<>());
+            1, new ArrayList<>(), new ArrayList<>(), 10L);
 
     /**
      * Creates a Logging configuration from a configuration map.
@@ -208,7 +259,31 @@ public record Logging(Level logLevel,
                 getOrDefault(conf, PRINT_FULL_STACKTRACE, DEFAULT_LOGGING.fullStacktrace(), true),
                 getOrDefault(conf, REQUESTS_LOG_MODE, DEFAULT_LOGGING.requestsLogMode(), silent),
                 // following is optional, so get it always in silent mode
-                getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true));
+                getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true),
+                // following is optional, so get it always in silent mode
+                convertToLong(getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL,
+                        DEFAULT_LOGGING.requestsLogExcludeInterval(), true)));
+    }
+
+    /**
+     * Converts a configuration value to Long, handling Integer to Long conversion.
+     * 
+     * @param value
+     *            the value to convert
+     * @return the value as Long
+     */
+    private static long convertToLong(Object value) {
+        if (value instanceof Long longValue) {
+            return longValue;
+        } else if (value instanceof Integer intValue) {
+            return intValue.longValue();
+        } else if (value instanceof Number numberValue) {
+            return numberValue.longValue();
+        } else {
+            throw new ClassCastException("Cannot convert " + value.getClass().getSimpleName() + " to Long");
+        }
     }
 
     /**

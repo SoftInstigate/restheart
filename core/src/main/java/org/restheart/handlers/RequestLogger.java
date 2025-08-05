@@ -27,7 +27,10 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
@@ -53,14 +56,35 @@ public class RequestLogger extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLogger.class);
 
-    private final Configuration configuration = Bootstrapper.getConfiguration();
+    // Last logged time for excluded requests per pattern (in milliseconds)
+    private static final ConcurrentHashMap<String, Long> LAST_LOGGED_TIME = new ConcurrentHashMap<>();
+
+    // Cache compiled regex patterns to avoid recompilation
+    private static final ConcurrentHashMap<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
+
+    // Constants for time calculations to avoid repeated multiplication
+    private static final long MINUTES_TO_MS = 60 * 1000;
+
+    // Cache color formatting strings to avoid repeated ansi() object creation
+    private static final String RED_BOLD_FORMAT = ansi().fg(RED).bold().toString();
+    private static final String GREEN_BOLD_FORMAT = ansi().fg(GREEN).bold().toString();
+    private static final String RESET_FORMAT = ansi().reset().toString();
+
+    // Cache immutable configuration values to avoid repeated access
+    private final int requestsLogMode;
+    private final List<String> requestsLogExcludePatterns;
+    private final long requestsLogExcludeInterval;
+    private final long requestsLogExcludeIntervalMs; // Pre-calculated interval in milliseconds
+
+    // Optimization flag: true if there are exclusion patterns to check
+    private final boolean hasExclusionPatterns;
 
     /**
      * Creates a new instance of RequestLoggerHandler
      *
      */
     public RequestLogger() {
-        super();
+        this(null);
     }
 
     /**
@@ -70,6 +94,22 @@ public class RequestLogger extends PipelinedHandler {
      */
     public RequestLogger(final PipelinedHandler next) {
         super(next);
+        // Cache immutable configuration values at startup
+        final Configuration config = Bootstrapper.getConfiguration();
+        if (config != null) {
+            this.requestsLogMode = config.logging().requestsLogMode();
+            this.requestsLogExcludePatterns = config.logging().requestsLogExcludePatterns();
+            this.requestsLogExcludeInterval = config.logging().requestsLogExcludeInterval();
+            this.requestsLogExcludeIntervalMs = requestsLogExcludeInterval * MINUTES_TO_MS; // Pre-calculate
+            this.hasExclusionPatterns = !requestsLogExcludePatterns.isEmpty();
+        } else {
+            // Fallback for testing scenarios where configuration is not available
+            this.requestsLogMode = 0;
+            this.requestsLogExcludePatterns = java.util.Collections.emptyList();
+            this.requestsLogExcludeInterval = 0;
+            this.requestsLogExcludeIntervalMs = 0;
+            this.hasExclusionPatterns = false;
+        }
     }
 
     /**
@@ -79,11 +119,124 @@ public class RequestLogger extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if (configuration.logging().requestsLogMode() > 0 && LOGGER.isInfoEnabled()) {
-            dumpExchange(exchange, configuration.logging().requestsLogMode());
+        if (requestsLogMode > 0 && LOGGER.isInfoEnabled()) {
+            // Optimization: only check for exclusion patterns if any are configured
+            if (hasExclusionPatterns) {
+                // Check if the request path should be excluded from logging
+                final String requestPath = exchange.getRequestPath();
+                final String matchedPattern = findMatchingPattern(requestPath);
+
+                if (matchedPattern != null) {
+                    // Request matches an exclusion pattern
+                    handleExcludedRequest(exchange, requestPath, matchedPattern);
+                } else {
+                    // Normal request - log it
+                    dumpExchange(exchange, requestsLogMode);
+                }
+            } else {
+                // No exclusion patterns configured - always log
+                dumpExchange(exchange, requestsLogMode);
+            }
         }
 
         next(exchange);
+    }
+
+    /**
+     * Finds the first pattern that matches the request path
+     * 
+     * @param requestPath
+     *            the request path to check
+     * @return the matching pattern or null if no match
+     */
+    private String findMatchingPattern(final String requestPath) {
+        // Early exit optimization for empty patterns (should not happen due to hasExclusionPatterns check)
+        if (requestsLogExcludePatterns.isEmpty()) {
+            return null;
+        }
+
+        // Optimize for single pattern case (very common scenario)
+        if (requestsLogExcludePatterns.size() == 1) {
+            final String pattern = requestsLogExcludePatterns.get(0);
+            return matchesPattern(requestPath, pattern)
+                ? pattern
+                : null;
+        }
+
+        // Multiple patterns - use stream for flexibility
+        return requestsLogExcludePatterns.stream()
+                .filter(pattern -> matchesPattern(requestPath, pattern))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Handles an excluded request with time-based logging
+     * 
+     * @param exchange
+     *            the HTTP exchange
+     * @param requestPath
+     *            the request path
+     * @param matchedPattern
+     *            the pattern that matched
+     */
+    private void handleExcludedRequest(final HttpServerExchange exchange, final String requestPath,
+            final String matchedPattern) {
+        final long now = System.currentTimeMillis();
+
+        final Long lastLogged = LAST_LOGGED_TIME.get(matchedPattern);
+
+        if (lastLogged == null) {
+            // First occurrence of this pattern
+            if (requestsLogExcludeInterval <= 0) {
+                LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):",
+                        matchedPattern);
+            } else {
+                LOGGER.info("First excluded request for pattern '{}' (will log again every {} minutes):",
+                        matchedPattern, requestsLogExcludeInterval);
+            }
+            dumpExchange(exchange, requestsLogMode);
+            LAST_LOGGED_TIME.put(matchedPattern, now);
+        } else if (requestsLogExcludeInterval > 0 && (now - lastLogged) >= requestsLogExcludeIntervalMs) {
+            // Time interval has elapsed
+            final long minutesElapsed = (now - lastLogged) / MINUTES_TO_MS;
+            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
+                    matchedPattern, minutesElapsed);
+            dumpExchange(exchange, requestsLogMode);
+            LAST_LOGGED_TIME.put(matchedPattern, now);
+        }
+        // Otherwise, request is silently excluded
+    }
+
+    /**
+     * Checks if a request path matches an exclusion pattern.
+     * Supports exact matches and simple wildcard patterns with '*'.
+     * 
+     * @param requestPath
+     *            the request path to check
+     * @param pattern
+     *            the exclusion pattern
+     * @return true if the path matches the pattern
+     */
+    private boolean matchesPattern(final String requestPath, final String pattern) {
+        if (pattern.equals(requestPath)) {
+            // Exact match
+            return true;
+        }
+
+        // Check for wildcard patterns more efficiently using indexOf instead of contains
+        final int wildcardIndex = pattern.indexOf('*');
+        if (wildcardIndex >= 0) {
+            // Use cached compiled patterns to avoid recompilation
+            final Pattern compiledPattern = PATTERN_CACHE.computeIfAbsent(pattern, p -> {
+                final String regexPattern = p
+                        .replace(".", "\\.")
+                        .replace("*", ".*");
+                return Pattern.compile(regexPattern);
+            });
+            return compiledPattern.matcher(requestPath).matches();
+        }
+        return false;
     }
 
     /**
@@ -103,7 +256,10 @@ public class RequestLogger extends PipelinedHandler {
 
         final var request = JsonProxyRequest.of(exchange);
 
-        final StringBuilder sb = new StringBuilder();
+        // Pre-allocate StringBuilder with appropriate capacity based on log level
+        final StringBuilder sb = new StringBuilder(logLevel == 1
+            ? 256
+            : 2048);
         final long start = request != null && request.getStartTime() != null
             ? request.getStartTime()
             : System.currentTimeMillis();
@@ -150,8 +306,7 @@ public class RequestLogger extends PipelinedHandler {
                     .append("\n");
 
             @SuppressWarnings("removal")
-            final
-            Map<String, Cookie> cookies = exchange.getRequestCookies();
+            final Map<String, Cookie> cookies = exchange.getRequestCookies();
             if (cookies != null) {
                 cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
                     sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue())
@@ -204,7 +359,8 @@ public class RequestLogger extends PipelinedHandler {
         addExchangeCompleteListener(exchange, logLevel, sb, start);
     }
 
-    private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel, final StringBuilder sb,
+    private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel,
+            final StringBuilder sb,
             final long start) {
         exchange.addExchangeCompleteListener(
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
@@ -230,9 +386,9 @@ public class RequestLogger extends PipelinedHandler {
                         sb.append(" =>").append(" status=");
 
                         if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {
-                            sb.append(ansi().fg(RED).bold().a(exchange.getStatusCode()).reset().toString());
+                            sb.append(RED_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
                         } else {
-                            sb.append(ansi().fg(GREEN).bold().a(exchange.getStatusCode()).reset().toString());
+                            sb.append(GREEN_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
                         }
 
                         sb.append(" elapsed=").append(System.currentTimeMillis() - start).append("ms")
@@ -258,8 +414,7 @@ public class RequestLogger extends PipelinedHandler {
                                 .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
 
                         @SuppressWarnings("removal")
-                        final
-                        Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
+                        final Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                         if (cookies1 != null) {
                             cookies1.values().stream().forEach((cookie) -> {
                                 sb.append("            cookie=").append(cookie.getName()).append("=")
@@ -282,9 +437,9 @@ public class RequestLogger extends PipelinedHandler {
                         sb.append("            status=");
 
                         if (exchange.getStatusCode() >= 300) {
-                            sb.append(ansi().fg(RED).bold().a(exchange1.getStatusCode()).reset().toString());
+                            sb.append(RED_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
                         } else {
-                            sb.append(ansi().fg(GREEN).bold().a(exchange1.getStatusCode()).reset().toString());
+                            sb.append(GREEN_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
                         }
 
                         sb.append("\n");
