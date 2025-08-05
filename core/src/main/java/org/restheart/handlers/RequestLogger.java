@@ -184,10 +184,11 @@ public class RequestLogger extends PipelinedHandler {
             final String matchedPattern) {
         final long now = System.currentTimeMillis();
 
-        final Long lastLogged = LAST_LOGGED_TIME.get(matchedPattern);
+        // Use putIfAbsent for thread-safe first-time detection
+        final Long previousValue = LAST_LOGGED_TIME.putIfAbsent(matchedPattern, now);
 
-        if (lastLogged == null) {
-            // First occurrence of this pattern
+        if (previousValue == null) {
+            // This thread was first to add the pattern
             if (requestsLogExcludeInterval <= 0) {
                 LOGGER.info("First excluded request for pattern '{}' (logging disabled for subsequent requests):",
                         matchedPattern);
@@ -196,14 +197,15 @@ public class RequestLogger extends PipelinedHandler {
                         matchedPattern, requestsLogExcludeInterval);
             }
             dumpExchange(exchange, requestsLogMode);
-            LAST_LOGGED_TIME.put(matchedPattern, now);
-        } else if (requestsLogExcludeInterval > 0 && (now - lastLogged) >= requestsLogExcludeIntervalMs) {
-            // Time interval has elapsed
-            final long minutesElapsed = (now - lastLogged) / MINUTES_TO_MS;
-            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
-                    matchedPattern, minutesElapsed);
-            dumpExchange(exchange, requestsLogMode);
-            LAST_LOGGED_TIME.put(matchedPattern, now);
+        } else if (requestsLogExcludeInterval > 0 && (now - previousValue) >= requestsLogExcludeIntervalMs) {
+            // Time interval has elapsed - use replace for atomic update
+            if (LAST_LOGGED_TIME.replace(matchedPattern, previousValue, now)) {
+                final long minutesElapsed = (now - previousValue) / MINUTES_TO_MS;
+                LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
+                        matchedPattern, minutesElapsed);
+                dumpExchange(exchange, requestsLogMode);
+            }
+            // If replace failed, another thread already logged this interval
         }
         // Otherwise, request is silently excluded
     }
