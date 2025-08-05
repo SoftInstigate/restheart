@@ -84,23 +84,7 @@ public class RequestLogger extends PipelinedHandler {
      *
      */
     public RequestLogger() {
-        super();
-        // Cache immutable configuration values at startup
-        final Configuration config = Bootstrapper.getConfiguration();
-        if (config != null) {
-            this.requestsLogMode = config.logging().requestsLogMode();
-            this.requestsLogExcludePatterns = config.logging().requestsLogExcludePatterns();
-            this.requestsLogExcludeInterval = config.logging().requestsLogExcludeInterval();
-            this.requestsLogExcludeIntervalMs = requestsLogExcludeInterval * MINUTES_TO_MS; // Pre-calculate
-            this.hasExclusionPatterns = !requestsLogExcludePatterns.isEmpty();
-        } else {
-            // Fallback for testing scenarios where configuration is not available
-            this.requestsLogMode = 0;
-            this.requestsLogExcludePatterns = java.util.Collections.emptyList();
-            this.requestsLogExcludeInterval = 0;
-            this.requestsLogExcludeIntervalMs = 0;
-            this.hasExclusionPatterns = false;
-        }
+        this(null);
     }
 
     /**
