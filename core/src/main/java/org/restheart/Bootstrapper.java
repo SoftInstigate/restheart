@@ -54,6 +54,8 @@ import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+
+import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.buffers.ThreadAwareByteBufferPool;
 import org.restheart.configuration.Configuration;
@@ -233,8 +235,14 @@ public final class Bootstrapper {
     }
 
     private static void run() {
-        if (!configuration.logging().ansiConsole()) {
+        // install jansi to enable ANSI color support on consoles that lack native support (primarily Windows)
+        if (!configuration.logging().ansiConsole() && !configuration.logging().noColors()) {
             AnsiConsole.systemInstall();
+        }
+
+        // disable colors in file and console logging
+        if (configuration.logging().noColors()) {
+            Ansi.setEnabled(false);
         }
 
         if (!IS_FORKED) {
