@@ -432,6 +432,17 @@ logging:
   #  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
   #  - tracestate        # ^^
 
+  # Request path patterns to exclude from logging
+  requests-log-exclude-patterns:
+  #  - "/ping"              # Exact match for load balancer health checks
+  #  - "/health"            # Exact match for health endpoint
+  #  - "/_ping"             # Exact match for internal ping
+  #  - "/monitoring/*"      # Wildcard: excludes all paths starting with /monitoring/
+  #  - "/api/*/status"      # Wildcard: excludes /api/v1/status, /api/v2/status, etc.
+
+  # Optional: Interval in minutes for logging excluded requests (default: 10)
+  requests-log-exclude-interval: 10
+
 # Metrics see https://restheart.org/docs/metrics
 metrics:
   enabled: true
