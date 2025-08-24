@@ -27,6 +27,8 @@ import java.util.Set;
 
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+
+import org.fusesource.jansi.Ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
@@ -114,25 +116,25 @@ public class BootstrapperUtils {
      */
     public static void initLogging(Configuration configuration, final RESTHeartDaemon d, boolean isForked) {
         LoggingInitializer.setLogLevel(configuration.logging().packages(), configuration.logging().logLevel());
-        LoggingInitializer.applyFullstacktraceOption(configuration.logging().fullStacktrace());
+        LoggingInitializer.applyFullStackTraceAndNoColors(configuration.logging().fullStacktrace(), configuration.logging().noColors());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
-            LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace());
+            LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace(), configuration.logging().noColors());
         } else if (!isForked) {
             if (!configuration.logging().logToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
             if (configuration.logging().logToFile()) {
-                LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace());
+                LoggingInitializer.startFileLogging(configuration.logging().logFilePath(), configuration.logging().fullStacktrace(), configuration.logging().noColors());
             }
         }
     }
 
     public static void logStartMessages(Configuration configuration) {
         var instanceName = getInstanceName(configuration);
-        LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART).reset().toString() + INSTANCE + ansi().fg(RED).bold().a(instanceName).reset().toString());
+	    LOGGER.info(STARTING + "{}" + INSTANCE + "{}", ansi().fg(RED).bold().a(RESTHEART).reset().toString(), ansi().fg(RED).bold().a(instanceName).reset().toString());
         LOGGER.info(VERSION, Configuration.VERSION);
-        LOGGER.debug("Configuration:\n" + configuration.toString());
+        LOGGER.debug("Configuration:\n{}", configuration.toString());
     }
 
     /**

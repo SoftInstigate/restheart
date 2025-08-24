@@ -391,7 +391,8 @@ dateHeader:
 # Options:
 # - log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
 # - log-to-console: true => log messages to the console (default value: true)
-# - ansi-console: use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
+# - ansi-console: whether console supports native ANSI colors; when false, uses jansi library to enable ANSI color support (primarily for Windows compatibility). Only applies to console logging, not file logging.
+# - no-colors: disables all color output in both console and file logging, overriding ansiConsole setting
 # - log-to-file: true => log messages to a file (default value: false)
 # - log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
 # - packages: only messages form these packages are logged, e.g. [ "org.restheart", "com.restheart", "io.undertow", "org.mongodb" ]
@@ -403,6 +404,7 @@ logging:
   log-level: INFO
   log-to-console: true
   ansi-console: true
+  no-colors: false
   log-to-file: false
   log-file-path: restheart.log
   packages: [ "org.restheart", "com.restheart" ]

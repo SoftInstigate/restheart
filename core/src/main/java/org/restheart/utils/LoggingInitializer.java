@@ -32,7 +32,15 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
+
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import org.fusesource.jansi.AnsiConsole;
+import org.fusesource.jansi.io.AnsiOutputStream;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -52,7 +60,7 @@ public class LoggingInitializer {
         var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         var logbackConfigurationFile = System.getProperty("logback.configurationFile");
 
-        packages.stream().forEachOrdered(pack -> {
+        packages.forEach(pack -> {
             var logger = loggerContext.getLogger(pack);
             if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
                 logger.info("Loglevel was set via logback configuration file with level {}", logger.getLevel());
@@ -64,11 +72,12 @@ public class LoggingInitializer {
 
     /**
      * used to change the log pattern for console appender
-     * @param fullStacktrace
+     * @param fullStackTrace
+     * @param noColors
      */
-    public static void applyFullstacktraceOption(boolean fullStacktrace) {
-        // short stack trace is default, nothing to do
-        if (!fullStacktrace) {
+    public static void applyFullStackTraceAndNoColors(boolean fullStackTrace, boolean noColors) {
+        // short stack trace with colors is default, nothing to do
+        if (!fullStackTrace && !noColors) {
             return;
         }
 
@@ -97,7 +106,17 @@ public class LoggingInitializer {
             PatternLayoutEncoder encoder = new PatternLayoutEncoder();
             encoder.setContext(loggerContext);
 
-            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+            if (fullStackTrace) {
+                if (noColors) {
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{full}");
+                } else {
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{full}");
+                }
+            } else {
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{short}");
+                // noColors=false and fullStackTrace=false is default
+            }
+
             encoder.start();
 
             newAppender.setEncoder(encoder);
@@ -112,19 +131,20 @@ public class LoggingInitializer {
      *
      */
     public static void stopConsoleLogging() {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
-
-        Appender<ILoggingEvent> appender = rootLogger.getAppender("STDOUT");
+        var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        var rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+        var appender = rootLogger.getAppender("STDOUT");
 
         appender.stop();
     }
 
     /**
      *
-     * @param logFilePath
+     * @param logFilePath the log file path
+     * @param fullStacktrace true if errors should include full stacktrace
+     * @param noColors {boolean} When true, disables color highlighting in log output
      */
-    public static void startFileLogging(String logFilePath, boolean fullStacktrace) {
+    public static void startFileLogging(String logFilePath, boolean fullStacktrace, boolean noColors) {
         Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
         LoggerContext loggerContext = rootLogger.getLoggerContext();
@@ -147,9 +167,17 @@ public class LoggingInitializer {
         encoder.setContext(loggerContext);
 
         if (fullStacktrace) {
-            encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{full}");
+            if (noColors) {
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{full}");
+            } else {
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{full}");
+            }
         }  else {
-            encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{short}");
+            if (noColors) {
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{short}");
+            } else {
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{short}");
+            }
         }
         encoder.start();
 
