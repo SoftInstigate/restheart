@@ -70,9 +70,6 @@ import static io.undertow.util.RedirectBuilder.UTF_8;
 public class MongoRealmAuthenticator implements Authenticator {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoRealmAuthenticator.class);
 
-    public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
-    public static final String X_FORWARDED_ROLE = "RESTHeart";
-
     private String propId = "_id";
     private String usersDb;
     private String usersCollection;
@@ -86,7 +83,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
     private record CacheKey(String id, String db) {};
     private LoadingCache<CacheKey, MongoRealmAccount> USERS_CACHE = null;
-    private static final transient Cache<CacheKey, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000l, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000l);
+    private static final transient Cache<CacheKey, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000);
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -546,7 +543,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * @param req
+     * @param req the request
      * @return the usersDb taking into account the override-users-db attached parameter
      */
     public String getUsersDb(final Request<?> req) {

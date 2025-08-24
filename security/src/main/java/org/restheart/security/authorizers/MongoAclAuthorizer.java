@@ -119,7 +119,7 @@ public class MongoAclAuthorizer implements Authorizer {
                 this.acl = CacheFactory.createLocalLoadingCache(
                     this.cacheSize,
                     this.cacheExpirePolicy,
-                    this.cacheTTL, role -> this.findRolePermissions(role));
+                    this.cacheTTL, this::findRolePermissions);
             }
         }
 
@@ -133,17 +133,17 @@ public class MongoAclAuthorizer implements Authorizer {
     }
 
     /**
-     * @param request
-     * @return
+     * @param req the request
+     * @return true if request is allowed
      */
     @Override
-    public boolean isAllowed(Request<?> request) {
+    public boolean isAllowed(Request<?> req) {
         // always allow OPTIONS requests
-        if (request.isOptions()) {
+        if (req.isOptions()) {
             return true;
         }
 
-        var exchange = request.getExchange();
+        var exchange = req.getExchange();
 
         if (this.rootRole != null
                 && exchange.getSecurityContext() != null
@@ -175,11 +175,11 @@ public class MongoAclAuthorizer implements Authorizer {
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role -> {
                 ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
-                final var key = new CacheKey(role, aclDb(request));
+                final var key = new CacheKey(role, aclDb(req));
 
                 rolePermissions(key)
                     .stream().anyMatch(permission -> {
-                        var resolved = permission.allow(request);
+                        var resolved = permission.allow(req);
 
                         String marker;
 
@@ -205,11 +205,11 @@ public class MongoAclAuthorizer implements Authorizer {
         // the applicable permission is the ones that
         // resolves the exchange
         roles(exchange)
-            .map(role -> new CacheKey(role, aclDb(request)))
+            .map(role -> new CacheKey(role, aclDb(req)))
             .forEachOrdered(key -> rolePermissions(key)
             .stream()
             .anyMatch(r -> {
-                if (r.allow(request)) {
+                if (r.allow(req)) {
                     permissions.add(r);
                     return true;
                 } else {
