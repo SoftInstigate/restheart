@@ -7,7 +7,7 @@ The interceptor scans the incoming request for any headers that start with X-RH-
 The interceptor also adds all the headers starting with `X-RH-` in the request to the response header `Access-Control-Expose-Headers` for CORS support.
 
 ```bash
-$ http -a admin:secret OPTIONS :8080/coll X-RH-filter:'{"a":1}'
+http -a admin:secret OPTIONS :8080/coll X-RH-filter:'{"a":1}'
 HTTP/1.1 200 OK
 
 Access-Control-Expose-Headers: Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge,X-RH-filter <----
@@ -19,7 +19,7 @@ Access-Control-Expose-Headers: Accept, Accept-Encoding, Authorization, Content-L
 Use the following command to build the plugin. Ensure you are in the project's root directory before executing it:
 
 ```bash
-$ ../mvnw clean package
+../mvnw clean package
 ```
 
 ## Running RESTHeart with the plugin
@@ -33,8 +33,8 @@ To run the RESTHeart with the plugin, use Docker as follows. This command maps t
 Use the following commands to start a MongoDB container and initialize it as a single node replica set.
 
 ```bash
-$ docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
-$ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
+docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
+docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
 ```
 
 **For Subsequent Uses:**
@@ -42,7 +42,7 @@ $ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the Mo
 If you've previously created the MongoDB container and just need to start it again, you can simply use the following command:
 
 ```bash
-$ docker start mongodb
+docker start mongodb
 ```
 
 2) **Launch RESTHeart Container**
@@ -50,7 +50,7 @@ $ docker start mongodb
 Run the RESTHeart container, linking it to the MongoDB container:
 
 ```bash
-$ docker run --name restheart --rm -p "8080:8080"  -v ./target:/opt/restheart/plugins/custom softinstigate/restheart:latest
+docker run --name restheart --rm -p "8080:8080"  -v ./target:/opt/restheart/plugins/custom softinstigate/restheart:latest
 ```
 
 For more information see: [For development: run RESTHeart and open MongoDB with Docker](https://restheart.org/docs/setup-with-docker#for-development-run-restheart-and-open-mongodb-with-docker)
@@ -62,9 +62,9 @@ The MongoService handles the request `GET /coll?filter={"foo":"bar}` using the q
 Using this plugin, you can pass the query using the request header `X-RH-filter`
 
 ```bash
-$ http -a admin:secret PUT :8080/coll # create collection coll
-$ echo '[{"foo":"bar"},{"foo":"zap"}]' | http -a admin:secret :8080/coll # create two documents
-$ http -a admin:secret :8080/coll X-RH-filter:'{"foo":"bar"}' X-RH-keys:'{"foo":1,"_id":0}' # get filtering via x-rh-filter and projecting via x-rh-keys headers
+http -a admin:secret PUT :8080/coll # create collection coll
+echo '[{"foo":"bar"},{"foo":"zap"}]' | http -a admin:secret :8080/coll # create two documents
+http -a admin:secret :8080/coll X-RH-filter:'{"foo":"bar"}' X-RH-keys:'{"foo":1,"_id":0}' # get filtering via x-rh-filter and projecting via x-rh-keys headers
 
 [
     {

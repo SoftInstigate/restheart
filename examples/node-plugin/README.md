@@ -20,8 +20,8 @@ We assume that the latest version of RESTHeart is installed in the directory <RH
 We also assume that the RESTHeart repository is available in the directory <RH_REPO>
 
 ```bash
-$ cd <RH_REPO>
-$ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
+cd <RH_REPO>
+git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 ```
 
 ## Install GraalVM
@@ -29,15 +29,15 @@ $ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 (here we use the brilliant sdkman)
 
 ```bash
-$ sdk install java 21.0.2-graalce
-$ sdk use java 21.0.2-graalce
+sdk install java 21.0.2-graalce
+sdk use java 21.0.2-graalce
 ```
 
 ## Get the script `restheart.js`
 
 ```
-$ cd <RH_HOME>
-$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/polyglot/src/js/restheart.js > restheart.js
+cd <RH_HOME>
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/polyglot/src/js/restheart.js > restheart.js
 ```
 
 Where <RH_HOME> is the RESTHeart installation directory.
@@ -49,7 +49,7 @@ Check [Getting Started with Node.js](https://www.graalvm.org/latest/reference-ma
 ## Run RESTHeart on Node
 
 ```bash
-$ <graalvm_install_dir>/bin/node --jvm --vm.cp=restheart.jar restheart.js
+<graalvm_install_dir>/bin/node --jvm --vm.cp=restheart.jar restheart.js
 ```
 
 ## Deploy the example Node Plugin
@@ -57,7 +57,7 @@ $ <graalvm_install_dir>/bin/node --jvm --vm.cp=restheart.jar restheart.js
 Just copy the directory `node-plugin` into `<RH_HOME>/plugins`:
 
 ```bash
-$ cp -r <RH_REPO>/examples/node-plugin <RH_HOME>/plugins
+cp -r <RH_REPO>/examples/node-plugin <RH_HOME>/plugins
 ```
 
 This plugin includes two services `/hello` and `/promise`
@@ -68,13 +68,13 @@ INFO  o.r.polyglot.PolyglotDeployer - URI /promise bound to service nodePromiseS
 ```
 
 ```bash
-$ http -b :8080/hello
+http -b :8080/hello
 
 Hello World!
 ```
 
 ```bash
-$ http -b :8080/promise
+http -b :8080/promise
 {
     "anything": {
         "args": {},

@@ -17,7 +17,7 @@ var docs = rh.collect(mclient.getDb('restheart').getCollection('foo').find());
 ### option one: create an npm installable module
 
 ```bash
-$ npm install restheart-js
+npm install restheart-js
 ```
 
 ### option two: use an initialization script

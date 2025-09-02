@@ -15,7 +15,7 @@ To tailor the information included in the `serverStatus` report, you can use the
 For instance, if you want to exclude the replica set status (`repl`), metrics, and locks information from the output, you can structure your HTTP request as follows:
 
 ```bash
-$ http -a admin:secret -b :8080/mongoServerStatus?command='{serverStatus: 1, repl: 0, metrics: 0, locks: 0}'
+http -a admin:secret -b :8080/mongoServerStatus?command='{serverStatus: 1, repl: 0, metrics: 0, locks: 0}'
 ```
 
 This request will return a `serverStatus` JSON document, customized to omit the specified sections.
@@ -31,7 +31,7 @@ This service is an excellent example of creating flexible and dynamic Web Servic
 Use the following command to build the plugin. Ensure you are in the project's root directory before executing it:
 
 ```bash
-$ ../mvnw clean package
+../mvnw clean package
 ```
 
 ## Running RESTHeart with the plugin
@@ -45,8 +45,8 @@ To run the RESTHeart with the plugin, use Docker as follows. This command maps t
 Use the following commands to start a MongoDB container and initialize it as a single node replica set.
 
 ```bash
-$ docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
-$ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
+docker run -d --name mongodb -p 27017:27017 mongo --replSet=rs0 # Launch a MongoDB container
+docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the MongoDB instance to work as a single node replica set
 ```
 
 **For Subsequent Uses:**
@@ -54,7 +54,7 @@ $ docker exec mongodb mongosh --quiet --eval "rs.initiate()" # Initialize the Mo
 If you've previously created the MongoDB container and just need to start it again, you can simply use the following command:
 
 ```bash
-$ docker start mongodb
+docker start mongodb
 ```
 
 2) **Launch RESTHeart Container**
@@ -62,7 +62,7 @@ $ docker start mongodb
 Run the RESTHeart container, linking it to the MongoDB container:
 
 ```bash
-$ docker run --name restheart --rm -p "8080:8080"  -v ./target:/opt/restheart/plugins/custom softinstigate/restheart:latest
+docker run --name restheart --rm -p "8080:8080"  -v ./target:/opt/restheart/plugins/custom softinstigate/restheart:latest
 ```
 
 For more information see: [For development: run RESTHeart and open MongoDB with Docker](https://restheart.org/docs/setup-with-docker#for-development-run-restheart-and-open-mongodb-with-docker)
@@ -70,7 +70,7 @@ For more information see: [For development: run RESTHeart and open MongoDB with 
 ## Testing the Service
 
 ```bash
-$ http -a admin:secret -b :8080/mongoServerStatus
+http -a admin:secret -b :8080/mongoServerStatus
 
 {
     "asserts": {
