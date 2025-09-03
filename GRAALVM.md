@@ -5,7 +5,7 @@
 > GraalVM required version: >= 21.0.2-graal
 
 ```bash
-$ sdk install java 21.0.2-graalce
+sdk install java 21.0.2-graalce
 ```
 
 ## build native image
@@ -13,13 +13,13 @@ $ sdk install java 21.0.2-graalce
 Build image for local OS
 
 ```bash
-$ ./mvnw clean package -Pnative -DskipTests
+./mvnw clean package -Pnative -DskipTests
 ```
 
 Build Linux image
 
 ```bash
-$ docker run -it --rm \
+docker run -it --rm \
     -v "$PWD":/opt/app  \
     -v "$HOME"/.m2:/root/.m2 \
     softinstigate/graalvm-maven \
@@ -33,12 +33,12 @@ __Note__: Linux needs to use the `G1` garbage collector. This is obtained by pas
 ### build linux based container
 
 ```bash
-$ RH_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout ) && echo version=$RH_VERSION, major version=${RH_VERSION%.*}
-$ cd core
-$ docker build -f Dockerfile.native . -t softinstigate/restheart:${RH_VERSION}-native -t softinstigate/restheart:latest-native -t softinstigate/restheart:${RH_VERSION%.*}-native
-$ docker push softinstigate/restheart:${RH_VERSION}-native
-$ docker push softinstigate/restheart:latest-native
-$ docker push softinstigate/restheart:${RH_VERSION%.*}-native
+RH_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout ) && echo version=$RH_VERSION, major version=${RH_VERSION%.*}
+cd core
+docker build -f Dockerfile.native . -t softinstigate/restheart:${RH_VERSION}-native -t softinstigate/restheart:latest-native -t softinstigate/restheart:${RH_VERSION%.*}-native
+docker push softinstigate/restheart:${RH_VERSION}-native
+docker push softinstigate/restheart:latest-native
+docker push softinstigate/restheart:${RH_VERSION%.*}-native
 ```
 
 ## start native image
@@ -46,7 +46,7 @@ $ docker push softinstigate/restheart:${RH_VERSION%.*}-native
 Start RESTHeart
 
 ```bash
-$ ./core/target/restheart
+./core/target/restheart
 ```
 
 ## How-tos
@@ -56,16 +56,16 @@ $ ./core/target/restheart
 Start RESTHeart with test configuration and the `native-image-agent`
 
 ```bash
-$ ./mvnw clean package
-$ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
-$ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
+./mvnw clean package
+cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
+java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar -o core/src/test/resources/etc/conf-overrides.yml
 ```
 
 Execute tests, this makes the `native-image-agent` collecting all needed configuration
 
 ```bash
-$ cd core
-$ ../mvnw test surefire:test -DskipITs=false -Dtest=\*IT
+cd core
+../mvnw test surefire:test -DskipITs=false -Dtest=\*IT
 ```
 
 Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
@@ -108,7 +108,7 @@ The following fields must be configured with `allowWrite: true`
 Run
 
 ```bash
-$ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectConfig
+java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectConfig
 ```
 
 And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`

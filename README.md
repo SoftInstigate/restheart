@@ -52,7 +52,7 @@ Before digging the [full documentation](https://restheart.org/docs/), our AI ass
 1. Run both RESTHeart and MongoDB with Docker Compose using the following one-liner:
 
 ```sh
-$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
   --output docker-compose.yml \
   && docker compose up --pull=always --attach restheart
 ```
@@ -60,7 +60,7 @@ $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-c
 1. Call RESTHeart's ping service with [curl](https://curl.se/) to verify it's running:
 
 ```sh
-$ curl -i localhost:8080/ping
+curl -i localhost:8080/ping
 
 HTTP/1.1 200 OK
 Connection: keep-alive
@@ -85,7 +85,7 @@ Date: Fri, 21 Mar 2025 10:27:26 GMT
 4. Start MongoDB on `localhost:27017` and then run RESTHeart with its default configuration:
    
 ```sh
-$ java -jar restheart.jar
+java -jar restheart.jar
 ```
 
 ### Connect to a remote MongoDB
@@ -95,7 +95,7 @@ To connect to a MongoDB server running in a remote host, you can quickly [modify
 Example:
 
 ```sh
-$ RHO='/mclient/connection-string->"mongodb://127.0.0.1"' java -jar restheart.jar
+RHO='/mclient/connection-string->"mongodb://127.0.0.1"' java -jar restheart.jar
 ```
 
 ## Native executables
