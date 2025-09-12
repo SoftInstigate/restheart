@@ -70,7 +70,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             LOGGER.error("Cannot find Change Stream Worker changeStreamKey={}", csKey);
             try {
                 channel.close();
-            } catch (IOException e) {
+            } catch (IOException ignored) {
             }
         }
     });
@@ -122,7 +122,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
             LOGGER.warn("Cannot open change stream, "
                     + "the request does not specify the required variables "
-                    + "in the avars query paramter: {}",
+                    + "in the avars query parameter: {}",
                     ex.getMessage());
 
             next(exchange);
@@ -160,7 +160,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             .filter(q -> q.getUri().equals(changesStreamOperation))
             .findFirst();
 
-        if (!_query.isPresent()) {
+        if (_query.isEmpty()) {
             throw new QueryNotFoundException("Stream " + request.getUnmappedRequestUri() + "  does not exist");
         }
 
@@ -168,8 +168,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
 
-        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
-        return resolvedStages;
+	  return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
     }
 
     /**
@@ -187,9 +186,9 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         var resolvedStages = getResolvedStagesAsList(request);
 
-        var existingChangeSreamWorker$ = ChangeStreamWorkers.getInstance().get(csKey);
+        var existingChangeStreamWorker$ = ChangeStreamWorkers.getInstance().get(csKey);
 
-        if (existingChangeSreamWorker$.isEmpty()) {
+        if (existingChangeStreamWorker$.isEmpty()) {
             var changeStreamWorker = (new ChangeStreamWorker(csKey,
                 resolvedStages,
                 request.getDBName(),

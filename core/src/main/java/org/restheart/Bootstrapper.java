@@ -324,7 +324,7 @@ public final class Bootstrapper {
             System.exit(0);
         }
 
-        // if -t, just print the configuration to sterr and exit
+        // if -t, just print the configuration to stderr and exit
         if (printConfigurationTemplate) {
             var confFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml" : "/restheart-default-config.yml";
 
@@ -525,11 +525,11 @@ public final class Bootstrapper {
         final var allowers = authorizers == null
             ? null
             : authorizers.stream()
-                .filter(a -> a.isEnabled())
+                .filter(PluginRecord::isEnabled)
                 .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
+                .map(PluginRecord::getInstance)
                 .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                .collect(Collectors.toList());
+                .toList();
 
         if (allowers == null || allowers.isEmpty()) {
             LOGGER.warn(ansi().fg(RED).bold().a("No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enabled to allow any request.").reset().toString());
@@ -537,7 +537,7 @@ public final class Bootstrapper {
 
         var builder = Undertow.builder();
 
-        // set the bytee buffer pool
+        // set the byte buffer pool
         // since the undertow default byte buffer is not good for virtual threads
         builder.setByteBufferPool(new ThreadAwareByteBufferPool(
             configuration.coreModule().directBuffers(),
@@ -600,7 +600,7 @@ public final class Bootstrapper {
             autoConfigWorkersSchedulerParallelism ? " (auto detected)" : "", workersSchedulerParallelism,
             configuration.coreModule().workersSchedulerMaxPoolSize());
 
-        builder = builder
+        builder
             .setIoThreads(ioThreads)
             .setWorkerThreads(0) // starting v8, restheart uses virtual threads
             .setDirectBuffers(configuration.coreModule().directBuffers())
@@ -670,7 +670,7 @@ public final class Bootstrapper {
     /**
      * getHandlersPipe
      *
-     * @param identityManager
+     * @param authMechanisms
      * @param authorizers
      * @param tokenManager
      * @return a GracefulShutdownHandler
@@ -681,7 +681,7 @@ public final class Bootstrapper {
             .getRootPathHandler()
             .addPrefixPath("/", new RequestNotManagedHandler());
 
-        LOGGER.debug("Content buffers maximun size is {} bytes", MAX_CONTENT_SIZE);
+        LOGGER.debug("Content buffers maximum size is {} bytes", MAX_CONTENT_SIZE);
 
         plugServices();
 
@@ -741,7 +741,7 @@ public final class Bootstrapper {
             }
 
             if (!uri.startsWith("/")) {
-                LOGGER.error("Cannot start service {}: the configuration property 'uri' must start with /", srv.getName(), uri);
+                LOGGER.error("Cannot start service {}: the configuration property 'uri' must start with /", srv.getName());
 
                 return;
             }
@@ -758,10 +758,9 @@ public final class Bootstrapper {
      * plugProxies
      *
      * @param conf
-     * @param paths
      * @param authMechanisms
-     * @param identityManager
      * @param authorizers
+     * @param tokenManager
      */
     private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
@@ -831,14 +830,9 @@ public final class Bootstrapper {
 
     /**
      * plugStaticResourcesHandlers
-     *
      * plug the static resources specified in the configuration file
      *
      * @param conf
-     * @param pathHandler
-     * @param authenticationMechanism
-     * @param identityManager
-     * @param accessManager
      */
     private static void plugStaticResourcesHandlers(final Configuration conf) {
         if (conf.getStaticResources() == null || conf.getStaticResources().isEmpty()) {
@@ -900,7 +894,7 @@ public final class Bootstrapper {
                 }
 
             } catch (Throwable t) {
-                LOGGER.error("Cannot bind static resource", sr, t);
+                LOGGER.error("Cannot bind static resource {}", sr, t);
             }
         });
     }

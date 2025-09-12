@@ -61,8 +61,7 @@ public class ChangeStreamWorkers {
         if (db == null) {
             return new HashSet<>();
         } else {
-            return CHANGE_STREAM_WORKERS.entrySet().stream()
-                .map(e -> e.getValue())
+            return CHANGE_STREAM_WORKERS.values().stream()
                 .filter(csw -> db.equals(csw.getDbName()))
                 .collect(Collectors.toSet());
         }
@@ -72,16 +71,14 @@ public class ChangeStreamWorkers {
         if (db == null) {
             return new HashSet<>();
         } else {
-            return CHANGE_STREAM_WORKERS.entrySet().stream()
-                .map(e -> e.getValue())
+            return CHANGE_STREAM_WORKERS.values().stream()
                 .filter(csw -> db.equals(csw.getDbName()) && coll.equals(csw.getCollName()))
                 .collect(Collectors.toSet());
         }
     }
 
     public Optional<ChangeStreamWorker> workerOfSession(WebSocketSession session) {
-        return CHANGE_STREAM_WORKERS.entrySet().stream()
-                .map(e -> e.getValue())
+        return CHANGE_STREAM_WORKERS.values().stream()
                 .filter(csw -> csw.websocketSessions().contains(session))
                 .findFirst();
     }
