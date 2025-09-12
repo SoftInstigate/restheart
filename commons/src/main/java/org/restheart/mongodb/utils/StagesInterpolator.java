@@ -22,6 +22,7 @@ package org.restheart.mongodb.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.bson.BsonArray;
@@ -116,7 +117,7 @@ public class StagesInterpolator {
 
         // check optional stages
         stagesWithUnescapedOperators.stream()
-            .map(s -> s.asDocument())
+            .map(BsonValue::asDocument)
             .filter(stage -> optional(stageOperator, stage)).forEach(optionalStage -> {
                 try {
                     checkIfVar(stageOperator, optionalStage);
@@ -125,17 +126,17 @@ public class StagesInterpolator {
                 }
             });
 
-        var stagesWithoutUnboudOptionalStages = stagesWithUnescapedOperators.stream()
-            .map(s -> s.asDocument())
+        var stagesWithoutUnboundOptionalStages = stagesWithUnescapedOperators.stream()
+            .map(BsonValue::asDocument)
             .map(stage -> _stage(stageOperator, stage, values))
-            .filter(stage -> stage != null)
+            .filter(Objects::nonNull)
             .collect(Collectors.toCollection(BsonArray::new));
 
-        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboudOptionalStages, values).asArray();
+        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values).asArray();
 
         var ret = new ArrayList<BsonDocument>();
 
-        resolvedStages.stream().filter(stage -> stage.isDocument()).map(stage -> stage.asDocument()).forEach(ret::add);
+        resolvedStages.stream().filter(BsonValue::isDocument).map(BsonValue::asDocument).forEach(ret::add);
 
         return ret;
     }
@@ -218,7 +219,7 @@ public class StagesInterpolator {
 
             if (!(ifvar.isArray() && (ifvar.asArray().size() == 2 || ifvar.asArray().size() == 3) &&
                 (ifvar.asArray().get(0).isString() ||
-                (ifvar.asArray().get(0).isArray() && ifvar.asArray().get(0).asArray().stream().allMatch(e -> e.isString())) ||
+                (ifvar.asArray().get(0).isArray() && ifvar.asArray().get(0).asArray().stream().allMatch(BsonValue::isString)) ||
                 (ifvar.asArray().get(1).isDocument()) ||
                 (ifvar.asArray().size() > 2 && ifvar.asArray().get(2).isDocument())))) {
                     throw new InvalidMetadataException("Invalid optional stage: " + BsonUtils.toJson(stage));
@@ -248,7 +249,7 @@ public class StagesInterpolator {
             return false;
         }
 
-        var vars = stage.get(stageOperator.name()).asArray().get(0);
+        var vars = stage.get(stageOperator.name()).asArray().getFirst();
 
         if (vars.isString()) {
             return BsonUtils.get(avars, vars.asString().getValue()).isPresent();
@@ -332,7 +333,7 @@ public class StagesInterpolator {
      */
     public static void injectAvars(MongoRequest request, BsonDocument avars) {
         // add @page, @pagesize, @limit and @skip to avars to allow handling
-        // paging in the aggragation via default page and pagesize qparams
+        // paging in the aggregation via default page and pagesize query params
         avars.put("@page", new BsonInt32(request.getPage()));
         avars.put("@pagesize", new BsonInt32(request.getPagesize()));
         avars.put("@limit", new BsonInt32(request.getPagesize()));

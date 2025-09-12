@@ -156,7 +156,7 @@ public class ChangeStreamWorker implements Runnable {
                     this.send(session, msg);
                     LOGGER.trace("Change event sent to WebSocket session {}", session.getId());
                 } catch (Throwable t) {
-                    LOGGER.error("Error sending change event to WebSocket session ", session.getId(), t);
+                    LOGGER.error("Error sending change event to WebSocket session {}", session.getId(), t);
                 }
             }));
         });
@@ -188,7 +188,7 @@ public class ChangeStreamWorker implements Runnable {
 
     /**
      * removes the workers form the list of active workers and
-     * close all its websocket sesssions and interrupt the handling virtual thread
+     * close all its websocket sessions and interrupt the handling virtual thread
      *
      * on next change event, the thread will terminate since it has no active websocket sesssions
      */
@@ -202,8 +202,7 @@ public class ChangeStreamWorker implements Runnable {
     }
 
     void closeAllWebSocketSessions() {
-        websocketSessions.stream()
-            .collect(Collectors.toSet())
+	  new HashSet<>(websocketSessions)
             .forEach(wsk -> {
                 try {
                     wsk.close();
@@ -224,7 +223,7 @@ public class ChangeStreamWorker implements Runnable {
                 .watch(resolvedStages)
                 .fullDocument(FullDocument.UPDATE_LOOKUP);
         }  catch(Throwable e) {
-            LOGGER.warn("Error trying to start the stream: " + e.getMessage());
+            LOGGER.warn("Error trying to start the stream: {}", e.getMessage(), e);
             throw e;
         }
     }

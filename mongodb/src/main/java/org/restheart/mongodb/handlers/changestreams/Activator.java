@@ -66,7 +66,7 @@ public class Activator implements Initializer {
             // Add Change Stream handler
             dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET, new GetChangeStreamHandler());
         } catch (Throwable t) {
-            LOGGER.error("Error, change streams disabled {}", t);
+            LOGGER.error("Error, change streams disabled {}", t.getMessage(), t);
         }
     }
 }

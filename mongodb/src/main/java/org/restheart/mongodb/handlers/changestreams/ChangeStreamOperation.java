@@ -103,7 +103,7 @@ public class ChangeStreamOperation {
                     + "; must be an array of stage objects");
         }
 
-        // chekcs that the _stages array elements are all documents
+        // checks that the _stages array elements are all documents
         if (_stages.asArray().stream()
                 .anyMatch(s -> !s.isDocument())) {
             throw new InvalidMetadataException("query /" + this.uri
