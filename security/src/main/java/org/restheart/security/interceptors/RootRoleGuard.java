@@ -81,7 +81,7 @@ public class RootRoleGuard implements MongoInterceptor {
             .map(a -> (MongoAclAuthorizer) a)
             .findFirst();
 
-        if (_authorizer.isPresent() && _authenticator.isPresent()) {
+        if (_authorizer.isPresent() && _authorizer.get().rootRole() != null && _authenticator.isPresent()) {
             var authorizer = _authorizer.get();
             var authenticator = _authenticator.get();
             this.rootRole = authorizer.rootRole();
