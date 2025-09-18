@@ -84,7 +84,7 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
     public PooledByteBuffer[] getBuffer() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Request content is not available. "
-                    + "Add a Request Inteceptor with "
+                    + "Add a Request Interceptor with "
                     + "@RegisterPlugin(requiresContent = true) to make "
                     + "the content available.");
         }

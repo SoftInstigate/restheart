@@ -80,62 +80,6 @@ public class MongoRequestContentInjector {
     }
 
     /**
-     * Checks the _id in POST requests; it cannot be a string having a special
-     * meaning e.g _null, since the URI /db/coll/_null refers to the document
-     * with _id: null
-     *
-     * @param content
-     * @return null if ok, or the first not valid id
-     */
-    public static String checkReservedId(BsonValue content) {
-        if (content == null) {
-            return null;
-        } else if (content.isDocument()) {
-            var id = content.asDocument().get("_id");
-
-            if (id == null || !id.isString()) {
-                return null;
-            }
-
-            var _id = id.asString().getValue();
-
-            if (MAX_KEY_ID.equalsIgnoreCase(_id)
-                    || MIN_KEY_ID.equalsIgnoreCase(_id)
-                    || NULL_KEY_ID.equalsIgnoreCase(_id)
-                    || TRUE_KEY_ID.equalsIgnoreCase(_id)
-                    || FALSE_KEY_ID.equalsIgnoreCase(_id)) {
-                return _id;
-            } else {
-                return null;
-            }
-        } else if (content.isArray()) {
-            var arrayContent = content.asArray();
-
-            var objs = arrayContent.getValues().iterator();
-
-            String ret = null;
-
-            while (objs.hasNext()) {
-                var obj = objs.next();
-
-                if (obj.isDocument()) {
-                    ret = checkReservedId(obj);
-                    if (ret != null) {
-                        break;
-                    }
-                } else {
-                    LOGGER.warn("element of content array is not an object");
-                }
-            }
-
-            return ret;
-        }
-
-        LOGGER.warn("content is not an object nor an array");
-        return null;
-    }
-
-    /**
      * Search the request for a field named 'metadata' (or 'properties') which
      * must contain valid JSON
      *
@@ -265,23 +209,25 @@ public class MongoRequestContentInjector {
 
     private static BsonValue injectBson(HttpServerExchange exchange) throws BadRequestException, IOException {
         BsonValue content;
-        final String contentString;
+        final String rawBody;
 
         var bar = ByteArrayProxyRequest.of(exchange);
 
         if (bar.isContentAvailable()) {
             // if content has been already injected
             // get it from MongoRequest.readContent()
-            contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
+            rawBody = new String(bar.readContent(), StandardCharsets.UTF_8);
         } else {
             // otherwise use ChannelReader
-            contentString = ChannelReader.readString(exchange);
+            rawBody = ChannelReader.readString(exchange);
         }
 
+        MongoRequest.of(exchange).setRawBody(rawBody);
+
         // parse the json content
-        if (contentString != null && !contentString.isEmpty()) { // check content type
+        if (rawBody != null && !rawBody.isEmpty()) { // check content type
             try {
-                content = BsonUtils.parse(contentString);
+                content = BsonUtils.parse(rawBody);
 
                 if (content != null && !content.isDocument() && !content.isArray()) {
                     throw new BadRequestException("request data must be either a json object or an array, got " + content.getBsonType().name());
@@ -306,7 +252,7 @@ public class MongoRequestContentInjector {
         // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
-             return injectMultiparForFiles(exchange, request, response);
+             return injectMultipartForFiles(exchange, request, response);
         }
 
         var parser = parser(exchange);
@@ -318,7 +264,7 @@ public class MongoRequestContentInjector {
         var formData = parser.parseBlocking();
 
         var ret = new BsonDocument();
-        boolean errored[] = {false};
+        boolean[] errored = {false};
 
         StreamSupport.stream(formData.spliterator(), false)
             .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
@@ -350,7 +296,7 @@ public class MongoRequestContentInjector {
         return errored[0] ? null : ret;
     }
 
-    private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
+    private static BsonValue injectMultipartForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
         BsonValue content;
 
         var parser = parser(exchange);
