@@ -120,6 +120,7 @@ public class BsonRequest extends ServiceRequest<BsonValue> implements RawBodyAcc
     public BsonValue parseContent() throws IOException, BadRequestException {
         try {
             rawBody = ChannelReader.readString(wrapped);
+            setRawBody(rawBody);
             return BsonUtils.parse(rawBody);
         } catch (JsonParseException jpe) {
             throw new BadRequestException(jpe.getMessage(), jpe);
@@ -140,5 +141,9 @@ public class BsonRequest extends ServiceRequest<BsonValue> implements RawBodyAcc
     @Override
     public final String getRawBody() {
         return rawBody;
+    }
+
+    void setRawBody(String rawBody) {
+        this.rawBody = rawBody;
     }
 }

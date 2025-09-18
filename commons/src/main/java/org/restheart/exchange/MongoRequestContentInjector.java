@@ -30,13 +30,8 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
-import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
-import static org.restheart.exchange.ExchangeKeys.MIN_KEY_ID;
-import static org.restheart.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.PROPERTIES;
-import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys._ID;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
@@ -121,74 +116,6 @@ public class MongoRequestContentInjector {
         return contentTypes != null
                 && !contentTypes.isEmpty()
                 && contentTypes.stream().anyMatch(ct -> ct.startsWith(Exchange.FORM_URLENCODED) || ct.startsWith(Exchange.MULTIPART));
-    }
-
-    /**
-     * Validates that document IDs do not use reserved string values.
-     * <p>
-     * This method checks that document _id fields in POST requests do not use
-     * string values that have special meaning in RESTHeart URL paths. For example,
-     * the string "_null" is reserved because the URI "/db/coll/_null" refers to
-     * the document with _id: null, not _id: "_null".
-     * </p>
-     * <p>
-     * Reserved ID strings include:
-     * <ul>
-     *   <li>"_null" - represents null document ID</li>
-     *   <li>"_true" and "_false" - represent boolean document IDs</li>
-     *   <li>"_MaxKey" and "_MinKey" - represent MongoDB special key types</li>
-     * </ul>
-     * </p>
-     *
-     * @param content the BSON content to validate (document or array of documents)
-     * @return null if all IDs are valid, or the first invalid ID string found
-     */
-    public static String checkReservedId(BsonValue content) {
-        if (content == null) {
-            return null;
-        } else if (content.isDocument()) {
-            var id = content.asDocument().get("_id");
-
-            if (id == null || !id.isString()) {
-                return null;
-            }
-
-            var _id = id.asString().getValue();
-
-            if (MAX_KEY_ID.equalsIgnoreCase(_id)
-                    || MIN_KEY_ID.equalsIgnoreCase(_id)
-                    || NULL_KEY_ID.equalsIgnoreCase(_id)
-                    || TRUE_KEY_ID.equalsIgnoreCase(_id)
-                    || FALSE_KEY_ID.equalsIgnoreCase(_id)) {
-                return _id;
-            } else {
-                return null;
-            }
-        } else if (content.isArray()) {
-            var arrayContent = content.asArray();
-
-            var objs = arrayContent.getValues().iterator();
-
-            String ret = null;
-
-            while (objs.hasNext()) {
-                var obj = objs.next();
-
-                if (obj.isDocument()) {
-                    ret = checkReservedId(obj);
-                    if (ret != null) {
-                        break;
-                    }
-                } else {
-                    LOGGER.warn("element of content array is not an object");
-                }
-            }
-
-            return ret;
-        }
-
-        LOGGER.warn("content is not an object nor an array");
-        return null;
     }
 
     /**
@@ -310,12 +237,12 @@ public class MongoRequestContentInjector {
                 throw new BadRequestException("request content must be a Json object");
             }
 
-            if (!content.asArray().stream().anyMatch(_doc -> {
+            if (content.asArray().stream().noneMatch(_doc -> {
                 if (_doc.isDocument()) {
                     var _id = _doc.asDocument().get(_ID);
 
                     if (_id != null && _id.isArray()) {
-                        throw new BadRequestException("the type of _id in request data is not supported: " + (_id == null ? "" : _id.getBsonType().name()));
+                        throw new BadRequestException("the type of _id in request data is not supported: " + _id.getBsonType().name());
                     }
                     return true;
                 } else {
@@ -371,23 +298,25 @@ public class MongoRequestContentInjector {
      */
     private static BsonValue injectBson(HttpServerExchange exchange) throws BadRequestException, IOException {
         BsonValue content;
-        final String contentString;
+        final String rawBody;
 
         var bar = ByteArrayProxyRequest.of(exchange);
 
         if (bar.isContentAvailable()) {
             // if content has been already injected
             // get it from MongoRequest.readContent()
-            contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
+            rawBody = new String(bar.readContent(), StandardCharsets.UTF_8);
         } else {
             // otherwise use ChannelReader
-            contentString = ChannelReader.readString(exchange);
+            rawBody = ChannelReader.readString(exchange);
         }
 
+        MongoRequest.of(exchange).setRawBody(rawBody);
+
         // parse the json content
-        if (contentString != null && !contentString.isEmpty()) { // check content type
+        if (rawBody != null && !rawBody.isEmpty()) { // check content type
             try {
-                content = BsonUtils.parse(contentString);
+                content = BsonUtils.parse(rawBody);
 
                 if (content != null && !content.isDocument() && !content.isArray()) {
                     throw new BadRequestException("request data must be either a json object or an array, got " + content.getBsonType().name());
@@ -424,7 +353,7 @@ public class MongoRequestContentInjector {
      * <p>
      * This method handles multipart form data by determining if it's a file upload operation
      * (for GridFS) or a regular document operation with form fields. For file operations,
-     * it delegates to {@link #injectMultiparForFiles(HttpServerExchange, MongoRequest, MongoResponse)}.
+     * it delegates to {@link #injectMultipartForFiles(HttpServerExchange, MongoRequest, MongoResponse)}.
      * For regular operations, it processes form fields and attempts to parse them as JSON.
      * </p>
      * <p>
@@ -448,7 +377,7 @@ public class MongoRequestContentInjector {
         // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
-             return injectMultiparForFiles(exchange, request, response);
+             return injectMultipartForFiles(exchange, request, response);
         }
 
         var parser = parser(exchange);
@@ -460,7 +389,7 @@ public class MongoRequestContentInjector {
         var formData = parser.parseBlocking();
 
         var ret = new BsonDocument();
-        boolean errored[] = {false};
+        boolean[] errored = {false};
 
         StreamSupport.stream(formData.spliterator(), false)
             .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
@@ -516,7 +445,7 @@ public class MongoRequestContentInjector {
      * @throws BadRequestException if no form parser is available, metadata is invalid, or no file is present
      * @throws IOException if there is an error accessing the file input stream
      */
-    private static BsonValue injectMultiparForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
+    private static BsonValue injectMultipartForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
         BsonValue content;
 
         var parser = parser(exchange);
