@@ -527,11 +527,11 @@
           <scope>runtime</scope>
         </dependency>
         <!-- uncomment to add test plugins to the native image -->
-        <!-- <dependency>
+        <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-test-plugins</artifactId>
           <version>${project.version}</version>
-        </dependency> -->
+        </dependency>
       </dependencies>
       <build>
         <plugins>

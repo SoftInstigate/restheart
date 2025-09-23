@@ -2,7 +2,12 @@
   "reflection": [
     {
       "type": "graphql.schema.GraphQLScalarType",
-      "fields": [{ "name": "coercing", "allowWrite": true }]
+      "fields": [
+        {
+          "name": "coercing",
+          "allowWrite": true
+        }
+      ]
     },
     {
       "type": "org.restheart.graphql.models.QueryMapping",
