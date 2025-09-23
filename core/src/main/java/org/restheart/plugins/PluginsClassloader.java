@@ -109,7 +109,8 @@ public class PluginsClassloader extends URLClassLoader {
                         LambdaUtils.throwsSneakyException(murle);
                         return null;
                     }
-                }).toArray(size -> new URL[size]);
+                }).toArray(URL[]::new);
+
             try {
                 SINGLETON = new PluginsClassloader(urls);
             } catch(IOException ioe) {

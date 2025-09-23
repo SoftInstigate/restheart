@@ -28,6 +28,7 @@ package org.restheart.graal;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.hosted.Feature;
@@ -53,7 +54,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
 
         PluginsScanner.allPluginsClassNames().stream()
             .map(this::clazz)
-            .filter(c -> c != null)
+            .filter(Objects::nonNull)
             .forEach(this::registerAll);
     }
 
@@ -93,7 +94,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
     private Field[] annotated(Field... fields) {
         var list = Arrays.stream(fields)
                 .filter((f -> f.getAnnotation(Inject.class) != null))
-                .collect(Collectors.toList());
+                .toList();
 
         return list.toArray(Field[]::new);
     }
@@ -107,7 +108,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
     private Method[] annotated(Method... methods) {
         var list = Arrays.stream(methods)
                 .filter(m -> m.getAnnotation(OnInit.class) != null)
-                .collect(Collectors.toList());
+                .toList();
 
         return list.toArray(Method[]::new);
     }

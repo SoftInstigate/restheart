@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.github.classgraph.*;
 import org.restheart.Bootstrapper;
 import org.restheart.graal.ImageInfo;
 import org.restheart.plugins.security.AuthMechanism;
@@ -44,12 +45,6 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.github.classgraph.AnnotationEnumValue;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
 
 /**
  * Scans and discovers all RESTHeart plugins in the classpath and plugin directories.
@@ -159,7 +154,7 @@ public class PluginsScanner {
      * It must be called during the build phase and uses the PluginsClassloader
      * to scan for plugins.
      * 
-     * @throws IllegalStateException if called outside of the build-time context
+     * @throws IllegalStateException if called outside the build-time context
      * @see <a href="https://github.com/SoftInstigate/classgraph-on-graalvm">ClassGraph on GraalVM</a>
      */
     // ClassGraph.scan() at class initialization time to support native image
@@ -176,17 +171,15 @@ public class PluginsScanner {
         final var cg = new ClassGraph();
 
         final var classGraph = cg
-                .disableDirScanning() // added for GraalVM
-                .disableNestedJarScanning() // added for GraalVM
-                .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build
-                                                                        // fails
-                .ignoreParentClassLoaders()
-                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
-                .initializeLoadedClasses();
+            .disableDirScanning() // added for GraalVM
+            .disableNestedJarScanning() // added for GraalVM
+            .disableRuntimeInvisibleAnnotations() // added for GraalVM
+            .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
+            .ignoreParentClassLoaders()
+            .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
+            .initializeLoadedClasses();
 
-        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg
-                .getClasspathURIs().stream().map(uri -> uri.getPath()).collect(Collectors.joining(File.pathSeparator)));
+        System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(URI::getPath).collect(Collectors.joining(File.pathSeparator)));
 
         try (var scanResult = classGraph.scan(Runtime.getRuntime().availableProcessors())) {
             INITIALIZERS.addAll(collectPlugins(scanResult, INITIALIZER_CLASS_NAME));
@@ -211,14 +204,14 @@ public class PluginsScanner {
      */
     public static List<String> allPluginsClassNames() {
         final var ret = new ArrayList<String>();
-        INITIALIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        AUTH_MECHANISMS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        AUTHORIZERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        TOKEN_MANAGERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        AUTHENTICATORS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        INTERCEPTORS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        SERVICES.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
-        PROVIDERS.stream().map(p -> p.clazz()).forEachOrdered(ret::add);
+        INITIALIZERS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        AUTH_MECHANISMS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        AUTHORIZERS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        TOKEN_MANAGERS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        AUTHENTICATORS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        INTERCEPTORS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        SERVICES.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        PROVIDERS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
 
         return ret;
     }
@@ -228,7 +221,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of provider plugin descriptors
      */
-    static final List<PluginDescriptor> providers() {
+    static List<PluginDescriptor> providers() {
         return PROVIDERS;
     }
 
@@ -237,7 +230,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of initializer plugin descriptors
      */
-    static final List<PluginDescriptor> initializers() {
+    static List<PluginDescriptor> initializers() {
         return INITIALIZERS;
     }
 
@@ -246,7 +239,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of authentication mechanism plugin descriptors
      */
-    static final List<PluginDescriptor> authMechanisms() {
+    static List<PluginDescriptor> authMechanisms() {
         return AUTH_MECHANISMS;
     }
 
@@ -255,7 +248,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of authorizer plugin descriptors
      */
-    static final List<PluginDescriptor> authorizers() {
+    static List<PluginDescriptor> authorizers() {
         return AUTHORIZERS;
     }
 
@@ -264,7 +257,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of token manager plugin descriptors
      */
-    static final List<PluginDescriptor> tokenManagers() {
+    static List<PluginDescriptor> tokenManagers() {
         return TOKEN_MANAGERS;
     }
 
@@ -273,7 +266,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of authenticator plugin descriptors
      */
-    static final List<PluginDescriptor> authenticators() {
+    static List<PluginDescriptor> authenticators() {
         return AUTHENTICATORS;
     }
 
@@ -282,7 +275,7 @@ public class PluginsScanner {
      * 
      * @return an unmodifiable list of interceptor plugin descriptors
      */
-    static final List<PluginDescriptor> interceptors() {
+    static List<PluginDescriptor> interceptors() {
         return INTERCEPTORS;
     }
 
@@ -295,9 +288,6 @@ public class PluginsScanner {
         return SERVICES;
     }
 
-    /**
-     * @param type the class of the plugin , e.g. Initializer.class
-     */
     private static List<PluginDescriptor> collectPlugins(final ScanResult scanResult, final String className) {
         final var ret = new ArrayList<PluginDescriptor>();
 
@@ -319,7 +309,7 @@ public class PluginsScanner {
 
         final var plugins = registeredPlugins.intersect(listOfType);
 
-        return plugins.stream().map(c -> descriptor(c)).collect(Collectors.toList());
+        return plugins.stream().map(PluginsScanner::descriptor).collect(Collectors.toList());
     }
 
     /**
@@ -327,20 +317,18 @@ public class PluginsScanner {
     */
     private static List<PluginDescriptor> collectProviders(final ScanResult scanResult) {
         final var ret = new ArrayList<PluginDescriptor>();
-
         final var providers = scanResult.getClassesImplementing(PROVIDER_CLASS_NAME);
 
         if (providers == null || providers.isEmpty()) {
             return ret;
         }
 
-        return providers.stream().map(c -> descriptor(c)).collect(Collectors.toList());
+        return providers.stream().map(PluginsScanner::descriptor).collect(Collectors.toList());
     }
 
     private static PluginDescriptor descriptor(final ClassInfo pluginClassInfo) {
         final var clazz = pluginClassInfo.getName();
-        final var name = pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream()
-                .filter(p -> "name".equals(p.getName())).map(p -> p.getValue()).findAny().get().toString();
+        final var name = pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME).getParameterValues().stream().filter(p -> "name".equals(p.getName())).map(AnnotationParameterValue::getValue).findAny().get().toString();
 
         return new PluginDescriptor(name, clazz, isEnabled(name, pluginClassInfo), collectInjections(pluginClassInfo));
     }
@@ -368,18 +356,16 @@ public class PluginsScanner {
             return true;
         } else {
             final var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME)
-                    .getParameterValues().stream()
-                    .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
+                .getParameterValues().stream()
+                .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
             final Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
             return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
         }
     }
 
-    private static ArrayList<InjectionDescriptor> collectMethodInjections(final ClassInfo pluginClassInfo,
-            final Class<?> clazz) {
+    private static ArrayList<InjectionDescriptor> collectMethodInjections(final ClassInfo pluginClassInfo, final Class<?> clazz) {
         final var ret = new ArrayList<InjectionDescriptor>();
-
         final var mil = pluginClassInfo.getDeclaredMethodInfo();
 
         for (final var mi : mil) {
@@ -406,10 +392,8 @@ public class PluginsScanner {
         return ret;
     }
 
-    private static ArrayList<InjectionDescriptor> collectFieldInjections(final ClassInfo pluginClassInfo,
-            final Class<?> clazz) {
+    private static ArrayList<InjectionDescriptor> collectFieldInjections(final ClassInfo pluginClassInfo, final Class<?> clazz) {
         final var ret = new ArrayList<InjectionDescriptor>();
-
         final var fil = pluginClassInfo.getDeclaredFieldInfo();
 
         for (final var fi : fil) {
@@ -424,8 +408,7 @@ public class PluginsScanner {
                 }
 
                 try {
-                    final var fieldClass = PluginsClassloader.getInstance()
-                            .loadClass(fi.getTypeDescriptor().toString());
+                    final var fieldClass = PluginsClassloader.getInstance().loadClass(fi.getTypeDescriptor().toString());
                     ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
                 } catch (final ClassNotFoundException cnfe) {
                     // should not happen
@@ -639,7 +622,7 @@ public class PluginsScanner {
         /**
          * Determines whether the given JAR file is classified as a library.
          * A JAR is considered a library if it is located within a subdirectory of the
-         * plugins direcory
+         * plugins directory
          * whose relative path contains "lib", "-lib", or "_lib" as part of the
          * directory name.
          *

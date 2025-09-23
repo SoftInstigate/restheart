@@ -153,7 +153,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * force plugin objects instantiation
      */
     public void instantiateAll() {
-        // Explicit init PluginsClassloader hen running as a native image
+        // Explicit init PluginsClassloader when running as a native image
         if (ImageInfo.isExecutable() && !PluginsClassloader.isInitialized()) {
             PluginsClassloader.init(new URL[0]);
         }

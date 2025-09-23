@@ -298,7 +298,7 @@ public class PluginsFactory {
      * @throws IllegalStateException if called before providers have been instantiated
      */
     static Map<String, Class<?>> providersTypes() {
-        if (!PluginsScanner.providers().isEmpty() && providersTypes.keySet().isEmpty()) {
+        if (!PluginsScanner.providers().isEmpty() && providersTypes.isEmpty()) {
             throw new IllegalStateException("providersTypes are available only after providers instantiation happening in method providers()");
         }
         return providersTypes;

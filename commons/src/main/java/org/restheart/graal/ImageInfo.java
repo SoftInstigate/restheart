@@ -47,7 +47,7 @@ public class ImageInfo {
      * Cached reference to the GraalVM ImageInfo class, if available.
      * Will be null when running in a standard JVM.
      */
-    private static Class imageInfoClass = null;
+    private static Class<?> imageInfoClass = null;
 
     static {
         try {
@@ -74,7 +74,6 @@ public class ImageInfo {
      * @see #inImageRuntimeCode()
      * @see #inImageCode()
      */
-    @SuppressWarnings("unchecked")
     public static boolean inImageBuildtimeCode() {
         if (imageInfoClass == null) {
             return false;
@@ -105,7 +104,6 @@ public class ImageInfo {
      * @see #inImageBuildtimeCode()
      * @see #inImageRuntimeCode()
      */
-    @SuppressWarnings("unchecked")
     public static boolean inImageCode() {
         if (imageInfoClass == null) {
             return false;
@@ -136,7 +134,6 @@ public class ImageInfo {
      * @see #inImageBuildtimeCode()
      * @see #inImageCode()
      */
-    @SuppressWarnings("unchecked")
     public static boolean inImageRuntimeCode() {
         if (imageInfoClass == null) {
             return false;
@@ -163,7 +160,6 @@ public class ImageInfo {
      *         {@code false} if it's a shared library or running in a JVM
      * @see #isSharedLibrary()
      */
-    @SuppressWarnings("unchecked")
     public static boolean isExecutable() {
         if (imageInfoClass == null) {
             return false;
@@ -191,7 +187,6 @@ public class ImageInfo {
      *         {@code false} if it's an executable or running in a JVM
      * @see #isExecutable()
      */
-    @SuppressWarnings("unchecked")
     public static boolean isSharedLibrary() {
         if (imageInfoClass == null) {
             return false;
