@@ -1,4 +1,4 @@
-ARG ECLIPSE_TEMURIN_JRE=21-jre
+ARG ECLIPSE_TEMURIN_JRE=25-jre
 FROM eclipse-temurin:${ECLIPSE_TEMURIN_JRE}
 
 RUN apt-get update && \
