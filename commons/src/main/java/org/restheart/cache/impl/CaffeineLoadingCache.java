@@ -24,15 +24,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.restheart.utils.ThreadsUtils;
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import org.jspecify.annotations.NonNull;
 
-import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
@@ -44,14 +42,12 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * 
  * <p>Key features include:</p>
  * <ul>
- *   <li>Automatic asynchronous loading of missing values using virtual threads</li>
  *   <li>Bulk loading support for efficient batch operations</li>
  *   <li>Size-based eviction with LRU policy</li>
  *   <li>Time-based expiration (after write or after access)</li>
- *   <li>Non-blocking operations with CompletableFuture-based async loading</li>
  * </ul>
  * 
- * <p>The loader function is executed asynchronously using virtual threads, providing excellent
+ * <p>The loader function is executed in current virtual threads, providing excellent
  * performance for I/O-bound operations such as database queries or web service calls. Multiple
  * concurrent requests for the same key will result in only one loader invocation, with other
  * threads waiting for the result.</p>
@@ -77,15 +73,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  * @param <V> the class of the values (is Optional-ized).
  */
 public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private static final Executor virtualThreadsExecutor = ThreadsUtils.virtualThreadsExecutor();
-    private final AsyncLoadingCache<K, Optional<V>> wrapped;
+    private final LoadingCache<K, Optional<V>> wrapped;
 
     /**
      * Creates a new CaffeineLoadingCache with the specified configuration and loader function.
      * 
-     * <p>This constructor creates an asynchronous loading cache that automatically computes values
-     * for missing keys using the provided loader function. The loader is executed asynchronously
-     * using virtual threads, providing non-blocking behavior.</p>
+     * <p>This constructor creates a loading cache that automatically computes values
+     * for missing keys using the provided loader function. The loader is executed in current
+     * virtual thread, providing non-blocking behavior.</p>
      * 
      * <p>The cache enforces size limits and supports time-based expiration policies. When the size
      * limit is reached, the least recently used entries are evicted.</p>
@@ -108,23 +103,22 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
         }
 
         wrapped = builder
-            .executor(virtualThreadsExecutor)
-            .buildAsync(new AsyncCacheLoader<K, Optional<V>>() {
-                @Override
-                public CompletableFuture<? extends Optional<V>> asyncLoad(K key, Executor executor) throws Exception {
-                    return CompletableFuture.supplyAsync(() -> Optional.ofNullable(loader.apply(key)), virtualThreadsExecutor);
-                }
+            .build(new CacheLoader<K, Optional<V>>() {
+            @Override
+            public Optional<V> load(K key) throws Exception {
+                return Optional.ofNullable(loader.apply(key));
+            }
 
-                @Override
-                public CompletableFuture<? extends Map<? extends K, ? extends Optional<V>>> asyncLoadAll(Set<? extends K> keys, Executor executor) throws Exception {
-                    var ret = new HashMap<K, Optional<V>>();
-                    keys.stream().forEachOrdered(key -> {
-                        ret.put(key, Optional.ofNullable(loader.apply(key)));
-                    });
+            @Override
+            public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
+                var ret = new HashMap<K, Optional<V>>();
+                keys.forEach(key -> {
+                    ret.put(key, Optional.ofNullable(loader.apply(key)));
+                });
 
-                    return CompletableFuture.supplyAsync(() -> ret, virtualThreadsExecutor);
-                }
-            });
+                return ret;
+            }
+        });
     }
 
     /**
@@ -142,16 +136,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public Optional<V> get(K key) {
-        var cf = wrapped.getIfPresent(key);
-        if (cf == null) {
-            return null;
-        }
-
-        try {
-            return cf.get();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
-        }
+        return wrapped.getIfPresent(key);
     }
 
     /**
@@ -167,7 +152,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
     @Override
     public synchronized Optional<V> remove(K key) {
         var ret = get(key);
-        wrapped.synchronous().invalidate(key);
+        wrapped.invalidate(key);
         return ret;
     }
 
@@ -175,7 +160,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      * {@inheritDoc}
      * 
      * <p>This implementation returns the cached value if present, or triggers the loader function
-     * if the key is not found. The loader is executed asynchronously, but this method blocks until
+     * if the key is not found. The loader is executed in current virtual thread, but this method blocks until
      * the value is computed and cached.</p>
      * 
      * <p>If multiple threads request the same missing key concurrently, only one loader invocation
@@ -188,12 +173,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public Optional<V> getLoading(K key) {
-        var cf = wrapped.get(key);
-        try {
-            return cf.get();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
-        }
+        return wrapped.get(key);
     }
 
     /**
@@ -208,7 +188,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public void put(K key, V value) {
-        wrapped.put(key, CompletableFuture.supplyAsync(() -> Optional.ofNullable(value)));
+        wrapped.put(key, Optional.ofNullable(value));
     }
 
     /**
@@ -222,7 +202,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public void invalidate(K key) {
-        wrapped.synchronous().invalidate(key);
+        wrapped.invalidate(key);
     }
 
     /**
@@ -233,7 +213,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public void invalidateAll() {
-        wrapped.synchronous().invalidateAll();
+        wrapped.invalidateAll();
     }
 
     /**
@@ -247,7 +227,7 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public Map<K, Optional<V>> asMap() {
-        return wrapped.synchronous().asMap();
+        return wrapped.asMap();
     }
 
     /**
@@ -259,6 +239,6 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
      */
     @Override
     public void cleanUp() {
-        wrapped.synchronous().cleanUp();
+        wrapped.cleanUp();
     }
 }
