@@ -1450,7 +1450,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoClient",
+  { "type": "com.mongodb.client.MongoClient",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1459,7 +1459,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.AggregateIterable",
+  { "type": "com.mongodb.client.AggregateIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1468,7 +1468,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.ChangeStreamIterable",
+  { "type": "com.mongodb.client.ChangeStreamIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1477,7 +1477,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.ClientSession",
+  { "type": "com.mongodb.client.ClientSession",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1486,7 +1486,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.DistinctIterable",
+  { "type": "com.mongodb.client.DistinctIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1495,7 +1495,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.FindIterable",
+  { "type": "com.mongodb.client.FindIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1504,7 +1504,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.ListCollectionsIterable",
+  { "type": "com.mongodb.client.ListCollectionsIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1513,7 +1513,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.ListDatabasesIterable",
+  { "type": "com.mongodb.client.ListDatabasesIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1522,7 +1522,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.ListIndexesIterable",
+  { "type": "com.mongodb.client.ListIndexesIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1531,7 +1531,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MapReduceIterable",
+  { "type": "com.mongodb.client.MapReduceIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1540,7 +1540,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoChangeStreamCursor",
+  { "type": "com.mongodb.client.MongoChangeStreamCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1549,7 +1549,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoClient",
+  { "type": "com.mongodb.client.MongoClient",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1558,7 +1558,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoClientFactory",
+  { "type": "com.mongodb.client.MongoClientFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1567,7 +1567,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoClients",
+  { "type": "com.mongodb.client.MongoClients",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1576,7 +1576,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoCollection",
+  { "type": "com.mongodb.client.MongoCollection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1585,7 +1585,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoCursor",
+  { "type": "com.mongodb.client.MongoCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1594,7 +1594,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoDatabase",
+  { "type": "com.mongodb.client.MongoDatabase",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1603,7 +1603,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.MongoIterable",
+  { "type": "com.mongodb.client.MongoIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1612,7 +1612,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.TransactionBody",
+  { "type": "com.mongodb.client.TransactionBody",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1621,7 +1621,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.GridFSBucket",
+  { "type": "com.mongodb.client.gridfs.GridFSBucket",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1630,7 +1630,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.GridFSBuckets",
+  { "type": "com.mongodb.client.gridfs.GridFSBuckets",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1639,7 +1639,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.GridFSDownloadStream",
+  { "type": "com.mongodb.client.gridfs.GridFSDownloadStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1648,7 +1648,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.GridFSFindIterable",
+  { "type": "com.mongodb.client.gridfs.GridFSFindIterable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1657,7 +1657,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.GridFSUploadStream",
+  { "type": "com.mongodb.client.gridfs.GridFSUploadStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1666,7 +1666,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.codecs.GridFSFileCodec",
+  { "type": "com.mongodb.client.gridfs.codecs.GridFSFileCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1675,7 +1675,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.codecs.GridFSFileCodecProvider",
+  { "type": "com.mongodb.client.gridfs.codecs.GridFSFileCodecProvider",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1684,7 +1684,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.model.GridFSDownloadOptions",
+  { "type": "com.mongodb.client.gridfs.model.GridFSDownloadOptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1693,7 +1693,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.model.GridFSFile",
+  { "type": "com.mongodb.client.gridfs.model.GridFSFile",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1702,7 +1702,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.gridfs.model.GridFSUploadOptions",
+  { "type": "com.mongodb.client.gridfs.model.GridFSUploadOptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1711,7 +1711,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.ChangeStreamIterableImpl",
+  { "type": "com.mongodb.client.internal.ChangeStreamIterableImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1720,7 +1720,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.ClientEncryptionImpl",
+  { "type": "com.mongodb.client.internal.ClientEncryptionImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1729,7 +1729,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.ClientSessionBinding",
+  { "type": "com.mongodb.client.internal.ClientSessionBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1738,7 +1738,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.ClientSessionClock",
+  { "type": "com.mongodb.client.internal.ClientSessionClock",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1747,7 +1747,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.Crypts",
+  { "type": "com.mongodb.client.internal.Crypts",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1756,7 +1756,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.ListDatabasesIterableImpl",
+  { "type": "com.mongodb.client.internal.ListDatabasesIterableImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1765,7 +1765,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.MongoBatchCursorAdapter",
+  { "type": "com.mongodb.client.internal.MongoBatchCursorAdapter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1774,7 +1774,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.MongoChangeStreamCursorImpl",
+  { "type": "com.mongodb.client.internal.MongoChangeStreamCursorImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1783,7 +1783,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.MongoClientImpl",
+  { "type": "com.mongodb.client.internal.MongoClientImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1792,7 +1792,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.MongoDatabaseImpl",
+  { "type": "com.mongodb.client.internal.MongoDatabaseImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1801,7 +1801,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.MongoIterableImpl",
+  { "type": "com.mongodb.client.internal.MongoIterableImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1810,7 +1810,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.internal.OperationExecutor",
+  { "type": "com.mongodb.client.internal.OperationExecutor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1819,7 +1819,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.Filters",
+  { "type": "com.mongodb.client.model.Filters",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1828,7 +1828,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.changestream.ChangeStreamDocument",
+  { "type": "com.mongodb.client.model.changestream.ChangeStreamDocument",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1837,7 +1837,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.changestream.FullDocument",
+  { "type": "com.mongodb.client.model.changestream.FullDocument",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1846,7 +1846,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.changestream.OperationType",
+  { "type": "com.mongodb.client.model.changestream.OperationType",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1855,7 +1855,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.changestream.TruncatedArray",
+  { "type": "com.mongodb.client.model.changestream.TruncatedArray",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1864,7 +1864,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.changestream.UpdateDescription",
+  { "type": "com.mongodb.client.model.changestream.UpdateDescription",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1873,7 +1873,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.CoordinateReferenceSystem",
+  { "type": "com.mongodb.client.model.geojson.CoordinateReferenceSystem",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1882,7 +1882,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.CoordinateReferenceSystemType",
+  { "type": "com.mongodb.client.model.geojson.CoordinateReferenceSystemType",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1891,7 +1891,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.GeoJsonObjectType",
+  { "type": "com.mongodb.client.model.geojson.GeoJsonObjectType",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1900,7 +1900,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.Geometry",
+  { "type": "com.mongodb.client.model.geojson.Geometry",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1909,7 +1909,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.GeometryCollection",
+  { "type": "com.mongodb.client.model.geojson.GeometryCollection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1918,7 +1918,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.LineString",
+  { "type": "com.mongodb.client.model.geojson.LineString",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1927,7 +1927,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.MultiLineString",
+  { "type": "com.mongodb.client.model.geojson.MultiLineString",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1936,7 +1936,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.MultiPoint",
+  { "type": "com.mongodb.client.model.geojson.MultiPoint",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1945,7 +1945,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.MultiPolygon",
+  { "type": "com.mongodb.client.model.geojson.MultiPolygon",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1954,7 +1954,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.NamedCoordinateReferenceSystem",
+  { "type": "com.mongodb.client.model.geojson.NamedCoordinateReferenceSystem",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1963,7 +1963,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.Point",
+  { "type": "com.mongodb.client.model.geojson.Point",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1972,7 +1972,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.Polygon",
+  { "type": "com.mongodb.client.model.geojson.Polygon",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1981,7 +1981,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.PolygonCoordinates",
+  { "type": "com.mongodb.client.model.geojson.PolygonCoordinates",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1990,7 +1990,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.Position",
+  { "type": "com.mongodb.client.model.geojson.Position",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1999,7 +1999,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.GeoJsonCodecProvider",
+  { "type": "com.mongodb.client.model.geojson.codecs.GeoJsonCodecProvider",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2008,7 +2008,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.GeometryCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.GeometryCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2017,7 +2017,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.GeometryCollectionCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.GeometryCollectionCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2026,7 +2026,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.LineStringCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.LineStringCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2035,7 +2035,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.MultiLineStringCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.MultiLineStringCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2044,7 +2044,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.MultiPointCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.MultiPointCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2053,7 +2053,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.MultiPolygonCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.MultiPolygonCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2062,7 +2062,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.NamedCoordinateReferenceSystemCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.NamedCoordinateReferenceSystemCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2071,7 +2071,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.PointCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.PointCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2080,7 +2080,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.geojson.codecs.PolygonCodec",
+  { "type": "com.mongodb.client.model.geojson.codecs.PolygonCodec",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2089,7 +2089,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.vault.DataKeyOptions",
+  { "type": "com.mongodb.client.model.vault.DataKeyOptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2098,7 +2098,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.model.vault.EncryptOptions",
+  { "type": "com.mongodb.client.model.vault.EncryptOptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2107,7 +2107,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.result.DeleteResult",
+  { "type": "com.mongodb.client.result.DeleteResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2116,7 +2116,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.result.InsertManyResult",
+  { "type": "com.mongodb.client.result.InsertManyResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2125,7 +2125,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.result.InsertOneResult",
+  { "type": "com.mongodb.client.result.InsertOneResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2134,7 +2134,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.result.UpdateResult",
+  { "type": "com.mongodb.client.result.UpdateResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2143,7 +2143,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.vault.ClientEncryption",
+  { "type": "com.mongodb.client.vault.ClientEncryption",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2152,7 +2152,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.vault.ClientEncryptions",
+  { "type": "com.mongodb.client.vault.ClientEncryptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2161,7 +2161,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.HexUtils",
+  { "type": "com.mongodb.internal.HexUtils",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2170,7 +2170,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.async.AsyncAggregateResponseBatchCursor",
+  { "type": "com.mongodb.internal.async.AsyncAggregateResponseBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2179,7 +2179,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.async.AsyncBatchCursor",
+  { "type": "com.mongodb.internal.async.AsyncBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2188,7 +2188,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.async.ErrorHandlingResultCallback",
+  { "type": "com.mongodb.internal.async.ErrorHandlingResultCallback",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2197,7 +2197,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.async.SingleResultCallback",
+  { "type": "com.mongodb.internal.async.SingleResultCallback",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2206,7 +2206,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.authentication.NativeAuthenticationHelper",
+  { "type": "com.mongodb.internal.authentication.NativeAuthenticationHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2215,7 +2215,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.authentication.SaslPrep",
+  { "type": "com.mongodb.internal.authentication.SaslPrep",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2224,7 +2224,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AbstractReferenceCounted",
+  { "type": "com.mongodb.internal.binding.AbstractReferenceCounted",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2233,7 +2233,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncClusterAwareReadWriteBinding",
+  { "type": "com.mongodb.internal.binding.AsyncClusterAwareReadWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2242,7 +2242,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncClusterBinding",
+  { "type": "com.mongodb.internal.binding.AsyncClusterBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2251,7 +2251,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncConnectionSource",
+  { "type": "com.mongodb.internal.binding.AsyncConnectionSource",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2260,7 +2260,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncReadBinding",
+  { "type": "com.mongodb.internal.binding.AsyncReadBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2269,7 +2269,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncReadWriteBinding",
+  { "type": "com.mongodb.internal.binding.AsyncReadWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2278,7 +2278,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncWriteBinding",
+  { "type": "com.mongodb.internal.binding.AsyncWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2287,7 +2287,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ClusterAwareReadWriteBinding",
+  { "type": "com.mongodb.internal.binding.ClusterAwareReadWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2296,7 +2296,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ClusterBinding",
+  { "type": "com.mongodb.internal.binding.ClusterBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2305,7 +2305,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ConnectionSource",
+  { "type": "com.mongodb.internal.binding.ConnectionSource",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2314,7 +2314,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ReadBinding",
+  { "type": "com.mongodb.internal.binding.ReadBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2323,7 +2323,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ReadWriteBinding",
+  { "type": "com.mongodb.internal.binding.ReadWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2332,7 +2332,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.ReferenceCounted",
+  { "type": "com.mongodb.internal.binding.ReferenceCounted",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2341,7 +2341,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.SingleServerBinding",
+  { "type": "com.mongodb.internal.binding.SingleServerBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2350,7 +2350,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.TransactionContext",
+  { "type": "com.mongodb.internal.binding.TransactionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2359,7 +2359,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.WriteBinding",
+  { "type": "com.mongodb.internal.binding.WriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2368,7 +2368,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.build.MongoDriverVersion",
+  { "type": "com.mongodb.internal.build.MongoDriverVersion",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2377,7 +2377,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.DeleteRequest",
+  { "type": "com.mongodb.internal.bulk.DeleteRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2386,7 +2386,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.IndexRequest",
+  { "type": "com.mongodb.internal.bulk.IndexRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2395,7 +2395,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.InsertRequest",
+  { "type": "com.mongodb.internal.bulk.InsertRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2404,7 +2404,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.UpdateRequest",
+  { "type": "com.mongodb.internal.bulk.UpdateRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2413,7 +2413,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.WriteRequest",
+  { "type": "com.mongodb.internal.bulk.WriteRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2422,7 +2422,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.WriteRequest$Type",
+  { "type": "com.mongodb.internal.bulk.WriteRequest$Type",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2431,7 +2431,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.bulk.WriteRequestWithIndex",
+  { "type": "com.mongodb.internal.bulk.WriteRequestWithIndex",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2440,7 +2440,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.capi.MongoCryptHelper",
+  { "type": "com.mongodb.internal.capi.MongoCryptHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2449,7 +2449,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.client.model.AggregationLevel",
+  { "type": "com.mongodb.internal.client.model.AggregationLevel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2458,7 +2458,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.client.model.CountStrategy",
+  { "type": "com.mongodb.internal.client.model.CountStrategy",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2467,7 +2467,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.client.model.FindOptions",
+  { "type": "com.mongodb.internal.client.model.FindOptions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2476,7 +2476,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.client.model.changestream.ChangeStreamLevel",
+  { "type": "com.mongodb.internal.client.model.changestream.ChangeStreamLevel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2485,7 +2485,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.AbstractMultiServerCluster",
+  { "type": "com.mongodb.internal.connection.AbstractMultiServerCluster",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2494,7 +2494,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.AsyncConnection",
+  { "type": "com.mongodb.internal.connection.AsyncConnection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2503,7 +2503,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.AsynchronousChannelStream",
+  { "type": "com.mongodb.internal.connection.AsynchronousChannelStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2512,7 +2512,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.AsynchronousSocketChannelStream",
+  { "type": "com.mongodb.internal.connection.AsynchronousSocketChannelStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2521,7 +2521,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Authenticator",
+  { "type": "com.mongodb.internal.connection.Authenticator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2530,7 +2530,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.AwsAuthenticator",
+  { "type": "com.mongodb.internal.connection.AwsAuthenticator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2539,7 +2539,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.BsonWriterDecorator",
+  { "type": "com.mongodb.internal.connection.BsonWriterDecorator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2548,7 +2548,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.BulkWriteBatchCombiner",
+  { "type": "com.mongodb.internal.connection.BulkWriteBatchCombiner",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2557,7 +2557,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ByteBufferBsonOutput",
+  { "type": "com.mongodb.internal.connection.ByteBufferBsonOutput",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2566,7 +2566,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClientMetadataHelper",
+  { "type": "com.mongodb.internal.connection.ClientMetadataHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2575,7 +2575,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Cluster",
+  { "type": "com.mongodb.internal.connection.Cluster",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2584,7 +2584,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClusterClock",
+  { "type": "com.mongodb.internal.connection.ClusterClock",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2593,7 +2593,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClusterClockAdvancingSessionContext",
+  { "type": "com.mongodb.internal.connection.ClusterClockAdvancingSessionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2602,7 +2602,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClusterDescriptionHelper",
+  { "type": "com.mongodb.internal.connection.ClusterDescriptionHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2611,7 +2611,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClusterDescriptionHelper$Predicate",
+  { "type": "com.mongodb.internal.connection.ClusterDescriptionHelper$Predicate",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2620,7 +2620,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ClusterableServerFactory",
+  { "type": "com.mongodb.internal.connection.ClusterableServerFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2629,7 +2629,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.CommandHelper",
+  { "type": "com.mongodb.internal.connection.CommandHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2638,7 +2638,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.CommandMessage",
+  { "type": "com.mongodb.internal.connection.CommandMessage",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2647,7 +2647,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.CommandProtocol",
+  { "type": "com.mongodb.internal.connection.CommandProtocol",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2656,7 +2656,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ConcurrentPool",
+  { "type": "com.mongodb.internal.connection.ConcurrentPool",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2665,7 +2665,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ConcurrentPool$ItemFactory",
+  { "type": "com.mongodb.internal.connection.ConcurrentPool$ItemFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2674,7 +2674,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Connection",
+  { "type": "com.mongodb.internal.connection.Connection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2683,7 +2683,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Connection$PinningMode",
+  { "type": "com.mongodb.internal.connection.Connection$PinningMode",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2692,7 +2692,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DecimalFormatHelper",
+  { "type": "com.mongodb.internal.connection.DecimalFormatHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2701,7 +2701,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DefaultClusterFactory",
+  { "type": "com.mongodb.internal.connection.DefaultClusterFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2710,7 +2710,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DefaultClusterableServerFactory",
+  { "type": "com.mongodb.internal.connection.DefaultClusterableServerFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2719,7 +2719,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DefaultDnsSrvRecordMonitorFactory",
+  { "type": "com.mongodb.internal.connection.DefaultDnsSrvRecordMonitorFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2728,7 +2728,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DefaultServerConnection",
+  { "type": "com.mongodb.internal.connection.DefaultServerConnection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2737,7 +2737,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DescriptionHelper",
+  { "type": "com.mongodb.internal.connection.DescriptionHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2746,7 +2746,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DnsMultiServerCluster",
+  { "type": "com.mongodb.internal.connection.DnsMultiServerCluster",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2755,7 +2755,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DnsSrvRecordMonitor",
+  { "type": "com.mongodb.internal.connection.DnsSrvRecordMonitor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2764,7 +2764,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.DnsSrvRecordMonitorFactory",
+  { "type": "com.mongodb.internal.connection.DnsSrvRecordMonitorFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2773,7 +2773,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ElementExtendingBsonWriter",
+  { "type": "com.mongodb.internal.connection.ElementExtendingBsonWriter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2782,7 +2782,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ExtendedAsynchronousByteChannel",
+  { "type": "com.mongodb.internal.connection.ExtendedAsynchronousByteChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2791,7 +2791,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.FieldTrackingBsonWriter",
+  { "type": "com.mongodb.internal.connection.FieldTrackingBsonWriter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2800,7 +2800,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.IdHoldingBsonWriter",
+  { "type": "com.mongodb.internal.connection.IdHoldingBsonWriter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2809,7 +2809,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.IndexMap",
+  { "type": "com.mongodb.internal.connection.IndexMap",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2818,7 +2818,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.InternalConnection",
+  { "type": "com.mongodb.internal.connection.InternalConnection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2827,7 +2827,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.InternalConnectionInitializationDescription",
+  { "type": "com.mongodb.internal.connection.InternalConnectionInitializationDescription",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2836,7 +2836,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.InternalStreamConnection",
+  { "type": "com.mongodb.internal.connection.InternalStreamConnection",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2845,7 +2845,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.InternalStreamConnectionInitializer",
+  { "type": "com.mongodb.internal.connection.InternalStreamConnectionInitializer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2854,7 +2854,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.LoadBalancedClusterableServerFactory",
+  { "type": "com.mongodb.internal.connection.LoadBalancedClusterableServerFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2863,7 +2863,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.LoadBalancedServer",
+  { "type": "com.mongodb.internal.connection.LoadBalancedServer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2872,7 +2872,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.MessageSettings",
+  { "type": "com.mongodb.internal.connection.MessageSettings",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2881,7 +2881,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.MessageSettings$Builder",
+  { "type": "com.mongodb.internal.connection.MessageSettings$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2890,7 +2890,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.MongoCredentialWithCache",
+  { "type": "com.mongodb.internal.connection.MongoCredentialWithCache",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2899,7 +2899,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.MongoWriteConcernWithResponseException",
+  { "type": "com.mongodb.internal.connection.MongoWriteConcernWithResponseException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2908,7 +2908,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.MultiServerCluster",
+  { "type": "com.mongodb.internal.connection.MultiServerCluster",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2917,7 +2917,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.NoOpSessionContext",
+  { "type": "com.mongodb.internal.connection.NoOpSessionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2926,7 +2926,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.PowerOfTwoBufferPool",
+  { "type": "com.mongodb.internal.connection.PowerOfTwoBufferPool",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2935,7 +2935,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ProtocolExecutor",
+  { "type": "com.mongodb.internal.connection.ProtocolExecutor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2944,7 +2944,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ProtocolHelper",
+  { "type": "com.mongodb.internal.connection.ProtocolHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2953,7 +2953,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.QueryResult",
+  { "type": "com.mongodb.internal.connection.QueryResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2962,7 +2962,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ReadConcernAwareNoOpSessionContext",
+  { "type": "com.mongodb.internal.connection.ReadConcernAwareNoOpSessionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2971,7 +2971,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ReadConcernHelper",
+  { "type": "com.mongodb.internal.connection.ReadConcernHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2980,7 +2980,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ReplyHeader",
+  { "type": "com.mongodb.internal.connection.ReplyHeader",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2989,7 +2989,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ReplyMessage",
+  { "type": "com.mongodb.internal.connection.ReplyMessage",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -2998,7 +2998,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ResponseBuffers",
+  { "type": "com.mongodb.internal.connection.ResponseBuffers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3007,7 +3007,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ScramShaAuthenticator$AuthenticationHashGenerator",
+  { "type": "com.mongodb.internal.connection.ScramShaAuthenticator$AuthenticationHashGenerator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3016,7 +3016,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ScramShaAuthenticator$RandomStringGenerator",
+  { "type": "com.mongodb.internal.connection.ScramShaAuthenticator$RandomStringGenerator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3025,7 +3025,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Server",
+  { "type": "com.mongodb.internal.connection.Server",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3034,7 +3034,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ServerAddressHelper",
+  { "type": "com.mongodb.internal.connection.ServerAddressHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3043,7 +3043,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.ServerTuple",
+  { "type": "com.mongodb.internal.connection.ServerTuple",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3052,7 +3052,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SingleServerCluster",
+  { "type": "com.mongodb.internal.connection.SingleServerCluster",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3061,7 +3061,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SocketStream",
+  { "type": "com.mongodb.internal.connection.SocketStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3070,7 +3070,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SplittablePayload",
+  { "type": "com.mongodb.internal.connection.SplittablePayload",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3079,7 +3079,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SplittablePayload$Type",
+  { "type": "com.mongodb.internal.connection.SplittablePayload$Type",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3088,7 +3088,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SplittablePayloadBsonWriter",
+  { "type": "com.mongodb.internal.connection.SplittablePayloadBsonWriter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3097,7 +3097,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.SslHelper",
+  { "type": "com.mongodb.internal.connection.SslHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3106,7 +3106,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.Time",
+  { "type": "com.mongodb.internal.connection.Time",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3115,7 +3115,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.UnixSocketChannelStream",
+  { "type": "com.mongodb.internal.connection.UnixSocketChannelStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3124,7 +3124,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.BufferAllocator",
+  { "type": "com.mongodb.internal.connection.tlschannel.BufferAllocator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3133,7 +3133,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.ClientTlsChannel",
+  { "type": "com.mongodb.internal.connection.tlschannel.ClientTlsChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3142,7 +3142,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.ClientTlsChannel$Builder",
+  { "type": "com.mongodb.internal.connection.tlschannel.ClientTlsChannel$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3151,7 +3151,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.DirectBufferAllocator",
+  { "type": "com.mongodb.internal.connection.tlschannel.DirectBufferAllocator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3160,7 +3160,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.HeapBufferAllocator",
+  { "type": "com.mongodb.internal.connection.tlschannel.HeapBufferAllocator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3169,7 +3169,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.NeedsReadException",
+  { "type": "com.mongodb.internal.connection.tlschannel.NeedsReadException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3178,7 +3178,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.NeedsTaskException",
+  { "type": "com.mongodb.internal.connection.tlschannel.NeedsTaskException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3187,7 +3187,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.NeedsWriteException",
+  { "type": "com.mongodb.internal.connection.tlschannel.NeedsWriteException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3196,7 +3196,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel",
+  { "type": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3205,7 +3205,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel$Builder",
+  { "type": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3214,7 +3214,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel$SslContextStrategy$SniReader",
+  { "type": "com.mongodb.internal.connection.tlschannel.ServerTlsChannel$SslContextStrategy$SniReader",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3223,7 +3223,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.SniSslContextFactory",
+  { "type": "com.mongodb.internal.connection.tlschannel.SniSslContextFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3232,7 +3232,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.TlsChannel",
+  { "type": "com.mongodb.internal.connection.tlschannel.TlsChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3241,7 +3241,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.TlsChannelBuilder",
+  { "type": "com.mongodb.internal.connection.tlschannel.TlsChannelBuilder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3250,7 +3250,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.TlsChannelCallbackException",
+  { "type": "com.mongodb.internal.connection.tlschannel.TlsChannelCallbackException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3259,7 +3259,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.TlsChannelFlowControlException",
+  { "type": "com.mongodb.internal.connection.tlschannel.TlsChannelFlowControlException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3268,7 +3268,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.TrackingAllocator",
+  { "type": "com.mongodb.internal.connection.tlschannel.TrackingAllocator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3277,7 +3277,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.WouldBlockException",
+  { "type": "com.mongodb.internal.connection.tlschannel.WouldBlockException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3286,7 +3286,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.async.AsynchronousTlsChannel",
+  { "type": "com.mongodb.internal.connection.tlschannel.async.AsynchronousTlsChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3295,7 +3295,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.async.AsynchronousTlsChannelGroup",
+  { "type": "com.mongodb.internal.connection.tlschannel.async.AsynchronousTlsChannelGroup",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3304,7 +3304,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.async.ExtendedAsynchronousByteChannel",
+  { "type": "com.mongodb.internal.connection.tlschannel.async.ExtendedAsynchronousByteChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3313,7 +3313,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.BufferHolder",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.BufferHolder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3322,7 +3322,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.ByteBufferSet",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.ByteBufferSet",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3331,7 +3331,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.ByteBufferUtil",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.ByteBufferUtil",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3340,7 +3340,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.TlsChannelImpl",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.TlsChannelImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3349,7 +3349,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.TlsChannelImpl$EofException",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.TlsChannelImpl$EofException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3358,7 +3358,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.impl.TlsExplorer",
+  { "type": "com.mongodb.internal.connection.tlschannel.impl.TlsExplorer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3367,7 +3367,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.util.DirectBufferDeallocator",
+  { "type": "com.mongodb.internal.connection.tlschannel.util.DirectBufferDeallocator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3376,7 +3376,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.connection.tlschannel.util.Util",
+  { "type": "com.mongodb.internal.connection.tlschannel.util.Util",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3385,7 +3385,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.dns.DefaultDnsResolver",
+  { "type": "com.mongodb.internal.dns.DefaultDnsResolver",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3394,7 +3394,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.dns.DnsResolver",
+  { "type": "com.mongodb.internal.dns.DnsResolver",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3403,7 +3403,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.event.EventListenerHelper",
+  { "type": "com.mongodb.internal.event.EventListenerHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3412,7 +3412,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AbortTransactionOperation",
+  { "type": "com.mongodb.internal.operation.AbortTransactionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3421,7 +3421,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AggregateOperation",
+  { "type": "com.mongodb.internal.operation.AggregateOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3430,7 +3430,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AggregateResponseBatchCursor",
+  { "type": "com.mongodb.internal.operation.AggregateResponseBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3439,7 +3439,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AggregateToCollectionOperation",
+  { "type": "com.mongodb.internal.operation.AggregateToCollectionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3448,7 +3448,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AsyncExplainableReadOperation",
+  { "type": "com.mongodb.internal.operation.AsyncExplainableReadOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3457,7 +3457,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AsyncReadOperation",
+  { "type": "com.mongodb.internal.operation.AsyncReadOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3466,7 +3466,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.AsyncWriteOperation",
+  { "type": "com.mongodb.internal.operation.AsyncWriteOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3475,7 +3475,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.BaseFindAndModifyOperation",
+  { "type": "com.mongodb.internal.operation.BaseFindAndModifyOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3484,7 +3484,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.BatchCursor",
+  { "type": "com.mongodb.internal.operation.BatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3493,7 +3493,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ChangeStreamOperation",
+  { "type": "com.mongodb.internal.operation.ChangeStreamOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3502,7 +3502,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CommandReadOperation",
+  { "type": "com.mongodb.internal.operation.CommandReadOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3511,7 +3511,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CommitTransactionOperation",
+  { "type": "com.mongodb.internal.operation.CommitTransactionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3520,7 +3520,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CountDocumentsOperation",
+  { "type": "com.mongodb.internal.operation.CountDocumentsOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3529,7 +3529,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CountOperation",
+  { "type": "com.mongodb.internal.operation.CountOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3538,7 +3538,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CreateCollectionOperation",
+  { "type": "com.mongodb.internal.operation.CreateCollectionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3547,7 +3547,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CreateIndexesOperation",
+  { "type": "com.mongodb.internal.operation.CreateIndexesOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3556,7 +3556,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.CreateViewOperation",
+  { "type": "com.mongodb.internal.operation.CreateViewOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3565,7 +3565,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.DistinctOperation",
+  { "type": "com.mongodb.internal.operation.DistinctOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3574,7 +3574,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.DropCollectionOperation",
+  { "type": "com.mongodb.internal.operation.DropCollectionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3583,7 +3583,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.DropDatabaseOperation",
+  { "type": "com.mongodb.internal.operation.DropDatabaseOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3592,7 +3592,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.DropIndexOperation",
+  { "type": "com.mongodb.internal.operation.DropIndexOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3601,7 +3601,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.EstimatedDocumentCountOperation",
+  { "type": "com.mongodb.internal.operation.EstimatedDocumentCountOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3610,7 +3610,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ExplainableReadOperation",
+  { "type": "com.mongodb.internal.operation.ExplainableReadOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3619,7 +3619,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.FindAndDeleteOperation",
+  { "type": "com.mongodb.internal.operation.FindAndDeleteOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3628,7 +3628,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.FindAndReplaceOperation",
+  { "type": "com.mongodb.internal.operation.FindAndReplaceOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3637,7 +3637,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.FindAndUpdateOperation",
+  { "type": "com.mongodb.internal.operation.FindAndUpdateOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3646,7 +3646,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.FindOperation",
+  { "type": "com.mongodb.internal.operation.FindOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3655,7 +3655,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.IndexHelper",
+  { "type": "com.mongodb.internal.operation.IndexHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3664,7 +3664,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ListCollectionsOperation",
+  { "type": "com.mongodb.internal.operation.ListCollectionsOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3673,7 +3673,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ListDatabasesOperation",
+  { "type": "com.mongodb.internal.operation.ListDatabasesOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3682,7 +3682,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ListIndexesOperation",
+  { "type": "com.mongodb.internal.operation.ListIndexesOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3691,7 +3691,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MapReduceAsyncBatchCursor",
+  { "type": "com.mongodb.internal.operation.MapReduceAsyncBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3700,7 +3700,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MapReduceBatchCursor",
+  { "type": "com.mongodb.internal.operation.MapReduceBatchCursor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3709,7 +3709,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MapReduceStatistics",
+  { "type": "com.mongodb.internal.operation.MapReduceStatistics",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3718,7 +3718,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MapReduceToCollectionOperation",
+  { "type": "com.mongodb.internal.operation.MapReduceToCollectionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3727,7 +3727,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MapReduceWithInlineResultsOperation",
+  { "type": "com.mongodb.internal.operation.MapReduceWithInlineResultsOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3736,7 +3736,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.MixedBulkWriteOperation",
+  { "type": "com.mongodb.internal.operation.MixedBulkWriteOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3745,7 +3745,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.Operations",
+  { "type": "com.mongodb.internal.operation.Operations",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3754,7 +3754,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ReadOperation",
+  { "type": "com.mongodb.internal.operation.ReadOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3763,7 +3763,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.RenameCollectionOperation",
+  { "type": "com.mongodb.internal.operation.RenameCollectionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3772,7 +3772,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.ServerVersionHelper",
+  { "type": "com.mongodb.internal.operation.ServerVersionHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3781,7 +3781,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.SyncOperations",
+  { "type": "com.mongodb.internal.operation.SyncOperations",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3790,7 +3790,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.TransactionOperation",
+  { "type": "com.mongodb.internal.operation.TransactionOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3799,7 +3799,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.WriteConcernHelper",
+  { "type": "com.mongodb.internal.operation.WriteConcernHelper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3808,7 +3808,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.operation.WriteOperation",
+  { "type": "com.mongodb.internal.operation.WriteOperation",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3817,7 +3817,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.selector.LatencyMinimizingServerSelector",
+  { "type": "com.mongodb.internal.selector.LatencyMinimizingServerSelector",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3826,7 +3826,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.selector.PrimaryServerSelector",
+  { "type": "com.mongodb.internal.selector.PrimaryServerSelector",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3835,7 +3835,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.selector.ReadPreferenceServerSelector",
+  { "type": "com.mongodb.internal.selector.ReadPreferenceServerSelector",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3844,7 +3844,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.selector.ServerAddressSelector",
+  { "type": "com.mongodb.internal.selector.ServerAddressSelector",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3853,7 +3853,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.selector.WritableServerSelector",
+  { "type": "com.mongodb.internal.selector.WritableServerSelector",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3862,7 +3862,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.session.BaseClientSessionImpl",
+  { "type": "com.mongodb.internal.session.BaseClientSessionImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3871,7 +3871,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.session.ClientSessionContext",
+  { "type": "com.mongodb.internal.session.ClientSessionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3880,7 +3880,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.session.ServerSessionPool",
+  { "type": "com.mongodb.internal.session.ServerSessionPool",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3889,7 +3889,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.session.SessionContext",
+  { "type": "com.mongodb.internal.session.SessionContext",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3898,7 +3898,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.thread.DaemonThreadFactory",
+  { "type": "com.mongodb.internal.thread.DaemonThreadFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3907,7 +3907,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.validator.MappedFieldNameValidator",
+  { "type": "com.mongodb.internal.validator.MappedFieldNameValidator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3916,7 +3916,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.validator.NoOpFieldNameValidator",
+  { "type": "com.mongodb.internal.validator.NoOpFieldNameValidator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3925,7 +3925,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.validator.ReplacingDocumentFieldNameValidator",
+  { "type": "com.mongodb.internal.validator.ReplacingDocumentFieldNameValidator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3934,7 +3934,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.validator.UpdateFieldNameValidator",
+  { "type": "com.mongodb.internal.validator.UpdateFieldNameValidator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4643,7 +4643,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.BaseAccount",
+  { "type": "org.restheart.security.BaseAccount",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4652,7 +4652,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.BaseAclPermission",
+  { "type": "org.restheart.security.BaseAclPermission",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4661,7 +4661,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.BasePrincipal",
+  { "type": "org.restheart.security.BasePrincipal",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4670,7 +4670,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.FileRealmAccount",
+  { "type": "org.restheart.security.FileRealmAccount",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4679,7 +4679,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.JwtAccount",
+  { "type": "org.restheart.security.JwtAccount",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4688,7 +4688,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.MongoPermissions",
+  { "type": "org.restheart.security.MongoPermissions",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4697,7 +4697,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.MongoRealmAccount",
+  { "type": "org.restheart.security.MongoRealmAccount",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4706,7 +4706,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "org.restheart.security.PwdCredentialAccount",
+  { "type": "org.restheart.security.PwdCredentialAccount",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
