@@ -1,6 +1,7 @@
+{"reflection":
 [
   {
-    "name": "jdk.internal.net.http.BufferingSubscriber",
+    "type": "jdk.internal.net.http.BufferingSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -10,7 +11,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.HttpClientBuilderImpl",
+    "type": "jdk.internal.net.http.HttpClientBuilderImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -20,7 +21,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.HttpRequestBuilderImpl",
+    "type": "jdk.internal.net.http.HttpRequestBuilderImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -30,7 +31,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.HttpRequestImpl",
+    "type": "jdk.internal.net.http.HttpRequestImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -40,7 +41,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.LineSubscriberAdapter",
+    "type": "jdk.internal.net.http.LineSubscriberAdapter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -50,7 +51,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RawChannelTube",
+    "type": "jdk.internal.net.http.RawChannelTube",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -60,7 +61,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers",
+    "type": "jdk.internal.net.http.RequestPublishers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -70,7 +71,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$ByteArrayPublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$ByteArrayPublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -80,7 +81,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$EmptyPublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$EmptyPublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -90,7 +91,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$FilePublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$FilePublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -100,7 +101,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$InputStreamPublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$InputStreamPublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -110,7 +111,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$IterablePublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$IterablePublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -120,7 +121,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$PublisherAdapter",
+    "type": "jdk.internal.net.http.RequestPublishers$PublisherAdapter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -130,7 +131,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$StreamIterator",
+    "type": "jdk.internal.net.http.RequestPublishers$StreamIterator",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -140,7 +141,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.RequestPublishers$StringPublisher",
+    "type": "jdk.internal.net.http.RequestPublishers$StringPublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -150,7 +151,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseBodyHandlers",
+    "type": "jdk.internal.net.http.ResponseBodyHandlers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -160,7 +161,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseBodyHandlers$FileDownloadBodyHandler",
+    "type": "jdk.internal.net.http.ResponseBodyHandlers$FileDownloadBodyHandler",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -170,7 +171,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseBodyHandlers$PathBodyHandler",
+    "type": "jdk.internal.net.http.ResponseBodyHandlers$PathBodyHandler",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -180,7 +181,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseBodyHandlers$PushPromisesHandlerWithMap",
+    "type": "jdk.internal.net.http.ResponseBodyHandlers$PushPromisesHandlerWithMap",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -190,7 +191,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers",
+    "type": "jdk.internal.net.http.ResponseSubscribers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -200,7 +201,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$ByteArraySubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$ByteArraySubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -210,7 +211,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$ConsumerSubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$ConsumerSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -220,7 +221,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$HttpResponseInputStream",
+    "type": "jdk.internal.net.http.ResponseSubscribers$HttpResponseInputStream",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -230,7 +231,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$MappingSubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$MappingSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -240,7 +241,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$NullSubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$NullSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -250,7 +251,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$PathSubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$PathSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -260,7 +261,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$SubscriberAdapter",
+    "type": "jdk.internal.net.http.ResponseSubscribers$SubscriberAdapter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -270,7 +271,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseSubscribers$TrustedSubscriber",
+    "type": "jdk.internal.net.http.ResponseSubscribers$TrustedSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -280,7 +281,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.ResponseTimerEvent",
+    "type": "jdk.internal.net.http.ResponseTimerEvent",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -290,7 +291,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.SocketTube$BufferSource",
+    "type": "jdk.internal.net.http.SocketTube$BufferSource",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -300,7 +301,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.BufferSupplier",
+    "type": "jdk.internal.net.http.common.BufferSupplier",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -310,7 +311,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Cancelable",
+    "type": "jdk.internal.net.http.common.Cancelable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -320,7 +321,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.ConnectionExpiredException",
+    "type": "jdk.internal.net.http.common.ConnectionExpiredException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -330,7 +331,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Demand",
+    "type": "jdk.internal.net.http.common.Demand",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -340,7 +341,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.FlowTube",
+    "type": "jdk.internal.net.http.common.FlowTube",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -350,7 +351,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.FlowTube$AbstractTubePublisher",
+    "type": "jdk.internal.net.http.common.FlowTube$AbstractTubePublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -360,7 +361,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.FlowTube$AbstractTubeSubscriber",
+    "type": "jdk.internal.net.http.common.FlowTube$AbstractTubeSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -370,7 +371,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.FlowTube$TubePublisher",
+    "type": "jdk.internal.net.http.common.FlowTube$TubePublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -380,7 +381,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.FlowTube$TubeSubscriber",
+    "type": "jdk.internal.net.http.common.FlowTube$TubeSubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -390,7 +391,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.HttpHeadersBuilder",
+    "type": "jdk.internal.net.http.common.HttpHeadersBuilder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -400,7 +401,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.ImmutableExtendedSSLSession",
+    "type": "jdk.internal.net.http.common.ImmutableExtendedSSLSession",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -410,7 +411,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.ImmutableSSLSession",
+    "type": "jdk.internal.net.http.common.ImmutableSSLSession",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -420,7 +421,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Log",
+    "type": "jdk.internal.net.http.common.Log",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -430,7 +431,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Logger",
+    "type": "jdk.internal.net.http.common.Logger",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -440,7 +441,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.MinimalFuture",
+    "type": "jdk.internal.net.http.common.MinimalFuture",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -450,7 +451,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.MinimalFuture$ExceptionalSupplier",
+    "type": "jdk.internal.net.http.common.MinimalFuture$ExceptionalSupplier",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -460,7 +461,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.OperationTrackers",
+    "type": "jdk.internal.net.http.common.OperationTrackers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -470,7 +471,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.OperationTrackers$Trackable",
+    "type": "jdk.internal.net.http.common.OperationTrackers$Trackable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -480,7 +481,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.OperationTrackers$Tracker",
+    "type": "jdk.internal.net.http.common.OperationTrackers$Tracker",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -490,7 +491,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Pair",
+    "type": "jdk.internal.net.http.common.Pair",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -500,7 +501,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SSLFlowDelegate",
+    "type": "jdk.internal.net.http.common.SSLFlowDelegate",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -510,7 +511,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SSLFlowDelegate$Monitorable",
+    "type": "jdk.internal.net.http.common.SSLFlowDelegate$Monitorable",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -520,7 +521,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SSLTube",
+    "type": "jdk.internal.net.http.common.SSLTube",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -530,7 +531,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SequentialScheduler",
+    "type": "jdk.internal.net.http.common.SequentialScheduler",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -540,7 +541,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SequentialScheduler$CompleteRestartableTask",
+    "type": "jdk.internal.net.http.common.SequentialScheduler$CompleteRestartableTask",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -550,7 +551,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SequentialScheduler$DeferredCompleter",
+    "type": "jdk.internal.net.http.common.SequentialScheduler$DeferredCompleter",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -560,7 +561,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SequentialScheduler$RestartableTask",
+    "type": "jdk.internal.net.http.common.SequentialScheduler$RestartableTask",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -570,7 +571,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SequentialScheduler$SynchronizedRestartableTask",
+    "type": "jdk.internal.net.http.common.SequentialScheduler$SynchronizedRestartableTask",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -580,7 +581,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SubscriberWrapper",
+    "type": "jdk.internal.net.http.common.SubscriberWrapper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -590,7 +591,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SubscriberWrapper$SchedulingAction",
+    "type": "jdk.internal.net.http.common.SubscriberWrapper$SchedulingAction",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -600,7 +601,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.SubscriptionBase",
+    "type": "jdk.internal.net.http.common.SubscriptionBase",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -610,7 +611,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Utils",
+    "type": "jdk.internal.net.http.common.Utils",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -620,7 +621,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.common.Utils$ServerName",
+    "type": "jdk.internal.net.http.common.Utils$ServerName",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -630,7 +631,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.ContinuationFrame",
+    "type": "jdk.internal.net.http.frame.ContinuationFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -640,7 +641,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.DataFrame",
+    "type": "jdk.internal.net.http.frame.DataFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -650,7 +651,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.ErrorFrame",
+    "type": "jdk.internal.net.http.frame.ErrorFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -660,7 +661,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.FramesDecoder",
+    "type": "jdk.internal.net.http.frame.FramesDecoder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -670,7 +671,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.FramesDecoder$FrameProcessor",
+    "type": "jdk.internal.net.http.frame.FramesDecoder$FrameProcessor",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -680,7 +681,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.FramesEncoder",
+    "type": "jdk.internal.net.http.frame.FramesEncoder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -690,7 +691,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.GoAwayFrame",
+    "type": "jdk.internal.net.http.frame.GoAwayFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -700,7 +701,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.HeaderFrame",
+    "type": "jdk.internal.net.http.frame.HeaderFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -710,7 +711,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.HeadersFrame",
+    "type": "jdk.internal.net.http.frame.HeadersFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -720,7 +721,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.Http2Frame",
+    "type": "jdk.internal.net.http.frame.Http2Frame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -730,7 +731,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.MalformedFrame",
+    "type": "jdk.internal.net.http.frame.MalformedFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -740,7 +741,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.OutgoingHeaders",
+    "type": "jdk.internal.net.http.frame.OutgoingHeaders",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -750,7 +751,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.PingFrame",
+    "type": "jdk.internal.net.http.frame.PingFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -760,7 +761,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.PriorityFrame",
+    "type": "jdk.internal.net.http.frame.PriorityFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -770,7 +771,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.PushPromiseFrame",
+    "type": "jdk.internal.net.http.frame.PushPromiseFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -780,7 +781,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.ResetFrame",
+    "type": "jdk.internal.net.http.frame.ResetFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -790,7 +791,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.SettingsFrame",
+    "type": "jdk.internal.net.http.frame.SettingsFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -800,7 +801,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.frame.WindowUpdateFrame",
+    "type": "jdk.internal.net.http.frame.WindowUpdateFrame",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -810,7 +811,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.Decoder",
+    "type": "jdk.internal.net.http.hpack.Decoder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -820,7 +821,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.DecodingCallback",
+    "type": "jdk.internal.net.http.hpack.DecodingCallback",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -830,7 +831,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.Encoder",
+    "type": "jdk.internal.net.http.hpack.Encoder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -840,7 +841,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.HPACK",
+    "type": "jdk.internal.net.http.hpack.HPACK",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -850,7 +851,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.HPACK$Logger",
+    "type": "jdk.internal.net.http.hpack.HPACK$Logger",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -860,7 +861,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.HPACK$Logger$Level",
+    "type": "jdk.internal.net.http.hpack.HPACK$Logger$Level",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -870,7 +871,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.Huffman",
+    "type": "jdk.internal.net.http.hpack.Huffman",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -880,7 +881,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.Huffman$Reader",
+    "type": "jdk.internal.net.http.hpack.Huffman$Reader",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -890,7 +891,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.Huffman$Writer",
+    "type": "jdk.internal.net.http.hpack.Huffman$Writer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -900,7 +901,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.ISO_8859_1$Reader",
+    "type": "jdk.internal.net.http.hpack.ISO_8859_1$Reader",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -910,7 +911,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.ISO_8859_1$Writer",
+    "type": "jdk.internal.net.http.hpack.ISO_8859_1$Writer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -920,7 +921,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.NaiveHuffman",
+    "type": "jdk.internal.net.http.hpack.NaiveHuffman",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -930,7 +931,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.QuickHuffman",
+    "type": "jdk.internal.net.http.hpack.QuickHuffman",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -940,7 +941,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.hpack.SimpleHeaderTable$HeaderField",
+    "type": "jdk.internal.net.http.hpack.SimpleHeaderTable$HeaderField",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -950,7 +951,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.BuilderImpl",
+    "type": "jdk.internal.net.http.websocket.BuilderImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -960,7 +961,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.MessageEncoder",
+    "type": "jdk.internal.net.http.websocket.MessageEncoder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -970,7 +971,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.MessageQueue",
+    "type": "jdk.internal.net.http.websocket.MessageQueue",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -980,7 +981,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.MessageQueue$QueueCallback",
+    "type": "jdk.internal.net.http.websocket.MessageQueue$QueueCallback",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -990,7 +991,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.OpeningHandshake",
+    "type": "jdk.internal.net.http.websocket.OpeningHandshake",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1000,7 +1001,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.RawChannel",
+    "type": "jdk.internal.net.http.websocket.RawChannel",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1010,7 +1011,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.RawChannel$Provider",
+    "type": "jdk.internal.net.http.websocket.RawChannel$Provider",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1020,7 +1021,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.RawChannel$RawEvent",
+    "type": "jdk.internal.net.http.websocket.RawChannel$RawEvent",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1030,7 +1031,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.Transport",
+    "type": "jdk.internal.net.http.websocket.Transport",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1040,7 +1041,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.TransportFactory",
+    "type": "jdk.internal.net.http.websocket.TransportFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1050,7 +1051,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.TransportFactoryImpl",
+    "type": "jdk.internal.net.http.websocket.TransportFactoryImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1060,7 +1061,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.TransportImpl",
+    "type": "jdk.internal.net.http.websocket.TransportImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1070,7 +1071,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.WebSocketImpl",
+    "type": "jdk.internal.net.http.websocket.WebSocketImpl",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1080,7 +1081,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "jdk.internal.net.http.websocket.WebSocketRequest",
+    "type": "jdk.internal.net.http.websocket.WebSocketRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1090,7 +1091,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpClient",
+    "type": "java.net.http.HttpClient",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1100,7 +1101,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpClient$Builder",
+    "type": "java.net.http.HttpClient$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1110,7 +1111,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpClient$Redirect",
+    "type": "java.net.http.HttpClient$Redirect",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1120,7 +1121,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpClient$Version",
+    "type": "java.net.http.HttpClient$Version",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1130,7 +1131,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpConnectTimeoutException",
+    "type": "java.net.http.HttpConnectTimeoutException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1140,7 +1141,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpHeaders",
+    "type": "java.net.http.HttpHeaders",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1150,7 +1151,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpRequest",
+    "type": "java.net.http.HttpRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1160,7 +1161,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpRequest$BodyPublisher",
+    "type": "java.net.http.HttpRequest$BodyPublisher",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1170,7 +1171,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpRequest$BodyPublishers",
+    "type": "java.net.http.HttpRequest$BodyPublishers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1180,7 +1181,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpRequest$Builder",
+    "type": "java.net.http.HttpRequest$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1190,7 +1191,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse",
+    "type": "java.net.http.HttpResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1200,7 +1201,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$BodyHandler",
+    "type": "java.net.http.HttpResponse$BodyHandler",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1210,7 +1211,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$BodyHandlers",
+    "type": "java.net.http.HttpResponse$BodyHandlers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1220,7 +1221,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$BodySubscriber",
+    "type": "java.net.http.HttpResponse$BodySubscriber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1230,7 +1231,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$BodySubscribers",
+    "type": "java.net.http.HttpResponse$BodySubscribers",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1240,7 +1241,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$PushPromiseHandler",
+    "type": "java.net.http.HttpResponse$PushPromiseHandler",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1250,7 +1251,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse$ResponseInfo",
+    "type": "java.net.http.HttpResponse$ResponseInfo",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1260,7 +1261,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpTimeoutException",
+    "type": "java.net.http.HttpTimeoutException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1270,7 +1271,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.WebSocket",
+    "type": "java.net.http.WebSocket",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1280,7 +1281,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.WebSocket$Builder",
+    "type": "java.net.http.WebSocket$Builder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1290,7 +1291,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.WebSocket$Listener",
+    "type": "java.net.http.WebSocket$Listener",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1300,7 +1301,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.WebSocketHandshakeException",
+    "type": "java.net.http.WebSocketHandshakeException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1310,7 +1311,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpClient",
+    "type": "java.net.http.HttpClient",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1320,7 +1321,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpHeaders",
+    "type": "java.net.http.HttpHeaders",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1330,7 +1331,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpRequest",
+    "type": "java.net.http.HttpRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1340,7 +1341,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.http.HttpResponse",
+    "type": "java.net.http.HttpResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1350,7 +1351,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.net.URI",
+    "type": "java.net.URI",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1360,7 +1361,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "java.time.Duration",
+    "type": "java.time.Duration",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1370,7 +1371,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonParser",
+    "type": "com.google.gson.JsonParser",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1380,7 +1381,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonParseException",
+    "type": "com.google.gson.JsonParseException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1390,7 +1391,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "ch.qos.logback.classic.Logger",
+    "type": "ch.qos.logback.classic.Logger",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1400,7 +1401,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonArray",
+    "type": "com.google.gson.JsonArray",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1410,7 +1411,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonNull",
+    "type": "com.google.gson.JsonNull",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1420,7 +1421,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonObject",
+    "type": "com.google.gson.JsonObject",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1430,7 +1431,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.JsonPrimitive",
+    "type": "com.google.gson.JsonPrimitive",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -1440,7 +1441,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "com.google.gson.reflect.TypeToken",
+    "type": "com.google.gson.reflect.TypeToken",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3943,37 +3944,37 @@
     "allDeclaredClasses": true
   },
   {
-    "name":"com.mongodb.client.internal.MongoBatchCursorAdapter",
+    "type":"com.mongodb.client.internal.MongoBatchCursorAdapter",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true
   },
   {
-    "name": "com.mongodb.internal.operation.BatchCursor",
+    "type": "com.mongodb.internal.operation.BatchCursor",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true
   },
   {
-    "name": "com.mongodb.internal.operation.QueryBatchCursor",
+    "type": "com.mongodb.internal.operation.QueryBatchCursor",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true
   },
   {
-    "name": "com.mongodb.internal.operation.CommandBatchCursor",
+    "type": "com.mongodb.internal.operation.CommandBatchCursor",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true
   },
   {
-    "name": "com.mongodb.internal.operation.CommandCursorResult",
+    "type": "com.mongodb.internal.operation.CommandCursorResult",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true
   },
   {
-    "name": "org.apache.commons.logging.LogFactory",
+    "type": "org.apache.commons.logging.LogFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3983,7 +3984,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonArray",
+    "type": "org.bson.BsonArray",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -3993,7 +3994,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonBinary",
+    "type": "org.bson.BsonBinary",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4003,7 +4004,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonBoolean",
+    "type": "org.bson.BsonBoolean",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4013,7 +4014,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDateTime",
+    "type": "org.bson.BsonDateTime",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4023,7 +4024,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDbPointer",
+    "type": "org.bson.BsonDbPointer",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4033,7 +4034,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDecimal128",
+    "type": "org.bson.BsonDecimal128",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4043,7 +4044,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDocument",
+    "type": "org.bson.BsonDocument",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4053,7 +4054,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDocumentWrapper",
+    "type": "org.bson.BsonDocumentWrapper",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4063,7 +4064,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonDouble",
+    "type": "org.bson.BsonDouble",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4073,7 +4074,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonInt32",
+    "type": "org.bson.BsonInt32",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4083,7 +4084,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonInt64",
+    "type": "org.bson.BsonInt64",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4093,7 +4094,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonJavaScript",
+    "type": "org.bson.BsonJavaScript",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4103,7 +4104,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonJavaScriptWithScope",
+    "type": "org.bson.BsonJavaScriptWithScope",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4113,7 +4114,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonMaxKey",
+    "type": "org.bson.BsonMaxKey",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4123,7 +4124,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonMinKey",
+    "type": "org.bson.BsonMinKey",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4133,7 +4134,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonNull",
+    "type": "org.bson.BsonNull",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4143,7 +4144,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonNumber",
+    "type": "org.bson.BsonNumber",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4153,7 +4154,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonObjectId",
+    "type": "org.bson.BsonObjectId",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4163,7 +4164,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonRegularExpression",
+    "type": "org.bson.BsonRegularExpression",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4173,7 +4174,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonString",
+    "type": "org.bson.BsonString",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4183,7 +4184,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonSymbol",
+    "type": "org.bson.BsonSymbol",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4193,7 +4194,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonTimestamp",
+    "type": "org.bson.BsonTimestamp",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4203,7 +4204,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.BsonUndefined",
+    "type": "org.bson.BsonUndefined",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4213,7 +4214,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.RawBsonArray",
+    "type": "org.bson.RawBsonArray",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4223,7 +4224,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.bson.RawBsonDocument",
+    "type": "org.bson.RawBsonDocument",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4233,7 +4234,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.BadRequestException",
+    "type": "org.restheart.exchange.BadRequestException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4243,7 +4244,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.BsonFromCsvRequest",
+    "type": "org.restheart.exchange.BsonFromCsvRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4253,7 +4254,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.BsonRequest",
+    "type": "org.restheart.exchange.BsonRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4263,7 +4264,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.BsonResponse",
+    "type": "org.restheart.exchange.BsonResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4273,7 +4274,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.BufferedExchange",
+    "type": "org.restheart.exchange.BufferedExchange",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4283,7 +4284,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ByteArrayProxyRequest",
+    "type": "org.restheart.exchange.ByteArrayProxyRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4293,7 +4294,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ByteArrayProxyResponse",
+    "type": "org.restheart.exchange.ByteArrayProxyResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4303,7 +4304,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ByteArrayRequest",
+    "type": "org.restheart.exchange.ByteArrayRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4313,7 +4314,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ByteArrayResponse",
+    "type": "org.restheart.exchange.ByteArrayResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4323,7 +4324,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.Exchange",
+    "type": "org.restheart.exchange.Exchange",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4333,7 +4334,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys",
+    "type": "org.restheart.exchange.ExchangeKeys",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4343,7 +4344,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$DOC_ID_TYPE",
+    "type": "org.restheart.exchange.ExchangeKeys$DOC_ID_TYPE",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4353,7 +4354,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$ETAG_CHECK_POLICY",
+    "type": "org.restheart.exchange.ExchangeKeys$ETAG_CHECK_POLICY",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4363,7 +4364,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$HAL_MODE",
+    "type": "org.restheart.exchange.ExchangeKeys$HAL_MODE",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4373,7 +4374,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$METHOD",
+    "type": "org.restheart.exchange.ExchangeKeys$METHOD",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4383,7 +4384,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$REPRESENTATION_FORMAT",
+    "type": "org.restheart.exchange.ExchangeKeys$REPRESENTATION_FORMAT",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4393,7 +4394,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$TYPE",
+    "type": "org.restheart.exchange.ExchangeKeys$TYPE",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4403,7 +4404,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ExchangeKeys$WRITE_MODE",
+    "type": "org.restheart.exchange.ExchangeKeys$WRITE_MODE",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4413,7 +4414,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.IllegalQueryParameterException",
+    "type": "org.restheart.exchange.IllegalQueryParameterException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4423,7 +4424,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.InvalidMetadataException",
+    "type": "org.restheart.exchange.InvalidMetadataException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4433,7 +4434,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.JsonProxyRequest",
+    "type": "org.restheart.exchange.JsonProxyRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4443,7 +4444,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.JsonProxyResponse",
+    "type": "org.restheart.exchange.JsonProxyResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4453,7 +4454,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.JsonRequest",
+    "type": "org.restheart.exchange.JsonRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4463,7 +4464,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.JsonResponse",
+    "type": "org.restheart.exchange.JsonResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4473,7 +4474,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.MongoRequest",
+    "type": "org.restheart.exchange.MongoRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4483,7 +4484,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.MongoResponse",
+    "type": "org.restheart.exchange.MongoResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4493,7 +4494,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.PipelineInfo",
+    "type": "org.restheart.exchange.PipelineInfo",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4503,7 +4504,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.PipelineInfo$PIPELINE_TYPE",
+    "type": "org.restheart.exchange.PipelineInfo$PIPELINE_TYPE",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4513,7 +4514,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ProxyRequest",
+    "type": "org.restheart.exchange.ProxyRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4523,7 +4524,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ProxyResponse",
+    "type": "org.restheart.exchange.ProxyResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4533,7 +4534,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.QueryNotFoundException",
+    "type": "org.restheart.exchange.QueryNotFoundException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4543,7 +4544,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.QueryVariableNotBoundException",
+    "type": "org.restheart.exchange.QueryVariableNotBoundException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4553,7 +4554,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.Request",
+    "type": "org.restheart.exchange.Request",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4563,7 +4564,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.Response",
+    "type": "org.restheart.exchange.Response",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4573,7 +4574,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ServiceRequest",
+    "type": "org.restheart.exchange.ServiceRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4583,7 +4584,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.ServiceResponse",
+    "type": "org.restheart.exchange.ServiceResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4593,7 +4594,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.StringRequest",
+    "type": "org.restheart.exchange.StringRequest",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4603,7 +4604,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.StringResponse",
+    "type": "org.restheart.exchange.StringResponse",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4613,7 +4614,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.UnsupportedDocumentIdException",
+    "type": "org.restheart.exchange.UnsupportedDocumentIdException",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4623,7 +4624,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.mongodb.db.OperationResult",
+    "type": "org.restheart.mongodb.db.OperationResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4633,7 +4634,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.mongodb.db.BulkOperationResult",
+    "type": "org.restheart.mongodb.db.BulkOperationResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4715,7 +4716,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.utils.BsonUtils",
+    "type": "org.restheart.utils.BsonUtils",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4725,7 +4726,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.utils.BsonUtils$DocumentBuilder",
+    "type": "org.restheart.utils.BsonUtils$DocumentBuilder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4735,7 +4736,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.utils.BsonUtils$ArrayBuilder",
+    "type": "org.restheart.utils.BsonUtils$ArrayBuilder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4745,7 +4746,7 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.slf4j.Logger",
+    "type": "org.slf4j.Logger",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4755,3 +4756,4 @@
     "allDeclaredClasses": true
   }
 ]
+}
