@@ -231,11 +231,11 @@ public class PolyglotDeployer implements Initializer {
 
             if (ImageInfo.inImageRuntimeCode()) {
                 // directory relative to the one containing the native image executable
-                LOGGER.info("Code is executing at image runtime");
+                LOGGER.trace("Code is executing at image runtime");
                 return Path.of(locationUri).toAbsolutePath().normalize().getParent().resolve(pluginsPath);
             } else {
                 // the directory containing the plugin jar is the plugins directory
-                LOGGER.info("Code is executing at development time");
+                LOGGER.trace("Code is executing at development time");
                 return Path.of(locationUri).toAbsolutePath().normalize().getParent();
             }
         } catch (final URISyntaxException uee) {
