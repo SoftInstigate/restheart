@@ -24,7 +24,7 @@ RESTHeart is designed for:
 ✅ **Low-Code Development**: Create APIs with minimal coding effort.  
 ✅ **Seamless MongoDB Integration**: Instantly expose your MongoDB collections via REST, GraphQL, and WebSocket APIs.  
 ✅ **Built-in Security**: Provides declarative authentication and authorization mechanisms.  
-✅ **High Performance**: Utilizes Java 21 Virtual Threads for efficient concurrency.  
+✅ **High Performance**: Utilizes Java Virtual Threads for efficient concurrency.  
 ✅ **Customizable**: Flexible architecture that adapts to your specific needs.  
 
 ## Compatible Databases

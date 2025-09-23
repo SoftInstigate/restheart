@@ -34,9 +34,9 @@
             mvn clean verify -Dmongodb.version="6.0"  (to test with mongo:6.0 container)
         -->
         <mongodb.version>8.0</mongodb.version>
-        <jdk.version>21</jdk.version>
-        <graalvm.version>24.2.2</graalvm.version>
-        <truffle.version>24.2.2</truffle.version> <!-- Truffle and Graal languages are compatible
+        <jdk.version>25</jdk.version>
+        <graalvm.version>25.0.0</graalvm.version>
+        <truffle.version>25.0.0</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
@@ -205,6 +205,11 @@
                 <version>2.3.18.Final</version>
             </dependency>
             <dependency>
+                <groupId>org.jboss.threads</groupId>
+                <artifactId>jboss-threads</artifactId>
+                <version>3.9.1</version>
+            </dependency>
+            <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
                 <version>20250517</version>
@@ -212,7 +217,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.4.8-jre</version>
+                <version>33.5.0-jre</version>
             </dependency>
             <dependency>
                 <groupId>org.checkerframework</groupId>
