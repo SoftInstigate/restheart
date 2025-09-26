@@ -1,14 +1,12 @@
-#ARG ECLIPSE_TEMURIN_JRE=25-jre
-#FROM eclipse-temurin:${ECLIPSE_TEMURIN_JRE}
-# waiting for temurin 25 to be released....
-FROM amazoncorretto:25-jdk
+ARG ECLIPSE_TEMURIN_JRE=25-jre
+FROM eclipse-temurin:${ECLIPSE_TEMURIN_JRE}
 
-#RUN apt-get update && \
-#    apt-get upgrade -y && \
-#    apt-get install -y --no-install-recommends ca-certificates && \
-#    apt-get autoremove -y && \
-#    apt-get clean && \
-#    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 LABEL org.opencontainers.image.title="RESTHeart"
 LABEL org.opencontainers.image.description="RESTHeart is Java Framework, built on top of Undertow"

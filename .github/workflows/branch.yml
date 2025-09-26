@@ -108,8 +108,8 @@ jobs:
           platforms: |
             linux/amd64,
             linux/arm64,
-#            linux/ppc64le,
-#            linux/s390x
+            linux/ppc64le,
+            linux/s390x
           push: true # push all images built
           pull: true # pull all required images before building
           # Tag with "latest" only if branch is master

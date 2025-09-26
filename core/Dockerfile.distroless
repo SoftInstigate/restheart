@@ -1,3 +1,4 @@
+# TODO update to java25 as soon as distroless image is released
 FROM gcr.io/distroless/java21-debian12:latest
 
 LABEL org.opencontainers.image.title="RESTHeart distroless"
