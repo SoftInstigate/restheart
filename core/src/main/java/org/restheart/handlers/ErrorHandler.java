@@ -106,24 +106,33 @@ public class ErrorHandler extends PipelinedHandler {
                     + "' was compiled using the correct version of restheart-commons: "
                     + version;
 
-
                 LOGGER.error(errMsg, le);
             } else {
                 LOGGER.error("Error handling the request", le);
             }
 
-            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", le);
-
-            sender.handleRequest(exchange);
+		  if (!exchange.isResponseStarted()) {
+			Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", le);
+			sender.handleRequest(exchange);
+		  } else {
+			LOGGER.debug("Omit error response since response already started");
+		  }
         } catch (BadRequestException bre) {
-            Response.of(exchange).setInError(bre.getStatusCode(), bre.getMessage());
-            sender.handleRequest(exchange);
+			if (!exchange.isResponseStarted()) {
+			  Response.of(exchange).setInError(bre.getStatusCode(), bre.getMessage());
+			  sender.handleRequest(exchange);
+			} else {
+			  LOGGER.debug("Bad request. Omit error response since response already started", bre);
+			}
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
-            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", t);
-
-            sender.handleRequest(exchange);
+			if (!exchange.isResponseStarted()) {
+            	Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", t);
+            	sender.handleRequest(exchange);
+			} else {
+			  LOGGER.debug("Omit error response since response already started", t);
+			}
         }
     }
 }
