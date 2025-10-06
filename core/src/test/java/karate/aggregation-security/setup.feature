@@ -43,102 +43,67 @@ Scenario: Setup test database and collection for aggregation security tests
   When method POST
   Then status 200
 
-  # Create aggregation with safe operations
-  Given path '/test-aggr-security/coll/_aggrs/safe-aggr'
+  # Define aggregations in collection metadata
+  Given path '/test-aggr-security/coll'
+  And param wm = 'upsert'
   And header Authorization = admin
   And header Content-Type = 'application/json'
   And request
   """
   {
-    "type": "pipeline",
-    "stages": [
-      {"$match": {"category": "A"}},
-      {"$group": {"_id": "$category", "total": {"$sum": "$value"}}},
-      {"$sort": {"total": -1}}
-    ]
-  }
-  """
-  When method PUT
-  Then status 201
-
-  # Create aggregation with $out stage (should be blocked)
-  Given path '/test-aggr-security/coll/_aggrs/unsafe-out'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And request
-  """
-  {
-    "type": "pipeline",
-    "stages": [
-      {"$match": {"category": "A"}},
-      {"$out": "malicious_output"}
-    ]
-  }
-  """
-  When method PUT
-  Then status 201
-
-  # Create aggregation with $lookup cross-database (should be blocked)
-  Given path '/test-aggr-security/coll/_aggrs/unsafe-lookup'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And request
-  """
-  {
-    "type": "pipeline", 
-    "stages": [
+    "aggrs": [
       {
-        "$lookup": {
-          "from": "other-db.users",
-          "localField": "user_id",
-          "foreignField": "_id",
-          "as": "user_info"
-        }
-      }
-    ]
-  }
-  """
-  When method PUT
-  Then status 201
-
-  # Create aggregation with $where operator (should be blocked)
-  Given path '/test-aggr-security/coll/_aggrs/unsafe-where'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And request
-  """
-  {
-    "type": "pipeline",
-    "stages": [
-      {"$match": {"$where": "function() { return this.value > 100; }"}}
-    ]
-  }
-  """
-  When method PUT
-  Then status 201
-
-  # Create aggregation with $function operator (should be blocked)
-  Given path '/test-aggr-security/coll/_aggrs/unsafe-function'
-  And header Authorization = admin  
-  And header Content-Type = 'application/json'
-  And request
-  """
-  {
-    "type": "pipeline",
-    "stages": [
+        "uri": "safe-aggr",
+        "stages": [
+          {"$match": {"category": "A"}},
+          {"$group": {"_id": "$category", "total": {"$sum": "$value"}}},
+          {"$sort": {"total": -1}}
+        ]
+      },
       {
-        "$addFields": {
-          "doubled": {
-            "$function": {
-              "body": "function(value) { return value * 2; }",
-              "args": ["$value"],
-              "lang": "js"
+        "uri": "unsafe-out",
+        "stages": [
+          {"$match": {"category": "A"}},
+          {"$out": "malicious_output"}
+        ]
+      },
+      {
+        "uri": "unsafe-lookup",
+        "stages": [
+          {
+            "$lookup": {
+              "from": "other-db.users",
+              "localField": "user_id",
+              "foreignField": "_id",
+              "as": "user_info"
             }
           }
-        }
+        ]
+      },
+      {
+        "uri": "unsafe-where",
+        "stages": [
+          {"$match": {"$where": "function() { return this.value > 100; }"}}
+        ]
+      },
+      {
+        "uri": "unsafe-function",
+        "stages": [
+          {
+            "$addFields": {
+              "doubled": {
+                "$function": {
+                  "body": "function(value) { return value * 2; }",
+                  "args": ["$value"],
+                  "lang": "js"
+                }
+              }
+            }
+          }
+        ]
       }
     ]
   }
   """
-  When method PUT
-  Then status 201
+  When method PATCH
+  Then status 200
