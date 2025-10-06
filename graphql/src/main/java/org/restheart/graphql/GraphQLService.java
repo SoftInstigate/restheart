@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.bson.BsonNull;
 import org.dataloader.DataLoaderRegistry;
+import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.ExchangeKeys;
@@ -115,6 +116,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     @Inject("config")
     private Map<String, Object> config;
 
+	@Inject("rh-config")
+	private Configuration rhConfig;
+
     @OnInit
     public void init()throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
@@ -134,8 +138,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         GraphQLDataFetcher.setMongoClient(mclient);
         
         // Initialize aggregation security checker for GraphQL
-        @SuppressWarnings("unchecked")
-        var securityConfig = (Map<String, Object>) config.getOrDefault("aggregationSecurity", new HashMap<>());
+	  	@SuppressWarnings("unchecked")
+	  	Map<String, Object> securityConfig = rhConfig.getOrDefault("aggregationSecurity", new HashMap<>());
         var securityChecker = new AggregationPipelineSecurityChecker(securityConfig);
         AggregationBatchLoader.setSecurityChecker(securityChecker);
         GraphQLDataFetcher.setSecurityChecker(securityChecker);

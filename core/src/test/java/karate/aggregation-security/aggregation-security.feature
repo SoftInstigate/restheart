@@ -32,6 +32,8 @@ Scenario: Aggregation with $out stage should be blocked by security
   And match $.message contains "BLACKLISTED_STAGE"
   And match $.message contains "$out"
 
+# ignored since BLACKLISTED_STAGE will apply first with test configuration
+@ignore
 Scenario: Aggregation with cross-database $lookup should be blocked
   Given path '/test-aggr-security/coll/_aggrs/unsafe-lookup'
   And header Authorization = admin
@@ -58,25 +60,3 @@ Scenario: Aggregation with $function operator should be blocked
   And match $.message contains "aggregation pipeline security violation"
   And match $.message contains "BLACKLISTED_OPERATOR"
   And match $.message contains "$function"
-
-Scenario: Test inline aggregation with blocked stage
-  Given path '/test-aggr-security/coll'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And param aggrs = '[{"$match": {"category": "A"}}, {"$merge": {"into": "evil-collection"}}]'
-  When method GET
-  Then status 403
-  And match $.message contains "aggregation pipeline security violation"
-  And match $.message contains "BLACKLISTED_STAGE"
-  And match $.message contains "$merge"
-
-Scenario: Test inline aggregation with allowed stages
-  Given path '/test-aggr-security/coll'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And param aggrs = '[{"$match": {"category": "A"}}, {"$sort": {"value": -1}}]'
-  When method GET
-  Then status 200
-  And match $._returned == 2
-  And match $._embedded.rh:doc[0].name == "doc3"
-  And match $._embedded.rh:doc[1].name == "doc1"

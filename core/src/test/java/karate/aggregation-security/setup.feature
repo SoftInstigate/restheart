@@ -13,20 +13,19 @@ Background:
   """
   * def admin = basic({username: 'admin', password: 'secret'})
 
-@ignore
 Scenario: Setup test database and collection for aggregation security tests
 
   # Create test database
   Given path '/test-aggr-security'
   And header Authorization = admin
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
 
   # Create test collection
   Given path '/test-aggr-security/coll'
   And header Authorization = admin
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
 
   # Insert test documents
   Given path '/test-aggr-security/coll'
@@ -41,7 +40,7 @@ Scenario: Setup test database and collection for aggregation security tests
   ]
   """
   When method POST
-  Then status 200
+  Then assert responseStatus == 201 || responseStatus == 200
 
   # Define aggregations in collection metadata
   Given path '/test-aggr-security/coll'
@@ -106,4 +105,4 @@ Scenario: Setup test database and collection for aggregation security tests
   }
   """
   When method PATCH
-  Then status 200
+  Then assert responseStatus == 201 || responseStatus == 200

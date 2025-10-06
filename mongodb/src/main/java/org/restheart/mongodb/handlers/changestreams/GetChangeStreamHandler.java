@@ -144,7 +144,13 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
-        } catch (Throwable t) {
+        } catch(SecurityException se) {
+		  var error = "Cannot open change stream: " + se.getMessage();
+
+		  LOGGER.warn(error, se);
+
+		  response.setInError(HttpStatus.SC_FORBIDDEN, error);
+		} catch (Throwable t) {
             LOGGER.error("Error handling the Change Stream request", t);
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, t.getMessage());
         }
@@ -160,7 +166,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             Arrays.stream(uhVals.toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
-    private List<BsonDocument> getResolvedStagesAsList(MongoRequest request) throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
+    private List<BsonDocument> getResolvedStagesAsList(MongoRequest request) throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException, SecurityException {
         var changesStreamOperation = request.getChangeStreamOperation();
 
         var streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
@@ -181,14 +187,9 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
         
         // Security validation: check change stream pipeline for blacklisted stages and operators
-        try {
-            var stagesArray = new BsonArray();
-            resolvedStages.forEach(stagesArray::add);
-            securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
-        } catch (SecurityException se) {
-            LOGGER.warn("Change stream pipeline blocked for security violation: {}", se.getMessage());
-            throw new InvalidMetadataException("Change stream pipeline security violation: " + se.getMessage());
-        }
+	  	var stagesArray = new BsonArray();
+		resolvedStages.forEach(stagesArray::add);
+		securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
 
         return resolvedStages;
     }

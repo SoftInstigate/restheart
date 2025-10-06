@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
@@ -238,7 +239,7 @@ public class MongoServiceConfiguration {
         defaultPagesize = asInteger(conf, DEFAULT_PAGESIZE_KEY, DEFAULT_DEFAULT_PAGESIZE, silent);
 
         maxPagesize = asInteger(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE, silent);
-        
+
         aggregationSecurityConfiguration = asMap(conf, "aggregationSecurity", new HashMap<>(), silent);
     }
 

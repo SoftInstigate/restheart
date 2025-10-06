@@ -12,23 +12,29 @@ Background:
   }
   """
   * def admin = basic({username: 'admin', password: 'secret'})
+  * def setupData = callonce read('setup.feature')
 
-@ignore
 Scenario: Setup GraphQL app with aggregation security test
   
   # Create test database and collection for GraphQL
-  Given path '/test-gql-security'
+  Given path '/test-graphql'
   And header Authorization = admin
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
 
-  Given path '/test-gql-security/products'
+  Given path '/test-graphql/products'
   And header Authorization = admin
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  # Create gql-apps collection for GraphQL apps
+  Given path '/test-graphql/gql-apps'
+  And header Authorization = admin
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
 
   # Insert test data
-  Given path '/test-gql-security/products'
+  Given path '/test-graphql/products'
   And header Authorization = admin
   And header Content-Type = 'application/json'
   And request
@@ -40,12 +46,13 @@ Scenario: Setup GraphQL app with aggregation security test
   ]
   """
   When method POST
-  Then status 200
+  Then assert responseStatus == 201 || responseStatus == 200
 
-  # Create GraphQL app with safe aggregation
-  Given path '/restheart/gqlapps/test-gql-security-app'
+  # Create GraphQL app with safe and unsafe aggregations
+  Given path '/test-graphql/gql-apps/test-gql-security-app'
   And header Authorization = admin
   And header Content-Type = 'application/json'
+  And param wm = "upsert"
   And request
   """
   {
@@ -56,41 +63,37 @@ Scenario: Setup GraphQL app with aggregation security test
       "uri": "test-gql-security-app"
     },
     "schema": "type Query { products: [Product] productsByCategory: [CategorySummary] unsafeProducts: [Product] } type Product { name: String category: String price: Float } type CategorySummary { _id: String totalPrice: Float count: Int }",
-    "mappings": [
-      {
-        "dataloader": "products", 
-        "type": "aggregation",
-        "db": "test-gql-security",
-        "collection": "products",
-        "stages": [
-          {"$sort": {"name": 1}}
-        ]
-      },
-      {
-        "dataloader": "productsByCategory",
-        "type": "aggregation", 
-        "db": "test-gql-security",
-        "collection": "products",
-        "stages": [
-          {"$group": {"_id": "$category", "totalPrice": {"$sum": "$price"}, "count": {"$sum": 1}}},
-          {"$sort": {"totalPrice": -1}}
-        ]
-      },
-      {
-        "dataloader": "unsafeProducts",
-        "type": "aggregation",
-        "db": "test-gql-security", 
-        "collection": "products",
-        "stages": [
-          {"$match": {"category": "electronics"}},
-          {"$out": "hacked_products"}
-        ]
+    "mappings": {
+      "Query": {
+        "products": {
+          "db": "test-graphql",
+          "collection": "products",
+          "stages": [
+            {"$sort": {"name": 1}}
+          ]
+        },
+        "productsByCategory": {
+          "db": "test-graphql",
+          "collection": "products",
+          "stages": [
+            {"$group": {"_id": "$category", "totalPrice": {"$sum": "$price"}, "count": {"$sum": 1}}},
+            {"$sort": {"totalPrice": -1}}
+          ]
+        },
+        "unsafeProducts": {
+          "db": "test-graphql", 
+          "collection": "products",
+          "stages": [
+            {"$match": {"category": "electronics"}},
+            {"$out": "hacked_products"}
+          ]
+        }
       }
-    ]
+    }
   }
   """
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
 
 Scenario: Safe GraphQL aggregation should work
   Given path '/graphql/test-gql-security-app'

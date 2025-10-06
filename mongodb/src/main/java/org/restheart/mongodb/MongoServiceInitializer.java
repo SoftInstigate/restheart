@@ -48,7 +48,9 @@ public class MongoServiceInitializer implements Initializer {
     @OnInit
     public void onInit() {
         Map<String, Object> mongoConfig = config.getOrDefault("mongo", null);
-        if (mongoConfig != null) {
+		if (mongoConfig != null) {
+		  	// copy aggregationSecurity into mongoConfig
+		  	mongoConfig.put("aggregationSecurity",  config.getOrDefault("aggregationSecurity", null));
             MongoServiceConfiguration.init(mongoConfig);
 
             TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());

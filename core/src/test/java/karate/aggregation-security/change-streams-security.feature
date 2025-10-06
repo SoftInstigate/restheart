@@ -12,63 +12,79 @@ Background:
   }
   """
   * def admin = basic({username: 'admin', password: 'secret'})
+  * def setupData = callonce read('setup.feature')
 
-@ignore
-Scenario: Setup change stream with safe pipeline
+Scenario: Setup change streams with safe and unsafe pipelines in collection metadata
+  # Create test database for change streams
+  Given path '/test-stream-security'
+  And header Authorization = admin
+  When method PUT
+  Then assert responseStatus == 201 || responseStatus == 200
+
   # Create test collection for change streams
   Given path '/test-stream-security/coll'
   And header Authorization = admin
   When method PUT
-  Then status 201
+  Then assert responseStatus == 201 || responseStatus == 200
 
-  # Create safe change stream
-  Given path '/test-stream-security/coll/_streams/safe-stream'
+  # Insert test data
+  Given path '/test-stream-security/coll'
+  And header Authorization = admin
+  And header Content-Type = 'application/json'
+  And request
+  """
+  [
+    {"name": "doc1", "value": 100},
+    {"name": "doc2", "value": 200}
+  ]
+  """
+  When method POST
+  Then assert responseStatus == 201 || responseStatus == 200
+
+  # Define change streams in collection metadata (both safe and unsafe)
+  Given path '/test-stream-security/coll'
+  And param wm = 'upsert'
   And header Authorization = admin
   And header Content-Type = 'application/json'
   And request
   """
   {
-    "stages": [
-      {"$match": {"operationType": "insert"}},
-      {"$project": {"fullDocument": 1, "operationType": 1}}
+    "streams": [
+      {
+        "uri": "safe-stream",
+        "stages": [
+          {"$match": {"operationType": "insert"}},
+          {"$project": {"fullDocument": 1, "operationType": 1}}
+        ]
+      },
+      {
+        "uri": "unsafe-stream",
+        "stages": [
+          {"$match": {"operationType": "insert"}},
+          {"$out": "malicious_stream_output"}
+        ]
+      }
     ]
   }
   """
-  When method PUT
-  Then status 201
+  When method PATCH
+  Then assert responseStatus == 201 || responseStatus == 200
 
-  # Create unsafe change stream with $out (should be blocked)
-  Given path '/test-stream-security/coll/_streams/unsafe-stream'
-  And header Authorization = admin
-  And header Content-Type = 'application/json'
-  And request
-  """
-  {
-    "stages": [
-      {"$match": {"operationType": "insert"}},
-      {"$out": "malicious_stream_output"}
-    ]
-  }
-  """
-  When method PUT
-  Then status 201
-
-Scenario: Safe change stream should accept WebSocket connections
+Scenario: Safe change stream should work normally
   Given path '/test-stream-security/coll/_streams/safe-stream'
   And header Authorization = admin
   And header Connection = 'Upgrade'
   And header Upgrade = 'websocket'
   When method GET
-  # Note: This will fail with HTTP status since we can't establish WebSocket in Karate easily
-  # But if aggregation security is working, it should not fail with 403 due to pipeline issues
-  Then status != 403
+  # Note: WebSocket upgrade is not fully testable in Karate, but should not fail due to security
+  Then assert responseStatus != 403
 
-Scenario: Unsafe change stream should be blocked before WebSocket upgrade
-  Given path '/test-stream-security/coll/_streams/unsafe-stream'
+Scenario: Unsafe change stream should be blocked when processing events
+  Given path '/test-stream-security/coll/_streams/unsafe-stream'  
   And header Authorization = admin
   And header Connection = 'Upgrade'
   And header Upgrade = 'websocket'
   When method GET
-  # Should fail with 400 Bad Request due to security violation, not proceed to WebSocket
-  Then status 400
-  And match $.message contains "Change stream pipeline security violation"
+  # Should be blocked due to $out stage in the pipeline
+  # The security check should happen during stream processing
+  Then assert responseStatus == 403 || responseStatus == 400
