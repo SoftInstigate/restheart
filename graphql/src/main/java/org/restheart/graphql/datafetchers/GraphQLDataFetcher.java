@@ -22,6 +22,7 @@ package org.restheart.graphql.datafetchers;
 
 import org.bson.BsonDocument;
 import org.restheart.graphql.models.FieldMapping;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 
 import com.mongodb.client.MongoClient;
 
@@ -34,9 +35,14 @@ import graphql.schema.GraphQLType;
 public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
     protected static MongoClient mongoClient;
     protected FieldMapping fieldMapping;
+    protected static AggregationPipelineSecurityChecker securityChecker;
 
     public static void setMongoClient(MongoClient mClient){
         mongoClient = mClient;
+    }
+    
+    public static void setSecurityChecker(AggregationPipelineSecurityChecker checker) {
+        securityChecker = checker;
     }
 
     public GraphQLDataFetcher(FieldMapping fieldMapping){

@@ -64,6 +64,19 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
         var _db = aggregation.getDb().getValue();
         var _collection = aggregation.getCollection().getValue();
+        
+        // Security validation: check GraphQL aggregation pipeline for blacklisted stages and operators
+        if (securityChecker != null && securityChecker.isEnabled()) {
+            var stagesArray = new BsonArray();
+            interpolatedAggregation.forEach(stage -> stagesArray.add(stage));
+            
+            try {
+                securityChecker.validatePipelineOrThrow(stagesArray, _db);
+            } catch (SecurityException se) {
+                LOGGER.warn("GraphQL aggregation pipeline blocked for security violation: {}", se.getMessage());
+                throw new RuntimeException("GraphQL aggregation pipeline security violation: " + se.getMessage());
+            }
+        }
 
         LOGGER.debug("Executing aggregation for field {}: {}.{}.aggregate {}, context vars {}", env.getField().getName(), _db, _collection,
             "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),

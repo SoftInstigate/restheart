@@ -85,6 +85,7 @@ public class MongoServiceConfiguration {
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
+    private final Map<String, Object> aggregationSecurityConfiguration;
 
     public static MongoServiceConfiguration get() {
         return INSTANCE;
@@ -237,6 +238,8 @@ public class MongoServiceConfiguration {
         defaultPagesize = asInteger(conf, DEFAULT_PAGESIZE_KEY, DEFAULT_DEFAULT_PAGESIZE, silent);
 
         maxPagesize = asInteger(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE, silent);
+        
+        aggregationSecurityConfiguration = asMap(conf, "aggregationSecurity", new HashMap<>(), silent);
     }
 
     @Override
@@ -413,6 +416,13 @@ public class MongoServiceConfiguration {
      */
     public int getMaxPagesize() {
         return maxPagesize;
+    }
+    
+    /**
+     * @return the aggregation security configuration
+     */
+    public Map<String, Object> getAggregationSecurityConfiguration() {
+        return aggregationSecurityConfiguration;
     }
 
     /**

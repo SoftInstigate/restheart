@@ -35,6 +35,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongodb</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
         </dependency>

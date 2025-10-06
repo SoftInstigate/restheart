@@ -32,6 +32,9 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.dataloader.BatchLoader;
 import org.restheart.graphql.GraphQLQueryTimeoutException;
+import org.restheart.security.AggregationPipelineSecurityChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.client.MongoClient;
@@ -40,7 +43,9 @@ import com.mongodb.client.model.Facet;
 
 public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregationBatchLoader.class);
     private static MongoClient mongoClient;
+    private static AggregationPipelineSecurityChecker securityChecker;
 
     private final String db;
     private final String collection;
@@ -57,10 +62,28 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
     public static void setMongoClient(MongoClient mClient) {
         mongoClient = mClient;
     }
+    
+    public static void setSecurityChecker(AggregationPipelineSecurityChecker checker) {
+        securityChecker = checker;
+    }
 
     @Override
     public CompletionStage<List<BsonValue>> load(List<BsonValue> pipelines) {
         var res = new ArrayList<BsonValue>();
+
+        // Security validation: check all batch pipelines for blacklisted stages and operators
+        if (securityChecker != null && securityChecker.isEnabled()) {
+            for (BsonValue pipeline : pipelines) {
+                if (pipeline.isArray()) {
+                    try {
+                        securityChecker.validatePipelineOrThrow(pipeline.asArray(), this.db);
+                    } catch (SecurityException se) {
+                        LOGGER.warn("GraphQL batch aggregation pipeline blocked for security violation: {}", se.getMessage());
+                        throw new RuntimeException("GraphQL batch aggregation pipeline security violation: " + se.getMessage());
+                    }
+                }
+            }
+        }
 
         var listOfFacets = pipelines.stream()
                 .map(pipeline -> new Facet(String.valueOf(pipeline.hashCode()), toBson(pipeline)))

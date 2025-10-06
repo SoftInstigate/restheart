@@ -35,6 +35,7 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Databases;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
@@ -57,12 +58,15 @@ public class GetAggregationHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetAggregationHandler.class);
 
     private final Databases dbs = Databases.get();
+    private final AggregationPipelineSecurityChecker securityChecker;
 
     /**
      * Default ctor
      */
     public GetAggregationHandler() {
         super();
+        var config = MongoServiceConfiguration.get().getAggregationSecurityConfiguration();
+        this.securityChecker = new AggregationPipelineSecurityChecker(config);
     }
 
     /**
@@ -72,6 +76,8 @@ public class GetAggregationHandler extends PipelinedHandler {
      */
     public GetAggregationHandler(PipelinedHandler next) {
         super(next);
+        var config = MongoServiceConfiguration.get().getAggregationSecurityConfiguration();
+        this.securityChecker = new AggregationPipelineSecurityChecker(config);
     }
 
     /**
@@ -95,7 +101,7 @@ public class GetAggregationHandler extends PipelinedHandler {
 
         var _query = aggregations.stream().filter(q -> q.getUri().equals(queryUri)).findFirst();
 
-        if (!_query.isPresent()) {
+        if (_query.isEmpty()) {
             response.setInError(HttpStatus.SC_NOT_FOUND, "query does not exist");
             next(exchange);
             return;
@@ -160,6 +166,18 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         var stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
+
+                        // Security validation: check aggregation pipeline for blacklisted stages and operators
+                        try {
+                            var stagesArray = new BsonArray();
+                            stages.forEach(stagesArray::add);
+                            securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
+                        } catch (SecurityException se) {
+                            response.setInError(HttpStatus.SC_FORBIDDEN, "aggregation pipeline security violation: " + se.getMessage());
+                            LOGGER.warn("Aggregation pipeline blocked for security violation: {}", se.getMessage());
+                            next(exchange);
+                            return;
+                        }
 
                         if (clientSession == null) {
                             agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())

@@ -372,6 +372,18 @@ filterOperatorsBlacklist:
   blacklist: [ "$where" ]
   enabled: true
 
+# Aggregation pipeline security settings
+aggregationSecurity:
+  enabled: true
+  # Block dangerous pipeline stages that can access other databases or execute code
+  stageBlacklist: [ "$out", "$merge", "$lookup", "$graphLookup", "$unionWith" ]
+  # Block dangerous operators within pipeline stages
+  operatorBlacklist: [ "$where", "$function", "$accumulator" ]
+  # Prevent operations that access different databases than the request URI
+  allowCrossDatabaseOperations: false
+  # Control JavaScript execution in aggregation pipelines
+  allowJavaScriptExecution: false
+
 # bruteForceAttackGuard defends from brute force password cracking attacks
 # by returning `429 Too Many Requests` when more than
 # `max-failed-attempts` requests with wrong credentials

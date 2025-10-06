@@ -23,6 +23,7 @@ package org.restheart.graphql;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,6 +50,7 @@ import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.metrics.MetricLabel;
 import org.restheart.metrics.Metrics;
 import org.restheart.plugins.Inject;
@@ -130,6 +132,14 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
+        
+        // Initialize aggregation security checker for GraphQL
+        @SuppressWarnings("unchecked")
+        var securityConfig = (Map<String, Object>) config.getOrDefault("aggregationSecurity", new HashMap<>());
+        var securityChecker = new AggregationPipelineSecurityChecker(securityConfig);
+        AggregationBatchLoader.setSecurityChecker(securityChecker);
+        GraphQLDataFetcher.setSecurityChecker(securityChecker);
+        
         AppDefinitionLoader.setup(db, collection, mclient);
         AppBuilder.setDefaultLimit(this.defaultLimit);
         AppBuilder.setMaxLimit(this.maxLimit);

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.restheart.exchange.InvalidMetadataException;
@@ -32,6 +33,8 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.QueryNotFoundException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.mongodb.utils.StagesInterpolator;
 import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
 import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
@@ -57,6 +60,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private final String UPGRADE_HEADER_VALUE = "websocket";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
+    private final AggregationPipelineSecurityChecker securityChecker;
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
         var csKey = new ChangeStreamWorkerKey(exchange);
         var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
@@ -77,6 +81,12 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
     public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
+    
+    public GetChangeStreamHandler() {
+        super();
+        var config = MongoServiceConfiguration.get().getAggregationSecurityConfiguration();
+        this.securityChecker = new AggregationPipelineSecurityChecker(config);
+    }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -168,7 +178,19 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
 
-	  return StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
+        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
+        
+        // Security validation: check change stream pipeline for blacklisted stages and operators
+        try {
+            var stagesArray = new BsonArray();
+            resolvedStages.forEach(stagesArray::add);
+            securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
+        } catch (SecurityException se) {
+            LOGGER.warn("Change stream pipeline blocked for security violation: {}", se.getMessage());
+            throw new InvalidMetadataException("Change stream pipeline security violation: " + se.getMessage());
+        }
+
+        return resolvedStages;
     }
 
     /**
