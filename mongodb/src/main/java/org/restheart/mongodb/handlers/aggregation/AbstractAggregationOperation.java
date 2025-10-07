@@ -28,9 +28,6 @@ import org.bson.BsonDocument;
 import org.restheart.exchange.InvalidMetadataException;
 
 public abstract class AbstractAggregationOperation {
-
-    private static final Set<String> MAP_REDUCE_ALIASES = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(), "map reduce", "mapReduce", "map-reduce", "mr"});
-
     private static final Set<String> AGGREGATION_PIPELINE_ALIASES = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(), "aggregation pipeline", "aggregationPipeline", "pipeline", "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
     /**
@@ -95,9 +92,7 @@ public abstract class AbstractAggregationOperation {
 
             var type = _type.asString().getValue();
 
-            if (MAP_REDUCE_ALIASES.contains(type)) {
-                return new MapReduce(query);
-            } else if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
+            if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
                 return new AggregationPipeline(query);
             } else {
                 throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "': " + type);
@@ -127,9 +122,7 @@ public abstract class AbstractAggregationOperation {
 
             var stype = _type.asString().getValue();
 
-            if (MAP_REDUCE_ALIASES.contains(stype)) {
-                this.type = TYPE.MAP_REDUCE;
-            } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
+            if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
                 this.type = TYPE.AGGREGATION_PIPELINE;
             } else {
                 throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "' property: " + stype);

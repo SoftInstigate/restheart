@@ -125,7 +125,17 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
-        _testGetAggregation(uri);
+
+		// support of map reduce aggregations is removed since v9.0.0
+	  	var aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
+	  	var resp = adminExecutor.execute(Request.Get(aggrUri));
+		var httpResp = resp.returnResponse();
+		assertNotNull(httpResp);
+		var entity = httpResp.getEntity();
+		assertNotNull(entity);
+		var statusLine = httpResp.getStatusLine();
+		assertNotNull(statusLine);
+	  	assertEquals(HttpStatus.SC_UNPROCESSABLE_ENTITY, statusLine.getStatusCode(), "check status code");
     }
 
     /**
@@ -165,50 +175,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         StatusLine statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
 
-        assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
-        assertNotNull(entity.getContentType(), "content type not null");
-        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
-
-        String content = EntityUtils.toString(entity);
-
-        assertNotNull(content, "");
-
-        JsonObject json = null;
-
-        try {
-            json = Json.parse(content).asObject();
-        } catch (Throwable t) {
-            fail("parsing received json");
-        }
-
-        assertNotNull(json, "check not null json response");
-        assertNotNull(json.get("_embedded"), "check not null _embedded");
-        assertTrue(json.get("_embedded").isObject(), "check _embedded");
-
-        assertNotNull(json.get("_embedded").asObject().get("rh:result"), "");
-        assertTrue(json.get("_embedded").asObject().get("rh:result").isArray(),
-                "check _embedded[\"rh:results\"]");
-
-        JsonArray results = json.get("_embedded").asObject().get("rh:result").asArray();
-
-        assertTrue(results.size() == 1, "check we have 2 results");
-
-        results.values().stream().map((v) -> {
-            assertNotNull(v.asObject().get("_id"), "check not null _id property");
-            return v;
-        }).map((v) -> {
-            assertTrue(v.asObject().get("_id").isString(), "check results _id property is string");
-            return v;
-        }).map((v) -> {
-            assertTrue(v.asObject().get("_id").asString().equals("a"), "check results _id property is a");
-            return v;
-        }).map((v) -> {
-            assertNotNull(
-                    v.asObject().get("value"), "check not null value property");
-            return v;
-        }).forEach((v) -> {
-            assertTrue(v.asObject().get("value").isNumber(), "check results value property is number");
-        });
+        assertEquals(HttpStatus.SC_UNPROCESSABLE_ENTITY, statusLine.getStatusCode(), "check status code");
     }
 
     /**
@@ -219,22 +186,25 @@ public class GetAggregationIT extends HttpClientAbstactIT {
     public void testUnboundVariable() throws Exception {
         String uri = "avg_ages";
 
-        String aggregationsMetadata = "{\"aggrs\": ["
-                + "{"
-                + "\"type\":\"mapReduce\"" + ","
-                + "\"uri\": \"" + uri + "\","
-                + "\"map\": \"function() { emit(this.name, this.age) }\"" + ","
-                + "\"reduce\":\"function(key, values) { return Array.avg(values) }\"" + ","
-                + "\"query\":{\"name\":{\"$var\":\"name\"}}"
-                + "}]}";
+	  	String aggregationsMetadata = """
+			{ "aggrs": [
+				{
+				  "uri": "%s",
+				  "stages": [
+				  	{"$match": {"name": {"$var":"name"} }},
+					{"$group": {"_id": "$name", "value": {"$avg": "$age" }}}
+				  ]
+			  	}
+			  ]
+			}
+			""".formatted(uri);
 
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
 
         Response resp;
 
-        URI aggrUri = buildURI("/" + dbTmpName
-                + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
+        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
@@ -251,8 +221,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
     }
 
     private void createTmpCollection() throws Exception {
-        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        Response resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp db", resp, HttpStatus.SC_CREATED);
 
         resp = adminExecutor.execute(Request.Put(collectionTmpUri)
@@ -298,15 +267,13 @@ public class GetAggregationIT extends HttpClientAbstactIT {
                         .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
                         .addHeader(Headers.IF_MATCH_STRING, etag));
 
-        check("check update collection with aggregations metadata",
-                resp, HttpStatus.SC_OK);
+        check("check update collection with aggregations metadata", resp, HttpStatus.SC_OK);
     }
 
     private void _testGetAggregation(String uri) throws Exception {
         Response resp;
 
-        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/"
-                + _AGGREGATIONS + "/" + uri);
+        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
