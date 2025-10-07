@@ -134,9 +134,6 @@ public class AggregationPipelineSecurityChecker {
 
 	this.allowCrossDatabaseOperations = (Boolean) config.getOrDefault("allowCrossDatabaseOperations", false);
 	this.allowJavaScriptExecution = (Boolean) config.getOrDefault("allowJavaScriptExecution", false);
-
-	LOGGER.info("AggregationPipelineSecurityChecker initialized: enabled={}, stageBlacklist={}, operatorBlacklist={}",
-		enabled, stageBlacklist, operatorBlacklist);
   }
 
   /**

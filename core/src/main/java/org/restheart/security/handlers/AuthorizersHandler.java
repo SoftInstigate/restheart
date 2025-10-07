@@ -21,6 +21,7 @@
 package org.restheart.security.handlers;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
@@ -30,6 +31,8 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -41,6 +44,8 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthorizersHandler extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizersHandler.class);
+    
     private final Set<PluginRecord<Authorizer>> authorizers;
 
     /**
@@ -52,6 +57,19 @@ public class AuthorizersHandler extends PipelinedHandler {
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
         super(next);
         this.authorizers = authorizers;
+        
+        var vetoers = authorizers.stream()
+            .filter(a -> PluginUtils.authorizerType(a.getInstance()) == TYPE.VETOER)
+            .map(a -> PluginUtils.name(a.getInstance()))
+            .collect(Collectors.toList());
+            
+        var allowers = authorizers.stream()
+            .filter(a -> PluginUtils.authorizerType(a.getInstance()) == TYPE.ALLOWER)
+            .map(a -> PluginUtils.name(a.getInstance()))
+            .collect(Collectors.toList());
+            
+        LOGGER.debug("Initialized AuthorizersHandler with {} authorizers - VETOERs: {}, ALLOWERs: {}", 
+            authorizers.size(), vetoers, allowers);
     }
 
     /**
@@ -62,10 +80,23 @@ public class AuthorizersHandler extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = Request.of(exchange);
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var authorizationStartTime = System.currentTimeMillis();
+        var isAuthenticated = request.isAuthenticated();
+        var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
+        
+        LOGGER.debug("┌── AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
 
-        if (isAllowed(request)) {
+        var isAllowedResult = isAllowed(request);
+        var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
+        
+        if (isAllowedResult) {
+            LOGGER.debug("└── ✓ ACCESS GRANTED ({}ms)", authorizationDuration);
             next(exchange);
         } else {
+            LOGGER.debug("└── ✗ ACCESS DENIED → 403 Forbidden ({}ms)", authorizationDuration);
+                
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
@@ -81,28 +112,111 @@ public class AuthorizersHandler extends PipelinedHandler {
      */
     @SuppressWarnings("rawtypes")
     private boolean isAllowed(final Request request) {
+        var requestPath = request.getPath();
+        var requestMethod = request.getMethod().toString();
+        var isAuthenticated = request.isAuthenticated();
+        var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
+        
         if (authorizers == null || authorizers.isEmpty()) {
+            LOGGER.debug("No authorizers configured for {} {} - User: {} - Access DENIED", 
+                requestMethod, requestPath, userPrincipal);
             return false;
-        } else {
-            return
-                // no VETOER must deny the request
-                authorizers.stream()
-                .filter(a -> a.isEnabled())
-                .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
-                // filter out authorizers that requires authentication when the request is not authenticated
-                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
-                .allMatch(a -> a.isAllowed(request))
-                && authorizers.stream()
-                // at least one ALLOWER must authorize the request
-                .filter(a -> a.isEnabled())
-                .filter(a -> a.getInstance() != null)
-                .map(a -> a.getInstance())
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                // filter out authorizers that requires authentication when the request is not authenticated
-                .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
-                .anyMatch(a -> a.isAllowed(request));
         }
+        
+        var authorizersStartTime = System.currentTimeMillis();
+        
+        // Check VETOER authorizers first
+        var vetoers = authorizers.stream()
+            .filter(a -> a.isEnabled())
+            .filter(a -> a.getInstance() != null)
+            .map(a -> a.getInstance())
+            .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
+            .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
+            .collect(Collectors.toList());
+            
+        if (!vetoers.isEmpty()) {
+            LOGGER.debug("│   Checking {} VETOER authorizers", vetoers.size());
+        }
+            
+        var vetoerStartTime = System.currentTimeMillis();
+        var vetoerResult = true;
+        
+        for (var vetoer : vetoers) {
+            var vetoerName = PluginUtils.name(vetoer);
+            var vetoerClass = vetoer.getClass().getSimpleName();
+            var vetoerCheckStartTime = System.currentTimeMillis();
+            
+            try {
+                var allowed = vetoer.isAllowed(request);
+                var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
+                
+                LOGGER.debug("│   ├─ VETOER {}: {} ({}ms)", vetoerName, allowed ? "✓" : "✗", vetoerCheckDuration);
+                
+                if (!allowed) {
+                    vetoerResult = false;
+                    break;
+                }
+            } catch (Exception ex) {
+                var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
+                LOGGER.error("Error in VETOER {} ({}) for {} {} - User: {} after {}ms", 
+                    vetoerName, vetoerClass, requestMethod, requestPath, userPrincipal, vetoerCheckDuration, ex);
+                vetoerResult = false;
+                break;
+            }
+        }
+        
+        var vetoerDuration = System.currentTimeMillis() - vetoerStartTime;
+        
+        if (!vetoerResult) {
+            var totalDuration = System.currentTimeMillis() - authorizersStartTime;
+            LOGGER.debug("VETOER check FAILED for {} {} - User: {} - VETOER time: {}ms, Total: {}ms", 
+                requestMethod, requestPath, userPrincipal, vetoerDuration, totalDuration);
+            return false;
+        }
+        
+        
+        // Check ALLOWER authorizers
+        var allowers = authorizers.stream()
+            .filter(a -> a.isEnabled())
+            .filter(a -> a.getInstance() != null)
+            .map(a -> a.getInstance())
+            .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+            .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
+            .collect(Collectors.toList());
+            
+        if (!allowers.isEmpty()) {
+            LOGGER.debug("│   Checking {} ALLOWER authorizers", allowers.size());
+        }
+            
+        var allowerStartTime = System.currentTimeMillis();
+        var allowerResult = false;
+        
+        for (var allower : allowers) {
+            var allowerName = PluginUtils.name(allower);
+            var allowerClass = allower.getClass().getSimpleName();
+            var allowerCheckStartTime = System.currentTimeMillis();
+            
+            try {
+                var allowed = allower.isAllowed(request);
+                var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
+                
+                LOGGER.debug("│   ├─ ALLOWER {}: {} ({}ms)", allowerName, allowed ? "✓" : "✗", allowerCheckDuration);
+                
+                if (allowed) {
+                    allowerResult = true;
+                    break;
+                }
+            } catch (Exception ex) {
+                var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
+                LOGGER.error("Error in ALLOWER {} ({}) for {} {} - User: {} after {}ms", 
+                    allowerName, allowerClass, requestMethod, requestPath, userPrincipal, allowerCheckDuration, ex);
+            }
+        }
+        
+        var allowerDuration = System.currentTimeMillis() - allowerStartTime;
+        var totalDuration = System.currentTimeMillis() - authorizersStartTime;
+        
+        
+        return vetoerResult && allowerResult;
     }
 }

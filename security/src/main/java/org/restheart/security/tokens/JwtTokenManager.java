@@ -146,50 +146,78 @@ public class JwtTokenManager implements TokenManager {
 
     @Override
     public Account verify(final String id, final Credential credential) {
+        var verificationStartTime = System.currentTimeMillis();
+        
         if (!enabled) {
+            LOGGER.debug("JwtTokenManager is disabled - Cannot verify token for user '{}'", id);
             return null;
         }
 
-        if (id != null && credential instanceof PasswordCredential) {
-            final char[] rawToken = ((PasswordCredential) credential).getPassword();
-            final var ca = new ComparableAccount(new BaseAccount(id, null));
-            final var _cached = this.jwtCache.get(ca);
+        if (id == null || !(credential instanceof PasswordCredential)) {
+            LOGGER.debug("Invalid parameters for JWT verification - id: {}, credential type: {}", 
+                id, credential != null ? credential.getClass().getSimpleName() : "null");
+            return null;
+        }
+        
+        LOGGER.debug("Starting JWT token verification for user '{}'", id);
 
-            // first check if the very same token is in the cache
-            if (_cached != null && _cached.isPresent() && Arrays.equals(rawToken, _cached.get().raw())) {
-                LOGGER.debug("jwt token in cache");
-                final var cached = _cached.get();
-                final var roles = Sets.newHashSet(cached.roles());
-                final var jwtParts = String.valueOf(cached.raw()).split("\\.");
-                final var jwtPayload = new String(Base64.getUrlDecoder().decode(jwtParts[1]), StandardCharsets.UTF_8);
+        final char[] rawToken = ((PasswordCredential) credential).getPassword();
+        final var ca = new ComparableAccount(new BaseAccount(id, null));
+        
+        var cacheCheckStartTime = System.currentTimeMillis();
+        final var _cached = this.jwtCache.get(ca);
+        var cacheCheckDuration = System.currentTimeMillis() - cacheCheckStartTime;
 
-                return new JwtAccount(id, roles, jwtPayload);
-            } else {
-                LOGGER.trace("jwt token not in cache, let's verify it");
-                // if the token is not in the cache, verify it
-                try {
-                    final var decoded = this.verifier.verify(String.valueOf(rawToken));
+        // first check if the very same token is in the cache
+        if (_cached != null && _cached.isPresent() && Arrays.equals(rawToken, _cached.get().raw())) {
+            LOGGER.debug("JWT token found in cache for user '{}' - Cache lookup: {}ms", id, cacheCheckDuration);
+            final var cached = _cached.get();
+            final var roles = Sets.newHashSet(cached.roles());
+            final var jwtParts = String.valueOf(cached.raw()).split("\\.");
+            final var jwtPayload = new String(Base64.getUrlDecoder().decode(jwtParts[1]), StandardCharsets.UTF_8);
 
-                    if (id.equals(decoded.getSubject())) {
-                        final var _roles = decoded.getClaim(ROLES).asArray(String.class);
-                        final var roles = Sets.newHashSet(_roles);
+            var totalDuration = System.currentTimeMillis() - verificationStartTime;
+            LOGGER.debug("JWT token verification successful (cached) for user '{}' with roles: {} - Total: {}ms", 
+                id, roles, totalDuration);
+                
+            return new JwtAccount(id, roles, jwtPayload);
+        } else {
+            LOGGER.debug("JWT token not in cache for user '{}' - Performing verification - Cache lookup: {}ms", 
+                id, cacheCheckDuration);
+            // if the token is not in the cache, verify it
+            try {
+                var jwtVerifyStartTime = System.currentTimeMillis();
+                final var decoded = this.verifier.verify(String.valueOf(rawToken));
+                var jwtVerifyDuration = System.currentTimeMillis() - jwtVerifyStartTime;
 
-                        final var jwtPayload = new String(Base64.getUrlDecoder().decode(decoded.getPayload()),
-                                StandardCharsets.UTF_8);
-                        this.jwtCache.put(ca, newToken(ca.wrapped, decoded.getExpiresAt()));
-                        return new JwtAccount(id, roles, jwtPayload);
-                    } else {
-                        LOGGER.warn("invalid token from user {}, not matching id in token, was {}", id,
-                                decoded.getSubject());
-                        return null;
-                    }
-                } catch (final Exception e) {
-                    LOGGER.warn("expired or invalid token from user {}, {}", id, e.getMessage());
+                if (id.equals(decoded.getSubject())) {
+                    final var _roles = decoded.getClaim(ROLES).asArray(String.class);
+                    final var roles = Sets.newHashSet(_roles);
+
+                    final var jwtPayload = new String(Base64.getUrlDecoder().decode(decoded.getPayload()),
+                            StandardCharsets.UTF_8);
+                    
+                    var cacheUpdateStartTime = System.currentTimeMillis();
+                    this.jwtCache.put(ca, newToken(ca.wrapped, decoded.getExpiresAt()));
+                    var cacheUpdateDuration = System.currentTimeMillis() - cacheUpdateStartTime;
+                    
+                    var totalDuration = System.currentTimeMillis() - verificationStartTime;
+                    LOGGER.debug("JWT token verification successful for user '{}' with roles: {} - JWT verify: {}ms, Cache update: {}ms, Total: {}ms", 
+                        id, roles, jwtVerifyDuration, cacheUpdateDuration, totalDuration);
+                        
+                    return new JwtAccount(id, roles, jwtPayload);
+                } else {
+                    var totalDuration = System.currentTimeMillis() - verificationStartTime;
+                    LOGGER.warn("Invalid JWT token from user '{}' - Subject mismatch: expected '{}', got '{}' - Verification: {}ms, Total: {}ms", 
+                        id, id, decoded.getSubject(), jwtVerifyDuration, totalDuration);
                     return null;
                 }
+            } catch (final Exception e) {
+                var totalDuration = System.currentTimeMillis() - verificationStartTime;
+                LOGGER.warn("JWT token verification failed for user '{}' after {}ms: {}", 
+                    id, totalDuration, e.getMessage());
+                return null;
             }
-        } else {
-            return null;
         }
     }
 
@@ -200,21 +228,43 @@ public class JwtTokenManager implements TokenManager {
 
     @Override
     public PasswordCredential get(final Account account) {
+        var tokenStartTime = System.currentTimeMillis();
+        
         if (!enabled) {
+            LOGGER.debug("JwtTokenManager is disabled - Cannot generate token");
             return null;
         }
 
         if (account == null || account.getPrincipal() == null || account.getPrincipal().getName() == null) {
+            LOGGER.debug("Invalid account provided to JwtTokenManager - Cannot generate token");
             return null;
         }
+        
+        var userName = account.getPrincipal().getName();
+        var userRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
+        
+        LOGGER.debug("Generating JWT token for user '{}' with roles: {}", userName, userRoles);
 
-        final var token = this.jwtCache.getLoading(new ComparableAccount(account)).get();
-        final var newTokenAccount = new PwdCredentialAccount(
-                account.getPrincipal().getName(),
-                token.raw(),
-                Sets.newTreeSet(account.getRoles()));
+        try {
+            var cacheStartTime = System.currentTimeMillis();
+            final var token = this.jwtCache.getLoading(new ComparableAccount(account)).get();
+            var cacheDuration = System.currentTimeMillis() - cacheStartTime;
+            
+            final var newTokenAccount = new PwdCredentialAccount(
+                    account.getPrincipal().getName(),
+                    token.raw(),
+                    Sets.newTreeSet(account.getRoles()));
 
-        return newTokenAccount.getCredentials();
+            var totalDuration = System.currentTimeMillis() - tokenStartTime;
+            LOGGER.debug("JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms", 
+                userName, cacheDuration, totalDuration);
+                
+            return newTokenAccount.getCredentials();
+        } catch (Exception ex) {
+            var totalDuration = System.currentTimeMillis() - tokenStartTime;
+            LOGGER.error("Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
+            throw ex;
+        }
     }
 
     private Token newToken(final Account account) {

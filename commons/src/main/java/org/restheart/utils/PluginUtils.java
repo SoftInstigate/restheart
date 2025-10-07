@@ -397,6 +397,18 @@ public class PluginUtils {
     private static final LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.responseType());
 
     /**
+     * Retrieves the priority of a plugin from its @RegisterPlugin annotation.
+     *
+     * @param plugin the plugin to get the priority from
+     * @return the plugin priority, or 10 (default) if annotation is not present
+     */
+    public static int priority(Plugin plugin) {
+        if (plugin == null) return 10; // default priority
+        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        return annotation != null ? annotation.priority() : 10; // default priority
+    }
+
+    /**
      * Retrieves the request type for the plugin using a cache for improved performance.
      * Plugin.requestType() is computationally expensive, so this helper method
      * speeds up invocation by caching results.

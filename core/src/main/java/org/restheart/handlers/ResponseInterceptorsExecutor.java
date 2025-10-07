@@ -105,6 +105,10 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
     private void executeResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         Exchange.setResponseInterceptorsExecuted(exchange);
+        
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var statusCode = response.getStatusCode();
 
         List<Interceptor<?,?>> inteceptors;
 
@@ -114,35 +118,63 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
             inteceptors = this.pluginsRegistry.getProxyInterceptors(InterceptPoint.RESPONSE);
         }
 
-        inteceptors.stream()
+        var applicableInterceptors = inteceptors.stream()
             .filter(ri -> ri instanceof Interceptor)
             .map(ri -> (Interceptor) ri)
-            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri)).filter(ri -> {
+            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
+            .filter(ri -> {
                 try {
                     return ri.resolve(request, response);
                 } catch (Exception ex) {
-                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE, ex);
-
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
+                    LOGGER.warn("Error resolving response interceptor {} for {} {}", 
+                        ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
                     return false;
                 }
-            }).forEachOrdered(ri -> {
-                LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE);
+            })
+            .collect(java.util.stream.Collectors.toList());
 
-                try {
-                    ri.handle(request, response);
-                } catch (Exception ex) {
-                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE, ex);
+        if (applicableInterceptors.isEmpty()) {
+            LOGGER.debug("┌── RESPONSE INTERCEPTORS");
+            LOGGER.debug("│   No applicable interceptors");
+            LOGGER.debug("└── RESPONSE COMPLETED in 0ms");
+            return;
+        }
 
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
-                }
-            });
+        LOGGER.debug("┌── RESPONSE INTERCEPTORS");
+        LOGGER.debug("│   Found {} applicable interceptors", applicableInterceptors.size());
+
+        var executionStartTime = System.currentTimeMillis();
+        
+        applicableInterceptors.forEach(ri -> {
+            var interceptorStartTime = System.currentTimeMillis();
+            var interceptorName = PluginUtils.name(ri);
+            
+            LOGGER.debug("│   ├─ {} (priority: {})", interceptorName, PluginUtils.priority(ri));
+
+            try {
+                ri.handle(request, response);
+                
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.debug("│   │  └─ ✓ {}ms", interceptorDuration);
+            } catch (Exception ex) {
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+
+                Exchange.setInError(exchange);
+                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
+            }
+        });
+            
+        var totalDuration = System.currentTimeMillis() - executionStartTime;
+        LOGGER.debug("└── RESPONSE COMPLETED in {}ms", totalDuration);
     }
 
     @SuppressWarnings({"unchecked","rawtypes"})
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
+
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var statusCode = response.getStatusCode();
 
         List<Interceptor<?, ?>> inteceptors;
 
@@ -152,9 +184,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
             inteceptors = this.pluginsRegistry.getProxyInterceptors(InterceptPoint.RESPONSE_ASYNC);
         }
 
-        Exchange.setResponseInterceptorsExecuted(exchange);
-
-        inteceptors.stream()
+        var applicableAsyncInterceptors = inteceptors.stream()
             .filter(ri -> ri instanceof Interceptor)
             .map(ri -> (Interceptor) ri)
             .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
@@ -162,24 +192,43 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                 try {
                     return ri.resolve(request, response);
                 } catch (Exception ex) {
-                    LOGGER.warn("Error resolving async interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
-
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving async interceptor " + ri.getClass().getSimpleName(), ex));
+                    LOGGER.warn("Error resolving async interceptor {} for {} {}", 
+                        ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
                     return false;
                 }
             })
-            .forEachOrdered(ri -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
+            .collect(java.util.stream.Collectors.toList());
 
-                try {
-                    ri.handle(request, response);
-                } catch (Exception ex) {
-                    LOGGER.error("Error executing asyng interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC, ex);
+        if (!applicableAsyncInterceptors.isEmpty()) {
+            LOGGER.debug("┌── RESPONSE_ASYNC INTERCEPTORS");
+            LOGGER.debug("│   Found {} applicable async interceptors", applicableAsyncInterceptors.size());
+        }
 
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
-                }
-            }));
+        Exchange.setResponseInterceptorsExecuted(exchange);
+
+        applicableAsyncInterceptors.forEach(ri -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+            var interceptorStartTime = System.currentTimeMillis();
+            var interceptorName = PluginUtils.name(ri);
+            
+            LOGGER.debug("│   ├─ ASYNC {} (priority: {}, thread: {})", 
+                interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
+
+            try {
+                ri.handle(request, response);
+                
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.debug("│   │  └─ ✓ {}ms (async)", interceptorDuration);
+            } catch (Exception ex) {
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.error("│   │  └─ ✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+
+                Exchange.setInError(exchange);
+                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
+            }
+        }));
+        
+        if (!applicableAsyncInterceptors.isEmpty()) {
+            LOGGER.debug("└── RESPONSE_ASYNC dispatched to {} virtual threads", applicableAsyncInterceptors.size());
+        }
     }
 }

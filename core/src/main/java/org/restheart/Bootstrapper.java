@@ -92,6 +92,7 @@ import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
 import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
+import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.RegisterPlugin;
@@ -365,28 +366,63 @@ public final class Bootstrapper {
         }
 
         // run pre startup initializers
-        PluginsRegistryImpl.getInstance()
+        var beforeStartupInitializers = PluginsRegistryImpl.getInstance()
             .getInitializers()
             .stream()
             .filter(i -> initPoint(i.getInstance()) == BEFORE_STARTUP)
-            .forEach(i -> {
-                try {
-                    i.getInstance().init();
-                } catch (NoClassDefFoundError iae) {
-                    // this occurs executing interceptors missing external dependencies
-                    LOGGER.error("Error executing initializer {}. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", i.getName(), iae);
-                } catch (LinkageError le) {
-                    // this might occur executing plugin code compiled
-                    // with wrong version of restheart-commons
-                    var version = Version.getInstance().getVersion() == null
-                        ? "of correct version"
-                        : "v" + Version.getInstance().getVersion();
+            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
+            .toList();
+            
+        if (beforeStartupInitializers.isEmpty()) {
+            LOGGER.debug("┌── BEFORE_STARTUP INITIALIZERS");
+            LOGGER.debug("│   No initializers configured");
+            LOGGER.debug("└── BEFORE_STARTUP COMPLETED in 0ms");
+        } else {
+            LOGGER.debug("┌── BEFORE_STARTUP INITIALIZERS");
+            LOGGER.debug("│   Found {} initializers", beforeStartupInitializers.size());
+        }
+        var beforeStartupStartTime = System.currentTimeMillis();
+        
+        beforeStartupInitializers.forEach(i -> {
+            var initializerStartTime = System.currentTimeMillis();
+            var initializerName = i.getName();
+            var initializerClass = i.getInstance().getClass().getSimpleName();
+            var initializerPriority = getPluginPriority(i.getInstance());
+            
+            LOGGER.debug("│   ├─ {} ({}) - Priority: {}", 
+                initializerName, initializerClass, initializerPriority);
+                
+            try {
+                i.getInstance().init();
+                
+                var duration = System.currentTimeMillis() - initializerStartTime;
+                LOGGER.debug("│   │  └─ ✓ {}ms", duration);
+            } catch (NoClassDefFoundError iae) {
+                var duration = System.currentTimeMillis() - initializerStartTime;
+                // this occurs executing interceptors missing external dependencies
+                LOGGER.error("Error executing BEFORE_STARTUP initializer {} ({}) after {}ms. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", 
+                    initializerName, initializerClass, duration, iae);
+            } catch (LinkageError le) {
+                var duration = System.currentTimeMillis() - initializerStartTime;
+                // this might occur executing plugin code compiled
+                // with wrong version of restheart-commons
+                var version = Version.getInstance().getVersion() == null
+                    ? "of correct version"
+                    : "v" + Version.getInstance().getVersion();
 
-                    LOGGER.error("Linkage error executing initializer {}. Check that it was compiled against restheart-commons {}", i.getName(), version, le);
-                } catch (Throwable t) {
-                    LOGGER.error("Error executing initializer {}", i.getName());
-                }
-            });
+                LOGGER.error("Linkage error executing BEFORE_STARTUP initializer {} ({}) after {}ms. Check that it was compiled against restheart-commons {}", 
+                    initializerName, initializerClass, duration, version, le);
+            } catch (Throwable t) {
+                var duration = System.currentTimeMillis() - initializerStartTime;
+                LOGGER.error("Error executing BEFORE_STARTUP initializer {} ({}) after {}ms", 
+                    initializerName, initializerClass, duration, t);
+            }
+        });
+        
+        if (!beforeStartupInitializers.isEmpty()) {
+            var beforeStartupDuration = System.currentTimeMillis() - beforeStartupStartTime;
+            LOGGER.debug("└── BEFORE_STARTUP COMPLETED in {}ms", beforeStartupDuration);
+        }
         try {
             startCoreSystem();
         } catch (Throwable t) {
@@ -402,30 +438,58 @@ public final class Bootstrapper {
         }
 
         // run initializers
-        PluginsRegistryImpl.getInstance()
+        var afterStartupInitializers = PluginsRegistryImpl.getInstance()
             .getInitializers()
             .stream()
             .filter(i -> initPoint(i.getInstance()) == AFTER_STARTUP)
-            .forEach(i -> {
+            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
+            .toList();
+            
+        if (afterStartupInitializers.isEmpty()) {
+            LOGGER.debug("┌── AFTER_STARTUP INITIALIZERS");
+            LOGGER.debug("│   No initializers found");
+            LOGGER.debug("└── AFTER_STARTUP COMPLETED in 0ms");
+        } else {
+            LOGGER.debug("┌── AFTER_STARTUP INITIALIZERS");
+            LOGGER.debug("│   Found {} initializers", afterStartupInitializers.size());
+            
+            var afterStartupStartTime = System.currentTimeMillis();
+            
+            afterStartupInitializers.forEach(i -> {
+                var initializerStartTime = System.currentTimeMillis();
+                var initializerName = i.getName();
+                var initializerClass = i.getInstance().getClass().getSimpleName();
+                var initializerPriority = getPluginPriority(i.getInstance());
+                
+                LOGGER.debug("│   ├─ {} ({}) - Priority: {}", initializerName, initializerClass, initializerPriority);
+                    
                 try {
                     i.getInstance().init();
+                    
+                    var duration = System.currentTimeMillis() - initializerStartTime;
+                    LOGGER.debug("│   │  └─ ✓ {}ms", duration);
                 } catch (NoClassDefFoundError iae) {
+                    var duration = System.currentTimeMillis() - initializerStartTime;
                     // this occurs executing interceptors missing external dependencies
-
-                    LOGGER.error("Error executing initializer {}. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", i.getName(), iae);
+                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: Missing external dependency. Copy the missing dependency jar to the plugins directory", duration, iae);
                 } catch (LinkageError le) {
+                    var duration = System.currentTimeMillis() - initializerStartTime;
                     // this might occur executing plugin code compiled
                     // with wrong version of restheart-commons
-
                     var version = Version.getInstance().getVersion() == null
                             ? "of correct version"
                             : "v" + Version.getInstance().getVersion();
 
-                    LOGGER.error("Linkage error executing initializer {}. Check that it was compiled against restheart-commons {}", i.getName(), version, le);
+                    LOGGER.error("│   │  └─ ✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}", duration, version, le);
                 } catch (Throwable t) {
-                    LOGGER.error("Error executing initializer {}", i.getName(), t);
+                    var duration = System.currentTimeMillis() - initializerStartTime;
+                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", duration, t.getMessage());
                 }
             });
+            
+            var afterStartupDuration = System.currentTimeMillis() - afterStartupStartTime;
+            LOGGER.debug("└── AFTER_STARTUP COMPLETED in {}ms", afterStartupDuration);
+        }
 
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
@@ -896,6 +960,12 @@ public final class Bootstrapper {
                 LOGGER.error("Cannot bind static resource {}", sr, t);
             }
         });
+    }
+
+    private static int getPluginPriority(Plugin plugin) {
+        if (plugin == null) return 10; // default priority
+        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        return annotation != null ? annotation.priority() : 10; // default priority
     }
 
     /**

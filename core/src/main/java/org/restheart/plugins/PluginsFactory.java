@@ -419,8 +419,15 @@ public class PluginsFactory {
     }
 
     private void inject(InstatiatedPlugin ip) throws NoProviderException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        var injectStartTime = System.currentTimeMillis();
+        LOGGER.debug("Starting dependency injection for {} ({})", ip.name, ip.clazz.getSimpleName());
+        
         setInjectFields(ip);
         invokeOnInitMethods(ip);
+        
+        var injectDuration = System.currentTimeMillis() - injectStartTime;
+        LOGGER.debug("Completed dependency injection for {} ({}) in {}ms", 
+            ip.name, ip.clazz.getSimpleName(), injectDuration);
     }
 
     private void setInjectFields(InstatiatedPlugin ip) throws NoProviderException, InstantiationException, IllegalAccessException, InvocationTargetException {
@@ -434,29 +441,65 @@ public class PluginsFactory {
             .filter(i -> i instanceof FieldInjectionDescriptor)
             .map(i -> (FieldInjectionDescriptor) i)
             .forEach(injections::add);
+            
+        LOGGER.debug("Processing {} field injections for {} ({})", 
+            injections.size(), ip.name, ip.clazz.getSimpleName());
 
         for (var injection : injections) {
             // try to set @Inject field
+            var injectionStartTime = System.currentTimeMillis();
             try {
                 var field = ip.clazz.getDeclaredField(injection.field());
+                var fieldType = field.getType().getSimpleName();
 
                 // find the provider
                 var providerName = injection.annotationParams().get(0).getValue();
+                LOGGER.debug("Looking up provider '{}' for field {} ({}) in {} ({})", 
+                    providerName, injection.field(), fieldType, ip.name, ip.clazz.getSimpleName());
+                    
                 var _provider = providers().stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
                 if (_provider.isPresent()) {
-                    var value = _provider.get().getInstance().get(this.INSTANTIATED_PLUGINS_RECORDS.get(ip.clazz.getName()));
+                    var providerInstance = _provider.get().getInstance();
+                    var providerClass = providerInstance.getClass().getSimpleName();
+                    var callerRecord = this.INSTANTIATED_PLUGINS_RECORDS.get(ip.clazz.getName());
+                    
+                    LOGGER.debug("Found provider '{}' ({}) - Calling get() for {} ({})", 
+                        providerName, providerClass, ip.name, ip.clazz.getSimpleName());
+                        
+                    var getStartTime = System.currentTimeMillis();
+                    var value = providerInstance.get(callerRecord);
+                    var getDuration = System.currentTimeMillis() - getStartTime;
+                    
                     field.setAccessible(true);
-                    LOGGER.debug("Injecting {} into field {} of class {}", PluginUtils.name(_provider.get().getInstance()), field.getName(), ip.instance.getClass().getName());
                     field.set(ip.instance, value);
+                    
+                    var injectionDuration = System.currentTimeMillis() - injectionStartTime;
+                    LOGGER.debug("Provider '{}' injected {} into field {} of {} ({}) - Provider call: {}ms, Total: {}ms", 
+                        providerName, value != null ? value.getClass().getSimpleName() : "null", 
+                        injection.field(), ip.name, ip.clazz.getSimpleName(), getDuration, injectionDuration);
                 } else {
+                    var availableProviders = providers().stream().map(p -> p.getName()).toList();
+                    LOGGER.error("No provider found for @Inject(\"{}\") in {} ({}). Available providers: {}", 
+                        providerName, ip.name, ip.clazz.getSimpleName(), availableProviders);
                     throw new NoProviderException("no provider found for @Inject(\"" + providerName + "\")");
                 }
             } catch(NoSuchFieldException nsfe) {
+                var injectionDuration = System.currentTimeMillis() - injectionStartTime;
+                LOGGER.error("Field '{}' not found in {} ({}) after {}ms", 
+                    injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration);
                 // should not happen
                 throw new InvocationTargetException(nsfe);
+            } catch(Exception ex) {
+                var injectionDuration = System.currentTimeMillis() - injectionStartTime;
+                LOGGER.error("Error injecting provider into field '{}' of {} ({}) after {}ms", 
+                    injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration, ex);
+                throw ex;
             }
         }
+        
+        LOGGER.debug("Completed {} field injections for {} ({})", 
+            injections.size(), ip.name, ip.clazz.getSimpleName());
     }
 
     private void invokeOnInitMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {

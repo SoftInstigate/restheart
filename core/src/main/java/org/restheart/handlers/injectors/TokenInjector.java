@@ -23,12 +23,17 @@ package org.restheart.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.utils.PluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TokenInjector extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TokenInjector.class);
+    
     private final TokenManager tokenManager;
 
     /**
@@ -40,6 +45,15 @@ public class TokenInjector extends PipelinedHandler {
     public TokenInjector(PipelinedHandler next, TokenManager tokenManager) {
         super(next);
         this.tokenManager = tokenManager;
+        
+        if (tokenManager != null) {
+            var tokenManagerName = PluginUtils.name(tokenManager);
+            var tokenManagerClass = tokenManager.getClass().getSimpleName();
+            LOGGER.debug("Initialized TokenInjector with token manager: {} ({})", 
+                tokenManagerName, tokenManagerClass);
+        } else {
+            LOGGER.debug("Initialized TokenInjector with no token manager");
+        }
     }
 
     /**
@@ -49,14 +63,52 @@ public class TokenInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (this.tokenManager != null
-                && exchange.getSecurityContext() != null
-                && exchange.getSecurityContext().isAuthenticated()) {
-            var authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var securityContext = exchange.getSecurityContext();
+        var isAuthenticated = securityContext != null && securityContext.isAuthenticated();
+        
+        if (this.tokenManager == null) {
+            LOGGER.debug("No token manager configured for {} {} - Skipping token injection", 
+                requestMethod, requestPath);
+        } else if (securityContext == null) {
+            LOGGER.debug("No security context for {} {} - Skipping token injection", 
+                requestMethod, requestPath);
+        } else if (!isAuthenticated) {
+            LOGGER.debug("Request not authenticated for {} {} - Skipping token injection", 
+                requestMethod, requestPath);
+        } else {
+            var tokenStartTime = System.currentTimeMillis();
+            var authenticatedAccount = securityContext.getAuthenticatedAccount();
+            var userPrincipal = authenticatedAccount.getPrincipal().getName();
+            var tokenManagerName = PluginUtils.name(tokenManager);
+            var tokenManagerClass = tokenManager.getClass().getSimpleName();
+            
+            LOGGER.debug("Starting token injection for {} {} - User: {} - Token Manager: {} ({})", 
+                requestMethod, requestPath, userPrincipal, tokenManagerName, tokenManagerClass);
 
-            var token = tokenManager.get(authenticatedAccount);
+            try {
+                var tokenGenStartTime = System.currentTimeMillis();
+                var token = tokenManager.get(authenticatedAccount);
+                var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
+                
+                LOGGER.debug("Token generation completed for user '{}' with {} ({}) in {}ms", 
+                    userPrincipal, tokenManagerName, tokenManagerClass, tokenGenDuration);
 
-            tokenManager.injectTokenHeaders(exchange, token);
+                var headerInjectionStartTime = System.currentTimeMillis();
+                tokenManager.injectTokenHeaders(exchange, token);
+                var headerInjectionDuration = System.currentTimeMillis() - headerInjectionStartTime;
+                
+                var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
+                LOGGER.debug("Token injection completed for {} {} - User: {} - Generation: {}ms, Header injection: {}ms, Total: {}ms", 
+                    requestMethod, requestPath, userPrincipal, tokenGenDuration, headerInjectionDuration, totalTokenDuration);
+                    
+            } catch (Exception ex) {
+                var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
+                LOGGER.error("Error during token injection for {} {} - User: {} - Token Manager: {} ({}) after {}ms", 
+                    requestMethod, requestPath, userPrincipal, tokenManagerName, tokenManagerClass, totalTokenDuration, ex);
+                throw ex;
+            }
         }
 
         next(exchange);

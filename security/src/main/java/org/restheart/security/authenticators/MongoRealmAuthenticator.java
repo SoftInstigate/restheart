@@ -175,29 +175,46 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     private Account verify(final String usersDb, final String id, final Credential credential) {
+        var verificationStartTime = System.currentTimeMillis();
+        
         if (credential == null) {
-            LOGGER.debug("cannot verify null credential");
+            LOGGER.debug("Cannot verify null credential for user '{}'", id);
             return null;
         }
 
-        LOGGER.debug("Verifying credentials for user {} in {}.{} collection", id, usersDb, this.usersCollection);
-
+        var accountLookupStartTime = System.currentTimeMillis();
         final var ref = getAccount(usersDb, id);
+        var accountLookupDuration = System.currentTimeMillis() - accountLookupStartTime;
+        
+        if (ref == null) {
+            var totalDuration = System.currentTimeMillis() - verificationStartTime;
+            LOGGER.debug("User '{}' not found in {}.{} ({}ms)", id, usersDb, this.usersCollection, totalDuration);
+            return null;
+        }
 
         boolean verified = false;
+        var credentialVerificationStartTime = System.currentTimeMillis();
 
         if (credential instanceof final PasswordCredential passwordCredential) {
             verified = verifyPasswordCredential(usersDb, ref, passwordCredential);
         } else if (credential instanceof final DigestCredential digestCredential) {
             verified = verifyDigestCredential(ref, digestCredential);
         } else {
-            LOGGER.warn("mongoRealmAuthenticator does not support credential of type {}", credential.getClass().getSimpleName());
+            LOGGER.warn("MongoRealmAuthenticator does not support credential of type {} for user '{}'", 
+                credential.getClass().getSimpleName(), id);
         }
+        
+        var credentialVerificationDuration = System.currentTimeMillis() - credentialVerificationStartTime;
+        var totalDuration = System.currentTimeMillis() - verificationStartTime;
 
         if (verified) {
+            LOGGER.debug("User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms", 
+                id, accountLookupDuration, credentialVerificationDuration, totalDuration);
+                
             updateAuthTokenCache(ref);
             return ref;
         } else {
+            LOGGER.debug("User '{}' verification failed ({}ms)", id, totalDuration);
             return null;
         }
     }

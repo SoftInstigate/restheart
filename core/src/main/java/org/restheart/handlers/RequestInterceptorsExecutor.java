@@ -87,6 +87,10 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         Response<?> response;
 
         var handlingService = (Service<ServiceRequest<?>, ServiceResponse<?>>) PluginUtils.handlingService(pluginsRegistry, exchange);
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+
+        LOGGER.debug("┌── {} INTERCEPTORS for {} {}", interceptPoint, requestMethod, requestPath);
 
         List<Interceptor<?, ?>> interceptors;
 
@@ -99,6 +103,18 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             response = ByteArrayProxyResponse.of(exchange);
             interceptors = pluginsRegistry.getProxyInterceptors(interceptPoint);
         }
+
+        if (interceptors.isEmpty()) {
+            LOGGER.debug("│   No interceptors found");
+            LOGGER.debug("└── {} COMPLETED in 0ms", interceptPoint);
+            next(exchange);
+            return;
+        }
+
+        LOGGER.debug("│   Found {} interceptors", interceptors.size());
+
+        var executionStartTime = System.currentTimeMillis();
+        var executedCount = 0;
 
         interceptors.stream()
             .filter(ri -> ri instanceof Interceptor)
@@ -114,17 +130,26 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 return false;
             }})
             .forEachOrdered(ri -> {
+                var interceptorStartTime = System.currentTimeMillis();
+                var interceptorName = PluginUtils.name(ri);
                 try {
-                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint);
+                    LOGGER.debug("│   ├─ {} (priority: {})", interceptorName, PluginUtils.priority(ri));
 
                     ri.handle(request, response);
+                    
+                    var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                    LOGGER.debug("│   │  └─ ✓ {}ms", interceptorDuration);
                 } catch (Exception ex) {
-                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
+                    var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
 
                     Exchange.setInError(exchange);
                     LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
                 }
             });
+
+        var totalDuration = System.currentTimeMillis() - executionStartTime;
+        LOGGER.debug("└── {} COMPLETED in {}ms", interceptPoint, totalDuration);
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response

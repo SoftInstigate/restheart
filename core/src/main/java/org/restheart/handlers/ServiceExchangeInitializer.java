@@ -58,6 +58,8 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var path = exchange.getRequestPath();
+        var method = exchange.getRequestMethod().toString();
+        var initStartTime = System.currentTimeMillis();
 
         var pi = pluginsRegistry.getPipelineInfo(path);
 
@@ -66,30 +68,53 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             .findAny();
 
         if (srv.isPresent()) {
+            var serviceName = srv.get().getName();
+            var serviceClass = srv.get().getInstance().getClass().getSimpleName();
+            
+            LOGGER.debug("┌── SERVICE EXCHANGE INIT: {} ({})", serviceName, serviceClass);
             try {
+                var requestInitStartTime = System.currentTimeMillis();
+                
                 // execute the service request initializer or a custom one
                 var customRequestInitializer = UninitializedRequest.of(exchange).customRequestInitializer();
 
                 if (customRequestInitializer == null) {
+                    LOGGER.debug("│   ├─ Request initializer (default)");
                     // service default request initializer
                     srv.get().getInstance().requestInitializer().accept(exchange);
                 } else {
+                    LOGGER.debug("│   ├─ Request initializer (custom)");
                     // custom request initializer
                     customRequestInitializer.accept(exchange);
                 }
+                
+                var requestInitDuration = System.currentTimeMillis() - requestInitStartTime;
+                LOGGER.debug("│   │  └─ ✓ {}ms", requestInitDuration);
+                
+                var responseInitStartTime = System.currentTimeMillis();
 
                 // execute the service respnse initializer or a custom one
                 var customResponseInitializer = UninitializedResponse.of(exchange).customResponseInitializer();
 
                 if (customResponseInitializer == null) {
+                    LOGGER.debug("│   ├─ Response initializer (default)");
                     // service default response initializer
                     srv.get().getInstance().responseInitializer().accept(exchange);
                 } else {
+                    LOGGER.debug("│   ├─ Response initializer (custom)");
                     // custom response initializer
                     customResponseInitializer.accept(exchange);
                 }
+                
+                var responseInitDuration = System.currentTimeMillis() - responseInitStartTime;
+                LOGGER.debug("│   │  └─ ✓ {}ms", responseInitDuration);
+                
+                var totalInitDuration = System.currentTimeMillis() - initStartTime;
+                LOGGER.debug("└── SERVICE EXCHANGE INIT COMPLETED in {}ms", totalInitDuration);
             } catch (BadRequestException bre) {
-                LOGGER.debug("Error handling the request: {}", bre.getMessage(), bre);
+                var initDuration = System.currentTimeMillis() - initStartTime;
+                LOGGER.error("│   └─ ✗ BAD REQUEST after {}ms: {}", initDuration, bre.getMessage());
+                    
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, bre.contentType());
                 exchange.getResponseSender().send(
@@ -98,6 +123,9 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     : BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
                 return;
             } catch (Throwable t) {
+                var initDuration = System.currentTimeMillis() - initStartTime;
+                LOGGER.error("│   └─ ✗ FAILED after {}ms: {}", initDuration, t.getMessage());
+                    
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 throw t;
             }

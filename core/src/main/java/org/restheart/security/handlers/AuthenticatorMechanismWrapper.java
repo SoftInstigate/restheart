@@ -23,6 +23,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticatorMechanismWrapper implements AuthMechanism {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthMechanism.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticatorMechanismWrapper.class);
 
     private final AuthMechanism wrapped;
 
@@ -66,21 +67,68 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
 
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
-        var outcome = wrapped.authenticate(exchange, securityContext);
+        var mechanismName = wrapped.getMechanismName();
+        var pluginName = PluginUtils.name(wrapped);
+        var mechanismClass = wrapped.getClass().getSimpleName();
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var authenticateStartTime = System.currentTimeMillis();
+        
+        LOGGER.debug("├─ AUTH: {} ({})", mechanismName, mechanismClass);
+            
+        try {
+            var outcome = wrapped.authenticate(exchange, securityContext);
+            var authenticateDuration = System.currentTimeMillis() - authenticateStartTime;
+            var account = securityContext.getAuthenticatedAccount();
 
-        LOGGER.debug("{} -> {}", wrapped.getMechanismName(), outcome.name());
-
-        switch (outcome) {
-            case NOT_AUTHENTICATED:
-                return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-            default:
-                return outcome;
+            switch (outcome) {
+                case NOT_AUTHENTICATED:
+                    LOGGER.debug("│  └─ ⚬ NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
+                case AUTHENTICATED:
+                    LOGGER.debug("│  └─ ✓ AUTHENTICATED as '{}' ({}ms)", 
+                        account.getPrincipal().getName(), authenticateDuration);
+                    return outcome;
+                case NOT_ATTEMPTED:
+                    LOGGER.debug("│  └─ ⚬ NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    return outcome;
+                default:
+                    return outcome;
+            }
+        } catch (Exception ex) {
+            var authenticateDuration = System.currentTimeMillis() - authenticateStartTime;
+            LOGGER.error("Error in authentication mechanism {} ({}) for {} {} after {}ms", 
+                mechanismName, mechanismClass, requestMethod, requestPath, authenticateDuration, ex);
+            throw ex;
         }
     }
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
-        return wrapped.sendChallenge(exchange, securityContext);
+        var mechanismName = wrapped.getMechanismName();
+        var pluginName = PluginUtils.name(wrapped);
+        var mechanismClass = wrapped.getClass().getSimpleName();
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var challengeStartTime = System.currentTimeMillis();
+        
+        LOGGER.debug("Sending authentication challenge: {} ({}) for {} {} - Plugin: {}", 
+            mechanismName, mechanismClass, requestMethod, requestPath, pluginName);
+            
+        try {
+            var result = wrapped.sendChallenge(exchange, securityContext);
+            var challengeDuration = System.currentTimeMillis() - challengeStartTime;
+            
+            LOGGER.debug("Authentication challenge {} ({}) result: {} for {} {} - Duration: {}ms", 
+                mechanismName, mechanismClass, result.toString(), requestMethod, requestPath, challengeDuration);
+                
+            return result;
+        } catch (Exception ex) {
+            var challengeDuration = System.currentTimeMillis() - challengeStartTime;
+            LOGGER.error("Error sending challenge for mechanism {} ({}) for {} {} after {}ms", 
+                mechanismName, mechanismClass, requestMethod, requestPath, challengeDuration, ex);
+            throw ex;
+        }
     }
 
     @Override

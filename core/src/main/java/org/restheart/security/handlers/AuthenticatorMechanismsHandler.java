@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.utils.PluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is the PipelinedHandler version of
@@ -38,26 +41,58 @@ import org.restheart.plugins.security.AuthMechanism;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticatorMechanismsHandler extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticatorMechanismsHandler.class);
+    
     private final Set<AuthenticatorMechanismWrapper> wrappedAuthenticatorMechanisms;
 
     public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         super(next);
-        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream()
+            .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+            
+        LOGGER.debug("Initialized AuthenticatorMechanismsHandler with {} mechanisms: {}", 
+            authenticatorMechanisms.size(), 
+            authenticatorMechanisms.stream()
+                .map(m -> PluginUtils.name(m.getInstance()) + " (" + m.getInstance().getMechanismName() + ")")
+                .collect(Collectors.joining(", ")));
     }
 
     public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
-        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream()
+            .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+            
+        LOGGER.debug("Initialized AuthenticatorMechanismsHandler with {} mechanisms: {}", 
+            authenticatorMechanisms.size(), 
+            authenticatorMechanisms.stream()
+                .map(m -> PluginUtils.name(m.getInstance()) + " (" + m.getInstance().getMechanismName() + ")")
+                .collect(Collectors.joining(", ")));
     }
 
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         final var sc = exchange.getSecurityContext();
+        var requestPath = exchange.getRequestPath();
+        var requestMethod = exchange.getRequestMethod().toString();
+        var registrationStartTime = System.currentTimeMillis();
+
+        if (wrappedAuthenticatorMechanisms.isEmpty()) {
+            LOGGER.debug("┌── AUTHENTICATION - no mechanisms");
+        } else {
+            LOGGER.debug("┌── AUTHENTICATION - {} mechanisms", wrappedAuthenticatorMechanisms.size());
+        }
 
         if (sc != null && sc instanceof AuthenticationMechanismContext amc) {
-            wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> amc.addAuthenticationMechanism(wrappedMechanism));
+            wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
+                amc.addAuthenticationMechanism(wrappedMechanism);
+            });
+                
             next(exchange);
         } else {
+            LOGGER.error("The SecurityContext does not support authentication mechanisms for {} {} - Context type: {}", 
+                requestMethod, requestPath, sc != null ? sc.getClass().getSimpleName() : "null");
             throw new IllegalStateException("The SecurityContext does not support authentication mechanisms!");
         }
     }

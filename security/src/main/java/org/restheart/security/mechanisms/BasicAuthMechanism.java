@@ -34,6 +34,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.security.authenticators.MongoRealmAuthenticator;
+import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,17 +78,35 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public void init() throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
         String authenticatorName = arg(config, "authenticator");
+        
+        LOGGER.debug("Initializing BasicAuthMechanism with authenticator: {}", authenticatorName);
 
         try {
             var authenticatorRecord = registry.getAuthenticator(authenticatorName);
 
             if (authenticatorRecord != null) {
                 this.authenticator = authenticatorRecord.getInstance();
+                var authenticatorClass = this.authenticator.getClass().getSimpleName();
+                
+                LOGGER.debug("Found authenticator: {} ({}) - Setting as identity manager", 
+                    authenticatorName, authenticatorClass);
+                    
                 setIdentityManager(this.authenticator);
+                
+                LOGGER.debug("BasicAuthMechanism initialization completed with authenticator: {} ({})", 
+                    authenticatorName, authenticatorClass);
             } else {
+                var availableAuthenticators = registry.getAuthenticators().stream()
+                    .map(a -> a.getName())
+                    .collect(java.util.stream.Collectors.toList());
+                    
+                LOGGER.error("Authenticator '{}' not found. Available authenticators: {}", 
+                    authenticatorName, availableAuthenticators);
+                    
                 throw new ConfigurationException("authenticator " + authenticatorName + " is not available");
             }
         } catch(ConfigurationException ce) {
+            LOGGER.error("Configuration error loading authenticator '{}': {}", authenticatorName, ce.getMessage());
             throw new ConfigurationException("authenticator " + authenticatorName + " is not available. check configuration option /basicAuthMechanism/authenticator");
         }
     }
@@ -151,6 +170,9 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
 
                         var credential = new PasswordCredential(password);
                         try {
+                            var authenticatorStartTime = System.currentTimeMillis();
+                            var authenticatorName = PluginUtils.name(this.authenticator);
+                            
                             final AuthenticationMechanismOutcome result;
                             final Account account;
                             if (authenticator instanceof MongoRealmAuthenticator mauth) {
@@ -158,14 +180,30 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                             } else {
                                 account = this.authenticator.verify(userName, credential);
                             }
+                            
+                            var authenticatorDuration = System.currentTimeMillis() - authenticatorStartTime;
+                            
                             if (account != null) {
+                                var accountPrincipal = account.getPrincipal().getName();
+                                var accountRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
+                                LOGGER.debug("Authenticator {} verified user '{}' ({}ms) - Roles: {}", 
+                                    authenticatorName, userName, authenticatorDuration, accountRoles);
+                                    
                                 securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;
                             } else {
+                                LOGGER.debug("Authenticator {} failed to verify user '{}' ({}ms)", 
+                                    authenticatorName, userName, authenticatorDuration);
+                                    
                                 securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), getMechanismName());
                                 result = AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                             }
                             return result;
+                        } catch (Exception ex) {
+                            LOGGER.error("Error in authenticator {} ({}) for user '{}' - {} {}", 
+                                PluginUtils.name(this.authenticator), this.authenticator.getClass().getSimpleName(), 
+                                userName, exchange.getRequestMethod().toString(), exchange.getRequestPath(), ex);
+                            throw ex;
                         } finally {
                             clear(password);
                         }

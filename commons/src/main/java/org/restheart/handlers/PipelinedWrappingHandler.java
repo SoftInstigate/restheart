@@ -22,6 +22,9 @@ package org.restheart.handlers;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Service;
+import org.restheart.utils.PluginUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -233,6 +236,8 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
  * @param <S> the type of ServiceResponse the service produces
  */
 class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceWrapper.class);
+    
     /**
      * The wrapped service instance.
      */
@@ -249,7 +254,34 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        service.handle(service.request().apply(exchange),
-                service.response().apply(exchange));
+        var path = exchange.getRequestPath();
+        var method = exchange.getRequestMethod().toString();
+        var serviceName = PluginUtils.name(service);
+        var serviceClass = service.getClass().getSimpleName();
+        var startTime = System.currentTimeMillis();
+        
+        LOGGER.debug("┌── SERVICE: {} ({})", serviceName, serviceClass);
+            
+        try {
+            // Apply service transformers and execute
+            var serviceRequest = service.request().apply(exchange);
+            var serviceResponse = service.response().apply(exchange);
+            
+            LOGGER.debug("│   Request/Response: {} → {}", 
+                serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
+            
+            service.handle(serviceRequest, serviceResponse);
+            
+            var duration = System.currentTimeMillis() - startTime;
+            var statusCode = serviceResponse.getStatusCode();
+            
+            LOGGER.debug("└── ✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
+                
+        } catch (Exception ex) {
+            var duration = System.currentTimeMillis() - startTime;
+            LOGGER.error("Service execution failed: {} for {} {} after {}ms - Thread: {}", 
+                serviceName, method, path, duration, Thread.currentThread().getName(), ex);
+            throw ex;
+        }
     }
 }

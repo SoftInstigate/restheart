@@ -149,7 +149,7 @@ public class MongoAclAuthorizer implements Authorizer {
                 && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext().getAuthenticatedAccount() != null
                 && exchange.getSecurityContext().getAuthenticatedAccount().getRoles().contains(this.rootRole)) {
-            LOGGER.debug("allow request for root user {}", exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName());
+            // Root user access granted
 
             // for root role add a mongo permissions that allows everything
             Set<String> roles = Sets.newHashSet();
