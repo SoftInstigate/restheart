@@ -88,10 +88,13 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
             wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
                 amc.addAuthenticationMechanism(wrappedMechanism);
             });
-                
+
+            var mechanismRegistrationDuration = System.currentTimeMillis() - registrationStartTime;
+            LOGGER.debug("└── AUTHENTICATION MECHANISMS REGISTERED in {}ms", mechanismRegistrationDuration);
+
             next(exchange);
         } else {
-            LOGGER.error("The SecurityContext does not support authentication mechanisms for {} {} - Context type: {}", 
+            LOGGER.error("The SecurityContext does not support authentication mechanisms for {} {} - Context type: {}",
                 requestMethod, requestPath, sc != null ? sc.getClass().getSimpleName() : "null");
             throw new IllegalStateException("The SecurityContext does not support authentication mechanisms!");
         }

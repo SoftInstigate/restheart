@@ -83,30 +83,29 @@ public class TokenInjector extends PipelinedHandler {
             var userPrincipal = authenticatedAccount.getPrincipal().getName();
             var tokenManagerName = PluginUtils.name(tokenManager);
             var tokenManagerClass = tokenManager.getClass().getSimpleName();
-            
-            LOGGER.debug("Starting token injection for {} {} - User: {} - Token Manager: {} ({})", 
-                requestMethod, requestPath, userPrincipal, tokenManagerName, tokenManagerClass);
+
+            LOGGER.debug("┌── TOKEN INJECTION: {} ({}) for user '{}'",
+                tokenManagerName, tokenManagerClass, userPrincipal);
 
             try {
                 var tokenGenStartTime = System.currentTimeMillis();
                 var token = tokenManager.get(authenticatedAccount);
                 var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
-                
-                LOGGER.debug("Token generation completed for user '{}' with {} ({}) in {}ms", 
-                    userPrincipal, tokenManagerName, tokenManagerClass, tokenGenDuration);
+
+                LOGGER.debug("│   ├─ Token generation: {}ms", tokenGenDuration);
 
                 var headerInjectionStartTime = System.currentTimeMillis();
                 tokenManager.injectTokenHeaders(exchange, token);
                 var headerInjectionDuration = System.currentTimeMillis() - headerInjectionStartTime;
-                
+
+                LOGGER.debug("│   ├─ Header injection: {}ms", headerInjectionDuration);
+
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
-                LOGGER.debug("Token injection completed for {} {} - User: {} - Generation: {}ms, Header injection: {}ms, Total: {}ms", 
-                    requestMethod, requestPath, userPrincipal, tokenGenDuration, headerInjectionDuration, totalTokenDuration);
-                    
+                LOGGER.debug("└── TOKEN INJECTION COMPLETED in {}ms", totalTokenDuration);
+
             } catch (Exception ex) {
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
-                LOGGER.error("Error during token injection for {} {} - User: {} - Token Manager: {} ({}) after {}ms", 
-                    requestMethod, requestPath, userPrincipal, tokenManagerName, tokenManagerClass, totalTokenDuration, ex);
+                LOGGER.error("└── ✗ TOKEN INJECTION FAILED after {}ms", totalTokenDuration, ex);
                 throw ex;
             }
         }

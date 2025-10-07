@@ -168,9 +168,6 @@ public class AuthorizersHandler extends PipelinedHandler {
         var vetoerDuration = System.currentTimeMillis() - vetoerStartTime;
         
         if (!vetoerResult) {
-            var totalDuration = System.currentTimeMillis() - authorizersStartTime;
-            LOGGER.debug("VETOER check FAILED for {} {} - User: {} - VETOER time: {}ms, Total: {}ms", 
-                requestMethod, requestPath, userPrincipal, vetoerDuration, totalDuration);
             return false;
         }
         

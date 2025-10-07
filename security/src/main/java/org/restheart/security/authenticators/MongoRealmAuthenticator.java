@@ -208,13 +208,13 @@ public class MongoRealmAuthenticator implements Authenticator {
         var totalDuration = System.currentTimeMillis() - verificationStartTime;
 
         if (verified) {
-            LOGGER.debug("User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms", 
+            LOGGER.debug("│  │  └─ User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms",
                 id, accountLookupDuration, credentialVerificationDuration, totalDuration);
-                
+
             updateAuthTokenCache(ref);
             return ref;
         } else {
-            LOGGER.debug("User '{}' verification failed ({}ms)", id, totalDuration);
+            LOGGER.debug("│  │  └─ User '{}' verification failed ({}ms)", id, totalDuration);
             return null;
         }
     }
