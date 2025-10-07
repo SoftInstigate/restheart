@@ -111,12 +111,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
-        LOGGER.debug("│   Found {} interceptors", interceptors.size());
-
-        var executionStartTime = System.currentTimeMillis();
-        var executedCount = 0;
-
-        interceptors.stream()
+        var resolvedInterceptors = interceptors.stream()
             .filter(ri -> ri instanceof Interceptor)
             .map(ri -> (Interceptor) ri)
             .filter(ri -> {
@@ -129,24 +124,34 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
                 return false;
             }})
-            .forEachOrdered(ri -> {
-                var interceptorStartTime = System.currentTimeMillis();
-                var interceptorName = PluginUtils.name(ri);
-                try {
-                    LOGGER.debug("│   ├─ {} (priority: {})", interceptorName, PluginUtils.priority(ri));
+            .toList();
 
-                    ri.handle(request, response);
-                    
-                    var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                    LOGGER.debug("│   │  └─ ✓ {}ms", interceptorDuration);
-                } catch (Exception ex) {
-                    var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+        LOGGER.debug("│   Found {} interceptors", resolvedInterceptors.size());
 
-                    Exchange.setInError(exchange);
-                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
-                }
-            });
+        var executionStartTime = System.currentTimeMillis();
+        var totalInterceptors = resolvedInterceptors.size();
+
+        for (int i = 0; i < totalInterceptors; i++) {
+            var ri = resolvedInterceptors.get(i);
+            var isLast = (i == totalInterceptors - 1);
+            var interceptorStartTime = System.currentTimeMillis();
+            var interceptorName = PluginUtils.name(ri);
+
+            try {
+                LOGGER.debug("│   {}─ {} (priority: {})", isLast ? "└" : "├", interceptorName, PluginUtils.priority(ri));
+
+                ri.handle(request, response);
+
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.debug("│   {}  └─ ✓ {}ms", isLast ? " " : "│", interceptorDuration);
+            } catch (Exception ex) {
+                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                LOGGER.error("│   {}  └─ ✗ FAILED after {}ms: {}", isLast ? " " : "│", interceptorDuration, ex.getMessage());
+
+                Exchange.setInError(exchange);
+                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
+            }
+        }
 
         var totalDuration = System.currentTimeMillis() - executionStartTime;
         LOGGER.debug("└── {} COMPLETED in {}ms", interceptPoint, totalDuration);
