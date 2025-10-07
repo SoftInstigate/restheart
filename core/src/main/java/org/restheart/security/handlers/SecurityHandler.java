@@ -39,6 +39,95 @@ public class SecurityHandler extends PipelinedHandler {
     private final Set<PluginRecord<Authorizer>> authorizers;
     private final PluginRecord<TokenManager> tokenManager;
 
+    // Cached security handler chain components (created once, reused across all services)
+    private static volatile SecurityChainComponents cachedComponents = null;
+    private static final Object LOCK = new Object();
+
+    // Helper class to hold the reusable chain components
+    private static class SecurityChainComponents {
+        final ReusableAuthenticatorMechanismsHandler authMechanismsHandler;
+        final ReusableTokenInjector tokenInjector;
+        final ReusableAuthorizersHandler authorizersHandler;
+        final ReusableAuthenticationConstraintHandler constraintHandler;
+        final ReusableAuthenticationCallHandler callHandler;
+
+        SecurityChainComponents(
+                Set<PluginRecord<AuthMechanism>> mechanisms,
+                Set<PluginRecord<Authorizer>> authorizers,
+                TokenManager tokenManager) {
+            // Build the reusable components (without linking them yet)
+            this.authorizersHandler = new ReusableAuthorizersHandler(authorizers);
+            this.tokenInjector = new ReusableTokenInjector(tokenManager);
+            this.callHandler = new ReusableAuthenticationCallHandler();
+            this.constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
+            this.authMechanismsHandler = new ReusableAuthenticatorMechanismsHandler(mechanisms);
+        }
+
+        void linkChain(PipelinedHandler next) {
+            authorizersHandler.setNext(next);
+            tokenInjector.setNext(authorizersHandler);
+            callHandler.setNext(tokenInjector);
+            constraintHandler.setNext(callHandler);
+            authMechanismsHandler.setNext(constraintHandler);
+        }
+    }
+
+    // Wrapper classes that expose setNext() publicly
+    private static class ReusableAuthenticatorMechanismsHandler extends AuthenticatorMechanismsHandler {
+        ReusableAuthenticatorMechanismsHandler(Set<PluginRecord<AuthMechanism>> mechanisms) {
+            super(mechanisms);
+        }
+
+        @Override
+        public void setNext(PipelinedHandler next) {
+            super.setNext(next);
+        }
+    }
+
+    private static class ReusableTokenInjector extends TokenInjector {
+        ReusableTokenInjector(TokenManager tokenManager) {
+            super(null, tokenManager);
+        }
+
+        @Override
+        public void setNext(PipelinedHandler next) {
+            super.setNext(next);
+        }
+    }
+
+    private static class ReusableAuthorizersHandler extends AuthorizersHandler {
+        ReusableAuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers) {
+            super(authorizers, null);
+        }
+
+        @Override
+        public void setNext(PipelinedHandler next) {
+            super.setNext(next);
+        }
+    }
+
+    private static class ReusableAuthenticationCallHandler extends AuthenticationCallHandler {
+        ReusableAuthenticationCallHandler() {
+            super(null);
+        }
+
+        @Override
+        public void setNext(PipelinedHandler next) {
+            super.setNext(next);
+        }
+    }
+
+    private static class ReusableAuthenticationConstraintHandler extends AuthenticationConstraintHandler {
+        ReusableAuthenticationConstraintHandler(Set<PluginRecord<Authorizer>> authorizers) {
+            super(null, authorizers);
+        }
+
+        @Override
+        public void setNext(PipelinedHandler next) {
+            super.setNext(next);
+        }
+    }
+
     /**
      *
      * @param mechanisms
@@ -75,20 +164,28 @@ public class SecurityHandler extends PipelinedHandler {
                     + "that gives full access power");
         }
 
-        if (mechanisms != null && mechanisms.size() > 0) {
-            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
-                new AuthenticatorMechanismsHandler(
-                    new AuthenticationConstraintHandler(
-                        new AuthenticationCallHandler(
-                            new TokenInjector(
-                                new AuthorizersHandler(authorizers, next),
-                            tokenManager != null ? tokenManager.getInstance() : null)),
-                        authorizers),
-                mechanisms));
+        if (mechanisms != null && !mechanisms.isEmpty()) {
+            // Lazy initialization of cached components (double-checked locking)
+            if (cachedComponents == null) {
+                synchronized (LOCK) {
+                    if (cachedComponents == null) {
+                        cachedComponents = new SecurityChainComponents(
+                            mechanisms,
+                            authorizers,
+                            tokenManager != null ? tokenManager.getInstance() : null
+                        );
+                    }
+                }
+            }
 
-        } else if (authorizers != null && authorizers.size() > 0) {
+            // Link the cached components with the specific 'next' handler for this service
+            cachedComponents.linkChain(next);
+
+            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, cachedComponents.authMechanismsHandler);
+
+        } else if (authorizers != null && !authorizers.isEmpty()) {
             // if no authentication mechanism is enabled and at least one authorizer is defined
-            // just pipe the autorizers
+            // just pipe the authorizers
             // this will make the request to be authorized without any authentication mechanism
             // see https://github.com/SoftInstigate/restheart/discussions/417
             return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, new AuthorizersHandler(authorizers, next));
