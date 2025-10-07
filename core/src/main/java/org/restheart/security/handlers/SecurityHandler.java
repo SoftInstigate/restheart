@@ -162,6 +162,33 @@ public class SecurityHandler extends PipelinedHandler {
         super.setNext(buildSecurityHandlersChain(next, mechanisms, authorizers, tokenManager));
     }
 
+    /**
+     * Pre-initialize security handlers (normally they are lazily initialized on first use)
+     * This is useful to show initialization logs before service binding
+     *
+     * @param mechanisms
+     * @param authorizers
+     * @param tokenManager
+     */
+    public static void preInitialize(
+            final Set<PluginRecord<AuthMechanism>> mechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
+        if (mechanisms != null && !mechanisms.isEmpty()) {
+            if (cachedComponents == null) {
+                synchronized (LOCK) {
+                    if (cachedComponents == null) {
+                        cachedComponents = new SecurityChainComponents(
+                            mechanisms,
+                            authorizers,
+                            tokenManager != null ? tokenManager.getInstance() : null
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     private static PipelinedHandler buildSecurityHandlersChain(
             PipelinedHandler next,
             final Set<PluginRecord<AuthMechanism>> mechanisms,

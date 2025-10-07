@@ -161,21 +161,35 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                     + " where url must be either all absolute paths"
                     + " or all path templates");
         } else {
-            MongoServiceConfiguration.get().getMongoMounts().stream().forEach(m -> {
-                var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
-                var resource = (String) m.get(MONGO_MOUNT_WHAT_KEY);
+            var mongoMounts = MongoServiceConfiguration.get().getMongoMounts();
+
+            if (mongoMounts.isEmpty()) {
+                LOGGER.debug("┌── MONGODB RESOURCE BINDING");
+                LOGGER.debug("│   No MongoDB resources configured");
+                LOGGER.debug("└── MONGODB RESOURCE BINDING COMPLETED");
+            } else {
+                LOGGER.debug("┌── MONGODB RESOURCE BINDING");
+                var startTime = System.currentTimeMillis();
+
+                mongoMounts.stream().forEach(m -> {
+                    var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
+                    var resource = (String) m.get(MONGO_MOUNT_WHAT_KEY);
+
+                    if (allPathTemplates) {
+                        pathsTemplates.add(uri, _pipeline);
+                    } else {
+                        rootHandler.addPrefixPath(uri, _pipeline);
+                    }
+
+                    LOGGER.debug("│   ├─ URI {} bound to MongoDB resource {}", uri, resource);
+                });
 
                 if (allPathTemplates) {
-                    pathsTemplates.add(uri, _pipeline);
-                } else {
-                    rootHandler.addPrefixPath(uri, _pipeline);
+                    rootHandler.addPrefixPath(myURI(), pathsTemplates);
                 }
 
-                LOGGER.trace("│   │  ├─ URI {} bound to MongoDB resource {}", uri, resource);
-            });
-
-            if (allPathTemplates) {
-                rootHandler.addPrefixPath(myURI(), pathsTemplates);
+                var duration = System.currentTimeMillis() - startTime;
+                LOGGER.debug("└── MONGODB RESOURCE BINDING COMPLETED in {}ms", duration);
             }
         }
 

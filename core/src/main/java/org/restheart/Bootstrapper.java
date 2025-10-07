@@ -675,8 +675,6 @@ public final class Bootstrapper {
         // allow unescaped chars in URL (otherwise not allowed by default)
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, configuration.coreModule().allowUnescapedCharsInUrl());
 
-        LOGGER.debug("Allow unescaped characters in URL: {}", configuration.coreModule().allowUnescapedCharsInUrl());
-
         Utils.setConnectionOptions(builder, configuration);
 
         undertowServer = builder.build();
@@ -743,8 +741,9 @@ public final class Bootstrapper {
             .getInstance()
             .getRootPathHandler()
             .addPrefixPath("/", new RequestNotManagedHandler());
-
-        LOGGER.debug("Content buffers maximum size is {} bytes", MAX_CONTENT_SIZE);
+		
+        // Pre-initialize security handlers before service binding to show logs in correct order
+        SecurityHandler.preInitialize(authMechanisms, authorizers, tokenManager);
 
         plugServices();
 
@@ -838,14 +837,21 @@ public final class Bootstrapper {
      * @param tokenManager
      */
     private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
-        if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
-            LOGGER.debug("No proxy specified");
+        var proxies = conf.getProxies();
+
+        if (proxies == null || proxies.isEmpty()) {
+            LOGGER.debug("┌── PROXY BINDING");
+            LOGGER.debug("│   No proxies configured");
+            LOGGER.debug("└── PROXY BINDING COMPLETED");
             return;
         }
 
-        conf.getProxies().stream().forEachOrdered((ProxiedResource proxy) -> {
+        LOGGER.debug("┌── PROXY BINDING");
+        var startTime = System.currentTimeMillis();
+
+        proxies.stream().forEachOrdered((ProxiedResource proxy) -> {
             if (proxy.location() == null || proxy.proxyPass() == null || proxy.proxyPass().isEmpty()) {
-                LOGGER.warn("Invalid proxies entry: {}", proxy);
+                LOGGER.warn("│   ├─ ✗ Invalid proxies entry: {}", proxy);
                 return;
             }
 
@@ -867,7 +873,7 @@ public final class Bootstrapper {
                     var uri = new URI(pp);
                     proxyClient.addHost(uri, xnioSsl);
                 } catch(URISyntaxException t) {
-                    LOGGER.warn("Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
+                    LOGGER.warn("│   │  ├─ ✗ Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
                 } catch (GeneralSecurityException ex) {
                     logErrorAndExit("error configuring ssl", ex, false, -13);
                 }
@@ -899,8 +905,11 @@ public final class Bootstrapper {
 
             PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy, new PipelineInfo(PROXY, proxy.location(), proxy.name()));
 
-            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to proxy resource {}").reset().toString(), proxy.location(), proxy.proxyPass());
+            LOGGER.debug("│   ├─ URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
         });
+
+        var duration = System.currentTimeMillis() - startTime;
+        LOGGER.debug("└── PROXY BINDING COMPLETED in {}ms", duration);
     }
 
     /**
@@ -910,20 +919,27 @@ public final class Bootstrapper {
      * @param conf
      */
     private static void plugStaticResourcesHandlers(final Configuration conf) {
-        if (conf.getStaticResources() == null || conf.getStaticResources().isEmpty()) {
-            LOGGER.debug("No static resource specified");
+        var staticResources = conf.getStaticResources();
+
+        if (staticResources == null || staticResources.isEmpty()) {
+            LOGGER.debug("┌── STATIC RESOURCE BINDING");
+            LOGGER.debug("│   No static resources configured");
+            LOGGER.debug("└── STATIC RESOURCE BINDING COMPLETED");
             return;
         }
 
-        conf.getStaticResources().stream().forEach(sr -> {
+        LOGGER.debug("┌── STATIC RESOURCE BINDING");
+        var startTime = System.currentTimeMillis();
+
+        staticResources.stream().forEach(sr -> {
             try {
                 if (sr.where() == null || !sr.where().startsWith("/")) {
-                    LOGGER.error("Cannot bind static resources {}. parameter 'where' must start with /", sr);
+                    LOGGER.error("│   ├─ ✗ Cannot bind static resources {}. parameter 'where' must start with /", sr);
                     return;
                 }
 
                 if (sr.what() == null) {
-                    LOGGER.error("Cannot bind static resources to {}. missing parameter 'what'", sr);
+                    LOGGER.error("│   ├─ ✗ Cannot bind static resources to {}. missing parameter 'what'", sr);
                     return;
                 }
 
@@ -935,10 +951,10 @@ public final class Bootstrapper {
 
                         if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, sr.what())) {
                             TMP_EXTRACTED_FILES.put(sr.what(), file);
-                            LOGGER.info("Embedded static resources {} extracted in {}", sr.what(), file.toString());
+                            LOGGER.debug("│   │  ├─ Embedded static resources {} extracted in {}", sr.what(), file.toString());
                         }
                     } catch (URISyntaxException | IOException | IllegalStateException ex) {
-                        LOGGER.error("Error extracting embedded static resource {}", sr.what(), ex);
+                        LOGGER.error("│   ├─ ✗ Error extracting embedded static resource {}", sr.what(), ex);
                         return;
                     }
                 } else if (!sr.what().startsWith("/")) {
@@ -963,15 +979,18 @@ public final class Bootstrapper {
 
                     PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph, new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
-                    LOGGER.info(ansi().fg(GREEN).a("URI {} bound to static resource {}").reset().toString(), sr.where(), file.getAbsolutePath());
+                    LOGGER.debug("│   ├─ URI {} bound to static resource {}", sr.where(), file.getAbsolutePath());
                 } else {
-                    LOGGER.error("Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
+                    LOGGER.error("│   ├─ ✗ Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
                 }
 
             } catch (Throwable t) {
-                LOGGER.error("Cannot bind static resource {}", sr, t);
+                LOGGER.error("│   ├─ ✗ Cannot bind static resource {}", sr, t);
             }
         });
+
+        var duration = System.currentTimeMillis() - startTime;
+        LOGGER.debug("└── STATIC RESOURCE BINDING COMPLETED in {}ms", duration);
     }
 
     private static int getPluginPriority(Plugin plugin) {

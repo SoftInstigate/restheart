@@ -78,19 +78,18 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
         var requestMethod = exchange.getRequestMethod().toString();
         var registrationStartTime = System.currentTimeMillis();
 
-        if (wrappedAuthenticatorMechanisms.isEmpty()) {
-            LOGGER.debug("┌── AUTHENTICATION - no mechanisms");
-        } else {
-            LOGGER.debug("┌── AUTHENTICATION - {} mechanisms", wrappedAuthenticatorMechanisms.size());
-        }
-
         if (sc != null && sc instanceof AuthenticationMechanismContext amc) {
-            wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
-                amc.addAuthenticationMechanism(wrappedMechanism);
-            });
+            if (wrappedAuthenticatorMechanisms.isEmpty()) {
+                LOGGER.debug("┌── AUTHENTICATION");
+                LOGGER.debug("│   No mechanisms configured");
+                LOGGER.debug("└── AUTHENTICATION COMPLETED");
+            } else {
+                LOGGER.debug("┌── AUTHENTICATION");
 
-            var mechanismRegistrationDuration = System.currentTimeMillis() - registrationStartTime;
-            LOGGER.debug("└── AUTHENTICATION MECHANISMS REGISTERED in {}ms", mechanismRegistrationDuration);
+                wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
+                    amc.addAuthenticationMechanism(wrappedMechanism);
+                });
+            }
 
             next(exchange);
         } else {
