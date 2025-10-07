@@ -68,7 +68,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             .map(a -> PluginUtils.name(a.getInstance()))
             .collect(Collectors.toList());
             
-        LOGGER.debug("Initialized AuthorizersHandler with {} authorizers - VETOERs: {}, ALLOWERs: {}", 
+        LOGGER.debug("│   ├─ AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
             authorizers.size(), vetoers, allowers);
     }
 

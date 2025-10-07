@@ -29,12 +29,16 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityHandler.class);
+
     private final Set<PluginRecord<AuthMechanism>> mechanisms;
     private final Set<PluginRecord<Authorizer>> authorizers;
     private final PluginRecord<TokenManager> tokenManager;
@@ -55,12 +59,18 @@ public class SecurityHandler extends PipelinedHandler {
                 Set<PluginRecord<AuthMechanism>> mechanisms,
                 Set<PluginRecord<Authorizer>> authorizers,
                 TokenManager tokenManager) {
+            var startTime = System.currentTimeMillis();
+            LOGGER.debug("┌── SECURITY HANDLERS INITIALIZATION");
+
             // Build the reusable components (without linking them yet)
             this.authorizersHandler = new ReusableAuthorizersHandler(authorizers);
             this.tokenInjector = new ReusableTokenInjector(tokenManager);
             this.callHandler = new ReusableAuthenticationCallHandler();
             this.constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
             this.authMechanismsHandler = new ReusableAuthenticatorMechanismsHandler(mechanisms);
+
+            var duration = System.currentTimeMillis() - startTime;
+            LOGGER.debug("└── SECURITY HANDLERS INITIALIZED in {}ms", duration);
         }
 
         void linkChain(PipelinedHandler next) {

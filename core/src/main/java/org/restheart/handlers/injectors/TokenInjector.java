@@ -49,10 +49,10 @@ public class TokenInjector extends PipelinedHandler {
         if (tokenManager != null) {
             var tokenManagerName = PluginUtils.name(tokenManager);
             var tokenManagerClass = tokenManager.getClass().getSimpleName();
-            LOGGER.debug("Initialized TokenInjector with token manager: {} ({})", 
+            LOGGER.debug("│   ├─ TokenInjector: token manager {} ({})",
                 tokenManagerName, tokenManagerClass);
         } else {
-            LOGGER.debug("Initialized TokenInjector with no token manager");
+            LOGGER.debug("│   ├─ TokenInjector: no token manager");
         }
     }
 

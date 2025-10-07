@@ -51,10 +51,10 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
             .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
             .collect(Collectors.toCollection(LinkedHashSet::new));
             
-        LOGGER.debug("Initialized AuthenticatorMechanismsHandler with {} mechanisms: {}", 
-            authenticatorMechanisms.size(), 
+        LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
+            authenticatorMechanisms.size(),
             authenticatorMechanisms.stream()
-                .map(m -> PluginUtils.name(m.getInstance()) + " (" + m.getInstance().getMechanismName() + ")")
+                .map(m -> PluginUtils.name(m.getInstance()))
                 .collect(Collectors.joining(", ")));
     }
 
@@ -63,10 +63,10 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
             .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
             .collect(Collectors.toCollection(LinkedHashSet::new));
             
-        LOGGER.debug("Initialized AuthenticatorMechanismsHandler with {} mechanisms: {}", 
-            authenticatorMechanisms.size(), 
+        LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
+            authenticatorMechanisms.size(),
             authenticatorMechanisms.stream()
-                .map(m -> PluginUtils.name(m.getInstance()) + " (" + m.getInstance().getMechanismName() + ")")
+                .map(m -> PluginUtils.name(m.getInstance()))
                 .collect(Collectors.joining(", ")));
     }
 
