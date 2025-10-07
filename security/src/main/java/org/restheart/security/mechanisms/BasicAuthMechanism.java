@@ -79,7 +79,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
         // the authenticator specified in auth mechanism configuration
         String authenticatorName = arg(config, "authenticator");
         
-        LOGGER.debug("Initializing BasicAuthMechanism with authenticator: {}", authenticatorName);
+        LOGGER.trace("Initializing BasicAuthMechanism with authenticator: {}", authenticatorName);
 
         try {
             var authenticatorRecord = registry.getAuthenticator(authenticatorName);
@@ -87,13 +87,13 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
             if (authenticatorRecord != null) {
                 this.authenticator = authenticatorRecord.getInstance();
                 var authenticatorClass = this.authenticator.getClass().getSimpleName();
-                
-                LOGGER.debug("Found authenticator: {} ({}) - Setting as identity manager", 
+
+                LOGGER.trace("Found authenticator: {} ({}) - Setting as identity manager",
                     authenticatorName, authenticatorClass);
-                    
+
                 setIdentityManager(this.authenticator);
-                
-                LOGGER.debug("BasicAuthMechanism initialization completed with authenticator: {} ({})", 
+
+                LOGGER.trace("BasicAuthMechanism initialization completed with authenticator: {} ({})",
                     authenticatorName, authenticatorClass);
             } else {
                 var availableAuthenticators = registry.getAuthenticators().stream()

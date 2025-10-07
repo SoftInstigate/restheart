@@ -355,7 +355,7 @@ public class PluginsFactory {
 
                     if (pr.isEnabled()) {
                         ret.add(pr);
-                        LOGGER.debug("Registered {} {}: {}", type, name, description);
+                        LOGGER.trace("Registered {} {}: {}", type, name, description);
 
                         if (!plugin.injections().isEmpty()) {
                             var ip = new InstatiatedPlugin(name, type, plugin, clazz, i);
@@ -363,7 +363,7 @@ public class PluginsFactory {
                         }
                     }
                 } else {
-                    LOGGER.debug("{} {} is disabled", type, name);
+                    LOGGER.trace("{} {} is disabled", type, name);
                 }
             } catch (ClassNotFoundException | ConfigurationException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 LOGGER.error("Error registering {} {}: {}", type, plugin.clazz(), getRootException(e).getMessage(), e);
@@ -420,13 +420,13 @@ public class PluginsFactory {
 
     private void inject(InstatiatedPlugin ip) throws NoProviderException, InstantiationException, IllegalAccessException, InvocationTargetException {
         var injectStartTime = System.currentTimeMillis();
-        LOGGER.debug("Starting dependency injection for {} ({})", ip.name, ip.clazz.getSimpleName());
-        
+        LOGGER.trace("Starting dependency injection for {} ({})", ip.name, ip.clazz.getSimpleName());
+
         setInjectFields(ip);
         invokeOnInitMethods(ip);
-        
+
         var injectDuration = System.currentTimeMillis() - injectStartTime;
-        LOGGER.debug("Completed dependency injection for {} ({}) in {}ms", 
+        LOGGER.trace("Completed dependency injection for {} ({}) in {}ms",
             ip.name, ip.clazz.getSimpleName(), injectDuration);
     }
 
@@ -442,7 +442,7 @@ public class PluginsFactory {
             .map(i -> (FieldInjectionDescriptor) i)
             .forEach(injections::add);
             
-        LOGGER.debug("Processing {} field injections for {} ({})", 
+        LOGGER.trace("Processing {} field injections for {} ({})",
             injections.size(), ip.name, ip.clazz.getSimpleName());
 
         for (var injection : injections) {
@@ -454,29 +454,29 @@ public class PluginsFactory {
 
                 // find the provider
                 var providerName = injection.annotationParams().get(0).getValue();
-                LOGGER.debug("Looking up provider '{}' for field {} ({}) in {} ({})", 
+                LOGGER.trace("Looking up provider '{}' for field {} ({}) in {} ({})",
                     providerName, injection.field(), fieldType, ip.name, ip.clazz.getSimpleName());
-                    
+
                 var _provider = providers().stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
                 if (_provider.isPresent()) {
                     var providerInstance = _provider.get().getInstance();
                     var providerClass = providerInstance.getClass().getSimpleName();
                     var callerRecord = this.INSTANTIATED_PLUGINS_RECORDS.get(ip.clazz.getName());
-                    
-                    LOGGER.debug("Found provider '{}' ({}) - Calling get() for {} ({})", 
+
+                    LOGGER.trace("Found provider '{}' ({}) - Calling get() for {} ({})",
                         providerName, providerClass, ip.name, ip.clazz.getSimpleName());
-                        
+
                     var getStartTime = System.currentTimeMillis();
                     var value = providerInstance.get(callerRecord);
                     var getDuration = System.currentTimeMillis() - getStartTime;
-                    
+
                     field.setAccessible(true);
                     field.set(ip.instance, value);
-                    
+
                     var injectionDuration = System.currentTimeMillis() - injectionStartTime;
-                    LOGGER.debug("Provider '{}' injected {} into field {} of {} ({}) - Provider call: {}ms, Total: {}ms", 
-                        providerName, value != null ? value.getClass().getSimpleName() : "null", 
+                    LOGGER.trace("Provider '{}' injected {} into field {} of {} ({}) - Provider call: {}ms, Total: {}ms",
+                        providerName, value != null ? value.getClass().getSimpleName() : "null",
                         injection.field(), ip.name, ip.clazz.getSimpleName(), getDuration, injectionDuration);
                 } else {
                     var availableProviders = providers().stream().map(p -> p.getName()).toList();
@@ -498,7 +498,7 @@ public class PluginsFactory {
             }
         }
         
-        LOGGER.debug("Completed {} field injections for {} ({})", 
+        LOGGER.trace("Completed {} field injections for {} ({})",
             injections.size(), ip.name, ip.clazz.getSimpleName());
     }
 

@@ -572,7 +572,7 @@ public class PluginsScanner {
                         urls.add(jar);
 
                         if (isLibJar(path)) {
-                            LOGGER.debug("Found lib jar {}", path.toString());
+                            LOGGER.trace("Found lib jar {}", path.toString());
                         } else {
                             LOGGER.info("Found plugin jar {}", path.toString());
                         }
