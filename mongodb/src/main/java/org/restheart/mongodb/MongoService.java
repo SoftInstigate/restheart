@@ -171,7 +171,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                     rootHandler.addPrefixPath(uri, _pipeline);
                 }
 
-                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to MongoDB resource {}").reset().toString(), uri, resource);
+                LOGGER.trace("│   │  ├─ URI {} bound to MongoDB resource {}", uri, resource);
             });
 
             if (allPathTemplates) {

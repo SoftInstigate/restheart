@@ -776,45 +776,57 @@ public final class Bootstrapper {
      * plug services
      */
     private static void plugServices() {
-        PluginsRegistryImpl.getInstance().getServices().stream()
-        // if a service has been added programmatically (for instance, by an initializer)
-        // filter out it (assuming it isn't annotated with @RegisterPlugin)
-        .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
-        .forEach(srv -> {
-            var srvConfArgs = srv.getConfArgs();
+        var services = PluginsRegistryImpl.getInstance().getServices().stream()
+            // if a service has been added programmatically (for instance, by an initializer)
+            // filter out it (assuming it isn't annotated with @RegisterPlugin)
+            .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
+            .toList();
 
-            String uri;
-            var mp = uriMatchPolicy(srv.getInstance());
+        if (services.isEmpty()) {
+            LOGGER.info("┌── SERVICE BINDING");
+            LOGGER.info("│   No services configured");
+            LOGGER.info("└── SERVICE BINDING COMPLETED");
+        } else {
+            LOGGER.info("┌── SERVICE BINDING");
+            var startTime = System.currentTimeMillis();
 
-            if (srvConfArgs == null || !srvConfArgs.containsKey("uri") || srvConfArgs.get("uri") == null) {
-                uri = defaultURI(srv.getInstance());
-            } else {
-                if (!(srvConfArgs.get("uri") instanceof String)) {
-                    LOGGER.error("Cannot start service {}: the configuration property 'uri' must be a string", srv.getName());
+            services.forEach(srv -> {
+                var srvConfArgs = srv.getConfArgs();
 
-                    return;
+                String uri;
+                var mp = uriMatchPolicy(srv.getInstance());
+
+                if (srvConfArgs == null || !srvConfArgs.containsKey("uri") || srvConfArgs.get("uri") == null) {
+                    uri = defaultURI(srv.getInstance());
                 } else {
-                    uri = (String) srvConfArgs.get("uri");
+                    if (!(srvConfArgs.get("uri") instanceof String)) {
+                        LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' must be a string", srv.getName());
+                        return;
+                    } else {
+                        uri = (String) srvConfArgs.get("uri");
+                    }
                 }
-            }
 
-            if (uri == null) {
-                LOGGER.error("Cannot start service {}: the configuration property 'uri' is not defined and the service does not have a default value", srv.getName());
-                return;
-            }
+                if (uri == null) {
+                    LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' is not defined", srv.getName());
+                    return;
+                }
 
-            if (!uri.startsWith("/")) {
-                LOGGER.error("Cannot start service {}: the configuration property 'uri' must start with /", srv.getName());
+                if (!uri.startsWith("/")) {
+                    LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' must start with /", srv.getName());
+                    return;
+                }
 
-                return;
-            }
+                var secured = srv.isSecure();
 
-            var secured = srv.isSecure();
+                PluginsRegistryImpl.getInstance().plugService(srv, uri, mp, secured);
 
-            PluginsRegistryImpl.getInstance().plugService(srv, uri, mp, secured);
+                LOGGER.info("│   ├─ URI {} bound to service {}, secured: {}, uri match {}", uri, srv.getName(), secured, mp);
+            });
 
-            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset().toString(), uri, srv.getName(), secured, mp);
-        });
+            var duration = System.currentTimeMillis() - startTime;
+            LOGGER.info("└── SERVICE BINDING COMPLETED in {}ms", duration);
+        }
     }
 
     /**

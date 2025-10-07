@@ -490,12 +490,12 @@ public class PluginsScanner {
         private long starScanTime = 0;
 
         public void logStartScan() {
-            LOGGER.info("Scanning jars for plugins started");
+            LOGGER.info("┌── SCANNING JARS FOR PLUGINS");
             this.starScanTime = System.currentTimeMillis();
         }
 
         public void logEndScan() {
-            LOGGER.info("Scanning jars for plugins completed in {} msec", System.currentTimeMillis() - starScanTime);
+            LOGGER.info("└── SCANNING COMPLETED in {} msec", System.currentTimeMillis() - starScanTime);
         }
 
         public ClassGraph get() {
@@ -538,13 +538,16 @@ public class PluginsScanner {
         }
 
         private URL[] findPluginsJars(final Path pluginsDirectory) {
-            return _findPluginsJars(pluginsDirectory, 0);
+            LOGGER.info("┌── DISCOVERING PLUGIN JARS");
+            var result = _findPluginsJars(pluginsDirectory, 0);
+            LOGGER.info("└── PLUGIN JARS DISCOVERED");
+            return result;
         }
 
         private URL[] _findPluginsJars(final Path dir, final int depth) {
             final var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!pluginsPackages.isEmpty()) {
-                LOGGER.info("Limiting the scanning of plugins to packages {}", pluginsPackages);
+                LOGGER.info("│   Limiting scanning to packages {}", pluginsPackages);
             }
             if (dir == null) {
                 return new URL[0];
@@ -572,9 +575,9 @@ public class PluginsScanner {
                         urls.add(jar);
 
                         if (isLibJar(path)) {
-                            LOGGER.trace("Found lib jar {}", path.toString());
+                            LOGGER.trace("│   Found lib jar {}", path.toString());
                         } else {
-                            LOGGER.info("Found plugin jar {}", path.toString());
+                            LOGGER.info("│   ├─ {}", path.getFileName());
                         }
                     } catch (final Exception e) {
                         LOGGER.error("Error processing jar file: {}", path, e);
