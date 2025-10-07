@@ -108,12 +108,12 @@ public class LoggingInitializer {
 
             if (fullStackTrace) {
                 if (noColors) {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{full}");
                 } else {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %-45logger{45} - %msg%n%throwable{full}");
                 }
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{short}");
                 // noColors=false and fullStackTrace=false is default
             }
 

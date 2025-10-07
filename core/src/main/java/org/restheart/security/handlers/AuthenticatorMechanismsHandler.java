@@ -46,28 +46,26 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
     private final Set<AuthenticatorMechanismWrapper> wrappedAuthenticatorMechanisms;
 
     public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
-        super(next);
-        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream()
-            .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
-            .collect(Collectors.toCollection(LinkedHashSet::new));
-            
-        LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
-            authenticatorMechanisms.size(),
-            authenticatorMechanisms.stream()
-                .map(m -> PluginUtils.name(m.getInstance()))
-                .collect(Collectors.joining(", ")));
+        this(authenticatorMechanisms);
+        super.setNext(next);
     }
 
     public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
+        this(authenticatorMechanisms, false);
+    }
+
+    public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms, boolean logInitialization) {
         this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream()
             .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
             .collect(Collectors.toCollection(LinkedHashSet::new));
-            
-        LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
-            authenticatorMechanisms.size(),
-            authenticatorMechanisms.stream()
-                .map(m -> PluginUtils.name(m.getInstance()))
-                .collect(Collectors.joining(", ")));
+
+        if (logInitialization) {
+            LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
+                authenticatorMechanisms.size(),
+                authenticatorMechanisms.stream()
+                    .map(m -> PluginUtils.name(m.getInstance()))
+                    .collect(Collectors.joining(", ")));
+        }
     }
 
 

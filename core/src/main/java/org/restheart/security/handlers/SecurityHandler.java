@@ -202,7 +202,7 @@ public class SecurityHandler extends PipelinedHandler {
         }
 
         if (mechanisms != null && !mechanisms.isEmpty()) {
-            // Lazy initialization of cached components (double-checked locking)
+            // Pre-initialize for logging (only once)
             if (cachedComponents == null) {
                 synchronized (LOCK) {
                     if (cachedComponents == null) {
@@ -215,10 +215,21 @@ public class SecurityHandler extends PipelinedHandler {
                 }
             }
 
-            // Link the cached components with the specific 'next' handler for this service
-            cachedComponents.linkChain(next);
+            // Create NEW handler instances for each service (cannot reuse because of 'next' pointer)
+            var authorizersHandler = new ReusableAuthorizersHandler(authorizers);
+            var tokenInjector = new ReusableTokenInjector(tokenManager != null ? tokenManager.getInstance() : null);
+            var callHandler = new ReusableAuthenticationCallHandler();
+            var constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
+            var authMechanismsHandler = new ReusableAuthenticatorMechanismsHandler(mechanisms);
 
-            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, cachedComponents.authMechanismsHandler);
+            // Link the chain
+            authorizersHandler.setNext(next);
+            tokenInjector.setNext(authorizersHandler);
+            callHandler.setNext(tokenInjector);
+            constraintHandler.setNext(callHandler);
+            authMechanismsHandler.setNext(constraintHandler);
+
+            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, authMechanismsHandler);
 
         } else if (authorizers != null && !authorizers.isEmpty()) {
             // if no authentication mechanism is enabled and at least one authorizer is defined
