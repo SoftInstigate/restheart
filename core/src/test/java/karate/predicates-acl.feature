@@ -115,6 +115,36 @@ Scenario: Test mongodb mergeRequest
   And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
 
 
+# Test that PATCH with update operators works correctly with mergeRequest
+Scenario: Test mongodb mergeRequest with PATCH update operators
+
+  * def setupData = call read('predicate-acl-setup.feature')
+
+  # create a document
+  * headers { Authorization: '#(test)'}
+  Given path 'test-predicates/coll'
+  And request { title: 'Test PATCH with mergeRequest' }
+  When method POST
+  Then status 201
+  * def docLocation = responseHeaders['Location'][0]
+
+  # update the document using PATCH with update operators
+  * headers { Authorization: '#(test)'}
+  Given url docLocation
+  And request { "$set": { "a": 2 } }
+  When method PATCH
+  Then status 200
+
+  # check that the document has been updated with both the $set field and the mergeRequest fields
+  * headers { Authorization: '#(test)'}
+  Given url docLocation
+  When method GET
+  Then status 200
+  And match response contains {a: 2, author: 'test', status: 'draft', title: 'Test PATCH with mergeRequest'}
+
+  And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
+
+
 Scenario: Test mongodb projectResponse
 
   * def setupData = call read('predicate-acl-setup.feature')

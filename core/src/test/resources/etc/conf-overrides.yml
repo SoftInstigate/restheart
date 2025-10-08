@@ -207,6 +207,15 @@
           {"author": "@user.userid", "status": "draft", "log": "@request"}
       priority: 100
 
+    - role: test
+      predicate: >
+        method(PATCH)
+        and path-template(value="/test-predicates/coll/{id}")
+      mongo:
+        mergeRequest: >
+          {"author": "@user.userid", "status": "draft"}
+      priority: 100
+
     - role: testWithArray
       predicate: >
         (method(PUT) or method(GET)) and path-template(value="/test-predicates/coll/{id}")
