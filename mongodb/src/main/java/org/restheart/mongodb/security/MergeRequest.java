@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.security;
 
+import static org.restheart.utils.BsonUtils.containsUpdateOperators;
+
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -48,9 +50,29 @@ public class MergeRequest implements MongoInterceptor {
     }
 
     private void merge(MongoRequest request, BsonDocument toMerge) {
-        var iToMegere = AclVarsInterpolator.interpolateBson(request, toMerge).asDocument();
+        var iToMerge = AclVarsInterpolator.interpolateBson(request, toMerge).asDocument();
 
-        request.getContent().asDocument().putAll(iToMegere);
+        var content = request.getContent().asDocument();
+
+        // Check if content contains update operators (e.g., $set, $inc, $push, etc.)
+        if (containsUpdateOperators(content)) {
+            // When using update operators, we need to merge the fields into the $set operator
+            // because MongoDB doesn't allow mixing update operators with regular fields at root level
+
+            if (content.containsKey("$set")) {
+                // If $set already exists, merge into it
+                var setOperator = content.get("$set");
+                if (setOperator.isDocument()) {
+                    setOperator.asDocument().putAll(iToMerge);
+                }
+            } else {
+                // If $set doesn't exist, create it with the merge fields
+                content.put("$set", iToMerge);
+            }
+        } else {
+            // For regular documents (not using update operators), merge at root level
+            content.putAll(iToMerge);
+        }
     }
 
     @Override
