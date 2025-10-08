@@ -1,7 +1,6 @@
 {
   "_id": "test",
   "descriptor": {
-    "name": "test-app",
     "description": "This is a GraphQL application to test plugin features",
     "enabled": true,
     "uri": "testapp"

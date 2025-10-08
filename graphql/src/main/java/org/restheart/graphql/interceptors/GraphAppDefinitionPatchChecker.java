@@ -85,6 +85,41 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
         return gql$.isPresent() && gql$.get().isEnabled();
     }
 
+    /**
+     * Checks if there is a URI collision with another GraphQL app definition.
+     * A collision occurs when:
+     * 1. Another app has descriptor.uri equal to the target URI
+     * 2. Another app has _id equal to the target URI (without leading slash) and no descriptor.uri
+     *
+     * @param currentDocId the _id of the current document being created/updated
+     * @param targetUri the URI where this app will be accessible (with leading slash)
+     * @return true if there is a collision, false otherwise
+     */
+    private boolean hasUriCollision(String currentDocId, String targetUri) {
+        var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
+
+        // Search for apps that would be accessible at the same URI
+        // Exclude the current document from the search
+        var orConditions = org.restheart.utils.BsonUtils.array()
+            // Another app explicitly sets descriptor.uri to our target URI
+            .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", targetUri))
+            // Another app has _id that would default to our target URI
+            .add(org.restheart.utils.BsonUtils.document()
+                .put("_id", targetUri)
+                .put("$or", org.restheart.utils.BsonUtils.array()
+                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", org.restheart.utils.BsonUtils.document().put("$exists", false)))
+                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", (String) null))
+                )
+            );
+
+        var query = org.restheart.utils.BsonUtils.document()
+            .put("_id", org.restheart.utils.BsonUtils.document().put("$ne", currentDocId))
+            .put("$or", orConditions);
+
+        var conflictingApp = collection.find(query.get()).first();
+        return conflictingApp != null;
+    }
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         if (request.isBulkDocuments()) {
@@ -96,7 +131,19 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
 
         try {
             var app = AppBuilder.build(appDef);
-            var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
+            // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
+            var appUri = app.getDescriptor().getUri() != null
+                ? app.getDescriptor().getUri()
+                : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
+
+            // Check for URI collision
+            var docId = appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "";
+            if (hasUriCollision(docId, appUri)) {
+                response.rollback(this.mclient);
+                response.setInError(HttpStatus.SC_CONFLICT, "URI collision: another GraphQL app is already accessible at /" + appUri);
+                return;
+            }
+
             AppDefinitionLoadingCache.getCache().put(appUri, app);
         } catch(GraphQLIllegalAppDefinitionException e) {
             LOGGER.debug("Wrong GraphQL App definition", e);

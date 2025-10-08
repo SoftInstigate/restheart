@@ -94,7 +94,10 @@ public class GraphAppsInitializer implements Initializer {
                     ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                         try {
                             var app = AppBuilder.build(appDef);
-                            var appUri = app.getDescriptor().getUri() != null ? app.getDescriptor().getUri() :  app.getDescriptor().getAppName();
+                            // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
+                            var appUri = app.getDescriptor().getUri() != null
+                                ? app.getDescriptor().getUri()
+                                : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
                             AppDefinitionLoadingCache.getCache().put(appUri, app);
                             LOGGER.debug("GQL App Definition {} initialized", appUri);
                         } catch (GraphQLIllegalAppDefinitionException e) {

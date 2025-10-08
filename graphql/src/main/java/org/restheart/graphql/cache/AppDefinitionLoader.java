@@ -37,7 +37,6 @@ public class AppDefinitionLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppDefinitionLoader.class);
 
     private static final String APP_URI_FIELD = "descriptor.uri";
-    private static final String APP_NAME_FIELD = "descriptor.name";
     private static final String APP_ENABLED_FIELD = "descriptor.enabled";
 
     private static MongoClient mongoClient;
@@ -56,12 +55,12 @@ public class AppDefinitionLoader {
      * @return true if the app definition appURI has been updated, i.e. has a different _etag
      */
     public static boolean isUpdated(String appURI, BsonValue etag) {
-        var uriOrNameCond = array()
+        var uriOrIdCond = array()
             .add(document().put(APP_URI_FIELD, appURI))
-            .add(document().put(APP_NAME_FIELD, appURI));
+            .add(document().put("_id", appURI));
 
         var conditions = array()
-            .add(document().put("$or", uriOrNameCond))
+            .add(document().put("$or", uriOrIdCond))
             .add(document().put(APP_ENABLED_FIELD, true));
 
         var findArg = document().put("$and", conditions);
@@ -80,12 +79,12 @@ public class AppDefinitionLoader {
     public static GraphQLApp load(String appURI) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
         LOGGER.trace("Loading GQL App Definition {} from db", appURI);
 
-        var uriOrNameCond = array()
+        var uriOrIdCond = array()
             .add(document().put(APP_URI_FIELD, appURI))
-            .add(document().put(APP_NAME_FIELD, appURI));
+            .add(document().put("_id", appURI));
 
         var conditions = array()
-            .add(document().put("$or", uriOrNameCond))
+            .add(document().put("$or", uriOrIdCond))
             .add(document().put(APP_ENABLED_FIELD, true));
 
         var findArg = document().put("$and", conditions);

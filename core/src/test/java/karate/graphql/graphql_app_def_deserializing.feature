@@ -11,7 +11,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
   ### TESTS ON GRAPHQL APP DESCRIPTOR ###
 
-  Scenario: upload GraphQL app definition without descriptor
+  Scenario: upload GraphQL app definition without descriptor (should succeed with empty descriptor)
 
     * remove appDef.descriptor
     * header Authorization = rhBasicAuth
@@ -32,65 +32,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     * header Authorization = rhBasicAuth
 
-    # upload GraphQL app definition
-    Given path '/test-graphql/gql-apps'
-    And param wm = "upsert"
-    And request appDef
-    When method POST
-    Then assert responseStatus == 400
-
-  Scenario: upload GraphQL app definition without both name and uri descriptor fields
-
-    * remove appDef.descriptor.name
-    * remove appDef.descriptor.uri
-
-    * header Authorization = rhBasicAuth
-
-    # create test-graphql db
-    Given path '/test-graphql'
-    And request {}
-    When method PUT
-    Then assert responseStatus == 201 || responseStatus == 200
-
-    * header Authorization = rhBasicAuth
-
-    # create gql-apps collection
-    Given path '/test-graphql/gql-apps'
-    And request {}
-    When method PUT
-    Then assert responseStatus == 201 || responseStatus == 200
-
-    * header Authorization = rhBasicAuth
-
-    # upload GraphQL app definition
-    Given path '/test-graphql/gql-apps'
-    And param wm = "upsert"
-    And request appDef
-    When method POST
-    Then assert responseStatus == 400
-
-  Scenario: upload GraphQL app definition without uri descriptor field
-
-    * remove appDef.descriptor.uri
-    * header Authorization = rhBasicAuth
-
-    # create test-graphql db
-    Given path '/test-graphql'
-    And request {}
-    When method PUT
-    Then assert responseStatus == 201 || responseStatus == 200
-
-    * header Authorization = rhBasicAuth
-
-    # create gql-apps collection
-    Given path '/test-graphql/gql-apps'
-    And request {}
-    When method PUT
-    Then assert responseStatus == 201 || responseStatus == 200
-
-    * header Authorization = rhBasicAuth
-
-    # upload GraphQL app definition
+    # upload GraphQL app definition (descriptor is now optional)
     Given path '/test-graphql/gql-apps'
     And param wm = "upsert"
     And request appDef
@@ -99,7 +41,7 @@ Feature: GraphQL App correctness checker (needs Interceptor)
 
     * header Authorization = rhBasicAuth
 
-    # test if it is reachable at /graphql/<app-name>
+    # test if it is reachable at /graphql/<_id>
     * text query =
      """
     {
@@ -109,7 +51,55 @@ Feature: GraphQL App correctness checker (needs Interceptor)
     }
     """
 
-    Given path '/graphql/test-app'
+    Given path '/graphql/test'
+    And request {query: '#(query)'}
+    When method POST
+    Then status 200
+
+    * call confDestroyer
+
+  Scenario: upload GraphQL app definition without uri descriptor field (should use _id as uri)
+
+    * remove appDef.descriptor.uri
+
+    * header Authorization = rhBasicAuth
+
+    # create test-graphql db
+    Given path '/test-graphql'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # create gql-apps collection
+    Given path '/test-graphql/gql-apps'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # upload GraphQL app definition
+    Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
+    And request appDef
+    When method POST
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # test if it is reachable at /graphql/<_id>
+    * text query =
+     """
+    {
+      users(limit: 2, skip:1){
+        id
+      }
+    }
+    """
+
+    Given path '/graphql/test'
     And request {query: '#(query)'}
     When method POST
     Then status 200
@@ -205,6 +195,106 @@ Feature: GraphQL App correctness checker (needs Interceptor)
     And request appDef
     When method POST
     Then assert responseStatus == 400
+
+  Scenario: prevent URI collision - explicit uri conflicts with another app's _id
+
+    * header Authorization = rhBasicAuth
+
+    # create test-graphql db
+    Given path '/test-graphql'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # create gql-apps collection
+    Given path '/test-graphql/gql-apps'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # upload first app with _id "myapp" (will be accessible at /graphql/myapp)
+    * def firstApp = read('app-definitionExample.json')
+    * set firstApp._id = "myapp"
+    * remove firstApp.descriptor.uri
+    Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
+    And request firstApp
+    When method POST
+    Then assert responseStatus == 201
+
+    * header Authorization = rhBasicAuth
+
+    # try to upload second app with explicit uri "myapp" (should fail with 409 Conflict)
+    * def secondApp = read('app-definitionExample.json')
+    * set secondApp._id = "otherapp"
+    * set secondApp.descriptor.uri = "myapp"
+    Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
+    And request secondApp
+    When method POST
+    Then assert responseStatus == 409
+
+    * header Authorization = rhBasicAuth
+
+    # cleanup - delete myapp
+    Given path '/test-graphql/gql-apps/myapp'
+    And request {}
+    When method DELETE
+    Then status 204
+
+  Scenario: prevent URI collision - _id conflicts with another app's explicit uri
+
+    * header Authorization = rhBasicAuth
+
+    # create test-graphql db
+    Given path '/test-graphql'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # create gql-apps collection
+    Given path '/test-graphql/gql-apps'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+    # upload first app with explicit uri "myapp"
+    * def firstApp = read('app-definitionExample.json')
+    * set firstApp._id = "first"
+    * set firstApp.descriptor.uri = "myapp"
+    Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
+    And request firstApp
+    When method POST
+    Then assert responseStatus == 201
+
+    * header Authorization = rhBasicAuth
+
+    # try to upload second app with _id "myapp" and no explicit uri (should fail with 409 Conflict)
+    * def secondApp = read('app-definitionExample.json')
+    * set secondApp._id = "myapp"
+    * remove secondApp.descriptor.uri
+    Given path '/test-graphql/gql-apps'
+    And param wm = "upsert"
+    And request secondApp
+    When method POST
+    Then assert responseStatus == 409
+
+    * header Authorization = rhBasicAuth
+
+    # cleanup - delete first
+    Given path '/test-graphql/gql-apps/first'
+    And request {}
+    When method DELETE
+    Then status 204
 
 
 

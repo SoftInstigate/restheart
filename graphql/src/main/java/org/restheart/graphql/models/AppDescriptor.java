@@ -21,13 +21,11 @@
 package org.restheart.graphql.models;
 
 public class AppDescriptor {
-    private String appName;
     private Boolean enabled;
     private String description;
     private String uri;
 
-    private AppDescriptor(String appName, Boolean enabled, String description, String uri) {
-        this.appName = appName;
+    private AppDescriptor(Boolean enabled, String description, String uri) {
         this.enabled = enabled;
         this.description = description;
         this.uri = uri;
@@ -35,14 +33,6 @@ public class AppDescriptor {
 
     public static Builder newBuilder() {
         return new Builder();
-    }
-
-    public String getAppName() {
-        return appName;
-    }
-
-    public void setAppName(String appName) {
-        this.appName = appName;
     }
 
     public Boolean getEnabled() {
@@ -71,17 +61,11 @@ public class AppDescriptor {
 
     public static class Builder {
 
-        private String appName;
         private Boolean enabled;
         private String description;
         private String uri;
 
         private Builder() {
-        }
-
-        public Builder appName(String appName) {
-            this.appName = appName;
-            return this;
         }
 
         public Builder enabled(Boolean enabled) {
@@ -100,11 +84,7 @@ public class AppDescriptor {
         }
 
         public AppDescriptor build() {
-            if (appName == null && uri == null) {
-                throw new IllegalStateException("At least one of 'name' and 'uri' must be not null!");
-            }
-
-            return new AppDescriptor(this.appName, this.enabled, this.description, this.uri);
+            return new AppDescriptor(this.enabled, this.description, this.uri);
         }
     }
 }

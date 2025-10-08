@@ -52,6 +52,9 @@ public class AppBuilder extends Mappings {
             } else {
                 throw new GraphQLIllegalAppDefinitionException("'Descriptor' field must be an Object but was " + appDef.get("descriptor").getBsonType());
             }
+        } else {
+            // Create empty descriptor if not present
+            descriptor = AppDescriptor.newBuilder().enabled(true).description("").build();
         }
 
         if (appDef.containsKey("schema")) {
@@ -131,14 +134,8 @@ public class AppBuilder extends Mappings {
             var descriptor = doc.getDocument("descriptor");
             var descBuilder = AppDescriptor.newBuilder();
 
-            if (descriptor.containsKey("name")) {
-                descBuilder.appName(descriptor.getString("name").getValue());
-            }
-
             if (descriptor.containsKey("uri")) {
                 descBuilder.uri(descriptor.getString("uri").getValue());
-            } else if (descriptor.containsKey("name")) {
-                descBuilder.uri(descriptor.getString("name").getValue());
             }
 
             if (descriptor.containsKey("description")) {
