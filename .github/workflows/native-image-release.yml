@@ -54,7 +54,7 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image -march=list
-          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          mvn -T 1C package -Pnative -DskipTests -Dnative.march="-march=x86-64"
 
       - name: Build MacOS Apple Silicon native
         if: matrix.arch == 'darwin-arm64'
@@ -63,7 +63,7 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image -march=list
-          mvn package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
+          mvn -T 1C package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
 
       - name: Build Windows native
         if: matrix.arch == 'windows-amd64'
@@ -72,7 +72,7 @@ jobs:
           echo "JAVA_HOME: %JAVA_HOME%"
           java --version
           native-image.cmd -march=list
-          mvn package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
+          mvn -T 1C package -Pnative -DskipTests "-Dnative.march=-march=x86-64"
 
       - name: Build Linux native
         if: matrix.arch == 'linux-amd64'
@@ -81,7 +81,7 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image -march=list
-          mvn package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          mvn -T 1C package -Pnative -DskipTests -Dnative.march="-march=x86-64"
           chmod +x core/target/restheart
 
       - name: Upload restheart-${{ matrix.arch }} native artifact
