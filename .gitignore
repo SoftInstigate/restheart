@@ -290,3 +290,4 @@ infer-out
 /core/Dockerfile.jbr
 
 .zed/
+.claude
