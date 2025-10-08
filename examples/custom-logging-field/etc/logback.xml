@@ -4,7 +4,7 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %X{timestamp} %highlight(%-5level) %-45logger{45} - %msg%n%throwable{short}</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %X{timestamp} %highlight(%-5level) %trace%-45logger{45} - %msg%n%throwable{short}</pattern>
         </encoder>
     </appender>
 

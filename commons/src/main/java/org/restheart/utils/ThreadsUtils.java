@@ -32,7 +32,7 @@ import java.util.concurrent.Executors;
  */
 public class ThreadsUtils {
     /** Virtual threads executor service that creates a new virtual thread for each task. */
-    private static final ExecutorService VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH-VIRTUAL-WORKER-", 0L).factory());
+    private static final ExecutorService VIRTUAL_THREADS_EXECUTOR = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("RH VRT WRK ⚙").factory());
 
     /**
      * Returns the shared virtual threads executor service.

@@ -48,7 +48,11 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (emptyTraceHeaders) {
+		// add traceId (last 4 chars of requestId) to the MDC
+		var requestId = exchange.getRequestId();
+		MDC.put("traceId", requestId.substring(Math.max(0, requestId.length() - 4)));
+
+		if (emptyTraceHeaders) {
             next(exchange);
         } else {
             this.traceHeaders
@@ -68,7 +72,7 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                 next(exchange);
             }
 
-            this.traceHeaders.forEach((traceIdHeader) -> MDC.remove(traceIdHeader));
+            this.traceHeaders.forEach(MDC::remove);
         }
     }
 }

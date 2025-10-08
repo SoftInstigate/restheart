@@ -103,17 +103,17 @@ public class LoggingInitializer {
             var newAppender = new ConsoleAppender<ILoggingEvent>();
             newAppender.setContext(loggerContext);
 
-            PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+            var encoder = new PatternLayoutEncoder();
             encoder.setContext(loggerContext);
 
             if (fullStackTrace) {
                 if (noColors) {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} - %msg%n%throwable{full}");
                 } else {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %-45logger{45} - %msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} - %msg%n%throwable{full}");
                 }
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} - %msg%n%throwable{short}");
                 // noColors=false and fullStackTrace=false is default
             }
 
@@ -168,15 +168,15 @@ public class LoggingInitializer {
 
         if (fullStacktrace) {
             if (noColors) {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{full}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} - %msg%n%throwable{full}");
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %-45logger{45} - %msg%n%throwable{full}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} - %msg%n%throwable{full}");
             }
         }  else {
             if (noColors) {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %-45logger{45} - %msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} - %msg%n%throwable{short}");
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %-45logger{45} - %msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} - %msg%n%throwable{short}");
             }
         }
         encoder.start();
