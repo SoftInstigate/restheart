@@ -64,7 +64,7 @@ public abstract class Request<T> extends Exchange<T> {
     public static final String UNDERSCORE = "_";
 
     /** Attachment key for storing request-specific parameters. */
-    private static final AttachmentKey<Map<String, Object>> ATTACHED_PARAMS_KEY = AttachmentKey.create(Map.class);
+    public static final AttachmentKey<Map<String, Object>> ATTACHED_PARAMS_KEY = AttachmentKey.create(Map.class);
 
     /** Attachment key for storing pipeline information. */
     public static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);

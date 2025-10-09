@@ -51,7 +51,7 @@ import com.mongodb.client.MongoClient;
 public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionPatchChecker.class);
 
-    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String defaultAppDefDb = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
     private boolean enabled = false;
@@ -70,7 +70,7 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
         try {
             Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
             if (graphqlArgs != null) {
-                this.db = arg(graphqlArgs, "db");
+                this.defaultAppDefDb = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
                 this.enabled = true;
             } else {
@@ -96,8 +96,8 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
      * @param targetUri the URI where this app will be accessible (with leading slash)
      * @return true if there is a collision, false otherwise
      */
-    private boolean hasUriCollision(String currentDocId, String targetUri) {
-        var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
+    private boolean hasUriCollision(String db, String currentDocId, String targetUri) {
+		var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
 
         // Search for apps that would be accessible at the same URI
         // Exclude the current document from the search
@@ -128,6 +128,9 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             return;
         }
 
+		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         var appDef = response.getDbOperationResult().getNewData();
 
         try {
@@ -139,13 +142,13 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
 
             // Check for URI collision
             var docId = appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "";
-            if (hasUriCollision(docId, appUri)) {
+            if (hasUriCollision(db, docId, appUri)) {
                 response.rollback(this.mclient);
                 response.setInError(HttpStatus.SC_CONFLICT, "URI collision: another GraphQL app is already accessible at /" + appUri);
                 return;
             }
 
-            AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
+            AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
         } catch(GraphQLIllegalAppDefinitionException e) {
             LOGGER.debug("Wrong GraphQL App definition", e);
             response.rollback(this.mclient);
@@ -154,14 +157,17 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
+    public boolean resolve(MongoRequest req, MongoResponse res) {
+		String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         return enabled
-            && this.db.equals(request.getDBName())
-            && this.coll.equals(request.getCollectionName())
-            && (request.isBulkDocuments()
-            || (request.isDocument()
-            && request.isPatch()
-            && response.getDbOperationResult() != null
-            && response.getDbOperationResult().getNewData() != null));
+            && db.equals(req.getDBName())
+            && this.coll.equals(req.getCollectionName())
+            && (req.isBulkDocuments()
+            || (req.isDocument()
+            && req.isPatch()
+            && res.getDbOperationResult() != null
+            && res.getDbOperationResult().getNewData() != null));
     }
 }

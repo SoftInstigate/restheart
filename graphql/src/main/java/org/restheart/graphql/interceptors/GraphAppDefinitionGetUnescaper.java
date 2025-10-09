@@ -35,13 +35,13 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 
-@RegisterPlugin(name="gaphAppDefinitionGetUnescaper",
+@RegisterPlugin(name="graphAppDefinitionGetUnescaper",
         description = "unescapes $ prefixed keys in GraphQL application definitions",
         interceptPoint = RESPONSE,
         enabledByDefault = true
 )
 public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
-    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String defaultAppDefDb = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
     private boolean enabled = false;
@@ -57,7 +57,7 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
         try {
             Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
             if (graphqlArgs != null) {
-                this.db = arg(graphqlArgs, "db");
+                this.defaultAppDefDb = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
                 this.enabled = isGQLSrvEnabled();
             } else {
@@ -80,8 +80,11 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
+		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         return enabled
-            && this.db.equals(request.getDBName())
+            && db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
             && request.isGet()
             && response.getContent() != null;

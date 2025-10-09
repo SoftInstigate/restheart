@@ -42,7 +42,7 @@ import org.restheart.utils.BsonUtils;
         enabledByDefault = true
 )
 public class GraphAppDefinitionEscaper implements MongoInterceptor {
-    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String defaultAppDefDb = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
     private boolean enabled = false;
@@ -58,7 +58,7 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
         try {
             Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
             if (graphqlArgs != null) {
-                this.db = arg(graphqlArgs, "db");
+                this.defaultAppDefDb = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
                 this.enabled = isGQLSrvEnabled();
             } else {
@@ -80,11 +80,14 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
+    public boolean resolve(MongoRequest req, MongoResponse res) {
+		String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         return enabled
-            && this.db.equals(request.getDBName())
-            && this.coll.equals(request.getCollectionName())
-            && request.getContent() != null
-            && request.isWriteDocument();
+            && db.equals(req.getDBName())
+            && this.coll.equals(req.getCollectionName())
+            && req.getContent() != null
+            && req.isWriteDocument();
     }
 }

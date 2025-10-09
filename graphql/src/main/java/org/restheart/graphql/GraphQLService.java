@@ -104,7 +104,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
     private GraphQL gql;
-    private String db = DEFAULT_APP_DEF_DB;
+    private String defaultAppDefDb = DEFAULT_APP_DEF_DB;
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
     private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
@@ -124,7 +124,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     public void init()throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
 
-        this.db = argOrDefault(config, "db", DEFAULT_APP_DEF_DB);
+        this.defaultAppDefDb = argOrDefault(config, "db", DEFAULT_APP_DEF_DB);
         this.collection = argOrDefault(config, "collection", DEFAULT_APP_DEF_COLLECTION);
         this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
         this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
@@ -161,7 +161,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             return;
         }
 
-        var graphQLApp = gqlApp(appURI(req.getExchange()));
+        var graphQLApp = gqlApp(req.getExchange());
 
         var dataLoaderRegistry = setDataloaderRegistry(graphQLApp.objectsMappings());
 
@@ -199,11 +199,10 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         // add authenticated account properties to local context
         // used by AggregationMapping to interpolate args as @user and @user._id
         switch (req.getAuthenticatedAccount()) {
-            case null -> localContext.put("@user", document());
-            case MongoRealmAccount ma -> localContext.put("@user", ma.properties());
+			case MongoRealmAccount ma -> localContext.put("@user", ma.properties());
             case WithProperties<?> awp -> localContext.put("@user", BsonUtils.toBsonDocument(awp.propertiesAsMap()));
-            default -> localContext.put("@user", document());
-        }
+			case null, default -> localContext.put("@user", BsonUtils.document());
+		}
 
         // add the query-time-limit to the local context;
         if (this.queryTimeLimit > 0) {
@@ -240,7 +239,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             var result = this.gql.execute(inputBuilder.build());
 
             //  The graphql specification specifies:
-            //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null."
+            //  If an error was encountered during the execution that prevented a valid response, the data entry in the response should be null.
             if (result.getErrors() != null && !result.getErrors().isEmpty()) {
 
                 var graphQLQueryTimeoutException = result.getErrors().stream()
@@ -340,7 +339,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     }
 
     private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
-        dataLoaderRegistry.getKeys().forEach(key -> LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics()));
+        dataLoaderRegistry.getKeys().forEach(key -> LOGGER.debug("{}: {}", key.toUpperCase(), dataLoaderRegistry.getDataLoader(key).getStatistics()));
     }
 
     private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings) {
@@ -376,8 +375,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             try {
                 if (e.getRequestMethod().equalToString(ExchangeKeys.METHOD.POST.name()) || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())) {
                     var appURI = appURI(e);
-                    gqlApp(appURI); // throws GraphQLAppDefNotFoundException when uri is not bound to an app definition
-                                    // thorws GraphQLIllegalAppDefinitionException is app def is invalid
+                    gqlApp(e); 					  // throws GraphQLAppDefNotFoundException when uri is not bound to an app definition
+                                    			  // throws GraphQLIllegalAppDefinitionException is app def is invalid
                     GraphQLRequest.init(e, appURI); // throws BadRequestException when content type is not valid or query field is missing
                                                     // throws JsonSyntaxException when content is not valid JSON
                 } else {
@@ -480,13 +479,20 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
     }
 
-    private String appURI(HttpServerExchange exchange) {
-        var splitPath = exchange.getRequestPath().split("/");
-        return String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
-    }
+	private String appURI(HttpServerExchange e) {
+		var splitPath = e.getRequestPath().split("/");
+		return String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
+	}
 
-    private GraphQLApp gqlApp(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
-        return AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(this.db, this.collection, appURI));
+	private GraphQLApp gqlApp(HttpServerExchange e) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
+		var appURI = appURI(e);
+
+		Map<String, Object> attachedParams = e.getAttachment(Request.ATTACHED_PARAMS_KEY);
+		var overrideGQLAppsDb = (String) attachedParams.get("override-gql-apps-db");
+
+        return overrideGQLAppsDb == null
+			? AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(this.defaultAppDefDb, this.collection, appURI))
+			: AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(overrideGQLAppsDb, this.collection, appURI));
     }
 
     @Override
@@ -521,7 +527,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         // add metric label with queries names
         return rootFields.stream()
             .filter(f -> f.getName() != null)
-            .map(f -> f.getName())
+            .map(Field::getName)
             .collect(Collectors.joining(","));
     }
 

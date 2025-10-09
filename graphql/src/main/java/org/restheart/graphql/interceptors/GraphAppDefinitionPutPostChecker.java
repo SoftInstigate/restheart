@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionPutPostChecker.class);
 
-    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String defaultAppDefDb = GraphQLService.DEFAULT_APP_DEF_DB;
     private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
     private boolean enabled = false;
@@ -70,7 +70,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
         try {
             Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
             if (graphqlArgs != null) {
-                this.db = arg(graphqlArgs, "db");
+                this.defaultAppDefDb = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
                 this.enabled = isGQLSrvEnabled();
             } else {
@@ -96,7 +96,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
      * @param targetUri the URI where this app will be accessible (with leading slash)
      * @return true if there is a collision, false otherwise
      */
-    private boolean hasUriCollision(String currentDocId, String targetUri) {
+    private boolean hasUriCollision(String db, String currentDocId, String targetUri) {
         var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
 
         // Search for apps that would be accessible at the same URI
@@ -125,6 +125,9 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var content = request.getContent();
 
+		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         if (content.isDocument()) {
             var appDef = content.asDocument();
 
@@ -138,12 +141,12 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
                 // Check for URI collision
                 var docId = unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "";
-                if (hasUriCollision(docId, appUri)) {
+                if (hasUriCollision(db, docId, appUri)) {
                     response.setInError(HttpStatus.SC_CONFLICT, "URI collision: another GraphQL app is already accessible at /" + appUri);
                     return;
                 }
 
-                AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
+                AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
             } catch(GraphQLIllegalAppDefinitionException e) {
                 LOGGER.debug("Wrong GraphQL App definition", e);
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
@@ -162,12 +165,12 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
                     // Check for URI collision
                     var docId = unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "";
-                    if (hasUriCollision(docId, appUri)) {
+                    if (hasUriCollision(db, docId, appUri)) {
                         response.setInError(HttpStatus.SC_CONFLICT, "URI collision in document at index position " + index + ": another GraphQL app is already accessible at /" + appUri);
                         break;
                     }
 
-                    AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
+                    AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
                 } catch(GraphQLIllegalAppDefinitionException e) {
                     LOGGER.debug("Wrong GraphQL App definition", e);
                     response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
@@ -181,8 +184,11 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
+		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+
         return enabled
-            && this.db.equals(request.getDBName())
+            && db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
             && request.getContent() != null
             && ((request.isCollection() && request.isPost())

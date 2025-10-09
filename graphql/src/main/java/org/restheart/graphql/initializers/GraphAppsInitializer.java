@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.client.MongoClient;
 
 @RegisterPlugin(name="graphAppsInitializer",
-        description = "initializes and caches all GQL Apps at boot timeGraphQL",
+        description = "initializes and caches all GQL Apps at boot time",
         enabledByDefault = true
 )
 public class GraphAppsInitializer implements Initializer {
