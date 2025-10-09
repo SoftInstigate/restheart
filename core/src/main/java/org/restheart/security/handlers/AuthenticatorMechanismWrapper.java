@@ -111,18 +111,9 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
         var requestPath = exchange.getRequestPath();
         var requestMethod = exchange.getRequestMethod().toString();
         var challengeStartTime = System.currentTimeMillis();
-        
-        LOGGER.debug("Sending authentication challenge: {} ({}) for {} {} - Plugin: {}", 
-            mechanismName, mechanismClass, requestMethod, requestPath, pluginName);
-            
+
         try {
-            var result = wrapped.sendChallenge(exchange, securityContext);
-            var challengeDuration = System.currentTimeMillis() - challengeStartTime;
-            
-            LOGGER.debug("Authentication challenge {} ({}) result: {} for {} {} - Duration: {}ms", 
-                mechanismName, mechanismClass, result.toString(), requestMethod, requestPath, challengeDuration);
-                
-            return result;
+            return wrapped.sendChallenge(exchange, securityContext);
         } catch (Exception ex) {
             var challengeDuration = System.currentTimeMillis() - challengeStartTime;
             LOGGER.error("Error sending challenge for mechanism {} ({}) for {} {} after {}ms", 
