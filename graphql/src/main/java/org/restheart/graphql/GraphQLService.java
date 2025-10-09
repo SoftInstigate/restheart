@@ -41,6 +41,7 @@ import static org.restheart.exchange.GraphQLResponse.GRAPHQL_RESPONSE_CONTENT_TY
 import org.restheart.exchange.Request;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
+import org.restheart.graphql.cache.AppDefinitionRef;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
@@ -144,7 +145,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         AggregationBatchLoader.setSecurityChecker(securityChecker);
         GraphQLDataFetcher.setSecurityChecker(securityChecker);
         
-        AppDefinitionLoader.setup(db, collection, mclient);
+        AppDefinitionLoader.setup(mclient);
         AppBuilder.setDefaultLimit(this.defaultLimit);
         AppBuilder.setMaxLimit(this.maxLimit);
         QueryMapping.setMaxLimit(this.maxLimit);
@@ -485,26 +486,26 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     }
 
     private GraphQLApp gqlApp(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
-        return AppDefinitionLoadingCache.getLoading(appURI);
+        return AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(this.db, this.collection, appURI));
     }
 
     @Override
     public Consumer<HttpServerExchange> responseInitializer() {
-        return e -> GraphQLResponse.init(e);
+        return GraphQLResponse::init;
     }
 
     @Override
     public Function<HttpServerExchange, GraphQLRequest> request() {
-        return e -> GraphQLRequest.of(e);
+        return GraphQLRequest::of;
     }
 
     @Override
     public Function<HttpServerExchange, GraphQLResponse> response() {
-        return e -> GraphQLResponse.of(e);
+        return GraphQLResponse::of;
     }
 
     /**
-     * collect first level query fields are return a comma separated list of their nmaes
+     * collect first level query fields are return a comma separated list of their names
      * @param doc
      * @return
      */

@@ -30,6 +30,7 @@ import org.restheart.configuration.Configuration;
 import org.restheart.graphql.GraphQLAppDefNotFoundException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.cache.AppDefinitionLoader;
+import org.restheart.graphql.cache.AppDefinitionRef;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -54,7 +55,7 @@ public class GraphAppsUpdater implements Initializer {
     private Configuration config;
 
     @Inject("gql-app-definition-cache")
-    LoadingCache<String, GraphQLApp> gqlAppDefCache;
+    LoadingCache<AppDefinitionRef, GraphQLApp> gqlAppDefCache;
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -81,7 +82,7 @@ public class GraphAppsUpdater implements Initializer {
         if (this.enabled) {
             Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(() -> ThreadsUtils.virtualThreadsExecutor()
-                    .execute(() -> this.revalidateCacheEntries()), TTR, TTR, TimeUnit.MILLISECONDS);
+                    .execute(this::revalidateCacheEntries), TTR, TTR, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -93,7 +94,7 @@ public class GraphAppsUpdater implements Initializer {
             .filter(entry -> entry.getValue().isPresent())
             // filter out not updated documents (same etag than cached entry)
             .filter(entry -> AppDefinitionLoader.isUpdated(entry.getKey(), entry.getValue().get().getEtag()))
-            .map(entry -> entry.getKey())
+            .map(Map.Entry::getKey)
             .forEach(appUri -> {
                 try {
                     var appDef = AppDefinitionLoader.load(appUri);
@@ -104,10 +105,10 @@ public class GraphAppsUpdater implements Initializer {
                     LOGGER.debug("gql cache entry {} removed", appUri);
                 } catch (GraphQLIllegalAppDefinitionException e) {
                     this.gqlAppDefCache.invalidate(appUri);
-                    LOGGER.warn("gql cache entry {} removed {} due to illegal definition", appUri, e);
+                    LOGGER.warn("gql cache entry {} removed due to illegal definition", appUri, e);
                 } catch (Throwable e) {
                     this.gqlAppDefCache.invalidate(appUri);
-                    LOGGER.warn("error updaring gql cache entry {}", appUri, e);
+                    LOGGER.warn("error updating gql cache entry {}", appUri, e);
                 }
         });
     }

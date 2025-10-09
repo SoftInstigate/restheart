@@ -38,7 +38,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.LambdaUtils;
 
 @RegisterPlugin(name="gql-app-definition-cache", description="provides access to the GQL App Definition cache")
-public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
+public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefinitionRef,GraphQLApp>> {
     private static final long MAX_CACHE_SIZE = 100_000;
     private static boolean enabled = true;
 
@@ -63,10 +63,10 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
         return gql$.isPresent() && gql$.get().isEnabled();
     }
 
-    private static final LoadingCache<String, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.NEVER, 0,
-        appURI -> {
+    private static final LoadingCache<AppDefinitionRef, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.NEVER, 0,
+		appRef -> {
             try {
-                return AppDefinitionLoader.load(appURI);
+                return AppDefinitionLoader.load(appRef);
             } catch (GraphQLAppDefNotFoundException e) {
                 return null;
             } catch (GraphQLIllegalAppDefinitionException e) {
@@ -75,24 +75,24 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
             }
         });
 
-    public static LoadingCache<String, GraphQLApp> getCache() {
+    public static LoadingCache<AppDefinitionRef, GraphQLApp> getCache() {
         return CACHE;
     }
 
-    public static GraphQLApp getLoading(String appURI) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
+    public static GraphQLApp getLoading(AppDefinitionRef appRef) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
         if (enabled) {
-            var _app = CACHE.get(appURI);
+            var _app = CACHE.get(appRef);
 
             if (_app != null && _app.isPresent()){
                 return _app.get();
             } else {
                 // Remove key if null was cached (previous request missed it, but it may exist now)
                 if (_app != null && _app.isEmpty()) {
-                    CACHE.remove(appURI);
+                    CACHE.remove(appRef);
                 }
 
                 try {
-                    _app = CACHE.getLoading(appURI);
+                    _app = CACHE.getLoading(appRef);
                 } catch (Exception e) {
                     throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
                 }
@@ -100,11 +100,11 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
                 if (_app != null && _app.isPresent()) {
                     return _app.get();
                 } else {
-                    throw new GraphQLAppDefNotFoundException("GQL App Definition for uri " + appURI + " not found. ");
+                    throw new GraphQLAppDefNotFoundException("GQL App Definition for %s not found.".formatted(appRef));
                 }
             }
         } else {
-            return AppDefinitionLoader.load(appURI);
+            return AppDefinitionLoader.load(appRef);
         }
     }
 
@@ -112,7 +112,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache> {
      * Implementation of the get() method of the Provider interface
      */
     @Override
-    public LoadingCache<String, GraphQLApp> get(PluginRecord<?> caller) {
+    public LoadingCache<AppDefinitionRef, GraphQLApp> get(PluginRecord<?> caller) {
         return CACHE;
     }
 }

@@ -28,6 +28,7 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
+import org.restheart.graphql.cache.AppDefinitionRef;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -98,7 +99,7 @@ public class GraphAppsInitializer implements Initializer {
                             var appUri = app.getDescriptor().getUri() != null
                                 ? app.getDescriptor().getUri()
                                 : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
-                            AppDefinitionLoadingCache.getCache().put(appUri, app);
+                            AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
                             LOGGER.debug("GQL App Definition {} initialized", appUri);
                         } catch (GraphQLIllegalAppDefinitionException e) {
                             LOGGER.warn("GQL App Definition {} is invalid", appDef.get("_id"), e);

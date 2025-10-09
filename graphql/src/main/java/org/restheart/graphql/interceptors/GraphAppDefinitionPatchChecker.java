@@ -29,6 +29,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
+import org.restheart.graphql.cache.AppDefinitionRef;
 import org.restheart.graphql.models.builder.AppBuilder;
 import org.restheart.plugins.Inject;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
@@ -144,7 +145,7 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
                 return;
             }
 
-            AppDefinitionLoadingCache.getCache().put(appUri, app);
+            AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
         } catch(GraphQLIllegalAppDefinitionException e) {
             LOGGER.debug("Wrong GraphQL App definition", e);
             response.rollback(this.mclient);

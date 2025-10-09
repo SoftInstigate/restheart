@@ -40,24 +40,20 @@ public class AppDefinitionLoader {
     private static final String APP_ENABLED_FIELD = "descriptor.enabled";
 
     private static MongoClient mongoClient;
-    private static String appDB;
-    private static String appCollection;
 
-    public static void setup(String _db, String _collection, MongoClient mclient){
-        appDB = _db;
-        appCollection = _collection;
+    public static void setup(MongoClient mclient){
         mongoClient = mclient;
     }
 
     /**
-     * @param appURI
+     * @param appRef the app reference
      * @param etag the etag of cached gql app
      * @return true if the app definition appURI has been updated, i.e. has a different _etag
      */
-    public static boolean isUpdated(String appURI, BsonValue etag) {
+    public static boolean isUpdated(AppDefinitionRef appRef, BsonValue etag) {
         var uriOrIdCond = array()
-            .add(document().put(APP_URI_FIELD, appURI))
-            .add(document().put("_id", appURI));
+            .add(document().put(APP_URI_FIELD, appRef.id()))
+            .add(document().put("_id", appRef.id()));
 
         var conditions = array()
             .add(document().put("$or", uriOrIdCond))
@@ -65,23 +61,23 @@ public class AppDefinitionLoader {
 
         var findArg = document().put("$and", conditions);
 
-        var gqlApp = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
+        var gqlApp = mongoClient.getDatabase(appRef.db()).getCollection(appRef.collection(), BsonDocument.class).find(findArg.get()).first();
 
         if (gqlApp != null) {
             var newEtag = gqlApp.get("_etag");
             LOGGER.trace("oldEtag {}, newEtag {}", etag, newEtag);
-            return etag == null || newEtag == null || !etag.equals(newEtag);
+            return etag == null || !etag.equals(newEtag);
         } else {
             return true; // app has been deleted
         }
     }
 
-    public static GraphQLApp load(String appURI) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
-        LOGGER.trace("Loading GQL App Definition {} from db", appURI);
+    public static GraphQLApp load(AppDefinitionRef appRef) throws GraphQLIllegalAppDefinitionException, GraphQLAppDefNotFoundException {
+        LOGGER.trace("Loading GQL App Definition {} from db", appRef);
 
         var uriOrIdCond = array()
-            .add(document().put(APP_URI_FIELD, appURI))
-            .add(document().put("_id", appURI));
+            .add(document().put(APP_URI_FIELD, appRef.id()))
+            .add(document().put("_id", appRef.id()));
 
         var conditions = array()
             .add(document().put("$or", uriOrIdCond))
@@ -89,12 +85,12 @@ public class AppDefinitionLoader {
 
         var findArg = document().put("$and", conditions);
 
-        var gqlApp = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
+        var gqlApp = mongoClient.getDatabase(appRef.db()).getCollection(appRef.collection(), BsonDocument.class).find(findArg.get()).first();
 
         if (gqlApp != null) {
             return AppBuilder.build(gqlApp);
         } else {
-            throw new GraphQLAppDefNotFoundException("GQL App Definition for uri " + appURI + " not found. ");
+            throw new GraphQLAppDefNotFoundException("GQL App Definition %s not found.".formatted(appRef));
         }
     }
 }
