@@ -114,7 +114,8 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             } catch (BadRequestException bre) {
                 var initDuration = System.currentTimeMillis() - initStartTime;
                 LOGGER.error("│   └─ ✗ BAD REQUEST after {}ms: {}", initDuration, bre.getMessage());
-                    
+                LOGGER.error("└── SERVICE EXCHANGE INIT FAILED");
+
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, bre.contentType());
                 exchange.getResponseSender().send(
@@ -125,7 +126,8 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             } catch (Throwable t) {
                 var initDuration = System.currentTimeMillis() - initStartTime;
                 LOGGER.error("│   └─ ✗ FAILED after {}ms: {}", initDuration, t.getMessage());
-                    
+                LOGGER.error("└── SERVICE EXCHANGE INIT FAILED");
+
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 throw t;
             }

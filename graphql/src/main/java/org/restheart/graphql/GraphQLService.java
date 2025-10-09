@@ -182,7 +182,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 var queryNames = queryNames(doc);
                 // add metric label
                 Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames));
-                LOGGER.debug("Executing GraphQL query: {}", queryNames);
+                LOGGER.debug("│   Executing GraphQL query: {}", queryNames);
             } catch(InvalidSyntaxException ise) {
                 // invalid syntax -> 400
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
@@ -415,7 +415,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
 
                 throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             } catch (GraphQLAppDefNotFoundException nfe) {
-                // GrahpQL app not found -> 404
+                // GraphQL app not found -> 404
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
                 // If the GraphQL response does not contain the {data} entry then
                 // the server MUST reply with a 4xx or 5xx status code as appropriate.

@@ -64,7 +64,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
         var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
         var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-        LOGGER.debug("Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
+        LOGGER.debug("│   Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
 
         try {
             var query = mongoClient
