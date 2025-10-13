@@ -37,7 +37,7 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
 
 public class AppBuilder extends Mappings {
-    public static final GraphQLApp build(BsonDocument appDef) throws GraphQLIllegalAppDefinitionException {
+    public static GraphQLApp build(BsonDocument appDef, String appDefDb, Boolean restrictMappingDb) throws GraphQLIllegalAppDefinitionException {
         AppDescriptor descriptor = null;
         String schema = null;
         TypeDefinitionRegistry typeDefinitionRegistry;
@@ -79,7 +79,7 @@ public class AppBuilder extends Mappings {
         if (appDef.containsKey("mappings")) {
             if (appDef.get("mappings").isDocument()) {
                 var mappings = appDef.getDocument("mappings");
-                objectsMappings = ObjectsMappings.get(BsonUtils.unescapeKeys(mappings).asDocument(), typeDefinitionRegistry);
+                objectsMappings = ObjectsMappings.get(BsonUtils.unescapeKeys(mappings).asDocument(), typeDefinitionRegistry, appDefDb, restrictMappingDb);
                 enumsMappings = EnumMappings.get(mappings, typeDefinitionRegistry);
                 unionsMappings = UnionsMappings.get(mappings, typeDefinitionRegistry);
                 interfacesMappings = InterfacesMappings.get(mappings, typeDefinitionRegistry);

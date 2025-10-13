@@ -27,6 +27,7 @@ import java.util.Map;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonValue;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.GraphQLService;
 import org.restheart.graphql.models.AggregationMapping;
@@ -61,10 +62,12 @@ class ObjectsMappings extends Mappings {
      *
      * @param doc
      * @param typeDefinitionRegistry
+     * @param appDefDb the database where the GraphQL app definition is stored
+     * @param restrictMappingDb if true, all mappings must use the same db as appDefDb
      * @return the objects mappings
      * @throws GraphQLIllegalAppDefinitionException
      */
-    static Map<String, TypeMapping> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
+    static Map<String, TypeMapping> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry, String appDefDb, Boolean restrictMappingDb) throws GraphQLIllegalAppDefinitionException {
         var ret = new HashMap<String, TypeMapping>();
 
         var _wrongObjectMapping = doc.keySet().stream()
@@ -80,7 +83,7 @@ class ObjectsMappings extends Mappings {
         doc.keySet().stream()
             .filter(key -> isObject(key, typeDefinitionRegistry))
             .filter(key -> doc.get(key).isDocument())
-            .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, typeDefinitionRegistry, doc.getDocument(type)))));
+            .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, typeDefinitionRegistry, doc.getDocument(type), appDefDb, restrictMappingDb))));
 
         return ret;
     }
@@ -88,10 +91,13 @@ class ObjectsMappings extends Mappings {
     /**
      *
      * @param type
+     * @param typeDefinitionRegistry
      * @param typeDoc
+     * @param appDefDb the database where the GraphQL app definition is stored
+     * @param restrictMappingDb if true, all mappings must use the same db as appDefDb
      * @return the FieldMappings of the Object Type
      */
-    private static HashMap<String, FieldMapping> objectFieldMappings(String type, TypeDefinitionRegistry typeDefinitionRegistry, BsonDocument typeDoc) {
+    private static HashMap<String, FieldMapping> objectFieldMappings(String type, TypeDefinitionRegistry typeDefinitionRegistry, BsonDocument typeDoc, String appDefDb, Boolean restrictMappingDb) {
         var typeMappings = new HashMap<String, FieldMapping>();
 
         for (var field : typeDoc.keySet()) {
@@ -107,6 +113,13 @@ class ObjectsMappings extends Mappings {
                     if (fieldMappingDoc.containsKey("db")) {
                         if (!fieldMappingDoc.get("db").isString()) {
                             throwIllegalDefinitionException(field, type, "db", "string", fieldMappingDoc.get("db"));
+                        }
+                        // Validate that mapping db matches app definition db if restriction is enabled
+                        if (restrictMappingDb && !fieldMappingDoc.getString("db").getValue().equals(appDefDb)) {
+                            LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException(
+                                "The mapping for " + type + "." + field + " uses db '" + fieldMappingDoc.getString("db").getValue() + 
+                                "' but the GraphQL app definition is stored in db '" + appDefDb + "'. " +
+                                "When 'restrict-mapping-db' is enabled, all mappings must use the same database as the app definition."));
                         }
                     } else {
                         throwIllegalDefinitionException(field, type, "db");
@@ -129,10 +142,10 @@ class ObjectsMappings extends Mappings {
 
                             aggregationBuilder
                                 .fieldName(field)
-                                .db(fieldMappingDoc.get("db").asString())
+                                .db(fieldMappingDoc.get("db").asString()) // DB!!!
                                 .collection(fieldMappingDoc.get("collection").asString())
                                 .stages(fieldMappingDoc.get("stages").asArray())
-                                .allowDiskUse(hasKeyOfType(fieldMappingDoc, "allowDiskUse", t -> t.isBoolean())
+                                .allowDiskUse(hasKeyOfType(fieldMappingDoc, "allowDiskUse", BsonValue::isBoolean)
                                     ? fieldMappingDoc.get("allowDiskUse").asBoolean()
                                     : BsonBoolean.FALSE);
 
@@ -171,6 +184,7 @@ class ObjectsMappings extends Mappings {
 
                         queryMappingBuilder.fieldName(field);
 
+						// DB !!!
                         queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
                         queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
 

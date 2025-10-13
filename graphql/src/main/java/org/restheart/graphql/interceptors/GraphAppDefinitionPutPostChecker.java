@@ -133,7 +133,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
             try {
                 var unflattened = BsonUtils.unflatten(appDef).asDocument();
-                var app = AppBuilder.build(unflattened);
+                // Note: restrictMappingDb validation happens at runtime via AppDefinitionLoader
+                var app = AppBuilder.build(unflattened, db, false);
                 // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
                 var appUri = app.getDescriptor().getUri() != null
                     ? app.getDescriptor().getUri()
@@ -157,7 +158,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             for (var appDef: content.asArray()) {
                 try {
                     var unflattened = BsonUtils.unflatten(appDef).asDocument();
-                    var app = AppBuilder.build(unflattened);
+                    // Note: restrictMappingDb validation happens at runtime via AppDefinitionLoader
+                    var app = AppBuilder.build(unflattened, db, false);
                     // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
                     var appUri = app.getDescriptor().getUri() != null
                         ? app.getDescriptor().getUri()

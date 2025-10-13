@@ -94,7 +94,8 @@ public class GraphAppsInitializer implements Initializer {
                 .forEach(appDef -> {
                     ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                         try {
-                            var app = AppBuilder.build(appDef);
+                            // Note: restrictMappingDb is false here because validation happens at runtime via AppDefinitionLoader
+                            var app = AppBuilder.build(appDef, this.db, false);
                             // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
                             var appUri = app.getDescriptor().getUri() != null
                                 ? app.getDescriptor().getUri()

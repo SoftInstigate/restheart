@@ -134,7 +134,8 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
         var appDef = response.getDbOperationResult().getNewData();
 
         try {
-            var app = AppBuilder.build(appDef);
+            // Note: restrictMappingDb validation happens at runtime via AppDefinitionLoader
+            var app = AppBuilder.build(appDef, db, false);
             // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
             var appUri = app.getDescriptor().getUri() != null
                 ? app.getDescriptor().getUri()

@@ -100,6 +100,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     public static final int DEFAULT_DEFAULT_LIMIT = 100;
     public static final int DEFAULT_MAX_LIMIT = 1_000;
     public static final long DEFAULT_QUERY_TIME_LIMIT = 0l; // disabled
+    public static final Boolean DEFAULT_RESTRICT_MAPPING_DB = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -110,6 +111,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private int defaultLimit = DEFAULT_DEFAULT_LIMIT;
     private int maxLimit = DEFAULT_MAX_LIMIT;
     private long queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
+    private Boolean restrictMappingDb = DEFAULT_RESTRICT_MAPPING_DB;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -133,6 +135,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         this.maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
 
         this.queryTimeLimit = ((Number)argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
+        this.restrictMappingDb = argOrDefault(config, "restrict-mapping-db", DEFAULT_RESTRICT_MAPPING_DB);
 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
@@ -145,7 +148,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         AggregationBatchLoader.setSecurityChecker(securityChecker);
         GraphQLDataFetcher.setSecurityChecker(securityChecker);
         
-        AppDefinitionLoader.setup(mclient);
+        AppDefinitionLoader.setup(mclient, this.restrictMappingDb);
         AppBuilder.setDefaultLimit(this.defaultLimit);
         AppBuilder.setMaxLimit(this.maxLimit);
         QueryMapping.setMaxLimit(this.maxLimit);

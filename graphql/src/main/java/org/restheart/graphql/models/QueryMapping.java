@@ -57,7 +57,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
 
     private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort, BsonValue limit, BsonValue skip, DataLoaderSettings dataLoaderSettings) {
         super(fieldName);
-        this.db = db;
+        this.db = db; // DB!!!
         this.collection = collection;
         this.find = find;
         this.sort = sort;
@@ -87,7 +87,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
             options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
             options.setCachingEnabled(this.dataLoaderSettings.getCaching());
 
-            options.setStatisticsCollector(() -> new SimpleStatisticsCollector());
+            options.setStatisticsCollector(SimpleStatisticsCollector::new);
 
             return DataLoaderFactory.newDataLoader(new QueryBatchLoader(this.db, this.collection, this.dataLoaderSettings.getQueryTimeLimit()), options);
         } else {

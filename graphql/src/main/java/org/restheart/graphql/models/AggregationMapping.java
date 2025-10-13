@@ -57,7 +57,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages, BsonBoolean allowDiskUse, DataLoaderSettings settings) {
         super(fieldName);
         this.stages = stages;
-        this.db = db;
+        this.db = db; // DB!!!
         this.collection = collection;
         this.allowDiskUse = allowDiskUse;
         this.dataLoaderSettings = settings;

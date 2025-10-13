@@ -114,24 +114,24 @@ mongoRealmAuthenticator:
 # Sets auth cookie on successful authentication when '?set-auth-cookie' is present
 # Compatible with both rndTokenManager and jwtTokenManager
 authCookieSetter:
-  enabled: false          # Not enabled by default
-  name: rh_auth           # The name of the cookie to be set
-  domain: localhost       # The domain within which the cookie is valid.
-  path: /                 # The cookie path, applicable to the entire domain.
-  http-only: true         # If true enhances security by making the cookie inaccessible to JavaScript.
-  same-site: true         # Restricts the cookie to first-party contexts, preventing CSRF attacks.
-  same-site-mode: strict  # Strictly prevents the cookie from being sent along with cross-site requests.
-  expires-ttl: 86_400     # Defines the duration in seconds for which the cookie is valid (default: 86400 seconds = 1 day). When using jwtTokenManager, this value should match the TTL configured at /jwtTokenManager/ttl.
+  enabled: false # Not enabled by default
+  name: rh_auth # The name of the cookie to be set
+  domain: localhost # The domain within which the cookie is valid.
+  path: / # The cookie path, applicable to the entire domain.
+  http-only: true # If true enhances security by making the cookie inaccessible to JavaScript.
+  same-site: true # Restricts the cookie to first-party contexts, preventing CSRF attacks.
+  same-site-mode: strict # Strictly prevents the cookie from being sent along with cross-site requests.
+  expires-ttl: 86_400 # Defines the duration in seconds for which the cookie is valid (default: 86400 seconds = 1 day). When using jwtTokenManager, this value should match the TTL configured at /jwtTokenManager/ttl.
 
 # Creates Authorization header from auth cookie. Compatible with Basic and JWT auth.
 authCookieHandler:
-  enabled: false          # Not enabled by default
+  enabled: false # Not enabled by default
 
 # Clears auth cookie on POST /logout, logging out the user
 authCookieRemover:
-  enabled: false          # Not enabled by default
-  secure: false           # If request to clean the cookie should be authenticated
-  defaultUri: /logout     # The endpoint that triggers this service.
+  enabled: false # Not enabled by default
+  secure: false # If request to clean the cookie should be authenticated
+  defaultUri: /logout # The endpoint that triggers this service.
 
 # fileAclAuthorizer authorizes requests according to the Access Control List defined inline or in a YAML file.
 # See https://restheart.org/docs/security/authorization#file-acl-authorizer
@@ -300,6 +300,8 @@ graphql:
   # The time limit in milliseconds for processing queries. Set to 0 for no time limit.
   query-time-limit: 0 # in milliseconds
   verbose: false
+  # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
+  restrict-mapping-db: false
 
 # Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
 # for GraphQL applications to improve query performance when fetching app definitions
@@ -356,16 +358,16 @@ roles:
 
 # A global blacklist for mongodb operators in filter query parameter
 filterOperatorsBlacklist:
-  blacklist: [ "$where" ]
+  blacklist: ["$where"]
   enabled: true
 
 # Aggregation pipeline security settings
 aggregationSecurity:
   enabled: true
   # Block dangerous pipeline stages that can access other databases or execute code
-  stageBlacklist: [ "$out", "$merge", "$lookup", "$graphLookup", "$unionWith" ]
+  stageBlacklist: ["$out", "$merge", "$lookup", "$graphLookup", "$unionWith"]
   # Block dangerous operators within pipeline stages
-  operatorBlacklist: [ "$where", "$function", "$accumulator" ]
+  operatorBlacklist: ["$where", "$function", "$accumulator"]
   # Prevent operations that access different databases than the request URI
   allowCrossDatabaseOperations: false
   # Control JavaScript execution in aggregation pipelines
@@ -419,7 +421,7 @@ logging:
   no-colors: false
   log-to-file: false
   log-file-path: restheart.log
-  packages: [ "org.restheart", "com.restheart" ]
+  packages: ["org.restheart", "com.restheart"]
   full-stacktrace: false
   requests-log-mode: 1
   tracing-headers:
@@ -450,8 +452,8 @@ metrics:
 
 requestsMetricsCollector:
   enabled: false
-  include: [ "/*" ]
-  exclude: [ "/metrics", "/metrics/*" ]
+  include: ["/*"]
+  exclude: ["/metrics", "/metrics/*"]
 
 jvmMetricsCollector:
   enabled: false

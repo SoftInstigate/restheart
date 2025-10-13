@@ -40,9 +40,11 @@ public class AppDefinitionLoader {
     private static final String APP_ENABLED_FIELD = "descriptor.enabled";
 
     private static MongoClient mongoClient;
+    private static Boolean restrictMappingDb = false;
 
-    public static void setup(MongoClient mclient){
+    public static void setup(MongoClient mclient, Boolean _restrictMappingDb){
         mongoClient = mclient;
+        restrictMappingDb = _restrictMappingDb;
     }
 
     /**
@@ -88,7 +90,7 @@ public class AppDefinitionLoader {
         var gqlApp = mongoClient.getDatabase(appRef.db()).getCollection(appRef.collection(), BsonDocument.class).find(findArg.get()).first();
 
         if (gqlApp != null) {
-            return AppBuilder.build(gqlApp);
+            return AppBuilder.build(gqlApp, appRef.db(), restrictMappingDb);
         } else {
             throw new GraphQLAppDefNotFoundException("GQL App Definition %s not found.".formatted(appRef));
         }
