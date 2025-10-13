@@ -162,6 +162,15 @@ public class JwtTokenManager implements TokenManager {
         LOGGER.debug("Starting JWT token verification for user '{}'", id);
 
         final char[] rawToken = ((PasswordCredential) credential).getPassword();
+        
+        // Check if the credential has JWT structure (3 parts separated by dots)
+        final var tokenString = String.valueOf(rawToken);
+        if (tokenString.split("\\.").length != 3) {
+            LOGGER.debug("Credential for user '{}' is not a JWT token (expected 3 parts, got {})", 
+                id, tokenString.split("\\.").length);
+            return null;
+        }
+        
         final var ca = new ComparableAccount(new BaseAccount(id, null));
         
         var cacheCheckStartTime = System.currentTimeMillis();
