@@ -93,7 +93,7 @@ public class FileAclPermission extends BaseAclPermission {
         if (args.containsKey("priority")) {
             priority = argValue(args, "priority");
         } else {
-            LOGGER.warn("Predicate {} {} doesn't have priority; setting it to very low priority", roles, argPredicate);
+            LOGGER.debug("Predicate {} {} doesn't have priority; setting it to very low priority", roles, argPredicate);
             priority = Integer.MAX_VALUE; // very low priority
         }
 

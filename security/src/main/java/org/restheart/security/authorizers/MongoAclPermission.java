@@ -92,7 +92,7 @@ public class MongoAclPermission extends BaseAclPermission {
         if (_priority == null || _priority.isNull() || !_priority.isNumber()) {
             priority = Integer.MAX_VALUE; // very low priority
 
-            LOGGER.warn("predicate {} doesn't have priority; setting it to very low priority", _id);
+            LOGGER.debug("predicate {} doesn't have priority; setting it to very low priority", _id);
         } else {
             priority = _priority.asNumber().intValue();
         }
