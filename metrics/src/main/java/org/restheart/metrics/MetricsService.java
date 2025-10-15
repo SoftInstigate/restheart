@@ -54,10 +54,22 @@ public class MetricsService implements StringService {
     @Inject("config")
     private Map<String, Object> config;
     private String serviceUri = "/metrics";
+    // New config option: status code for missing registry
+    private int missingRegistryStatusCode = HttpStatus.SC_NOT_FOUND; // default to 404 for backward compatibility
 
     @OnInit
     public void onInit() {
         this.serviceUri = argOrDefault(config, "uri", "/metrics");
+        // Read config option for missing registry status code
+        Object statusCodeOpt = config.get("missing-registry-status-code");
+        if (statusCodeOpt != null) {
+            String codeStr = statusCodeOpt.toString().trim();
+            if (codeStr.equals("200")) {
+                this.missingRegistryStatusCode = HttpStatus.SC_OK;
+            } else if (codeStr.equals("404")) {
+                this.missingRegistryStatusCode = HttpStatus.SC_NOT_FOUND;
+            } // else: ignore invalid values, keep default
+        }
     }
 
     /**
@@ -95,9 +107,12 @@ public class MetricsService implements StringService {
 
                 response.setContent(writer.toString());
             } else {
-                // Return empty metrics instead of 404 to prevent Prometheus from marking the target as down
-                // The registry is created on first request matching the include pattern
-                response.setContent("");
+                // Configurable status code for missing registry
+                if (missingRegistryStatusCode == HttpStatus.SC_OK) {
+                    response.setContent("");
+                } else {
+                    response.setStatusCode(missingRegistryStatusCode);
+                }
             }
         }
     }
