@@ -80,7 +80,18 @@ public class PingService implements ByteArrayService {
     }
 
     private String getHostHeader(final HttpServerExchange exchange) {
-        return exchange.getRequestHeaders().getFirst("Host");
+        // Get the X-Forwarded-Host header from the request (rightmost value when behind multiple proxies)
+        final String forwardedHost = exchange.getRequestHeaders().getFirst("X-Forwarded-Host");
+
+        if (forwardedHost != null && !forwardedHost.isEmpty()) {
+            // X-Forwarded-Host can contain multiple values separated by commas
+            // Return the rightmost (last) value which is the original client host
+            final String[] hosts = forwardedHost.split(",");
+            return hosts[hosts.length - 1].trim();
+        } else {
+            // Fallback to the Host header
+            return exchange.getRequestHeaders().getFirst("Host");
+        }
     }
 
     private String getClientIp(final HttpServerExchange exchange) {
