@@ -170,6 +170,52 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.services();
 
         factory.injectDependencies();
+        
+        // log interceptors after instantiation
+        logInterceptors();
+    }
+    
+    /**
+     * Logs all instantiated interceptors with their configuration details
+     */
+    private void logInterceptors() {
+        var logger = org.slf4j.LoggerFactory.getLogger(PluginsRegistryImpl.class);
+        
+        var interceptors = getInterceptors()
+            .stream()
+            .filter(PluginRecord::isEnabled)
+            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
+            .toList();
+
+        if (interceptors.isEmpty()) {
+            logger.debug("┌── INTERCEPTORS");
+            logger.debug("│   No interceptors configured");
+            logger.debug("└── INTERCEPTORS LOGGED");
+        } else {
+            logger.debug("┌── INTERCEPTORS");
+            logger.debug("│   Found {} interceptors", interceptors.size());
+
+            interceptors.forEach(interceptor -> {
+                var interceptorName = interceptor.getName();
+                var interceptorClass = interceptor.getInstance().getClass().getSimpleName();
+                var interceptorPriority = getPluginPriority(interceptor.getInstance());
+                var interceptPoint = PluginUtils.interceptPoint(interceptor.getInstance());
+
+                logger.info("│   ├─ {} ({}) - Priority: {}, Intercept Point: {}",
+                    interceptorName, interceptorClass, interceptorPriority, interceptPoint);
+            });
+
+            logger.debug("└── INTERCEPTORS LOGGED");
+        }
+    }
+    
+    /**
+     * Gets the priority of a plugin from its @RegisterPlugin annotation
+     */
+    private int getPluginPriority(Plugin plugin) {
+        if (plugin == null) return 10; // default priority
+        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        return annotation != null ? annotation.priority() : 10; // default priority
     }
 
     /**
