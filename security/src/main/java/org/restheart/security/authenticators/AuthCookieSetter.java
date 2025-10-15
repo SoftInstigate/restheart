@@ -101,12 +101,17 @@ public class AuthCookieSetter implements WildcardInterceptor {
         res.getExchange().setResponseCookie(new CookieImpl(this.name, authToken)
             .setSecure(this.secure)
             .setHttpOnly(this.httpOnly)
-            .setDomain(this.domain)
+            .setDomain(domain(req))
             .setPath(this.path)
             .setSameSite(this.sameSite)
             .setSameSiteMode(this.sameSiteMode)
             .setExpires(Date.from(expiry)));
     }
+
+	private String domain(ServiceRequest<?> req) {
+		String overrideCookieDomain = req.attachedParam("override-cookie-domain");
+		return overrideCookieDomain != null ? overrideCookieDomain : this.domain;
+	}
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
