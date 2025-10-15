@@ -95,7 +95,9 @@ public class MetricsService implements StringService {
 
                 response.setContent(writer.toString());
             } else {
-                response.setInError(HttpStatus.SC_NOT_FOUND, "metric not found");
+                // Return empty metrics instead of 404 to prevent Prometheus from marking the target as down
+                // The registry is created on first request matching the include pattern
+                response.setContent("");
             }
         }
     }
