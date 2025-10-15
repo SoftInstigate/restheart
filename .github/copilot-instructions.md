@@ -217,6 +217,7 @@ This updates all `pom.xml` files and creates git commit/tag if not a SNAPSHOT.
 - Main class: `org.restheart.Bootstrapper`
 - Check plugin registration: Watch logs for "Registered plugin: ..." messages
 - Request logging: Set `logging.requests-log-mode: 2` for detailed dumps (dev only)
+- Metrics registries are created lazily on first matching request (empty response before traffic occurs)
 
 ## Documentation References
 
