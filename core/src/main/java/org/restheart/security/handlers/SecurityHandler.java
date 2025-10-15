@@ -69,6 +69,30 @@ public class SecurityHandler extends PipelinedHandler {
             this.constraintHandler = new ReusableAuthenticationConstraintHandler(authorizers);
             this.authMechanismsHandler = new ReusableAuthenticatorMechanismsHandler(mechanisms);
 
+            // Log authorizers info
+            var vetoers = authorizers.stream()
+                .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
+                .collect(java.util.stream.Collectors.toList());
+            
+            var allowers = authorizers.stream()
+                .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.ALLOWER)
+                .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
+                .collect(java.util.stream.Collectors.toList());
+            
+            LOGGER.debug("│   ├─ AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
+                authorizers.size(), vetoers, allowers);
+            
+            // Log token manager info
+            if (tokenManager != null) {
+                var tokenManagerName = org.restheart.utils.PluginUtils.name(tokenManager);
+                var tokenManagerClass = tokenManager.getClass().getSimpleName();
+                LOGGER.debug("│   ├─ TokenInjector: token manager {} ({})",
+                    tokenManagerName, tokenManagerClass);
+            } else {
+                LOGGER.debug("│   ├─ TokenInjector: no token manager");
+            }
+
             var duration = System.currentTimeMillis() - startTime;
             LOGGER.debug("└── SECURITY HANDLERS INITIALIZED in {}ms", duration);
         }

@@ -188,12 +188,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             .toList();
 
         if (interceptors.isEmpty()) {
-            logger.debug("┌── INTERCEPTORS");
-            logger.debug("│   No interceptors configured");
-            logger.debug("└── INTERCEPTORS LOGGED");
+            logger.info("┌── INTERCEPTORS");
+            logger.info("│   No interceptors configured");
+            logger.info("└── INTERCEPTORS LOGGED");
         } else {
-            logger.debug("┌── INTERCEPTORS");
-            logger.debug("│   Found {} interceptors", interceptors.size());
+            logger.info("┌── INTERCEPTORS");
+            logger.info("│   Found {} interceptors", interceptors.size());
 
             interceptors.forEach(interceptor -> {
                 var interceptorName = interceptor.getName();
@@ -205,7 +205,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     interceptorName, interceptorClass, interceptorPriority, interceptPoint);
             });
 
-            logger.debug("└── INTERCEPTORS LOGGED");
+            logger.info("└── INTERCEPTORS LOGGED");
         }
     }
     

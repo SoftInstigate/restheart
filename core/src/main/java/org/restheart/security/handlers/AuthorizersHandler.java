@@ -57,19 +57,6 @@ public class AuthorizersHandler extends PipelinedHandler {
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
         super(next);
         this.authorizers = authorizers;
-        
-        var vetoers = authorizers.stream()
-            .filter(a -> PluginUtils.authorizerType(a.getInstance()) == TYPE.VETOER)
-            .map(a -> PluginUtils.name(a.getInstance()))
-            .collect(Collectors.toList());
-            
-        var allowers = authorizers.stream()
-            .filter(a -> PluginUtils.authorizerType(a.getInstance()) == TYPE.ALLOWER)
-            .map(a -> PluginUtils.name(a.getInstance()))
-            .collect(Collectors.toList());
-            
-        LOGGER.debug("│   ├─ AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
-            authorizers.size(), vetoers, allowers);
     }
 
     /**
