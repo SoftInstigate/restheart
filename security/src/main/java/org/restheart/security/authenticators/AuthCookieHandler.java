@@ -108,11 +108,11 @@ public class AuthCookieHandler implements WildcardInterceptor {
         }
 
         if (accessToken == null) {
-            LOGGER.debug("no {} cookie", this.authCookieName);
+            LOGGER.debug("│   │     no {} cookie", this.authCookieName);
         } else {
             var authorizationHeader = accessToken.getValue();
             req.setHeader("Authorization", authorizationHeader);
-            LOGGER.debug("set header Authorization: {}", authorizationHeader);
+            LOGGER.debug("│   │     set header Authorization: {}", authorizationHeader);
         }
     }
 
