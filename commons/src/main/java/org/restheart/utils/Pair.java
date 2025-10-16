@@ -29,11 +29,11 @@ import java.util.AbstractMap;
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Pair<K, V> extends AbstractMap.SimpleEntry<K,V> {
-    
+
     /**
      * Creates a new Pair with the specified key and value.
      *
@@ -42,5 +42,9 @@ public class Pair<K, V> extends AbstractMap.SimpleEntry<K,V> {
      */
     public Pair(K key, V value) {
         super(key, value);
+    }
+
+    public static <K, V> Pair<K, V> of(K key, V value) {
+      return new Pair<>(key, value);
     }
 }
