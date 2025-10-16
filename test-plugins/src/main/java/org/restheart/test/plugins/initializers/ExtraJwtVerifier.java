@@ -23,12 +23,14 @@ package org.restheart.test.plugins.initializers;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import io.undertow.server.HttpServerExchange;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +53,7 @@ public class ExtraJwtVerifier implements Initializer {
     @Override
     @SuppressWarnings("unchecked")
     public void init() {
-        ConsumingPlugin<DecodedJWT> am;
+        ConsumingPlugin<Pair<HttpServerExchange, DecodedJWT>> am;
 
         try {
             var pr = registry
@@ -61,7 +63,7 @@ public class ExtraJwtVerifier implements Initializer {
                     .findFirst();
 
             if (pr.isPresent()) {
-                am = (ConsumingPlugin<DecodedJWT>) pr.get().getInstance();
+                am = (ConsumingPlugin<Pair<HttpServerExchange, DecodedJWT>>) pr.get().getInstance();
             } else {
                 LOGGER.debug("Skipping, jwtAuthenticationMechanism is disabled");
                 return;
@@ -70,8 +72,8 @@ public class ExtraJwtVerifier implements Initializer {
             throw new IllegalStateException("cannot get jwtAuthenticationMechanism", ex);
         }
 
-        am.addConsumer(token -> {
-            var extraClaim = token.getClaim("extra");
+        am.addConsumer(exchangeAndToken -> {
+            var extraClaim = exchangeAndToken.getValue().getClaim("extra");
 
             if (extraClaim == null || extraClaim.isNull()) {
                 throw new JWTVerificationException("missing extra claim");
