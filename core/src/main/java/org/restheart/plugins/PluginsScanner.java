@@ -612,12 +612,12 @@ public class PluginsScanner {
 
         private void checkPluginDirectory(final Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
-                LOGGER.warn("Plugin directory {} does not exist", pluginsDirectory);
+                LOGGER.warn("│   Plugin directory {} does not exist", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " does not exist");
             }
 
             if (!Files.isReadable(pluginsDirectory)) {
-                LOGGER.warn("Plugin directory {} is not readable", pluginsDirectory);
+                LOGGER.warn("│   Plugin directory {} is not readable", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
             }
         }
