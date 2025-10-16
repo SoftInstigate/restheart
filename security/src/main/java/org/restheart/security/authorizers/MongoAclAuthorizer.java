@@ -46,6 +46,7 @@ import org.restheart.plugins.security.Authorizer;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
 import org.restheart.security.utils.MongoUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,6 +174,7 @@ public class MongoAclAuthorizer implements Authorizer {
 
         // debug roles and predicates evaluation order
         if (LOGGER.isDebugEnabled()) {
+            var debugLogs = new ArrayList<String>();
             roles(exchange).forEachOrdered(role -> {
                 ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
                 final var key = new CacheKey(role, aclDb(req));
@@ -186,20 +188,25 @@ public class MongoAclAuthorizer implements Authorizer {
                         // to highlight the effective permission
                         if (resolved && matched.isEmpty()) {
                             matched.add(permission);
-                            marker = "<--";
+                            marker = " <--";
                         } else {
                             marker = "";
                         }
 
-                        LOGGER.debug("role {}, permission id {}, resolve {} {}",
+                        debugLogs.add(String.format("│   │   ├─ role %s, permission id %s, resolve %s%s",
                             role,
-                            permission.getId(),
+                            BsonUtils.toJson(permission.getId()),
                             resolved,
-                            marker);
+                            marker));
 
                         return false;
                     });
             });
+            
+            // Log all permission checks grouped together
+            if (!debugLogs.isEmpty()) {
+                debugLogs.forEach(LOGGER::debug);
+            }
         }
 
         // the applicable permission is the ones that
