@@ -1,6 +1,6 @@
-# RESTHeart
+# RESTHeart - instant API server and Java development framework for MongoDB.
 
-RESTHeart is a __Java__ backend framework that facilitates the rapid development of __REST__, __GraphQL__, and __WebSocket__ APIs, leveraging __MongoDB__ for data storage.
+## With RESTHeart you can build modern applications that interact with MongoDB through a RESTful interface, without writing backend code.
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -9,6 +9,8 @@ RESTHeart is a __Java__ backend framework that facilitates the rapid development
 [![javadoc](https://javadoc.io/badge2/org.restheart/restheart-commons/javadoc.svg)](https://javadoc.io/doc/org.restheart/restheart-commons)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
+
+---
 
 <img width="983" height="750" alt="Screenshot 2025-10-16 alle 09 46 08" src="https://github.com/user-attachments/assets/f7953184-39aa-4fd7-95f2-69daa39ffa6b" />
 
