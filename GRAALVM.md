@@ -49,6 +49,31 @@ Start RESTHeart
 ./core/target/restheart
 ```
 
+## Testing the native image
+
+To test the native image with integration tests, follow these steps:
+
+1. Uncomment the test plugins dependency in `core/pom.xml` (marked with `<!-- uncomment to add test plugins to the native image -->`)
+
+2. Build the native image:
+
+```bash
+./mvnw clean package -Pnative
+```
+
+3. Start RESTHeart with the test configuration:
+
+```bash
+./core/target/restheart -o core/src/test/resources/etc/conf-overrides.yml
+```
+
+4. Run the integration tests:
+
+```bash
+cd core
+../mvnw test surefire:test -DskipITs=false -Dtest=\*IT
+```
+
 ## How-tos
 
 ### Generate native-image build configuration
