@@ -10,6 +10,8 @@ RESTHeart is a __Java__ backend framework that facilitates the rapid development
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat on Slack](https://img.shields.io/badge/chat-on%20slack-orange)](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)
 
+<img width="983" height="750" alt="Screenshot 2025-10-16 alle 09 46 08" src="https://github.com/user-attachments/assets/f7953184-39aa-4fd7-95f2-69daa39ffa6b" />
+
 ### Who Benefits from RESTHeart?
 
 RESTHeart is designed for:
