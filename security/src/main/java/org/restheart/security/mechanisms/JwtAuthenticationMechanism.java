@@ -44,6 +44,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.JwtAccount;
+import org.restheart.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,13 +69,13 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "jwtAuthenticationMechanism", description = "handle JSON Web Token authentication", enabledByDefault = false)
-public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugin<DecodedJWT> {
+public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugin<Pair<HttpServerExchange, DecodedJWT>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);
 
     public static final String JWT_AUTH_HEADER_PREFIX = "Bearer ";
     private JWTVerifier jwtVerifier;
-    private Consumer<DecodedJWT> extraJwtVerifier = null;
+    private Consumer<Pair<HttpServerExchange, DecodedJWT>> extraJwtVerifier = null;
 
     private boolean base64Encoded;
 
@@ -88,8 +89,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     // - At least one digit
     // - At least one special character
     // - At least 32 characters long
-    private static final Pattern COMPLEXITY_PATTERN = Pattern.compile(
-            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{32,}$");
+    private static final Pattern COMPLEXITY_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{32,}$");
 
     @Inject("config")
     private Map<String, Object> config;
@@ -137,8 +137,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         }
 
         if (rolesClaim == null && fixedRoles == null) {
-            throw new ConfigurationException(
-                    "wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
+            throw new ConfigurationException("wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
         }
 
         this.jwtVerifier = v.build();
@@ -151,8 +150,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
         }
 
         if (!COMPLEXITY_PATTERN.matcher(jwtKey).matches()) {
-            LOGGER.warn("The JWT key does not meet complexity requirements. " +
-                    "Ensure it contains uppercase letters, lowercase letters, digits, and special characters.");
+            LOGGER.warn("The JWT key does not meet complexity requirements. Ensure it contains uppercase letters, lowercase letters, digits, and special characters.");
             return false;
         }
         LOGGER.info("The JWT key meets the minimum complexity requirements.");
@@ -160,8 +158,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     }
 
     @Override
-    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(final HttpServerExchange hse,
-            final SecurityContext sc) {
+    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(final HttpServerExchange hse, final SecurityContext sc) {
         try {
             var token = getToken(hse);
 
@@ -196,8 +193,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                             }
                         } catch (final JWTDecodeException ex) {
-                            LOGGER.warn("Jwt cannot get roles from claim {}, extepected an array of strings: {}",
-                                    rolesClaim, _roles.toString());
+                            LOGGER.warn("Jwt cannot get roles from claim {}, extepected an array of strings: {}", rolesClaim, _roles.toString());
                         }
                     }
                 }
@@ -207,11 +203,10 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                 }
 
                 if (this.extraJwtVerifier != null) {
-                    this.extraJwtVerifier.accept(verifiedJwt);
+                    this.extraJwtVerifier.accept(Pair.of(hse, verifiedJwt));
                 }
 
-                final var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()),
-                        StandardCharsets.UTF_8);
+                final var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()), StandardCharsets.UTF_8);
 
                 final var account = new JwtAccount(subject, actualRoles, jwtPayload);
 
@@ -242,7 +237,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
      * @param extraJwtVerifier
      */
     @Override
-    public void addConsumer(final Consumer<DecodedJWT> extraJwtVerifier) {
+    public void addConsumer(final Consumer<Pair<HttpServerExchange, DecodedJWT>> extraJwtVerifier) {
         this.extraJwtVerifier = extraJwtVerifier;
     }
 
