@@ -191,8 +191,7 @@ jobs:
           file: ./core/Dockerfile.distroless
           platforms: |
             linux/amd64,
-            linux/arm64,
-#            linux/ppc64le
+            linux/arm64
           push: true # push all images built
           pull: true # pull all required images before building
           # Tag with "distroless" only if branch is master
