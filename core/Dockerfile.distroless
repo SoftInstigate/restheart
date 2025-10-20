@@ -1,5 +1,5 @@
-# TODO update to java25 as soon as distroless image is released
-FROM gcr.io/distroless/java21-debian12:latest
+# Using Chainguard distroless JRE image
+FROM cgr.dev/chainguard/jre:latest
 
 LABEL org.opencontainers.image.title="RESTHeart distroless"
 LABEL org.opencontainers.image.description="RESTHeart is Java Framework, built on top of Undertow"
