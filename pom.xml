@@ -35,8 +35,8 @@
         -->
         <mongodb.version>8.0</mongodb.version>
         <jdk.version>24</jdk.version>
-        <graalvm.version>24.1.2</graalvm.version>
-        <truffle.version>24.1.2</truffle.version> <!-- Truffle and Graal languages are compatible
+        <graalvm.version>24.2.2</graalvm.version>
+        <truffle.version>24.2.2</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
