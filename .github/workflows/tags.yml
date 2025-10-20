@@ -252,8 +252,7 @@ jobs:
           file: ./core/Dockerfile.distroless
           platforms: |
             linux/amd64,
-            linux/arm64,
-            linux/ppc64le
+            linux/arm64
           push: true
           pull: true
           tags: ${{ env.TAGS_DISTROLESS }}
