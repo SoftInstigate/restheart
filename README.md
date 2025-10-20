@@ -27,7 +27,7 @@ RESTHeart is a modern Java backend solution enabling **REST**, **GraphQL**, and 
 
 ✅ **On-Premises Control**: Offers the advantages of on-premises deployment, granting developers full control over the backend infrastructure while maintaining the ease of a low-code approach.
 
-✅ **Concurrency**: Powered by the new [Java 21 Virtual Threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) lightweight concurrency model.
+✅ **Concurrency**: Powered by the new [Java 24 Virtual Threads](https://docs.oracle.com/en/java/javase/24/core/virtual-threads.html) lightweight concurrency model.
 
 ✅ **Built on Undertow**: RESTHeart is built on top of the [Undertow](https://undertow.io/) web server.
 

@@ -6,7 +6,7 @@
 
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>RESTHeart - Low code platform for cloud-native HTTP microservices.</description>
@@ -34,7 +34,7 @@
             mvn clean verify -Dmongodb.version="6.0"  (to test with mongo:6.0 container)
         -->
         <mongodb.version>8.0</mongodb.version>
-        <jdk.version>21</jdk.version>
+        <jdk.version>24</jdk.version>
         <graalvm.version>24.1.2</graalvm.version>
         <truffle.version>24.1.2</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
@@ -262,7 +262,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.19</version>
+                <version>1.5.20</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>

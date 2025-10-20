@@ -2,10 +2,10 @@
 
 ## prerequisites
 
-> GraalVM required version: >= 21.0.2-graal
+> GraalVM required version: >= 24.0.0-graal
 
 ```bash
-$ sdk install java 21.0.2-graalce
+$ sdk install java 24.0.0-graalce
 ```
 
 ## build native image
