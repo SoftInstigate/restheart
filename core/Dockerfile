@@ -29,6 +29,24 @@ COPY target/plugins/lib/*.jar plugins/lib/
 # Set environment variables
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 
-ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar" ]
+# JDK 25 optimized for RESTHeart: high-throughput REST API, ≤2GB heap, Virtual Threads
+# G1GC tuned for small heap with many concurrent clients and short-lived request objects
+ENTRYPOINT [ "java", \
+    "-Dfile.encoding=UTF-8", \
+    "-server", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=50", \
+    "-XX:G1NewSizePercent=30", \
+    "-XX:G1MaxNewSizePercent=60", \
+    "-XX:G1ReservePercent=10", \
+    "-XX:InitiatingHeapOccupancyPercent=45", \
+    "-XX:MaxRAMPercentage=80.0", \
+    "-XX:InitialRAMPercentage=50.0", \
+    "-XX:+DisableExplicitGC", \
+    "-XX:+UseStringDeduplication", \
+    "-Djdk.tracePinnedThreads=full", \
+    "-XX:+ExitOnOutOfMemoryError", \
+    "-jar", \
+    "restheart.jar" ]
 
 EXPOSE 8009 8080 4443
