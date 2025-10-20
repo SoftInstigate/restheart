@@ -1,4 +1,5 @@
-FROM gcr.io/distroless/java24-debian12:latest
+# Using distroless Java runtime image from Chainguard
+FROM cgr.dev/chainguard/jre:latest
 
 LABEL org.opencontainers.image.title="RESTHeart distroless"
 LABEL org.opencontainers.image.description="RESTHeart is Java Framework, built on top of Undertow"
