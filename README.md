@@ -79,6 +79,14 @@ java -jar restheart.jar
 RHO='/mclient/connection-string->"mongodb://your-mongo-host:27017"' java -jar restheart.jar
 ```
 
+**Run in standalone mode (no MongoDB required):**
+
+```sh
+java -jar restheart.jar -s
+```
+
+This mode is perfect for testing custom plugins, services, or running RESTHeart as a pure Java API server.
+
 ## Compatible Databases
 
 Works with MongoDB and MongoDB-compatible databases:
