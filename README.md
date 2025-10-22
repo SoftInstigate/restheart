@@ -29,7 +29,7 @@ Build production-ready APIs in minutes, then extend them with custom business lo
 
 - 🚀 **Zero-code APIs** — Connect to MongoDB and start querying via REST/GraphQL
 - 🔐 **Built-in security** — Authentication, authorization, and role-based access control
-- ⚡ **High performance** — Java Virtual Threads for efficient concurrency
+- ⚡ **High performance** — Java Virtual Threads for efficient concurrency, built on [Undertow](https://undertow.io) (the battle-tested web server from JBoss, default in Wildfly Application Server)
 - 🔌 **Extensible** — Plugin architecture for custom services, interceptors, and validators
 - 🌐 **Polyglot** — Write plugins in JavaScript, Python, or other languages when running on GraalVM
 - 📦 **Production-ready** — Docker support, metrics, monitoring, and native executables
