@@ -240,19 +240,19 @@ public class JwtTokenManager implements TokenManager {
         var tokenStartTime = System.currentTimeMillis();
         
         if (!enabled) {
-            LOGGER.debug("JwtTokenManager is disabled - Cannot generate token");
+            LOGGER.debug("│   ├─ JwtTokenManager is disabled - Cannot generate token");
             return null;
         }
 
         if (account == null || account.getPrincipal() == null || account.getPrincipal().getName() == null) {
-            LOGGER.debug("Invalid account provided to JwtTokenManager - Cannot generate token");
+            LOGGER.debug("│   ├─ Invalid account provided to JwtTokenManager - Cannot generate token");
             return null;
         }
         
         var userName = account.getPrincipal().getName();
         var userRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
         
-        LOGGER.debug("Generating JWT token for user '{}' with roles: {}", userName, userRoles);
+        LOGGER.debug("│   ├─ Generating JWT token for user '{}' with roles: {}", userName, userRoles);
 
         try {
             var cacheStartTime = System.currentTimeMillis();
@@ -265,13 +265,13 @@ public class JwtTokenManager implements TokenManager {
                     Sets.newTreeSet(account.getRoles()));
 
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            LOGGER.debug("JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms", 
+            LOGGER.debug("│   ├─ JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms", 
                 userName, cacheDuration, totalDuration);
                 
             return newTokenAccount.getCredentials();
         } catch (Exception ex) {
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            LOGGER.error("Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
+            LOGGER.error("│   ├─ Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
             throw ex;
         }
     }
