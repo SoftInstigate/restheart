@@ -225,10 +225,11 @@ restHeartConfiguration:
   # Static web resources to bind to the URL specified by the 'where' property.
   # The 'what' property is the path of the directory containing the resources.
   # The path is either absolute (starts with /) or relative to the restheart.jar file
-  # If embedded is true, the resources are either included in the restheart.jar
-  # or available in the classpath
+  # If embedded is true, the resources are loaded from the classpath (e.g. inside restheart.jar
+  # or any dependency on the classpath). In this case, 'what' must be a classpath resource name
+  # (no leading slash), for example: "public/web".
 
-  static-resources-mounts:
+  static-resources:
   #  - what: /path/to/resources
   #    where: /static
   #    welcome-file: index.html
