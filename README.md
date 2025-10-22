@@ -19,12 +19,14 @@ RESTHeart is a Java backend framework that instantly exposes your MongoDB databa
 Build production-ready APIs in minutes, then extend them with custom business logic using a powerful plugin system.
 
 **Perfect for:**
+
 - Building APIs without writing boilerplate CRUD code
 - Rapid prototyping and MVPs
 - Extending MongoDB with custom Java services
 - Microservices architectures
 
 **Key capabilities:**
+
 - 🚀 **Zero-code APIs** — Connect to MongoDB and start querying via REST/GraphQL
 - 🔐 **Built-in security** — Authentication, authorization, and role-based access control
 - ⚡ **High performance** — Java Virtual Threads for efficient concurrency
@@ -34,7 +36,6 @@ Build production-ready APIs in minutes, then extend them with custom business lo
 ## Quick Start
 
 Get RESTHeart and MongoDB running in 30 seconds:
-
 
 ```sh
 curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --pull=always --attach restheart
@@ -47,7 +48,6 @@ curl localhost:8080/ping
 ```
 
 That's it! You now have a running RESTHeart instance connected to MongoDB.
-
 
 👉 **Next steps:**
 
@@ -98,6 +98,10 @@ Works with MongoDB and MongoDB-compatible databases:
 - [Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) — Partial compatibility
 - [Azure CosmosDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/) — Partial compatibility
 
+## RESTHeart Cloud
+
+Looking for a fully managed solution? [RESTHeart Cloud](https://cloud.restheart.com/) provides RESTHeart as a cloud service with zero infrastructure management. Get your API up and running in seconds without worrying about deployment, scaling, or maintenance.
+
 ## Advanced Topics
 
 **Plugin Development with CLI:**
@@ -138,4 +142,4 @@ RESTHeart is open source and free. If you find it valuable, consider [sponsoring
 
 ---
 
-_Made with :heart: by [SoftInstigate](https://www.softinstigate.com). Follow us on [Twitter](https://twitter.com/softinstigate)_.
+_Made with :heart: by [SoftInstigate](https://www.softinstigate.com)_
