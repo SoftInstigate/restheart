@@ -34,10 +34,6 @@ ENTRYPOINT [ "java", \
     "-server", \
     "-XX:+UseG1GC", \
     "-XX:MaxGCPauseMillis=50", \
-    "-XX:G1NewSizePercent=30", \
-    "-XX:G1MaxNewSizePercent=60", \
-    "-XX:G1ReservePercent=10", \
-    "-XX:InitiatingHeapOccupancyPercent=45", \
     "-XX:MaxRAMPercentage=80.0", \
     "-XX:InitialRAMPercentage=50.0", \
     "-XX:+DisableExplicitGC", \
