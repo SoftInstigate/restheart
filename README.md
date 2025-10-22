@@ -1,6 +1,6 @@
-# RESTHeart - instant API server and Java development framework for MongoDB.
+# RESTHeart
 
-## With RESTHeart you can build modern applications that interact with MongoDB through a RESTful interface, without writing backend code.
+**The backend framework that instantly turns MongoDB into REST, GraphQL, and WebSocket APIs.**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -12,136 +12,118 @@
 
 ---
 
-<img width="983" height="750" alt="Screenshot 2025-10-16 alle 09 46 08" src="https://github.com/user-attachments/assets/f7953184-39aa-4fd7-95f2-69daa39ffa6b" />
+## What is RESTHeart?
 
-### Who Benefits from RESTHeart?
+RESTHeart is a Java backend framework that instantly exposes your MongoDB database through secure REST, GraphQL, and WebSocket APIs — **no backend code required**.
 
-RESTHeart is designed for:
-- __Developers__ seeking a low-code solution to build scalable, secure, and high-performance APIs.
-- __Teams__ aiming to reduce development time and complexity when working with MongoDB.
-- __Businesses__ looking for a reliable and efficient way to expose data through REST or GraphQL APIs.
+Build production-ready APIs in minutes, then extend them with custom business logic using a powerful plugin system.
 
----
+**Perfect for:**
+- Building APIs without writing boilerplate CRUD code
+- Rapid prototyping and MVPs
+- Extending MongoDB with custom Java services
+- Microservices architectures
 
-## Key Features
+**Key capabilities:**
+- 🚀 **Zero-code APIs** — Connect to MongoDB and start querying via REST/GraphQL
+- 🔐 **Built-in security** — Authentication, authorization, and role-based access control
+- ⚡ **High performance** — Java Virtual Threads for efficient concurrency
+- 🔌 **Extensible** — Plugin architecture for custom services, interceptors, and validators
+- 📦 **Production-ready** — Docker support, metrics, monitoring, and native executables
 
-✅ **Low-Code Development**: Create APIs with minimal coding effort.  
-✅ **Seamless MongoDB Integration**: Instantly expose your MongoDB collections via REST, GraphQL, and WebSocket APIs.  
-✅ **Built-in Security**: Provides declarative authentication and authorization mechanisms.  
-✅ **High Performance**: Utilizes Java Virtual Threads for efficient concurrency.  
-✅ **Customizable**: Flexible architecture that adapts to your specific needs.  
+## Quick Start
 
-## Compatible Databases
+Get RESTHeart and MongoDB running in 30 seconds:
 
-- [MongoDB](https://www.mongodb.com/)
-- [MongoDB Atlas Cloud Database](https://www.mongodb.com/products/platform/atlas-database)
-- [Percona Server for MongoDB](https://www.percona.com/mongodb/software/percona-server-for-mongodb)
-- [FerretDB](https://www.ferretdb.com/) (*)
-- [Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) (*)
-- [Microsoft Azure CosmosDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/) (*)
-
-> (*) Might be partially compatibile with MongoDB.
-
-## Default Configuration
-
-- The [default configuration](https://restheart.org/docs/default-configuration) connects to a local MongoDB instance using the connection string `mongodb://127.0.0.1`.  
-- To prevent unintentional exposure of all your data, the API root (`"/"`) is, by default, mapped to a database named `"restheart"`. If you want to expose existing databases and collections through the API, you must [update your configuration](https://restheart.org/docs/configuration) by replacing the default admin password and explicitly mapping your own databases to API endpoints.
-
-## Ask Sophia AI!
-
-Before digging the [full documentation](https://restheart.org/docs/), our AI assistant [Sophia](https://sophia.restheart.com/) can quickly help you with any question about RESTHeart. 
-
-## Quick Start with Docker Compose
-
-1. Run both RESTHeart and MongoDB with Docker Compose using the following one-liner:
 
 ```sh
-curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
-  --output docker-compose.yml \
-  && docker compose up --pull=always --attach restheart
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --pull=always --attach restheart
 ```
 
-1. Call RESTHeart's ping service with [curl](https://curl.se/) to verify it's running:
+**Test it:**
 
 ```sh
-curl -i localhost:8080/ping
-
-HTTP/1.1 200 OK
-Connection: keep-alive
-Access-Control-Allow-Origin: *
-X-Powered-By: restheart.org
-Access-Control-Allow-Credentials: true
-Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By
-Content-Type: application/json
-Content-Length: 112
-Date: Fri, 21 Mar 2025 10:27:26 GMT
-
-{"message": "Greetings from RESTHeart!", "client_ip": "127.0.0.1", "host": "localhost:8080", "version": "8.4.0"}
+curl localhost:8080/ping
 ```
 
-ℹ️ Look at [Setup with Docker](https://restheart.org/docs/setup-with-docker) for more.
+That's it! You now have a running RESTHeart instance connected to MongoDB.
+
+
+👉 **Next steps:**
+
+- [REST API Tutorial](https://restheart.org/docs/mongodb-rest/tutorial) — Learn CRUD operations
+- [GraphQL API Tutorial](https://restheart.org/docs/mongodb-graphql/tutorial) — Query with GraphQL
+- [Configuration Guide](https://restheart.org/docs/configuration) — Customize your setup
+- [Plugin Development](https://restheart.org/docs/plugins/overview) — Extend with custom logic
+
+💡 **Need help?** Ask [Sophia](https://sophia.restheart.com/), our AI assistant, or join us on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
 
 ## Running Without Docker
 
-1. Download a pre-built binary of RESTHeart from the [Releases](https://github.com/SoftInstigate/restheart/releases) page.
-2. Uncompress the `restheart.tar.gz` or `restheart.zip` archive
-3. `cd restheart`
-4. Start MongoDB on `localhost:27017` and then run RESTHeart with its default configuration:
-   
+**Download and run:**
+
 ```sh
+# 1. Download from releases
+curl -L https://github.com/SoftInstigate/restheart/releases/latest/download/restheart.tar.gz -o restheart.tar.gz
+
+# 2. Extract
+tar -xzf restheart.tar.gz && cd restheart
+
+# 3. Run (requires MongoDB on localhost:27017)
 java -jar restheart.jar
 ```
 
-### Connect to a remote MongoDB
-
-To connect to a MongoDB server running in a remote host, you can quickly [modify the configuration with the RHO env var](https://restheart.org/docs/configuration#modify-the-configuration-with-the-rho-env-var).
-
-Example:
+**Connect to remote MongoDB:**
 
 ```sh
-RHO='/mclient/connection-string->"mongodb://127.0.0.1"' java -jar restheart.jar
+RHO='/mclient/connection-string->"mongodb://your-mongo-host:27017"' java -jar restheart.jar
 ```
 
-## Native executables
+## Compatible Databases
 
-Or CI/CD pipeline builds native executables for main MacOS, Linux and Windows. Have a look at the [Native Executables](/native-executables.md) document for more information.
+Works with MongoDB and MongoDB-compatible databases:
 
-ℹ️ The native executables use the same [configuration approach](https://restheart.org/docs/configuration) as the Java version.
+- [MongoDB](https://www.mongodb.com/) — Full support
+- [MongoDB Atlas](https://www.mongodb.com/products/platform/atlas-database) — Cloud database
+- [Percona Server for MongoDB](https://www.percona.com/mongodb/software/percona-server-for-mongodb) — Full support
+- [FerretDB](https://www.ferretdb.com/) — Partial compatibility
+- [Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) — Partial compatibility
+- [Azure CosmosDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/) — Partial compatibility
 
-## Build from Source
+## Advanced Topics
 
-To build from source or to run the integration tests suite look at [BUILD.md](BUILD.md).
+**Native Executables:**
+Pre-built native executables for macOS, Linux, and Windows are available. See [Native Executables](native-executables.md) for details.
 
-## Documentation
+**Build from Source:**
+Want to contribute or customize? Check out [BUILD.md](BUILD.md) for build instructions and testing.
 
-The full documentation is available on [restheart.org/docs](https://restheart.org/docs/).
+**Full Documentation:**
+Complete guides, API references, and examples at [restheart.org/docs](https://restheart.org/docs/).
 
-To explore the APIs, start with:
-- [The REST Data API Tutorial](https://restheart.org/docs/mongodb-rest/tutorial)
-- [The GraphQL Data API Tutorial](https://restheart.org/docs/mongodb-graphql/tutorial)
+## Get Help
 
-## Community Support
+- 🤖 [Ask Sophia](https://sophia.restheart.com/) — AI assistant for quick answers
+- 💬 [Join Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ) — Chat with the community
+- 🐛 [GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new) — Report bugs or request features
+- 💡 [Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart) — Technical questions
+- 📅 [Book a demo](https://calendly.com/restheart) — Free 1-to-1 session
 
-- Open an [issue on GitHub](https://github.com/SoftInstigate/restheart/issues/new) to report a specific problem.
-- Ask technical questions on [Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart).
-- Chat with other users on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
-- Book a [free 1-to-1 demo](https://calendly.com/restheart) with us.
+## Support This Project
 
-## Sponsors
+RESTHeart is open source and free. If you find it valuable, consider [sponsoring us on GitHub](https://github.com/sponsors/SoftInstigate).
 
 <table>
   <tbody>
     <tr>
       <td align="center" valign="middle">
         <a href="https://www.softinstigate.com" target="_blank">
-          <img width="222px" src="https://www.softinstigate.com/images/logo.png">
+          <img width="222px" src="https://www.softinstigate.com/images/logo.png" alt="SoftInstigate">
         </a>
       </td>
     </tr>
   </tbody>
 </table>
-
-If you enjoy using this open-source project, you can support the development of RESTHeart via the [GitHub Sponsor program](https://github.com/sponsors/SoftInstigate).
 
 ---
 
