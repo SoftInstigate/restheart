@@ -100,6 +100,9 @@ Works with MongoDB and MongoDB-compatible databases:
 
 ## Advanced Topics
 
+**Plugin Development with CLI:**
+Use [restheart-cli](https://github.com/SoftInstigate/restheart-cli) to scaffold and develop custom plugins with hot-reload support. The CLI streamlines plugin development, testing, and packaging.
+
 **Native Executables:**
 Pre-built native executables for macOS, Linux, and Windows are available. See [Native Executables](native-executables.md) for details.
 
