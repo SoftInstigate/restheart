@@ -12,7 +12,7 @@
 
 ---
 
-# What is RESTHeart?
+## What is RESTHeart?
 
 RESTHeart is a Java backend framework that instantly exposes your MongoDB database through secure **REST**, **GraphQL**, and **WebSocket** APIs — **no backend code required**.
 
