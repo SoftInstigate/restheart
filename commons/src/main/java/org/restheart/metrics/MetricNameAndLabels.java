@@ -19,6 +19,7 @@
  */
 package org.restheart.metrics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,16 +84,12 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
 
     /**
      * Creates a new MetricNameAndLabels with sanitized name and specified labels.
-     * 
+     *
      * <p>The metric name is sanitized by replacing dots ('.') with underscores ('_')
      * to ensure compatibility with the serialization format and various metrics systems.
      * This prevents the metric name from being confused with the label separators
      * in the serialized format.</p>
-     * 
-     * <p>Note: There appears to be a bug in the original implementation where
-     * "SEPARATOR_REGEX" is used as a literal string instead of the variable.
-     * This implementation maintains the original behavior for compatibility.</p>
-     * 
+     *
      * @param name the metric name, must not be null
      * @param labels the list of labels for this metric, must not be null (but can be empty)
      * @throws IllegalArgumentException if name or labels is null
@@ -103,11 +100,10 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
         }
 
         if (labels == null) {
-            throw new IllegalArgumentException("value cannot be null");
+            throw new IllegalArgumentException("labels cannot be null");
         }
 
-
-        this.name = name.replaceAll("SEPARATOR_REGEX", "_");
+        this.name = name.replaceAll(SEPARATOR_REGEX, "_");
         this.labels = labels;
     }
 
@@ -147,25 +143,25 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
 
     /**
      * Serializes this metric name and labels to string format.
-     * 
+     *
      * <p>The serialization format is "metricName.label1=value1.label2=value2...",
      * where the metric name is followed by dot-separated label representations.
      * Each label is serialized using its {@link MetricLabel#toString()} method.</p>
-     * 
+     *
      * <p>Examples:</p>
      * <pre>{@code
      * // With labels
      * new MetricNameAndLabels("requests", labels).toString()
      * // Returns: "requests.service=api.method=GET"
-     * 
+     *
      * // With empty labels
      * new MetricNameAndLabels("requests", List.of()).toString()
      * // Returns: "requests."
      * }</pre>
-     * 
+     *
      * <p>Note: The resulting string always ends with a separator after the metric name,
      * even when there are no labels. This maintains consistency in the format.</p>
-     * 
+     *
      * @return the string representation in format "name.label1=value1.label2=value2..."
      */
     public String toString() {
@@ -174,5 +170,43 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
 
         sb.append(labels.stream().map(l -> l.toString()).collect(Collectors.joining(SEPARATOR)));
         return sb.toString();
+    }
+
+    /**
+     * Creates a new MetricNameAndLabels with an additional label.
+     *
+     * <p>This method provides a fluent API for building metrics with labels:</p>
+     * <pre>{@code
+     * var metric = MetricNameAndLabels.name("http_requests")
+     *     .label("service", "api")
+     *     .label("method", "GET")
+     *     .label("status", "200");
+     * }</pre>
+     *
+     * @param labelName the label name
+     * @param labelValue the label value
+     * @return a new MetricNameAndLabels instance with the additional label
+     */
+    public MetricNameAndLabels label(String labelName, String labelValue) {
+        var newLabels = new ArrayList<>(this.labels);
+        newLabels.add(new MetricLabel(labelName, labelValue));
+        return new MetricNameAndLabels(this.name, newLabels);
+    }
+
+    /**
+     * Static factory method to start building a metric with a name.
+     *
+     * <p>This provides a more readable way to create metrics:</p>
+     * <pre>{@code
+     * var metric = MetricNameAndLabels.of("http_requests")
+     *     .label("service", "api")
+     *     .label("method", "GET");
+     * }</pre>
+     *
+     * @param name the metric name
+     * @return a new MetricNameAndLabels instance with the given name and no labels
+     */
+    public static MetricNameAndLabels of(String name) {
+        return new MetricNameAndLabels(name, List.of());
     }
 }

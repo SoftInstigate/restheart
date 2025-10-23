@@ -11,7 +11,7 @@
         <jdk.version>25</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>${jdk.version}</maven.compiler.release>
-        <restheart.version>LATEST</restheart.version>
+        <restheart.version>9.0.0-SNAPSHOT</restheart.version>
     </properties>
 
     <modules>
@@ -29,6 +29,7 @@
         <module>freemarker</module>
         <module>custom-logging-field</module>
         <module>x-headers-to-qparams</module>
+        <module>custom-metrics-example</module>
     </modules>
 
     <dependencyManagement>

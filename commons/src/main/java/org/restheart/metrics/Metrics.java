@@ -19,11 +19,20 @@
  */
 package org.restheart.metrics;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Timer;
 import com.google.common.net.HttpHeaders;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.security.Authenticator;
 import io.undertow.attribute.ExchangeAttributes;
@@ -332,12 +341,12 @@ public class Metrics {
 
     /**
      * Retrieves the metric labels attached to a request.
-     * 
+     *
      * <p>This method returns the list of custom metric labels that have been attached
      * to the request via {@link #attachMetricLabels(Request, List)} or
      * {@link #attachMetricLabel(Request, MetricLabel)}. These labels are used by
      * the metrics collection system to add dimensional data to collected metrics.</p>
-     * 
+     *
      * <p>Example:</p>
      * <pre>{@code
      * List<MetricLabel> labels = Metrics.getMetricLabels(request);
@@ -355,5 +364,384 @@ public class Metrics {
      */
     public static List<MetricLabel> getMetricLabels(Request<?> request) {
         return request.getExchange().getAttachment(CUSTOM_METRIC_LABELS);
+    }
+
+    // ========== Custom Metrics ==========
+
+    /**
+     * Prefix for custom metrics registry names.
+     * Each custom metric is registered in its own registry named "METRICS-/{metric_name}".
+     */
+    private static final String CUSTOM_METRICS_REGISTRY_PREFIX = "METRICS-/";
+
+    /**
+     * Gets or creates the registry for a specific metric name.
+     *
+     * @param metricName the base name of the metric (without labels)
+     * @return the metric registry for the given metric name
+     */
+    private static MetricRegistry getCustomRegistry(String metricName) {
+        return SharedMetricRegistries.getOrCreate(CUSTOM_METRICS_REGISTRY_PREFIX + metricName);
+    }
+
+    /**
+     * Registers a counter metric with the specified name and labels.
+     *
+     * <p>Counters are monotonically increasing values, ideal for tracking totals.
+     * The metric will be exposed at GET /metrics/{name}.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.registerCounter(MetricNameAndLabels.of("orders_total")
+     *     .label("status", "completed")
+     *     .label("region", "us-west"));
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the registered Counter instance
+     */
+    public static Counter registerCounter(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).counter(nameAndLabels.toString());
+    }
+
+    /**
+     * Increments a counter by 1.
+     *
+     * @param nameAndLabels the metric name and labels
+     */
+    public static void incrementCounter(MetricNameAndLabels nameAndLabels) {
+        registerCounter(nameAndLabels).inc();
+    }
+
+    /**
+     * Increments a counter by the specified amount.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param amount the amount to increment by
+     */
+    public static void incrementCounter(MetricNameAndLabels nameAndLabels, long amount) {
+        registerCounter(nameAndLabels).inc(amount);
+    }
+
+    /**
+     * Decrements a counter by 1.
+     *
+     * @param nameAndLabels the metric name and labels
+     */
+    public static void decrementCounter(MetricNameAndLabels nameAndLabels) {
+        registerCounter(nameAndLabels).dec();
+    }
+
+    /**
+     * Decrements a counter by the specified amount.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param amount the amount to decrement by
+     */
+    public static void decrementCounter(MetricNameAndLabels nameAndLabels, long amount) {
+        registerCounter(nameAndLabels).dec(amount);
+    }
+
+    /**
+     * Gets the current value of a counter.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the current count, or 0 if the counter doesn't exist
+     */
+    public static long getCounterValue(MetricNameAndLabels nameAndLabels) {
+        Counter counter = getCustomRegistry(nameAndLabels.name()).getCounters().get(nameAndLabels.toString());
+        return counter != null ? counter.getCount() : 0;
+    }
+
+    /**
+     * Registers a gauge metric with the specified name, labels, and value supplier.
+     *
+     * <p>Gauges represent instantaneous values that can increase or decrease.
+     * The metric will be exposed at GET /metrics/{name}.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.registerGauge(
+     *     MetricNameAndLabels.of("active_connections").label("pool", "main"),
+     *     () -> connectionPool.getActiveCount()
+     * );
+     * }</pre>
+     *
+     * @param <T> the type of the gauge value (must extend Number)
+     * @param nameAndLabels the metric name and labels
+     * @param valueSupplier a supplier that provides the current value
+     * @return the registered Gauge instance
+     */
+    public static <T extends Number> Gauge<T> registerGauge(MetricNameAndLabels nameAndLabels, Supplier<T> valueSupplier) {
+        return getCustomRegistry(nameAndLabels.name()).gauge(nameAndLabels.toString(), () -> (Gauge<T>) valueSupplier::get);
+    }
+
+    /**
+     * Gets the current value of a gauge.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the current gauge value, or null if the gauge doesn't exist
+     */
+    public static Object getGaugeValue(MetricNameAndLabels nameAndLabels) {
+        Gauge<?> gauge = getCustomRegistry(nameAndLabels.name()).getGauges().get(nameAndLabels.toString());
+        return gauge != null ? gauge.getValue() : null;
+    }
+
+    /**
+     * Registers a histogram metric with the specified name and labels.
+     *
+     * <p>Histograms measure the statistical distribution of values.
+     * The metric will be exposed at GET /metrics/{name}.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.registerHistogram(
+     *     MetricNameAndLabels.of("response_size_bytes").label("endpoint", "/api/users")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the registered Histogram instance
+     */
+    public static Histogram registerHistogram(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).histogram(nameAndLabels.toString());
+    }
+
+    /**
+     * Updates a histogram with a new value.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param value the value to record
+     */
+    public static void updateHistogram(MetricNameAndLabels nameAndLabels, long value) {
+        registerHistogram(nameAndLabels).update(value);
+    }
+
+    /**
+     * Updates a histogram with a new value.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param value the value to record
+     */
+    public static void updateHistogram(MetricNameAndLabels nameAndLabels, int value) {
+        registerHistogram(nameAndLabels).update(value);
+    }
+
+    /**
+     * Registers a histogram metric with a sliding time window reservoir.
+     *
+     * <p>This is useful for measuring rates over a time window, such as requests per minute.
+     * The sliding time window keeps only values recorded within the specified time window,
+     * making it ideal for rate calculations.</p>
+     *
+     * <p>Example for measuring request rate (requests/minute):</p>
+     * <pre>{@code
+     * // Register histogram with 60-second sliding window
+     * Metrics.registerSlidingTimeWindowHistogram(
+     *     MetricNameAndLabels.of("request_rate").label("endpoint", "/api/users"),
+     *     60,
+     *     TimeUnit.SECONDS
+     * );
+     *
+     * // Record each request (value of 1 for each request)
+     * Metrics.recordRequest(
+     *     MetricNameAndLabels.of("request_rate").label("endpoint", "/api/users")
+     * );
+     *
+     * // The histogram will show statistics over the last 60 seconds
+     * // Mean will give you the average requests per second
+     * // Count will give you total requests in the window
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param windowSize the size of the sliding time window
+     * @param windowUnit the time unit of the window size
+     * @return the registered Histogram instance with sliding time window reservoir
+     */
+    public static Histogram registerSlidingTimeWindowHistogram(MetricNameAndLabels nameAndLabels, long windowSize, TimeUnit windowUnit) {
+        return getCustomRegistry(nameAndLabels.name()).histogram(
+            nameAndLabels.toString(),
+            () -> new Histogram(new com.codahale.metrics.SlidingTimeWindowArrayReservoir(windowSize, windowUnit))
+        );
+    }
+
+    /**
+     * Records a request in a sliding time window histogram.
+     *
+     * <p>This is a convenience method for tracking request rates. It automatically registers
+     * a histogram with a 60-second sliding time window if it doesn't exist, and records
+     * a value of 1 for the request.</p>
+     *
+     * <p>To get requests per minute, multiply the histogram's mean rate by 60, or use the count
+     * which represents total requests in the last 60 seconds.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * // In your service handler
+     * Metrics.recordRequest(
+     *     MetricNameAndLabels.of("request_rate")
+     *         .label("endpoint", "/api/users")
+     *         .label("method", "GET")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     */
+    public static void recordRequest(MetricNameAndLabels nameAndLabels) {
+        registerSlidingTimeWindowHistogram(nameAndLabels, 60, TimeUnit.SECONDS).update(1);
+    }
+
+    /**
+     * Registers a meter metric with the specified name and labels.
+     *
+     * <p>Meters measure the rate of events over time.
+     * The metric will be exposed at GET /metrics/{name}.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.registerMeter(
+     *     MetricNameAndLabels.of("api_requests")
+     *         .label("endpoint", "/api/orders")
+     *         .label("method", "POST")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the registered Meter instance
+     */
+    public static Meter registerMeter(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).meter(nameAndLabels.toString());
+    }
+
+    /**
+     * Marks the occurrence of an event in a meter.
+     *
+     * @param nameAndLabels the metric name and labels
+     */
+    public static void markMeter(MetricNameAndLabels nameAndLabels) {
+        registerMeter(nameAndLabels).mark();
+    }
+
+    /**
+     * Marks multiple occurrences of events in a meter.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param count the number of events to mark
+     */
+    public static void markMeter(MetricNameAndLabels nameAndLabels, long count) {
+        registerMeter(nameAndLabels).mark(count);
+    }
+
+    /**
+     * Registers a timer metric with the specified name and labels.
+     *
+     * <p>Timers measure both the rate of events and the duration of those events.
+     * The metric will be exposed at GET /metrics/{name}.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.registerTimer(
+     *     MetricNameAndLabels.of("database_query_duration")
+     *         .label("operation", "select")
+     *         .label("table", "users")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the registered Timer instance
+     */
+    public static Timer registerTimer(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).timer(nameAndLabels.toString());
+    }
+
+    /**
+     * Updates a timer with a duration.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param duration the duration to record
+     * @param unit the time unit of the duration
+     */
+    public static void updateTimer(MetricNameAndLabels nameAndLabels, long duration, TimeUnit unit) {
+        registerTimer(nameAndLabels).update(duration, unit);
+    }
+
+    /**
+     * Times the execution of a Runnable operation.
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Metrics.time(
+     *     MetricNameAndLabels.of("cache_refresh"),
+     *     () -> cache.refresh()
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @param operation the operation to time
+     */
+    public static void time(MetricNameAndLabels nameAndLabels, Runnable operation) {
+        Timer.Context context = registerTimer(nameAndLabels).time();
+        try {
+            operation.run();
+        } finally {
+            context.stop();
+        }
+    }
+
+    /**
+     * Times the execution of a Callable operation and returns its result.
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * var users = Metrics.time(
+     *     MetricNameAndLabels.of("database_query")
+     *         .label("operation", "select")
+     *         .label("table", "users"),
+     *     () -> database.query("SELECT * FROM users")
+     * );
+     * }</pre>
+     *
+     * @param <T> the return type of the operation
+     * @param nameAndLabels the metric name and labels
+     * @param operation the operation to time
+     * @return the result of the operation
+     * @throws Exception if the operation throws an exception
+     */
+    public static <T> T time(MetricNameAndLabels nameAndLabels, Callable<T> operation) throws Exception {
+        Timer.Context context = registerTimer(nameAndLabels).time();
+        try {
+            return operation.call();
+        } finally {
+            context.stop();
+        }
+    }
+
+    /**
+     * Removes a metric from the custom metrics registry.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return true if the metric was removed, false if it didn't exist
+     */
+    public static boolean removeMetric(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).remove(nameAndLabels.toString());
+    }
+
+    /**
+     * Removes all metrics from a specific named registry.
+     *
+     * @param metricName the metric name whose registry should be cleared
+     */
+    public static void removeAllMetrics(String metricName) {
+        getCustomRegistry(metricName).removeMatching((name, metric) -> true);
+    }
+
+    /**
+     * Gets the metric registry for a specific metric name.
+     *
+     * @param metricName the metric name
+     * @return the metric registry for the given metric name
+     */
+    public static MetricRegistry customRegistry(String metricName) {
+        return getCustomRegistry(metricName);
     }
 }
