@@ -12,11 +12,24 @@
 
 ---
 
-## What is RESTHeart?
+# What is RESTHeart?
 
-RESTHeart is a Java backend framework that instantly exposes your MongoDB database through secure REST, GraphQL, and WebSocket APIs — **no backend code required**.
+RESTHeart is a Java backend framework that instantly exposes your MongoDB database through secure **REST**, **GraphQL**, and **WebSocket** APIs — **no backend code required**.
 
-Build production-ready APIs in minutes, then extend them with custom business logic using a powerful plugin system.
+You can start querying your data right away, using **any HTTP client** — no SDKs or special libraries needed.
+
+For example, you can fetch MongoDB documents directly from the browser with just a few lines of JavaScript:
+
+```javascript
+const url = encodeURI('https://demo.restheart.org/messages?filter={"from":"Bob"}&pagesize=1');
+
+fetch(url)
+  .then(response => response.json())
+  .then(json => JSON.stringify(json, null, 2))
+  .then(docs => console.log(docs));
+```
+
+Developers can build production-ready APIs in minutes, then extend them with custom business logic using a powerful plugin system.
 
 **Perfect for:**
 
@@ -86,7 +99,7 @@ RHO='/mclient/connection-string->"mongodb://your-mongo-host:27017"' java -jar re
 java -jar restheart.jar -s
 ```
 
-This mode is perfect for testing custom plugins, services, or running RESTHeart as a pure Java API server.
+This mode is ideal for testing custom plugins and services, or running RESTHeart independently as a Java API server. Add any JDBC driver to create services that connect to relational databases or other data sources.
 
 ## Compatible Databases
 
@@ -98,6 +111,8 @@ Works with MongoDB and MongoDB-compatible databases:
 - [FerretDB](https://www.ferretdb.com/) — Partial compatibility
 - [Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) — Partial compatibility
 - [Azure CosmosDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/) — Partial compatibility
+
+**Note**: compatibility is determined by the extent to which a database implements the MongoDB wire protocol and API surface.
 
 ## RESTHeart Cloud
 
