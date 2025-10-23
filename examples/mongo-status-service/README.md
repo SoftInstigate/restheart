@@ -1,30 +1,120 @@
 # MongoDB serverStatus service
 
-This example service demonstrates how to create a Web Service that retrieves and returns the JSON output of MongoDB's `serverStatus` system command. It provides a practical illustration of using dependency injection with the `@Inject` annotation to obtain the `MongoClient`.
+This service provides secure access to MongoDB's `serverStatus` diagnostic information through a REST API. It demonstrates best practices for creating administrative services in RESTHeart, including dependency injection, input validation, and security hardening.
+
+## Features
+
+- **Secure by default**: Requires authentication and validates all input
+- **Configurable**: Can be customized via RESTHeart configuration
+- **Safe**: Only allows `serverStatus` command with whitelisted options
+- **Production-ready**: Includes proper error handling and logging
+
+## Security
+
+This service is marked as `secure=true`, requiring authentication. Additionally:
+
+1. **Command Validation**: By default, custom commands are **disabled** to prevent command injection attacks
+2. **Whitelist-based**: When enabled, only `serverStatus` with approved options is allowed
+3. **Input Sanitization**: All command parameters are validated before execution
+4. **Admin Database Only**: Executes commands only against the `admin` database
+
+### Allowed serverStatus Options
+
+When custom commands are enabled, only these options can be toggled (0 to exclude, 1 to include):
+
+- `repl` - Replica set status
+- `metrics` - Server metrics  
+- `locks` - Lock information
+- `network` - Network statistics
+- `opcounters` - Operation counters
+- `connections` - Connection information
+- `memory` - Memory usage
+- `asserts` - Assertion counters
+- `extra_info` - Additional info
+- `globalLock` - Global lock information
+- `wiredTiger` - WiredTiger storage engine stats
+- `tcmalloc` - TCMalloc memory allocator stats
+- `storageEngine` - Storage engine info
+- `indexStats` - Index statistics
+- `sharding` - Sharding information
+- `security` - Security statistics
+
+## Configuration
+
+Add to your `restheart.yml`:
+
+```yaml
+mongoServerStatus:
+  # Enable custom commands (disabled by default for security)
+  enable-custom-commands: false
+  # Override the default URI (optional, defaults to /status/mongo)
+  uri: /status/mongo
+```
+
+### Configuration Parameters
+
+- **`enable-custom-commands`** (boolean, default: `false`): When `true`, allows filtering serverStatus output via the `command` query parameter. Disabled by default for security.
+- **`uri`** (string, default: `/status/mongo`): Override the service URI. The default is set via `defaultURI` in the `@RegisterPlugin` annotation.
+
+## Usage
 
 **Default Operation:**
 
-By default, the service executes the MongoDB command `db.runCommand({ serverStatus: 1 })`. This command fetches a comprehensive status report of the MongoDB server.
-
-**Customizing the Output with Optional Query Parameters:**
-
-To tailor the information included in the `serverStatus` report, you can use the optional `command` query parameter. This feature allows you to specify additional conditions, enabling you to include or exclude specific sections of the report.
-
-**Example Usage:**
-
-For instance, if you want to exclude the replica set status (`repl`), metrics, and locks information from the output, you can structure your HTTP request as follows:
+Get comprehensive server status (requires authentication):
 
 ```bash
-http -a admin:secret -b :8080/mongoServerStatus?command='{serverStatus: 1, repl: 0, metrics: 0, locks: 0}'
+http -a admin:secret GET :8080/status/mongo
 ```
 
-This request will return a `serverStatus` JSON document, customized to omit the specified sections.
+**With Custom URI:**
 
-**Further Reading and Reference:**
+If you've configured a custom URI in `restheart.yml`:
 
-For a more detailed understanding of the `serverStatus` command and its potential outputs, you can refer to MongoDB's official documentation: [MongoDB serverStatus command reference](https://docs.mongodb.com/manual/reference/command/serverStatus/).
+```yaml
+mongoServerStatus:
+  uri: /api/mongo-status
+```
 
-This service is an excellent example of creating flexible and dynamic Web Services with RESTHeart, utilizing MongoDB's powerful querying capabilities.
+Then use:
+
+```bash
+http -a admin:secret GET :8080/api/mongo-status
+```
+
+**Custom Options (requires `enable-custom-commands: true`):**
+
+Exclude replica set status, metrics, and locks:
+
+```bash
+http -a admin:secret GET ':8080/status/mongo?command={serverStatus:1,repl:0,metrics:0,locks:0}'
+```
+
+Exclude most sections to get a minimal response (keep only version, host, connections, etc.):
+
+```bash
+http -a admin:secret GET ':8080/status/mongo?command={serverStatus:1,repl:0,metrics:0,locks:0,opcounters:0,memory:0,globalLock:0,wiredTiger:0,tcmalloc:0}'
+```
+
+**Note:** MongoDB's `serverStatus` includes all sections by default. You can only **exclude** sections by setting them to `0`, not selectively include them. Setting a field to `1` (or omitting it) means it will be included in the output.
+
+## Authorization Recommendations
+
+For production deployments, create specific ACL rules to restrict access to this service:
+
+```javascript
+// In restheart.acl collection
+{
+  "roles": ["monitoring", "admin"],
+  "predicate": "path-prefix('/status') and method(GET)",
+  "priority": 100
+}
+```
+
+Only grant access to trusted monitoring/admin roles, as serverStatus can reveal sensitive operational information.
+
+## Further Reading
+
+For details on MongoDB's `serverStatus` output, see: [MongoDB serverStatus Documentation](https://docs.mongodb.com/manual/reference/command/serverStatus/)
 
 ## Building the Plugin
 
@@ -70,7 +160,7 @@ For more information see: [For development: run RESTHeart and open MongoDB with 
 ## Testing the Service
 
 ```bash
-http -a admin:secret -b :8080/mongoServerStatus
+http -a admin:secret -b :8080/status/mongo
 
 {
     "asserts": {
