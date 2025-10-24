@@ -28,6 +28,8 @@ fetch(url)
   .then(json => console.log(JSON.stringify(json, null, 2)));
 ```
 
+📄 **Complete documentation** available at <https://restheart.org/docs/>
+
 ---
 
 ## Why RESTHeart?
@@ -155,6 +157,7 @@ Compatibility depends on MongoDB wire protocol support.
 
 ## Community and Support
 
+- 📄 [Documentation](https://restheart.org/docs/) - Comprehensive configuration, development and deployment documents.
 - 🤖 [Ask Sophia](https://sophia.restheart.com) — AI-powered documentation assistant  
 - 💬 [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ) — Community discussion channel  
 - 🐛 [GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new) — Bug reports and feature requests  
