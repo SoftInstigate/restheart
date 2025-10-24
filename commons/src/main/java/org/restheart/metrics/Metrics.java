@@ -718,7 +718,7 @@ public class Metrics {
         var histogram = registerSlidingTimeWindowHistogram(histoName, windowSize, windowUnit);
 
         // Register a gauge that reads from the histogram's snapshot
-         d(nameAndLabels, () -> histogram.getSnapshot().size());
+        registerGauge(nameAndLabels, () -> histogram.getSnapshot().size());
     }
 
     /**
