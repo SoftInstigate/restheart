@@ -169,13 +169,4 @@ Compatibility depends on MongoDB wire protocol support.
 
 ---
 
-## Contribute
-
-RESTHeart is open source and community-driven.  
-Help us improve it — star, fork, or contribute on GitHub.
-
-👉 [GitHub Repository](https://github.com/SoftInstigate/restheart)
-
----
-
 _Made with ❤️ by [SoftInstigate](https://www.softinstigate.com)_
