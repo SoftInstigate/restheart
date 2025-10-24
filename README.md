@@ -1,6 +1,6 @@
 # RESTHeart
 
-**The backend framework that instantly turns MongoDB into REST, GraphQL, and WebSocket APIs.**
+**The backend framework that instantly turns MongoDB into REST, GraphQL, and WebSocket APIs — no code required.**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -25,137 +25,159 @@ const url = encodeURI('https://demo.restheart.org/messages?filter={"from":"Bob"}
 
 fetch(url)
   .then(response => response.json())
-  .then(json => JSON.stringify(json, null, 2))
-  .then(docs => console.log(docs));
+  .then(json => console.log(JSON.stringify(json, null, 2)));
 ```
 
-Developers can build production-ready APIs in minutes, then extend them with custom business logic using a powerful plugin system.
+---
 
-**Perfect for:**
+## Why RESTHeart?
 
-- Building APIs without writing boilerplate CRUD code
-- Rapid prototyping and MVPs
-- Extending MongoDB with custom Java services
-- Microservices architectures
+RESTHeart isn’t just a MongoDB REST layer — it’s a **complete backend foundation**.
 
-**Key capabilities:**
+| Capability | Description |
+|-------------|--------------|
+| 🧩 **Zero-code APIs** | Instantly expose collections and documents over REST and GraphQL |
+| ⚙️ **Extensible framework** | Add custom business logic using plugins, written in Java or JavaScript |
+| 🔐 **Security built-in** | Authentication, authorization, role-based access control, and HTTPS |
+| 💬 **WebSockets** | Real-time data updates and event streaming |
+| 🚀 **High-performance engine** | Built on Undertow with Virtual Threads (Project Loom) |
+| 🌐 **Polyglot runtime** | Run plugins in JavaScript or Python when using GraalVM |
+| 📈 **Observability** | Metrics, health checks, and monitoring endpoints |
+| 🧰 **Developer tools** | CLI, hot-reload, plugin scaffolding, Docker, and native binaries |
 
-- 🚀 **Zero-code APIs** — Connect to MongoDB and start querying via REST/GraphQL
-- 🔐 **Built-in security** — Authentication, authorization, and role-based access control
-- ⚡ **High performance** — Java Virtual Threads for efficient concurrency, built on [Undertow](https://undertow.io) (the battle-tested web server from JBoss, default in Wildfly Application Server)
-- 🔌 **Extensible** — Plugin architecture for custom services, interceptors, and validators
-- 🌐 **Polyglot** — Write plugins in JavaScript, Python, or other languages when running on GraalVM
-- 📦 **Production-ready** — Docker support, metrics, monitoring, and native executables
+RESTHeart combines the **speed of instant APIs** with the **flexibility of a full backend framework**.
+
+Perfect for:
+
+- 🚧 Rapid prototyping and MVPs  
+- 🧠 Scalable microservices architectures  
+- 🧩 Enterprise backends extending MongoDB with custom logic  
+- ☁️ Deployments on AWS, GCP, Azure, or RESTHeart Cloud  
+
+---
 
 ## Quick Start
 
-Get RESTHeart and MongoDB running in 30 seconds:
+Run MongoDB + RESTHeart in **30 seconds**:
 
 ```sh
 curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker compose up --pull=always --attach restheart
 ```
 
-**Test it:**
+Test your instance:
 
 ```sh
 curl localhost:8080/ping
 ```
 
-That's it! You now have a running RESTHeart instance connected to MongoDB.
-
-👉 **Next steps:**
-
-- [REST API Tutorial](https://restheart.org/docs/mongodb-rest/tutorial) — Learn CRUD operations
-- [GraphQL API Tutorial](https://restheart.org/docs/mongodb-graphql/tutorial) — Query with GraphQL
-- [Configuration Guide](https://restheart.org/docs/configuration) — Customize your setup
-- [Plugin Development](https://restheart.org/docs/plugins/overview) — Extend with custom logic
-
-💡 **Need help?** Ask [Sophia](https://sophia.restheart.com/), our AI assistant, or join us on [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ).
-
-## Running Without Docker
-
-**Download and run:**
-
-```sh
-# 1. Download from releases
-curl -L https://github.com/SoftInstigate/restheart/releases/latest/download/restheart.tar.gz -o restheart.tar.gz
-
-# 2. Extract
-tar -xzf restheart.tar.gz && cd restheart
-
-# 3. Run (requires MongoDB on localhost:27017)
-java -jar restheart.jar
-```
-
-**Connect to remote MongoDB:**
-
-```sh
-RHO='/mclient/connection-string->"mongodb://your-mongo-host:27017"' java -jar restheart.jar
-```
-
-**Run in standalone mode (no MongoDB required):**
-
-```sh
-java -jar restheart.jar -s
-```
-
-This mode is ideal for testing custom plugins and services, or running RESTHeart independently as a Java API server. Add any JDBC driver to create services that connect to relational databases or other data sources.
-
-## Compatible Databases
-
-Works with MongoDB and MongoDB-compatible databases:
-
-- [MongoDB](https://www.mongodb.com/) — Full support
-- [MongoDB Atlas](https://www.mongodb.com/products/platform/atlas-database) — Cloud database
-- [Percona Server for MongoDB](https://www.percona.com/mongodb/software/percona-server-for-mongodb) — Full support
-- [FerretDB](https://www.ferretdb.com/) — Partial compatibility
-- [Amazon DocumentDB](https://docs.aws.amazon.com/documentdb/latest/developerguide/what-is.html) — Partial compatibility
-- [Azure CosmosDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/) — Partial compatibility
-
-**Note**: compatibility is determined by the extent to which a database implements the MongoDB wire protocol and API surface.
-
-## RESTHeart Cloud
-
-Looking for a fully managed solution? [RESTHeart Cloud](https://cloud.restheart.com/) provides RESTHeart as a cloud service with zero infrastructure management. Get your API up and running in seconds without worrying about deployment, scaling, or maintenance.
-
-## Advanced Topics
-
-**Plugin Development with CLI:**
-Use [restheart-cli](https://github.com/SoftInstigate/restheart-cli) to scaffold and develop custom plugins with hot-reload support. The CLI streamlines plugin development, testing, and packaging.
-
-**Native Executables:**
-Pre-built native executables for macOS, Linux, and Windows are available. See [Native Executables](native-executables.md) for details.
-
-**Build from Source:**
-Want to contribute or customize? Check out [BUILD.md](BUILD.md) for build instructions and testing.
-
-**Full Documentation:**
-Complete guides, API references, and examples at [restheart.org/docs](https://restheart.org/docs/).
-
-## Get Help
-
-- 🤖 [Ask Sophia](https://sophia.restheart.com/) — AI assistant for quick answers
-- 💬 [Join Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ) — Chat with the community
-- 🐛 [GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new) — Report bugs or request features
-- 💡 [Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart) — Technical questions
-- 📅 [Book a demo](https://calendly.com/restheart) — Free 1-to-1 session
-
-## Support This Project
-
-RESTHeart is open source and free. If you find it valuable, consider [sponsoring us on GitHub](https://github.com/sponsors/SoftInstigate).
-
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="middle">
-        <a href="https://www.softinstigate.com" target="_blank">
-          <img width="222px" src="https://www.softinstigate.com/images/logo.png" alt="SoftInstigate">
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
+That’s it! You now have a running RESTHeart connected to MongoDB.
 
 ---
 
-_Made with :heart: by [SoftInstigate](https://www.softinstigate.com)_
+## Examples
+
+### Query documents via REST
+
+```bash
+curl 'http://localhost:8080/people?filter={"age":{"$gt":30}}'
+```
+
+### Query documents via GraphQL
+
+```graphql
+{
+  people(filter: "{'age': {'$gt': 30}}", pagesize: 5) {
+    _id
+    name
+    age
+  }
+}
+```
+
+### Receive real-time updates via WebSocket
+
+```javascript
+const ws = new WebSocket("wss://demo.restheart.org/ws/messages");
+ws.onmessage = e => console.log("New message:", e.data);
+```
+
+---
+
+## Configuration
+
+RESTHeart uses a single YAML configuration file or the `RHO` environment variable to customize runtime behavior.
+
+Key areas you can configure:
+
+- MongoDB connection(s)
+- Authentication & roles
+- API exposure rules
+- Plugin registration
+- Metrics and logging
+
+See the [Configuration Guide](https://restheart.org/docs/configuration).
+
+---
+
+## Plugin Architecture
+
+Plugins let you extend RESTHeart with **custom services, interceptors, and validators**.
+
+- Write your own APIs in Java or JavaScript
+- Register them via configuration or at runtime
+- Use `restheart-cli` to scaffold, test, and package plugins with hot reload
+
+```bash
+npx restheart-cli create my-plugin
+cd my-plugin
+npx restheart-cli dev
+```
+
+---
+
+## RESTHeart Cloud
+
+Want RESTHeart as a managed service?  
+[RESTHeart Cloud](https://cloud.restheart.com) provides:
+
+- Zero deployment friction  
+- Built-in scalability  
+- Centralized monitoring and analytics  
+- Instant API publishing  
+
+Ideal for production APIs or rapid experimentation.
+
+---
+
+## Supported Databases
+
+- ✅ MongoDB / MongoDB Atlas  
+- ✅ Percona Server for MongoDB  
+- ⚙️ FerretDB (partial)  
+- ⚙️ Amazon DocumentDB (partial)  
+- ⚙️ Azure CosmosDB (partial)  
+
+Compatibility depends on MongoDB wire protocol support.
+
+---
+
+## Community and Support
+
+- 🤖 [Ask Sophia](https://sophia.restheart.com) — your AI assistant for docs and usage help  
+- 💬 [Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ) — community chat  
+- 🐛 [GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new) — report bugs  
+- 💡 [Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart) — technical Q&A  
+- 📅 [Book a demo](https://calendly.com/restheart) — free 1:1 session
+
+---
+
+## Contribute
+
+RESTHeart is open source and community-driven.  
+Help us improve it — star, fork, or contribute on GitHub.
+
+👉 [GitHub Repository](https://github.com/SoftInstigate/restheart)
+
+---
+
+_Made with ❤️ by [SoftInstigate](https://www.softinstigate.com)_
