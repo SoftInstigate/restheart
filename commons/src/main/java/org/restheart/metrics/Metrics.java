@@ -443,13 +443,23 @@ public class Metrics {
     }
 
     /**
+     * Gets a counter metric instance.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the Counter instance, or null if it doesn't exist
+     */
+    public static Counter getCounter(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).getCounters().get(nameAndLabels.toString());
+    }
+
+    /**
      * Gets the current value of a counter.
      *
      * @param nameAndLabels the metric name and labels
      * @return the current count, or 0 if the counter doesn't exist
      */
     public static long getCounterValue(MetricNameAndLabels nameAndLabels) {
-        Counter counter = getCustomRegistry(nameAndLabels.name()).getCounters().get(nameAndLabels.toString());
+        Counter counter = getCounter(nameAndLabels);
         return counter != null ? counter.getCount() : 0;
     }
 
@@ -477,13 +487,23 @@ public class Metrics {
     }
 
     /**
+     * Gets a gauge metric instance.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the Gauge instance, or null if it doesn't exist
+     */
+    public static Gauge<?> getGauge(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).getGauges().get(nameAndLabels.toString());
+    }
+
+    /**
      * Gets the current value of a gauge.
      *
      * @param nameAndLabels the metric name and labels
      * @return the current gauge value, or null if the gauge doesn't exist
      */
     public static Object getGaugeValue(MetricNameAndLabels nameAndLabels) {
-        Gauge<?> gauge = getCustomRegistry(nameAndLabels.name()).getGauges().get(nameAndLabels.toString());
+        Gauge<?> gauge = getGauge(nameAndLabels);
         return gauge != null ? gauge.getValue() : null;
     }
 
@@ -505,6 +525,33 @@ public class Metrics {
      */
     public static Histogram registerHistogram(MetricNameAndLabels nameAndLabels) {
         return getCustomRegistry(nameAndLabels.name()).histogram(nameAndLabels.toString());
+    }
+
+    /**
+     * Gets a histogram metric instance.
+     *
+     * <p>This method retrieves an existing histogram without creating one if it doesn't exist.
+     * Use this when you need to access histogram methods like {@code getSnapshot()} to retrieve
+     * statistics such as min, max, mean, percentiles, etc.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Histogram histogram = Metrics.getHistogram(
+     *     MetricNameAndLabels.of("response_size_bytes").label("endpoint", "/api/users")
+     * );
+     * if (histogram != null) {
+     *     var snapshot = histogram.getSnapshot();
+     *     double max = snapshot.getMax();
+     *     double mean = snapshot.getMean();
+     *     double p99 = snapshot.get99thPercentile();
+     * }
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the Histogram instance, or null if it doesn't exist
+     */
+    public static Histogram getHistogram(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).getHistograms().get(nameAndLabels.toString());
     }
 
     /**
@@ -614,6 +661,33 @@ public class Metrics {
     }
 
     /**
+     * Gets a meter metric instance.
+     *
+     * <p>This method retrieves an existing meter without creating one if it doesn't exist.
+     * Use this when you need to access meter methods to retrieve rate statistics.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Meter meter = Metrics.getMeter(
+     *     MetricNameAndLabels.of("api_requests")
+     *         .label("endpoint", "/api/orders")
+     *         .label("method", "POST")
+     * );
+     * if (meter != null) {
+     *     double meanRate = meter.getMeanRate();
+     *     double oneMinuteRate = meter.getOneMinuteRate();
+     *     long count = meter.getCount();
+     * }
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the Meter instance, or null if it doesn't exist
+     */
+    public static Meter getMeter(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).getMeters().get(nameAndLabels.toString());
+    }
+
+    /**
      * Marks the occurrence of an event in a meter.
      *
      * @param nameAndLabels the metric name and labels
@@ -652,6 +726,35 @@ public class Metrics {
      */
     public static Timer registerTimer(MetricNameAndLabels nameAndLabels) {
         return getCustomRegistry(nameAndLabels.name()).timer(nameAndLabels.toString());
+    }
+
+    /**
+     * Gets a timer metric instance.
+     *
+     * <p>This method retrieves an existing timer without creating one if it doesn't exist.
+     * Use this when you need to access timer methods to retrieve timing statistics.</p>
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * Timer timer = Metrics.getTimer(
+     *     MetricNameAndLabels.of("database_query_duration")
+     *         .label("operation", "select")
+     *         .label("table", "users")
+     * );
+     * if (timer != null) {
+     *     var snapshot = timer.getSnapshot();
+     *     double meanDuration = snapshot.getMean();
+     *     double maxDuration = snapshot.getMax();
+     *     double p95 = snapshot.get95thPercentile();
+     *     long count = timer.getCount();
+     * }
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the Timer instance, or null if it doesn't exist
+     */
+    public static Timer getTimer(MetricNameAndLabels nameAndLabels) {
+        return getCustomRegistry(nameAndLabels.name()).getTimers().get(nameAndLabels.toString());
     }
 
     /**

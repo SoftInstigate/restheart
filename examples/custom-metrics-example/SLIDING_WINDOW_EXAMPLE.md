@@ -176,8 +176,3 @@ double requestsPerSecond = snapshot.getMean();
 2. **Automatic Decay**: Old requests automatically drop out of the window
 3. **Real-time Visibility**: Always shows current rate, not historical average
 4. **Memory Efficient**: Fixed memory usage regardless of request volume
-
-## See Also
-
-- [Metrics.java](../../commons/src/main/java/org/restheart/metrics/Metrics.java) - Full API documentation
-- [Dropwizard Metrics - Reservoirs](https://metrics.dropwizard.io/4.2.0/manual/core.html#histograms) - Underlying metrics library

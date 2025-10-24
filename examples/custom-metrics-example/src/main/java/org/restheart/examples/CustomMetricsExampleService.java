@@ -92,8 +92,92 @@ public class CustomMetricsExampleService implements JsonService {
 
             case POST -> handleOrder(req, res);
 
+            case GET -> handleGetStats(req, res);
+
             default -> res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
+    }
+
+    /**
+     * Handles GET request to retrieve metric statistics.
+     * Demonstrates how to use the new getter methods to access metric objects
+     * and retrieve their statistics without side effects.
+     */
+    private void handleGetStats(JsonRequest req, JsonResponse res) {
+        var stats = object();
+
+        // Counter statistics
+        var orderMetric = MetricNameAndLabels.of("orders_total").label("service", "order-processing");
+        var counter = Metrics.getCounter(orderMetric);
+        if (counter != null) {
+            stats.put("orders_total", counter.getCount());
+        }
+
+        // Histogram statistics - demonstrates accessing snapshot methods like getMax()
+        var orderValueMetric = MetricNameAndLabels.of("order_value_dollars").label("service", "order-processing");
+        var valueHistogram = Metrics.getHistogram(orderValueMetric);
+        if (valueHistogram != null) {
+            var snapshot = valueHistogram.getSnapshot();
+            stats.put("order_value_stats", object()
+                .put("count", valueHistogram.getCount())
+                .put("min", snapshot.getMin() / 100.0)
+                .put("max", snapshot.getMax() / 100.0)
+                .put("mean", snapshot.getMean() / 100.0)
+                .put("median", snapshot.getMedian() / 100.0)
+                .put("p95", snapshot.get95thPercentile() / 100.0)
+                .put("p99", snapshot.get99thPercentile() / 100.0).get());
+        }
+
+        // Another histogram for order size
+        var orderSizeMetric = MetricNameAndLabels.of("order_size_items").label("service", "order-processing");
+        var sizeHistogram = Metrics.getHistogram(orderSizeMetric);
+        if (sizeHistogram != null) {
+            var snapshot = sizeHistogram.getSnapshot();
+            stats.put("order_size_stats", object()
+                .put("count", sizeHistogram.getCount())
+                .put("min", snapshot.getMin())
+                .put("max", snapshot.getMax())
+                .put("mean", snapshot.getMean())
+                .put("median", snapshot.getMedian()).get());
+        }
+
+        // Meter statistics
+        var rateMetric = MetricNameAndLabels.of("order_processing_rate").label("service", "order-processing");
+        var meter = Metrics.getMeter(rateMetric);
+        if (meter != null) {
+            stats.put("order_processing_rate", object()
+                .put("count", meter.getCount())
+                .put("mean_rate", meter.getMeanRate())
+                .put("one_minute_rate", meter.getOneMinuteRate())
+                .put("five_minute_rate", meter.getFiveMinuteRate())
+                .put("fifteen_minute_rate", meter.getFifteenMinuteRate()).get());
+        }
+
+        // Timer statistics
+        var durationMetric = MetricNameAndLabels.of("order_processing_duration").label("service", "order-processing");
+        var timer = Metrics.getTimer(durationMetric);
+        if (timer != null) {
+            var snapshot = timer.getSnapshot();
+            stats.put("order_processing_duration", object()
+                .put("count", timer.getCount())
+                .put("mean_rate", timer.getMeanRate())
+                .put("mean_duration_ms", snapshot.getMean() / 1_000_000.0)
+                .put("max_duration_ms", snapshot.getMax() / 1_000_000.0)
+                .put("p95_duration_ms", snapshot.get95thPercentile() / 1_000_000.0).get());
+        }
+
+        // Gauge statistics
+        var activeOrdersGauge = Metrics.getGauge(MetricNameAndLabels.of("active_orders"));
+        if (activeOrdersGauge != null) {
+            var value = activeOrdersGauge.getValue();
+            if (value instanceof Number num) {
+                stats.put("active_orders", num);
+            }
+        }
+
+        res.setContent(object()
+            .put("message", "Metric statistics retrieved using getter methods")
+            .put("stats", stats.get()));
     }
 
     /**
