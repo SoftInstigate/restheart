@@ -555,6 +555,39 @@ public class Metrics {
     }
 
     /**
+     * Gets the cumulative count of a histogram (total number of recorded values since creation).
+     * Note: For sliding time window histograms, use getHistogramSnapshotSize() to get the count in the window.
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the histogram count, or 0 if the histogram doesn't exist
+     */
+    public static long getHistogramCount(MetricNameAndLabels nameAndLabels) {
+        Histogram histogram = getHistogram(nameAndLabels);
+        return histogram != null ? histogram.getCount() : 0;
+    }
+
+    /**
+     * Gets the number of values in the current snapshot of a histogram.
+     * For sliding time window histograms, this returns the count of values in the window.
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * // Get total requests in the last minute (sliding window)
+     * long requestsPerMinute = Metrics.getHistogramSnapshotSize(
+     *     MetricNameAndLabels.of("http_requests_rate_per_minute")
+     *         .label("srvId", "cloud")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the number of values in the histogram snapshot, or 0 if the histogram doesn't exist
+     */
+    public static int getHistogramSnapshotSize(MetricNameAndLabels nameAndLabels) {
+        Histogram histogram = getHistogram(nameAndLabels);
+        return histogram != null ? histogram.getSnapshot().size() : 0;
+    }
+
+    /**
      * Updates a histogram with a new value.
      *
      * @param nameAndLabels the metric name and labels
@@ -639,6 +672,73 @@ public class Metrics {
     }
 
     /**
+     * Registers a gauge that tracks requests per minute using a sliding window.
+     * This creates a histogram internally and exposes a gauge that shows the count as a simple number.
+     *
+     * <p>In Prometheus, this will appear as a single gauge value:</p>
+     * <pre>
+     * http_requests_rate_per_minute{srvId="cloud"} 123
+     * </pre>
+     *
+     * <p>Example usage:</p>
+     * <pre>{@code
+     * // Register once (e.g., in @OnInit)
+     * Metrics.registerRequestRateGauge(
+     *     MetricNameAndLabels.of("http_requests_rate_per_minute")
+     *         .label("srvId", "cloud"),
+     *     60,
+     *     TimeUnit.SECONDS
+     * );
+     *
+     * // Record each request
+     * Metrics.recordRequestRate(
+     *     MetricNameAndLabels.of("http_requests_rate_per_minute")
+     *         .label("srvId", "cloud")
+     * );
+     *
+     * // Get value programmatically
+     * int rate = (Integer) Metrics.getGaugeValue(
+     *     MetricNameAndLabels.of("http_requests_rate_per_minute")
+     *         .label("srvId", "cloud")
+     * );
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels for the gauge
+     * @param windowSize the size of the sliding time window
+     * @param windowUnit the time unit of the window size
+     */
+    public static void registerRequestRateGauge(MetricNameAndLabels nameAndLabels, long windowSize, TimeUnit windowUnit) {
+        // Register the histogram with a hidden name
+        var histoName = MetricNameAndLabels.of("_internal_histo_" + nameAndLabels.name());
+        if (nameAndLabels.labels() != null) {
+            for (var label : nameAndLabels.labels()) {
+                histoName = histoName.label(label.name(), label.value());
+            }
+        }
+        var histogram = registerSlidingTimeWindowHistogram(histoName, windowSize, windowUnit);
+
+        // Register a gauge that reads from the histogram's snapshot
+         d(nameAndLabels, () -> histogram.getSnapshot().size());
+    }
+
+    /**
+     * Records a request event for a request rate gauge.
+     * Must be used with a metric registered via registerRequestRateGauge().
+     *
+     * @param nameAndLabels the metric name and labels (must match the registration)
+     */
+    public static void recordRequestRate(MetricNameAndLabels nameAndLabels) {
+        // Update the internal histogram
+        var histoName = MetricNameAndLabels.of("_internal_histo_" + nameAndLabels.name());
+        if (nameAndLabels.labels() != null) {
+            for (var label : nameAndLabels.labels()) {
+                histoName = histoName.label(label.name(), label.value());
+            }
+        }
+        updateHistogram(histoName, 1);
+    }
+
+    /**
      * Registers a meter metric with the specified name and labels.
      *
      * <p>Meters measure the rate of events over time.
@@ -685,6 +785,28 @@ public class Metrics {
      */
     public static Meter getMeter(MetricNameAndLabels nameAndLabels) {
         return getCustomRegistry(nameAndLabels.name()).getMeters().get(nameAndLabels.toString());
+    }
+
+    /**
+     * Gets the one-minute rate of a meter (exponentially-weighted moving average).
+     * Returns the rate in events per second.
+     *
+     * <p>Example:</p>
+     * <pre>{@code
+     * // Get requests per second over the last minute
+     * double requestsPerSecond = Metrics.getMeterOneMinuteRate(
+     *     MetricNameAndLabels.of("http_requests").label("srvId", "cloud")
+     * );
+     * // Convert to requests per minute
+     * long requestsPerMinute = Math.round(requestsPerSecond * 60);
+     * }</pre>
+     *
+     * @param nameAndLabels the metric name and labels
+     * @return the one-minute rate in events per second, or 0.0 if the meter doesn't exist
+     */
+    public static double getMeterOneMinuteRate(MetricNameAndLabels nameAndLabels) {
+        Meter meter = getMeter(nameAndLabels);
+        return meter != null ? meter.getOneMinuteRate() : 0.0;
     }
 
     /**

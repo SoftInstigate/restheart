@@ -178,7 +178,6 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * in the last 10 seconds.
      *
      * @param exchange
-     * @param success
      */
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
         // update the histo

@@ -153,7 +153,18 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
      * Convert histogram snapshot.
      */
     MetricFamilySamples fromHistogram(String dropwizardName, Histogram histogram) {
-        return fromSnapshotAndCount(dropwizardName, histogram.getSnapshot(), histogram.getCount(), 1.0, getHelpMessage(dropwizardName, histogram));
+        var snapshot = histogram.getSnapshot();
+        List<MetricFamilySamples.Sample> samples = new ArrayList<>(Arrays.asList(
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.5"), snapshot.getMedian()),
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.75"), snapshot.get75thPercentile()),
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.95"), snapshot.get95thPercentile()),
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.98"), snapshot.get98thPercentile()),
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.99"), snapshot.get99thPercentile()),
+                sampleBuilder.createSample(dropwizardName, "", Arrays.asList("quantile"), Arrays.asList("0.999"), snapshot.get999thPercentile()),
+                sampleBuilder.createSample(dropwizardName, "_count", new ArrayList<String>(), new ArrayList<String>(), histogram.getCount()),
+                sampleBuilder.createSample(dropwizardName, "_window_count", new ArrayList<String>(), new ArrayList<String>(), snapshot.size())
+        ));
+        return new MetricFamilySamples(samples.get(0).name, Type.SUMMARY, getHelpMessage(dropwizardName, histogram), samples);
     }
 
     private static double TIMER_FACTOR = 1.0D / TimeUnit.SECONDS.toNanos(1L);
