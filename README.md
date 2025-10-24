@@ -121,15 +121,9 @@ See the [Configuration Guide](https://restheart.org/docs/configuration).
 
 The plugin architecture allows extending RESTHeart with custom services, interceptors, and validators.
 
-- Implement custom APIs in Java or JavaScript
+- Implement custom APIs in Java, JavaScript and other GraalVM suported languages
 - Register plugins via configuration or programmatically at runtime
-- Use the `restheart-cli` tool for scaffolding, testing, and hot-reload during development
-
-```bash
-npx restheart-cli create my-plugin
-cd my-plugin
-npx restheart-cli dev
-```
+- Use the [restheart-cli](https://github.com/SoftInstigate/restheart-cli) tool for scaffolding, testing, and hot-reload during development
 
 ---
 
