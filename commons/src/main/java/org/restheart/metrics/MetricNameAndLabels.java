@@ -74,13 +74,13 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * The separator character used between metric name and labels in string format.
      * Also used between individual labels in the serialized string.
      */
-    public static String SEPARATOR = ".";
+    public static final String SEPARATOR = ".";
     
     /**
      * Regular expression for splitting on the separator character.
      * Since '.' is a special character in regex, it needs to be escaped.
      */
-    private static String SEPARATOR_REGEX = "\\.";
+    private static final String SEPARATOR_REGEX = "\\.";
 
     /**
      * Creates a new MetricNameAndLabels with sanitized name and specified labels.
@@ -131,11 +131,17 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * @see MetricLabel#from(String)
      */
     public static MetricNameAndLabels from(String raw) {
-        var name = raw.substring(0, raw.indexOf("."));
+		var idx = raw.indexOf(".");
+
+		if (idx < 0) {
+			throw new IllegalArgumentException(" Wrong raw format, it does not contain the . separator.");
+		}
+
+        var name = raw.substring(0, idx);
 
         var labels = Arrays.stream(raw.split(SEPARATOR_REGEX))
             .skip(1)
-            .map(l -> MetricLabel.from(l))
+            .map(MetricLabel::from)
             .collect(Collectors.toList());
 
         return new MetricNameAndLabels(name, labels);
@@ -165,11 +171,7 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * @return the string representation in format "name.label1=value1.label2=value2..."
      */
     public String toString() {
-        var sb = new StringBuilder();
-        sb.append(name).append(SEPARATOR);
-
-        sb.append(labels.stream().map(l -> l.toString()).collect(Collectors.joining(SEPARATOR)));
-        return sb.toString();
+		return name + SEPARATOR + labels.stream().map(MetricLabel::toString).collect(Collectors.joining(SEPARATOR));
     }
 
     /**
