@@ -225,6 +225,8 @@ curl localhost:8080/ping
 
 RESTHeart is now running. APIs are available at `http://localhost:8080/`.
 
+> Docker images are automatically publishes on [Docker Hub](https://hub.docker.com/r/softinstigate/restheart).
+
 ---
 
 ## API Examples
