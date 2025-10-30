@@ -62,10 +62,10 @@ import com.mongodb.client.MongoClient;
 public class DbProbeService implements JsonService {
 
     @Inject("mclient")
-    /* package */ MongoClient mclient;
+    private MongoClient mclient;
 
     @Inject("config")
-    /* package */ Map<String, Object> config;
+    private Map<String, Object> config;
 
     // Fixed concurrency cap for probes
     private static final int MAX_CONCURRENCY = 5;
