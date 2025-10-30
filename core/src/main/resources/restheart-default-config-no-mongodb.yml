@@ -365,6 +365,11 @@ ping:
   msg: Greetings from RESTHeart!
   enable-extended-response: true
 
+# Lightweight MongoDB connectivity probe service for readiness checks.
+# Disabled by default when running standalone without MongoDB.
+database-probe:
+  enabled: false
+
 # Returns the roles of the authenticated user
 roles:
   uri: /roles

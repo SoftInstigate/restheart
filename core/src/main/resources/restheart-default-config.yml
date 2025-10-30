@@ -339,6 +339,8 @@ authTokenService:
   uri: /tokens
 
 # Simple ping service
+# Endpoint:
+# - GET /ping
 # Must respond with HTTP 200 OK
 # If enable-extended-response is true, returns the following JSON response
 # {
@@ -351,6 +353,26 @@ ping:
   enabled: true
   msg: Greetings from RESTHeart!
   enable-extended-response: true
+
+# Lightweight MongoDB connectivity probe service for readiness checks.
+# Endpoint:
+# - GET /health/db
+# Must respond with HTTP 200 OK if MongoDB is reachable within the configured timeout.
+# Purpose:
+# Performs a minimal, non-destructive ping against MongoDB (runs `db.runCommand({ ping: 1 })`) to verify connectivity
+# and report a small JSON status payload. Intended to be cheap and suitable for health/readiness checks.
+# Response example:
+# {
+#     "db": "admin",
+#     "pingMs": 2,
+#     "status": "ok"
+# }
+database-probe:
+  enabled: true
+  # how long to wait for the ping before timing out (ms)
+  timeout-ms: 2000
+  # database name to run the ping against
+  dbname: admin
 
 # Returns the roles of the authenticated user
 roles:
