@@ -85,7 +85,7 @@ public class DbProbeService implements JsonService {
             new ThreadPoolExecutor.AbortPolicy());
 
     // configurable timeout (ms)
-    /* package */ long timeoutMs = 2000L;
+    private long timeoutMs = 2000L;
     // configurable database name to ping
     private String dbName = "admin";
 
