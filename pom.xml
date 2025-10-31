@@ -35,8 +35,8 @@
         -->
         <mongodb.version>8.0</mongodb.version>
         <jdk.version>25</jdk.version>
-        <graalvm.version>25.0.0</graalvm.version>
-        <truffle.version>25.0.0</truffle.version> <!-- Truffle and Graal languages are compatible
+        <graalvm.version>25.0.1</graalvm.version>
+        <truffle.version>25.0.1</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
@@ -234,7 +234,7 @@
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
-                <version>3.2.2</version>
+                <version>3.2.3</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
