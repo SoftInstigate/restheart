@@ -176,20 +176,22 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     public Account verify(final Request<?> req, final String id, final Credential credential) {
         var usersDb = getUsersDb(req);
+
         LOGGER.debug("MongoRealmAuthenticator.verify: username={} usersDb={} override-users-db={}", id, usersDb, req.attachedParam("override-users-db"));
-        var account = verify(usersDb, id, credential);
-        
+
+        var account = verify(usersDb, req.attachedParams(), id, credential);
+
         // Copy configured attached parameters to account properties
         if (account instanceof MongoRealmAccount mongoAccount && this.attachedProps != null && !this.attachedProps.isEmpty()) {
             copyAttachedParamsToAccount(req, mongoAccount);
         }
-        
+
         return account;
     }
 
-    private Account verify(final String usersDb, final String id, final Credential credential) {
+    private Account verify(final String usersDb, Map<String, Object> attachedParams, final String id, final Credential credential) {
         var verificationStartTime = System.currentTimeMillis();
-        
+
         if (credential == null) {
             LOGGER.debug("Cannot verify null credential for user '{}'", id);
             return null;
@@ -198,7 +200,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         var accountLookupStartTime = System.currentTimeMillis();
         final var ref = getAccount(usersDb, id);
         var accountLookupDuration = System.currentTimeMillis() - accountLookupStartTime;
-        
+
         if (ref == null) {
             var totalDuration = System.currentTimeMillis() - verificationStartTime;
             LOGGER.debug("User '{}' not found in {}.{} ({}ms)", id, usersDb, this.usersCollection, totalDuration);
@@ -213,16 +215,19 @@ public class MongoRealmAuthenticator implements Authenticator {
         } else if (credential instanceof final DigestCredential digestCredential) {
             verified = verifyDigestCredential(ref, digestCredential);
         } else {
-            LOGGER.warn("MongoRealmAuthenticator does not support credential of type {} for user '{}'", 
-                credential.getClass().getSimpleName(), id);
+            LOGGER.warn("MongoRealmAuthenticator does not support credential of type {} for user '{}'", credential.getClass().getSimpleName(), id);
         }
-        
+
         var credentialVerificationDuration = System.currentTimeMillis() - credentialVerificationStartTime;
         var totalDuration = System.currentTimeMillis() - verificationStartTime;
 
         if (verified) {
-            LOGGER.debug("│  │  └─ User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms",
-                id, accountLookupDuration, credentialVerificationDuration, totalDuration);
+            LOGGER.debug("│  │  └─ User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms", id, accountLookupDuration, credentialVerificationDuration, totalDuration);
+
+       			// Copy configured attached parameters to account properties
+       			if ( this.attachedProps != null && !this.attachedProps.isEmpty()) {
+        				copyAttachedParamsToAccount(attachedParams, ref);
+       			}
 
             updateAuthTokenCache(ref);
             return ref;
@@ -234,7 +239,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     @Override
     public Account verify(final String id, final Credential credential) {
-        return verify(this.usersDb, id, credential);
+        return verify(this.usersDb, null, id, credential);
     }
 
     @Override
@@ -246,7 +251,7 @@ public class MongoRealmAuthenticator implements Authenticator {
      * Copies configured request parameters to account properties.
      * Only parameters listed in the attached-props configuration are copied.
      * Missing parameters are silently skipped without errors.
-     * 
+     *
      * @param req the request containing attached parameters
      * @param account the MongoRealmAccount to update with parameters
      */
@@ -255,32 +260,41 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.debug("Cannot copy attached params: account properties is null");
             return;
         }
-        
-        for (String paramName : this.attachedProps) {
-            Object paramValue = req.attachedParam(paramName);
-            
-            if (paramValue != null) {
-                // Convert the parameter value to a BsonValue and add to account properties
-                try {
-                    if (paramValue instanceof String) {
-                        account.properties().put(paramName, new BsonString((String) paramValue));
-                    } else if (paramValue instanceof BsonDocument) {
-                        account.properties().put(paramName, (BsonDocument) paramValue);
-                    } else if (paramValue instanceof org.bson.BsonValue) {
-                        account.properties().put(paramName, (org.bson.BsonValue) paramValue);
-                    } else {
-                        // For other types, convert to string
-                        account.properties().put(paramName, new BsonString(paramValue.toString()));
-                    }
-                    LOGGER.debug("Copied attached param '{}' to account properties for user '{}'", paramName, account.getPrincipal().getName());
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to copy attached param '{}' to account properties: {}", paramName, e.getMessage());
-                }
-            } else {
-                LOGGER.trace("Attached param '{}' not found in request, skipping", paramName);
-            }
-        }
+
+        copyAttachedParamsToAccount(req.attachedParams(), account);
     }
+
+	private void copyAttachedParamsToAccount(Map<String, Object> props, final MongoRealmAccount account) {
+		if (account.properties() == null) {
+			LOGGER.debug("Cannot copy attached params: account properties is null");
+			return;
+		}
+
+		for (String paramName : this.attachedProps) {
+			Object paramValue = props.get(paramName);
+
+			if (paramValue != null) {
+				// Convert the parameter value to a BsonValue and add to account properties
+				try {
+					if (paramValue instanceof String) {
+						account.properties().put(paramName, new BsonString((String) paramValue));
+					} else if (paramValue instanceof BsonDocument) {
+						account.properties().put(paramName, (BsonDocument) paramValue);
+					} else if (paramValue instanceof org.bson.BsonValue) {
+						account.properties().put(paramName, (org.bson.BsonValue) paramValue);
+					} else {
+						// For other types, convert to string
+						account.properties().put(paramName, new BsonString(paramValue.toString()));
+					}
+					LOGGER.debug("Copied attached param '{}' to account properties for user '{}'", paramName, account.getPrincipal().getName());
+				} catch (Exception e) {
+					LOGGER.warn("Failed to copy attached param '{}' to account properties: {}", paramName, e.getMessage());
+				}
+			} else {
+				LOGGER.trace("Attached param '{}' not found in request, skipping", paramName);
+			}
+		}
+	}
 
     /**
      * @return the bcryptComplexity
@@ -325,11 +339,11 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     private boolean verifyPasswordCredential(final String usersDb, final PwdCredentialAccount ref, final PasswordCredential credential) {
         if (ref == null
-                || ref.getPrincipal() == null
-                || ref.getPrincipal().getName() == null
-                || ref.getCredentials() == null
-                || ref.getCredentials().getPassword() == null
-                || credential == null || credential.getPassword() == null) {
+            || ref.getPrincipal() == null
+            || ref.getPrincipal().getName() == null
+            || ref.getCredentials() == null
+            || ref.getCredentials().getPassword() == null
+            || credential == null || credential.getPassword() == null) {
             return false;
         }
 
@@ -344,17 +358,16 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     private boolean verifyDigestCredential(final PwdCredentialAccount ref, final DigestCredential credential) {
         if (this.bcryptHashedPassword) {
-            LOGGER.error(
-                    "Digest authentication cannot support bcryped stored password, consider using basic authetication over TLS");
+            LOGGER.error("Digest authentication cannot support bcryped stored password, consider using basic authetication over TLS");
             return false;
         }
 
         if (ref == null
-                || ref.getCredentials() == null
-                || ref.getCredentials().getPassword() == null
-                || ref.getPrincipal() == null
-                || ref.getPrincipal().getName() == null
-                || credential == null) {
+            || ref.getCredentials() == null
+            || ref.getCredentials().getPassword() == null
+            || ref.getPrincipal() == null
+            || ref.getPrincipal().getName() == null
+            || credential == null) {
             return false;
         }
 
