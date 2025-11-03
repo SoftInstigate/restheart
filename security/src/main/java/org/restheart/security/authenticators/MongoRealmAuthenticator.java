@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.bson.BsonDocument;
@@ -81,6 +82,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private int minimumPasswordStrength = 3;
     private BsonDocument createUserDocument = null;
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
+    private List<String> attachedProps = null;
     private record CacheKey(String id, String db) {};
     private LoadingCache<CacheKey, MongoRealmAccount> USERS_CACHE = null;
     private static final transient Cache<CacheKey, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000);
@@ -140,6 +142,8 @@ public class MongoRealmAuthenticator implements Authenticator {
 
         this.jsonPathRoles = arg(config, "json-path-roles");
 
+        this.attachedProps = arg(config, "attached-props");
+
         final boolean cacheEnabled = arg(config, "cache-enabled");
         if (cacheEnabled) {
             final int cacheSize = arg(config, "cache-size");
@@ -173,7 +177,14 @@ public class MongoRealmAuthenticator implements Authenticator {
     public Account verify(final Request<?> req, final String id, final Credential credential) {
         var usersDb = getUsersDb(req);
         LOGGER.debug("MongoRealmAuthenticator.verify: username={} usersDb={} override-users-db={}", id, usersDb, req.attachedParam("override-users-db"));
-        return verify(usersDb, id, credential);
+        var account = verify(usersDb, id, credential);
+        
+        // Copy configured attached parameters to account properties
+        if (account instanceof MongoRealmAccount mongoAccount && this.attachedProps != null && !this.attachedProps.isEmpty()) {
+            copyAttachedParamsToAccount(req, mongoAccount);
+        }
+        
+        return account;
     }
 
     private Account verify(final String usersDb, final String id, final Credential credential) {
@@ -229,6 +240,46 @@ public class MongoRealmAuthenticator implements Authenticator {
     @Override
     public Account verify(final Credential credential) {
         return null;
+    }
+
+    /**
+     * Copies configured request parameters to account properties.
+     * Only parameters listed in the attached-props configuration are copied.
+     * Missing parameters are silently skipped without errors.
+     * 
+     * @param req the request containing attached parameters
+     * @param account the MongoRealmAccount to update with parameters
+     */
+    private void copyAttachedParamsToAccount(final Request<?> req, final MongoRealmAccount account) {
+        if (account.properties() == null) {
+            LOGGER.debug("Cannot copy attached params: account properties is null");
+            return;
+        }
+        
+        for (String paramName : this.attachedProps) {
+            Object paramValue = req.attachedParam(paramName);
+            
+            if (paramValue != null) {
+                // Convert the parameter value to a BsonValue and add to account properties
+                try {
+                    if (paramValue instanceof String) {
+                        account.properties().put(paramName, new BsonString((String) paramValue));
+                    } else if (paramValue instanceof BsonDocument) {
+                        account.properties().put(paramName, (BsonDocument) paramValue);
+                    } else if (paramValue instanceof org.bson.BsonValue) {
+                        account.properties().put(paramName, (org.bson.BsonValue) paramValue);
+                    } else {
+                        // For other types, convert to string
+                        account.properties().put(paramName, new BsonString(paramValue.toString()));
+                    }
+                    LOGGER.debug("Copied attached param '{}' to account properties for user '{}'", paramName, account.getPrincipal().getName());
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to copy attached param '{}' to account properties: {}", paramName, e.getMessage());
+                }
+            } else {
+                LOGGER.trace("Attached param '{}' not found in request, skipping", paramName);
+            }
+        }
     }
 
     /**
