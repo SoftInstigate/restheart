@@ -104,6 +104,12 @@ mongoRealmAuthenticator:
   cache-size: 1_000
   cache-ttl: 60_000 # in milliseconds
   cache-expire-policy: AFTER_WRITE
+  # List of request parameter names to copy into account properties after successful authentication.
+  # Useful for copying metadata attached by interceptors (e.g., tenantId, organizationId).
+  # When omitted or empty, no parameters are copied (default behavior).
+  # attached-props:
+  #   - tenantId
+  #   - organizationId
 
 # Cookie Authentication
 # see: https://restheart.org/docs/security/authentication#cookie-authentication

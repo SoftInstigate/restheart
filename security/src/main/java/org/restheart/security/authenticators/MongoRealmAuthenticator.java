@@ -142,7 +142,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
         this.jsonPathRoles = arg(config, "json-path-roles");
 
-        this.attachedProps = arg(config, "attached-props");
+        this.attachedProps = argOrDefault(config, "attached-props", null);
 
         final boolean cacheEnabled = arg(config, "cache-enabled");
         if (cacheEnabled) {
