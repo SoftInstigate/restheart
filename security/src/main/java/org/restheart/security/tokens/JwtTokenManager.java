@@ -504,13 +504,38 @@ class ComparableAccount {
                 || that.wrapped.getPrincipal() == null
                 || that.wrapped.getPrincipal().getName() == null) {
             return false;
-        } else {
-            return Objects.equals(wrapped.getPrincipal().getName(), that.wrapped.getPrincipal().getName());
         }
+        
+        // Compare username
+        if (!Objects.equals(wrapped.getPrincipal().getName(), that.wrapped.getPrincipal().getName())) {
+            return false;
+        }
+        
+        // Compare authDb if present in account properties
+        String thisAuthDb = getAuthDb(this.wrapped);
+        String thatAuthDb = getAuthDb(that.wrapped);
+        return Objects.equals(thisAuthDb, thatAuthDb);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName());
+        String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
+        String authDb = getAuthDb(wrapped);
+        return Objects.hash(username, authDb);
+    }
+    
+    private String getAuthDb(Account account) {
+        if (account instanceof WithProperties<?> wp) {
+            var props = wp.propertiesAsMap();
+            if (props != null && props.containsKey("authDb")) {
+                Object authDbObj = props.get("authDb");
+                if (authDbObj instanceof String) {
+                    return (String) authDbObj;
+                } else if (authDbObj instanceof org.bson.BsonString) {
+                    return ((org.bson.BsonString) authDbObj).getValue();
+                }
+            }
+        }
+        return null;
     }
 }

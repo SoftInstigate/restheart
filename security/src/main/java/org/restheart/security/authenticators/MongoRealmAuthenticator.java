@@ -171,7 +171,9 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     public Account verify(final Request<?> req, final String id, final Credential credential) {
-        return verify(getUsersDb(req), id, credential);
+        var usersDb = getUsersDb(req);
+        LOGGER.debug("MongoRealmAuthenticator.verify: username={} usersDb={} override-users-db={}", id, usersDb, req.attachedParam("override-users-db"));
+        return verify(usersDb, id, credential);
     }
 
     private Account verify(final String usersDb, final String id, final Credential credential) {
@@ -501,7 +503,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
 
         if (!account.isJsonObject()) {
-            LOGGER.warn("Retrived document for account {} is not an object", key.id());
+            LOGGER.warn("Retrieved document for account {} is not an object", key.id());
             return null;
         }
 
@@ -526,7 +528,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         try {
             _roles = JsonPath.read(account, this.jsonPathRoles);
         } catch (final PathNotFoundException pnfe) {
-            LOGGER.warn("Account with id: {} does not have roles");
+            LOGGER.warn("Account with id: {} does not have roles", key.id());
             _roles = new JsonArray();
         }
 
