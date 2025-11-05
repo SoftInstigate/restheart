@@ -185,7 +185,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 var queryNames = queryNames(doc);
                 // add metric label
                 Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames));
-                LOGGER.debug("│   Executing GraphQL query: {}", queryNames);
+                LOGGER.debug("Executing GraphQL query: {}", queryNames);
             } catch(InvalidSyntaxException ise) {
                 // invalid syntax -> 400
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md

@@ -73,16 +73,16 @@ public class AuthorizersHandler extends PipelinedHandler {
         var isAuthenticated = request.isAuthenticated();
         var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
         
-        LOGGER.debug("┌── AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
+        LOGGER.debug("AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
 
         var isAllowedResult = isAllowed(request);
         var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
         
         if (isAllowedResult) {
-            LOGGER.debug("└── ✓ ACCESS GRANTED ({}ms)", authorizationDuration);
+            LOGGER.debug("✓ ACCESS GRANTED ({}ms)", authorizationDuration);
             next(exchange);
         } else {
-            LOGGER.debug("└── ✗ ACCESS DENIED → 403 Forbidden ({}ms)", authorizationDuration);
+            LOGGER.debug("✗ ACCESS DENIED → 403 Forbidden ({}ms)", authorizationDuration);
                 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
@@ -122,7 +122,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             .collect(Collectors.toList());
             
         if (!vetoers.isEmpty()) {
-            LOGGER.debug("│   Checking {} VETOER authorizers", vetoers.size());
+            LOGGER.debug("Checking {} VETOER authorizers", vetoers.size());
         }
             
         var vetoerStartTime = System.currentTimeMillis();
@@ -137,7 +137,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 var allowed = vetoer.isAllowed(request);
                 var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
                 
-                LOGGER.debug("│   ├─ VETOER {}: {} ({}ms)", vetoerName, allowed ? "✓" : "✗", vetoerCheckDuration);
+                LOGGER.debug("VETOER {}: {} ({}ms)", vetoerName, allowed ? "✓" : "✗", vetoerCheckDuration);
                 
                 if (!allowed) {
                     vetoerResult = false;
@@ -169,7 +169,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             .collect(Collectors.toList());
             
         if (!allowers.isEmpty()) {
-            LOGGER.debug("│   Checking {} ALLOWER authorizers", allowers.size());
+            LOGGER.debug("Checking {} ALLOWER authorizers", allowers.size());
         }
             
         var allowerStartTime = System.currentTimeMillis();
@@ -184,7 +184,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 var allowed = allower.isAllowed(request);
                 var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
                 
-                LOGGER.debug("│   ├─ ALLOWER {}: {} ({}ms)", allowerName, allowed ? "✓" : "✗", allowerCheckDuration);
+                LOGGER.debug("ALLOWER {}: {} ({}ms)", allowerName, allowed ? "✓" : "✗", allowerCheckDuration);
                 
                 if (allowed) {
                     allowerResult = true;

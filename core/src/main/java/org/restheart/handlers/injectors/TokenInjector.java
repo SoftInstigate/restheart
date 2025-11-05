@@ -75,7 +75,7 @@ public class TokenInjector extends PipelinedHandler {
             var tokenManagerName = PluginUtils.name(tokenManager);
             var tokenManagerClass = tokenManager.getClass().getSimpleName();
 
-            LOGGER.debug("┌── TOKEN INJECTION: {} ({}) for user '{}'",
+            LOGGER.debug("TOKEN INJECTION: {} ({}) for user '{}'",
                 tokenManagerName, tokenManagerClass, userPrincipal);
 
             try {
@@ -83,20 +83,20 @@ public class TokenInjector extends PipelinedHandler {
                 var token = tokenManager.get(authenticatedAccount);
                 var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
 
-                LOGGER.debug("│   ├─ Token generation: {}ms", tokenGenDuration);
+                LOGGER.debug("Token generation: {}ms", tokenGenDuration);
 
                 var headerInjectionStartTime = System.currentTimeMillis();
                 tokenManager.injectTokenHeaders(exchange, token);
                 var headerInjectionDuration = System.currentTimeMillis() - headerInjectionStartTime;
 
-                LOGGER.debug("│   ├─ Header injection: {}ms", headerInjectionDuration);
+                LOGGER.debug("Header injection: {}ms", headerInjectionDuration);
 
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
-                LOGGER.debug("└── TOKEN INJECTION COMPLETED in {}ms", totalTokenDuration);
+                LOGGER.debug("TOKEN INJECTION COMPLETED in {}ms", totalTokenDuration);
 
             } catch (Exception ex) {
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
-                LOGGER.error("└── ✗ TOKEN INJECTION FAILED after {}ms", totalTokenDuration, ex);
+                LOGGER.error("✗ TOKEN INJECTION FAILED after {}ms", totalTokenDuration, ex);
                 throw ex;
             }
         }

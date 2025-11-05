@@ -60,7 +60,7 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
         if (logInitialization) {
-            LOGGER.debug("│   ├─ AuthenticatorMechanismsHandler: {} mechanisms ({})",
+            LOGGER.debug("AuthenticatorMechanismsHandler: {} mechanisms ({})",
                 authenticatorMechanisms.size(),
                 authenticatorMechanisms.stream()
                     .map(m -> PluginUtils.name(m.getInstance()))
@@ -78,11 +78,11 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
 
         if (sc != null && sc instanceof AuthenticationMechanismContext amc) {
             if (wrappedAuthenticatorMechanisms.isEmpty()) {
-                LOGGER.debug("┌── AUTHENTICATION");
-                LOGGER.debug("│   No mechanisms configured");
-                LOGGER.debug("└── AUTHENTICATION COMPLETED");
+                LOGGER.debug("AUTHENTICATION");
+                LOGGER.debug("No mechanisms configured");
+                LOGGER.debug("AUTHENTICATION COMPLETED");
             } else {
-                LOGGER.debug("┌── AUTHENTICATION");
+                LOGGER.debug("AUTHENTICATION");
 
                 wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
                     amc.addAuthenticationMechanism(wrappedMechanism);

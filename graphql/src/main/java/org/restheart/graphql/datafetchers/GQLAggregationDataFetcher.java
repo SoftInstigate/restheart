@@ -78,7 +78,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             }
         }
 
-        LOGGER.debug("│   Executing aggregation for field {}: {}.{}.aggregate {}, context vars {}", env.getField().getName(), _db, _collection,
+        LOGGER.debug("Executing aggregation for field {}: {}.{}.aggregate {}, context vars {}", env.getField().getName(), _db, _collection,
             "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
             BsonUtils.toJson(env.getLocalContext()));
 

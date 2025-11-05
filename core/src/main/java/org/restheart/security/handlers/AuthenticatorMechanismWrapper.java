@@ -74,7 +74,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
         var requestMethod = exchange.getRequestMethod().toString();
         var authenticateStartTime = System.currentTimeMillis();
         
-        LOGGER.debug("├─ AUTH: {} ({})", mechanismName, mechanismClass);
+        LOGGER.debug("AUTH: {} ({})", mechanismName, mechanismClass);
             
         try {
             var outcome = wrapped.authenticate(exchange, securityContext);
@@ -83,14 +83,14 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
 
             switch (outcome) {
                 case NOT_AUTHENTICATED:
-                    LOGGER.debug("│  └─ ⚬ NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    LOGGER.debug("⚬ NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                 case AUTHENTICATED:
-                    LOGGER.debug("│  └─ ✓ AUTHENTICATED as '{}' ({}ms)", 
+                    LOGGER.debug("✓ AUTHENTICATED as '{}' ({}ms)", 
                         account.getPrincipal().getName(), authenticateDuration);
                     return outcome;
                 case NOT_ATTEMPTED:
-                    LOGGER.debug("│  └─ ⚬ NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    LOGGER.debug("⚬ NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return outcome;
                 default:
                     return outcome;

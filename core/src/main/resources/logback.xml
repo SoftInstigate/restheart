@@ -2,11 +2,12 @@
 
 <configuration>
     <conversionRule conversionWord="trace" class="org.restheart.utils.OptionalTraceConverter" />
+    <conversionRule conversionWord="prefix" class="org.restheart.logging.LogPrefixConverter" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <withJansi>false</withJansi>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} - %msg%n%throwable{short}</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}</pattern>
         </encoder>
     </appender>
 

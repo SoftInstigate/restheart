@@ -92,9 +92,9 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         var requestMethod = exchange.getRequestMethod().toString();
         
         if (this.wildCardInterceptors.isEmpty()) {
-            LOGGER.debug("┌── BEFORE_EXCHANGE_INIT INTERCEPTORS");
-            LOGGER.debug("│   No interceptors registered");
-            LOGGER.debug("└── BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
+            LOGGER.debug("BEFORE_EXCHANGE_INIT INTERCEPTORS");
+            LOGGER.debug("No interceptors registered");
+            LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
             next(exchange);
             return;
         }
@@ -115,8 +115,8 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             }
         }
 
-        LOGGER.debug("┌── BEFORE_EXCHANGE_INIT INTERCEPTORS");
-        LOGGER.debug("│   Found {} wildcard interceptors", interceptors.size());
+        LOGGER.debug("BEFORE_EXCHANGE_INIT INTERCEPTORS");
+        LOGGER.debug("Found {} wildcard interceptors", interceptors.size());
 
         var executionStartTime = System.currentTimeMillis();
         
@@ -132,8 +132,8 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             }}).collect(Collectors.toList());
 
         if (applicableInterceptors.isEmpty()) {
-            LOGGER.debug("│   No applicable interceptors");
-            LOGGER.debug("└── BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
+            LOGGER.debug("No applicable interceptors");
+            LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
             next(exchange);
             return;
         }
@@ -143,16 +143,16 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             var interceptorName = PluginUtils.name(ri);
             var isRequired = PluginUtils.requiredinterceptor(ri) ? " (required)" : "";
             
-            LOGGER.debug("│   ├─ {} (priority: {}){}", interceptorName, PluginUtils.priority(ri), isRequired);
+            LOGGER.debug("{} (priority: {}){}", interceptorName, PluginUtils.priority(ri), isRequired);
             
             try {
                 ri.handle(request, response);
                 
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                LOGGER.debug("│   │  └─ ✓ {}ms", interceptorDuration);
+                LOGGER.debug("✓ {}ms", interceptorDuration);
             } catch (Exception ex) {
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
 
                 Exchange.setInError(exchange);
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
@@ -160,7 +160,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         });
             
         var totalDuration = System.currentTimeMillis() - executionStartTime;
-        LOGGER.debug("└── BEFORE_EXCHANGE_INIT COMPLETED in {}ms", totalDuration);
+        LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in {}ms", totalDuration);
 
         next(exchange);
     }

@@ -28,6 +28,7 @@ import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,12 +53,12 @@ public class TxnsActivator implements Initializer {
     @Override
     public void init() {
         if (!connected(mclient)) {
-            LOGGER.error("Cannot enable Transactions: MongoDB not connected.");
+            BootstrapLogger.errorSubItem(LOGGER, "Cannot enable Transactions: MongoDB not connected.");
         } else {
             if (replicaSet(mclient)) {
                 enableTxns();
             } else {
-                LOGGER.warn("Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
+                BootstrapLogger.warnSubItem(LOGGER, "Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
             }
         }
     }

@@ -186,13 +186,13 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                             if (account != null) {
                                 var accountPrincipal = account.getPrincipal().getName();
                                 var accountRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
-                                LOGGER.debug("│  │  ├─ Authenticator {} verified user '{}' ({}ms) - Roles: {}",
+                                LOGGER.debug("Authenticator {} verified user '{}' ({}ms) - Roles: {}",
                                     authenticatorName, userName, authenticatorDuration, accountRoles);
 
                                 securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;
                             } else {
-                                LOGGER.debug("│  │  ├─ Authenticator {} failed to verify user '{}' ({}ms)",
+                                LOGGER.debug("Authenticator {} failed to verify user '{}' ({}ms)",
                                     authenticatorName, userName, authenticatorDuration);
 
                                 securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), getMechanismName());

@@ -148,7 +148,7 @@ public class AggregationPipelineSecurityChecker {
 	  return Optional.empty();
 	}
 
-	LOGGER.debug("│   Validating aggregation pipeline with {} stages for database '{}'",
+	LOGGER.debug("Validating aggregation pipeline with {} stages for database '{}'",
 		pipeline.size(), requestDatabase);
 
 	for (int i = 0; i < pipeline.size(); i++) {

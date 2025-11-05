@@ -260,14 +260,14 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
         var serviceClass = service.getClass().getSimpleName();
         var startTime = System.currentTimeMillis();
         
-        LOGGER.debug("┌── SERVICE: {} ({})", serviceName, serviceClass);
+        LOGGER.debug("SERVICE: {} ({})", serviceName, serviceClass);
             
         try {
             // Apply service transformers and execute
             var serviceRequest = service.request().apply(exchange);
             var serviceResponse = service.response().apply(exchange);
             
-            LOGGER.debug("│   Request/Response: {} → {}", 
+            LOGGER.debug("Request/Response: {} → {}", 
                 serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
             
             service.handle(serviceRequest, serviceResponse);
@@ -275,7 +275,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
             var duration = System.currentTimeMillis() - startTime;
             var statusCode = serviceResponse.getStatusCode();
             
-            LOGGER.debug("└── ✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
+            LOGGER.debug("✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
                 
         } catch (Exception ex) {
             var duration = System.currentTimeMillis() - startTime;

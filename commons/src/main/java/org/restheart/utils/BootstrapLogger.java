@@ -20,12 +20,14 @@
  */
 package org.restheart.utils;
 
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.slf4j.Logger;
 
 /**
- * Utility class for consistent bootstrap/startup logging with tree-style prefixes.
- * This class provides methods to log bootstrap messages with visual hierarchy
- * using box-drawing characters.
+ * Utility class for consistent bootstrap/startup logging.
+ * This class provides methods to log bootstrap messages with proper phase context
+ * so that the LogPrefixConverter can add appropriate visual hierarchy.
  * 
  * Usage example:
  * <pre>
@@ -40,21 +42,6 @@ import org.slf4j.Logger;
  */
 public class BootstrapLogger {
     
-    // Phase markers
-    private static final String PHASE_START = "┌── ";
-    private static final String PHASE_END = "└── ";
-    
-    // Item markers within a phase
-    private static final String ITEM = "│   ├─ ";
-    private static final String ITEM_LAST = "│   └─ ";
-    
-    // Sub-item markers (for nested logs)
-    private static final String SUBITEM = "│   │  └─ ";
-    private static final String SUBITEM_LAST = "│      └─ ";
-    
-    // Continuation (for logs within a phase)
-    private static final String INFO = "│   ";
-    
     private BootstrapLogger() {
         // Utility class, no instantiation
     }
@@ -67,7 +54,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void startPhase(Logger logger, String message, Object... args) {
-        logger.info(PHASE_START + message, args);
+        RequestPhaseContext.setPhase(Phase.PHASE_START);
+        logger.info(message, args);
     }
     
     /**
@@ -78,7 +66,9 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void endPhase(Logger logger, String message, Object... args) {
-        logger.info(PHASE_END + message, args);
+        RequestPhaseContext.setPhase(Phase.PHASE_END);
+        logger.info(message, args);
+        RequestPhaseContext.reset();
     }
     
     /**
@@ -89,7 +79,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void item(Logger logger, String message, Object... args) {
-        logger.info(ITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.ITEM);
+        logger.info(message, args);
     }
     
     /**
@@ -100,7 +91,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void lastItem(Logger logger, String message, Object... args) {
-        logger.info(ITEM_LAST + message, args);
+        RequestPhaseContext.setPhase(Phase.ITEM_LAST);
+        logger.info(message, args);
     }
     
     /**
@@ -111,7 +103,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void subItem(Logger logger, String message, Object... args) {
-        logger.info(SUBITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.SUBITEM);
+        logger.info(message, args);
     }
     
     /**
@@ -122,7 +115,9 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void lastSubItem(Logger logger, String message, Object... args) {
-        logger.info(SUBITEM_LAST + message, args);
+        RequestPhaseContext.setPhase(Phase.SUBITEM);
+        RequestPhaseContext.setLast(true);
+        logger.info(message, args);
     }
     
     /**
@@ -133,7 +128,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void info(Logger logger, String message, Object... args) {
-        logger.info(INFO + message, args);
+        RequestPhaseContext.setPhase(Phase.INFO);
+        logger.info(message, args);
     }
     
     /**
@@ -144,7 +140,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void debugItem(Logger logger, String message, Object... args) {
-        logger.debug(ITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.ITEM);
+        logger.debug(message, args);
     }
     
     /**
@@ -155,7 +152,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void debugSubItem(Logger logger, String message, Object... args) {
-        logger.debug(SUBITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.SUBITEM);
+        logger.debug(message, args);
     }
     
     /**
@@ -166,7 +164,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void debugInfo(Logger logger, String message, Object... args) {
-        logger.debug(INFO + message, args);
+        RequestPhaseContext.setPhase(Phase.INFO);
+        logger.debug(message, args);
     }
     
     /**
@@ -177,7 +176,8 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void errorItem(Logger logger, String message, Object... args) {
-        logger.error(ITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.ITEM);
+        logger.error(message, args);
     }
     
     /**
@@ -188,6 +188,31 @@ public class BootstrapLogger {
      * @param args message arguments
      */
     public static void errorSubItem(Logger logger, String message, Object... args) {
-        logger.error(SUBITEM + message, args);
+        RequestPhaseContext.setPhase(Phase.SUBITEM);
+        logger.error(message, args);
+    }
+    
+    /**
+     * Log a warning with item prefix
+     * 
+     * @param logger the logger to use
+     * @param message the message
+     * @param args message arguments
+     */
+    public static void warnItem(Logger logger, String message, Object... args) {
+        RequestPhaseContext.setPhase(Phase.ITEM);
+        logger.warn(message, args);
+    }
+    
+    /**
+     * Log a warning with sub-item prefix
+     * 
+     * @param logger the logger to use
+     * @param message the message
+     * @param args message arguments
+     */
+    public static void warnSubItem(Logger logger, String message, Object... args) {
+        RequestPhaseContext.setPhase(Phase.SUBITEM);
+        logger.warn(message, args);
     }
 }

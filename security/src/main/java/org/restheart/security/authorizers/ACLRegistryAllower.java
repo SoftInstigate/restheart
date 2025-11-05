@@ -44,7 +44,7 @@ public class ACLRegistryAllower implements Authorizer {
             .anyMatch(predicate -> predicate.test(request));
 
         if (LOGGER.isDebugEnabled() && allowed) {
-            LOGGER.debug("│   Request allowed by ACLRegistryAllower due to an allow predicate");
+            LOGGER.debug("Request allowed by ACLRegistryAllower due to an allow predicate");
         }
 
         return allowed;

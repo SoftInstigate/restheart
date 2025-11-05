@@ -49,6 +49,8 @@ import org.restheart.cache.LoadingCache;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.Utils;
 import org.restheart.exchange.Request;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
@@ -61,7 +63,6 @@ import org.restheart.utils.Pair;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.utils.BootstrapLogger;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator.Builder;
@@ -242,19 +243,23 @@ public class JwtTokenManager implements TokenManager {
         var tokenStartTime = System.currentTimeMillis();
 
         if (!enabled) {
-            BootstrapLogger.debugItem(LOGGER, "JwtTokenManager is disabled - Cannot generate token");
+            RequestPhaseContext.setPhase(Phase.ITEM);
+            LOGGER.debug("JwtTokenManager is disabled - Cannot generate token");
+            RequestPhaseContext.reset();
             return null;
         }
 
         if (account == null || account.getPrincipal() == null || account.getPrincipal().getName() == null) {
-            BootstrapLogger.debugItem(LOGGER, "Invalid account provided to JwtTokenManager - Cannot generate token");
+            RequestPhaseContext.setPhase(Phase.ITEM);
+            LOGGER.debug("Invalid account provided to JwtTokenManager - Cannot generate token");
+            RequestPhaseContext.reset();
             return null;
         }
 
         var userName = account.getPrincipal().getName();
         var userRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
 
-        BootstrapLogger.debugItem(LOGGER, "Generating JWT token for user '{}' with roles: {}", userName, userRoles);
+        LOGGER.debug("Generating JWT token for user '{}' with roles: {}", userName, userRoles);
 
         try {
             var cacheStartTime = System.currentTimeMillis();
@@ -267,12 +272,12 @@ public class JwtTokenManager implements TokenManager {
               Sets.newTreeSet(account.getRoles()));
 
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            BootstrapLogger.debugItem(LOGGER, "JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms",  userName, cacheDuration, totalDuration);
+            LOGGER.debug("JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms",  userName, cacheDuration, totalDuration);
 
             return newTokenAccount.getCredentials();
         } catch (Exception ex) {
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            LOGGER.error("│   ├─ Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
+            LOGGER.error("Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
             throw ex;
         }
     }

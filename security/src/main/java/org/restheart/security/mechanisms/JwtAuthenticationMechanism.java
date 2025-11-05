@@ -218,7 +218,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
             }
 
         } catch (final JWTVerificationException ex) {
-            LOGGER.debug("│  ├─ Jwt not verified: {}", ex.getMessage());
+            LOGGER.debug("Jwt not verified: {}", ex.getMessage());
             return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
         }
 

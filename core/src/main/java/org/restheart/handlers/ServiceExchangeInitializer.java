@@ -33,6 +33,8 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.utils.BootstrapLogger;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -72,7 +74,8 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
             var serviceName = srv.get().getName();
             var serviceClass = srv.get().getInstance().getClass().getSimpleName();
             
-            LOGGER.debug("┌── SERVICE EXCHANGE INIT: {} ({})", serviceName, serviceClass);
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
+            LOGGER.debug("SERVICE EXCHANGE INIT: {} ({})", serviceName, serviceClass);
             try {
                 var requestInitStartTime = System.currentTimeMillis();
                 
@@ -90,7 +93,8 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 }
                 
                 var requestInitDuration = System.currentTimeMillis() - requestInitStartTime;
-                LOGGER.debug("│   │  └─ ✓ {}ms", requestInitDuration);
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
+                LOGGER.debug("✓ {}ms", requestInitDuration);
                 
                 var responseInitStartTime = System.currentTimeMillis();
 
@@ -108,14 +112,18 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 }
                 
                 var responseInitDuration = System.currentTimeMillis() - responseInitStartTime;
-                LOGGER.debug("│   │  └─ ✓ {}ms", responseInitDuration);
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
+                LOGGER.debug("✓ {}ms", responseInitDuration);
                 
                 var totalInitDuration = System.currentTimeMillis() - initStartTime;
-                LOGGER.debug("└── SERVICE EXCHANGE INIT COMPLETED in {}ms", totalInitDuration);
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
+                LOGGER.debug("SERVICE EXCHANGE INIT COMPLETED in {}ms", totalInitDuration);
             } catch (BadRequestException bre) {
                 var initDuration = System.currentTimeMillis() - initStartTime;
-                LOGGER.error("│   └─ ✗ BAD REQUEST after {}ms: {}", initDuration, bre.getMessage());
-                LOGGER.error("└── SERVICE EXCHANGE INIT FAILED");
+                RequestPhaseContext.setPhase(Phase.ITEM_LAST);
+                LOGGER.error("✗ BAD REQUEST after {}ms: {}", initDuration, bre.getMessage());
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
+                LOGGER.error("SERVICE EXCHANGE INIT FAILED");
 
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, bre.contentType());
@@ -126,11 +134,15 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 return;
             } catch (Throwable t) {
                 var initDuration = System.currentTimeMillis() - initStartTime;
-                LOGGER.error("│   └─ ✗ FAILED after {}ms: {}", initDuration, t.getMessage());
-                LOGGER.error("└── SERVICE EXCHANGE INIT FAILED");
+                RequestPhaseContext.setPhase(Phase.ITEM_LAST);
+                LOGGER.error("✗ FAILED after {}ms: {}", initDuration, t.getMessage());
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
+                LOGGER.error("SERVICE EXCHANGE INIT FAILED");
 
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 throw t;
+            } finally {
+                RequestPhaseContext.reset();
             }
         }
 

@@ -28,6 +28,7 @@ import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +50,12 @@ public class Activator implements Initializer {
     @Override
     public void init() {
         if (!connected(mclient)) {
-            LOGGER.error("Cannot enable Change Streams: MongoDB not connected.");
+            BootstrapLogger.errorSubItem(LOGGER, "Cannot enable Change Streams: MongoDB not connected.");
         } else {
             if (replicaSet(mclient)) {
                 enableChangeStreams();
             } else {
-                LOGGER.warn("Cannot enable Change Streams: MongoDB is a standalone instance and Change Streams require a Replica Set.");
+                BootstrapLogger.warnSubItem(LOGGER, "Cannot enable Change Streams: MongoDB is a standalone instance and Change Streams require a Replica Set.");
             }
         }
     }
@@ -66,7 +67,7 @@ public class Activator implements Initializer {
             // Add Change Stream handler
             dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET, new GetChangeStreamHandler());
         } catch (Throwable t) {
-            LOGGER.error("Error, change streams disabled {}", t.getMessage(), t);
+            BootstrapLogger.errorSubItem(LOGGER, "Error, change streams disabled {}", t.getMessage(), t);
         }
     }
 }

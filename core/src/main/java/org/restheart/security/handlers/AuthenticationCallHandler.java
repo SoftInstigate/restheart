@@ -99,7 +99,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             var remoteIp = ExchangeAttributes.remoteIp().readAttribute(exchange);
             LOGGER.warn(BLOCK_AUTH_ERR_MSG, remoteIp);
 
-            LOGGER.debug("└── AUTHENTICATION BLOCKED");
+            LOGGER.debug("AUTHENTICATION BLOCKED");
 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
@@ -114,16 +114,16 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             //   might authorize the request even if authentication failed
 
             if (sc.isAuthenticated()) {
-                LOGGER.debug("└── AUTHENTICATION COMPLETED - User: {}", sc.getAuthenticatedAccount().getPrincipal().getName());
+                LOGGER.debug("AUTHENTICATION COMPLETED - User: {}", sc.getAuthenticatedAccount().getPrincipal().getName());
             } else {
-                LOGGER.debug("└── AUTHENTICATION COMPLETED - Anonymous");
+                LOGGER.debug("AUTHENTICATION COMPLETED - Anonymous");
             }
 
             if (!exchange.isComplete()) {
                 next(exchange);
             }
         } else {
-            LOGGER.debug("└── AUTHENTICATION FAILED");
+            LOGGER.debug("AUTHENTICATION FAILED");
 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);

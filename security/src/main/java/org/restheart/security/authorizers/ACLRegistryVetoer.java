@@ -44,7 +44,7 @@ public class ACLRegistryVetoer implements Authorizer {
             .anyMatch(predicate -> predicate.test(request));
 
         if (LOGGER.isDebugEnabled() && vetoed) {
-            LOGGER.debug("│   Request vetoed by ACLRegistryVetoer due to a veto predicate");
+            LOGGER.debug("Request vetoed by ACLRegistryVetoer due to a veto predicate");
         }
 
         return !vetoed;
