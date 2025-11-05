@@ -111,6 +111,7 @@ import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
 import org.restheart.utils.PluginUtils;
+import org.restheart.utils.BootstrapLogger;
 import static org.restheart.utils.PluginUtils.defaultURI;
 import static org.restheart.utils.PluginUtils.initPoint;
 import static org.restheart.utils.PluginUtils.uriMatchPolicy;
@@ -374,12 +375,12 @@ public final class Bootstrapper {
             .toList();
             
         if (beforeStartupInitializers.isEmpty()) {
-            LOGGER.debug("┌── BEFORE_STARTUP INITIALIZERS");
-            LOGGER.debug("│   No initializers configured");
-            LOGGER.debug("└── BEFORE_STARTUP COMPLETED in 0ms");
+            BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
+            BootstrapLogger.debugInfo(LOGGER, "No initializers configured");
+            BootstrapLogger.endPhase(LOGGER, "BEFORE_STARTUP COMPLETED in 0ms");
         } else {
-            LOGGER.debug("┌── BEFORE_STARTUP INITIALIZERS");
-            LOGGER.debug("│   Found {} initializers", beforeStartupInitializers.size());
+            BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
+            BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", beforeStartupInitializers.size());
         }
         var beforeStartupStartTime = System.currentTimeMillis();
         
@@ -389,14 +390,14 @@ public final class Bootstrapper {
             var initializerClass = i.getInstance().getClass().getSimpleName();
             var initializerPriority = getPluginPriority(i.getInstance());
             
-            LOGGER.debug("│   ├─ {} ({}) - Priority: {}", 
+            BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", 
                 initializerName, initializerClass, initializerPriority);
                 
             try {
                 i.getInstance().init();
                 
                 var duration = System.currentTimeMillis() - initializerStartTime;
-                LOGGER.debug("│   │  └─ ✓ {}ms", duration);
+                BootstrapLogger.debugSubItem(LOGGER, "✓ {}ms", duration);
             } catch (NoClassDefFoundError iae) {
                 var duration = System.currentTimeMillis() - initializerStartTime;
                 // this occurs executing interceptors missing external dependencies
@@ -421,7 +422,7 @@ public final class Bootstrapper {
         
         if (!beforeStartupInitializers.isEmpty()) {
             var beforeStartupDuration = System.currentTimeMillis() - beforeStartupStartTime;
-            LOGGER.debug("└── BEFORE_STARTUP COMPLETED in {}ms", beforeStartupDuration);
+            BootstrapLogger.endPhase(LOGGER, "BEFORE_STARTUP COMPLETED in {}ms", beforeStartupDuration);
         }
         try {
             startCoreSystem();
@@ -446,12 +447,12 @@ public final class Bootstrapper {
             .toList();
             
         if (afterStartupInitializers.isEmpty()) {
-            LOGGER.debug("┌── AFTER_STARTUP INITIALIZERS");
-            LOGGER.debug("│   No initializers found");
-            LOGGER.debug("└── AFTER_STARTUP COMPLETED in 0ms");
+            BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
+            BootstrapLogger.debugInfo(LOGGER, "No initializers found");
+            BootstrapLogger.endPhase(LOGGER, "AFTER_STARTUP COMPLETED in 0ms");
         } else {
-            LOGGER.debug("┌── AFTER_STARTUP INITIALIZERS");
-            LOGGER.debug("│   Found {} initializers", afterStartupInitializers.size());
+            BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
+            BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", afterStartupInitializers.size());
             
             var afterStartupStartTime = System.currentTimeMillis();
             
@@ -461,17 +462,17 @@ public final class Bootstrapper {
                 var initializerClass = i.getInstance().getClass().getSimpleName();
                 var initializerPriority = getPluginPriority(i.getInstance());
                 
-                LOGGER.debug("│   ├─ {} ({}) - Priority: {}", initializerName, initializerClass, initializerPriority);
+                BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", initializerName, initializerClass, initializerPriority);
                     
                 try {
                     i.getInstance().init();
                     
                     var duration = System.currentTimeMillis() - initializerStartTime;
-                    LOGGER.debug("│   │  └─ ✓ {}ms", duration);
+                    BootstrapLogger.debugSubItem(LOGGER, "✓ {}ms", duration);
                 } catch (NoClassDefFoundError iae) {
                     var duration = System.currentTimeMillis() - initializerStartTime;
                     // this occurs executing interceptors missing external dependencies
-                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: Missing external dependency. Copy the missing dependency jar to the plugins directory", duration, iae);
+                    BootstrapLogger.errorSubItem(LOGGER, "✗ FAILED after {}ms: Missing external dependency. Copy the missing dependency jar to the plugins directory", duration, iae);
                 } catch (LinkageError le) {
                     var duration = System.currentTimeMillis() - initializerStartTime;
                     // this might occur executing plugin code compiled
@@ -480,15 +481,15 @@ public final class Bootstrapper {
                             ? "of correct version"
                             : "v" + Version.getInstance().getVersion();
 
-                    LOGGER.error("│   │  └─ ✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}", duration, version, le);
+                    BootstrapLogger.errorSubItem(LOGGER, "✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}", duration, version, le);
                 } catch (Throwable t) {
                     var duration = System.currentTimeMillis() - initializerStartTime;
-                    LOGGER.error("│   │  └─ ✗ FAILED after {}ms: {}", duration, t.getMessage());
+                    BootstrapLogger.errorSubItem(LOGGER, "✗ FAILED after {}ms: {}", duration, t.getMessage());
                 }
             });
             
             var afterStartupDuration = System.currentTimeMillis() - afterStartupStartTime;
-            LOGGER.debug("└── AFTER_STARTUP COMPLETED in {}ms", afterStartupDuration);
+            BootstrapLogger.endPhase(LOGGER, "AFTER_STARTUP COMPLETED in {}ms", afterStartupDuration);
         }
 
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
@@ -782,11 +783,11 @@ public final class Bootstrapper {
             .toList();
 
         if (services.isEmpty()) {
-            LOGGER.info("┌── SERVICE BINDING");
-            LOGGER.info("│   No services configured");
-            LOGGER.info("└── SERVICE BINDING COMPLETED");
+            BootstrapLogger.startPhase(LOGGER, "SERVICE BINDING");
+            BootstrapLogger.info(LOGGER, "No services configured");
+            BootstrapLogger.endPhase(LOGGER, "SERVICE BINDING COMPLETED");
         } else {
-            LOGGER.info("┌── SERVICE BINDING");
+            BootstrapLogger.startPhase(LOGGER, "SERVICE BINDING");
             var startTime = System.currentTimeMillis();
 
             services.forEach(srv -> {
@@ -799,7 +800,7 @@ public final class Bootstrapper {
                     uri = defaultURI(srv.getInstance());
                 } else {
                     if (!(srvConfArgs.get("uri") instanceof String)) {
-                        LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' must be a string", srv.getName());
+                        BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must be a string", srv.getName());
                         return;
                     } else {
                         uri = (String) srvConfArgs.get("uri");
@@ -807,12 +808,12 @@ public final class Bootstrapper {
                 }
 
                 if (uri == null) {
-                    LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' is not defined", srv.getName());
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' is not defined", srv.getName());
                     return;
                 }
 
                 if (!uri.startsWith("/")) {
-                    LOGGER.error("│   ├─ ✗ Cannot start service {}: 'uri' must start with /", srv.getName());
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must start with /", srv.getName());
                     return;
                 }
 
@@ -820,11 +821,11 @@ public final class Bootstrapper {
 
                 PluginsRegistryImpl.getInstance().plugService(srv, uri, mp, secured);
 
-                LOGGER.info("│   ├─ URI {} bound to service {}, secured: {}, uri match {}", uri, srv.getName(), secured, mp);
+                BootstrapLogger.item(LOGGER, "URI {} bound to service {}, secured: {}, uri match {}", uri, srv.getName(), secured, mp);
             });
 
             var duration = System.currentTimeMillis() - startTime;
-            LOGGER.info("└── SERVICE BINDING COMPLETED in {}ms", duration);
+            BootstrapLogger.endPhase(LOGGER, "SERVICE BINDING COMPLETED in {}ms", duration);
         }
     }
 
@@ -840,18 +841,18 @@ public final class Bootstrapper {
         var proxies = conf.getProxies();
 
         if (proxies == null || proxies.isEmpty()) {
-            LOGGER.debug("┌── PROXY BINDING");
-            LOGGER.debug("│   No proxies configured");
-            LOGGER.debug("└── PROXY BINDING COMPLETED");
+            BootstrapLogger.startPhase(LOGGER, "PROXY BINDING");
+            BootstrapLogger.debugInfo(LOGGER, "No proxies configured");
+            BootstrapLogger.endPhase(LOGGER, "PROXY BINDING COMPLETED");
             return;
         }
 
-        LOGGER.debug("┌── PROXY BINDING");
+        BootstrapLogger.startPhase(LOGGER, "PROXY BINDING");
         var startTime = System.currentTimeMillis();
 
         proxies.stream().forEachOrdered((ProxiedResource proxy) -> {
             if (proxy.location() == null || proxy.proxyPass() == null || proxy.proxyPass().isEmpty()) {
-                LOGGER.warn("│   ├─ ✗ Invalid proxies entry: {}", proxy);
+                BootstrapLogger.item(LOGGER, "✗ Invalid proxies entry: {}", proxy);
                 return;
             }
 
@@ -873,7 +874,7 @@ public final class Bootstrapper {
                     var uri = new URI(pp);
                     proxyClient.addHost(uri, xnioSsl);
                 } catch(URISyntaxException t) {
-                    LOGGER.warn("│   │  ├─ ✗ Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
+                    BootstrapLogger.item(LOGGER, "✗ Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
                 } catch (GeneralSecurityException ex) {
                     logErrorAndExit("error configuring ssl", ex, false, -13);
                 }
@@ -905,11 +906,11 @@ public final class Bootstrapper {
 
             PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy, new PipelineInfo(PROXY, proxy.location(), proxy.name()));
 
-            LOGGER.debug("│   ├─ URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
+            BootstrapLogger.debugItem(LOGGER, "URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
         });
 
         var duration = System.currentTimeMillis() - startTime;
-        LOGGER.debug("└── PROXY BINDING COMPLETED in {}ms", duration);
+        BootstrapLogger.endPhase(LOGGER, "PROXY BINDING COMPLETED in {}ms", duration);
     }
 
     /**
@@ -922,24 +923,24 @@ public final class Bootstrapper {
         var staticResources = conf.getStaticResources();
 
         if (staticResources == null || staticResources.isEmpty()) {
-            LOGGER.debug("┌── STATIC RESOURCE BINDING");
-            LOGGER.debug("│   No static resources configured");
-            LOGGER.debug("└── STATIC RESOURCE BINDING COMPLETED");
+            BootstrapLogger.startPhase(LOGGER, "STATIC RESOURCE BINDING");
+            BootstrapLogger.debugInfo(LOGGER, "No static resources configured");
+            BootstrapLogger.endPhase(LOGGER, "STATIC RESOURCE BINDING COMPLETED");
             return;
         }
 
-        LOGGER.debug("┌── STATIC RESOURCE BINDING");
+        BootstrapLogger.startPhase(LOGGER, "STATIC RESOURCE BINDING");
         var startTime = System.currentTimeMillis();
 
         staticResources.stream().forEach(sr -> {
             try {
                 if (sr.where() == null || !sr.where().startsWith("/")) {
-                    LOGGER.error("│   ├─ ✗ Cannot bind static resources {}. parameter 'where' must start with /", sr);
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resources {}. parameter 'where' must start with /", sr);
                     return;
                 }
 
                 if (sr.what() == null) {
-                    LOGGER.error("│   ├─ ✗ Cannot bind static resources to {}. missing parameter 'what'", sr);
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resources to {}. missing parameter 'what'", sr);
                     return;
                 }
 
@@ -951,10 +952,10 @@ public final class Bootstrapper {
 
                         if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, sr.what())) {
                             TMP_EXTRACTED_FILES.put(sr.what(), file);
-                            LOGGER.debug("│   │  ├─ Embedded static resources {} extracted in {}", sr.what(), file.toString());
+                            BootstrapLogger.debugItem(LOGGER, "Embedded static resources {} extracted in {}", sr.what(), file.toString());
                         }
                     } catch (URISyntaxException | IOException | IllegalStateException ex) {
-                        LOGGER.error("│   ├─ ✗ Error extracting embedded static resource {}", sr.what(), ex);
+                        BootstrapLogger.errorItem(LOGGER, "✗ Error extracting embedded static resource {}", sr.what(), ex);
                         return;
                     }
                 } else if (!sr.what().startsWith("/")) {
@@ -979,18 +980,18 @@ public final class Bootstrapper {
 
                     PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph, new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
-                    LOGGER.debug("│   ├─ URI {} bound to static resource {}", sr.where(), file.getAbsolutePath());
+                    BootstrapLogger.debugItem(LOGGER, "URI {} bound to static resource {}", sr.where(), file.getAbsolutePath());
                 } else {
-                    LOGGER.error("│   ├─ ✗ Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
+                    BootstrapLogger.errorItem(LOGGER, "✗ Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
                 }
 
             } catch (Throwable t) {
-                LOGGER.error("│   ├─ ✗ Cannot bind static resource {}", sr, t);
+                BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resource {}", sr, t);
             }
         });
 
         var duration = System.currentTimeMillis() - startTime;
-        LOGGER.debug("└── STATIC RESOURCE BINDING COMPLETED in {}ms", duration);
+        BootstrapLogger.endPhase(LOGGER, "STATIC RESOURCE BINDING COMPLETED in {}ms", duration);
     }
 
     private static int getPluginPriority(Plugin plugin) {

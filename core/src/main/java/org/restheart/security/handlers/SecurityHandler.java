@@ -29,6 +29,7 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public class SecurityHandler extends PipelinedHandler {
                 Set<PluginRecord<Authorizer>> authorizers,
                 TokenManager tokenManager) {
             var startTime = System.currentTimeMillis();
-            LOGGER.debug("┌── SECURITY HANDLERS INITIALIZATION");
+            BootstrapLogger.startPhase(SecurityHandler.LOGGER, "SECURITY HANDLERS INITIALIZATION");
 
             // Build the reusable components (without linking them yet)
             this.authorizersHandler = new ReusableAuthorizersHandler(authorizers);
@@ -80,21 +81,21 @@ public class SecurityHandler extends PipelinedHandler {
                 .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
                 .collect(java.util.stream.Collectors.toList());
             
-            LOGGER.debug("│   ├─ AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
+            BootstrapLogger.debugItem(SecurityHandler.LOGGER, "AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
                 authorizers.size(), vetoers, allowers);
             
             // Log token manager info
             if (tokenManager != null) {
                 var tokenManagerName = org.restheart.utils.PluginUtils.name(tokenManager);
                 var tokenManagerClass = tokenManager.getClass().getSimpleName();
-                LOGGER.debug("│   ├─ TokenInjector: token manager {} ({})",
+                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: token manager {} ({})",
                     tokenManagerName, tokenManagerClass);
             } else {
-                LOGGER.debug("│   ├─ TokenInjector: no token manager");
+                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: no token manager");
             }
 
             var duration = System.currentTimeMillis() - startTime;
-            LOGGER.debug("└── SECURITY HANDLERS INITIALIZED in {}ms", duration);
+            BootstrapLogger.endPhase(SecurityHandler.LOGGER, "SECURITY HANDLERS INITIALIZED in {}ms", duration);
         }
 
         void linkChain(PipelinedHandler next) {

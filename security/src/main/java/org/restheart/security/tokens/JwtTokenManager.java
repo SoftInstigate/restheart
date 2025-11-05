@@ -61,6 +61,7 @@ import org.restheart.utils.Pair;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator.Builder;
@@ -241,19 +242,19 @@ public class JwtTokenManager implements TokenManager {
         var tokenStartTime = System.currentTimeMillis();
 
         if (!enabled) {
-            LOGGER.debug("│   ├─ JwtTokenManager is disabled - Cannot generate token");
+            BootstrapLogger.debugItem(LOGGER, "JwtTokenManager is disabled - Cannot generate token");
             return null;
         }
 
         if (account == null || account.getPrincipal() == null || account.getPrincipal().getName() == null) {
-            LOGGER.debug("│   ├─ Invalid account provided to JwtTokenManager - Cannot generate token");
+            BootstrapLogger.debugItem(LOGGER, "Invalid account provided to JwtTokenManager - Cannot generate token");
             return null;
         }
 
         var userName = account.getPrincipal().getName();
         var userRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
 
-        LOGGER.debug("│   ├─ Generating JWT token for user '{}' with roles: {}", userName, userRoles);
+        BootstrapLogger.debugItem(LOGGER, "Generating JWT token for user '{}' with roles: {}", userName, userRoles);
 
         try {
             var cacheStartTime = System.currentTimeMillis();
@@ -266,7 +267,7 @@ public class JwtTokenManager implements TokenManager {
               Sets.newTreeSet(account.getRoles()));
 
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            LOGGER.debug("│   ├─ JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms",  userName, cacheDuration, totalDuration);
+            BootstrapLogger.debugItem(LOGGER, "JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms",  userName, cacheDuration, totalDuration);
 
             return newTokenAccount.getCredentials();
         } catch (Exception ex) {

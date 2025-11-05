@@ -67,6 +67,7 @@ import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.authorizers.FullAuthorizer;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.utils.PluginUtils;
+import org.restheart.utils.BootstrapLogger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -188,12 +189,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             .toList();
 
         if (interceptors.isEmpty()) {
-            logger.info("┌── INTERCEPTORS");
-            logger.info("│   No interceptors configured");
-            logger.info("└── INTERCEPTORS LOGGED");
+            BootstrapLogger.startPhase(logger, "INTERCEPTORS");
+            BootstrapLogger.info(logger, "No interceptors configured");
+            BootstrapLogger.endPhase(logger, "INTERCEPTORS LOGGED");
         } else {
-            logger.info("┌── INTERCEPTORS");
-            logger.info("│   Found {} interceptors", interceptors.size());
+            BootstrapLogger.startPhase(logger, "INTERCEPTORS");
+            BootstrapLogger.info(logger, "Found {} interceptors", interceptors.size());
 
             interceptors.forEach(interceptor -> {
                 var interceptorName = interceptor.getName();
@@ -201,11 +202,11 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 var interceptorPriority = getPluginPriority(interceptor.getInstance());
                 var interceptPoint = PluginUtils.interceptPoint(interceptor.getInstance());
 
-                logger.info("│   ├─ {} ({}) - Priority: {}, Intercept Point: {}",
+                BootstrapLogger.item(logger, "{} ({}) - Priority: {}, Intercept Point: {}",
                     interceptorName, interceptorClass, interceptorPriority, interceptPoint);
             });
 
-            logger.info("└── INTERCEPTORS LOGGED");
+            BootstrapLogger.endPhase(logger, "INTERCEPTORS LOGGED");
         }
     }
     

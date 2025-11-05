@@ -45,6 +45,7 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 /**
  * Scans and discovers all RESTHeart plugins in the classpath and plugin directories.
@@ -490,12 +491,12 @@ public class PluginsScanner {
         private long starScanTime = 0;
 
         public void logStartScan() {
-            LOGGER.info("┌── SCANNING JARS FOR PLUGINS");
+            BootstrapLogger.startPhase(LOGGER, "SCANNING JARS FOR PLUGINS");
             this.starScanTime = System.currentTimeMillis();
         }
 
         public void logEndScan() {
-            LOGGER.info("└── SCANNING COMPLETED in {} msec", System.currentTimeMillis() - starScanTime);
+            BootstrapLogger.endPhase(LOGGER, "SCANNING COMPLETED in {} msec", System.currentTimeMillis() - starScanTime);
         }
 
         public ClassGraph get() {
@@ -538,16 +539,16 @@ public class PluginsScanner {
         }
 
         private URL[] findPluginsJars(final Path pluginsDirectory) {
-            LOGGER.info("┌── DISCOVERING PLUGIN JARS");
+            BootstrapLogger.startPhase(LOGGER, "DISCOVERING PLUGIN JARS");
             var result = _findPluginsJars(pluginsDirectory, 0);
-            LOGGER.info("└── PLUGIN JARS DISCOVERED");
+            BootstrapLogger.endPhase(LOGGER, "PLUGIN JARS DISCOVERED");
             return result;
         }
 
         private URL[] _findPluginsJars(final Path dir, final int depth) {
             final var pluginsPackages = Bootstrapper.getConfiguration().coreModule().pluginsPackages();
             if (!pluginsPackages.isEmpty()) {
-                LOGGER.info("│   Limiting scanning to packages {}", pluginsPackages);
+                BootstrapLogger.info(LOGGER, "Limiting scanning to packages {}", pluginsPackages);
             }
             if (dir == null) {
                 return new URL[0];
@@ -575,9 +576,9 @@ public class PluginsScanner {
                         urls.add(jar);
 
                         if (isLibJar(path)) {
-                            LOGGER.trace("│   Found lib jar {}", path.toString());
+                            BootstrapLogger.debugInfo(LOGGER, "Found lib jar {}", path.toString());
                         } else {
-                            LOGGER.info("│   ├─ {}", path.getFileName());
+                            BootstrapLogger.item(LOGGER, "{}", path.getFileName());
                         }
                     } catch (final Exception e) {
                         LOGGER.error("Error processing jar file: {}", path, e);
@@ -612,12 +613,12 @@ public class PluginsScanner {
 
         private void checkPluginDirectory(final Path pluginsDirectory) {
             if (!Files.exists(pluginsDirectory)) {
-                LOGGER.warn("│   Plugin directory {} does not exist", pluginsDirectory);
+                BootstrapLogger.info(LOGGER, "Plugin directory {} does not exist", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " does not exist");
             }
 
             if (!Files.isReadable(pluginsDirectory)) {
-                LOGGER.warn("│   Plugin directory {} is not readable", pluginsDirectory);
+                BootstrapLogger.info(LOGGER, "Plugin directory {} is not readable", pluginsDirectory);
                 throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
             }
         }

@@ -51,6 +51,7 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 import com.mongodb.client.MongoClient;
 
@@ -164,11 +165,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             var mongoMounts = MongoServiceConfiguration.get().getMongoMounts();
 
             if (mongoMounts.isEmpty()) {
-                LOGGER.debug("┌── MONGODB RESOURCE BINDING");
-                LOGGER.debug("│   No MongoDB resources configured");
-                LOGGER.debug("└── MONGODB RESOURCE BINDING COMPLETED");
+                BootstrapLogger.startPhase(LOGGER, "MONGODB RESOURCE BINDING");
+                BootstrapLogger.debugInfo(LOGGER, "No MongoDB resources configured");
+                BootstrapLogger.endPhase(LOGGER, "MONGODB RESOURCE BINDING COMPLETED");
             } else {
-                LOGGER.debug("┌── MONGODB RESOURCE BINDING");
+                BootstrapLogger.startPhase(LOGGER, "MONGODB RESOURCE BINDING");
                 var startTime = System.currentTimeMillis();
 
                 mongoMounts.stream().forEach(m -> {
@@ -181,7 +182,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                         rootHandler.addPrefixPath(uri, _pipeline);
                     }
 
-                    LOGGER.debug("│   ├─ URI {} bound to MongoDB resource {}", uri, resource);
+                    BootstrapLogger.debugItem(LOGGER, "URI {} bound to MongoDB resource {}", uri, resource);
                 });
 
                 if (allPathTemplates) {
@@ -189,7 +190,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                 }
 
                 var duration = System.currentTimeMillis() - startTime;
-                LOGGER.debug("└── MONGODB RESOURCE BINDING COMPLETED in {}ms", duration);
+                BootstrapLogger.endPhase(LOGGER, "MONGODB RESOURCE BINDING COMPLETED in {}ms", duration);
             }
         }
 

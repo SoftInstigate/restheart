@@ -32,6 +32,7 @@ import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -79,11 +80,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 var customRequestInitializer = UninitializedRequest.of(exchange).customRequestInitializer();
 
                 if (customRequestInitializer == null) {
-                    LOGGER.debug("│   ├─ Request initializer (default)");
+                    BootstrapLogger.debugItem(LOGGER, "Request initializer (default)");
                     // service default request initializer
                     srv.get().getInstance().requestInitializer().accept(exchange);
                 } else {
-                    LOGGER.debug("│   ├─ Request initializer (custom)");
+                    BootstrapLogger.debugItem(LOGGER, "Request initializer (custom)");
                     // custom request initializer
                     customRequestInitializer.accept(exchange);
                 }
@@ -97,11 +98,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 var customResponseInitializer = UninitializedResponse.of(exchange).customResponseInitializer();
 
                 if (customResponseInitializer == null) {
-                    LOGGER.debug("│   ├─ Response initializer (default)");
+                    BootstrapLogger.debugItem(LOGGER, "Response initializer (default)");
                     // service default response initializer
                     srv.get().getInstance().responseInitializer().accept(exchange);
                 } else {
-                    LOGGER.debug("│   ├─ Response initializer (custom)");
+                    BootstrapLogger.debugItem(LOGGER, "Response initializer (custom)");
                     // custom response initializer
                     customResponseInitializer.accept(exchange);
                 }

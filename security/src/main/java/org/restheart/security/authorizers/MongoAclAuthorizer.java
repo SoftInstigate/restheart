@@ -49,6 +49,7 @@ import org.restheart.security.utils.MongoUtils;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
