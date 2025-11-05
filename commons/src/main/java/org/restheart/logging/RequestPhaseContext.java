@@ -35,6 +35,9 @@ public class RequestPhaseContext {
     private static final ScopedValue<HttpServerExchange> CURRENT_EXCHANGE = ScopedValue.newInstance();
     private static final AttachmentKey<PhaseInfo> PHASE_INFO_KEY = AttachmentKey.create(PhaseInfo.class);
     
+    // Fallback for bootstrap logging (when no exchange is bound)
+    private static final ThreadLocal<PhaseInfo> BOOTSTRAP_PHASE = ThreadLocal.withInitial(PhaseInfo::new);
+    
     /**
      * Phase types for request processing
      */
@@ -92,14 +95,18 @@ public class RequestPhaseContext {
      */
     public static void setPhase(Phase phase) {
         if (CURRENT_EXCHANGE.isBound()) {
+            // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             var current = exchange.getAttachment(PHASE_INFO_KEY);
             if (current == null) {
                 current = new PhaseInfo();
             }
             exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
+        } else {
+            // Bootstrap: store in ThreadLocal
+            var current = BOOTSTRAP_PHASE.get();
+            BOOTSTRAP_PHASE.set(new PhaseInfo(phase, current.isLast));
         }
-        // If not bound, silently ignore (e.g., during bootstrap logging)
     }
     
     /**
@@ -109,12 +116,17 @@ public class RequestPhaseContext {
      */
     public static void setLast(boolean isLast) {
         if (CURRENT_EXCHANGE.isBound()) {
+            // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             var current = exchange.getAttachment(PHASE_INFO_KEY);
             if (current == null) {
                 current = new PhaseInfo();
             }
             exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(current.phase, isLast));
+        } else {
+            // Bootstrap: store in ThreadLocal
+            var current = BOOTSTRAP_PHASE.get();
+            BOOTSTRAP_PHASE.set(new PhaseInfo(current.phase, isLast));
         }
     }
     
@@ -125,11 +137,15 @@ public class RequestPhaseContext {
      */
     public static Phase getPhase() {
         if (CURRENT_EXCHANGE.isBound()) {
+            // Request-scoped: read from exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             var info = exchange.getAttachment(PHASE_INFO_KEY);
             if (info != null) {
                 return info.phase;
             }
+        } else {
+            // Bootstrap: read from ThreadLocal
+            return BOOTSTRAP_PHASE.get().phase;
         }
         return Phase.NONE;
     }
@@ -141,11 +157,15 @@ public class RequestPhaseContext {
      */
     public static boolean isLast() {
         if (CURRENT_EXCHANGE.isBound()) {
+            // Request-scoped: read from exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
             var info = exchange.getAttachment(PHASE_INFO_KEY);
             if (info != null) {
                 return info.isLast;
             }
+        } else {
+            // Bootstrap: read from ThreadLocal
+            return BOOTSTRAP_PHASE.get().isLast;
         }
         return false;
     }
@@ -157,6 +177,8 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
             exchange.removeAttachment(PHASE_INFO_KEY);
+        } else {
+            BOOTSTRAP_PHASE.remove();
         }
     }
     
@@ -167,6 +189,8 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
             exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
+        } else {
+            BOOTSTRAP_PHASE.set(new PhaseInfo());
         }
     }
     

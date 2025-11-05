@@ -576,7 +576,7 @@ public class PluginsScanner {
                         urls.add(jar);
 
                         if (isLibJar(path)) {
-                            BootstrapLogger.debugInfo(LOGGER, "Found lib jar {}", path.toString());
+                            BootstrapLogger.debugItem(LOGGER, "Found lib jar {}", path.toString());
                         } else {
                             BootstrapLogger.item(LOGGER, "{}", path.getFileName());
                         }
