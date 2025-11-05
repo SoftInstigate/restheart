@@ -27,6 +27,8 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import static org.restheart.metrics.Metrics.failedAuthHistogramName;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.HttpStatus;
@@ -99,7 +101,9 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             var remoteIp = ExchangeAttributes.remoteIp().readAttribute(exchange);
             LOGGER.warn(BLOCK_AUTH_ERR_MSG, remoteIp);
 
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("AUTHENTICATION BLOCKED");
+            RequestPhaseContext.reset();
 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
@@ -114,16 +118,22 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             //   might authorize the request even if authentication failed
 
             if (sc.isAuthenticated()) {
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("AUTHENTICATION COMPLETED - User: {}", sc.getAuthenticatedAccount().getPrincipal().getName());
+                RequestPhaseContext.reset();
             } else {
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("AUTHENTICATION COMPLETED - Anonymous");
+                RequestPhaseContext.reset();
             }
 
             if (!exchange.isComplete()) {
                 next(exchange);
             }
         } else {
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("AUTHENTICATION FAILED");
+            RequestPhaseContext.reset();
 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);

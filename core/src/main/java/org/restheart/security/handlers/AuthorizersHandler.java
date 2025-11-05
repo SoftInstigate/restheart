@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
@@ -73,16 +75,21 @@ public class AuthorizersHandler extends PipelinedHandler {
         var isAuthenticated = request.isAuthenticated();
         var userPrincipal = isAuthenticated ? request.getAuthenticatedAccount().getPrincipal().getName() : "anonymous";
         
+        RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
 
         var isAllowedResult = isAllowed(request);
         var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
         
         if (isAllowedResult) {
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("✓ ACCESS GRANTED ({}ms)", authorizationDuration);
+            RequestPhaseContext.reset();
             next(exchange);
         } else {
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("✗ ACCESS DENIED → 403 Forbidden ({}ms)", authorizationDuration);
+            RequestPhaseContext.reset();
                 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
@@ -122,6 +129,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             .collect(Collectors.toList());
             
         if (!vetoers.isEmpty()) {
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("Checking {} VETOER authorizers", vetoers.size());
         }
             
@@ -137,6 +145,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 var allowed = vetoer.isAllowed(request);
                 var vetoerCheckDuration = System.currentTimeMillis() - vetoerCheckStartTime;
                 
+                RequestPhaseContext.setPhase(Phase.ITEM);
                 LOGGER.debug("VETOER {}: {} ({}ms)", vetoerName, allowed ? "✓" : "✗", vetoerCheckDuration);
                 
                 if (!allowed) {
@@ -169,6 +178,7 @@ public class AuthorizersHandler extends PipelinedHandler {
             .collect(Collectors.toList());
             
         if (!allowers.isEmpty()) {
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("Checking {} ALLOWER authorizers", allowers.size());
         }
             
@@ -184,6 +194,7 @@ public class AuthorizersHandler extends PipelinedHandler {
                 var allowed = allower.isAllowed(request);
                 var allowerCheckDuration = System.currentTimeMillis() - allowerCheckStartTime;
                 
+                RequestPhaseContext.setPhase(Phase.ITEM);
                 LOGGER.debug("ALLOWER {}: {} ({}ms)", allowerName, allowed ? "✓" : "✗", allowerCheckDuration);
                 
                 if (allowed) {

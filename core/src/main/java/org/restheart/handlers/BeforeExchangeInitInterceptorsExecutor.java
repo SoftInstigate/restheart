@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
 import org.restheart.exchange.UninitializedResponse;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import static org.restheart.plugins.InterceptPoint.ANY;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT;
 import org.restheart.plugins.InterceptorException;
@@ -92,9 +94,13 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         var requestMethod = exchange.getRequestMethod().toString();
         
         if (this.wildCardInterceptors.isEmpty()) {
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("BEFORE_EXCHANGE_INIT INTERCEPTORS");
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("No interceptors registered");
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
+            RequestPhaseContext.reset();
             next(exchange);
             return;
         }
@@ -115,7 +121,9 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             }
         }
 
+        RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("BEFORE_EXCHANGE_INIT INTERCEPTORS");
+        RequestPhaseContext.setPhase(Phase.INFO);
         LOGGER.debug("Found {} wildcard interceptors", interceptors.size());
 
         var executionStartTime = System.currentTimeMillis();
@@ -132,8 +140,11 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             }}).collect(Collectors.toList());
 
         if (applicableInterceptors.isEmpty()) {
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("No applicable interceptors");
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in 0ms");
+            RequestPhaseContext.reset();
             next(exchange);
             return;
         }
@@ -143,15 +154,18 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             var interceptorName = PluginUtils.name(ri);
             var isRequired = PluginUtils.requiredinterceptor(ri) ? " (required)" : "";
             
+            RequestPhaseContext.setPhase(Phase.ITEM);
             LOGGER.debug("{} (priority: {}){}", interceptorName, PluginUtils.priority(ri), isRequired);
             
             try {
                 ri.handle(request, response);
                 
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", interceptorDuration);
             } catch (Exception ex) {
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.error("✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
 
                 Exchange.setInError(exchange);
@@ -160,7 +174,9 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         });
             
         var totalDuration = System.currentTimeMillis() - executionStartTime;
+        RequestPhaseContext.setPhase(Phase.PHASE_END);
         LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in {}ms", totalDuration);
+        RequestPhaseContext.reset();
 
         next(exchange);
     }

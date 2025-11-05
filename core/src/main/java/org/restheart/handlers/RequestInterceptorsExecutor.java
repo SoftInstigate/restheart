@@ -31,6 +31,8 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.InterceptorException;
@@ -90,6 +92,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         var requestPath = exchange.getRequestPath();
         var requestMethod = exchange.getRequestMethod().toString();
 
+        RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("{} INTERCEPTORS for {} {}", interceptPoint, requestMethod, requestPath);
 
         List<Interceptor<?, ?>> interceptors;
@@ -105,8 +108,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         }
 
         if (interceptors.isEmpty()) {
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("No interceptors found");
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("{} COMPLETED in 0ms", interceptPoint);
+            RequestPhaseContext.reset();
             next(exchange);
             return;
         }
@@ -126,6 +132,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             }})
             .toList();
 
+        RequestPhaseContext.setPhase(Phase.INFO);
         LOGGER.debug("Found {} interceptors", resolvedInterceptors.size());
 
         var executionStartTime = System.currentTimeMillis();
@@ -138,14 +145,17 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             var interceptorName = PluginUtils.name(ri);
 
             try {
+                RequestPhaseContext.setPhase(Phase.ITEM);
                 LOGGER.debug("{} (priority: {})", interceptorName, PluginUtils.priority(ri));
 
                 ri.handle(request, response);
 
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", interceptorDuration);
             } catch (Exception ex) {
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.error("✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
 
                 Exchange.setInError(exchange);
@@ -154,7 +164,9 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         }
 
         var totalDuration = System.currentTimeMillis() - executionStartTime;
+        RequestPhaseContext.setPhase(Phase.PHASE_END);
         LOGGER.debug("{} COMPLETED in {}ms", interceptPoint, totalDuration);
+        RequestPhaseContext.reset();
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response

@@ -22,6 +22,8 @@ package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -75,6 +77,7 @@ public class TokenInjector extends PipelinedHandler {
             var tokenManagerName = PluginUtils.name(tokenManager);
             var tokenManagerClass = tokenManager.getClass().getSimpleName();
 
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("TOKEN INJECTION: {} ({}) for user '{}'",
                 tokenManagerName, tokenManagerClass, userPrincipal);
 
@@ -83,20 +86,26 @@ public class TokenInjector extends PipelinedHandler {
                 var token = tokenManager.get(authenticatedAccount);
                 var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
 
+                RequestPhaseContext.setPhase(Phase.INFO);
                 LOGGER.debug("Token generation: {}ms", tokenGenDuration);
 
                 var headerInjectionStartTime = System.currentTimeMillis();
                 tokenManager.injectTokenHeaders(exchange, token);
                 var headerInjectionDuration = System.currentTimeMillis() - headerInjectionStartTime;
 
+                RequestPhaseContext.setPhase(Phase.INFO);
                 LOGGER.debug("Header injection: {}ms", headerInjectionDuration);
 
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("TOKEN INJECTION COMPLETED in {}ms", totalTokenDuration);
+                RequestPhaseContext.reset();
 
             } catch (Exception ex) {
                 var totalTokenDuration = System.currentTimeMillis() - tokenStartTime;
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.error("✗ TOKEN INJECTION FAILED after {}ms", totalTokenDuration, ex);
+                RequestPhaseContext.reset();
                 throw ex;
             }
         }

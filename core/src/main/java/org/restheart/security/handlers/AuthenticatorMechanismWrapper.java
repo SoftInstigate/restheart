@@ -22,6 +22,8 @@ package org.restheart.security.handlers;
 
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -74,6 +76,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
         var requestMethod = exchange.getRequestMethod().toString();
         var authenticateStartTime = System.currentTimeMillis();
         
+        RequestPhaseContext.setPhase(Phase.ITEM);
         LOGGER.debug("AUTH: {} ({})", mechanismName, mechanismClass);
             
         try {
@@ -83,13 +86,16 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
 
             switch (outcome) {
                 case NOT_AUTHENTICATED:
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
                     LOGGER.debug("⚬ NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                 case AUTHENTICATED:
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
                     LOGGER.debug("✓ AUTHENTICATED as '{}' ({}ms)", 
                         account.getPrincipal().getName(), authenticateDuration);
                     return outcome;
                 case NOT_ATTEMPTED:
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
                     LOGGER.debug("⚬ NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return outcome;
                 default:
@@ -97,6 +103,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
             }
         } catch (Exception ex) {
             var authenticateDuration = System.currentTimeMillis() - authenticateStartTime;
+            RequestPhaseContext.setPhase(Phase.SUBITEM);
             LOGGER.error("Error in authentication mechanism {} ({}) for {} {} after {}ms", 
                 mechanismName, mechanismClass, requestMethod, requestPath, authenticateDuration, ex);
             throw ex;

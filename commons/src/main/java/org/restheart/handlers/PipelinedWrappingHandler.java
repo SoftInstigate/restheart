@@ -21,6 +21,8 @@ package org.restheart.handlers;
 
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.Service;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -260,6 +262,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
         var serviceClass = service.getClass().getSimpleName();
         var startTime = System.currentTimeMillis();
         
+        RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("SERVICE: {} ({})", serviceName, serviceClass);
             
         try {
@@ -267,6 +270,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
             var serviceRequest = service.request().apply(exchange);
             var serviceResponse = service.response().apply(exchange);
             
+            RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("Request/Response: {} → {}", 
                 serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
             
@@ -275,12 +279,16 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
             var duration = System.currentTimeMillis() - startTime;
             var statusCode = serviceResponse.getStatusCode();
             
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
+            RequestPhaseContext.reset();
                 
         } catch (Exception ex) {
             var duration = System.currentTimeMillis() - startTime;
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.error("Service execution failed: {} for {} {} after {}ms - Thread: {}", 
                 serviceName, method, path, duration, Thread.currentThread().getName(), ex);
+            RequestPhaseContext.reset();
             throw ex;
         }
     }

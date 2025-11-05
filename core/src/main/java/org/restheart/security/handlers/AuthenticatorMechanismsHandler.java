@@ -27,6 +27,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.logging.RequestPhaseContext;
+import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.utils.PluginUtils;
@@ -78,10 +80,15 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
 
         if (sc != null && sc instanceof AuthenticationMechanismContext amc) {
             if (wrappedAuthenticatorMechanisms.isEmpty()) {
+                RequestPhaseContext.setPhase(Phase.PHASE_START);
                 LOGGER.debug("AUTHENTICATION");
+                RequestPhaseContext.setPhase(Phase.INFO);
                 LOGGER.debug("No mechanisms configured");
+                RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("AUTHENTICATION COMPLETED");
+                RequestPhaseContext.reset();
             } else {
+                RequestPhaseContext.setPhase(Phase.PHASE_START);
                 LOGGER.debug("AUTHENTICATION");
 
                 wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> {
