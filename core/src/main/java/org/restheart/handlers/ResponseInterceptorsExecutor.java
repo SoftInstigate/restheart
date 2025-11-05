@@ -221,30 +221,35 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
 
         Exchange.setResponseInterceptorsExecuted(exchange);
 
-        applicableAsyncInterceptors.forEach(ri -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-            var interceptorStartTime = System.currentTimeMillis();
-            var interceptorName = PluginUtils.name(ri);
-            
-            RequestPhaseContext.setPhase(Phase.ITEM);
-            LOGGER.debug("ASYNC {} (priority: {}, thread: {})", 
-                interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
+        applicableAsyncInterceptors.forEach(ri -> {
+            ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                // Use ScopedValue to propagate exchange to the async virtual thread
+                RequestPhaseContext.callWithCurrentExchange(() -> {
+                    var interceptorStartTime = System.currentTimeMillis();
+                    var interceptorName = PluginUtils.name(ri);
+                    
+                    RequestPhaseContext.setPhase(Phase.ITEM);
+                    LOGGER.debug("ASYNC {} (priority: {}, thread: {})", 
+                        interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
 
-            try {
-                ri.handle(request, response);
-                
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.debug("✓ {}ms (async)", interceptorDuration);
-            } catch (Exception ex) {
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                    try {
+                        ri.handle(request, response);
+                        
+                        var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                        RequestPhaseContext.setPhase(Phase.SUBITEM);
+                        LOGGER.debug("✓ {}ms (async)", interceptorDuration);
+                    } catch (Exception ex) {
+                        var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                        RequestPhaseContext.setPhase(Phase.SUBITEM);
+                        LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
 
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
-            }
-            RequestPhaseContext.reset();
-        }));
+                        Exchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
+                    }
+                    RequestPhaseContext.reset();
+                });
+            });
+        });
         
         if (!applicableAsyncInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_END);

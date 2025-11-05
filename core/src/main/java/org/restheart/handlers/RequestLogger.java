@@ -36,6 +36,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
+import org.restheart.logging.RequestPhaseContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -119,27 +120,30 @@ public class RequestLogger extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        if (requestsLogMode > 0 && LOGGER.isInfoEnabled()) {
-            // Optimization: only check for exclusion patterns if any are configured
-            if (hasExclusionPatterns) {
-                // Check if the request path should be excluded from logging
-                final String requestPath = exchange.getRequestPath();
-                final String matchedPattern = findMatchingPattern(requestPath);
+        // Use ScopedValue to set the exchange for the entire request processing pipeline
+        RequestPhaseContext.runWithExchange(exchange, () -> {
+            if (requestsLogMode > 0 && LOGGER.isInfoEnabled()) {
+                // Optimization: only check for exclusion patterns if any are configured
+                if (hasExclusionPatterns) {
+                    // Check if the request path should be excluded from logging
+                    final String requestPath = exchange.getRequestPath();
+                    final String matchedPattern = findMatchingPattern(requestPath);
 
-                if (matchedPattern != null) {
-                    // Request matches an exclusion pattern
-                    handleExcludedRequest(exchange, requestPath, matchedPattern);
+                    if (matchedPattern != null) {
+                        // Request matches an exclusion pattern
+                        handleExcludedRequest(exchange, requestPath, matchedPattern);
+                    } else {
+                        // Normal request - log it
+                        dumpExchange(exchange, requestsLogMode);
+                    }
                 } else {
-                    // Normal request - log it
+                    // No exclusion patterns configured - always log
                     dumpExchange(exchange, requestsLogMode);
                 }
-            } else {
-                // No exclusion patterns configured - always log
-                dumpExchange(exchange, requestsLogMode);
             }
-        }
 
-        next(exchange);
+            next(exchange);
+        });
     }
 
     /**

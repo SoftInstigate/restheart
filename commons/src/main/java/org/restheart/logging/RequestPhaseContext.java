@@ -20,15 +20,20 @@
  */
 package org.restheart.logging;
 
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
+
 /**
- * ThreadLocal context for tracking the current request processing phase
- * to determine appropriate log prefixes.
+ * ScopedValue-based context for tracking the current request processing phase
+ * to determine appropriate log prefixes. This is virtual thread-friendly as it uses
+ * ScopedValue to hold the exchange reference and exchange attachments for data storage.
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestPhaseContext {
     
-    private static final ThreadLocal<PhaseInfo> PHASE_CONTEXT = ThreadLocal.withInitial(PhaseInfo::new);
+    private static final ScopedValue<HttpServerExchange> CURRENT_EXCHANGE = ScopedValue.newInstance();
+    private static final AttachmentKey<PhaseInfo> PHASE_INFO_KEY = AttachmentKey.create(PhaseInfo.class);
     
     /**
      * Phase types for request processing
@@ -51,12 +56,49 @@ public class RequestPhaseContext {
     }
     
     /**
+     * Run a task with the exchange set in the ScopedValue context.
+     * This should be called at the entry point of request handling.
+     * 
+     * @param exchange the HttpServerExchange
+     * @param task the task to run with the exchange in scope
+     * @throws Exception if the task throws an exception
+     */
+    public static void runWithExchange(HttpServerExchange exchange, ThrowingRunnable task) throws Exception {
+        ScopedValue.where(CURRENT_EXCHANGE, exchange).call(() -> {
+            task.run();
+            return null;
+        });
+    }
+    
+    /**
+     * Call a task with the exchange set in the ScopedValue context.
+     * This is a convenience method for async operations that need to propagate the exchange.
+     * 
+     * @param task the task to run with the exchange in scope
+     */
+    public static void callWithCurrentExchange(Runnable task) {
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            ScopedValue.where(CURRENT_EXCHANGE, exchange).run(task);
+        } else {
+            task.run();
+        }
+    }
+    
+    /**
      * Set the current phase
      * 
      * @param phase the phase to set
      */
     public static void setPhase(Phase phase) {
-        PHASE_CONTEXT.get().phase = phase;
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            var current = exchange.getAttachment(PHASE_INFO_KEY);
+            if (current == null) {
+                current = new PhaseInfo();
+            }
+            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
+        }
     }
     
     /**
@@ -65,7 +107,14 @@ public class RequestPhaseContext {
      * @param isLast true if this is the last item
      */
     public static void setLast(boolean isLast) {
-        PHASE_CONTEXT.get().isLast = isLast;
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            var current = exchange.getAttachment(PHASE_INFO_KEY);
+            if (current == null) {
+                current = new PhaseInfo();
+            }
+            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(current.phase, isLast));
+        }
     }
     
     /**
@@ -74,7 +123,14 @@ public class RequestPhaseContext {
      * @return the current phase
      */
     public static Phase getPhase() {
-        return PHASE_CONTEXT.get().phase;
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            var info = exchange.getAttachment(PHASE_INFO_KEY);
+            if (info != null) {
+                return info.phase;
+            }
+        }
+        return Phase.NONE;
     }
     
     /**
@@ -83,29 +139,58 @@ public class RequestPhaseContext {
      * @return true if this is the last item
      */
     public static boolean isLast() {
-        return PHASE_CONTEXT.get().isLast;
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            var info = exchange.getAttachment(PHASE_INFO_KEY);
+            if (info != null) {
+                return info.isLast;
+            }
+        }
+        return false;
     }
     
     /**
-     * Clear the phase context (call at end of request)
+     * Clear the phase context
      */
     public static void clear() {
-        PHASE_CONTEXT.remove();
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            exchange.removeAttachment(PHASE_INFO_KEY);
+        }
     }
     
     /**
      * Reset to default values
      */
     public static void reset() {
-        PHASE_CONTEXT.get().phase = Phase.NONE;
-        PHASE_CONTEXT.get().isLast = false;
+        var exchange = CURRENT_EXCHANGE.orElse(null);
+        if (exchange != null) {
+            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
+        }
     }
     
     /**
-     * Internal class to hold phase information
+     * Functional interface for tasks that can throw exceptions
+     */
+    @FunctionalInterface
+    public interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+    
+    /**
+     * Internal class to hold phase information (immutable)
      */
     private static class PhaseInfo {
-        Phase phase = Phase.NONE;
-        boolean isLast = false;
+        final Phase phase;
+        final boolean isLast;
+        
+        PhaseInfo() {
+            this(Phase.NONE, false);
+        }
+        
+        PhaseInfo(Phase phase, boolean isLast) {
+            this.phase = phase;
+            this.isLast = isLast;
+        }
     }
 }
