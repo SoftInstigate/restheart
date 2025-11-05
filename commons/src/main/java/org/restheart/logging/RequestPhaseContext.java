@@ -77,8 +77,8 @@ public class RequestPhaseContext {
      * @param task the task to run with the exchange in scope
      */
     public static void callWithCurrentExchange(Runnable task) {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             ScopedValue.where(CURRENT_EXCHANGE, exchange).run(task);
         } else {
             task.run();
@@ -91,14 +91,15 @@ public class RequestPhaseContext {
      * @param phase the phase to set
      */
     public static void setPhase(Phase phase) {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             var current = exchange.getAttachment(PHASE_INFO_KEY);
             if (current == null) {
                 current = new PhaseInfo();
             }
             exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
         }
+        // If not bound, silently ignore (e.g., during bootstrap logging)
     }
     
     /**
@@ -107,8 +108,8 @@ public class RequestPhaseContext {
      * @param isLast true if this is the last item
      */
     public static void setLast(boolean isLast) {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             var current = exchange.getAttachment(PHASE_INFO_KEY);
             if (current == null) {
                 current = new PhaseInfo();
@@ -123,8 +124,8 @@ public class RequestPhaseContext {
      * @return the current phase
      */
     public static Phase getPhase() {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             var info = exchange.getAttachment(PHASE_INFO_KEY);
             if (info != null) {
                 return info.phase;
@@ -139,8 +140,8 @@ public class RequestPhaseContext {
      * @return true if this is the last item
      */
     public static boolean isLast() {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             var info = exchange.getAttachment(PHASE_INFO_KEY);
             if (info != null) {
                 return info.isLast;
@@ -153,8 +154,8 @@ public class RequestPhaseContext {
      * Clear the phase context
      */
     public static void clear() {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             exchange.removeAttachment(PHASE_INFO_KEY);
         }
     }
@@ -163,8 +164,8 @@ public class RequestPhaseContext {
      * Reset to default values
      */
     public static void reset() {
-        var exchange = CURRENT_EXCHANGE.orElse(null);
-        if (exchange != null) {
+        if (CURRENT_EXCHANGE.isBound()) {
+            var exchange = CURRENT_EXCHANGE.get();
             exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
         }
     }
