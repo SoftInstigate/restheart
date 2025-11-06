@@ -33,6 +33,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.utils.BootstrapLogger;
 
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
@@ -97,7 +98,7 @@ public class BootstrapperUtils {
         var pidFilePath = pidFile(confFilePath, propFilePath);
 
         if (Files.exists(pidFilePath)) {
-            LOGGER.warn("Found pid file! If this instance is already running, startup will fail with a BindException");
+            BootstrapLogger.standaloneWarn(LOGGER, "Found pid file! If this instance is already running, startup will fail with a BindException");
             return true;
         }
         return false;
@@ -132,8 +133,8 @@ public class BootstrapperUtils {
 
     public static void logStartMessages(Configuration configuration) {
         var instanceName = getInstanceName(configuration);
-	    LOGGER.info(STARTING + "{}" + INSTANCE + "{}", ansi().fg(RED).bold().a(RESTHEART).reset().toString(), ansi().fg(RED).bold().a(instanceName).reset().toString());
-        LOGGER.info(VERSION, Configuration.VERSION);
+	    BootstrapLogger.standalone(LOGGER, STARTING + "{}" + INSTANCE + "{}", ansi().fg(RED).bold().a(RESTHEART).reset().toString(), ansi().fg(RED).bold().a(instanceName).reset().toString());
+        BootstrapLogger.standalone(LOGGER, VERSION, Configuration.VERSION);
         LOGGER.debug("Configuration:\n{}", configuration.toString());
     }
 
@@ -153,14 +154,14 @@ public class BootstrapperUtils {
         }
 
         if (configuration.logging().logToFile()) {
-            LOGGER.info("Logging to file {} with level {}", configuration.logging().logFilePath(), configuration.getLogLevel());
+            BootstrapLogger.standalone(LOGGER, "Logging to file {} with level {}", configuration.logging().logFilePath(), configuration.getLogLevel());
         }
 
         if (!fork) {
             if (!configuration.logging().logToConsole()) {
-                LOGGER.info("Stop logging to console ");
+                BootstrapLogger.standalone(LOGGER, "Stop logging to console ");
             } else {
-                LOGGER.info("Logging to console with level {}", configuration.getLogLevel());
+                BootstrapLogger.standalone(LOGGER, "Logging to console with level {}", configuration.getLogLevel());
             }
         }
     }

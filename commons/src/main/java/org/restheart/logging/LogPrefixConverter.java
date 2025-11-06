@@ -51,6 +51,9 @@ public class LogPrefixConverter extends ClassicConverter {
     // Continuation (for logs within a phase)
     private static final String INFO = "│   ";
 
+    // Standalone message (not part of a group)
+    private static final String STANDALONE = "⚬ ";
+
     // No prefix
     private static final String NONE = "";
 
@@ -66,6 +69,7 @@ public class LogPrefixConverter extends ClassicConverter {
             case ITEM_LAST -> ITEM_LAST;
             case SUBITEM -> isLast ? SUBITEM_LAST : SUBITEM;
             case INFO -> INFO;
+            case STANDALONE -> STANDALONE;
             case NONE -> NONE;
         };
     }

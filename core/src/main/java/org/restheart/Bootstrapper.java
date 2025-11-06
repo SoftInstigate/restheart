@@ -435,7 +435,7 @@ public final class Bootstrapper {
         // create pid file on supported OSes
         if (!OSChecker.isWindows() && pidFilePath != null) {
             FileUtils.createPidFile(pidFilePath);
-            LOGGER.info("Pid file {}", pidFilePath);
+            BootstrapLogger.standalone(LOGGER, "Pid file {}", pidFilePath);
         }
 
         // run initializers
@@ -492,7 +492,7 @@ public final class Bootstrapper {
             BootstrapLogger.endPhase(LOGGER, "AFTER_STARTUP COMPLETED in {}ms", afterStartupDuration);
         }
 
-        LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
+        BootstrapLogger.standalone(LOGGER, ansi().fg(GREEN).bold().a("RESTHeart started").reset().toString());
     }
 
     /**
@@ -612,9 +612,9 @@ public final class Bootstrapper {
         if (httpsListener.enabled()) {
             builder.addHttpsListener(httpsListener.port(), httpsListener.host(), initSSLContext());
             if (httpsListener.host().equals("127.0.0.1") || httpsListener.host().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpsListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER, "HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpsListener.port());
             } else {
-                LOGGER.info("HTTPS listener bound at {}:{}", httpsListener.host(), httpsListener.port());
+                BootstrapLogger.standalone(LOGGER, "HTTPS listener bound at {}:{}", httpsListener.host(), httpsListener.port());
             }
         }
 
@@ -623,9 +623,9 @@ public final class Bootstrapper {
             builder.addHttpListener(httpListener.port(), httpListener.host());
 
             if (httpListener.host().equals("127.0.0.1") || httpListener.host().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER, "HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpListener.port());
             } else {
-                LOGGER.info("HTTP listener bound at {}:{}", httpListener.host(), httpListener.port());
+                BootstrapLogger.standalone(LOGGER, "HTTP listener bound at {}:{}", httpListener.host(), httpListener.port());
             }
         }
 
@@ -634,9 +634,9 @@ public final class Bootstrapper {
             builder.addAjpListener(ajpListener.port(), ajpListener.host());
 
             if (ajpListener.host().equals("127.0.0.1") || ajpListener.host().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", ajpListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER, "AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", ajpListener.port());
             } else {
-                LOGGER.info("AJP listener bound at {}:{}", ajpListener.host(), ajpListener.port());
+                BootstrapLogger.standalone(LOGGER, "AJP listener bound at {}:{}", ajpListener.host(), ajpListener.port());
             }
         }
 
@@ -659,7 +659,7 @@ public final class Bootstrapper {
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(workersSchedulerParallelism));
         System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(configuration.coreModule().workersSchedulerMaxPoolSize()));
 
-        LOGGER.info("Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
+        BootstrapLogger.standalone(LOGGER, "Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
             Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads,
             autoConfigWorkersSchedulerParallelism ? " (auto detected)" : "", workersSchedulerParallelism,
             configuration.coreModule().workersSchedulerMaxPoolSize());

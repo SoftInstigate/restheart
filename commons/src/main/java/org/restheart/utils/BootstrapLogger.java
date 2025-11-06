@@ -215,4 +215,28 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.SUBITEM);
         logger.warn(message, args);
     }
+    
+    /**
+     * Log a standalone info message (not part of a group)
+     * 
+     * @param logger the logger to use
+     * @param message the message
+     * @param args message arguments
+     */
+    public static void standalone(Logger logger, String message, Object... args) {
+        RequestPhaseContext.setPhase(Phase.STANDALONE);
+        logger.info(message, args);
+    }
+    
+    /**
+     * Log a standalone warning message (not part of a group)
+     * 
+     * @param logger the logger to use
+     * @param message the message
+     * @param args message arguments
+     */
+    public static void standaloneWarn(Logger logger, String message, Object... args) {
+        RequestPhaseContext.setPhase(Phase.STANDALONE);
+        logger.warn(message, args);
+    }
 }

@@ -455,6 +455,7 @@ public class RequestLogger extends PipelinedHandler {
                     }
 
                     nextListener.proceed();
+                    RequestPhaseContext.setPhase(RequestPhaseContext.Phase.STANDALONE);
                     LOGGER.info(sb.toString());
                 });
     }

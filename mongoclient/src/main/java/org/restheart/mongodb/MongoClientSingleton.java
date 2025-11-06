@@ -28,6 +28,7 @@ import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class MongoClientSingleton {
             throw new IllegalStateException("MongoClientSingleton is not initialized");
         }
 
-        LOGGER.info("Connecting to MongoDB...");
+        BootstrapLogger.standalone(LOGGER, "Connecting to MongoDB...");
 
         // TODO add minSize and maxSize to configuration
         final var settings = MongoClientSettings.builder()
@@ -128,20 +129,20 @@ public class MongoClientSingleton {
                 if (_version != null && _version instanceof String) {
                     serverVersion = (String) _version;
                 } else {
-                    LOGGER.warn("Cannot get the MongoDB version.");
+                    BootstrapLogger.standaloneWarn(LOGGER, "Cannot get the MongoDB version.");
                     serverVersion = "?";
                 }
 
-                LOGGER.info("MongoDB version {}", ansi()
+                BootstrapLogger.standalone(LOGGER, "MongoDB version {}", ansi()
                         .fg(MAGENTA)
                         .a(getServerVersion())
                         .reset()
                         .toString());
 
                 if (replicaSet(this.mclient)) {
-                    LOGGER.info("MongoDB is a replica set.");
+                    BootstrapLogger.standalone(LOGGER, "MongoDB is a replica set.");
                 } else {
-                    LOGGER.warn("MongoDB is a standalone instance.");
+                    BootstrapLogger.standaloneWarn(LOGGER, "MongoDB is a standalone instance.");
                 }
 
             } catch (final Throwable t) {

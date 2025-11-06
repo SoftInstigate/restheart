@@ -48,6 +48,7 @@ import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.graal.ImageInfo;
+import org.restheart.utils.BootstrapLogger;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -97,7 +98,7 @@ public class PolyglotDeployer implements Initializer {
     @OnInit
     public void onInit() {
         if (!isRunningOnGraalVM()) {
-            LOGGER.warn("Not running on GraalVM, polyglot plugins deployer disabled!");
+            BootstrapLogger.standaloneWarn(LOGGER, "Not running on GraalVM, polyglot plugins deployer disabled!");
             return;
         }
 

@@ -87,7 +87,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
             switch (outcome) {
                 case NOT_AUTHENTICATED:
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
-                    LOGGER.debug("⚬ NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    LOGGER.debug("NOT_AUTHENTICATED → NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                 case AUTHENTICATED:
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
@@ -96,7 +96,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
                     return outcome;
                 case NOT_ATTEMPTED:
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
-                    LOGGER.debug("⚬ NOT_ATTEMPTED ({}ms)", authenticateDuration);
+                    LOGGER.debug("NOT_ATTEMPTED ({}ms)", authenticateDuration);
                     return outcome;
                 default:
                     return outcome;

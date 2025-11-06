@@ -41,6 +41,7 @@ import org.restheart.configuration.Utils.RhOverride;
 import static org.restheart.configuration.Utils.asMap;
 import static org.restheart.configuration.Utils.findOrDefault;
 import static org.restheart.configuration.Utils.overrides;
+import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -535,7 +536,7 @@ public class Configuration {
                     }
 
                     if (!silent) {
-                        LOGGER.info("Overriding configuration from file: {}", confOverridesFilePath);
+                        BootstrapLogger.standalone(LOGGER, "Overriding configuration from file: {}", confOverridesFilePath);
                     }
 
                     confMap = overrideConfiguration(confMap, overrides(overrides, true, silent), silent);
@@ -548,7 +549,7 @@ public class Configuration {
             // overrides with RHO env var
             if (System.getenv().containsKey("RHO")) {
                 if (!silent) {
-                    LOGGER.info("Overriding configuration from environment variable RHO");
+                    BootstrapLogger.standalone(LOGGER, "Overriding configuration from environment variable RHO");
                 }
 
                 // overrides from RHO env var

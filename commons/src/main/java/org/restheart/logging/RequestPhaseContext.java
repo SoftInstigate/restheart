@@ -54,6 +54,8 @@ public class RequestPhaseContext {
         SUBITEM,
         /** Info/continuation (uses │   ) */
         INFO,
+        /** Standalone message (uses ⚬ ) */
+        STANDALONE,
         /** No prefix (default) */
         NONE
     }
