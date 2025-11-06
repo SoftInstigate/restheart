@@ -112,7 +112,6 @@ class Collections {
      * account the filters in case).
      *
      * @param cs the ClientSession
-     * @param db the MongoDatabase
      * @param collName the collection name
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
@@ -200,10 +199,9 @@ class Collections {
      * @param page
      * @param pagesize
      * @param sortBy
-     * @param filter
      * @param hints
      * @param keys
-     * @param cursorAllocationPolicy
+     * @param useCache
      * @return the documents in the collection as a BsonArray
      */
     BsonArray getCollectionData(
@@ -233,6 +231,7 @@ class Collections {
             if (match == null) {
                 return getCollectionDataFromDb(cs, coll, rsOps, dbName, collName, page, pagesize, sortBy, filters, hints, keys, useCache);
             } else {
+
                 var maxToIndex = match.getKey().to() - match.getKey().from();
                 var fromIndex = from - match.getKey().from();
 
@@ -247,34 +246,23 @@ class Collections {
         }
     }
 
-    private int cursorCount(MongoCursor<?> cursor) {
-        try {
-            var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("batchCursor");
-            _batchCursor.setAccessible(true);
-            var batchCursor = _batchCursor.get(cursor);
-
-            var _commandCursorResult = batchCursor.getClass().getDeclaredField("commandCursorResult");
-            _commandCursorResult.setAccessible(true);
-            var commandCursorResult = _commandCursorResult.get(batchCursor);
-
-            var _results = commandCursorResult.getClass().getDeclaredField("results");
-            _results.setAccessible(true);
-            var results = (List) _results.get(commandCursorResult);
-
-            return results.size();
-        } catch(NoSuchFieldException | IllegalAccessException ex) {
-            LOGGER.warn("cannot access field Cursor.batchCursor.commandCursorResult.results", ex);
-            return 0;
-        }
-    }
-
     @SuppressWarnings("unchecked")
     private List<BsonDocument> cursorDocs(MongoCursor<?> cursor) {
         try {
             var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("curBatch");
             _batchCursor.setAccessible(true);
-            var ret = (List<BsonDocument>) _batchCursor.get(cursor);
-            return ret;
+            var curBatch = (List<BsonDocument>) _batchCursor.get(cursor);
+            
+            // Make an immediate defensive copy - the driver's internal list may use weak references
+            // or be cleared/reused after the cursor advances
+            if (curBatch != null) {
+                // Create a new List with copies of non-null documents
+                // This ensures the documents are not garbage collected if the driver uses weak refs
+                return curBatch.stream()
+					.filter(Objects::nonNull).collect(Collectors.toList());
+            }
+            
+            return null;
         } catch(NoSuchFieldException | IllegalAccessException ex) {
             LOGGER.warn("cannot access field Cursor.curBatch ", ex);
             return Lists.newArrayList();
@@ -312,14 +300,11 @@ class Collections {
 
             // cache the cursor
             if (useCache) {
-                var count = cursorCount(cursor);
+                var cursorDocs = cursorDocs(cursor);
+                var count = cursorDocs != null ? cursorDocs.size() : 0;
                 var to = from + count;
                 var exhausted = count < GET_COLLECTION_CACHE_BATCH_SIZE;
 
-                var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, to, System.nanoTime(), exhausted);
-                LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
-
-                var cursorDocs = cursorDocs(cursor);
                 if (cursorDocs == null && !exhausted) {
                     // this should never happen
                     LOGGER.debug("cannot cache data, cursor does not contain documents and it is not exhausted");
@@ -328,10 +313,20 @@ class Collections {
                     // add to _cursorDocs all docs in ret
                     var _cursorDocs = ret.getValues().stream().map(v -> (BsonDocument) v).collect(Collectors.toList());
                     // add to _cursorDocs all remaining documents in the batch
-                    cursor.forEachRemaining(doc -> _cursorDocs.add(doc));
+                    cursor.forEachRemaining(_cursorDocs::add);
+                    
+                    var actualTo = from + _cursorDocs.size();
+                    var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, actualTo, System.nanoTime(), exhausted);
+                    LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
                     GetCollectionCache.getInstance().put(newkey, _cursorDocs);
                 } else {
-                    GetCollectionCache.getInstance().put(newkey, cursorDocs(cursor));
+                    // cursorDocs() already made a defensive copy of the batch
+                    // The batch should be safe to cache now
+                    var actualTo = from + cursorDocs.size();
+                    var actualExhausted = cursorDocs.size() < GET_COLLECTION_CACHE_BATCH_SIZE;
+                    var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, actualTo, System.nanoTime(), actualExhausted);
+                    LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
+                    GetCollectionCache.getInstance().put(newkey, cursorDocs);
                 }
             }
         }
@@ -398,11 +393,9 @@ class Collections {
      * @param dbName the database name
      * @param collName the collection name
      * @param method the request method
-     * @param properties the new collection properties
-     * @param requestEtag the entity tag. must match to allow actual write if
-     * checkEtag is true (otherwise http error code is returned)
      * @param updating true if updating existing document
-     * @param patching true if use patch semantic (update only specified fields)
+     * @param properties the new collection properties
+     * @param requestEtag the entity tag. must match to allow actual write if checkEtag is true (otherwise http error code is returned)
      * @param checkEtag true if etag must be checked
      * @return the HttpStatus code to set in the http response
      */
