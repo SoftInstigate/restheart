@@ -134,8 +134,8 @@ public class MongoDriverInternalsIT {
      */
     @Test
     public void testCursorDocsReflectionAccess() {
-        MongoCursor<BsonDocument> cursor = collection.find().batchSize(1000).cursor().limit(1).in;
-        try (MongoCursor<BsonDocument> cursor = collection.find().batchSize(1000).cursor()) {
+        try (var cursor = collection.find().batchSize(1000).cursor()) {
+			cursor.tryNext(); // force fetch
             // Now try to access the internal batch via reflection
             var cursorDocs = cursorDocs(cursor);
 
