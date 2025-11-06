@@ -22,12 +22,14 @@ package org.restheart.mongodb.db;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
@@ -50,7 +52,7 @@ public class GetCollectionCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionCache.class);
 
-    private static final boolean CACHE_ENABLED = MongoServiceConfiguration.get() == null ? true : MongoServiceConfiguration.get().isGetCollectionCacheEnabled();
+    private static final boolean CACHE_ENABLED = MongoServiceConfiguration.get() == null || MongoServiceConfiguration.get().isGetCollectionCacheEnabled();
     private static final long CACHE_SIZE = MongoServiceConfiguration.get() == null ? 100 : MongoServiceConfiguration.get().getGetCollectionCacheSize();
     private static final long CACHE_TTL = MongoServiceConfiguration.get() == null ? 10_000 : MongoServiceConfiguration.get().getGetCollectionCacheTTL();
 
@@ -110,14 +112,14 @@ public class GetCollectionCache {
     /**
      *
      * @param key
-     * @param allocationPolicy
+     * @param remove
      * @return
      */
     private Pair<GetCollectionCacheKey, List<BsonDocument>> _get(GetCollectionCacheKey key, boolean remove) {
         if (cache == null) return null;
 
-        // return the first entry with all avaible documents
-        var _bestKey = cache.asMap().keySet().stream()
+        // return the first entry with all available documents
+		var _bestKey = cache.asMap().keySet().stream()
             .filter(cacheKeyFilter(key))
             .findFirst();
 
@@ -166,7 +168,7 @@ public class GetCollectionCache {
 
         cache.asMap().keySet().stream()
             .filter(k -> k.collection().getNamespace().equals(coll.getNamespace()))
-            .forEach(k -> cache.invalidate(k));
+            .forEach(cache::invalidate);
     }
 
     private Predicate<? super GetCollectionCacheKey> cacheKeyFilter(GetCollectionCacheKey requested) {
@@ -177,8 +179,25 @@ public class GetCollectionCache {
             && Objects.equals(cached.filter(), requested.filter())
             && Objects.equals(cached.sort(), requested.sort())
             && Objects.equals(cached.keys(), requested.keys())
+            && Objects.equals(cached.hints(), requested.hints())
             && ((cached.from() <= requested.from() && cached.to() >= requested.to())
-                || (cached.exhausted() && cached.from() <= requested.from()));
+                || (cached.exhausted() && cached.from() <= requested.from()))
+            && sessionEquals(cached.session(), requested.session());
+    }
+    
+    private boolean sessionEquals(Optional<ClientSession> s1, Optional<ClientSession> s2) {
+        // Both empty
+        if (s1.isEmpty() && s2.isEmpty()) {
+            return true;
+        }
+        
+        // One empty, one present
+        if (s1.isEmpty() || s2.isEmpty()) {
+            return false;
+        }
+        
+        // Both present - compare by identity since ClientSession doesn't have meaningful equals
+        return s1.get() == s2.get();
     }
 
     private TreeMap<String, Long> getCacheSizes() {
