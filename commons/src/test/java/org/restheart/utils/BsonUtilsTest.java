@@ -701,6 +701,32 @@ public class BsonUtilsTest {
     }
 
     /**
+     * Test that empty string BsonValue is properly serialized to JSON as ""
+     */
+    @Test
+    public void testToJsonEmptyString() {
+        BsonString emptyString = new BsonString("");
+        String json = BsonUtils.toJson(emptyString);
+        
+        assertEquals("\"\"", json, "Empty string should be serialized as \"\"");
+    }
+
+    /**
+     * Test that document with empty string field is properly serialized
+     */
+    @Test
+    public void testToJsonDocumentWithEmptyString() {
+        BsonDocument doc = new BsonDocument();
+        doc.put("text", new BsonString(""));
+        doc.put("_id", new BsonString("test-id"));
+        
+        String json = BsonUtils.toJson(doc);
+        
+        assertTrue(json.contains("\"text\": \"\""), "Document should contain empty string field as \"text\": \"\"");
+        assertFalse(json.contains("\"text\": null"), "Document should not contain null for empty string field");
+    }
+
+    /**
      *
      */
     @Test

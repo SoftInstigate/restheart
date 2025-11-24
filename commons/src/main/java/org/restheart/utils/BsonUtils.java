@@ -758,7 +758,7 @@ public class BsonUtils {
             int index = ret.lastIndexOf('}');
             ret = ret.substring(0, index);
 
-            return ret;
+            return ret.strip();
         }
     }
 
