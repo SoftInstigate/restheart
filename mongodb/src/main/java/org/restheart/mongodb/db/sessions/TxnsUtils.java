@@ -172,8 +172,10 @@ public class TxnsUtils {
     }
 
     private static final String TXN = "txnNumber";
+    private static final String ON_SESSION = " on session ";
     /**
      * errorMsg can be the transaction number or:
+     * - from MongoDB 8:   1 on session <uuid> - <hash> - - using txnRetryCounter 0
      * - from MongoDB 6:   with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }
      * - from MongoDB 5:   with { txnNumber: 10 }
      * - from MongoDB < 5: with txnNumber 10
@@ -183,6 +185,13 @@ public class TxnsUtils {
     static String removeWithTxnNumber(String errorMsg) {
         if (errorMsg == null) {
             throw new IllegalArgumentException("argument s cannot be null");
+        }
+
+        // MongoDB 8.0+ format: "1 on session <uuid> - <hash> - - using txnRetryCounter 0"
+        // Extract just the number before " on session "
+        if (errorMsg.contains(ON_SESSION)) {
+            var numEnd = errorMsg.indexOf(ON_SESSION);
+            return errorMsg.substring(0, numEnd).strip();
         }
 
         if (errorMsg.contains(TXN)) {
