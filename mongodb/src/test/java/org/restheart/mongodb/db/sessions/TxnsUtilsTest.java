@@ -52,4 +52,11 @@ public class TxnsUtilsTest {
         var msg = "with txnNumberAndRetryCounter { txnNumber: 10, txnRetryCounter: 0 }";
         assertEquals(TxnsUtils.removeWithTxnNumber(msg), "10");
     }
+
+    @Test
+    public void testRemoveWithTxnNumberMongo8() {
+        // MongoDB 8.0 format: number followed by "on session" info before "using txnRetryCounter"
+        var msg = "1 on session fd3cb55b-f135-46ab-bdc7-2059230587ea - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -  using txnRetryCounter 0";
+        assertEquals(TxnsUtils.removeWithTxnNumber(msg), "1");
+    }
 }
