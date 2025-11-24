@@ -72,7 +72,6 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@SuppressWarnings("deprecation")
 public class RequestDispatcherHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
@@ -120,7 +119,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         if (request.getMethod() == METHOD.OTHER || request.getType() == TYPE.INVALID) {
             LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "method " + request.getMethod().name() + " not allowed");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "method " + request.getMethod().name() + " not allowed");
             next(exchange);
             return;
         }
@@ -133,7 +133,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             after(exchange);
         } else {
             LOGGER.error("Can't find PipelinedHandler({}, {})", request.getType(), request.getMethod());
-            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "method " + request.getMethod().name() + " not allowed");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "method " + request.getMethod().name() + " not allowed");
             next(exchange);
         }
     }
@@ -148,7 +149,9 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      */
     public PipelinedHandler getPipedHttpHandler(TYPE type, METHOD method) {
         Map<METHOD, PipelinedHandler> methodsMap = handlersMultimap.get(type);
-        return methodsMap != null ? methodsMap.get(method) : null;
+        return methodsMap != null
+            ? methodsMap.get(method)
+            : null;
     }
 
     /**
@@ -178,26 +181,25 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         putHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
         putHandler(TYPE.ROOT_SIZE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new SizeRequestTransformer(true),
                         new GetRootHandler(),
                         new SizeRequestTransformer(false)));
 
         // *** DB handlers
         putHandler(TYPE.DB, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDBHandler(),
-                        new AggregationTransformer(false)
-                ));
+                        new AggregationTransformer(false)));
 
         putHandler(TYPE.DB_SIZE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new SizeRequestTransformer(true),
                         new GetDBHandler(),
                         new SizeRequestTransformer(false)));
 
         putHandler(TYPE.DB_META, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
                         new MetaRequestTransformer()));
@@ -210,41 +212,38 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         // *** COLLECTION handlers
         putHandler(TYPE.COLLECTION, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetCollectionHandler(),
-                        new AggregationTransformer(false)
-                ));
+                        new AggregationTransformer(false)));
 
         putHandler(TYPE.COLLECTION_SIZE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false)));
 
         putHandler(TYPE.COLLECTION_META, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
-                        new MetaRequestTransformer()
-                ));
+                        new MetaRequestTransformer()));
 
         putHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
-                                new PostCollectionHandler(),
-                                new BulkPostCollectionHandler()));
+                        new PostCollectionHandler(),
+                        new BulkPostCollectionHandler()));
 
         putHandler(TYPE.COLLECTION, METHOD.PUT,
-                PipelinedHandler.pipe(
+                pipe(
                         new AggregationTransformer(true),
                         new PutCollectionHandler()));
 
         putHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
 
         putHandler(TYPE.COLLECTION, METHOD.PATCH,
-                PipelinedHandler.pipe(
+                pipe(
                         new AggregationTransformer(true),
-                        new PatchCollectionHandler()
-                ));
+                        new PatchCollectionHandler()));
 
         // *** DOCUMENT handlers
         putHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
@@ -276,24 +275,22 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         putHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler());
 
         putHandler(TYPE.FILES_BUCKET_SIZE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false)));
 
         putHandler(TYPE.FILES_BUCKET_META, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDocumentHandler(),
-                        new MetaRequestTransformer()
-                ));
+                        new MetaRequestTransformer()));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostBucketHandler());
 
         putHandler(TYPE.FILE, METHOD.PUT,
-                PipelinedHandler.pipe(
+                pipe(
                         new PutFileHandler(),
-                        new FileMetadataHandler()
-                ));
+                        new FileMetadataHandler()));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutBucketHandler());
 
@@ -323,51 +320,45 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         // *** SCHEMA handlers
         putHandler(TYPE.SCHEMA_STORE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetCollectionHandler(),
-                        new JsonSchemaTransformer(false)
-                ));
+                        new JsonSchemaTransformer(false)));
 
         putHandler(TYPE.SCHEMA_STORE_SIZE, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false)));
 
         putHandler(TYPE.SCHEMA_STORE_META, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDocumentHandler(),
-                        new MetaRequestTransformer()
-                ));
+                        new MetaRequestTransformer()));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
-                PipelinedHandler.pipe(
-                        new PutCollectionHandler()
-                ));
+                pipe(
+                        new PutCollectionHandler()));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PATCH, new PatchCollectionHandler());
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.POST,
-                PipelinedHandler.pipe(
+                pipe(
                         new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
-                        new PostCollectionHandler()
-                ));
+                        new PostCollectionHandler()));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.DELETE, new DeleteCollectionHandler());
 
         putHandler(TYPE.SCHEMA, METHOD.GET,
-                PipelinedHandler.pipe(
+                pipe(
                         new GetDocumentHandler(),
-                        new JsonSchemaTransformer(false)
-                ));
+                        new JsonSchemaTransformer(false)));
 
         putHandler(TYPE.SCHEMA, METHOD.PUT,
-                PipelinedHandler.pipe(
+                pipe(
                         new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
-                        new PutDocumentHandler()
-                ));
+                        new PutDocumentHandler()));
 
         putHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
     }
