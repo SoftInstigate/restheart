@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 
 import org.bson.*;
 import org.restheart.configuration.ConfigurationException;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
@@ -37,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.jayway.jsonpath.JsonPath;
 
 import io.undertow.attribute.ExchangeAttributes;
@@ -60,6 +63,8 @@ import io.undertow.predicate.PredicateParser;
  * <li><strong>@user.&lt;property&gt;</strong> - Any custom property from the user's account</li>
  * <li><strong>@request</strong> - The current request object</li>
  * <li><strong>@request.&lt;path&gt;</strong> - Specific request properties using JSONPath syntax</li>
+ * <li><strong>@request.body</strong> - The request body content (for BsonRequest/JsonRequest)</li>
+ * <li><strong>@request.body.&lt;path&gt;</strong> - Specific request body properties using dot notation</li>
  * <li><strong>@now</strong> - Current timestamp as epoch milliseconds</li>
  * <li><strong>@mongoPermissions</strong> - MongoDB-specific permissions object</li>
  * </ul>
@@ -95,6 +100,10 @@ import io.undertow.predicate.PredicateParser;
  * // Interpolate variables
  * BsonDocument interpolated = AclVarsInterpolator.interpolateBson(
  *         request, permission);
+ *
+ * // Using @request.body in ACL predicates for authorization
+ * // Example: restrict transaction amount
+ * // predicate: "method(POST) and lte(@request.body.amount, 10000)"
  * }</pre>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -205,6 +214,16 @@ public class AclVarsInterpolator {
      * <td>BsonValue</td>
      * </tr>
      * <tr>
+     * <td>@request.body</td>
+     * <td>Complete request body content</td>
+     * <td>BsonValue</td>
+     * </tr>
+     * <tr>
+     * <td>@request.body.property</td>
+     * <td>Request body property via dot notation</td>
+     * <td>BsonValue</td>
+     * </tr>
+     * <tr>
      * <td>@mongoPermissions</td>
      * <td>MongoDB permissions object</td>
      * <td>BsonDocument</td>
@@ -256,10 +275,15 @@ public class AclVarsInterpolator {
      * Nested properties can be accessed using dot notation:
      * </p>
      * <ul>
-     * <li>Simple properties: @user.email, @request.method</li>
-     * <li>Nested properties: @user.profile.firstName, @request.headers.contentType</li>
-     * <li>JSONPath expressions: @request.body.items[0].name</li>
+     * <li>Simple properties: @user.email, @request.method, @request.body.amount</li>
+     * <li>Nested properties: @user.profile.firstName, @request.body.transaction.amount</li>
+     * <li>JSONPath expressions: @request.headers.contentType</li>
      * </ul>
+     * <p>
+     * Note: @request.body variables require the request to be a BsonRequest (MongoRequest, etc.)
+     * with BsonDocument content. They are evaluated during request processing and can be used
+     * in authorization predicates to restrict operations based on request payload values.
+     * </p>
      *
      * @param request
      *            The current request containing authentication and context information
@@ -331,6 +355,37 @@ public class AclVarsInterpolator {
                     return BsonNull.VALUE;
                 }
             }
+        } else if (value.equals("@request.body")) {
+            if (request.getContent() == null) {
+                return BsonNull.VALUE;
+            }
+            return request.getContent();
+        } else if (value.startsWith("@request.body.") && value.length() > 13) {
+            if (request.getContent() == null) {
+                return BsonNull.VALUE;
+            }
+
+            if (!(request.getContent() instanceof BsonDocument contentDoc)) {
+                LOGGER.warn("@request.body variable used but request content is not a BsonDocument, it is {}", 
+                    request.getContent().getClass().getSimpleName());
+                return BsonNull.VALUE;
+            }
+
+            var prop = value.substring(14);
+
+            LOGGER.debug("request body doc: {}", contentDoc.toJson());
+
+            if (prop.contains(".")) {
+                // Use BsonUtils.get() for dot notation support
+                var _value = BsonUtils.get(contentDoc, prop);
+                return _value.orElse(BsonNull.VALUE);
+            } else {
+                if (contentDoc.containsKey(prop)) {
+                    return contentDoc.get(prop);
+                } else {
+                    return BsonNull.VALUE;
+                }
+            }
         } else if (value.equals("@mongoPermissions")) {
             if (MongoPermissions.of(request) != null) {
                 return MongoPermissions.of(request).asBson();
@@ -390,12 +445,20 @@ public class AclVarsInterpolator {
         var a = getAccountDocument(request);
 
         try {
-            if (a == null || a.isEmpty()) {
-                return PredicateParser.parse(predicate, classLoader);
-            } else {
-                var interpolatedPredicate = interpolatePredicate(predicate, "@user.", a);
-                return PredicateParser.parse(interpolatedPredicate, classLoader);
+            var interpolatedPredicate = predicate;
+            
+            // Interpolate @user variables
+            if (a != null && !a.isEmpty()) {
+                interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@user.", a);
             }
+            
+            // Interpolate @request.body variables
+            var requestBody = getRequestBodyDocument(request);
+            if (requestBody != null && !requestBody.isEmpty()) {
+                interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@request.body.", requestBody);
+            }
+            
+            return PredicateParser.parse(interpolatedPredicate, classLoader);
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + predicate, t);
         }
@@ -412,6 +475,109 @@ public class AclVarsInterpolator {
             case JwtAccount jwtAccount -> toBson(jwtAccount.propertiesAsMap()).asDocument();
             default -> null;
         };
+    }
+
+    /**
+     * Extracts the request body as a BSON document.
+     * <p>
+     * This helper method provides a unified way to access request body content regardless
+     * of whether the request is a BsonRequest or JsonRequest. It handles the conversion
+     * of different request types to a consistent BSON document format.
+     * </p>
+     *
+     * @param request The request to extract the body from
+     * @return A BsonDocument containing the request body, or null if no body is available or not supported
+     */
+    private static BsonDocument getRequestBodyDocument(Request<?> request) {
+        if (request == null) {
+            return null;
+        }
+
+        if (request instanceof BsonRequest bsonRequest) {
+            if (bsonRequest.getContent() == null) {
+                return null;
+            }
+            if (bsonRequest.getContent() instanceof BsonDocument doc) {
+                return doc;
+            } else {
+                LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", 
+                    bsonRequest.getContent().getClass().getSimpleName());
+                return null;
+            }
+        } else if (request instanceof JsonRequest jsonRequest) {
+            if (jsonRequest.getContent() == null) {
+                return null;
+            }
+            if (jsonRequest.getContent().isJsonObject()) {
+                return jsonObjectToBsonDocument(jsonRequest.getContent().getAsJsonObject());
+            } else {
+                LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", 
+                    jsonRequest.getContent().getClass().getSimpleName());
+                return null;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Converts a Gson JsonObject to a BSON document.
+     * 
+     * @param jsonObject The JsonObject to convert
+     * @return A BsonDocument representation of the JsonObject
+     */
+    private static BsonDocument jsonObjectToBsonDocument(JsonObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+        
+        var doc = new BsonDocument();
+        
+        jsonObject.entrySet().forEach(entry -> {
+            var key = entry.getKey();
+            var value = entry.getValue();
+            doc.put(key, jsonElementToBsonValue(value));
+        });
+        
+        return doc;
+    }
+
+    /**
+     * Converts a Gson JsonElement to a BsonValue.
+     * 
+     * @param element The JsonElement to convert
+     * @return A BsonValue representation of the JsonElement
+     */
+    private static BsonValue jsonElementToBsonValue(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return BsonNull.VALUE;
+        } else if (element.isJsonPrimitive()) {
+            var primitive = element.getAsJsonPrimitive();
+            if (primitive.isString()) {
+                return new BsonString(primitive.getAsString());
+            } else if (primitive.isNumber()) {
+                // Try to preserve integer types
+                try {
+                    return new BsonInt32(primitive.getAsInt());
+                } catch (NumberFormatException e) {
+                    try {
+                        return new BsonInt64(primitive.getAsLong());
+                    } catch (NumberFormatException e2) {
+                        return new BsonDouble(primitive.getAsDouble());
+                    }
+                }
+            } else if (primitive.isBoolean()) {
+                return new BsonBoolean(primitive.getAsBoolean());
+            }
+        } else if (element.isJsonObject()) {
+            return jsonObjectToBsonDocument(element.getAsJsonObject());
+        } else if (element.isJsonArray()) {
+            var array = new BsonArray();
+            element.getAsJsonArray().forEach(e -> array.add(jsonElementToBsonValue(e)));
+            return array;
+        }
+        
+        return BsonNull.VALUE;
     }
 
     /**

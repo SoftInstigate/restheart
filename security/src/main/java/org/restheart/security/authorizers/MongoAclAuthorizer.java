@@ -49,7 +49,6 @@ import org.restheart.security.utils.MongoUtils;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.utils.BootstrapLogger;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -203,7 +202,7 @@ public class MongoAclAuthorizer implements Authorizer {
                         return false;
                     });
             });
-            
+
             // Log all permission checks grouped together
             if (!debugLogs.isEmpty()) {
                 debugLogs.forEach(LOGGER::debug);
