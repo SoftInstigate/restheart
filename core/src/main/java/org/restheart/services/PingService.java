@@ -87,7 +87,7 @@ public class PingService implements ByteArrayService {
             // X-Forwarded-Host can contain multiple values separated by commas
             // Return the rightmost (last) value which is the original client host
             final String[] hosts = forwardedHost.split(",");
-            return hosts[hosts.length - 1].trim();
+            return hosts[hosts.length - 1].strip();
         } else {
             // Fallback to the Host header
             return exchange.getRequestHeaders().getFirst("Host");
@@ -100,7 +100,7 @@ public class PingService implements ByteArrayService {
 
         if (forwardedFor != null && !forwardedFor.isEmpty()) {
             // The first IP in X-Forwarded-For is typically the client's IP
-            return forwardedFor.split(",")[0].trim();
+            return forwardedFor.split(",")[0].strip();
         } else {
             // Fallback to the remote address from the exchange
             return exchange.getSourceAddress().getAddress().getHostAddress();

@@ -63,7 +63,7 @@ public class MetricsService implements StringService {
         // Read config option for missing registry status code
         Object statusCodeOpt = config.get("missing-registry-status-code");
         if (statusCodeOpt != null) {
-            String codeStr = statusCodeOpt.toString().trim();
+            String codeStr = statusCodeOpt.toString().strip();
             if (codeStr.equals("200")) {
                 this.missingRegistryStatusCode = HttpStatus.SC_OK;
             } else if (codeStr.equals("404")) {
