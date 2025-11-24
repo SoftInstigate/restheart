@@ -214,7 +214,7 @@
             <dependency>
                 <groupId>org.jboss.threads</groupId>
                 <artifactId>jboss-threads</artifactId>
-                <version>3.9.1</version>
+                <version>3.9.2</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>
@@ -274,7 +274,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.20</version>
+                <version>1.5.21</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
