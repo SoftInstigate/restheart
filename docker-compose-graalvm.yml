@@ -1,24 +1,45 @@
+# RESTHeart GraalVM Docker Compose Configuration
+# Runs RESTHeart with GraalVM JIT and MongoDB in replica set mode
+# GraalVM enables polyglot applications, so you can use JavaScript alongside Java
+# Ref: https://restheart.org/docs/plugins/core-plugins-js
 name: restheart-graalvm
 
 services:
+  # RESTHeart API server (GraalVM JIT)
   restheart:
     image: softinstigate/restheart:latest-graalvm
     environment:
+      # RHO (RESTHeart Overrides) - Override default configuration
+      # Uses semicolon-separated XPath expressions to modify config
+      # Note: Arrays use XPath 1.0 indexing (1-based, not 0-based)
+      # Uncomment the commented line below to override the default mount and expose all databases at root
       RHO: >
-          /mclient/connection-string->"mongodb://mongodb";
-          /http-listener/host->"0.0.0.0";
+        /mclient/connection-string->"mongodb://mongodb";
+        /http-listener/host->"0.0.0.0";
+      # /mongo/mongo-mounts[1]->{"what":"*","where":"/"};
+    # Wait for MongoDB to be healthy before starting
     depends_on:
       mongodb:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "8080:8080" # Expose RESTHeart API on http://localhost:8080
 
+  # MongoDB database server
   mongodb:
     image: mongo:8.0
+    # Run as replica set (required for change streams and transactions)
     command: ["--bind_ip_all", "--replSet", "rs0"]
+    # Health check to initialize replica set
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "'if (!rs.isMaster().ismaster) { rs.initiate(); }'"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 5s
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "'if (!rs.isMaster().ismaster) { rs.initiate(); }'",
+        ]
+      interval: 5s # Check every 5 seconds
+      timeout: 10s # Wait up to 10 seconds for response
+      retries: 5 # Retry 5 times before marking unhealthy
+      start_period: 5s # Grace period before health checks start
