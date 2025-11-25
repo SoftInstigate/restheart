@@ -20,15 +20,13 @@
  */
 package org.restheart.utils;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.LinkedList;
+
 import org.restheart.graal.ImageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
 
 /**
  * utility class to help daemonizing process
@@ -87,12 +85,12 @@ public class RESTHeartDaemon {
             LOGGER.info("newArgs: {}", args);
 
             var p = new ProcessBuilder()
-                .command(args.toArray(new String[0]))
-                .directory(new File(System.getProperty("user.dir")))
-                .inheritIO()
-                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .start();
+                    .command(args.toArray(new String[0]))
+                    .directory(new File(System.getProperty("user.dir")))
+                    .inheritIO()
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
 
             // disconnect std io
             p.getInputStream().close();
@@ -111,7 +109,7 @@ public class RESTHeartDaemon {
     private boolean isExecutable() {
         try {
             return ImageInfo.isExecutable();
-        } catch(Throwable cnfe) {
+        } catch (Throwable cnfe) {
             // this happens when not running GraalVM. ImageInfo would not be available.
             return false;
         }
