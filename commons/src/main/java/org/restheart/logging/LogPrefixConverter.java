@@ -20,6 +20,8 @@
  */
 package org.restheart.logging;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import org.restheart.logging.RequestPhaseContext.Phase;
@@ -62,6 +64,12 @@ public class LogPrefixConverter extends ClassicConverter {
         var phase = RequestPhaseContext.getPhase();
         var isLast = RequestPhaseContext.isLast();
 
+        // If this is a non-DEBUG log within a grouped context, check if the group would be visible
+        // If not, use STANDALONE prefix to avoid orphaned tree symbols
+        if (shouldUseStandalonePrefix(event, phase)) {
+            return STANDALONE;
+        }
+
         return switch (phase) {
             case PHASE_START -> PHASE_START;
             case PHASE_END -> PHASE_END;
@@ -72,5 +80,39 @@ public class LogPrefixConverter extends ClassicConverter {
             case STANDALONE -> STANDALONE;
             case NONE -> NONE;
         };
+    }
+
+    /**
+     * Determines if a STANDALONE prefix should be used instead of group prefixes.
+     * This happens when:
+     * 1. The event is at WARN/ERROR/INFO level (higher than DEBUG)
+     * 2. The phase indicates we're inside a group (ITEM, SUBITEM, INFO)
+     * 3. DEBUG logging is not enabled for the logger
+     * 
+     * In this case, the group context (PHASE_START, etc.) wouldn't be visible,
+     * so using group prefixes would create orphaned tree symbols.
+     */
+    private boolean shouldUseStandalonePrefix(ILoggingEvent event, Phase phase) {
+        // Only applies to phases that are part of a group
+        if (phase != Phase.ITEM && phase != Phase.ITEM_LAST && 
+            phase != Phase.SUBITEM && phase != Phase.INFO) {
+            return false;
+        }
+
+        // Only applies to non-DEBUG log levels
+        if (event.getLevel().levelInt <= Level.DEBUG_INT) {
+            return false;
+        }
+
+        // Check if DEBUG is enabled for this logger
+        // If DEBUG is not enabled, the group context won't be visible
+        if (event.getLoggerName() != null) {
+            var logger = (Logger) org.slf4j.LoggerFactory.getLogger(event.getLoggerName());
+            if (logger != null && !logger.isDebugEnabled()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
