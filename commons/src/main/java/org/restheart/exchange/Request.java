@@ -75,9 +75,6 @@ public abstract class Request<T> extends Exchange<T> {
     /** Attachment key for storing X-Forwarded headers. */
     private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS = AttachmentKey.create(Map.class);
 
-    /** Attachment key for blocking authentication due to too many requests. */
-    private static final AttachmentKey<Boolean> BLOCK_AUTH_FOR_TOO_MANY_REQUESTS = AttachmentKey.create(Boolean.class);
-
     /**
      * Constructs a Request wrapping the provided HttpServerExchange.
      * <p>
@@ -609,33 +606,6 @@ public abstract class Request<T> extends Exchange<T> {
         } else {
             return METHOD.OTHER;
         }
-    }
-
-    /**
-     * Marks this request to be blocked due to too many requests.
-     * <p>
-     * If called BEFORE authentication, the request will be aborted
-     * with a 429 Too Many Requests response. This is typically used
-     * by rate limiting mechanisms to prevent abuse.
-     * </p>
-     */
-    public void blockForTooManyRequests() {
-        getWrappedExchange().putAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS, true);
-    }
-
-    /**
-     * Checks if this request has been marked for blocking due to too many requests.
-     * <p>
-     * This method is used by authentication mechanisms to determine if a request
-     * should be rejected before processing.
-     * </p>
-     *
-     * @return true if the request is blocked for too many requests, false otherwise
-     */
-    public boolean isBlockForTooManyRequests() {
-        var block = getWrappedExchange().getAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS);
-
-        return block == null ? false : block;
     }
 
     /**

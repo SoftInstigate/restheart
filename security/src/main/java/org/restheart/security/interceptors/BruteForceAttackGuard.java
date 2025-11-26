@@ -53,11 +53,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Defends against brute force attacks by blocking requests that exceed failed authentication threshold.
+ * <p>
+ * This interceptor runs at the REQUEST_BEFORE_AUTH intercept point and checks the metrics
+ * collected by FailedAuthMetricsCollector. When the number of failed authentication attempts
+ * from the same source (IP address or X-Forwarded-For header) exceeds the configured threshold
+ * within the sliding time window (10 seconds), it immediately errors the request with a
+ * 429 Too Many Requests status, preventing the authentication attempt from even being processed.
+ * </p>
+ * <p>
+ * This preemptive approach prevents attackers from consuming server resources with repeated
+ * authentication attempts after they've already exceeded the threshold.
+ * </p>
+ * <p>
+ * Configuration options:
+ * <ul>
+ *   <li><code>max-failed-attempts</code> - Maximum allowed failed attempts in the time window (default: 5)</li>
+ *   <li><code>trust-x-forwarded-for</code> - Whether to track by X-Forwarded-For header (default: false)</li>
+ *   <li><code>x-forwarded-for-value-from-last</code> - Which value to use from X-Forwarded-For (default: 0, meaning last value)</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <strong>Note:</strong> This interceptor requires FailedAuthMetricsCollector to be enabled
+ * to function properly, as it relies on the metrics collected by that interceptor.
+ * </p>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name="bruteForceAttackGuard",
-        description = "defends from brute force attacks by returning 429 Too Many Requests when failed auth attempts in last 10 seconds from same ip are more than 50%",
+        description = "defends from brute force attacks by blocking requests when failed authentication attempts exceed threshold",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         enabledByDefault = false)
 public class BruteForceAttackGuard implements WildcardInterceptor {
@@ -107,13 +131,19 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
-        // if failed attempts in last 10 seconds >= maxFailedAttempts, deny access
-        var max = authHisto(request).getSnapshot().getMax();
-        if (max > this.maxFailedAttempts) {
-            logWarning(request.getExchange(), max);
-            // this blocks the request authentication
-            // with status code 429 TOO_MANY_REQUESTS
-            request.blockForTooManyRequests();
+        // This interceptor runs BEFORE authentication
+        // Check if failed attempts from this source exceed the threshold
+        var histogram = authHisto(request);
+        var failedAttempts = histogram.getSnapshot().getMax();
+        
+        if (failedAttempts >= this.maxFailedAttempts) {
+            logWarning(request.getExchange(), failedAttempts);
+            
+            // Set the request as in error to stop further processing
+            response.setInError(
+                org.restheart.utils.HttpStatus.SC_TOO_MANY_REQUESTS,
+                "Too many failed authentication attempts. Please try again later."
+            );
         }
     }
 
