@@ -26,8 +26,10 @@ import java.util.stream.Collectors;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
@@ -49,6 +51,7 @@ public class AuthorizersHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizersHandler.class);
     
     private final Set<PluginRecord<Authorizer>> authorizers;
+    private final RequestInterceptorsExecutor failedAuthInterceptorsExecutor;
 
     /**
      * Creates a new instance of AuthorizersHandler
@@ -59,6 +62,7 @@ public class AuthorizersHandler extends PipelinedHandler {
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
         super(next);
         this.authorizers = authorizers;
+        this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
     }
 
     /**
@@ -90,6 +94,9 @@ public class AuthorizersHandler extends PipelinedHandler {
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("✗ ACCESS DENIED → 403 Forbidden ({}ms)", authorizationDuration);
             RequestPhaseContext.reset();
+            
+            // execute REQUEST_AFTER_FAILED_AUTH interceptors
+            failedAuthInterceptorsExecutor.handleRequest(exchange);
                 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
