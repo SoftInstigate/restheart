@@ -35,28 +35,33 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 
 /**
- * Example interceptor that logs failed authentication attempts.
+ * Example interceptor that logs failed authentication and authorization attempts.
  * This demonstrates the use of the REQUEST_AFTER_FAILED_AUTH intercept point.
  *
  * When enabled, this interceptor logs details about each failed authentication
- * attempt including:
+ * or authorization attempt including:
  * - Remote IP address
  * - X-Forwarded-For header value
  * - Request method and URL
  * - User-Agent header
- * - Attempted username (if available in Authorization header)
+ * - Attempted username (for authentication failures) or authenticated username (for authorization failures)
+ *
+ * The interceptor automatically distinguishes between:
+ * - Authentication failures (401 Unauthorized): User failed to authenticate
+ * - Authorization failures (403 Forbidden): User is authenticated but lacks permissions
  *
  * This can be useful for:
  * - Security monitoring and auditing
  * - Identifying brute force attack patterns
- * - Collecting metrics on authentication failures
+ * - Collecting metrics on authentication and authorization failures
  * - Alerting on suspicious activity
+ * - Detecting privilege escalation attempts
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "failedAuthLogger",
-    description = "Logs details about failed authentication attempts for security monitoring",
+    description = "Logs details about failed authentication and authorization attempts for security monitoring",
     interceptPoint = InterceptPoint.REQUEST_AFTER_FAILED_AUTH,
     enabledByDefault = false
 )
@@ -67,21 +72,31 @@ public class FailedAuthLogger implements WildcardInterceptor {
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         var exchange = request.getExchange();
 
-        // Gather information about the failed authentication attempt
+        // Gather information about the failed authentication/authorization attempt
         var remoteIp = ExchangeAttributes.remoteIp().readAttribute(exchange);
         var xff = getHeaderValue(exchange, HttpHeaders.X_FORWARDED_FOR);
         var userAgent = getHeaderValue(exchange, HttpHeaders.USER_AGENT);
         var requestMethod = ExchangeAttributes.requestMethod().readAttribute(exchange);
         var requestUrl = ExchangeAttributes.requestURL().readAttribute(exchange);
-        var attemptedUsername = extractUsername(exchange);
-
-        // Log the failed authentication attempt
-        if (attemptedUsername != null) {
-            LOGGER.warn("Failed authentication attempt - User: {}, Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
-                attemptedUsername, remoteIp, xff, requestMethod, requestUrl, userAgent);
+        
+        // Determine if this is an authentication failure or authorization failure
+        var isAuthenticated = request.isAuthenticated();
+        
+        if (isAuthenticated) {
+            // Authorization failure - user is authenticated but not authorized
+            var username = request.getAuthenticatedAccount().getPrincipal().getName();
+            LOGGER.warn("Failed authorization attempt - User: {}, Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
+                username, remoteIp, xff, requestMethod, requestUrl, userAgent);
         } else {
-            LOGGER.warn("Failed authentication attempt - Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
-                remoteIp, xff, requestMethod, requestUrl, userAgent);
+            // Authentication failure - user failed to authenticate
+            var attemptedUsername = extractUsername(exchange);
+            if (attemptedUsername != null) {
+                LOGGER.warn("Failed authentication attempt - User: {}, Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
+                    attemptedUsername, remoteIp, xff, requestMethod, requestUrl, userAgent);
+            } else {
+                LOGGER.warn("Failed authentication attempt - Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
+                    remoteIp, xff, requestMethod, requestUrl, userAgent);
+            }
         }
     }
 
