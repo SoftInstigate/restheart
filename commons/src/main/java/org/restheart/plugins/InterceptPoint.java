@@ -31,6 +31,7 @@ package org.restheart.plugins;
  * <ol>
  *   <li>{@link #REQUEST_BEFORE_EXCHANGE_INIT} - Before request/response objects are created</li>
  *   <li>{@link #REQUEST_BEFORE_AUTH} - After initialization but before authentication</li>
+ *   <li>{@link #REQUEST_AFTER_FAILED_AUTH} - After authentication fails (only on auth failure)</li>
  *   <li>{@link #REQUEST_AFTER_AUTH} - After authentication but before request handling</li>
  *   <li>Request handling by service or proxy</li>
  *   <li>{@link #RESPONSE} - After response generation (blocking)</li>
@@ -114,6 +115,47 @@ public enum InterceptPoint {
      * </p>
      */
     REQUEST_BEFORE_AUTH,
+
+    /**
+     * Intercepts the request after authentication or authorization fails.
+     * <p>
+     * This intercept point is executed only when authentication or authorization fails,
+     * occurring after the authentication process completes unsuccessfully but before
+     * the error response is sent to the client. It allows interceptors to implement
+     * custom security policies, logging, or response modification for failed authentication
+     * attempts.
+     * </p>
+     * <p>
+     * <strong>Available Data:</strong>
+     * <ul>
+     *   <li>Complete request object with parsed content</li>
+     *   <li>Authentication context (may include attempted username)</li>
+     *   <li>Request headers and client information (IP address, user agent)</li>
+     *   <li>Response object for custom error response generation</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <strong>Use Cases:</strong>
+     * <ul>
+     *   <li>Brute force attack protection (blocking excessive failed attempts)</li>
+     *   <li>Security event logging and monitoring</li>
+     *   <li>Custom error response generation for failed authentication</li>
+     *   <li>Rate limiting based on failed authentication attempts</li>
+     *   <li>Notification triggers for suspicious activity</li>
+     *   <li>Collecting authentication failure metrics</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <strong>Important Notes:</strong>
+     * <ul>
+     *   <li>This intercept point only executes on authentication/authorization failure</li>
+     *   <li>The request phase is set to PHASE_END to prevent further processing</li>
+     *   <li>Interceptors should avoid expensive operations to maintain performance</li>
+     *   <li>The response status code is typically 401 (Unauthorized) or 429 (Too Many Requests)</li>
+     * </ul>
+     * </p>
+     */
+    REQUEST_AFTER_FAILED_AUTH,
 
     /**
      * Intercepts the request after authentication occurs but before request handling.

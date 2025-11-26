@@ -27,9 +27,11 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
 import static org.restheart.metrics.Metrics.failedAuthHistogramName;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -66,6 +68,8 @@ public class AuthenticationCallHandler extends PipelinedHandler {
     private static final String BLOCK_AUTH_ERR_MSG = "Request authentication was blocked";
     private static final String FAILED_AUTH_METRIC_PREFIX = "failed-auth-";
 
+    private final RequestInterceptorsExecutor failedAuthInterceptorsExecutor;
+
     static {
         if (LOGGER.isTraceEnabled()) {
             Slf4jReporter
@@ -83,6 +87,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
 
     public AuthenticationCallHandler(final PipelinedHandler next) {
         super(next);
+        this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
     }
 
     /**
@@ -135,10 +140,14 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             LOGGER.debug("AUTHENTICATION FAILED");
             RequestPhaseContext.reset();
 
-            // add CORS headers
-            CORSHandler.injectAccessControlAllowHeaders(exchange);
             // update failed auth metrics
             updateFailedAuthMetrics(exchange);
+
+            // execute REQUEST_AFTER_FAILED_AUTH interceptors
+            failedAuthInterceptorsExecutor.handleRequest(exchange);
+
+            // add CORS headers
+            CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
             Response.of(exchange).setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             fastEndExchange(exchange);
