@@ -30,10 +30,7 @@ import java.util.stream.Collectors;
 
 import org.bson.*;
 import org.restheart.configuration.ConfigurationException;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.JsonRequest;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.Request;
+import org.restheart.exchange.*;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -440,12 +437,12 @@ public class AclVarsInterpolator {
      *            the classloader to resolve the predicates, see java.util.ServiceLoader
      * @return the interpolated predicate
      */
-    public static Predicate interpolatePredicate(Request<?> request, String predicate, ClassLoader classLoader)
-            throws ConfigurationException {
+    public static Predicate interpolatePredicate(Request<?> request, String predicate, ClassLoader classLoader) throws ConfigurationException {
         var a = getAccountDocument(request);
 
         try {
-            var interpolatedPredicate = predicate;
+            // Normalize quotes in the predicate by replacing them with placeholder
+            var interpolatedPredicate = normalizeQuotes(predicate);
             
             // Interpolate @user variables
             if (a != null && !a.isEmpty()) {
@@ -453,7 +450,13 @@ public class AclVarsInterpolator {
             }
             
             // Interpolate @request.body variables
-            var requestBody = getRequestBodyDocument(request);
+			BsonDocument requestBody = null;
+			try {
+				requestBody = getRequestBodyDocument(request);
+			} catch(BadRequestException bre) {
+				// nothing to do
+			}
+
             if (requestBody != null && !requestBody.isEmpty()) {
                 interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@request.body.", requestBody);
             }
@@ -488,36 +491,33 @@ public class AclVarsInterpolator {
      * @param request The request to extract the body from
      * @return A BsonDocument containing the request body, or null if no body is available or not supported
      */
-    private static BsonDocument getRequestBodyDocument(Request<?> request) {
-        if (request == null) {
-            return null;
-        }
-
-        if (request instanceof BsonRequest bsonRequest) {
-            if (bsonRequest.getContent() == null) {
-                return null;
-            }
-            if (bsonRequest.getContent() instanceof BsonDocument doc) {
-                return doc;
-            } else {
-                LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", 
-                    bsonRequest.getContent().getClass().getSimpleName());
-                return null;
-            }
-        } else if (request instanceof JsonRequest jsonRequest) {
-            if (jsonRequest.getContent() == null) {
-                return null;
-            }
-            if (jsonRequest.getContent().isJsonObject()) {
-                return jsonObjectToBsonDocument(jsonRequest.getContent().getAsJsonObject());
-            } else {
-                LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", 
-                    jsonRequest.getContent().getClass().getSimpleName());
-                return null;
-            }
-        }
-        
-        return null;
+    private static BsonDocument getRequestBodyDocument(Request<?> request) throws BadRequestException {
+		return switch (request) {
+			case null -> null;
+			case BsonRequest bsonRequest -> {
+				if (bsonRequest.getContent() == null) {
+					yield null;
+				}
+				if (bsonRequest.getContent() instanceof BsonDocument doc) {
+					yield doc;
+				} else {
+					LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", bsonRequest.getContent().getClass().getSimpleName());
+					yield null;
+				}
+			}
+			case JsonRequest jsonRequest -> {
+				if (jsonRequest.getContent() == null) {
+					yield null;
+				}
+				if (jsonRequest.getContent().isJsonObject()) {
+					yield jsonObjectToBsonDocument(jsonRequest.getContent().getAsJsonObject());
+				} else {
+					LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", jsonRequest.getContent().getClass().getSimpleName());
+					yield null;
+				}
+			}
+			default -> null;
+		};
     }
 
     /**
@@ -686,14 +686,20 @@ public class AclVarsInterpolator {
 
         String[] ret = { predicate };
 
+        // Sort keys by length in descending order to replace longer paths first
+        // This prevents @user._id from becoming 'user'._id when @user is replaced first
+        var sortedKeys = flatten.keySet().stream()
+                .sorted((a, b) -> Integer.compare(b.length(), a.length()))
+                .toList();
+
         // interpolate primitive values
-        flatten.keySet().stream().filter(key -> flatten.get(key) != null)
+        sortedKeys.stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonPrimitive(flatten.get(key)))
                 .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)),
                         quote(jsonPrimitiveValue(flatten.get(key)))));
 
         // interpolate arrays
-        flatten.keySet().stream().filter(key -> flatten.get(key) != null)
+        sortedKeys.stream().filter(key -> flatten.get(key) != null)
                 .filter(key -> isJsonArray(flatten.get(key)))
                 .forEach(key -> ret[0] = ret[0].replaceAll(Pattern.quote(prefix.concat(key)),
                         jsonArrayValue(flatten.get(key).asArray())));
@@ -765,17 +771,90 @@ public class AclVarsInterpolator {
     }
 
     /**
+     * Normalizes quoted strings in predicates by replacing quote characters with placeholders.
+     * This converts both single and double-quoted strings to single-quoted strings with
+     * internal quotes replaced by appropriate placeholders to avoid escaping issues.
+     *
+     * @param predicate The predicate string to normalize
+     * @return The predicate with all quotes replaced by placeholders
+     */
+    private static String normalizeQuotes(String predicate) {
+        if (predicate == null) {
+            return predicate;
+        }
+
+        var result = new StringBuilder();
+        var inDoubleQuotes = false;
+        var inSingleQuotes = false;
+        var currentString = new StringBuilder();
+        
+        for (int i = 0; i < predicate.length(); i++) {
+            char c = predicate.charAt(i);
+            char prevChar = i > 0 ? predicate.charAt(i - 1) : '\0';
+            
+            // Check if this quote is escaped
+            boolean isEscaped = prevChar == '\\';
+            
+            if (c == '"' && !isEscaped && !inSingleQuotes) {
+                if (inDoubleQuotes) {
+                    // End of double-quoted string - convert to single quotes with placeholders
+                    var escaped = currentString.toString()
+                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                    result.append('\'').append(escaped).append('\'');
+                    currentString.setLength(0);
+                    inDoubleQuotes = false;
+                } else {
+                    // Start of double-quoted string
+                    inDoubleQuotes = true;
+                }
+            } else if (c == '\'' && !isEscaped && !inDoubleQuotes) {
+                if (inSingleQuotes) {
+                    // End of single-quoted string - replace internal quotes with placeholders
+                    var escaped = currentString.toString()
+                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                    result.append('\'').append(escaped).append('\'');
+                    currentString.setLength(0);
+                    inSingleQuotes = false;
+                } else {
+                    // Start of single-quoted string
+                    inSingleQuotes = true;
+                }
+            } else if (inDoubleQuotes || inSingleQuotes) {
+                // Accumulate characters within quotes
+                currentString.append(c);
+            } else {
+                // Outside any quotes
+                result.append(c);
+            }
+        }
+        
+        return result.toString();
+    }
+
+    /**
+     * Placeholder strings used to replace quote characters in predicates.
+     * This avoids escaping issues with Undertow's predicate parser.
+     */
+    private static final String SINGLE_QUOTE_PLACEHOLDER = "___RESTHEART_SINGLE_QUOTE___";
+    private static final String DOUBLE_QUOTE_PLACEHOLDER = "___RESTHEART_DOUBLE_QUOTE___";
+
+    /**
      * Wraps a string value in single quotes for use in predicates.
+     * Replaces any quotes within the string with appropriate placeholders.
      *
      * @param s
      *            The string to quote
-     * @return The string wrapped in single quotes
+     * @return The string wrapped in single quotes with internal quotes replaced by placeholders
      */
     private static String quote(String s) {
-        return "'".concat(s).concat("'");
+        // Replace quotes with placeholders
+        var escaped = s.replace("'", SINGLE_QUOTE_PLACEHOLDER).replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+        return "'".concat(escaped).concat("'");
     }
 
-    private static final String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
+    private static final String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
 
     /**
      * Random number generator for creating unique tokens during variable substitution.

@@ -193,7 +193,7 @@ public class MongoAclAuthorizer implements Authorizer {
                             marker = "";
                         }
 
-                        debugLogs.add(String.format("│   │   ├─ role %s, permission id %s, resolve %s%s",
+                        debugLogs.add(String.format("role %s, permission id %s, resolve %s%s",
                             role,
                             BsonUtils.toJson(permission.getId()),
                             resolved,
