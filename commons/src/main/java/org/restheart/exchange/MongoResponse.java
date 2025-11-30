@@ -367,6 +367,9 @@ public class MongoResponse extends BsonResponse {
                     }
 
                     rep.put("exception message", errorDoc.get());
+                } else if (t instanceof BadRequestException) {
+                    // do not add exception message, the response already contains the status code and message
+                    rep.remove("exception");
                 } else {
                     rep.put("exception message", new BsonString(avoidEscapedChars(t.getMessage())));
                 }
