@@ -43,6 +43,7 @@ import static org.restheart.utils.PluginUtils.requiresContent;
 import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -222,32 +223,45 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         Exchange.setResponseInterceptorsExecuted(exchange);
 
         applicableAsyncInterceptors.forEach(ri -> {
+            // Retrieve MDC context from the exchange attachment (set by TracingInstrumentationHandler)
+            var mdcContext = response.getMDCContext();
+            
             ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                // Use ScopedValue to propagate exchange to the async virtual thread
-                RequestPhaseContext.callWithCurrentExchange(() -> {
-                    var interceptorStartTime = System.currentTimeMillis();
-                    var interceptorName = PluginUtils.name(ri);
-                    
-                    RequestPhaseContext.setPhase(Phase.ITEM);
-                    LOGGER.debug("ASYNC {} (priority: {}, thread: {})", 
-                        interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
-
-                    try {
-                        ri.handle(request, response);
+                // Restore MDC context in the virtual thread
+                if (mdcContext != null) {
+                    MDC.setContextMap(mdcContext);
+                }
+                
+                try {
+                    // Use ScopedValue to propagate exchange to the async virtual thread
+                    RequestPhaseContext.callWithCurrentExchange(() -> {
+                        var interceptorStartTime = System.currentTimeMillis();
+                        var interceptorName = PluginUtils.name(ri);
                         
-                        var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                        RequestPhaseContext.setPhase(Phase.SUBITEM);
-                        LOGGER.debug("✓ {}ms (async)", interceptorDuration);
-                    } catch (Exception ex) {
-                        var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
-                        RequestPhaseContext.setPhase(Phase.SUBITEM);
-                        LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                        RequestPhaseContext.setPhase(Phase.ITEM);
+                        LOGGER.debug("ASYNC {} (priority: {}, thread: {})", 
+                            interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
 
-                        Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
-                    }
-                    RequestPhaseContext.reset();
-                });
+                        try {
+                            ri.handle(request, response);
+                            
+                            var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                            RequestPhaseContext.setPhase(Phase.SUBITEM);
+                            LOGGER.debug("✓ {}ms (async)", interceptorDuration);
+                        } catch (Exception ex) {
+                            var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                            RequestPhaseContext.setPhase(Phase.SUBITEM);
+                            LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+
+                            Exchange.setInError(exchange);
+                            LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
+                        }
+                        RequestPhaseContext.reset();
+                    });
+                } finally {
+                    // Clean up MDC context after execution
+                    MDC.clear();
+                }
             });
         });
         

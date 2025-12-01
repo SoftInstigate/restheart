@@ -53,6 +53,8 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
 		MDC.put("traceId", requestId.substring(Math.max(0, requestId.length() - 4)));
 
 		if (emptyTraceHeaders) {
+            // Save the MDC context (including traceId) for async operations
+            ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
             next(exchange);
         } else {
             this.traceHeaders
@@ -60,13 +62,13 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                     .get(traceIdHeader))
                     .flatMap(x -> Optional.ofNullable(x.peekFirst()))
                     .ifPresent(value -> {
-                        // saves the MDC Context
-                        // see response.getMDCContext() javadoc
                         MDC.put(traceIdHeader, value);
-                        ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
                         exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);
                     });
                 });
+
+            // Save the MDC context (including traceId and custom headers) for async operations
+            ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
 
             if (!exchange.isResponseComplete() && getNext() != null) {
                 next(exchange);
