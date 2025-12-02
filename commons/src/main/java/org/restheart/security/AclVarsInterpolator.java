@@ -87,7 +87,7 @@ import io.undertow.predicate.PredicateParser;
  * </ul>
  *
  * <h2>Example Usage</h2>
- * 
+ *
  * <pre>{@code
  * // BSON document with variables
  * BsonDocument permission = BsonDocument.parse(
@@ -141,7 +141,7 @@ public class AclVarsInterpolator {
      * @return A new BSON value with all variable references replaced by their actual values.
      *         Returns the original value if no interpolation is needed
      * @throws IllegalArgumentException if request is null
-     * @see #interpolatePropValue(MongoRequest, String, String)
+     * @see #
      */
     public static BsonValue interpolateBson(final MongoRequest request, final BsonValue bson) {
         if (bson.isDocument()) {
@@ -353,18 +353,33 @@ public class AclVarsInterpolator {
                 }
             }
         } else if (value.equals("@request.body")) {
-            if (request.getContent() == null) {
+            final BsonValue content;
+            try {
+              content = request.getContent();
+            } catch (Throwable t) {
+              LOGGER.debug("Error getting request content", t);
+              return BsonNull.VALUE;
+            }
+
+            if (content == null) {
                 return BsonNull.VALUE;
             }
-            return request.getContent();
+            return content;
         } else if (value.startsWith("@request.body.") && value.length() > 13) {
-            if (request.getContent() == null) {
+            final BsonValue content;
+            try {
+              content = request.getContent();
+            } catch (Throwable t) {
+              LOGGER.debug("Error getting request content", t);
+              return BsonNull.VALUE;
+            }
+
+            if (content == null) {
                 return BsonNull.VALUE;
             }
 
-            if (!(request.getContent() instanceof BsonDocument contentDoc)) {
-                LOGGER.warn("@request.body variable used but request content is not a BsonDocument, it is {}", 
-                    request.getContent().getClass().getSimpleName());
+            if (!(content instanceof BsonDocument contentDoc)) {
+                LOGGER.warn("@request.body variable used but request content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
                 return BsonNull.VALUE;
             }
 
@@ -443,12 +458,12 @@ public class AclVarsInterpolator {
         try {
             // Normalize quotes in the predicate by replacing them with placeholder
             var interpolatedPredicate = normalizeQuotes(predicate);
-            
+
             // Interpolate @user variables
             if (a != null && !a.isEmpty()) {
                 interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@user.", a);
             }
-            
+
             // Interpolate @request.body variables
 			BsonDocument requestBody = null;
 			try {
@@ -460,7 +475,7 @@ public class AclVarsInterpolator {
             if (requestBody != null && !requestBody.isEmpty()) {
                 interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@request.body.", requestBody);
             }
-            
+
             return PredicateParser.parse(interpolatedPredicate, classLoader);
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + predicate, t);
@@ -492,37 +507,51 @@ public class AclVarsInterpolator {
      * @return A BsonDocument containing the request body, or null if no body is available or not supported
      */
     private static BsonDocument getRequestBodyDocument(Request<?> request) throws BadRequestException {
-		return switch (request) {
-			case null -> null;
-			case BsonRequest bsonRequest -> {
-				if (bsonRequest.getContent() == null) {
-					yield null;
-				}
-				if (bsonRequest.getContent() instanceof BsonDocument doc) {
-					yield doc;
-				} else {
-					LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", bsonRequest.getContent().getClass().getSimpleName());
-					yield null;
-				}
-			}
-			case JsonRequest jsonRequest -> {
-				if (jsonRequest.getContent() == null) {
-					yield null;
-				}
-				if (jsonRequest.getContent().isJsonObject()) {
-					yield jsonObjectToBsonDocument(jsonRequest.getContent().getAsJsonObject());
-				} else {
-					LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", jsonRequest.getContent().getClass().getSimpleName());
-					yield null;
-				}
-			}
-			default -> null;
-		};
+  		return switch (request) {
+  			case null -> null;
+  			case BsonRequest bsonRequest -> {
+  			  final BsonValue content;
+          try {
+            content = bsonRequest.getContent();
+          } catch (Throwable t) {
+            LOGGER.debug("Error getting request content", t);
+            yield null;
+          }
+  				if (content == null) {
+  					yield null;
+  				}
+  				if (content instanceof BsonDocument doc) {
+  					yield doc;
+  				} else {
+  					LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
+  					yield null;
+  				}
+  			}
+  			case JsonRequest jsonRequest -> {
+          final JsonElement content;
+          try {
+            content = jsonRequest.getContent();
+          } catch (Throwable t) {
+            LOGGER.debug("Error getting request content", t);
+            yield null;
+          }
+  				if (content == null) {
+  					yield null;
+  				}
+  				if (content.isJsonObject()) {
+  					yield jsonObjectToBsonDocument(content.getAsJsonObject());
+  				} else {
+  					LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", content.getClass().getSimpleName());
+  					yield null;
+  				}
+  			}
+  			default -> null;
+  		};
     }
 
     /**
      * Converts a Gson JsonObject to a BSON document.
-     * 
+     *
      * @param jsonObject The JsonObject to convert
      * @return A BsonDocument representation of the JsonObject
      */
@@ -530,21 +559,21 @@ public class AclVarsInterpolator {
         if (jsonObject == null) {
             return null;
         }
-        
+
         var doc = new BsonDocument();
-        
+
         jsonObject.entrySet().forEach(entry -> {
             var key = entry.getKey();
             var value = entry.getValue();
             doc.put(key, jsonElementToBsonValue(value));
         });
-        
+
         return doc;
     }
 
     /**
      * Converts a Gson JsonElement to a BsonValue.
-     * 
+     *
      * @param element The JsonElement to convert
      * @return A BsonValue representation of the JsonElement
      */
@@ -576,7 +605,7 @@ public class AclVarsInterpolator {
             element.getAsJsonArray().forEach(e -> array.add(jsonElementToBsonValue(e)));
             return array;
         }
-        
+
         return BsonNull.VALUE;
     }
 
@@ -603,7 +632,7 @@ public class AclVarsInterpolator {
      * </p>
      *
      * <h3>Request Document Structure</h3>
-     * 
+     *
      * <pre>{@code
      * {
      *   "path": "/api/users",
@@ -662,7 +691,7 @@ public class AclVarsInterpolator {
      * </ol>
      *
      * <h3>Example</h3>
-     * 
+     *
      * <pre>{@code
      * // Given predicate: "roles[@user.roles] and equals[@user.department, 'IT']"
      * // And variableValues: { "roles": ["admin", "user"], "department": "IT" }
@@ -787,14 +816,14 @@ public class AclVarsInterpolator {
         var inDoubleQuotes = false;
         var inSingleQuotes = false;
         var currentString = new StringBuilder();
-        
+
         for (int i = 0; i < predicate.length(); i++) {
             char c = predicate.charAt(i);
             char prevChar = i > 0 ? predicate.charAt(i - 1) : '\0';
-            
+
             // Check if this quote is escaped
             boolean isEscaped = prevChar == '\\';
-            
+
             if (c == '"' && !isEscaped && !inSingleQuotes) {
                 if (inDoubleQuotes) {
                     // End of double-quoted string - convert to single quotes with placeholders
@@ -829,7 +858,7 @@ public class AclVarsInterpolator {
                 result.append(c);
             }
         }
-        
+
         return result.toString();
     }
 
@@ -878,7 +907,7 @@ public class AclVarsInterpolator {
 
     /**
      * remove the unbound variables from the predicate
-     * 
+     *
      * @param prefix
      *            the prefix such as @user, or @now
      * @param predicate
