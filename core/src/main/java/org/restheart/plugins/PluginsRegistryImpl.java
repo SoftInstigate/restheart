@@ -20,6 +20,7 @@
  */
 package org.restheart.plugins;
 
+import java.net.URL;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import org.restheart.graal.ImageInfo;
 import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
@@ -113,6 +115,11 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * force plugin objects instantiation
      */
     public void instantiateAll() {
+        // Explicit init PluginsClassloader when running as a native image
+        if (ImageInfo.isExecutable() && !PluginsClassloader.isInitialized()) {
+            PluginsClassloader.init(new URL[0]);
+        }
+
         var factory = PluginsFactory.getInstance();
 
         factory.providers(); // providers must be invoked first
