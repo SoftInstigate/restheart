@@ -6,7 +6,7 @@
 
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>8.13.1-SNAPSHOT</version>
+    <version>8.13.0</version>
     <packaging>pom</packaging>
 
     <description>RESTHeart - Low code platform for cloud-native HTTP microservices.</description>
