@@ -54,7 +54,10 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image -march=list
-          mvn -T 1C package -Pnative -DskipTests -Dnative.march="-march=x86-64"
+          export MAVEN_OPTS="-Xmx8g -Xms4g"
+          mvn package -Pnative -DskipTests \
+            -Dnative.march="-march=x86-64" \
+            -Dquarkus.native.additional-build-args="-J-Xmx10g,-J-Xms6g,--gc=serial"
 
       - name: Build MacOS Apple Silicon native
         if: matrix.arch == 'darwin-arm64'
@@ -63,7 +66,10 @@ jobs:
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
           native-image -march=list
-          mvn -T 1C package -Pnative -DskipTests -Dnative.march="-march=armv8-a"
+          export MAVEN_OPTS="-Xmx6g -Xms4g"
+          mvn package -Pnative -DskipTests \
+            -Dnative.march="-march=armv8-a" \
+            -Dquarkus.native.additional-build-args="-J-Xmx6g,-J-Xms4g,--gc=serial"
 
       - name: Build Windows native
         if: matrix.arch == 'windows-amd64'
