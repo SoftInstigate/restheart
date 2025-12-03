@@ -544,6 +544,7 @@
               <buildArgs>
                 <buildArg>${native.gc}</buildArg>
                 <buildArg>${native.march}</buildArg>
+                <buildArg>-J-Xmx10g</buildArg>
               </buildArgs>
             </configuration>
             <extensions>true</extensions>
