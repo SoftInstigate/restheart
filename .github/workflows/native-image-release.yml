@@ -69,7 +69,7 @@ jobs:
           export MAVEN_OPTS="-Xmx8g -Xms4g"
           mvn package -Pnative -DskipTests \
             -Dnative.march="-march=armv8-a" \
-            -Dquarkus.native.additional-build-args="-J-Xmx10g,-J-Xms6g,--gc=serial"
+            -Dquarkus.native.additional-build-args="-J-Xmx6g,-J-Xms4g,--gc=serial"
 
       - name: Build Windows native
         if: matrix.arch == 'windows-amd64'
