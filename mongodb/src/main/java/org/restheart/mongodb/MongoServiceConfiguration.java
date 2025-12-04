@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
@@ -117,19 +116,21 @@ public class MongoServiceConfiguration {
      * Creates a new instance of Configuration from the configuration file For any
      * missing property the default value is used.
      *
-     * @param conf   the key-value configuration map
+     * @param conf the key-value configuration map
      * @param silent
      * @throws org.restheart.configuration.ConfigurationException
      */
     @SuppressWarnings("deprecated")
-    private MongoServiceConfiguration(final Map<String, Object> conf, final boolean silent) throws ConfigurationException {
+    private MongoServiceConfiguration(final Map<String, Object> conf, final boolean silent)
+            throws ConfigurationException {
         this.mongoSrvConfiguration = conf;
 
         uri = asString(conf, "uri", null, silent);
 
         instanceBaseURL = asString(conf, INSTANCE_BASE_URL_KEY, null, silent);
 
-        final var _representationFormat = asString(conf, REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name(),
+        final var _representationFormat = asString(conf, REPRESENTATION_FORMAT_KEY,
+                DEFAULT_REPRESENTATION_FORMAT.name(),
                 silent);
 
         var rf = REPRESENTATION_FORMAT.STANDARD;
@@ -418,7 +419,7 @@ public class MongoServiceConfiguration {
     public int getMaxPagesize() {
         return maxPagesize;
     }
-    
+
     /**
      * @return the aggregation security configuration
      */
