@@ -302,8 +302,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     /**
      * helper class to store mongo mounts info
+     * 
+     * @param resource the mongo resource (eg. /db/coll)
+     * @param uri the mount uri (eg. /myapp/data)
      */
-    private static record MongoMount(String resource, String uri) {
+    public static record MongoMount(String resource, String uri) {
         public MongoMount(String resource, String uri) {
             if (uri == null) {
                 throw new IllegalArgumentException("'where' cannot be null. check your 'mongo-mounts'.");
