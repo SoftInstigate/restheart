@@ -20,13 +20,16 @@
  */
 package org.restheart.mongodb;
 
+import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.pathTemplate;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
@@ -34,8 +37,6 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
-import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -47,16 +48,14 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.utils.BootstrapLogger;
 
 import com.mongodb.client.MongoClient;
 
-import static io.undertow.Handlers.path;
-import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.PathMatcher;
 import io.undertow.util.PathTemplate;
@@ -68,12 +67,13 @@ import io.undertow.util.PathTemplateMatcher;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "mongo",
-        description = "handles requests to mongodb resources",
-        secure = true,
-        enabledByDefault = true,
-        defaultURI = "/",
-        priority = Integer.MIN_VALUE)
+@RegisterPlugin(
+    name = "mongo",
+    description = "handles requests to mongodb resources",
+    secure = true,
+    enabledByDefault = true,
+    defaultURI = "/",
+    priority = Integer.MIN_VALUE)
 public class MongoService implements Service<MongoRequest, MongoResponse> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoService.class);
 
@@ -99,9 +99,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
-            .stream()
-            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-            .allMatch(MongoService::isPathTemplate);
+                .stream()
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+                .allMatch(MongoService::isPathTemplate);
 
         if (!allPathTemplates) {
             // init mongoMounts
@@ -138,22 +138,22 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         var rootHandler = path();
 
         var _pipeline = PipelinedWrappingHandler.wrap(new ErrorHandler(
-            PipelinedHandler.pipe(
-                new OptionsHandler(),
-                ClientSessionInjector.build(),
-                new ETagPolicyInjector(),
-                RequestDispatcherHandler.getInstance())));
+                PipelinedHandler.pipe(
+                        new OptionsHandler(),
+                        ClientSessionInjector.build(),
+                        new ETagPolicyInjector(),
+                        RequestDispatcherHandler.getInstance())));
 
         // check that all mounts are either all paths or all path templates
         var allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
-            .stream()
-            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-            .allMatch(url -> isPathTemplate(url));
+                .stream()
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+                .allMatch(url -> isPathTemplate(url));
 
         var allPaths = MongoServiceConfiguration.get().getMongoMounts()
-            .stream()
-            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-            .allMatch(url -> !isPathTemplate(url));
+                .stream()
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+                .allMatch(url -> !isPathTemplate(url));
 
         var pathsTemplates = pathTemplate(false);
 
@@ -227,11 +227,15 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private MongoMount mongoMountsMatch(HttpServerExchange exchange, String path) {
         if (mongoMounts != null) {
             var mm = mongoMounts.match(path);
-            return mm != null ? mm.getValue() : null;
-        } else  if (templateMongoMounts != null) {
+            return mm != null
+                ? mm.getValue()
+                : null;
+        } else if (templateMongoMounts != null) {
             var tmm = templateMongoMounts.match(path);
             exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, tmm);
-            return tmm != null ? tmm.getValue() : null;
+            return tmm != null
+                ? tmm.getValue()
+                : null;
         } else {
             return null;
         }
@@ -265,7 +269,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
-                .forEachOrdered(e -> ret.add(new MongoMount((String) e.get(MONGO_MOUNT_WHAT_KEY), resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY)))));
+                .forEachOrdered(e -> ret.add(new MongoMount((String) e.get(MONGO_MOUNT_WHAT_KEY),
+                        resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY)))));
 
         return ret;
     }
@@ -313,7 +318,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             }
 
             if (!uri.startsWith("/") && !uri.equals("*")) {
-                throw new IllegalArgumentException("'what' must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your 'mongo-mounts'");
+                throw new IllegalArgumentException(
+                        "'what' must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your 'mongo-mounts'");
             }
 
             this.resource = resource;
