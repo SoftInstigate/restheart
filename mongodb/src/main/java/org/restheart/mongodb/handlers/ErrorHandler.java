@@ -24,6 +24,7 @@ import org.bson.BSONException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Response;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -101,10 +102,14 @@ public class ErrorHandler implements HttpHandler {
             response.setInError(400, "Invalid BSON: " + be.getMessage());
         } catch(BadRequestException be) {
             response.setInError(be.getStatusCode(), be.getMessage());
-        }catch (Exception t) {
-            LOGGER.error("Error handling the request", t);
-
-            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
+        } catch (Exception t) {
+			if (t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
+				LOGGER.error("Remote peer closed connection before all data could be read");
+				response.setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
+			} else {
+				LOGGER.error("Error handling the request", t);
+				response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
+			}
         }
     }
 }
