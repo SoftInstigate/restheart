@@ -70,6 +70,7 @@ public class PingService implements ByteArrayService {
             pingMessageBuilder.append("}");
 
             final String pingMessage = pingMessageBuilder.toString();
+            response.setStatusCode(HttpStatus.SC_OK);
             response.setContentType("application/json");
             response.setContent(pingMessage.getBytes());
         } else if (request.isOptions()) {
