@@ -20,6 +20,29 @@
  */
 package org.restheart;
 
+import static io.undertow.Handlers.resource;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
+import static org.restheart.handlers.PipelinedHandler.pipe;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
+import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
+import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
+import static org.restheart.utils.BootstrapperUtils.checkPidFile;
+import static org.restheart.utils.BootstrapperUtils.initLogging;
+import static org.restheart.utils.BootstrapperUtils.logLoggingConfiguration;
+import static org.restheart.utils.BootstrapperUtils.logStartMessages;
+import static org.restheart.utils.BootstrapperUtils.pidFile;
+import static org.restheart.utils.BootstrapperUtils.setJsonpathDefaults;
+import static org.restheart.utils.PluginUtils.defaultURI;
+import static org.restheart.utils.PluginUtils.initPoint;
+import static org.restheart.utils.PluginUtils.uriMatchPolicy;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,10 +74,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
-
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.buffers.ThreadAwareByteBufferPool;
@@ -63,35 +82,14 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.configuration.ProxiedResource;
 import org.restheart.configuration.Utils;
 import org.restheart.exchange.Exchange;
-import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
-import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
-import org.restheart.handlers.ConfigurableEncodingHandler;
-import org.restheart.handlers.ErrorHandler;
-import org.restheart.handlers.PipelinedHandler;
-import static org.restheart.handlers.PipelinedHandler.pipe;
-import org.restheart.handlers.PipelinedWrappingHandler;
-import org.restheart.handlers.ProxyExchangeBuffersCloser;
-import org.restheart.handlers.QueryStringRebuilder;
-import org.restheart.handlers.RequestInterceptorsExecutor;
-import org.restheart.handlers.RequestLogger;
-import org.restheart.handlers.RequestNotManagedHandler;
-import org.restheart.handlers.TracingInstrumentationHandler;
-import org.restheart.handlers.WorkingThreadsPoolDispatcher;
+import org.restheart.handlers.*;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.RequestContentInjector;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
-import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
-import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -101,20 +99,11 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
-import static org.restheart.utils.BootstrapperUtils.checkPidFile;
-import static org.restheart.utils.BootstrapperUtils.initLogging;
-import static org.restheart.utils.BootstrapperUtils.logLoggingConfiguration;
-import static org.restheart.utils.BootstrapperUtils.logStartMessages;
-import static org.restheart.utils.BootstrapperUtils.pidFile;
-import static org.restheart.utils.BootstrapperUtils.setJsonpathDefaults;
+import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
 import org.restheart.utils.PluginUtils;
-import org.restheart.utils.BootstrapLogger;
-import static org.restheart.utils.PluginUtils.defaultURI;
-import static org.restheart.utils.PluginUtils.initPoint;
-import static org.restheart.utils.PluginUtils.uriMatchPolicy;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -122,7 +111,6 @@ import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
 import org.xnio.Xnio;
 
-import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.protocols.ssl.UndertowXnioSsl;
@@ -171,8 +159,8 @@ public final class Bootstrapper {
     }
 
     private static void parseCommandLineParameters(final String[] args) {
-        var parameters = new Args();
-        var cmd = new CommandLine(parameters);
+        final var parameters = new Args();
+        final var cmd = new CommandLine(parameters);
 
         try {
             cmd.parseArgs(args);
@@ -182,15 +170,16 @@ public final class Bootstrapper {
             }
 
             if (cmd.isVersionHelpRequested()) {
-                var version = Version.getInstance().getVersion() == null
+                final var version = Version.getInstance().getVersion() == null
                     ? "unknown (not packaged)"
                     : Version.getInstance().getVersion();
 
                 System.out.println(RESTHEART
-                    .concat(" Version ")
-                    .concat(version)
-                    .concat(" Build-Time ")
-                    .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault()).format(Version.getInstance().getBuildTime())));
+                        .concat(" Version ")
+                        .concat(version)
+                        .concat(" Build-Time ")
+                        .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
+                                .format(Version.getInstance().getBuildTime())));
 
                 System.exit(0);
             }
@@ -200,7 +189,7 @@ public final class Bootstrapper {
             printConfigurationTemplate = parameters.printConfigurationTemplate;
             standaloneConfiguration = parameters.standalone;
 
-            var confFilePath = (parameters.configPath == null)
+            final var confFilePath = (parameters.configPath == null)
                 ? System.getenv("RESTHEART_CONF_FILE")
                 : parameters.configPath;
             CONFIGURATION_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
@@ -209,12 +198,12 @@ public final class Bootstrapper {
 
             IS_FORKED = parameters.isForked;
 
-            var confOverridesFilePath = parameters.rho == null
+            final var confOverridesFilePath = parameters.rho == null
                 ? System.getenv("RHO_FILE")
                 : parameters.rho;
 
             CONF_OVERRIDES_FILE_PATH = FileUtils.getFileAbsolutePath(confOverridesFilePath);
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage(System.out);
             System.exit(1);
@@ -226,9 +215,10 @@ public final class Bootstrapper {
         parseCommandLineParameters(args);
         setJsonpathDefaults();
         try {
-            configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration, true);
-        } catch(ConfigurationException ce) {
-            var confJustForError = Configuration.Builder.build(true, true);
+            configuration = Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH,
+                    standaloneConfiguration, true);
+        } catch (final ConfigurationException ce) {
+            final var confJustForError = Configuration.Builder.build(true, true);
             initLogging(confJustForError, null, IS_FORKED);
             logErrorAndExit(ce.getMessage(), ce, false, true, -1);
         }
@@ -261,14 +251,15 @@ public final class Bootstrapper {
             final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
-                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
+                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false,
+                        -1);
             }
 
-            var d = new RESTHeartDaemon();
+            final var d = new RESTHeartDaemon();
             if (d.isDaemonized()) {
                 try {
                     initLogging(configuration, d, IS_FORKED);
-                } catch (Exception t) {
+                } catch (final Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
                 startServer(true);
@@ -278,7 +269,7 @@ public final class Bootstrapper {
                     logStartMessages(configuration);
                     logLoggingConfiguration(configuration, false);
                     d.daemonize();
-                } catch (Throwable t) {
+                } catch (final Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
@@ -299,10 +290,10 @@ public final class Bootstrapper {
      *
      * @param fork
      */
-    private static void startServer(boolean fork) {
+    private static void startServer(final boolean fork) {
         logStartMessages(configuration);
 
-        var pidFilePath = pidFile(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH);
+        final var pidFilePath = pidFile(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH);
         var pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
@@ -313,8 +304,9 @@ public final class Bootstrapper {
 
         // re-read configuration file, to log errors now that logger is initialized
         try {
-            Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration, false);
-        } catch (ConfigurationException ex) {
+            Configuration.Builder.build(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH, standaloneConfiguration,
+                    false);
+        } catch (final ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
@@ -327,14 +319,17 @@ public final class Bootstrapper {
 
         // if -t, just print the configuration to stderr and exit
         if (printConfigurationTemplate) {
-            var confFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml" : "/restheart-default-config.yml";
+            final var confFilePath = standaloneConfiguration
+                ? "/restheart-default-config-no-mongodb.yml"
+                : "/restheart-default-config.yml";
 
             try (var confFileStream = Configuration.class.getResourceAsStream(confFilePath)) {
-                var content = new BufferedReader(new InputStreamReader(confFileStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                final var content = new BufferedReader(new InputStreamReader(confFileStream, StandardCharsets.UTF_8)).lines()
+                        .collect(Collectors.joining("\n"));
                 LOGGER.info("Printing configuration template and exiting");
                 System.err.println(content);
                 System.exit(0);
-            } catch(IOException ioe) {
+            } catch (final IOException ioe) {
                 logErrorAndExit(ioe.getMessage() + EXITING, ioe, false, -1);
             }
         }
@@ -342,38 +337,48 @@ public final class Bootstrapper {
         // force instantiation of all plugins singletons
         try {
             PluginsRegistryImpl.getInstance().instantiateAll();
-        } catch (IllegalArgumentException iae) {
+        } catch (final IllegalArgumentException iae) {
             // this occurs instatiating plugin missing external dependencies
             // unfortunatly Classgraph wraps it to IllegalArgumentException
             if (iae.getMessage() != null && iae.getMessage().contains("NoClassDefFoundError")) {
-                logErrorAndExit("Error instantiating plugins: an external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", iae, false, -112);
+                logErrorAndExit(
+                        "Error instantiating plugins: an external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                        iae, false, -112);
             } else {
                 logErrorAndExit("Error instantiating plugins", iae, false, -110);
             }
-        } catch (NoClassDefFoundError ncdfe) {
+        } catch (final NoClassDefFoundError ncdfe) {
             // this occurs instatiating plugin missing external dependencies
             // unfortunatly Classgraph wraps it to IllegalArgumentException
 
-            logErrorAndExit("Error instantiating plugins: an external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", ncdfe, false, -112);
-        } catch (LinkageError le) {
+            logErrorAndExit(
+                    "Error instantiating plugins: an external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                    ncdfe, false, -112);
+        } catch (final LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
 
-            var version = Version.getInstance().getVersion() == null ? "of correct version" : "v" + Version.getInstance().getVersion();
+            final var version = Version.getInstance().getVersion() == null
+                ? "of correct version"
+                : "v" + Version.getInstance().getVersion();
 
-            logErrorAndExit("Linkage error instantiating plugins. Check that all plugins were compiled against restheart-commons " + version, le, false, -111);
-        } catch (Throwable t) {
+            logErrorAndExit(
+                    "Linkage error instantiating plugins. Check that all plugins were compiled against restheart-commons "
+                            + version,
+                    le, false, -111);
+        } catch (final Throwable t) {
             logErrorAndExit("Error instantiating plugins", t, false, -110);
         }
 
         // run pre startup initializers
-        var beforeStartupInitializers = PluginsRegistryImpl.getInstance()
-            .getInitializers()
-            .stream()
-            .filter(i -> initPoint(i.getInstance()) == BEFORE_STARTUP)
-            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
-            .toList();
-            
+        final var beforeStartupInitializers = PluginsRegistryImpl.getInstance()
+                .getInitializers()
+                .stream()
+                .filter(i -> initPoint(i.getInstance()) == BEFORE_STARTUP)
+                .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()),
+                        getPluginPriority(b.getInstance())))
+                .toList();
+
         if (beforeStartupInitializers.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
             BootstrapLogger.debugInfo(LOGGER, "No initializers configured");
@@ -382,51 +387,53 @@ public final class Bootstrapper {
             BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
             BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", beforeStartupInitializers.size());
         }
-        var beforeStartupStartTime = System.currentTimeMillis();
-        
+        final var beforeStartupStartTime = System.currentTimeMillis();
+
         beforeStartupInitializers.forEach(i -> {
-            var initializerStartTime = System.currentTimeMillis();
-            var initializerName = i.getName();
-            var initializerClass = i.getInstance().getClass().getSimpleName();
-            var initializerPriority = getPluginPriority(i.getInstance());
-            
-            BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", 
-                initializerName, initializerClass, initializerPriority);
-                
+            final var initializerStartTime = System.currentTimeMillis();
+            final var initializerName = i.getName();
+            final var initializerClass = i.getInstance().getClass().getSimpleName();
+            final var initializerPriority = getPluginPriority(i.getInstance());
+
+            BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}",
+                    initializerName, initializerClass, initializerPriority);
+
             try {
                 i.getInstance().init();
-                
-                var duration = System.currentTimeMillis() - initializerStartTime;
+
+                final var duration = System.currentTimeMillis() - initializerStartTime;
                 BootstrapLogger.debugSubItem(LOGGER, "✓ {}ms", duration);
-            } catch (NoClassDefFoundError iae) {
-                var duration = System.currentTimeMillis() - initializerStartTime;
+            } catch (final NoClassDefFoundError iae) {
+                final var duration = System.currentTimeMillis() - initializerStartTime;
                 // this occurs executing interceptors missing external dependencies
-                LOGGER.error("Error executing BEFORE_STARTUP initializer {} ({}) after {}ms. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath", 
-                    initializerName, initializerClass, duration, iae);
-            } catch (LinkageError le) {
-                var duration = System.currentTimeMillis() - initializerStartTime;
+                LOGGER.error(
+                        "Error executing BEFORE_STARTUP initializer {} ({}) after {}ms. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                        initializerName, initializerClass, duration, iae);
+            } catch (final LinkageError le) {
+                final var duration = System.currentTimeMillis() - initializerStartTime;
                 // this might occur executing plugin code compiled
                 // with wrong version of restheart-commons
-                var version = Version.getInstance().getVersion() == null
+                final var version = Version.getInstance().getVersion() == null
                     ? "of correct version"
                     : "v" + Version.getInstance().getVersion();
 
-                LOGGER.error("Linkage error executing BEFORE_STARTUP initializer {} ({}) after {}ms. Check that it was compiled against restheart-commons {}", 
-                    initializerName, initializerClass, duration, version, le);
-            } catch (Throwable t) {
-                var duration = System.currentTimeMillis() - initializerStartTime;
-                LOGGER.error("Error executing BEFORE_STARTUP initializer {} ({}) after {}ms", 
-                    initializerName, initializerClass, duration, t);
+                LOGGER.error(
+                        "Linkage error executing BEFORE_STARTUP initializer {} ({}) after {}ms. Check that it was compiled against restheart-commons {}",
+                        initializerName, initializerClass, duration, version, le);
+            } catch (final Throwable t) {
+                final var duration = System.currentTimeMillis() - initializerStartTime;
+                LOGGER.error("Error executing BEFORE_STARTUP initializer {} ({}) after {}ms",
+                        initializerName, initializerClass, duration, t);
             }
         });
-        
+
         if (!beforeStartupInitializers.isEmpty()) {
-            var beforeStartupDuration = System.currentTimeMillis() - beforeStartupStartTime;
+            final var beforeStartupDuration = System.currentTimeMillis() - beforeStartupStartTime;
             BootstrapLogger.endPhase(LOGGER, "BEFORE_STARTUP COMPLETED in {}ms", beforeStartupDuration);
         }
         try {
             startCoreSystem();
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             logErrorAndExit("Error starting RESTHeart. Exiting...", t, false, !pidFileAlreadyExists, -2);
         }
 
@@ -439,13 +446,14 @@ public final class Bootstrapper {
         }
 
         // run initializers
-        var afterStartupInitializers = PluginsRegistryImpl.getInstance()
-            .getInitializers()
-            .stream()
-            .filter(i -> initPoint(i.getInstance()) == AFTER_STARTUP)
-            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
-            .toList();
-            
+        final var afterStartupInitializers = PluginsRegistryImpl.getInstance()
+                .getInitializers()
+                .stream()
+                .filter(i -> initPoint(i.getInstance()) == AFTER_STARTUP)
+                .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()),
+                        getPluginPriority(b.getInstance())))
+                .toList();
+
         if (afterStartupInitializers.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
             BootstrapLogger.debugInfo(LOGGER, "No initializers found");
@@ -453,42 +461,47 @@ public final class Bootstrapper {
         } else {
             BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
             BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", afterStartupInitializers.size());
-            
-            var afterStartupStartTime = System.currentTimeMillis();
-            
+
+            final var afterStartupStartTime = System.currentTimeMillis();
+
             afterStartupInitializers.forEach(i -> {
-                var initializerStartTime = System.currentTimeMillis();
-                var initializerName = i.getName();
-                var initializerClass = i.getInstance().getClass().getSimpleName();
-                var initializerPriority = getPluginPriority(i.getInstance());
-                
-                BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", initializerName, initializerClass, initializerPriority);
-                    
+                final var initializerStartTime = System.currentTimeMillis();
+                final var initializerName = i.getName();
+                final var initializerClass = i.getInstance().getClass().getSimpleName();
+                final var initializerPriority = getPluginPriority(i.getInstance());
+
+                BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", initializerName, initializerClass,
+                        initializerPriority);
+
                 try {
                     i.getInstance().init();
-                    
-                    var duration = System.currentTimeMillis() - initializerStartTime;
+
+                    final var duration = System.currentTimeMillis() - initializerStartTime;
                     BootstrapLogger.debugSubItem(LOGGER, "✓ {}ms", duration);
-                } catch (NoClassDefFoundError iae) {
-                    var duration = System.currentTimeMillis() - initializerStartTime;
+                } catch (final NoClassDefFoundError iae) {
+                    final var duration = System.currentTimeMillis() - initializerStartTime;
                     // this occurs executing interceptors missing external dependencies
-                    BootstrapLogger.errorSubItem(LOGGER, "✗ FAILED after {}ms: Missing external dependency. Copy the missing dependency jar to the plugins directory", duration, iae);
-                } catch (LinkageError le) {
-                    var duration = System.currentTimeMillis() - initializerStartTime;
+                    BootstrapLogger.errorSubItem(LOGGER,
+                            "✗ FAILED after {}ms: Missing external dependency. Copy the missing dependency jar to the plugins directory",
+                            duration, iae);
+                } catch (final LinkageError le) {
+                    final var duration = System.currentTimeMillis() - initializerStartTime;
                     // this might occur executing plugin code compiled
                     // with wrong version of restheart-commons
-                    var version = Version.getInstance().getVersion() == null
-                            ? "of correct version"
-                            : "v" + Version.getInstance().getVersion();
+                    final var version = Version.getInstance().getVersion() == null
+                        ? "of correct version"
+                        : "v" + Version.getInstance().getVersion();
 
-                    BootstrapLogger.errorSubItem(LOGGER, "✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}", duration, version, le);
-                } catch (Throwable t) {
-                    var duration = System.currentTimeMillis() - initializerStartTime;
+                    BootstrapLogger.errorSubItem(LOGGER,
+                            "✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}",
+                            duration, version, le);
+                } catch (final Throwable t) {
+                    final var duration = System.currentTimeMillis() - initializerStartTime;
                     BootstrapLogger.errorSubItem(LOGGER, "✗ FAILED after {}ms: {}", duration, t.getMessage());
                 }
             });
-            
-            var afterStartupDuration = System.currentTimeMillis() - afterStartupStartTime;
+
+            final var afterStartupDuration = System.currentTimeMillis() - afterStartupStartTime;
             BootstrapLogger.endPhase(LOGGER, "AFTER_STARTUP COMPLETED in {}ms", afterStartupDuration);
         }
 
@@ -500,7 +513,7 @@ public final class Bootstrapper {
      *
      * @param silent
      */
-    private static void stopServer(boolean silent) {
+    private static void stopServer(final boolean silent) {
         stopServer(silent, true);
     }
 
@@ -510,7 +523,7 @@ public final class Bootstrapper {
      * @param silent
      * @param removePid
      */
-    private static void stopServer(boolean silent, boolean removePid) {
+    private static void stopServer(final boolean silent, final boolean removePid) {
         if (!silent) {
             LOGGER.info("Stopping RESTHeart...");
         }
@@ -522,13 +535,14 @@ public final class Bootstrapper {
             try {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
-            } catch (InterruptedException ie) {
+            } catch (final InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request to complete", ie);
                 Thread.currentThread().interrupt();
             }
         }
 
-        var pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH));
+        final var pidFilePath = FileUtils
+                .getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE_PATH, CONF_OVERRIDES_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
@@ -536,7 +550,7 @@ public final class Bootstrapper {
             }
             try {
                 Files.deleteIfExists(pidFilePath);
-            } catch (IOException ex) {
+            } catch (final IOException ex) {
                 LOGGER.error("Can't delete pid file {}", pidFilePath.toString(), ex);
             }
         }
@@ -571,8 +585,8 @@ public final class Bootstrapper {
             logErrorAndExit("No configuration found. exiting..", null, false, -1);
         }
 
-
-        if (!configuration.httpsListener().enabled() && !configuration.httpListener().enabled() && !configuration.ajpListener().enabled()) {
+        if (!configuration.httpsListener().enabled() && !configuration.httpListener().enabled()
+                && !configuration.ajpListener().enabled()) {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
@@ -589,54 +603,65 @@ public final class Bootstrapper {
         final var allowers = authorizers == null
             ? null
             : authorizers.stream()
-                .filter(PluginRecord::isEnabled)
-                .filter(a -> a.getInstance() != null)
-                .map(PluginRecord::getInstance)
-                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                .toList();
+                    .filter(PluginRecord::isEnabled)
+                    .filter(a -> a.getInstance() != null)
+                    .map(PluginRecord::getInstance)
+                    .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                    .toList();
 
         if (allowers == null || allowers.isEmpty()) {
-            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enabled to allow any request.").reset().toString());
+            LOGGER.warn(ansi().fg(RED).bold().a(
+                    "No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enabled to allow any request.")
+                    .reset().toString());
         }
 
-        var builder = Undertow.builder();
+        final var builder = Undertow.builder();
 
         // set the byte buffer pool
         // since the undertow default byte buffer is not good for virtual threads
         builder.setByteBufferPool(new ThreadAwareByteBufferPool(
-            configuration.coreModule().directBuffers(),
-            configuration.coreModule().bufferSize(),
-            configuration.coreModule().buffersPooling()));
+                configuration.coreModule().directBuffers(),
+                configuration.coreModule().bufferSize(),
+                configuration.coreModule().buffersPooling()));
 
-        var httpsListener = configuration.httpsListener();
+        final var httpsListener = configuration.httpsListener();
         if (httpsListener.enabled()) {
             builder.addHttpsListener(httpsListener.port(), httpsListener.host(), initSSLContext());
             if (httpsListener.host().equals("127.0.0.1") || httpsListener.host().equalsIgnoreCase("localhost")) {
-                BootstrapLogger.standaloneWarn(LOGGER, "HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpsListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER,
+                        "HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.",
+                        httpsListener.port());
             } else {
-                BootstrapLogger.standalone(LOGGER, "HTTPS listener bound at {}:{}", httpsListener.host(), httpsListener.port());
+                BootstrapLogger.standalone(LOGGER, "HTTPS listener bound at {}:{}", httpsListener.host(),
+                        httpsListener.port());
             }
         }
 
-        var httpListener = configuration.httpListener();
+        final var httpListener = configuration.httpListener();
         if (httpListener.enabled()) {
             builder.addHttpListener(httpListener.port(), httpListener.host());
 
             if (httpListener.host().equals("127.0.0.1") || httpListener.host().equalsIgnoreCase("localhost")) {
-                BootstrapLogger.standaloneWarn(LOGGER, "HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", httpListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER,
+                        "HTTP listener bound to localhost:{}. Remote systems will be unable to connect to this server.",
+                        httpListener.port());
             } else {
-                BootstrapLogger.standalone(LOGGER, "HTTP listener bound at {}:{}", httpListener.host(), httpListener.port());
+                BootstrapLogger.standalone(LOGGER, "HTTP listener bound at {}:{}", httpListener.host(),
+                        httpListener.port());
             }
         }
 
-        var ajpListener = configuration.ajpListener();
+        final var ajpListener = configuration.ajpListener();
         if (ajpListener.enabled()) {
             builder.addAjpListener(ajpListener.port(), ajpListener.host());
 
             if (ajpListener.host().equals("127.0.0.1") || ajpListener.host().equalsIgnoreCase("localhost")) {
-                BootstrapLogger.standaloneWarn(LOGGER, "AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.", ajpListener.port());
+                BootstrapLogger.standaloneWarn(LOGGER,
+                        "AJP listener bound to localhost:{}. Remote systems will be unable to connect to this server.",
+                        ajpListener.port());
             } else {
-                BootstrapLogger.standalone(LOGGER, "AJP listener bound at {}:{}", ajpListener.host(), ajpListener.port());
+                BootstrapLogger.standalone(LOGGER, "AJP listener bound at {}:{}", ajpListener.host(),
+                        ajpListener.port());
             }
         }
 
@@ -647,34 +672,47 @@ public final class Bootstrapper {
 
         // io threads
         // use value in configuration, or auto detect values if io-threads <= 0
-        var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
-        var ioThreads = autoConfigIoThreads ? Runtime.getRuntime().availableProcessors() : configuration.coreModule().ioThreads();
+        final var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
+        final var ioThreads = autoConfigIoThreads
+            ? Runtime.getRuntime().availableProcessors()
+            : configuration.coreModule().ioThreads();
 
         // virtual threads carriers
         // use value in configuration, or auto detect values if virtual-threads-carriers <= 0
-        var autoConfigWorkersSchedulerParallelism = configuration.coreModule().workersSchedulerParallelism() <= 0;
-        var workersSchedulerParallelism = autoConfigWorkersSchedulerParallelism ? Math.round(Runtime.getRuntime().availableProcessors()*1.5) : configuration.coreModule().workersSchedulerParallelism();
+        final var autoConfigWorkersSchedulerParallelism = configuration.coreModule().workersSchedulerParallelism() <= 0;
+        final var workersSchedulerParallelism = autoConfigWorkersSchedulerParallelism
+            ? Math.round(Runtime.getRuntime().availableProcessors() * 1.5)
+            : configuration.coreModule().workersSchedulerParallelism();
 
         // apply workersSchedulerParallelism and workersSchedulerMaxPoolSize
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(workersSchedulerParallelism));
-        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", String.valueOf(configuration.coreModule().workersSchedulerMaxPoolSize()));
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize",
+                String.valueOf(configuration.coreModule().workersSchedulerMaxPoolSize()));
 
-        BootstrapLogger.standalone(LOGGER, "Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
-            Runtime.getRuntime().availableProcessors(), autoConfigIoThreads ? " (auto detected)" : "", ioThreads,
-            autoConfigWorkersSchedulerParallelism ? " (auto detected)" : "", workersSchedulerParallelism,
-            configuration.coreModule().workersSchedulerMaxPoolSize());
+        BootstrapLogger.standalone(LOGGER,
+                "Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
+                Runtime.getRuntime().availableProcessors(), autoConfigIoThreads
+                    ? " (auto detected)"
+                    : "",
+                ioThreads,
+                autoConfigWorkersSchedulerParallelism
+                    ? " (auto detected)"
+                    : "",
+                workersSchedulerParallelism,
+                configuration.coreModule().workersSchedulerMaxPoolSize());
 
         builder
-            .setIoThreads(ioThreads)
-            .setWorkerThreads(0) // starting v8, restheart uses virtual threads
-            .setDirectBuffers(configuration.coreModule().directBuffers())
-            .setBufferSize(configuration.coreModule().bufferSize())
-            .setHandler(HANDLERS);
+                .setIoThreads(ioThreads)
+                .setWorkerThreads(0) // starting v8, restheart uses virtual threads
+                .setDirectBuffers(configuration.coreModule().directBuffers())
+                .setBufferSize(configuration.coreModule().bufferSize())
+                .setHandler(HANDLERS);
 
         // starting from undertow 1.4.23 URL checks become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
         // allow unescaped chars in URL (otherwise not allowed by default)
-        builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, configuration.coreModule().allowUnescapedCharsInUrl());
+        builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
+                configuration.coreModule().allowUnescapedCharsInUrl());
 
         Utils.setConnectionOptions(builder, configuration);
 
@@ -684,21 +722,24 @@ public final class Bootstrapper {
 
     private static SSLContext initSSLContext() {
         try {
-            var sslContext = SSLContext.getInstance("TLSv1.2");
+            final var sslContext = SSLContext.getInstance("TLSv1.2");
 
-            var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            final var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            final var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
-            var ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            final var ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            var httpsListener = configuration.httpsListener();
-            if (httpsListener.keystorePath() != null && httpsListener.keystorePwd() != null && httpsListener.certificatePwd() != null) {
+            final var httpsListener = configuration.httpsListener();
+            if (httpsListener.keystorePath() != null && httpsListener.keystorePwd() != null
+                    && httpsListener.certificatePwd() != null) {
                 try (var fis = new FileInputStream(new File(httpsListener.keystorePath()))) {
                     ks.load(fis, httpsListener.keystorePwd().toCharArray());
                     kmf.init(ks, httpsListener.certificatePwd().toCharArray());
                 }
             } else {
-                logErrorAndExit("Cannot enable the HTTPS listener: the keystore is not configured. Generate a keystore and set the configuration options keystore-path, keystore-password and certificate-password. More information at https://restheart.org/docs/security/tls/", null, false, -1);
+                logErrorAndExit(
+                        "Cannot enable the HTTPS listener: the keystore is not configured. Generate a keystore and set the configuration options keystore-path, keystore-password and certificate-password. More information at https://restheart.org/docs/security/tls/",
+                        null, false, -1);
             }
 
             tmf.init(ks);
@@ -706,12 +747,19 @@ public final class Bootstrapper {
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
             return sslContext;
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, error with specified keystore. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
-        } catch (FileNotFoundException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, keystore file not found. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
-        } catch (IOException ex) {
-            logErrorAndExit("Couldn't start RESTHeart, error reading the keystore file. Check the keystore-path, keystore-password and certificate-password options. Exiting..", ex, false, -1);
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | CertificateException
+                | UnrecoverableKeyException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, error with specified keystore. Check the keystore-path, keystore-password and certificate-password options. Exiting..",
+                    ex, false, -1);
+        } catch (final FileNotFoundException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, keystore file not found. Check the keystore-path, keystore-password and certificate-password options. Exiting..",
+                    ex, false, -1);
+        } catch (final IOException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, error reading the keystore file. Check the keystore-path, keystore-password and certificate-password options. Exiting..",
+                    ex, false, -1);
         }
 
         return null;
@@ -725,7 +773,7 @@ public final class Bootstrapper {
      * @param silent
      * @param status
      */
-    private static void logErrorAndExit(String message, Throwable t, boolean silent, int status) {
+    private static void logErrorAndExit(final String message, final Throwable t, final boolean silent, final int status) {
         logErrorAndExit(message, t, silent, true, status);
     }
 
@@ -737,12 +785,13 @@ public final class Bootstrapper {
      * @param tokenManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getPipeline(final Set<PluginRecord<AuthMechanism>> authMechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
+    private static GracefulShutdownHandler getPipeline(final Set<PluginRecord<AuthMechanism>> authMechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         PluginsRegistryImpl
-            .getInstance()
-            .getRootPathHandler()
-            .addPrefixPath("/", new RequestNotManagedHandler());
-		
+                .getInstance()
+                .getRootPathHandler()
+                .addPrefixPath("/", new RequestNotManagedHandler());
+
         // Pre-initialize security handlers before service binding to show logs in correct order
         SecurityHandler.preInitialize(authMechanisms, authorizers, tokenManager);
 
@@ -761,27 +810,28 @@ public final class Bootstrapper {
      */
     private static GracefulShutdownHandler getBasePipeline() {
         return new GracefulShutdownHandler(
-            new AllowedMethodsHandler(
-                new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
-                // allowed methods
-                HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.HEAD.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.PATCH.name()),
-                HttpString.tryFromString(ExchangeKeys.METHOD.OPTIONS.name())));
+                new AllowedMethodsHandler(
+                        new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(
+                                PluginsRegistryImpl.getInstance().getRootPathHandler()))),
+                        // allowed methods
+                        HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.HEAD.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.PATCH.name()),
+                        HttpString.tryFromString(ExchangeKeys.METHOD.OPTIONS.name())));
     }
 
     /**
      * plug services
      */
     private static void plugServices() {
-        var services = PluginsRegistryImpl.getInstance().getServices().stream()
-            // if a service has been added programmatically (for instance, by an initializer)
-            // filter out it (assuming it isn't annotated with @RegisterPlugin)
-            .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
-            .toList();
+        final var services = PluginsRegistryImpl.getInstance().getServices().stream()
+                // if a service has been added programmatically (for instance, by an initializer)
+                // filter out it (assuming it isn't annotated with @RegisterPlugin)
+                .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
+                .toList();
 
         if (services.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "SERVICE BINDING");
@@ -789,19 +839,20 @@ public final class Bootstrapper {
             BootstrapLogger.endPhase(LOGGER, "SERVICE BINDING COMPLETED");
         } else {
             BootstrapLogger.startPhase(LOGGER, "SERVICE BINDING");
-            var startTime = System.currentTimeMillis();
+            final var startTime = System.currentTimeMillis();
 
             services.forEach(srv -> {
-                var srvConfArgs = srv.getConfArgs();
+                final var srvConfArgs = srv.getConfArgs();
 
                 String uri;
-                var mp = uriMatchPolicy(srv.getInstance());
+                final var mp = uriMatchPolicy(srv.getInstance());
 
                 if (srvConfArgs == null || !srvConfArgs.containsKey("uri") || srvConfArgs.get("uri") == null) {
                     uri = defaultURI(srv.getInstance());
                 } else {
                     if (!(srvConfArgs.get("uri") instanceof String)) {
-                        BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must be a string", srv.getName());
+                        BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must be a string",
+                                srv.getName());
                         return;
                     } else {
                         uri = (String) srvConfArgs.get("uri");
@@ -814,18 +865,20 @@ public final class Bootstrapper {
                 }
 
                 if (!uri.startsWith("/")) {
-                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must start with /", srv.getName());
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot start service {}: 'uri' must start with /",
+                            srv.getName());
                     return;
                 }
 
-                var secured = srv.isSecure();
+                final var secured = srv.isSecure();
 
                 PluginsRegistryImpl.getInstance().plugService(srv, uri, mp, secured);
 
-                BootstrapLogger.item(LOGGER, "URI {} bound to service {}, secured: {}, uri match {}", uri, srv.getName(), secured, mp);
+                BootstrapLogger.item(LOGGER, "URI {} bound to service {}, secured: {}, uri match {}", uri,
+                        srv.getName(), secured, mp);
             });
 
-            var duration = System.currentTimeMillis() - startTime;
+            final var duration = System.currentTimeMillis() - startTime;
             BootstrapLogger.endPhase(LOGGER, "SERVICE BINDING COMPLETED in {}ms", duration);
         }
     }
@@ -838,8 +891,9 @@ public final class Bootstrapper {
      * @param authorizers
      * @param tokenManager
      */
-    private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
-        var proxies = conf.getProxies();
+    private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
+        final var proxies = conf.getProxies();
 
         if (proxies == null || proxies.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "PROXY BINDING");
@@ -849,68 +903,71 @@ public final class Bootstrapper {
         }
 
         BootstrapLogger.startPhase(LOGGER, "PROXY BINDING");
-        var startTime = System.currentTimeMillis();
+        final var startTime = System.currentTimeMillis();
 
-        proxies.stream().forEachOrdered((ProxiedResource proxy) -> {
+        proxies.stream().forEachOrdered((final ProxiedResource proxy) -> {
             if (proxy.location() == null || proxy.proxyPass() == null || proxy.proxyPass().isEmpty()) {
                 BootstrapLogger.item(LOGGER, "✗ Invalid proxies entry: {}", proxy);
                 return;
             }
 
-            var proxyClient = new LoadBalancingProxyClient()
-                .setConnectionsPerThread(proxy.connectionPerThread())
-                .setSoftMaxConnectionsPerThread(proxy.softMaxConnectionsPerThread())
-                .setMaxQueueSize(proxy.maxQueueSize())
-                .setProblemServerRetry(proxy.problemServerRetry())
-                .setTtl(proxy.connectionsTTL());
+            final var proxyClient = new LoadBalancingProxyClient()
+                    .setConnectionsPerThread(proxy.connectionPerThread())
+                    .setSoftMaxConnectionsPerThread(proxy.softMaxConnectionsPerThread())
+                    .setMaxQueueSize(proxy.maxQueueSize())
+                    .setProblemServerRetry(proxy.problemServerRetry())
+                    .setTtl(proxy.connectionsTTL());
 
             proxy.proxyPass().stream().forEach(pp -> {
                 try {
-                    var byteBufferPool = new ThreadAwareByteBufferPool(
-                        configuration.coreModule().directBuffers(),
-                        configuration.coreModule().bufferSize(),
-                        configuration.coreModule().buffersPooling());
+                    final var byteBufferPool = new ThreadAwareByteBufferPool(
+                            configuration.coreModule().directBuffers(),
+                            configuration.coreModule().bufferSize(),
+                            configuration.coreModule().buffersPooling());
 
-                    var xnioSsl = new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, byteBufferPool);
-                    var uri = new URI(pp);
+                    final var xnioSsl = new UndertowXnioSsl(Xnio.getInstance(), OptionMap.EMPTY, byteBufferPool);
+                    final var uri = new URI(pp);
                     proxyClient.addHost(uri, xnioSsl);
-                } catch(URISyntaxException t) {
-                    BootstrapLogger.item(LOGGER, "✗ Invalid location URI {}, resource {} not bound ", proxy.location(), pp);
-                } catch (GeneralSecurityException ex) {
+                } catch (final URISyntaxException t) {
+                    BootstrapLogger.item(LOGGER, "✗ Invalid location URI {}, resource {} not bound ", proxy.location(),
+                            pp);
+                } catch (final GeneralSecurityException ex) {
                     logErrorAndExit("error configuring ssl", ex, false, -13);
                 }
             });
 
-            var proxyHandler = ProxyHandler.builder()
-                .setRewriteHostHeader(proxy.rewriteHostHeader())
-                .setProxyClient(proxyClient)
-                .build();
+            final var proxyHandler = ProxyHandler.builder()
+                    .setRewriteHostHeader(proxy.rewriteHostHeader())
+                    .setProxyClient(proxyClient)
+                    .build();
 
-            var rhProxy = pipe(
-                new WorkingThreadsPoolDispatcher(),
-                new PipelineInfoInjector(),
-                new TracingInstrumentationHandler(),
-                new RequestLogger(),
-                new ProxyExchangeBuffersCloser(),
-                new BeforeExchangeInitInterceptorsExecutor(),
-                new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
-                new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-                new QueryStringRebuilder(),
-                new SecurityHandler(authMechanisms, authorizers, tokenManager),
-                new AuthHeadersRemover(),
-                new XForwardedHeadersInjector(),
-                new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
-                new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-                new QueryStringRebuilder(),
-                new ConduitInjector(),
-                PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(proxyHandler))); // Must be after ConduitInjector
+            final var rhProxy = pipe(
+                    new WorkingThreadsPoolDispatcher(),
+                    new PipelineInfoInjector(),
+                    new TracingInstrumentationHandler(),
+                    new RequestLogger(),
+                    new ProxyExchangeBuffersCloser(),
+                    new BeforeExchangeInitInterceptorsExecutor(),
+                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
+                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+                    new QueryStringRebuilder(),
+                    new SecurityHandler(authMechanisms, authorizers, tokenManager),
+                    new AuthHeadersRemover(),
+                    new XForwardedHeadersInjector(),
+                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
+                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+                    new QueryStringRebuilder(),
+                    new ConduitInjector(),
+                    PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(proxyHandler))); // Must be after
+                                                                                                   // ConduitInjector
 
-            PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy, new PipelineInfo(PROXY, proxy.location(), proxy.name()));
+            PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy,
+                    new PipelineInfo(PROXY, proxy.location(), proxy.name()));
 
             BootstrapLogger.debugItem(LOGGER, "URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
         });
 
-        var duration = System.currentTimeMillis() - startTime;
+        final var duration = System.currentTimeMillis() - startTime;
         BootstrapLogger.endPhase(LOGGER, "PROXY BINDING COMPLETED in {}ms", duration);
     }
 
@@ -921,7 +978,7 @@ public final class Bootstrapper {
      * @param conf
      */
     private static void plugStaticResourcesHandlers(final Configuration conf) {
-        var staticResources = conf.getStaticResources();
+        final var staticResources = conf.getStaticResources();
 
         if (staticResources == null || staticResources.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "STATIC RESOURCE BINDING");
@@ -931,17 +988,19 @@ public final class Bootstrapper {
         }
 
         BootstrapLogger.startPhase(LOGGER, "STATIC RESOURCE BINDING");
-        var startTime = System.currentTimeMillis();
+        final var startTime = System.currentTimeMillis();
 
         staticResources.stream().forEach(sr -> {
             try {
                 if (sr.where() == null || !sr.where().startsWith("/")) {
-                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resources {}. parameter 'where' must start with /", sr);
+                    BootstrapLogger.errorItem(LOGGER,
+                            "✗ Cannot bind static resources {}. parameter 'where' must start with /", sr);
                     return;
                 }
 
                 if (sr.what() == null) {
-                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resources to {}. missing parameter 'what'", sr);
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resources to {}. missing parameter 'what'",
+                            sr);
                     return;
                 }
 
@@ -953,20 +1012,22 @@ public final class Bootstrapper {
 
                         if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, sr.what())) {
                             TMP_EXTRACTED_FILES.put(sr.what(), file);
-                            BootstrapLogger.debugItem(LOGGER, "Embedded static resources {} extracted in {}", sr.what(), file.toString());
+                            BootstrapLogger.debugItem(LOGGER, "Embedded static resources {} extracted in {}", sr.what(),
+                                    file.toString());
                         }
                     } catch (URISyntaxException | IOException | IllegalStateException ex) {
-                        BootstrapLogger.errorItem(LOGGER, "✗ Error extracting embedded static resource {}", sr.what(), ex);
+                        BootstrapLogger.errorItem(LOGGER, "✗ Error extracting embedded static resource {}", sr.what(),
+                                ex);
                         return;
                     }
                 } else if (!sr.what().startsWith("/")) {
                     // this is to allow specifying the configuration file path relative
                     // to the jar (also working when running from classes)
-                    var location = Bootstrapper.class.getProtectionDomain().getCodeSource().getLocation();
+                    final var location = Bootstrapper.class.getProtectionDomain().getCodeSource().getLocation();
 
-                    var locationFile = new File(location.getPath());
+                    final var locationFile = new File(location.getPath());
 
-                    var _path = Paths.get(locationFile.getParent().concat(File.separator).concat(sr.what()));
+                    final var _path = Paths.get(locationFile.getParent().concat(File.separator).concat(sr.what()));
 
                     // normalize addresses https://issues.jboss.org/browse/UNDERTOW-742
                     file = _path.normalize().toFile();
@@ -975,30 +1036,39 @@ public final class Bootstrapper {
                 }
 
                 if (file.exists()) {
-                    var handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(sr.welcomeFile()).setDirectoryListingEnabled(false);
+                    final var handler = resource(new FileResourceManager(file, 3)).addWelcomeFiles(sr.welcomeFile())
+                            .setDirectoryListingEnabled(false);
 
-                    var ph = PipelinedHandler.pipe(new PipelineInfoInjector(), new RequestLogger(), new WorkingThreadsPoolDispatcher(PipelinedWrappingHandler.wrap(handler)));
+                    final var ph = PipelinedHandler.pipe(new PipelineInfoInjector(), new RequestLogger(),
+                            new WorkingThreadsPoolDispatcher(PipelinedWrappingHandler.wrap(handler)));
 
-                    PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph, new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
+                    PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph,
+                            new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
-                    BootstrapLogger.debugItem(LOGGER, "URI {} bound to static resource {}", sr.where(), file.getAbsolutePath());
+                    BootstrapLogger.debugItem(LOGGER, "URI {} bound to static resource {}", sr.where(),
+                            file.getAbsolutePath());
                 } else {
-                    BootstrapLogger.errorItem(LOGGER, "✗ Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(), sr.what());
+                    BootstrapLogger.errorItem(LOGGER,
+                            "✗ Failed to bind URL {} to static resources {}. Directory does not exist.", sr.where(),
+                            sr.what());
                 }
 
-            } catch (Throwable t) {
+            } catch (final Throwable t) {
                 BootstrapLogger.errorItem(LOGGER, "✗ Cannot bind static resource {}", sr, t);
             }
         });
 
-        var duration = System.currentTimeMillis() - startTime;
+        final var duration = System.currentTimeMillis() - startTime;
         BootstrapLogger.endPhase(LOGGER, "STATIC RESOURCE BINDING COMPLETED in {}ms", duration);
     }
 
-    private static int getPluginPriority(Plugin plugin) {
-        if (plugin == null) return 10; // default priority
-        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
-        return annotation != null ? annotation.priority() : 10; // default priority
+    private static int getPluginPriority(final Plugin plugin) {
+        if (plugin == null)
+            return 10; // default priority
+        final var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        return annotation != null
+            ? annotation.priority()
+            : 10; // default priority
     }
 
     /**
@@ -1010,10 +1080,10 @@ public final class Bootstrapper {
      * @param removePid
      * @param status
      */
-    private static void logErrorAndExit(String message, Throwable t, boolean silent, boolean removePid, int status) {
+    private static void logErrorAndExit(final String message, final Throwable t, final boolean silent, final boolean removePid, final int status) {
         if (t == null) {
             LOGGER.error(message);
-        } else if (t instanceof ConfigurationException ce) {
+        } else if (t instanceof final ConfigurationException ce) {
             if (ce.shoudlPrintStackTrace()) {
                 LOGGER.error(message, t);
             } else {
@@ -1030,40 +1100,63 @@ public final class Bootstrapper {
     /**
      * Disables JIT compilation for Truffle in environments using Virtual Threads, as of version 24.
      * Since JIT compilation conflicts with Virtual Threads, the 'truffle-runtime' is excluded from 'restheart.jar'.
-     * The dependency for 'truffle-runtime' is marked as 'provided' in the project's pom.xml, facilitating its exclusion.
+     * The dependency for 'truffle-runtime' is marked as 'provided' in the project's pom.xml, facilitating its
+     * exclusion.
      *
      * This method addresses and suppresses the following warning:
      * WARNING: The polyglot engine uses a fallback runtime that does not support runtime compilation to machine code.
      * Execution without runtime compilation will negatively impact the performance of the guest application.
      */
-    private static  void doNotWarnTruffleInterpreterOnly() {
+    private static void doNotWarnTruffleInterpreterOnly() {
         System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
     }
 
-    @Command(name="java -jar restheart.jar")
+    @Command(
+        name = "java -jar restheart.jar")
     private static class Args {
-        @Parameters(index = "0", arity = "0..1", paramLabel = "CONF_FILE", description = "Main configuration file")
-        private String configPath = null;
+        @Parameters(
+            index = "0",
+            arity = "0..1",
+            paramLabel = "CONF_FILE",
+            description = "Main configuration file")
+        private final String configPath = null;
 
-        @Option(names = "--fork", description = "Fork the process in background")
-        private boolean isForked = false;
+        @Option(
+            names = "--fork",
+            description = "Fork the process in background")
+        private final boolean isForked = false;
 
-        @Option(names = {"-o", "--rho" }, paramLabel = "RHO_FILE", description = "Configuration overrides file")
-        private String rho = null;
+        @Option(
+            names = { "-o", "--rho" },
+            paramLabel = "RHO_FILE",
+            description = "Configuration overrides file")
+        private final String rho = null;
 
-        @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
-        private boolean help = false;
+        @Option(
+            names = { "-h", "--help" },
+            usageHelp = true,
+            description = "This help message")
+        private final boolean help = false;
 
-        @Option(names = {"-c", "--printConfiguration"}, description = "Print the effective configuration to the standard error and exit")
-        private boolean printConfiguration = false;
+        @Option(
+            names = { "-c", "--printConfiguration" },
+            description = "Print the effective configuration to the standard error and exit")
+        private final boolean printConfiguration = false;
 
-        @Option(names = {"-t", "--printConfigurationTemplate"}, description = "Print the configuration template to the standard error and exit")
-        private boolean printConfigurationTemplate = false;
+        @Option(
+            names = { "-t", "--printConfigurationTemplate" },
+            description = "Print the configuration template to the standard error and exit")
+        private final boolean printConfigurationTemplate = false;
 
-        @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
+        @Option(
+            names = { "-v", "--version" },
+            versionHelp = true,
+            description = "Print product version to the output stream and exit")
         boolean versionRequested;
 
-        @Option(names = { "-s", "--standalone" }, description = "Use an alternate configuration that disables all plugins depending from MongoDB")
+        @Option(
+            names = { "-s", "--standalone" },
+            description = "Use an alternate configuration that disables all plugins depending from MongoDB")
         boolean standalone;
     }
 }
