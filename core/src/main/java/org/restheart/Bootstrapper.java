@@ -1119,34 +1119,34 @@ public final class Bootstrapper {
             arity = "0..1",
             paramLabel = "CONF_FILE",
             description = "Main configuration file")
-        private final String configPath = null;
+        private String configPath = null;
 
         @Option(
             names = "--fork",
             description = "Fork the process in background")
-        private final boolean isForked = false;
+        private boolean isForked = false;
 
         @Option(
             names = { "-o", "--rho" },
             paramLabel = "RHO_FILE",
             description = "Configuration overrides file")
-        private final String rho = null;
+        private String rho = null;
 
         @Option(
             names = { "-h", "--help" },
             usageHelp = true,
             description = "This help message")
-        private final boolean help = false;
+        private boolean help = false;
 
         @Option(
             names = { "-c", "--printConfiguration" },
             description = "Print the effective configuration to the standard error and exit")
-        private final boolean printConfiguration = false;
+        private boolean printConfiguration = false;
 
         @Option(
             names = { "-t", "--printConfigurationTemplate" },
             description = "Print the configuration template to the standard error and exit")
-        private final boolean printConfigurationTemplate = false;
+        private boolean printConfigurationTemplate = false;
 
         @Option(
             names = { "-v", "--version" },
