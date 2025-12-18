@@ -59,11 +59,23 @@ public abstract class Exchange<T> {
     /** MIME type for standard JSON content. */
     public static final String JSON_MEDIA_TYPE = "application/json";
 
+    /** MIME type for XHTML content. */
+    public static final String XHTML_MEDIA_TYPE = "application/xhtml+xml";
+
+    /** MIME type for XML content. */
+    public static final String XML_MEDIA_TYPE = "application/xml";
+
     /** MIME type for PDF documents. */
     public static final String APPLICATION_PDF_TYPE = "application/pdf";
 
     /** MIME type for plain text content. */
     public static final String TEXT_PLAIN_CONTENT_TYPE = "text/plain";
+
+    /** MIME type for HTML content. */
+    public static final String HTML_CONTENT_TYPE = "text/html";
+
+    /** MIME type for XML content. */
+    public static final String XML_CONTENT_TYPE = "text/xml";
 
     /** MIME type for URL-encoded form data. */
     public static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
