@@ -99,7 +99,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      *
      * @param initialize if false then do not initialize the handlersMultimap
      */
-    RequestDispatcherHandler(boolean initialize) {
+    RequestDispatcherHandler(final boolean initialize) {
         super(null);
         this.handlersMultimap = new HashMap<>();
         if (initialize) {
@@ -114,11 +114,12 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = MongoRequest.of(exchange);
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+        final var request = MongoRequest.of(exchange);
 
         if (request.getMethod() == METHOD.OTHER || request.getType() == TYPE.INVALID) {
-            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code", HttpStatus.SC_METHOD_NOT_ALLOWED);
+            LOGGER.debug("This method is not allowed: returning a <{}> HTTP code",
+                    HttpStatus.SC_METHOD_NOT_ALLOWED);
             MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             next(exchange);
@@ -147,8 +148,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      * @param method
      * @return the PipelinedHandler
      */
-    public PipelinedHandler getPipedHttpHandler(TYPE type, METHOD method) {
-        Map<METHOD, PipelinedHandler> methodsMap = handlersMultimap.get(type);
+    public PipelinedHandler getPipedHttpHandler(final TYPE type, final METHOD method) {
+        final Map<METHOD, PipelinedHandler> methodsMap = handlersMultimap.get(type);
         return methodsMap != null
             ? methodsMap.get(method)
             : null;
@@ -161,7 +162,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      * @param method the HTTP method
      * @param handler the PipelinedHandler
      */
-    public void putHandler(TYPE type, METHOD method, PipelinedHandler handler) {
+    public void putHandler(final TYPE type, final METHOD method, final PipelinedHandler handler) {
         Map<METHOD, PipelinedHandler> methodsMap = handlersMultimap.get(type);
         if (methodsMap == null) {
             methodsMap = new HashMap<>();
@@ -368,7 +369,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      *
      * @param exchange the HttpServerExchange
      */
-    void before(HttpServerExchange exchange) {
+    void before(final HttpServerExchange exchange) {
     }
 
     /**
@@ -376,7 +377,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      *
      * @param exchange the HttpServerExchange
      */
-    void after(HttpServerExchange exchange) {
+    void after(final HttpServerExchange exchange) {
     }
 
     private static class RequestDispatcherHandlerHolder {

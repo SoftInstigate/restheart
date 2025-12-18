@@ -332,6 +332,9 @@ public interface ExchangeKeys {
      * </p>
      */
     public enum METHOD {
+        /** HTTP HEAD method - retrieves headers without the response body. */
+        HEAD,
+
         /** HTTP GET method - retrieves data without modifying it. */
         GET,
 

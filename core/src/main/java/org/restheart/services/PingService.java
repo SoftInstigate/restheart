@@ -36,7 +36,11 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "ping", description = "simple ping service", secure = false, blocking = false)
+@RegisterPlugin(
+    name = "ping",
+    description = "simple ping service",
+    secure = false,
+    blocking = false)
 public class PingService implements ByteArrayService {
     private static final String VERSION = PingService.class.getPackage().getImplementationVersion();
     private String msg = null;
@@ -54,30 +58,49 @@ public class PingService implements ByteArrayService {
     @Override
     public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
-            final var pingMessageBuilder = new StringBuilder();
-            pingMessageBuilder.append("{\"message\": \"").append(msg).append("\"");
-
-            if (this.isExtendedResponseEnabled) {
-                pingMessageBuilder.append(", \"client_ip\": \"")
-                        .append(getClientIp(request.getExchange()))
-                        .append("\", \"host\": \"")
-                        .append(getHostHeader(request.getExchange()))
-                        .append("\", \"version\": \"")
-                        .append(VERSION)
-                        .append("\"");
-            }
-
-            pingMessageBuilder.append("}");
-
-            final String pingMessage = pingMessageBuilder.toString();
-            response.setStatusCode(HttpStatus.SC_OK);
-            response.setContentType("application/json");
-            response.setContent(pingMessage.getBytes());
-        } else if (request.isOptions()) {
-            handleOptions(request);
-        } else {
-            response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+            setResponseHeaders(response);
+            buildPingResponse(request, response);
+            return;
         }
+
+        if (request.isOptions()) {
+            handleOptions(request);
+            return;
+        }
+
+        if (request.isHead()) {
+            // For HEAD requests, do not include a body
+            setResponseHeaders(response);
+            return;
+        }
+
+        response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+    }
+
+    private void setResponseHeaders(final ByteArrayResponse response) {
+        response.setStatusCode(HttpStatus.SC_OK);
+        response.setContentType("application/json");
+    }
+
+    private void buildPingResponse(final ByteArrayRequest request, final ByteArrayResponse response) {
+        final var pingMessageBuilder = new StringBuilder();
+        pingMessageBuilder.append("{\"message\": \"").append(msg).append("\"");
+
+        if (this.isExtendedResponseEnabled) {
+            pingMessageBuilder.append(", \"client_ip\": \"")
+                    .append(getClientIp(request.getExchange()))
+                    .append("\", \"host\": \"")
+                    .append(getHostHeader(request.getExchange()))
+                    .append("\", \"version\": \"")
+                    .append(VERSION)
+                    .append("\"");
+        }
+
+        pingMessageBuilder.append("}");
+
+        final String pingMessage = pingMessageBuilder.toString();
+
+        response.setContent(pingMessage.getBytes());
     }
 
     private String getHostHeader(final HttpServerExchange exchange) {

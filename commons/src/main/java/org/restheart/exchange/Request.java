@@ -19,17 +19,6 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.security.idm.Account;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.Cookie;
-import io.undertow.util.AttachmentKey;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
-import io.undertow.util.PathTemplate;
-import io.undertow.util.PathTemplateMatcher;
-
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
@@ -37,7 +26,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.restheart.exchange.ExchangeKeys.METHOD;
+
+import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatcher;
 
 /**
  * The root class for implementing a Request providing the implementation for
@@ -83,7 +83,7 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param exchange the HttpServerExchange to wrap
      */
-    protected Request(HttpServerExchange exchange) {
+    protected Request(final HttpServerExchange exchange) {
         super(exchange);
         // init attached params
         if (exchange.getAttachment(ATTACHED_PARAMS_KEY) == null) {
@@ -102,8 +102,8 @@ public abstract class Request<T> extends Exchange<T> {
      * @return a Request instance appropriate for the pipeline type
      */
     @SuppressWarnings("rawtypes")
-    public static Request of(HttpServerExchange exchange) {
-        var pi = pipelineInfo(exchange);
+    public static Request of(final HttpServerExchange exchange) {
+        final var pi = pipelineInfo(exchange);
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceRequest.of(exchange);
@@ -118,7 +118,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param exchange the HttpServerExchange to extract the content type from
      * @return the Content-Type header value, or null if not present
      */
-    public static String getContentType(HttpServerExchange exchange) {
+    public static String getContentType(final HttpServerExchange exchange) {
         return exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
 
@@ -207,9 +207,9 @@ public abstract class Request<T> extends Exchange<T> {
      * This method contains a typo in the name and will be removed in a future release
      */
     @Deprecated
-    public String getQueryParameterOfDefault(String name, String defaultValue) {
+    public String getQueryParameterOfDefault(final String name, final String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
-            ?  wrapped.getQueryParameters().get(name).getFirst()
+            ? wrapped.getQueryParameters().get(name).getFirst()
             : defaultValue;
     }
 
@@ -224,10 +224,10 @@ public abstract class Request<T> extends Exchange<T> {
      * @param defaultValue the default value to return if the query parameter is not present
      * @return the first value of the query parameter or defaultValue if not present
      */
-    public String getQueryParameterOrDefault(String name, String defaultValue) {
+    public String getQueryParameterOrDefault(final String name, final String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
-                ? wrapped.getQueryParameters().get(name).getFirst()
-                : defaultValue;
+            ? wrapped.getQueryParameters().get(name).getFirst()
+            : defaultValue;
     }
 
     /**
@@ -254,7 +254,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param name the name of the header to return
      * @return the first value of the header, or null if the header is not present
      */
-    public String getHeader(String name) {
+    public String getHeader(final String name) {
         return getHeaders().getFirst(HttpString.tryFromString(name));
     }
 
@@ -269,7 +269,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param name the name of the header to set
      * @param value the value to set for the header
      */
-    public void setHeader(HttpString name, String value) {
+    public void setHeader(final HttpString name, final String value) {
         if (getHeaders().get(name) == null) {
             getHeaders().put(name, value);
         } else {
@@ -289,7 +289,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param name the name of the header to set
      * @param value the value to set for the header
      */
-    public void setHeader(String name, String value) {
+    public void setHeader(final String name, final String value) {
         if (getHeaders().get(name) == null) {
             getHeaders().put(HttpString.tryFromString(name), value);
         } else {
@@ -304,7 +304,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param name the name of the cookie to return
      * @return the cookie with the specified name, or null if not found
      */
-    public Cookie getCookie(String name) {
+    public Cookie getCookie(final String name) {
         return wrapped.getRequestCookie(name);
     }
 
@@ -320,18 +320,20 @@ public abstract class Request<T> extends Exchange<T> {
      * @return a map of parameter names to values, or an empty map if no match
      * @throws IllegalArgumentException if the path template is malformed
      */
-    public Map<String, String> getPathParams(String pathTemplate) {
-        var ptm = new PathTemplateMatcher<String>();
+    public Map<String, String> getPathParams(final String pathTemplate) {
+        final var ptm = new PathTemplateMatcher<String>();
 
         try {
             ptm.add(PathTemplate.create(pathTemplate), "");
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             throw new IllegalArgumentException("wrong path template", t);
         }
 
-        var match = ptm.match(getPath());
+        final var match = ptm.match(getPath());
 
-        return match != null ? ptm.match(getPath()).getParameters() : new HashMap<>();
+        return match != null
+            ? ptm.match(getPath()).getParameters()
+            : new HashMap<>();
     }
 
     /**
@@ -346,10 +348,12 @@ public abstract class Request<T> extends Exchange<T> {
      * @return the value of the specified path parameter, or null if not found
      * @throws IllegalArgumentException if the path template is malformed
      */
-    public String getPathParam(String pathTemplate, String paramName) {
-        var params = getPathParams(pathTemplate);
+    public String getPathParam(final String pathTemplate, final String paramName) {
+        final var params = getPathParams(pathTemplate);
 
-        return params != null ? params.get(paramName) : null;
+        return params != null
+            ? params.get(paramName)
+            : null;
     }
 
     /**
@@ -367,7 +371,7 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param responseContentType the Content-Type to set
      */
-    public void setContentType(String responseContentType) {
+    public void setContentType(final String responseContentType) {
         getHeaders().put(Headers.CONTENT_TYPE, responseContentType);
     }
 
@@ -383,7 +387,7 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param length the content length in bytes
      */
-    protected void setContentLength(int length) {
+    protected void setContentLength(final int length) {
         getHeaders().put(Headers.CONTENT_LENGTH, length);
     }
 
@@ -401,7 +405,7 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param requestStartTime the request start time in milliseconds since epoch
      */
-    public void setStartTime(Long requestStartTime) {
+    public void setStartTime(final Long requestStartTime) {
         getWrappedExchange().putAttachment(START_TIME_KEY, requestStartTime);
     }
 
@@ -416,8 +420,8 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public Account getAuthenticatedAccount() {
         return getWrappedExchange().getSecurityContext() != null
-                ? getWrappedExchange().getSecurityContext().getAuthenticatedAccount()
-                : null;
+            ? getWrappedExchange().getSecurityContext().getAuthenticatedAccount()
+            : null;
     }
 
     /**
@@ -441,7 +445,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param key the header suffix (e.g., "For" for X-Forwarded-For)
      * @param value the header value to add
      */
-    public void addXForwardedHeader(String key, String value) {
+    public void addXForwardedHeader(final String key, final String value) {
         if (wrapped.getAttachment(XFORWARDED_HEADERS) == null) {
             wrapped.putAttachment(XFORWARDED_HEADERS, new LinkedHashMap<>());
 
@@ -476,7 +480,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param exchange the HttpServerExchange to get pipeline info for
      * @return the PipelineInfo, or null if not set
      */
-    public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
+    public static PipelineInfo pipelineInfo(final HttpServerExchange exchange) {
         return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
@@ -486,7 +490,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param exchange the exchange to bind the pipeline info to
      * @param pipelineInfo the pipeline information to set
      */
-    public static void setPipelineInfo(HttpServerExchange exchange, PipelineInfo pipelineInfo) {
+    public static void setPipelineInfo(final HttpServerExchange exchange, final PipelineInfo pipelineInfo) {
         exchange.putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
     }
 
@@ -513,7 +517,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param exchange the HttpServerExchange to get pipeline info for
      * @return the PipelineInfo, or null if not set
      */
-    public static PipelineInfo getPipelineInfo(HttpServerExchange exchange) {
+    public static PipelineInfo getPipelineInfo(final HttpServerExchange exchange) {
         return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
@@ -522,7 +526,7 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param pipelineInfo the pipeline information to set
      */
-    public void setPipelineInfo(PipelineInfo pipelineInfo) {
+    public void setPipelineInfo(final PipelineInfo pipelineInfo) {
         getWrappedExchange().putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
     }
 
@@ -542,6 +546,10 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public boolean isGet() {
         return getMethod() == METHOD.GET;
+    }
+
+    public boolean isHead() {
+        return getMethod() == METHOD.HEAD;
     }
 
     /**
@@ -590,22 +598,17 @@ public abstract class Request<T> extends Exchange<T> {
      * @param _method the HttpString representation of the HTTP method
      * @return the corresponding METHOD enum value
      */
-    private static METHOD selectMethod(HttpString _method) {
-        if (Methods.GET.equals(_method)) {
-            return METHOD.GET;
-        } else if (Methods.POST.equals(_method)) {
-            return METHOD.POST;
-        } else if (Methods.PUT.equals(_method)) {
-            return METHOD.PUT;
-        } else if (Methods.DELETE.equals(_method)) {
-            return METHOD.DELETE;
-        } else if (PATCH.equals(_method.toString())) {
-            return METHOD.PATCH;
-        } else if (Methods.OPTIONS.equals(_method)) {
-            return METHOD.OPTIONS;
-        } else {
-            return METHOD.OTHER;
-        }
+    private static METHOD selectMethod(final HttpString _method) {
+        return switch (_method.toString()) {
+            case "HEAD" -> METHOD.HEAD;
+            case "GET" -> METHOD.GET;
+            case "POST" -> METHOD.POST;
+            case "PUT" -> METHOD.PUT;
+            case "DELETE" -> METHOD.DELETE;
+            case "PATCH" -> METHOD.PATCH;
+            case "OPTIONS" -> METHOD.OPTIONS;
+            default -> METHOD.OTHER;
+        };
     }
 
     /**
@@ -625,16 +628,19 @@ public abstract class Request<T> extends Exchange<T> {
      *
      * @param <T> the expected type of the parameter value.
      * @param key the key of the parameter to retrieve; must not be {@code null}.
-     * @return the value associated with the given key, cast to type {@code T}, or {@code null} if the key is not present.
+     * @return the value associated with the given key, cast to type {@code T}, or {@code null} if the key is not
+     * present.
      * @throws NullPointerException if {@code key} is {@code null}.
      * @throws ClassCastException if the value cannot be cast to type {@code T}.
      */
     @SuppressWarnings("unchecked")
-    public <T> T attachedParam(String key) {
+    public <V> V attachedParam(final String key) {
         Objects.requireNonNull(key, "Key must not be null");
-        var val = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY).get(key);
+        final var val = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY).get(key);
 
-        return val == null ? null : (T) attachedParams().get(key);
+        return val == null
+            ? null
+            : (V) attachedParams().get(key);
     }
 
     /**
@@ -642,14 +648,14 @@ public abstract class Request<T> extends Exchange<T> {
      * <p>
      * If no parameters exist, this method ensures that a new map is created before adding the entry.
      *
-     * @param key   the key of the parameter to attach; must not be {@code null}.
+     * @param key the key of the parameter to attach; must not be {@code null}.
      * @param value the value of the parameter to attach; can be {@code null}.
      * @throws NullPointerException if {@code key} is {@code null}.
      */
-    public void attachParam(String key, Object value) {
+    public void attachParam(final String key, final Object value) {
         Objects.requireNonNull(key, "Key must not be null");
 
-        Map<String, Object> attachedParams = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY);
+        final var attachedParams = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY);
 
         // Ensure the map is initialized if not already present
         if (attachedParams == null) {
