@@ -147,47 +147,59 @@ public abstract class Response<T> extends Exchange<T> {
     }
 
     /**
-     * Convenience method to set the Content-Type header to "application/json".
+     * Convenience method to set the Content-Type header to "application/json; charset=UTF-8".
      * <p>
      * This is a commonly used method for JSON API responses, equivalent to
-     * calling {@code setContentType("application/json")}.
+     * calling {@code setContentType("application/json; charset=UTF-8")}.
+     * </p>
+     * <p>
+     * If you need a different charset, use {@link #setContentType(String)} directly.
      * </p>
      */
     public void setContentTypeAsJson() {
-        setContentType(Exchange.JSON_MEDIA_TYPE);
+        setContentType(Exchange.JSON_MEDIA_TYPE + "; charset=UTF-8");
     }
 
     /**
-     * Convenience method to set the Content-Type header to "text/html".
+     * Convenience method to set the Content-Type header to "text/html; charset=UTF-8".
      * <p>
      * This is a commonly used method for HTML responses, equivalent to
-     * calling {@code setContentType("text/html")}.
+     * calling {@code setContentType("text/html; charset=UTF-8")}.
+     * </p>
+     * <p>
+     * If you need a different charset, use {@link #setContentType(String)} directly.
      * </p>
      */
     public void setContentTypeAsHtml() {
-        setContentType(Exchange.HTML_CONTENT_TYPE);
+        setContentType(Exchange.HTML_CONTENT_TYPE + "; charset=UTF-8");
     }
 
     /**
-     * Convenience method to set the Content-Type header to "application/xhtml+xml".
+     * Convenience method to set the Content-Type header to "application/xhtml+xml; charset=UTF-8".
      * <p>
      * This is a commonly used method for XHTML responses, equivalent to
-     * calling {@code setContentType("application/xhtml+xml")}.
+     * calling {@code setContentType("application/xhtml+xml; charset=UTF-8")}.
+     * </p>
+     * <p>
+     * If you need a different charset, use {@link #setContentType(String)} directly.
      * </p>
      */
     public void setContentTypeAsXhtml() {
-        setContentType(Exchange.XHTML_MEDIA_TYPE);
+        setContentType(Exchange.XHTML_MEDIA_TYPE + "; charset=UTF-8");
     }
 
     /**
-     * Convenience method to set the Content-Type header to "text/xml".
+     * Convenience method to set the Content-Type header to "text/xml; charset=UTF-8".
      * <p>
      * This is a commonly used method for XML responses, equivalent to
-     * calling {@code setContentType("text/xml")}.
+     * calling {@code setContentType("text/xml; charset=UTF-8")}.
+     * </p>
+     * <p>
+     * If you need a different charset, use {@link #setContentType(String)} directly.
      * </p>
      */
     public void setContentTypeAsXml() {
-        setContentType(Exchange.XML_CONTENT_TYPE);
+        setContentType(Exchange.XML_CONTENT_TYPE + "; charset=UTF-8");
     }
 
     /**
