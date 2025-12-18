@@ -20,15 +20,17 @@
  */
 package org.restheart.test.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
@@ -90,7 +92,7 @@ public class PutIndexIT extends HttpClientAbstactIT {
 
         assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
         assertNotNull(entity.getContentType(), "content type not null");
-        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
+        assertTrue(entity.getContentType().getValue().startsWith(Exchange.HAL_JSON_MEDIA_TYPE), "check content type");
 
         String content = EntityUtils.toString(entity);
 

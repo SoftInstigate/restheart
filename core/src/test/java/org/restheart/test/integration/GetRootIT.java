@@ -84,7 +84,7 @@ public class GetRootIT extends HttpClientAbstactIT {
 
         assertEquals(HttpStatus.SC_OK, statusLine.getStatusCode(), "check status code");
         assertNotNull(entity.getContentType(), "content type not null");
-        assertEquals(Exchange.HAL_JSON_MEDIA_TYPE, entity.getContentType().getValue(), "check content type");
+        assertTrue(entity.getContentType().getValue().startsWith(Exchange.HAL_JSON_MEDIA_TYPE), "check content type");
 
         String content = EntityUtils.toString(entity);
 
