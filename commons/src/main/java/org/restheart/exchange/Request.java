@@ -634,13 +634,13 @@ public abstract class Request<T> extends Exchange<T> {
      * @throws ClassCastException if the value cannot be cast to type {@code T}.
      */
     @SuppressWarnings("unchecked")
-    public <T> T attachedParam(final String key) {
+    public <V> V attachedParam(final String key) {
         Objects.requireNonNull(key, "Key must not be null");
         final var val = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY).get(key);
 
         return val == null
             ? null
-            : (T) attachedParams().get(key);
+            : (V) attachedParams().get(key);
     }
 
     /**
