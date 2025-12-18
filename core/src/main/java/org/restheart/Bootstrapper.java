@@ -765,6 +765,7 @@ public final class Bootstrapper {
                 new ErrorHandler(PipelinedWrappingHandler.wrap(new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
                 // allowed methods
                 HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
+                HttpString.tryFromString(ExchangeKeys.METHOD.HEAD.name()),
                 HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
                 HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
                 HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
