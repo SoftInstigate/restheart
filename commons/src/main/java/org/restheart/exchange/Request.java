@@ -379,7 +379,7 @@ public abstract class Request<T> extends Exchange<T> {
      * Convenience method to set the Content-Type header to "application/json".
      */
     public void setContentTypeAsJson() {
-        setContentType("application/json");
+        setContentType("application/json; charset=UTF-8");
     }
 
     /**
