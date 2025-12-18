@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-examples</artifactId>
-    <version>8.13.1</version>
+    <version>8.13.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>custom-logging-field</artifactId>
