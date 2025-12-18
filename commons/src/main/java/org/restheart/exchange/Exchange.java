@@ -35,11 +35,11 @@ import io.undertow.util.Headers;
  * The Exchange class serves as the foundation for all request and response handling
  * in RESTHeart, providing:
  * <ul>
- *   <li>Content type detection and validation</li>
- *   <li>Authentication and authorization status checking</li>
- *   <li>Error state management</li>
- *   <li>Response interceptor lifecycle management</li>
- *   <li>Common utility methods for HTTP processing</li>
+ * <li>Content type detection and validation</li>
+ * <li>Authentication and authorization status checking</li>
+ * <li>Error state management</li>
+ * <li>Response interceptor lifecycle management</li>
+ * <li>Common utility methods for HTTP processing</li>
  * </ul>
  * </p>
  * <p>
@@ -52,7 +52,6 @@ import io.undertow.util.Headers;
  * @param <T> the type of content handled by this exchange
  */
 public abstract class Exchange<T> {
-
 
     /** MIME type for HAL+JSON (Hypertext Application Language) responses. */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
@@ -241,7 +240,8 @@ public abstract class Exchange<T> {
      * @return true if the content type is JSON, false otherwise
      */
     public boolean isContentTypeJson() {
-        return "application/json".equals(getContentType()) || (getContentType() != null && getContentType().startsWith("application/json;"));
+        return "application/json".equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith("application/json;"));
     }
 
     /**
@@ -255,7 +255,8 @@ public abstract class Exchange<T> {
      * @return true if the exchange is in an error state, false otherwise
      */
     public boolean isInError() {
-        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
+        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
+                && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
     }
 
     /**
@@ -332,7 +333,7 @@ public abstract class Exchange<T> {
      */
     public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
         var ct = exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
-        return ct != null && (ct.startsWith(FORM_URLENCODED)|| ct.startsWith(MULTIPART));
+        return ct != null && (ct.startsWith(FORM_URLENCODED) || ct.startsWith(MULTIPART));
     }
 
     /**
@@ -346,6 +347,111 @@ public abstract class Exchange<T> {
      */
     public boolean isContentTypeFormOrMultipart() {
         return isContentTypeFormOrMultipart(wrapped);
+    }
+
+    /**
+     * Checks if the content type is PDF.
+     * <p>
+     * This helper method determines if the content type is application/pdf
+     * or starts with application/pdf (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is PDF, false otherwise
+     */
+    public boolean isContentTypePdf() {
+        return APPLICATION_PDF_TYPE.equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith(APPLICATION_PDF_TYPE + ";"));
+    }
+
+    /**
+     * Checks if the content type is HTML.
+     * <p>
+     * This helper method determines if the content type is text/html
+     * or starts with text/html (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is HTML, false otherwise
+     */
+    public boolean isContentTypeHtml() {
+        return "text/html".equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith("text/html;"));
+    }
+
+    /**
+     * Checks if the content type is XHTML.
+     * <p>
+     * This helper method determines if the content type is application/xhtml+xml
+     * or starts with application/xhtml+xml (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is XHTML, false otherwise
+     */
+    public boolean isContentTypeXhtml() {
+        return "application/xhtml+xml".equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith("application/xhtml+xml;"));
+    }
+
+    /**
+     * Checks if the content type is HAL+JSON.
+     * <p>
+     * This helper method determines if the content type is application/hal+json
+     * or starts with application/hal+json (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is HAL+JSON, false otherwise
+     */
+    public boolean isContentTypeHalJson() {
+        return HAL_JSON_MEDIA_TYPE.equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith(HAL_JSON_MEDIA_TYPE + ";"));
+    }
+
+    /**
+     * Checks if the content type is text/plain.
+     * <p>
+     * This helper method determines if the content type is text/plain
+     * or starts with text/plain (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is text/plain, false otherwise
+     */
+    public boolean isContentTypeTextPlain() {
+        return TEXT_PLAIN_CONTENT_TYPE.equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith(TEXT_PLAIN_CONTENT_TYPE + ";"));
+    }
+
+    /**
+     * Checks if the content type is application/octet-stream.
+     * <p>
+     * This helper method determines if the content type is application/octet-stream
+     * or starts with application/octet-stream (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is application/octet-stream, false otherwise
+     */
+    public boolean isContentTypeApplicationOctetStream() {
+        return "application/octet-stream".equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith("application/octet-stream;"));
+    }
+
+    /**
+     * Checks if the content type is application/x-www-form-urlencoded.
+     * <p>
+     * This helper method determines if the content type is application/x-www-form-urlencoded
+     * or starts with application/x-www-form-urlencoded (allowing for additional parameters
+     * like charset specifications).
+     * </p>
+     *
+     * @return true if the content type is application/x-www-form-urlencoded, false otherwise
+     */
+    public boolean isContentTypeApplicationXWwwFormUrlEncoded() {
+        return FORM_URLENCODED.equals(getContentType())
+                || (getContentType() != null && getContentType().startsWith(FORM_URLENCODED + ";"));
     }
 
     /**
