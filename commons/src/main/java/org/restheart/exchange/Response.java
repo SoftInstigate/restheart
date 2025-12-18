@@ -168,7 +168,16 @@ public abstract class Response<T> extends Exchange<T> {
         setContentType(Exchange.HTML_CONTENT_TYPE);
     }
 
-    
+    /**
+     * Convenience method to set the Content-Type header to "application/xhtml+xml".
+     * <p>
+     * This is a commonly used method for XHTML responses, equivalent to
+     * calling {@code setContentType("application/xhtml+xml")}.
+     * </p>
+     */
+    public void setContentTypeAsXhtml() {
+        setContentType(Exchange.XHTML_MEDIA_TYPE);
+    }
 
     /**
      * Convenience method to set the Content-Type header to "text/xml".
