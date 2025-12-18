@@ -197,7 +197,7 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.6.1</version>
+                <version>5.6.2</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -274,7 +274,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.21</version>
+                <version>1.5.22</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
