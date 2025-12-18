@@ -20,6 +20,7 @@
 package org.restheart.exchange;
 
 import java.util.Map;
+
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
@@ -91,7 +92,7 @@ public abstract class Response<T> extends Exchange<T> {
      */
     @SuppressWarnings("rawtypes")
     public static Response of(HttpServerExchange exchange) {
-        var pi = Request.pipelineInfo(exchange);;
+        var pi = Request.pipelineInfo(exchange);
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceResponse.of(exchange);
@@ -154,6 +155,30 @@ public abstract class Response<T> extends Exchange<T> {
      */
     public void setContentTypeAsJson() {
         setContentType(Exchange.JSON_MEDIA_TYPE);
+    }
+
+    /**
+     * Convenience method to set the Content-Type header to "text/html".
+     * <p>
+     * This is a commonly used method for HTML responses, equivalent to
+     * calling {@code setContentType("text/html")}.
+     * </p>
+     */
+    public void setContentTypeAsHtml() {
+        setContentType(Exchange.HTML_CONTENT_TYPE);
+    }
+
+    
+
+    /**
+     * Convenience method to set the Content-Type header to "text/xml".
+     * <p>
+     * This is a commonly used method for XML responses, equivalent to
+     * calling {@code setContentType("text/xml")}.
+     * </p>
+     */
+    public void setContentTypeAsXml() {
+        setContentType(Exchange.XML_CONTENT_TYPE);
     }
 
     /**
