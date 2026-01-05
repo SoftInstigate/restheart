@@ -716,7 +716,17 @@ public class MongoRequest extends BsonRequest {
      * @return document id
      */
     public String getDocumentIdRaw() {
-        return getPathTokenAt(3);
+        String _docId = getPathTokenAt(3);
+
+        if (_docId == null) {
+            return null;
+        }
+
+        // Decode encoded slashes (%2F / %2f) in document ID
+        // Do NOT use URI decoding here — the document ID is already decoded except for slashes
+        _docId = _docId.replace("%2F", "/").replace("%2f", "/");
+
+        return _docId;
     }
 
     /**
