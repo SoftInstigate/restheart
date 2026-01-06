@@ -68,7 +68,7 @@ jobs:
       - name: Deploy to Maven Central (8.0 only)
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
-          mvn -B deploy -Pdeploy -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
+          mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
