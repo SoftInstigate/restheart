@@ -20,25 +20,18 @@
  */
 package org.restheart.mongodb.utils;
 
-import java.util.Arrays;
-import java.util.Objects;
-
-import org.bson.BsonBoolean;
-import org.bson.BsonDateTime;
-import org.bson.BsonMaxKey;
-import org.bson.BsonMinKey;
-import org.bson.BsonNull;
-import org.bson.BsonNumber;
-import org.bson.BsonObjectId;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.types.ObjectId;
-import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.MIN_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+import org.bson.*;
+import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
@@ -59,10 +52,10 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws UnsupportedDocumentIdException
      */
-    public static DOC_ID_TYPE checkId(BsonValue id) throws UnsupportedDocumentIdException {
+    public static DOC_ID_TYPE checkId(final BsonValue id) throws UnsupportedDocumentIdException {
         Objects.requireNonNull(id);
 
-        var type = id.getBsonType();
+        final var type = id.getBsonType();
 
         return switch (type) {
             case STRING -> DOC_ID_TYPE.STRING;
@@ -90,7 +83,8 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws UnsupportedDocumentIdException
      */
-    public static BsonValue getDocumentIdFromURI(String id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
+    public static BsonValue getDocumentIdFromURI(final String id, DOC_ID_TYPE type)
+            throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         }
@@ -137,7 +131,7 @@ public class MongoURLUtils extends URLUtils {
                 case NULL -> new BsonNull();
                 default -> new BsonString(id);
             };
-        } catch (IllegalArgumentException iar) {
+        } catch (final IllegalArgumentException iar) {
             throw new UnsupportedDocumentIdException(iar);
         }
     }
@@ -150,8 +144,8 @@ public class MongoURLUtils extends URLUtils {
      * @param exchange
      * @return
      */
-    static public String getRemappedRequestURL(HttpServerExchange exchange) {
-        var ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
+    public static String getRemappedRequestURL(final HttpServerExchange exchange) {
+        final var ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
 
         if (ibu == null) {
             return exchange.getRequestURL();
@@ -169,21 +163,21 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
-    static public String getUriWithDocId(
-        MongoRequest request,
-        String dbName,
-        String collName,
-        BsonValue id) throws UnsupportedDocumentIdException {
-        var docIdType = MongoURLUtils.checkId(id);
+    public static String getUriWithDocId(
+            final MongoRequest request,
+            final String dbName,
+            final String collName,
+            final BsonValue id) throws UnsupportedDocumentIdException {
+        final var docIdType = MongoURLUtils.checkId(id);
 
-        var sb = new StringBuilder();
+        final var sb = new StringBuilder();
 
         sb.append("/")
-            .append(dbName)
-            .append("/")
-            .append(collName)
-            .append("/")
-            .append(getIdAsStringNoBrachets(id));
+                .append(dbName)
+                .append("/")
+                .append(collName)
+                .append("/")
+                .append(getIdAsStringNoBrachets(id));
 
         if (docIdType == DOC_ID_TYPE.STRING && ObjectId.isValid(id.asString().getValue())) {
             sb.append("?id_type=STRING");
@@ -203,19 +197,19 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
-    static public String getUriWithFilterMany(
-        MongoRequest request,
-        String dbName,
-        String collName,
-        BsonValue[] ids) throws UnsupportedDocumentIdException {
-        var sb = new StringBuilder();
+    public static String getUriWithFilterMany(
+            final MongoRequest request,
+            final String dbName,
+            final String collName,
+            final BsonValue[] ids) throws UnsupportedDocumentIdException {
+        final var sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-            .append("filter={").append("'")
-            .append("_id").append("'").append(":")
-            .append("{'$in'").append(":")
-            .append(getIdsString(ids)).append("}}");
+                .append("filter={").append("'")
+                .append("_id").append("'").append(":")
+                .append("{'$in'").append(":")
+                .append(getIdsString(ids)).append("}}");
 
         return request.requestPathFromMongoUri(sb.toString());
     }
@@ -230,21 +224,21 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
-    static public String getUriWithFilterOne(
-        MongoRequest request,
-        String dbName,
-        String collName,
-        String referenceField,
-        BsonValue id) throws UnsupportedDocumentIdException {
-        var sb = new StringBuilder();
+    public static String getUriWithFilterOne(
+            final MongoRequest request,
+            final String dbName,
+            final String collName,
+            final String referenceField,
+            final BsonValue id) throws UnsupportedDocumentIdException {
+        final var sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-            .append("filter={").append("'")
-            .append(referenceField).append("'")
-            .append(":")
-            .append(getIdString(id))
-            .append("}");
+                .append("filter={").append("'")
+                .append(referenceField).append("'")
+                .append(":")
+                .append(getIdString(id))
+                .append("}");
 
         return request.requestPathFromMongoUri(sb.toString());
     }
@@ -259,25 +253,25 @@ public class MongoURLUtils extends URLUtils {
      * @return
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
-    static public String getUriWithFilterManyInverse(
-        MongoRequest request,
-        String dbName,
-        String collName,
-        String referenceField,
-        BsonValue id) throws UnsupportedDocumentIdException {
-        var sb = new StringBuilder();
+    public static String getUriWithFilterManyInverse(
+            final MongoRequest request,
+            final String dbName,
+            final String collName,
+            final String referenceField,
+            final BsonValue id) throws UnsupportedDocumentIdException {
+        final var sb = new StringBuilder();
 
         ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-            .append("filter={'").append(referenceField)
-            .append("':{").append("'$elemMatch':{'$eq':")
-            .append(getIdString(id)).append("}}}");
+                .append("filter={'").append(referenceField)
+                .append("':{").append("'$elemMatch':{'$eq':")
+                .append(getIdString(id)).append("}}}");
 
         return BsonUtils.minify(request.requestPathFromMongoUri(sb.toString())).toString();
     }
 
-    private static BsonNumber getIdAsNumber(String id) throws IllegalArgumentException {
-        var ret = BsonUtils.parse(id);
+    private static BsonNumber getIdAsNumber(final String id) throws IllegalArgumentException {
+        final var ret = BsonUtils.parse(id);
 
         if (ret.isNumber()) {
             return ret.asNumber();
@@ -286,8 +280,8 @@ public class MongoURLUtils extends URLUtils {
         }
     }
 
-    private static BsonDateTime getIdAsDate(String id) throws IllegalArgumentException {
-        var ret = BsonUtils.parse(id);
+    private static BsonDateTime getIdAsDate(final String id) throws IllegalArgumentException {
+        final var ret = BsonUtils.parse(id);
 
         if (ret.isDateTime()) {
             return ret.asDateTime();
@@ -301,7 +295,7 @@ public class MongoURLUtils extends URLUtils {
 
     }
 
-    private static BsonBoolean getIdAsBoolean(String id) throws IllegalArgumentException {
+    private static BsonBoolean getIdAsBoolean(final String id) throws IllegalArgumentException {
         if (id.equals(TRUE_KEY_ID)) {
             return new BsonBoolean(true);
         }
@@ -313,7 +307,7 @@ public class MongoURLUtils extends URLUtils {
         return null;
     }
 
-    private static BsonObjectId getIdAsObjectId(String id) throws IllegalArgumentException {
+    private static BsonObjectId getIdAsObjectId(final String id) throws IllegalArgumentException {
         if (!ObjectId.isValid(id)) {
             throw new IllegalArgumentException("The id is not a valid ObjectId " + id);
         }
@@ -321,7 +315,7 @@ public class MongoURLUtils extends URLUtils {
         return new BsonObjectId(new ObjectId(id));
     }
 
-    private static BsonValue getIdAsStringOrObjectId(String id) {
+    private static BsonValue getIdAsStringOrObjectId(final String id) {
         if (ObjectId.isValid(id)) {
             return getIdAsObjectId(id);
         }
@@ -329,7 +323,7 @@ public class MongoURLUtils extends URLUtils {
         return new BsonString(id);
     }
 
-    private static String getIdAsStringNoBrachets(BsonValue id) throws UnsupportedDocumentIdException {
+    private static String getIdAsStringNoBrachets(final BsonValue id) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         } else if (id.isString()) {
@@ -341,19 +335,19 @@ public class MongoURLUtils extends URLUtils {
         }
     }
 
-    private static String getIdsString(BsonValue[] ids) throws UnsupportedDocumentIdException {
+    private static String getIdsString(final BsonValue[] ids) throws UnsupportedDocumentIdException {
         if (ids == null) {
             return null;
         }
 
         var cont = 0;
-        var _ids = new String[ids.length];
+        final var idsArray = new String[ids.length];
 
         for (BsonValue id : ids) {
-            _ids[cont] = getIdString(id);
+            idsArray[cont] = getIdString(id);
             cont++;
         }
 
-        return BsonUtils.minify(Arrays.toString(_ids)).toString();
+        return BsonUtils.minify(Arrays.toString(idsArray)).toString();
     }
 }
