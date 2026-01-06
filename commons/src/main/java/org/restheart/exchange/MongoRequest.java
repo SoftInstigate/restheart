@@ -19,6 +19,11 @@
  */
 package org.restheart.exchange;
 
+import static org.restheart.exchange.ExchangeKeys.*;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -37,47 +42,16 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.ExchangeKeys.ADMIN;
-import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
-import static org.restheart.exchange.ExchangeKeys.CACHE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
-import static org.restheart.exchange.ExchangeKeys.CONFIG;
-import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
-import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.FS_CHUNKS_SUFFIX;
-import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
-import static org.restheart.exchange.ExchangeKeys.JSON_MODE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.LOCAL;
-import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import static org.restheart.exchange.ExchangeKeys.NO_CACHE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.NO_PROPS_KEY;
-import static org.restheart.exchange.ExchangeKeys.NUL;
-import static org.restheart.exchange.ExchangeKeys.READ_CONCERN_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.READ_PREFERENCE_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import static org.restheart.exchange.ExchangeKeys.RESOURCES_WILDCARD_KEY;
-import static org.restheart.exchange.ExchangeKeys.SYSTEM;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import static org.restheart.exchange.ExchangeKeys.WRITE_CONCERN_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY;
-import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
-import static org.restheart.exchange.ExchangeKeys._INDEXES;
-import static org.restheart.exchange.ExchangeKeys._META;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-import static org.restheart.exchange.ExchangeKeys._SESSIONS;
-import static org.restheart.exchange.ExchangeKeys._SIZE;
-import static org.restheart.exchange.ExchangeKeys._STREAMS;
-import static org.restheart.exchange.ExchangeKeys._TRANSACTIONS;
 import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import static org.restheart.utils.BsonUtils.array;
-import static org.restheart.utils.BsonUtils.document;
+import org.restheart.mongodb.utils.MongoMountResolver;
+import org.restheart.mongodb.utils.MongoMountResolver.ResolvedContext;
 import org.restheart.utils.MongoServiceAttachments;
-import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,6 +201,15 @@ public class MongoRequest extends BsonRequest {
 
     /** Optional MongoDB resource operations helper. */
     private final Optional<RSOps> rsOps;
+
+    /** Resolved MongoDB context (database, collection, permissions). Lazily initialized. */
+    private ResolvedContext resolvedContext;
+    
+    /** Flag to track if resolved context has been calculated (for lazy initialization). */
+    private boolean resolvedContextCalculated = false;
+    
+    /** Resolver instance for lazy calculation of context. Set by setter. */
+    private MongoMountResolver resolver;
 
     protected MongoRequest(HttpServerExchange exchange, String whereUri, String whatUri) {
         super(exchange);
@@ -939,8 +922,7 @@ public class MongoRequest extends BsonRequest {
                     ret.putAll(_s.asDocument());
                 } catch (JsonParseException e) {
                     // if we cannot parse it as a document,
-                    // assume it as a string property name
-                    // unless it starts with {
+                    // assume it as a string property name unless it starts with "{"
                     if (s.startsWith("{")) {
                         throw new JsonParseException("Invalid sort parameter", e);
                     } else if (s.startsWith("-")) {
@@ -1648,5 +1630,47 @@ public class MongoRequest extends BsonRequest {
      */
     public Optional<RSOps> rsOps() {
         return rsOps;
+    }
+
+    /**
+     * Gets the resolved MongoDB context for this request.
+     * Lazily initializes the context on first access if resolver is available.
+     * This is set during request processing by MongoService and contains
+     * information about the target database, collection, and permissions.
+     * 
+     * @return the resolved context, or null if not yet resolved or resolver not available
+     */
+    public ResolvedContext getResolvedContext() {
+        if (!resolvedContextCalculated && resolver != null) {
+            synchronized (this) {
+                if (!resolvedContextCalculated) {
+                    this.resolvedContext = resolver.resolve(this);
+                    this.resolvedContextCalculated = true;
+                }
+            }
+        }
+        return this.resolvedContext;
+    }
+
+    /**
+     * Sets the resolver for lazy resolution of MongoDB context.
+     * Called internally by MongoService during request initialization.
+     * The context will be resolved on first call to getResolvedContext().
+     * 
+     * @param resolver the resolver instance
+     */
+    public void setResolver(MongoMountResolver resolver) {
+        this.resolver = resolver;
+    }
+
+    /**
+     * Sets the resolved MongoDB context for this request directly.
+     * Called internally if context is pre-calculated.
+     * 
+     * @param context the resolved context
+     */
+    public void setResolvedContext(ResolvedContext context) {
+        this.resolvedContext = context;
+        this.resolvedContextCalculated = true;
     }
 }
