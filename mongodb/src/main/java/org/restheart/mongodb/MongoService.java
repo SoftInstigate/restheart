@@ -162,9 +162,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                     + " where url must be either all absolute paths"
                     + " or all path templates");
         } else {
-            var mongoMounts = MongoServiceConfiguration.get().getMongoMounts();
+            var mongoEndpointMappings = MongoServiceConfiguration.get().getMongoMounts();
 
-            if (mongoMounts.isEmpty()) {
+            if (mongoEndpointMappings.isEmpty()) {
                 BootstrapLogger.startPhase(LOGGER, "MONGODB RESOURCE BINDING");
                 BootstrapLogger.debugInfo(LOGGER, "No MongoDB resources configured");
                 BootstrapLogger.endPhase(LOGGER, "MONGODB RESOURCE BINDING COMPLETED");
@@ -172,7 +172,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                 BootstrapLogger.startPhase(LOGGER, "MONGODB RESOURCE BINDING");
                 var startTime = System.currentTimeMillis();
 
-                mongoMounts.stream().forEach(m -> {
+                mongoEndpointMappings.stream().forEach(m -> {
                     var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
                     var resource = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
