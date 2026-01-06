@@ -43,6 +43,7 @@ import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
+import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -256,7 +257,14 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     @Override
     public Function<HttpServerExchange, MongoRequest> request() {
-        return e -> MongoRequest.of(e);
+        return e -> {
+            var req = MongoRequest.of(e);
+            
+            // Set the resolver for lazy initialization of resolved context
+            req.setResolver(MongoMountResolverImpl.getInstance());
+            
+            return req;
+        };
     }
 
     @Override
