@@ -41,6 +41,7 @@ import io.undertow.server.HttpServerExchange;
  * OPTIONS returns the allowed methods.
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "ping",
