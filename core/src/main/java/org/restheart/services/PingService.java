@@ -34,16 +34,23 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
+ * Ping service returning a greeting message along with RESTHeart version and build time.
+ * Methods supported: GET, HEAD, OPTIONS.
+ * GET returns a JSON response with the greeting message, client IP, host, version, and build time.
+ * HEAD returns only the headers.
+ * OPTIONS returns the allowed methods.
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "ping",
-    description = "simple ping service",
+    description = "Ping service returning a greeting message along with RESTHeart version and build time.",
     secure = false,
     blocking = false)
 public class PingService implements ByteArrayService {
     private static final String VERSION = Version.getInstance().getVersionNumber().orElse("unknown");
+    private static final String BUILD_TIME = Version.getInstance().getBuildTime().toString();
+
     private String msg = null;
     private boolean isExtendedResponseEnabled = true;
 
@@ -58,24 +65,15 @@ public class PingService implements ByteArrayService {
 
     @Override
     public void handle(final ByteArrayRequest request, final ByteArrayResponse response) throws Exception {
-        if (request.isGet()) {
-            setResponseHeaders(response);
-            buildPingResponse(request, response);
-            return;
+        switch (request.getMethod()) {
+            case GET -> {
+                setResponseHeaders(response);
+                buildPingResponse(request, response);
+            }
+            case HEAD -> setResponseHeaders(response);
+            case OPTIONS -> handleOptions(request);
+            default -> response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
-
-        if (request.isOptions()) {
-            handleOptions(request);
-            return;
-        }
-
-        if (request.isHead()) {
-            // For HEAD requests, do not include a body
-            setResponseHeaders(response);
-            return;
-        }
-
-        response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
     }
 
     private void setResponseHeaders(final ByteArrayResponse response) {
@@ -84,8 +82,7 @@ public class PingService implements ByteArrayService {
     }
 
     private void buildPingResponse(final ByteArrayRequest request, final ByteArrayResponse response) {
-        final var pingMessageBuilder = new StringBuilder();
-        pingMessageBuilder.append("{\"message\": \"").append(msg).append("\"");
+        final var pingMessageBuilder = new StringBuilder(256).append("{\"message\": \"").append(msg).append("\"");
 
         if (this.isExtendedResponseEnabled) {
             pingMessageBuilder.append(", \"client_ip\": \"")
@@ -94,14 +91,14 @@ public class PingService implements ByteArrayService {
                     .append(getHostHeader(request.getExchange()))
                     .append("\", \"version\": \"")
                     .append(VERSION)
+                    .append("\", \"build_time\": \"")
+                    .append(BUILD_TIME)
                     .append("\"");
         }
 
         pingMessageBuilder.append("}");
 
-        final String pingMessage = pingMessageBuilder.toString();
-
-        response.setContent(pingMessage.getBytes());
+        response.setContent(pingMessageBuilder.toString().getBytes());
     }
 
     private String getHostHeader(final HttpServerExchange exchange) {
