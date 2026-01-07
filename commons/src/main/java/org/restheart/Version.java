@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * Singleton class providing RESTHeart version and build time information.
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class Version {
 
