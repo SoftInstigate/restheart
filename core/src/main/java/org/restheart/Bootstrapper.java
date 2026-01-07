@@ -170,9 +170,8 @@ public final class Bootstrapper {
             }
 
             if (cmd.isVersionHelpRequested()) {
-                final var version = Version.getInstance().getVersion() == null
-                    ? "unknown (not packaged)"
-                    : Version.getInstance().getVersion();
+                final var version = Version.getInstance().getVersionNumber()
+                    .orElse("unknown (not packaged)");
 
                 System.out.println(RESTHEART
                         .concat(" Version ")
@@ -358,9 +357,9 @@ public final class Bootstrapper {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
 
-            final var version = Version.getInstance().getVersion() == null
-                ? "of correct version"
-                : "v" + Version.getInstance().getVersion();
+            final var version = Version.getInstance().getVersionNumber()
+                .map(v -> "v" + v)
+                .orElse("of correct version");
 
             logErrorAndExit(
                     "Linkage error instantiating plugins. Check that all plugins were compiled against restheart-commons "
@@ -413,9 +412,9 @@ public final class Bootstrapper {
                 final var duration = System.currentTimeMillis() - initializerStartTime;
                 // this might occur executing plugin code compiled
                 // with wrong version of restheart-commons
-                final var version = Version.getInstance().getVersion() == null
-                    ? "of correct version"
-                    : "v" + Version.getInstance().getVersion();
+                final var version = Version.getInstance().getVersionNumber()
+                    .map(v -> "v" + v)
+                    .orElse("of correct version");
 
                 LOGGER.error(
                         "Linkage error executing BEFORE_STARTUP initializer {} ({}) after {}ms. Check that it was compiled against restheart-commons {}",
@@ -488,9 +487,9 @@ public final class Bootstrapper {
                     final var duration = System.currentTimeMillis() - initializerStartTime;
                     // this might occur executing plugin code compiled
                     // with wrong version of restheart-commons
-                    final var version = Version.getInstance().getVersion() == null
-                        ? "of correct version"
-                        : "v" + Version.getInstance().getVersion();
+                    final var version = Version.getInstance().getVersionNumber()
+                        .map(v -> "v" + v)
+                        .orElse("of correct version");
 
                     BootstrapLogger.errorSubItem(LOGGER,
                             "✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}",

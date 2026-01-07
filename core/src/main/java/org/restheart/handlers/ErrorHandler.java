@@ -94,9 +94,9 @@ public class ErrorHandler extends PipelinedHandler {
             var pi = Request.of(exchange).getPipelineInfo();
 
             if (pi != null) {
-                var version = Version.getInstance().getVersion() == null
-                    ? "of correct version"
-                    : "v" + Version.getInstance().getVersion();
+                var version = Version.getInstance().getVersionNumber()
+                    .map(v -> "v" + v)
+                    .orElse("of correct version");
 
                 var errMsg = "Linkage error occurred while handling the request. "
                     + "Ensure that '"
