@@ -22,6 +22,7 @@ package org.restheart.services;
 
 import java.util.Map;
 
+import org.restheart.Version;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
@@ -42,7 +43,7 @@ import io.undertow.server.HttpServerExchange;
     secure = false,
     blocking = false)
 public class PingService implements ByteArrayService {
-    private static final String VERSION = PingService.class.getPackage().getImplementationVersion();
+    private static final String VERSION = Version.getInstance().getVersionNumber().orElse("unknown");
     private String msg = null;
     private boolean isExtendedResponseEnabled = true;
 
