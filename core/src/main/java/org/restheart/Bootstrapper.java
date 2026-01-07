@@ -256,23 +256,31 @@ public final class Bootstrapper {
 
             final var d = new RESTHeartDaemon();
             if (d.isDaemonized()) {
-                try {
-                    initLogging(configuration, d, IS_FORKED);
-                } catch (final Exception t) {
-                    logErrorAndExit("Error staring forked process", t, false, false, -1);
-                }
-                startServer(true);
+                startForkedDaemonProcess(d);
             } else {
-                initLogging(configuration, d, IS_FORKED);
-                try {
-                    logStartMessages(configuration);
-                    logLoggingConfiguration(configuration, false);
-                    d.daemonize();
-                } catch (final Throwable t) {
-                    logErrorAndExit("Error forking", t, false, false, -1);
-                }
+                initializeForkedLogger(d);
             }
         }
+    }
+
+    private static void initializeForkedLogger(final RESTHeartDaemon d) {
+        initLogging(configuration, d, IS_FORKED);
+        try {
+            logStartMessages(configuration);
+            logLoggingConfiguration(configuration, false);
+            d.daemonize();
+        } catch (final Throwable t) {
+            logErrorAndExit("Error forking", t, false, false, -1);
+        }
+    }
+
+    private static void startForkedDaemonProcess(final RESTHeartDaemon d) {
+        try {
+            initLogging(configuration, d, IS_FORKED);
+        } catch (final Exception t) {
+            logErrorAndExit("Error staring forked process", t, false, false, -1);
+        }
+        startServer(true);
     }
 
     /**
