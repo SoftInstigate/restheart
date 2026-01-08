@@ -118,6 +118,8 @@ public class AuthTokenService implements ByteArrayService {
         }
 
         var isCookieEndpoint = TOKEN_COOKIE_ENDPOINT.equals(path);
+        // Also accept /token/{id} paths for GET/DELETE (token resource location)
+        var isTokenResource = path.startsWith(TOKEN_ENDPOINT + "/") && !path.startsWith(TOKEN_COOKIE_ENDPOINT);
 
         if (Methods.POST.equals(exchange.getRequestMethod())) {
             handlePost(request, response, isCookieEndpoint);
@@ -219,6 +221,7 @@ public class AuthTokenService implements ByteArrayService {
         var resp = new JsonObject();
         var tokenType = getTokenType();
         
+        // OAuth 2.0 format
         resp.add("access_token", new JsonPrimitive(authTokenHeader));
         resp.add("token_type", new JsonPrimitive(tokenType));
         
