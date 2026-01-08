@@ -13,41 +13,44 @@ function(creds) {
 """
 # YWRtaW46Y2hhbmdlaXQ= => admin:secret
 
-Scenario: use password, get token and use it
-    Given path '/secho'
+Scenario: use password, get token from /token endpoint and use it
+    # Get token from /token endpoint
+    Given path '/token'
     And header Authorization = basic ( {username: 'admin', password: 'secret' } )
     When method GET
     Then status 200
     And def token = responseHeaders['Auth-Token'][0]
 
+    # Use the token to authenticate to another endpoint
     Given path '/secho'
     And def creds = {username: 'admin', password: '#(token)' }
     And header Authorization = basic( creds )
     When method GET
     Then status 200
-    And def token = responseHeaders['Auth-Token'][0]
 
 Scenario: use password, get token and use it. then use password again and the token got from first request
-    Given path '/secho'
+    # Get token from /token endpoint
+    Given path '/token'
     And header Authorization = basic ( {username: 'admin', password: 'secret' } )
     When method GET
     Then status 200
     And def token = responseHeaders['Auth-Token'][0]
 
+    # Use the token
     Given path '/secho'
     And def creds = {username: 'admin', password: '#(token)' }
     And header Authorization = basic( creds )
     When method GET
     Then status 200
-    And def token = responseHeaders['Auth-Token'][0]
 
-    Given path '/secho'
+    # Get token again using password
+    Given path '/token'
     And header Authorization = basic ( {username: 'admin', password: 'secret' } )
     When method GET
     Then status 200
 
+    # Use the original token again (should still work, cached)
     Given path '/secho'
     And header Authorization = basic( creds )
     When method GET
     Then status 200
-    And def token = responseHeaders['Auth-Token'][0]

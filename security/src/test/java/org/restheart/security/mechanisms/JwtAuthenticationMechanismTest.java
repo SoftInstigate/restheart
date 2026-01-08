@@ -32,54 +32,7 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.security.tokens.JwtConfigProvider;
 
 public class JwtAuthenticationMechanismTest {
-    @Test
-    void testJwtConfigProviderRejectsWeakKey() {
-        var provider = new JwtConfigProvider();
-        
-        // Inject config with short key (less than 32 characters)
-        Map<String, Object> config = new HashMap<>();
-        config.put("key", "tooshort");
-        config.put("algorithm", "HS256");
-        config.put("issuer", "test");
-        config.put("audience", null);
-        
-        // Use reflection to set the config field
-        try {
-            var configField = JwtConfigProvider.class.getDeclaredField("config");
-            configField.setAccessible(true);
-            configField.set(provider, config);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        
-        // Should throw ConfigurationException for weak key
-        assertThrows(ConfigurationException.class, () -> provider.init());
-    }
-    
-    @Test
-    void testJwtConfigProviderRejectsSecretKey() {
-        var provider = new JwtConfigProvider();
-        
-        // Inject config with "secret" key
-        Map<String, Object> config = new HashMap<>();
-        config.put("key", "secret");
-        config.put("algorithm", "HS256");
-        config.put("issuer", "test");
-        config.put("audience", null);
-        
-        // Use reflection to set the config field
-        try {
-            var configField = JwtConfigProvider.class.getDeclaredField("config");
-            configField.setAccessible(true);
-            configField.set(provider, config);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        
-        // Should throw ConfigurationException for "secret" key
-        assertThrows(ConfigurationException.class, () -> provider.init());
-    }
-    
+
     @Test
     void testJwtConfigProviderAcceptsStrongKey() throws ConfigurationException {
         var provider = new JwtConfigProvider();

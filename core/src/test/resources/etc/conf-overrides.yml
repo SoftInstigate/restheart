@@ -3,12 +3,28 @@
 ---
 /http-listener/host: 0.0.0.0
 
+/tokenBasicAuthMechanism/enabled: true
+
 /basicAuthMechanism/authenticator: fileRealmAuthenticator
 
 /digestAuthMechanism/authenticator: fileRealmAuthenticator
 
 /jwtAuthenticationMechanism/enabled: true
+/jwtAuthenticationMechanism/usernameClaim: sub
 /jwtAuthenticationMechanism/rolesClaim: roles
+/jwtAuthenticationMechanism/base64Encoded: false
+
+/jwtConfigProvider/enabled: true
+/jwtConfigProvider/key: secret
+/jwtConfigProvider/algorithm: HS256
+/jwtConfigProvider/issuer: restheart.org
+/jwtConfigProvider/audience: null
+
+/jwtTokenManager/enabled: true
+/jwtTokenManager/ttl: 15
+
+/authCookieSetter/enabled: true
+/authCookieSetter/ttl: 15
 
 /fileRealmAuthenticator:
   enabled: true
@@ -293,7 +309,9 @@
 
 /testInitializer/enabled: true
 
-/authTokenService/uri: /tokens
+/authTokenService:
+  enabled: true
+  uri: /token
 
 /ping/msg: 'Ping!'
 

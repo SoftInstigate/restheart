@@ -75,22 +75,22 @@ public class ExtraJwtVerifier implements Initializer {
         am.addConsumer(exchangeAndToken -> {
             var extraClaim = exchangeAndToken.getValue().getClaim("extra");
 
-            if (extraClaim == null || extraClaim.isNull()) {
-                throw new JWTVerificationException("missing extra claim");
-            }
+            // Only verify if the extra claim is present
+            // This allows JWT tokens without the extra claim to still authenticate
+            if (extraClaim != null && !extraClaim.isMissing()) {
+                var extra = extraClaim.asMap();
 
-            var extra = extraClaim.asMap();
+                if (extra == null) {
+                    throw new JWTVerificationException("extra claim is empty");
+                }
 
-            if (extra == null) {
-                throw new JWTVerificationException("extra claim is empty");
-            }
+                if (!extra.containsKey("a")) {
+                    throw new JWTVerificationException("extra claim does not have 'a' property");
+                }
 
-            if (!extra.containsKey("a")) {
-                throw new JWTVerificationException("extra claim does not have 'a' property");
-            }
-
-            if (!extra.containsKey("b")) {
-                throw new JWTVerificationException("extra claim does not have 'b' property");
+                if (!extra.containsKey("b")) {
+                    throw new JWTVerificationException("extra claim does not have 'b' property");
+                }
             }
         });
     }

@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.bson.BsonString;
 import org.restheart.cache.Cache;
@@ -318,6 +319,7 @@ public class JwtTokenManager implements TokenManager {
           .withSubject(account.getPrincipal().getName())
           .withExpiresAt(expires)
           .withIssuer(issuer)
+          .withJWTId(UUID.randomUUID().toString())
           .withArrayClaim(ROLES, account.getRoles().toArray(new String[account.getRoles().size()]));
 
         final Builder[] builder = { _builder };
