@@ -36,7 +36,12 @@ import org.slf4j.LoggerFactory;
 public class TokenInjector extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenInjector.class);
     
+    private static final String TOKEN_ENDPOINT = "/token";
+    private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
+    
     private final TokenManager tokenManager;
+    private final boolean injectOnAllEndpoints;
+    private final boolean allowLegacy;
 
     /**
      * Creates a new instance of TokenInjector
@@ -45,8 +50,22 @@ public class TokenInjector extends PipelinedHandler {
      * @param tokenManager
      */
     public TokenInjector(PipelinedHandler next, TokenManager tokenManager) {
+        this(next, tokenManager, false, false);
+    }
+
+    /**
+     * Creates a new instance of TokenInjector with configuration
+     *
+     * @param next
+     * @param tokenManager
+     * @param injectOnAllEndpoints if true, inject tokens on all authenticated requests (legacy behavior)
+     * @param allowLegacy if true, honor ?renew-auth-token query parameter on any endpoint
+     */
+    public TokenInjector(PipelinedHandler next, TokenManager tokenManager, boolean injectOnAllEndpoints, boolean allowLegacy) {
         super(next);
         this.tokenManager = tokenManager;
+        this.injectOnAllEndpoints = injectOnAllEndpoints;
+        this.allowLegacy = allowLegacy;
     }
 
     /**
@@ -70,6 +89,8 @@ public class TokenInjector extends PipelinedHandler {
         } else if (!isAuthenticated) {
             LOGGER.debug("Request not authenticated for {} {} - Skipping token injection", 
                 requestMethod, requestPath);
+        } else if (!shouldInjectToken(requestPath, exchange)) {
+            LOGGER.debug("Endpoint {} not configured for token injection - Skipping", requestPath);
         } else {
             var tokenStartTime = System.currentTimeMillis();
             var authenticatedAccount = securityContext.getAuthenticatedAccount();
@@ -111,5 +132,33 @@ public class TokenInjector extends PipelinedHandler {
         }
 
         next(exchange);
+    }
+
+    /**
+     * Determine if token should be injected for this endpoint
+     *
+     * @param requestPath the request path
+     * @param exchange the HTTP exchange
+     * @return true if token should be injected, false otherwise
+     */
+    private boolean shouldInjectToken(String requestPath, HttpServerExchange exchange) {
+        // Legacy mode: inject on all authenticated endpoints
+        if (injectOnAllEndpoints) {
+            return true;
+        }
+
+        // Primary: /token and /token/cookie endpoints
+        if (TOKEN_ENDPOINT.equals(requestPath) || TOKEN_COOKIE_ENDPOINT.equals(requestPath)) {
+            return true;
+        }
+
+        // Legacy: honor ?renew-auth-token query parameter on any endpoint (if enabled)
+        if (allowLegacy && exchange.getQueryParameters().containsKey("renew-auth-token")) {
+            LOGGER.warn("Using legacy ?renew-auth-token query parameter on {} - Consider migrating to POST /token?renew=true", 
+                requestPath);
+            return true;
+        }
+
+        return false;
     }
 }

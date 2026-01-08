@@ -26,11 +26,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -57,7 +55,6 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import com.google.common.net.HttpHeaders;
-import java.util.regex.Pattern;
 
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
@@ -81,80 +78,47 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
 
     private String usernameClaim;
     private String rolesClaim;
-    private List<String> fixedRoles;
-
-    // Regular expression to check for minimum JWT key complexity:
-    // - At least one lowercase letter
-    // - At least one uppercase letter
-    // - At least one digit
-    // - At least one special character
-    // - At least 32 characters long
-    private static final Pattern COMPLEXITY_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{32,}$");
+    private java.util.List<String> fixedRoles;
 
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("jwtConfigProvider")
+    private org.restheart.security.tokens.JwtConfigProvider.JwtConfig jwtConfig;
+
     @OnInit
     public void init() throws ConfigurationException {
+        // Use shared JWT configuration from provider
+        if (jwtConfig == null) {
+            throw new ConfigurationException("jwtConfigProvider not available. Ensure it is enabled.");
+        }
+
         // get configuration arguments
         base64Encoded = arg(config, "base64Encoded");
-        final String key = arg(config, "key");
-        validateKeyComplexity(key);
         usernameClaim = arg(config, "usernameClaim");
         rolesClaim = argOrDefault(config, "rolesClaim", null);
         fixedRoles = argOrDefault(config, "fixedRoles", null);
-        final String issuer = argOrDefault(config, "issuer", null);
-        final var _audience = argOrDefault(config, "audience", null);
-
-        final List<String> audience = new ArrayList<>();
-
-        if (_audience == null) {
-            // do nothing
-        } else if (_audience instanceof final String _as) {
-            audience.add(_as);
-        } else if (_audience instanceof final List<?> _al) {
-            _al.stream().filter(String.class::isInstance).map(e -> (String) e).forEach(audience::add);
-        } else {
-            throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
-        }
 
         Algorithm _algorithm;
-        final String algorithm = arg(config, "algorithm");
         try {
-            _algorithm = getAlgorithm(algorithm, key);
+            _algorithm = getAlgorithm(jwtConfig.algorithm(), jwtConfig.key());
         } catch (final CertificateException ex) {
             throw new ConfigurationException("wrong JWT configuration, cannot setup algorithm", ex);
         }
 
         Verification v = JWT.require(_algorithm);
 
-        if (audience != null && !audience.isEmpty()) {
-            v = v.withAudience(audience.toArray(String[]::new));
+        if (jwtConfig.hasAudience()) {
+            v = v.withAudience(jwtConfig.audience());
         }
 
-        if (issuer != null) {
-            v = v.withIssuer(issuer);
-        }
+        v = v.withIssuer(jwtConfig.issuer());
 
         if (rolesClaim == null && fixedRoles == null) {
             throw new ConfigurationException("wrong JWT configuration, need to set at least one of 'rolesClaim' or 'fixedRoles'");
         }
 
         this.jwtVerifier = v.build();
-    }
-
-    protected static boolean validateKeyComplexity(final String jwtKey) {
-        if (jwtKey == null || jwtKey.length() < 32) {
-            LOGGER.warn("The JWT key is too short. It should be at least 32 characters long.");
-            return false;
-        }
-
-        if (!COMPLEXITY_PATTERN.matcher(jwtKey).matches()) {
-            LOGGER.warn("The JWT key does not meet complexity requirements. Ensure it contains uppercase letters, lowercase letters, digits, and special characters.");
-            return false;
-        }
-        LOGGER.info("The JWT key meets the minimum complexity requirements.");
-        return true;
     }
 
     @Override
@@ -206,9 +170,19 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                     this.extraJwtVerifier.accept(Pair.of(hse, verifiedJwt));
                 }
 
+                // Extract JWT payload and check for authDb claim
                 final var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()), StandardCharsets.UTF_8);
+                
+                // Parse payload to check for authDb claim
+                var payloadToStore = jwtPayload;
+                var authDbClaim = verifiedJwt.getClaim("authDb");
+                if (authDbClaim != null && !authDbClaim.isNull()) {
+                    // If authDb is present, we need to ensure it's in the payload for cache key matching
+                    // The payload already contains it, so just use it as-is
+                    LOGGER.debug("JWT contains authDb claim: {}", authDbClaim.asString());
+                }
 
-                final var account = new JwtAccount(subject, actualRoles, jwtPayload);
+                final var account = new JwtAccount(subject, actualRoles, payloadToStore);
 
                 sc.authenticationComplete(account, "JwtAuthenticationManager", false);
 

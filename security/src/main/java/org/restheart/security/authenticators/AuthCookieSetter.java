@@ -41,13 +41,15 @@ import io.undertow.server.handlers.CookieImpl;
 
 
 /**
- * sets the rh_auth_token cookie when the URL contains the qparam ?set-auth-cookie
+ * Sets the rh_auth_token cookie when the URL is /token/cookie
+ * (or legacy: when the URL contains the qparam ?set-auth-cookie)
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "authCookieSetter",
-                description = "sets the auth cookie if the URL contains the qparam ?set-auth-cookie",
-                interceptPoint = InterceptPoint.RESPONSE)
+                description = "sets the auth cookie for /token/cookie endpoint (or legacy ?set-auth-cookie)",
+                interceptPoint = InterceptPoint.RESPONSE,
+                enabledByDefault = true)
 public class AuthCookieSetter implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
@@ -57,6 +59,7 @@ public class AuthCookieSetter implements WildcardInterceptor {
 
     private boolean enabled = true;
     private boolean jwtAuthWithJwtAuthMechanism = false;
+    private boolean allowLegacy = false; // allow legacy ?set-auth-cookie behavior
 
     private String name;
     private String domain;
@@ -66,6 +69,8 @@ public class AuthCookieSetter implements WildcardInterceptor {
     private boolean sameSite;
     private String sameSiteMode;
     private int secondsUntilExpiration; // the number of seconds until the cookie expires
+    
+    private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
 
     @OnInit
     public void init() {
@@ -80,7 +85,9 @@ public class AuthCookieSetter implements WildcardInterceptor {
         this.httpOnly = argOrDefault(config, "http-only", true);
         this.sameSite = argOrDefault(config, "same-site", true);
         this.sameSiteMode = argOrDefault(config, "same-site-mode", "strict");
-        this.secondsUntilExpiration = argOrDefault(config, "expires-ttl", 24*60*60); // default 1 day
+        var ttlMinutes = argOrDefault(config, "ttl", 15); // default 15 minutes
+        this.secondsUntilExpiration = ttlMinutes * 60; // convert minutes to seconds
+        this.allowLegacy = argOrDefault(config, "allow-legacy", false); // default: disable legacy
     }
 
     @Override
@@ -115,6 +122,20 @@ public class AuthCookieSetter implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
-        return this.enabled && !req.isOptions() && req.isAuthenticated() && req.getQueryParameters().containsKey("set-auth-cookie") && res.getHeader("Auth-Token") != null;
+        if (!this.enabled || req.isOptions() || !req.isAuthenticated() || res.getHeader("Auth-Token") == null) {
+            return false;
+        }
+        
+        // Primary: /token/cookie endpoint
+        if (TOKEN_COOKIE_ENDPOINT.equals(req.getPath())) {
+            return true;
+        }
+        
+        // Legacy: ?set-auth-cookie query parameter (if enabled)
+        if (this.allowLegacy && req.getQueryParameters().containsKey("set-auth-cookie")) {
+            return true;
+        }
+        
+        return false;
     }
 }

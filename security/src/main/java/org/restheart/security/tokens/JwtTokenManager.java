@@ -101,6 +101,9 @@ public class JwtTokenManager implements TokenManager {
     @Inject("config")
     Map<String, Object> config;
 
+    @Inject("jwtConfigProvider")
+    private JwtConfigProvider.JwtConfig jwtConfig;
+
     @OnInit
     public void init() throws ConfigurationException {
         this.enabled = true;
@@ -113,24 +116,31 @@ public class JwtTokenManager implements TokenManager {
             throw new ConfigurationException("TTL minimum value is 1 minute");
         }
 
-        final String key = arg(config, "key");
-
-        if ("secret".equals(key)) {
-            LOGGER.warn("Using the default value: you should update the JWT key!");
+        // Use shared JWT configuration from provider
+        if (jwtConfig == null) {
+            throw new ConfigurationException("jwtConfigProvider not available. Ensure it is enabled.");
         }
 
-        this.algo = Algorithm.HMAC256((String) arg(config, "key"));
-        this.issuer = arg(config, "issuer");
+        // Get algorithm from provider config
+        String algorithmName = jwtConfig.algorithm();
+        try {
+            this.algo = getAlgorithm(algorithmName, jwtConfig.key());
+        } catch (final Exception e) {
+            this.enabled = false;
+            throw new ConfigurationException("error setting up JWT algorithm: " + algorithmName, e);
+        }
+
+        // Use issuer and audience from provider
+        this.issuer = jwtConfig.issuer();
+        this.audience = jwtConfig.audience();
 
         jwtCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
           Cache.EXPIRE_POLICY.AFTER_WRITE,
           ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
           account -> newToken(account.wrapped()));
 
-        audience = argOrDefault(config, "audience", null);
-
         try {
-            this.verifier = audience != null
+            this.verifier = jwtConfig.hasAudience()
                     ? JWT.require(algo).withIssuer(issuer).withAudience(audience).build()
                     : JWT.require(algo).withIssuer(issuer).build();
 
@@ -140,6 +150,19 @@ public class JwtTokenManager implements TokenManager {
         }
 
         this.accountPropertiesClaims = argOrDefault(config, "account-properties-claims", null);
+    }
+
+    private Algorithm getAlgorithm(final String name, final String key) {
+        if (name == null || key == null) {
+            throw new IllegalArgumentException("algorithm and key are required.");
+        }
+        
+        return switch (name) {
+            case "HMAC256", "HS256" -> Algorithm.HMAC256(key.getBytes(StandardCharsets.UTF_8));
+            case "HMAC384", "HS384" -> Algorithm.HMAC384(key.getBytes(StandardCharsets.UTF_8));
+            case "HMAC512", "HS512" -> Algorithm.HMAC512(key.getBytes(StandardCharsets.UTF_8));
+            default -> throw new IllegalArgumentException("unsupported algorithm for JwtTokenManager: " + name + " (only HMAC algorithms supported)");
+        };
     }
 
     @Override
@@ -302,6 +325,11 @@ public class JwtTokenManager implements TokenManager {
 
         if (account instanceof final WithProperties<?> awp) {
             properties = claimsFromAccountProps(awp.propertiesAsMap());
+            // Always include authDb claim if present (for cache key matching)
+            var authDb = getAuthDb(account);
+            if (authDb != null) {
+                builder[0] = builder[0].withClaim("authDb", authDb);
+            }
             properties.entrySet().stream().forEach(e -> builder[0] = withClaim(builder[0], e.getKey(), e.getValue()));
         } else {
             properties = null;
@@ -367,6 +395,21 @@ public class JwtTokenManager implements TokenManager {
         return Arrays.stream(ret).filter(k -> k != null && !k.isBlank()).toArray(String[]::new);
     }
 
+    private String getAuthDb(Account account) {
+        if (account instanceof WithProperties<?> wp) {
+            var props = wp.propertiesAsMap();
+            if (props != null && props.containsKey("authDb")) {
+                Object authDbObj = props.get("authDb");
+                if (authDbObj instanceof String) {
+                    return (String) authDbObj;
+                } else if (authDbObj instanceof BsonString) {
+                    return ((BsonString) authDbObj).getValue();
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * add the claim preserving the json structure
      * i.e. /a/nested/value -> { a: { nested: value} }
@@ -423,7 +466,15 @@ public class JwtTokenManager implements TokenManager {
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
                     URLUtils.removeTrailingSlashes(srvURI).concat("/").concat(cid));
 
-            if (exchange.getQueryParameters().containsKey("renew-auth-token")) {
+            // Check for renew parameter
+            // - On /token or /token/cookie: use ?renew=true (new OAuth 2.0 style)
+            // - On other endpoints: use ?renew-auth-token (legacy, requires allowLegacy config)
+            var requestPath = exchange.getRequestPath();
+            var isTokenEndpoint = "/token".equals(requestPath) || "/token/cookie".equals(requestPath);
+            var shouldRenew = (isTokenEndpoint && exchange.getQueryParameters().containsKey("renew"))
+                           || exchange.getQueryParameters().containsKey("renew-auth-token");
+            
+            if (shouldRenew) {
                 final var newToken = newToken(account);
 
                 this.jwtCache.put(ca, newToken);
@@ -433,6 +484,16 @@ public class JwtTokenManager implements TokenManager {
                 final var cachedToken = this.jwtCache.get(ca).get();
                 exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, String.valueOf(cachedToken.raw()));
                 exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, cachedToken.getDateAsString());
+            } else {
+                // Token was just generated but not yet in cache - use the one from the token parameter
+                if (token != null) {
+                    exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, String.valueOf(token.getPassword()));
+                    // Get the cached token to get the expiry date
+                    final var cachedToken = this.jwtCache.get(ca);
+                    if (cachedToken != null && cachedToken.isPresent()) {
+                        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, cachedToken.get().getDateAsString());
+                    }
+                }
             }
         }
     }
