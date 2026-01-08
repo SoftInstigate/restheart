@@ -461,10 +461,8 @@ public class JwtTokenManager implements TokenManager {
             final var account = request.getAuthenticatedAccount();
             final var ca = new ComparableAccount(account);
 
-            final var cid = request.getAuthenticatedAccount().getPrincipal().getName();
-
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
-                    URLUtils.removeTrailingSlashes(srvURI).concat("/").concat(cid));
+                    URLUtils.removeTrailingSlashes(srvURI));
 
             // Check for renew parameter
             // - On /token or /token/cookie: use ?renew=true (new OAuth 2.0 style)
