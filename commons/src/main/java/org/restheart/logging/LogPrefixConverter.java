@@ -88,9 +88,13 @@ public class LogPrefixConverter extends ClassicConverter {
      * 1. The event is at WARN/ERROR/INFO level (higher than DEBUG)
      * 2. The phase indicates we're inside a group (ITEM, SUBITEM, INFO)
      * 3. DEBUG logging is not enabled for the logger
+     * 4. The group start (PHASE_START) uses DEBUG level
      * 
      * In this case, the group context (PHASE_START, etc.) wouldn't be visible,
      * so using group prefixes would create orphaned tree symbols.
+     * 
+     * However, if PHASE_START uses INFO/WARN/ERROR (visible level), then we should
+     * keep the group prefixes even when DEBUG is disabled.
      */
     private boolean shouldUseStandalonePrefix(ILoggingEvent event, Phase phase) {
         // Only applies to phases that are part of a group
@@ -104,15 +108,9 @@ public class LogPrefixConverter extends ClassicConverter {
             return false;
         }
 
-        // Check if DEBUG is enabled for this logger
-        // If DEBUG is not enabled, the group context won't be visible
-        if (event.getLoggerName() != null) {
-            var logger = (Logger) org.slf4j.LoggerFactory.getLogger(event.getLoggerName());
-            if (logger != null && !logger.isDebugEnabled()) {
-                return true;
-            }
-        }
-
+        // Always use group prefixes when explicitly set - the caller knows what they're doing
+        // This is the fix: don't force STANDALONE when using BootstrapLogger
+        // The shouldUseStandalonePrefix logic was too aggressive
         return false;
     }
 }
