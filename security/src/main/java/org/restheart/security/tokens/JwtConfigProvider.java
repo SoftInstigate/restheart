@@ -87,24 +87,23 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
             BootstrapLogger.info(LOGGER, "No JWT key configured. Generated secure random key for this session.");
             BootstrapLogger.warnSubItem(LOGGER, "IMPORTANT: In clustered deployments, all nodes must use the same JWT key!");
             BootstrapLogger.warnSubItem(LOGGER, "Configure 'key' in jwtConfigProvider to ensure consistent token verification across nodes.");
-        } else if ("secret".equals(configuredKey)) {
-            // Reject insecure default key
-            LOGGER.error("❌ SECURITY RISK: Cannot use default 'secret' key!");
-            throw new ConfigurationException(
-                "Using default 'secret' key is insecure. " +
-                "Set key to null in jwtConfigProvider configuration to auto-generate a secure key, " +
-                "or provide your own secure key (minimum 32 characters)."
-            );
-        } else if (configuredKey.length() < 32) {
-            // Reject weak keys
-            LOGGER.error("❌ SECURITY RISK: JWT key is too short (minimum 32 characters required)");
-            throw new ConfigurationException(
-                "JWT key must be at least 32 characters long for security. " +
-                "Current key length: " + configuredKey.length()
-            );
         } else {
             key = configuredKey;
-            BootstrapLogger.info(LOGGER, "Using configured JWT key");
+            
+            if ("secret".equals(configuredKey)) {
+                // Warn about insecure default key
+                BootstrapLogger.warnItem(LOGGER, "Using configured JWT key");
+                BootstrapLogger.warnSubItem(LOGGER, "⚠️  SECURITY WARNING: Using default 'secret' key is insecure!");
+                BootstrapLogger.warnSubItem(LOGGER, "Set key to null in jwtConfigProvider configuration to auto-generate a secure key,");
+                BootstrapLogger.warnSubItem(LOGGER, "or provide your own secure key (minimum 32 characters recommended).");
+            } else if (configuredKey.length() < 32) {
+                // Warn about weak keys
+                BootstrapLogger.warnItem(LOGGER, "Using configured JWT key");
+                BootstrapLogger.warnSubItem(LOGGER, "⚠️  SECURITY WARNING: JWT key is short (minimum 32 characters recommended)");
+                BootstrapLogger.warnSubItem(LOGGER, "Current key length: " + configuredKey.length());
+            } else {
+                BootstrapLogger.info(LOGGER, "Using configured JWT key");
+            }
         }
 
         String algorithm = argOrDefault(config, "algorithm", "HS256");
