@@ -193,7 +193,7 @@ fullAuthorizer:
 # Generates and verifies auth tokens. First configured manager is used.
 # Token returned via auth-token header on successful authentication.
 
-# rndTokenService generates auth tokens using a random number generator.
+# rndTokenManager generates auth tokens using a random number generator.
 rndTokenManager:
   enabled: false
   ttl: 15 # in minutes
