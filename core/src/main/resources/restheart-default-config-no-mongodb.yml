@@ -203,6 +203,7 @@ jwtTokenManager:
   enabled: true
   ttl: 15 # in minutes
   srv-uri: /token
+  # Note: key, algorithm, issuer, audience configured via jwtConfigProvider
   # additional JWT claims from accounts properties
   account-properties-claims:
   # - foo # property name
