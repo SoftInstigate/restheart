@@ -61,9 +61,15 @@ import com.mongodb.client.MongoClient;
     blocking = true)
 public class DbProbeService implements JsonService {
 
+    // JSON response fields
     private static final String PING_MS = "pingMs";
     private static final String ERROR = "error";
     private static final String STATUS = "status";
+
+    // Fixed concurrency cap for probes
+    private static final int MAX_CONCURRENCY = 5;
+    private static final int QUEUE_SIZE = 10;
+    private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -71,10 +77,6 @@ public class DbProbeService implements JsonService {
     @Inject("config")
     private Map<String, Object> config;
 
-    // Fixed concurrency cap for probes
-    private static final int MAX_CONCURRENCY = 5;
-    private static final int QUEUE_SIZE = 10;
-    private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
     private final ThreadPoolExecutor pingExecutor = new ThreadPoolExecutor(
             MAX_CONCURRENCY,
             MAX_CONCURRENCY,
