@@ -61,6 +61,10 @@ import com.mongodb.client.MongoClient;
     blocking = true)
 public class DbProbeService implements JsonService {
 
+    private static final String PING_MS = "pingMs";
+    private static final String ERROR = "error";
+    private static final String STATUS = "status";
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -121,9 +125,9 @@ public class DbProbeService implements JsonService {
         } catch (final RejectedExecutionException ree) {
             final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             final JsonObject out = new JsonObject();
-            out.addProperty("status", "fail");
-            out.addProperty("error", "too many concurrent probes");
-            out.addProperty("pingMs", pingMs);
+            out.addProperty(STATUS, "fail");
+            out.addProperty(ERROR, "too many concurrent probes");
+            out.addProperty(PING_MS, pingMs);
 
             response.setContent(out);
             response.setStatusCode(HttpStatus.SC_TOO_MANY_REQUESTS); // Too Many Requests
@@ -137,9 +141,9 @@ public class DbProbeService implements JsonService {
             final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
 
             final JsonObject out = new JsonObject();
-            out.addProperty("status", "ok");
+            out.addProperty(STATUS, "ok");
             out.addProperty("db", this.dbName);
-            out.addProperty("pingMs", pingMs);
+            out.addProperty(PING_MS, pingMs);
 
             response.setContent(out);
             response.setStatusCode(HttpStatus.SC_OK);
@@ -147,20 +151,20 @@ public class DbProbeService implements JsonService {
             future.cancel(true);
             final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             final JsonObject out = new JsonObject();
-            out.addProperty("status", "fail");
-            out.addProperty("error", "ping timeout");
-            out.addProperty("pingMs", pingMs);
+            out.addProperty(STATUS, "fail");
+            out.addProperty(ERROR, "ping timeout");
+            out.addProperty(PING_MS, pingMs);
 
             response.setContent(out);
             response.setStatusCode(HttpStatus.SC_GATEWAY_TIMEOUT);
         } catch (final ExecutionException ee) {
             final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             final JsonObject out = new JsonObject();
-            out.addProperty("status", "fail");
-            out.addProperty("error", ee.getCause() != null
+            out.addProperty(STATUS, "fail");
+            out.addProperty(ERROR, ee.getCause() != null
                 ? ee.getCause().getMessage()
                 : ee.getMessage());
-            out.addProperty("pingMs", pingMs);
+            out.addProperty(PING_MS, pingMs);
 
             response.setContent(out);
             response.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
@@ -168,9 +172,9 @@ public class DbProbeService implements JsonService {
             Thread.currentThread().interrupt();
             final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             final JsonObject out = new JsonObject();
-            out.addProperty("status", "fail");
-            out.addProperty("error", "interrupted");
-            out.addProperty("pingMs", pingMs);
+            out.addProperty(STATUS, "fail");
+            out.addProperty(ERROR, "interrupted");
+            out.addProperty(PING_MS, pingMs);
 
             response.setContent(out);
             response.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
