@@ -20,7 +20,9 @@
 package org.restheart.security;
 
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -64,6 +66,8 @@ import io.undertow.predicate.PredicateParser;
  * <li><strong>@request.body.&lt;path&gt;</strong> - Specific request body properties using dot notation</li>
  * <li><strong>@now</strong> - Current timestamp as epoch milliseconds</li>
  * <li><strong>@mongoPermissions</strong> - MongoDB-specific permissions object</li>
+ * <li><strong>@rnd(bits)</strong> - Cryptographically secure random hex string of specified bit length</li>
+ * <li><strong>@qparams['key']</strong> - Query parameter value from request URL (supports both single and double quotes)</li>
  * </ul>
  *
  * <h2>Legacy Support</h2>
@@ -435,6 +439,64 @@ public class AclVarsInterpolator {
             } else {
                 return BsonNull.VALUE;
             }
+        } else if (value.startsWith("@rnd(") && value.endsWith(")")) {
+            try {
+                var bitsStr = value.substring(5, value.length() - 1);
+                var bits = Integer.parseInt(bitsStr);
+                
+                if (bits <= 0 || bits > 4096) {
+                    LOGGER.warn("@rnd() bit length must be between 1 and 4096, got: {}", bits);
+                    return BsonNull.VALUE;
+                }
+                
+                var bytes = new byte[(bits + 7) / 8]; // Convert bits to bytes
+                new SecureRandom().nextBytes(bytes);
+                var hex = new BigInteger(1, bytes).toString(16);
+                
+                // Pad with leading zeros if necessary
+                while (hex.length() < bytes.length * 2) {
+                    hex = "0" + hex;
+                }
+                
+                return new BsonString(hex);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid @rnd() syntax: {}", value);
+                return BsonNull.VALUE;
+            }
+        } else if (value.startsWith("@qparams['") && value.endsWith("']")) {
+            var paramName = value.substring(10, value.length() - 2);
+            var exchange = request.getExchange();
+            
+            if (exchange != null) {
+                var queryParams = exchange.getQueryParameters();
+                
+                if (queryParams != null && queryParams.containsKey(paramName)) {
+                    var values = queryParams.get(paramName);
+                    if (values != null && !values.isEmpty()) {
+                        // Return first value if multiple exist
+                        return new BsonString(values.getFirst());
+                    }
+                }
+            }
+            
+            return BsonNull.VALUE;
+        } else if (value.startsWith("@qparams[\"") && value.endsWith("\"]")) {
+            var paramName = value.substring(10, value.length() - 2);
+            var exchange = request.getExchange();
+            
+            if (exchange != null) {
+                var queryParams = exchange.getQueryParameters();
+                
+                if (queryParams != null && queryParams.containsKey(paramName)) {
+                    var values = queryParams.get(paramName);
+                    if (values != null && !values.isEmpty()) {
+                        // Return first value if multiple exist
+                        return new BsonString(values.getFirst());
+                    }
+                }
+            }
+            
+            return BsonNull.VALUE;
         } else {
             return new BsonString(value);
         }
