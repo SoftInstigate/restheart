@@ -46,12 +46,17 @@ import com.mongodb.client.MongoClient;
 
 /**
  * Lightweight DB connectivity probe.
- *
- * GET /health/db -> { status: "ok" | "fail", pingMs: N }
- *
+ * 
  * This performs a minimal, non-destructive ping (db.runCommand({ ping: 1 }))
  * to verify connectivity. It's intended for readiness checks and MUST be
  * cheap. It does not perform any writes.
+ *
+ * GET /health/db -> { status: "ok", latencyMs: N, description: "ping successful" }
+ * or { status: "error", latencyMs: N, description: "error description" }
+ * HEAD /health/db -> no body
+ * HTTP status codes: 200 (OK), 503 (unavailable), 504 (timeout), 429 (too many requests)
+ * 
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "database-probe",
@@ -59,12 +64,12 @@ import com.mongodb.client.MongoClient;
     secure = false,
     defaultURI = "/health/db",
     blocking = true)
-public class DbProbeService implements JsonService {
+public class DatabaseProbeService implements JsonService {
 
     // JSON response fields
-    private static final String PING_MS = "pingMs";
-    private static final String ERROR = "error";
     private static final String STATUS = "status";
+    private static final String DESCRIPTION = "description";
+    private static final String LATENCY_IN_MILLIS = "latencyMs";
 
     // Fixed concurrency cap for probes
     private static final int MAX_CONCURRENCY = 5;
@@ -110,76 +115,93 @@ public class DbProbeService implements JsonService {
             return;
         }
 
-        if (!request.isGet()) {
+        if (!request.isGet() && !request.isHead()) {
             response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
-        final long start = System.nanoTime();
+        sendPingAndAwait(request, response, this.timeoutMs);
+    }
 
-        final var cmd = new BsonDocument("ping", new BsonInt32(1));
+    private void sendPingAndAwait(final JsonRequest request, final JsonResponse response, long timeoutMs) {
+        final boolean wantsBody = request.isGet();
+        final long start = System.nanoTime();
 
         final CompletableFuture<BsonDocument> future;
         try {
+            final var pingCmd = new BsonDocument("ping", new BsonInt32(1));
             future = CompletableFuture.supplyAsync(
-                    () -> mclient.getDatabase(this.dbName).runCommand(cmd, BsonDocument.class),
+                    () -> mclient.getDatabase(this.dbName).runCommand(pingCmd, BsonDocument.class),
                     this.pingExecutor);
         } catch (final RejectedExecutionException ree) {
-            final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            final JsonObject out = new JsonObject();
-            out.addProperty(STATUS, "fail");
-            out.addProperty(ERROR, "too many concurrent probes");
-            out.addProperty(PING_MS, pingMs);
-
-            response.setContent(out);
+            if (wantsBody) {
+                setResponseContent(response, ProbeStatus.ERROR, "too many concurrent probes",
+                        pingDuration(start));
+            }
             response.setStatusCode(HttpStatus.SC_TOO_MANY_REQUESTS); // Too Many Requests
             return;
         }
 
         try {
             // wait with timeout
-            future.get(this.timeoutMs, TimeUnit.MILLISECONDS);
-
-            final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-
-            final JsonObject out = new JsonObject();
-            out.addProperty(STATUS, "ok");
-            out.addProperty("db", this.dbName);
-            out.addProperty(PING_MS, pingMs);
-
-            response.setContent(out);
+            future.get(timeoutMs, TimeUnit.MILLISECONDS);
+            if (wantsBody) {
+                setResponseContent(response, ProbeStatus.OK, "ping successful", pingDuration(start));
+            }
             response.setStatusCode(HttpStatus.SC_OK);
         } catch (final TimeoutException te) {
             future.cancel(true);
-            final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            final JsonObject out = new JsonObject();
-            out.addProperty(STATUS, "fail");
-            out.addProperty(ERROR, "ping timeout");
-            out.addProperty(PING_MS, pingMs);
-
-            response.setContent(out);
+            if (wantsBody) {
+                setResponseContent(response, ProbeStatus.ERROR, "ping timeout", pingDuration(start));
+            }
             response.setStatusCode(HttpStatus.SC_GATEWAY_TIMEOUT);
         } catch (final ExecutionException ee) {
-            final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            final JsonObject out = new JsonObject();
-            out.addProperty(STATUS, "fail");
-            out.addProperty(ERROR, ee.getCause() != null
-                ? ee.getCause().getMessage()
-                : ee.getMessage());
-            out.addProperty(PING_MS, pingMs);
-
-            response.setContent(out);
+            if (wantsBody) {
+                setResponseContent(response, ProbeStatus.ERROR, getErrorDescription(ee), pingDuration(start));
+            }
             response.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
         } catch (final InterruptedException ie) {
             Thread.currentThread().interrupt();
-            final long pingMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            final JsonObject out = new JsonObject();
-            out.addProperty(STATUS, "fail");
-            out.addProperty(ERROR, "interrupted");
-            out.addProperty(PING_MS, pingMs);
-
-            response.setContent(out);
+            if (wantsBody) {
+                setResponseContent(response, ProbeStatus.ERROR, "interrupted", pingDuration(start));
+            }
             response.setStatusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
+        }
+    }
+
+    private String getErrorDescription(final ExecutionException ee) {
+        return ee.getCause() != null
+            ? ee.getCause().getMessage()
+            : ee.getMessage();
+    }
+
+    private long pingDuration(final long start) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+    }
+
+    private void setResponseContent(final JsonResponse response, final ProbeStatus status, final String description,
+            final long pingMs) {
+        final JsonObject out = new JsonObject();
+        out.addProperty(STATUS, status.toString());
+        if (description != null) {
+            out.addProperty(DESCRIPTION, description);
+        }
+        out.addProperty(LATENCY_IN_MILLIS, pingMs);
+        response.setContent(out);
+    }
+
+    private enum ProbeStatus {
+        OK("ok"), ERROR("error");
+
+        private final String value;
+
+        ProbeStatus(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
         }
     }
 }
