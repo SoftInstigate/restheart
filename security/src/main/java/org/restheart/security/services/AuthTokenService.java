@@ -37,9 +37,11 @@ import java.util.function.Function;
 import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
+import org.restheart.security.ACLRegistry;
 import org.restheart.security.BaseAccount;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
@@ -75,24 +77,13 @@ public class AuthTokenService implements ByteArrayService {
     @Inject("config")
     private Map<String, Object> config;
 
-    @Override
-    public Consumer<HttpServerExchange> requestInitializer() {
-        return e -> ByteArrayRequest.init(e);
-    }
+    @Inject("acl-registry")
+    ACLRegistry aclRegistry;
 
-    @Override
-    public Consumer<HttpServerExchange> responseInitializer() {
-        return e -> ByteArrayResponse.init(e);
-    }
-
-    @Override
-    public Function<HttpServerExchange, ByteArrayRequest> request() {
-        return e -> ByteArrayRequest.of(e);
-    }
-
-    @Override
-    public Function<HttpServerExchange, ByteArrayResponse> response() {
-        return e -> ByteArrayResponse.of(e);
+    @OnInit
+    public void init() {
+		// allow authenticated requests to /token
+        aclRegistry.registerAllow(req -> req.isAuthenticated() && req.getPath().startsWith(TOKEN_ENDPOINT));
     }
 
     /**
@@ -105,53 +96,29 @@ public class AuthTokenService implements ByteArrayService {
         var exchange = request.getExchange();
         var path = request.getPath();
 
-        // Handle OPTIONS for CORS
-        if (Methods.OPTIONS.equals(exchange.getRequestMethod())) {
-            handleOptions(response);
-            return;
-        }
-
-        // Verify authentication
-        if (request.getAuthenticatedAccount() == null || request.getAuthenticatedAccount().getPrincipal() == null) {
-            response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
-            return;
-        }
-
         var isCookieEndpoint = TOKEN_COOKIE_ENDPOINT.equals(path);
-        // Also accept /token/{id} paths for GET/DELETE (token resource location)
-        var isTokenResource = path.startsWith(TOKEN_ENDPOINT + "/") && !path.startsWith(TOKEN_COOKIE_ENDPOINT);
 
-        if (Methods.POST.equals(exchange.getRequestMethod())) {
-            handlePost(request, response, isCookieEndpoint);
-        } else if (Methods.GET.equals(exchange.getRequestMethod())) {
-            if (isCookieEndpoint) {
-                // GET not supported on /token/cookie
-                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            } else {
-                handleGet(request, response);
-            }
-        } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
-            if (isCookieEndpoint) {
-                // DELETE not supported on /token/cookie (use AuthCookieRemover instead)
-                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            } else {
-                handleDelete(request, response);
-            }
-        } else {
-            response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-        }
-    }
-
-    /**
-     * Handle OPTIONS request for CORS
-     */
-    private void handleOptions(ByteArrayResponse response) {
-        response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, POST, DELETE")
-                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
-                    "Accept, Accept-Encoding, Authorization, Content-Length, "
-                    + "Content-Type, Host, Origin, X-Requested-With, "
-                    + "User-Agent, No-Auth-Challenge, Cookie");
-        response.setStatusCode(HttpStatus.SC_OK);
+        switch (request.getMethod()) {
+			case OPTIONS -> handleOptions(request);
+         	case GET -> {
+		        if (isCookieEndpoint) {
+                	// GET not supported on /token/cookie
+                	response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            	} else {
+                	handleGet(request, response);
+				}
+			}
+          	case POST -> handlePost(request, response, isCookieEndpoint);
+         	case DELETE -> {
+			  if (isCookieEndpoint) {
+				  // DELETE not supported on /token/cookie (use AuthCookieRemover instead)
+				  response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+			  } else {
+				  handleDelete(request, response);
+			  }
+		  }
+          default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+      };
     }
 
     /**
@@ -176,22 +143,22 @@ public class AuthTokenService implements ByteArrayService {
             resp.add("authenticated", new JsonPrimitive(true));
             resp.add("username", new JsonPrimitive(account.getPrincipal().getName()));
             resp.add("roles", rolesAsJsonArray(account));
-            
+
             LOGGER.debug("Token issued via cookie for user '{}'", account.getPrincipal().getName());
         } else {
             // Token endpoint: Include access_token in body (OAuth 2.0 format)
             resp.add("access_token", new JsonPrimitive(authTokenHeader));
             resp.add("token_type", new JsonPrimitive(tokenType));
-            
+
             var expiresIn = calculateExpiresIn(authTokenValidHeader);
             if (expiresIn != null) {
                 resp.add("expires_in", new JsonPrimitive(expiresIn));
             }
-            
+
             resp.add("username", new JsonPrimitive(account.getPrincipal().getName()));
             resp.add("roles", rolesAsJsonArray(account));
-            
-            LOGGER.debug("Token issued for user '{}', type: {}, expires_in: {}s", 
+
+            LOGGER.debug("Token issued for user '{}', type: {}, expires_in: {}s",
                 account.getPrincipal().getName(), tokenType, expiresIn);
         }
 
@@ -220,16 +187,16 @@ public class AuthTokenService implements ByteArrayService {
 
         var resp = new JsonObject();
         var tokenType = getTokenType();
-        
+
         // OAuth 2.0 format
         resp.add("access_token", new JsonPrimitive(authTokenHeader));
         resp.add("token_type", new JsonPrimitive(tokenType));
-        
+
         var expiresIn = calculateExpiresIn(authTokenValidHeader);
         if (expiresIn != null) {
             resp.add("expires_in", new JsonPrimitive(expiresIn));
         }
-        
+
         resp.add("username", new JsonPrimitive(account.getPrincipal().getName()));
         resp.add("roles", rolesAsJsonArray(account));
 
@@ -243,13 +210,13 @@ public class AuthTokenService implements ByteArrayService {
      */
     private void handleDelete(ByteArrayRequest request, ByteArrayResponse response) {
         var account = new BaseAccount(
-            request.getAuthenticatedAccount().getPrincipal().getName(), 
+            request.getAuthenticatedAccount().getPrincipal().getName(),
             null
         );
 
         invalidate(account);
         removeAuthTokens(request.getExchange());
-        
+
         LOGGER.debug("Token invalidated for user '{}'", account.getPrincipal().getName());
         response.setStatusCode(HttpStatus.SC_NO_CONTENT);
     }
@@ -260,21 +227,21 @@ public class AuthTokenService implements ByteArrayService {
      */
     private String getTokenType() {
         var tokenManager = this.registry.getTokenManager();
-        
+
         if (tokenManager != null) {
             var tokenManagerName = tokenManager.getName();
-            
+
             // JWT tokens are Bearer tokens
             if ("jwtTokenManager".equals(tokenManagerName)) {
                 return "Bearer";
             }
-            
+
             // RND tokens must be used as password in Basic Auth
             if ("rndTokenManager".equals(tokenManagerName)) {
                 return "Basic-Password";
             }
         }
-        
+
         // Default to Bearer for unknown token managers
         return "Bearer";
     }
@@ -293,7 +260,7 @@ public class AuthTokenService implements ByteArrayService {
             var now = new Date();
             var expiresInMillis = expirationDate.getTime() - now.getTime();
             var expiresInSeconds = (int) (expiresInMillis / 1000);
-            
+
             // Return 0 if already expired, otherwise return remaining seconds
             return Math.max(0, expiresInSeconds);
         } catch (ParseException ex) {
