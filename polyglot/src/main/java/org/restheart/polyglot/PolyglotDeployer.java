@@ -163,9 +163,22 @@ public class PolyglotDeployer implements Initializer {
         try {
             final var watcher = new DirectoryWatcher(pluginsDirectory, (path, kind) -> {
                 try {
+                    // Handle directory creation (e.g., copying a plugin directory)
+                    if (Files.isDirectory(path) && "ENTRY_CREATE".equals(kind.name())) {
+                        LOGGER.info("New plugin directory detected: {}", path);
+                        final var services = findServices(path);
+                        final var nodeServices = findNodeServices(path);
+                        final var interceptors = findInterceptors(path);
+                        deploy(services, nodeServices, interceptors);
+                        return;
+                    }
+                    
+                    // Ignore other directory events (ENTRY_MODIFY, ENTRY_DELETE on directories)
                     if (Files.isDirectory(path)) {
                         return;
                     }
+                    
+                    // Handle .mjs file events
                     if (path.toString().endsWith(".mjs")) {
                         switch (kind.name()) {
                             case "ENTRY_CREATE", "ENTRY_MODIFY" -> {
