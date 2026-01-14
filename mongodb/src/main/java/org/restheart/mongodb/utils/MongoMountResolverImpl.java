@@ -308,6 +308,17 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
             ? parts[0]
             : null;
 
+        // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
+        final StringBuilder mongoPath = new StringBuilder();
+        mongoPath.append(ROOTPATH).append(database);
+        if (collection != null) {
+            mongoPath.append(ROOTPATH).append(collection);
+            // Include any remaining path segments (e.g., document ID)
+            if (parts.length > 1 && !parts[1].isEmpty()) {
+                mongoPath.append(ROOTPATH).append(parts[1]);
+            }
+        }
+
         return new ResolvedContext(
                 database,
                 collection,
@@ -315,9 +326,7 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
                 true, // Database mount: can create collections
                 false, // Do not allow deleting mounted database
                 collection != null, // Allow delete collection when inside one
-                mountUri + (collection != null
-                    ? ROOTPATH + collection
-                    : ""),
+                mongoPath.toString(),
                 hasParametricMounts,
                 hasExtraPathSegments);
     }
@@ -343,6 +352,18 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
             ? parts[1]
             : null;
 
+        // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
+        final StringBuilder mongoPath = new StringBuilder();
+        if (database != null) {
+            mongoPath.append(ROOTPATH).append(database);
+            if (collection != null) {
+                mongoPath.append(ROOTPATH).append(collection);
+                if (!relativePath.isEmpty()) {
+                    mongoPath.append(ROOTPATH).append(relativePath);
+                }
+            }
+        }
+
         return new ResolvedContext(
                 database,
                 collection,
@@ -350,9 +371,7 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
                 false,
                 false,
                 false,
-                mountUri + (relativePath.isEmpty()
-                    ? ""
-                    : ROOTPATH + relativePath),
+                mongoPath.toString(),
                 hasParametricMounts,
                 hasExtraPathSegments);
     }
@@ -378,6 +397,18 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
             ? parts[0]
             : null;
 
+        // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
+        // This ensures template resolution works correctly regardless of mount configuration
+        final StringBuilder mongoPath = new StringBuilder();
+        mongoPath.append(ROOTPATH).append(database);
+        if (collection != null) {
+            mongoPath.append(ROOTPATH).append(collection);
+            // Include any remaining path segments (e.g., document ID)
+            if (parts.length > 1 && !parts[1].isEmpty()) {
+                mongoPath.append(ROOTPATH).append(parts[1]);
+            }
+        }
+
         return new ResolvedContext(
                 database,
                 collection,
@@ -385,9 +416,7 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
                 collection == null,
                 false,
                 collection != null,
-                mountUri + (collection != null
-                    ? ROOTPATH + collection
-                    : ""),
+                mongoPath.toString(),
                 hasParametricMounts,
                 hasExtraPathSegments);
     }

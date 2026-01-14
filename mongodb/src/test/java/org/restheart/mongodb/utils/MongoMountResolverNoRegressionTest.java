@@ -80,8 +80,9 @@ class MongoMountResolverNoRegressionTest {
 
             assertEquals("restheart", context.database());
             assertEquals("orders", context.collection());
-            // Note: mongoResourcePath may have double slash due to path stripping behavior
-            assertEquals("//orders", context.mongoResourcePath());
+            // FIXED: mongoResourcePath now returns canonical path /database/collection
+            assertEquals("/restheart/orders", context.mongoResourcePath(),
+                "mongoResourcePath should be canonical, not mount-relative");
         }
 
         @Test
@@ -95,7 +96,9 @@ class MongoMountResolverNoRegressionTest {
 
             assertEquals("mydb", context.database());
             assertEquals("users", context.collection());
-            assertEquals(API_USERS, context.mongoResourcePath());
+            // FIXED: mongoResourcePath now returns canonical path /database/collection
+            assertEquals("/mydb/users", context.mongoResourcePath(),
+                "mongoResourcePath should be canonical, not mount-relative");
         }
 
         @Test
