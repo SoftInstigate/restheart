@@ -97,6 +97,9 @@ public class ContextQueue {
         Context ctx = null;
         try {
             ctx = take();
+            if (ctx == null) {
+                throw new IllegalStateException("Failed to acquire context from pool - take() returned null");
+            }
             final Context finalCtx = ctx;
             ScopedValue.where(SCOPED_CONTEXT, finalCtx).call(() -> {
                 task.run();
@@ -120,7 +123,11 @@ public class ContextQueue {
         if (!SCOPED_CONTEXT.isBound()) {
             throw new IllegalStateException("No context bound to current scope. Must call executeWithContext first.");
         }
-        return SCOPED_CONTEXT.get();
+        var ctx = SCOPED_CONTEXT.get();
+        if (ctx == null) {
+            throw new IllegalStateException("Context is null - this should not happen. Context acquisition may have failed.");
+        }
+        return ctx;
     }
     
     /**
