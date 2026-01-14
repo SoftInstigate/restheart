@@ -99,11 +99,17 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
-            var current = exchange.getAttachment(PHASE_INFO_KEY);
-            if (current == null) {
-                current = new PhaseInfo();
+            if (exchange != null) {
+                var current = exchange.getAttachment(PHASE_INFO_KEY);
+                if (current == null) {
+                    current = new PhaseInfo();
+                }
+                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
+            } else {
+                // Fallback to bootstrap if exchange is null
+                var current = BOOTSTRAP_PHASE.get();
+                BOOTSTRAP_PHASE.set(new PhaseInfo(phase, current.isLast));
             }
-            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(phase, current.isLast));
         } else {
             // Bootstrap: store in ThreadLocal
             var current = BOOTSTRAP_PHASE.get();
@@ -120,11 +126,17 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: store in exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
-            var current = exchange.getAttachment(PHASE_INFO_KEY);
-            if (current == null) {
-                current = new PhaseInfo();
+            if (exchange != null) {
+                var current = exchange.getAttachment(PHASE_INFO_KEY);
+                if (current == null) {
+                    current = new PhaseInfo();
+                }
+                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(current.phase, isLast));
+            } else {
+                // Fallback to bootstrap if exchange is null
+                var current = BOOTSTRAP_PHASE.get();
+                BOOTSTRAP_PHASE.set(new PhaseInfo(current.phase, isLast));
             }
-            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo(current.phase, isLast));
         } else {
             // Bootstrap: store in ThreadLocal
             var current = BOOTSTRAP_PHASE.get();
@@ -141,9 +153,14 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: read from exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
-            var info = exchange.getAttachment(PHASE_INFO_KEY);
-            if (info != null) {
-                return info.phase;
+            if (exchange != null) {
+                var info = exchange.getAttachment(PHASE_INFO_KEY);
+                if (info != null) {
+                    return info.phase;
+                }
+            } else {
+                // Fallback to bootstrap if exchange is null
+                return BOOTSTRAP_PHASE.get().phase;
             }
         } else {
             // Bootstrap: read from ThreadLocal
@@ -161,9 +178,14 @@ public class RequestPhaseContext {
         if (CURRENT_EXCHANGE.isBound()) {
             // Request-scoped: read from exchange attachment
             var exchange = CURRENT_EXCHANGE.get();
-            var info = exchange.getAttachment(PHASE_INFO_KEY);
-            if (info != null) {
-                return info.isLast;
+            if (exchange != null) {
+                var info = exchange.getAttachment(PHASE_INFO_KEY);
+                if (info != null) {
+                    return info.isLast;
+                }
+            } else {
+                // Fallback to bootstrap if exchange is null
+                return BOOTSTRAP_PHASE.get().isLast;
             }
         } else {
             // Bootstrap: read from ThreadLocal
@@ -178,7 +200,12 @@ public class RequestPhaseContext {
     public static void clear() {
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
-            exchange.removeAttachment(PHASE_INFO_KEY);
+            if (exchange != null) {
+                exchange.removeAttachment(PHASE_INFO_KEY);
+            } else {
+                // Fallback to bootstrap if exchange is null
+                BOOTSTRAP_PHASE.remove();
+            }
         } else {
             BOOTSTRAP_PHASE.remove();
         }
@@ -190,7 +217,12 @@ public class RequestPhaseContext {
     public static void reset() {
         if (CURRENT_EXCHANGE.isBound()) {
             var exchange = CURRENT_EXCHANGE.get();
-            exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
+            if (exchange != null) {
+                exchange.putAttachment(PHASE_INFO_KEY, new PhaseInfo());
+            } else {
+                // Fallback to bootstrap if exchange is null
+                BOOTSTRAP_PHASE.set(new PhaseInfo());
+            }
         } else {
             BOOTSTRAP_PHASE.set(new PhaseInfo());
         }
