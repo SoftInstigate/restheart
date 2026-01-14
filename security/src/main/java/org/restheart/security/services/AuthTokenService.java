@@ -26,15 +26,11 @@ import com.google.gson.JsonPrimitive;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
-import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.security.ACLRegistry;
@@ -93,7 +89,6 @@ public class AuthTokenService implements ByteArrayService {
      */
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        var exchange = request.getExchange();
         var path = request.getPath();
 
         var isCookieEndpoint = TOKEN_COOKIE_ENDPOINT.equals(path);
@@ -106,10 +101,10 @@ public class AuthTokenService implements ByteArrayService {
                 	response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             	} else {
                 	handleGet(request, response);
-				}
-			}
-          	case POST -> handlePost(request, response, isCookieEndpoint);
-         	case DELETE -> {
+            }
+          }
+          case POST -> handlePost(request, response, isCookieEndpoint);
+          case DELETE -> {
 			  if (isCookieEndpoint) {
 				  // DELETE not supported on /token/cookie (use AuthCookieRemover instead)
 				  response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -300,20 +295,5 @@ public class AuthTokenService implements ByteArrayService {
         exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
         exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
         exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
-    }
-
-    /**
-     * Get configured URI or default to /token
-     */
-    private String getUri() {
-        if (config == null) {
-            return TOKEN_ENDPOINT;
-        }
-
-        try {
-            return arg(config, "uri");
-        } catch (ConfigurationException ex) {
-            return TOKEN_ENDPOINT;
-        }
     }
 }

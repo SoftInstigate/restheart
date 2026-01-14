@@ -212,6 +212,20 @@ jwtTokenManager:
   # - foo # property name
   # - /nested/property # xpath expr for nested properties
 
+# OAuth 2.0-inspired token endpoint for authentication
+# Endpoints:
+# - POST /token - Get access token (returns token in response body)
+# - POST /token/cookie - Get access token via cookie (more secure, token not in body)
+# - GET /token - Get current token information
+# - DELETE /token - Invalidate current token
+# Supports both HTTP Basic Auth and OAuth 2.0 form data (grant_type=password)
+# Token type in response depends on active TokenManager:
+#   - jwtTokenManager: token_type="Bearer" (use as: Authorization: Bearer <token>)
+#   - rndTokenManager: token_type="Basic-Password" (use as: Authorization: Basic <base64(username:token)>)
+# See: https://restheart.org/docs/security/authentication#token-endpoint
+authTokenService:
+  uri: /token
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/
@@ -345,20 +359,6 @@ static-resources:
 #    where: /static
 #    welcome-file: index.html
 #    embedded: false
-
-# OAuth 2.0-inspired token endpoint for authentication
-# Endpoints:
-# - POST /token - Get access token (returns token in response body)
-# - POST /token/cookie - Get access token via cookie (more secure, token not in body)
-# - GET /token - Get current token information
-# - DELETE /token - Invalidate current token
-# Supports both HTTP Basic Auth and OAuth 2.0 form data (grant_type=password)
-# Token type in response depends on active TokenManager:
-#   - jwtTokenManager: token_type="Bearer" (use as: Authorization: Bearer <token>)
-#   - rndTokenManager: token_type="Basic-Password" (use as: Authorization: Basic <base64(username:token)>)
-# See: https://restheart.org/docs/security/authentication#token-endpoint
-authTokenService:
-  uri: /token
 
 # Simple ping service
 # Endpoint:
