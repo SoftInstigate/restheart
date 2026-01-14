@@ -169,7 +169,9 @@ public class JSStringService extends JSService implements StringService {
         Context ctx = null;
         try {
             ctx = takeCtx();
-            ctx.eval(handleSource()).executeVoid(request, response);
+            // Use cached function to avoid re-evaluation overhead
+            var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
+            handleFunction.executeVoid(request, response);
         } finally {
             if (ctx != null) {
                 releaseCtx(ctx);

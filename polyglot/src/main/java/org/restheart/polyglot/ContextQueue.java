@@ -28,6 +28,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.IOAccess;
 import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
@@ -37,6 +39,9 @@ import com.mongodb.client.MongoClient;
 
 public class ContextQueue {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextQueue.class);
+    private static final String CACHED_HANDLE_KEY = "__cachedHandle";
+    private static final String CACHED_RESOLVE_KEY = "__cachedResolve";
+    
     private final int QUEUE_SIZE = 4 * Runtime.getRuntime().availableProcessors();
     private final ArrayBlockingQueue<Context> QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
 
@@ -59,6 +64,44 @@ public class ContextQueue {
                 LOGGER.warn("Error releasing Context in {}", Thread.currentThread().getName());
             }
         }
+    }
+    
+    /**
+     * Caches an evaluated handle function in the context bindings for reuse.
+     * This avoids re-evaluating the source on every request.
+     * 
+     * @param ctx the context to cache the function in
+     * @param handleSource the source to evaluate and cache
+     * @return the cached Value that can be executed
+     */
+    public static Value cacheHandleFunction(Context ctx, Source handleSource) {
+        var bindings = ctx.getBindings("js");
+        if (!bindings.hasMember(CACHED_HANDLE_KEY)) {
+            var handleValue = ctx.eval(handleSource);
+            bindings.putMember(CACHED_HANDLE_KEY, handleValue);
+            LOGGER.trace("Cached handle function in context");
+            return handleValue;
+        }
+        return bindings.getMember(CACHED_HANDLE_KEY);
+    }
+    
+    /**
+     * Caches an evaluated resolve function in the context bindings for reuse.
+     * This avoids re-evaluating the source on every request.
+     * 
+     * @param ctx the context to cache the function in
+     * @param resolveSource the source to evaluate and cache
+     * @return the cached Value that can be executed
+     */
+    public static Value cacheResolveFunction(Context ctx, Source resolveSource) {
+        var bindings = ctx.getBindings("js");
+        if (!bindings.hasMember(CACHED_RESOLVE_KEY)) {
+            var resolveValue = ctx.eval(resolveSource);
+            bindings.putMember(CACHED_RESOLVE_KEY, resolveValue);
+            LOGGER.trace("Cached resolve function in context");
+            return resolveValue;
+        }
+        return bindings.getMember(CACHED_RESOLVE_KEY);
     }
 
     public static Context newContext(Engine engine, String name, Configuration conf, Logger LOGGER, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {

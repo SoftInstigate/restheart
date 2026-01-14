@@ -83,7 +83,9 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
 
         try {
             ctx = takeCtx();
-            ctx.eval(handleSource()).executeVoid(request, response);
+            // Use cached function to avoid re-evaluation overhead
+            var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
+            handleFunction.executeVoid(request, response);
         } finally {
             if (ctx != null) {
                 releaseCtx(ctx);
@@ -98,7 +100,9 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
 
         try {
             ctx = takeCtx();
-            ret = ctx.eval(this.resolveSource).execute(request);
+            // Use cached function to avoid re-evaluation overhead
+            var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
+            ret = resolveFunction.execute(request);
         } catch(InterruptedException ie) {
             LOGGER.error("error on interceptor {} resolve()", name(), ie);
             request.setInError(true);
