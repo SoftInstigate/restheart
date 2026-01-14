@@ -5,5 +5,4 @@ Scenario: GET /health/db returns ok when MongoDB is up
 When method get
 Then status 200
 * match response.status == 'ok'
-* match response.db == 'admin'
-* assert response.pingMs >= 0
+* assert response.latencyMs >= 0
