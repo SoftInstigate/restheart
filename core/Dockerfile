@@ -19,11 +19,6 @@ COPY target/lib/*.jar lib/
 COPY target/plugins/*.jar plugins/
 COPY target/plugins/lib/*.jar plugins/lib/
 
-# Install SDKMAN
-SHELL ["/bin/bash", "-i", "-c"]
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh"
-ENV PATH="/root/.sdkman/candidates/java/current/bin:$PATH"
-
 # set environment variables
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart GraalVM is up and running"'
 
