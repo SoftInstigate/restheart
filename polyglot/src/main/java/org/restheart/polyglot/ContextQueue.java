@@ -37,6 +37,23 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
+/**
+ * Manages a pool of GraalVM Polyglot Context instances for executing JavaScript plugins.
+ * 
+ * <p>Performance Optimizations:</p>
+ * <ul>
+ *   <li><b>Context Pooling:</b> Maintains a pool of pre-initialized contexts (4 × CPU cores)
+ *       to avoid expensive context creation on every request</li>
+ *   <li><b>Function Caching:</b> Evaluated JavaScript functions are cached in context bindings
+ *       to eliminate repeated source evaluation overhead (see {@link #cacheHandleFunction} and 
+ *       {@link #cacheResolveFunction})</li>
+ *   <li><b>Value Sharing:</b> Contexts are created with {@code allowValueSharing(true)} to enable
+ *       efficient value passing between Java and JavaScript without expensive marshalling. This is
+ *       safe because plugin code is immutable and contexts don't share mutable state.</li>
+ * </ul>
+ * 
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class ContextQueue {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextQueue.class);
     private static final String CACHED_HANDLE_KEY = "__cachedHandle";
@@ -118,6 +135,7 @@ public class ContextQueue {
             .allowHostClassLookup(className -> true)
             .allowIO(IOAccess.ALL)
             .allowExperimentalOptions(true)
+            .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
             .options(OPTS)
             .build();
 
