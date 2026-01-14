@@ -162,21 +162,15 @@ public class JSStringService extends JSService implements StringService {
 
     /**
      *
-     * @throws java.lang.InterruptedException
+     * @throws java.lang.Exception
      */
     @Override
-    public void handle(StringRequest request, StringResponse response) throws InterruptedException {
-        Context ctx = null;
-        try {
-            ctx = takeCtx();
-            // Use cached function to avoid re-evaluation overhead
+    public void handle(StringRequest request, StringResponse response) throws Exception {
+        contextQueue().executeWithContext(() -> {
+            var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
             var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
             handleFunction.executeVoid(request, response);
-        } finally {
-            if (ctx != null) {
-                releaseCtx(ctx);
-            }
-        }
+        });
     }
 
     static void checkOptions(Value options, Path pluginPath) {

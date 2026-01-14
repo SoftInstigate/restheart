@@ -76,47 +76,36 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
      *
      * @param request
      * @param response
-     * @throws java.lang.InterruptedException */
+     * @throws java.lang.Exception */
     @Override
-    public void handle(R request, S response) throws InterruptedException {
-        Context ctx = null;
-
-        try {
-            ctx = takeCtx();
-            // Use cached function to avoid re-evaluation overhead
+    public void handle(R request, S response) throws Exception {
+        contextQueue.executeWithContext(() -> {
+            var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
             var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
             handleFunction.executeVoid(request, response);
-        } finally {
-            if (ctx != null) {
-                releaseCtx(ctx);
-            }
-        }
+        });
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        Context ctx = null;
-        Value ret = null;
-
         try {
-            ctx = takeCtx();
-            // Use cached function to avoid re-evaluation overhead
-            var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
-            ret = resolveFunction.execute(request);
-        } catch(InterruptedException ie) {
-            LOGGER.error("error on interceptor {} resolve()", name(), ie);
-            request.setInError(true);
-            return false;
-        } finally {
-            if (ctx != null) {
-                releaseCtx(ctx);
-            }
-        }
-
-        if (ret != null && ret.isBoolean()) {
-            return ret.asBoolean();
-        } else {
-            LOGGER.error("resolve() of interceptor {} did not returned a boolean", name());
+            var result = new boolean[1];
+            contextQueue.executeWithContext(() -> {
+                var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
+                var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
+                Value ret = resolveFunction.execute(request);
+                
+                if (ret != null && ret.isBoolean()) {
+                    result[0] = ret.asBoolean();
+                } else {
+                    LOGGER.error("resolve() of interceptor {} did not returned a boolean", name());
+                    request.setInError(true);
+                    result[0] = false;
+                }
+            });
+            return result[0];
+        } catch(Exception e) {
+            LOGGER.error("error on interceptor {} resolve()", name(), e);
             request.setInError(true);
             return false;
         }

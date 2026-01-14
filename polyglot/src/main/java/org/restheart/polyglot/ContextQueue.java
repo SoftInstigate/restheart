@@ -59,6 +59,9 @@ public class ContextQueue {
     private static final String CACHED_HANDLE_KEY = "__cachedHandle";
     private static final String CACHED_RESOLVE_KEY = "__cachedResolve";
     
+    // ScopedValue for binding context to execution scope
+    private static final ScopedValue<Context> SCOPED_CONTEXT = ScopedValue.newInstance();
+    
     private final int QUEUE_SIZE = 4 * Runtime.getRuntime().availableProcessors();
     private final ArrayBlockingQueue<Context> QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
 
@@ -81,6 +84,51 @@ public class ContextQueue {
                 LOGGER.warn("Error releasing Context in {}", Thread.currentThread().getName());
             }
         }
+    }
+    
+    /**
+     * Executes a task with a context from the pool bound to the execution scope via ScopedValue.
+     * Gets context from blocking queue, binds to ScopedValue, executes task, returns context to pool.
+     * 
+     * @param task the task to execute with the context in scope
+     * @throws Exception if the task throws an exception
+     */
+    public void executeWithContext(ThrowingRunnable task) throws Exception {
+        Context ctx = null;
+        try {
+            ctx = take();
+            final Context finalCtx = ctx;
+            ScopedValue.where(SCOPED_CONTEXT, finalCtx).call(() -> {
+                task.run();
+                return null;
+            });
+        } finally {
+            if (ctx != null) {
+                release(ctx);
+            }
+        }
+    }
+    
+    /**
+     * Gets the context bound to the current execution scope.
+     * Must be called within a scope established by {@link #executeWithContext}.
+     * 
+     * @return the current context
+     * @throws IllegalStateException if no context is bound to the current scope
+     */
+    public static Context getCurrentContext() {
+        if (!SCOPED_CONTEXT.isBound()) {
+            throw new IllegalStateException("No context bound to current scope. Must call executeWithContext first.");
+        }
+        return SCOPED_CONTEXT.get();
+    }
+    
+    /**
+     * Functional interface for tasks that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface ThrowingRunnable {
+        void run() throws Exception;
     }
     
     /**

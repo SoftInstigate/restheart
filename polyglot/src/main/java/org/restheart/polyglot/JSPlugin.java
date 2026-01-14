@@ -97,20 +97,12 @@ public abstract class JSPlugin {
     }
 
     /**
-     *
-     * @return the Context
-     * @throws java.lang.InterruptedException
+     * Provides access to the context queue for executing JavaScript code within a scoped context.
+     * 
+     * @return the context queue instance
      */
-    protected Context takeCtx() throws InterruptedException {
-        return this.contextQueue.take();
-    }
-
-    /**
-     *
-     * @param ctx
-     */
-    protected void releaseCtx(Context ctx) {
-        this.contextQueue.release(ctx);
+    protected ContextQueue contextQueue() {
+        return this.contextQueue;
     }
 
     public Optional<MongoClient> mclient() {
