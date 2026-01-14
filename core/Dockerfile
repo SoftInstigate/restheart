@@ -1,8 +1,8 @@
 ARG GRAALVM_VERSION=25.0.1-graalce
 FROM softinstigate/graalvm:${GRAALVM_VERSION}
 
-LABEL org.opencontainers.image.title="RESTHeart GraalVM"
-LABEL org.opencontainers.image.description="RESTHeart is Java Framework, built on top of Undertow"
+LABEL org.opencontainers.image.title="RESTHeart"
+LABEL org.opencontainers.image.description="RESTHeart is The Backend Framework with MongoDB Data APIs. "
 LABEL org.opencontainers.image.url="https://restheart.org"
 LABEL org.opencontainers.image.licenses="AGPL-3.0, Apache-2.0"
 LABEL org.opencontainers.image.authors="SoftInstigate <info@softinstigate.com>"
