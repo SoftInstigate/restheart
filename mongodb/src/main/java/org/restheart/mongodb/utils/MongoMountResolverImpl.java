@@ -190,7 +190,7 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
                 // Calculate relative path from resolved mount point
                 // Use the resolved where prefix (without "{*}") so generated mongoResourcePath
                 // does not leak parametric placeholders like "{*}".
-                return resolveWithMount(resourceResolved, wherePrefix, extractRelativePath(path, wherePrefix),
+                return resolveWithMount(resourceResolved, extractRelativePath(path, wherePrefix),
                         hasParametricMounts, hasExtraPathSegments);
             }
         }
@@ -259,7 +259,6 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      */
     private ResolvedContext resolveWithMount(
             final String resource,
-            final String mountUri,
             final String relativePath,
             final boolean hasParametricMounts,
             final boolean hasExtraPathSegments) {
@@ -276,16 +275,16 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
 
         // Special case: resource ends with "/*" or "/{*}" -> database mount with wildcard collections
         if (normalizedResource.endsWith("/{*}")) {
-            return resolveCollectionFromPath(mountUri, relativePath, normalizedResource, hasParametricMounts,
+            return resolveCollectionFromPath(relativePath, normalizedResource, hasParametricMounts,
                     hasExtraPathSegments);
         }
 
         if (normalizedResource.contains(ROOTPATH)) {
-            return resolveFixedCollectionMountContext(mountUri, relativePath, normalizedResource, hasParametricMounts,
+            return resolveFixedCollectionMountContext(relativePath, normalizedResource, hasParametricMounts,
                     hasExtraPathSegments);
         }
 
-        return resolveDatabaseMountAsCollectionContext(mountUri, relativePath, normalizedResource, hasParametricMounts,
+        return resolveDatabaseMountAsCollectionContext(relativePath, normalizedResource, hasParametricMounts,
                 hasExtraPathSegments);
 
     }
@@ -294,7 +293,6 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      * Handles mounts whose resource is a database with wildcard collections (i.e., ends with "/{*}").
      */
     private ResolvedContext resolveCollectionFromPath(
-            final String mountUri,
             final String relativePath,
             final String normalizedResource,
             final boolean hasParametricMounts,
@@ -337,7 +335,6 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      * context.
      */
     private ResolvedContext resolveFixedCollectionMountContext(
-            final String mountUri,
             final String relativePath,
             final String normalizedResource,
             final boolean hasParametricMounts,
@@ -382,7 +379,6 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      * context.
      */
     private ResolvedContext resolveDatabaseMountAsCollectionContext(
-            final String mountUri,
             final String relativePath,
             final String normalizedResource,
             final boolean hasParametricMounts,
