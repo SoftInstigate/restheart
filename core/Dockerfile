@@ -1,14 +1,7 @@
-ARG ECLIPSE_TEMURIN_JRE=25-jre
-FROM eclipse-temurin:${ECLIPSE_TEMURIN_JRE}
+ARG GRAALVM_VERSION=25.0.1-graalce
+FROM softinstigate/graalvm:${GRAALVM_VERSION}
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends ca-certificates && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-LABEL org.opencontainers.image.title="RESTHeart"
+LABEL org.opencontainers.image.title="RESTHeart GraalVM"
 LABEL org.opencontainers.image.description="RESTHeart is Java Framework, built on top of Undertow"
 LABEL org.opencontainers.image.url="https://restheart.org"
 LABEL org.opencontainers.image.licenses="AGPL-3.0, Apache-2.0"
@@ -26,13 +19,20 @@ COPY target/lib/*.jar lib/
 COPY target/plugins/*.jar plugins/
 COPY target/plugins/lib/*.jar plugins/lib/
 
-# Set environment variables
-ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
+# Install SDKMAN
+SHELL ["/bin/bash", "-i", "-c"]
+RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh"
+ENV PATH="/root/.sdkman/candidates/java/current/bin:$PATH"
+
+# set environment variables
+ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart GraalVM is up and running"'
 
 # JDK 25 optimized for RESTHeart: high-throughput REST API, ≤2GB heap, Virtual Threads
 # G1GC tuned for small heap with many concurrent clients and short-lived request objects
 ENTRYPOINT [ "java", \
     "-Dfile.encoding=UTF-8", \
+    "--enable-native-access=ALL-UNNAMED", \
+    "--sun-misc-unsafe-memory-access=allow", \
     "-server", \
     "-XX:+UseG1GC", \
     "-XX:MaxGCPauseMillis=50", \
@@ -44,5 +44,4 @@ ENTRYPOINT [ "java", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-jar", \
     "restheart.jar" ]
-
 EXPOSE 8009 8080 4443
