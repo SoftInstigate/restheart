@@ -20,7 +20,7 @@ COPY target/plugins/*.jar plugins/
 COPY target/plugins/lib/*.jar plugins/lib/
 
 # set environment variables
-ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0";/ping/msg->"RESTHeart GraalVM is up and running"'
+ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 
 # JDK 25 optimized for RESTHeart: high-throughput REST API, ≤2GB heap, Virtual Threads
 # G1GC tuned for small heap with many concurrent clients and short-lived request objects
