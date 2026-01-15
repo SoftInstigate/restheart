@@ -110,9 +110,13 @@ public class AuthCookieHandler implements WildcardInterceptor {
         if (accessToken == null) {
             LOGGER.debug("no {} cookie", this.authCookieName);
         } else {
-            var authorizationHeader = accessToken.getValue();
+            // Cookie value uses underscore for RFC 6265 compliance (Bearer_token or Basic_token)
+            // Replace underscore with space for standard Authorization header format
+            var cookieValue = accessToken.getValue();
+            var authorizationHeader = cookieValue.replaceFirst("Bearer_", "Bearer ")
+                                                  .replaceFirst("Basic_", "Basic ");
             req.setHeader("Authorization", authorizationHeader);
-            LOGGER.debug("set header Authorization: {}", authorizationHeader);
+            LOGGER.debug("set header Authorization: \"{}\"", authorizationHeader);
         }
     }
 

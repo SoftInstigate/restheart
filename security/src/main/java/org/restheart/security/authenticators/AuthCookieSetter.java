@@ -95,11 +95,11 @@ public class AuthCookieSetter implements WildcardInterceptor {
         var authTokenHeader = res.getHeader("Auth-Token");
 
         // if the token is issued by jwtTokenManager and the jwtAuthenticationMechanism is enabled
-        // use JWT authentication (i.e. Bearer...)
-        // otherwise rely on tokenBasicAuthMechanism (i.e. Basic...)
+        // use JWT authentication (i.e. Bearer_...) - underscore instead of space for RFC 6265 compliance
+        // otherwise rely on tokenBasicAuthMechanism (i.e. Basic_...)
         var authToken = jwtAuthWithJwtAuthMechanism
-            ? "Bearer ".concat(authTokenHeader)
-            : "Basic ".concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
+            ? "Bearer_".concat(authTokenHeader)
+            : "Basic_".concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
 
         var expiry = LocalDateTime.now()
             .plusSeconds(this.secondsUntilExpiration)
