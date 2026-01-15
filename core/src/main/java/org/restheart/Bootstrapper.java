@@ -64,6 +64,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -174,11 +175,11 @@ public final class Bootstrapper {
                     .orElse("unknown (not packaged)");
 
                 System.out.println(RESTHEART
-                        .concat(" Version ")
-                        .concat(version)
-                        .concat(" Build-Time ")
-                        .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
-                                .format(Version.getInstance().getBuildTime())));
+                    .concat(" Version ")
+                    .concat(version)
+                    .concat(" Build-Time ")
+                    .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.of("UTC"))
+                        .format(Version.getInstance().getBuildTime())));
 
                 System.exit(0);
             }
