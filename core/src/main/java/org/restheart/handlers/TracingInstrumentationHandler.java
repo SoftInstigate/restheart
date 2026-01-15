@@ -22,59 +22,100 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.restheart.Bootstrapper;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.slf4j.MDC;
+
 public class TracingInstrumentationHandler extends PipelinedHandler {
-    private final List<String> traceHeaders;
-    final private boolean emptyTraceHeaders;
 
-    public TracingInstrumentationHandler() {
-        var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
-        this.traceHeaders = _th == null ? new ArrayList<>() : _th;
-        this.emptyTraceHeaders = this.traceHeaders.isEmpty();
-    }
+  private final List<String> traceHeaders;
+  private final boolean emptyTraceHeaders;
+  // Cache HttpString instances to avoid repeated parsing
+  private final List<HttpString> traceHeaderHttpStrings;
 
-    public TracingInstrumentationHandler(final PipelinedHandler next) {
-        super(next);
-        var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
-        this.traceHeaders = _th == null ? new ArrayList<>() : _th;
-        this.emptyTraceHeaders = this.traceHeaders.isEmpty();
-    }
+  public TracingInstrumentationHandler() {
+    var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
+    this.traceHeaders = _th == null ? new ArrayList<>() : _th;
+    this.emptyTraceHeaders = this.traceHeaders.isEmpty();
+    this.traceHeaderHttpStrings = emptyTraceHeaders ? null :
+      traceHeaders.stream().map(HttpString::tryFromString).toList();
+  }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-		// add traceId (last 4 chars of requestId) to the MDC
-		var requestId = exchange.getRequestId();
-		MDC.put("traceId", requestId.substring(Math.max(0, requestId.length() - 4)));
+  public TracingInstrumentationHandler(final PipelinedHandler next) {
+    super(next);
+    var _th = Bootstrapper.getConfiguration().logging().tracingHeaders();
+    this.traceHeaders = _th == null ? new ArrayList<>() : _th;
+    this.emptyTraceHeaders = this.traceHeaders.isEmpty();
+    this.traceHeaderHttpStrings = emptyTraceHeaders ? null :
+      traceHeaders.stream().map(HttpString::tryFromString).toList();
+  }
 
-		if (emptyTraceHeaders) {
-            // Save the MDC context (including traceId) for async operations
-            ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
-            next(exchange);
-        } else {
-            this.traceHeaders
-                .forEach((traceIdHeader) -> {Optional.ofNullable(exchange.getRequestHeaders()
-                    .get(traceIdHeader))
-                    .flatMap(x -> Optional.ofNullable(x.peekFirst()))
-                    .ifPresent(value -> {
-                        MDC.put(traceIdHeader, value);
-                        exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);
-                    });
-                });
+  @Override
+  public void handleRequest(HttpServerExchange exchange) throws Exception {
+    // Set trace ID: use first configured tracing header if available, otherwise use auto-generated ID
+    if (emptyTraceHeaders) {
+      // No tracing headers configured - use auto-generated trace ID (last 4 chars of requestId)
+      var requestId = exchange.getRequestId();
+      MDC.put(
+        "traceId",
+        requestId.substring(Math.max(0, requestId.length() - 4))
+      );
 
-            // Save the MDC context (including traceId and custom headers) for async operations
-            ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
+      // Save the MDC context (including traceId) for async operations
+      ByteArrayProxyResponse.of(exchange).setMDCContext(
+        MDC.getCopyOfContextMap()
+      );
+      next(exchange);
+    } else {
+      var requestHeaders = exchange.getRequestHeaders();
+      var responseHeaders = exchange.getResponseHeaders();
 
-            if (!exchange.isResponseComplete() && getNext() != null) {
-                next(exchange);
-            }
+      // Tracing headers configured - try to use first header's value as trace ID
+      var firstHeaderHttpString = traceHeaderHttpStrings.get(0);
+      var firstHeaderKey = traceHeaders.get(0);
+      var firstHeaderValues = requestHeaders.get(firstHeaderHttpString);
+      var traceIdFromHeader = (firstHeaderValues != null) ? firstHeaderValues.peekFirst() : null;
 
-            this.traceHeaders.forEach(MDC::remove);
+      if (traceIdFromHeader != null) {
+        // Use the first tracing header's value as the trace ID
+        MDC.put("traceId", traceIdFromHeader);
+        // Also add it with its actual header name so it shows in logs
+        MDC.put(firstHeaderKey, traceIdFromHeader);
+        // Echo it back in response
+        responseHeaders.put(firstHeaderHttpString, traceIdFromHeader);
+      } else {
+        // Fallback to auto-generated trace ID if header not present
+        var requestId = exchange.getRequestId();
+        MDC.put(
+          "traceId",
+          requestId.substring(Math.max(0, requestId.length() - 4))
+        );
+      }
+
+      // Process remaining tracing headers (if any)
+      for (int i = 1; i < traceHeaderHttpStrings.size(); i++) {
+        var headerHttpString = traceHeaderHttpStrings.get(i);
+        var headerKey = traceHeaders.get(i);
+        var headerValues = requestHeaders.get(headerHttpString);
+        if (headerValues != null) {
+          var value = headerValues.peekFirst();
+          if (value != null) {
+            MDC.put(headerKey, value);
+            responseHeaders.put(headerHttpString, value);
+          }
         }
+      }
+
+      // Save the MDC context (including traceId and custom headers) for async operations
+      ByteArrayProxyResponse.of(exchange).setMDCContext(MDC.getCopyOfContextMap());
+
+      if (!exchange.isResponseComplete() && getNext() != null) {
+        next(exchange);
+      }
+
+      this.traceHeaders.forEach(MDC::remove);
     }
+  }
 }
