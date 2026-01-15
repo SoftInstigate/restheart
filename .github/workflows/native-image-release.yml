@@ -204,7 +204,7 @@ jobs:
         id: build_tags
         run: |
           # Construct all tags based on the MAJOR.MINOR.PATCH format
-          TAGS="softinstigate/restheart:latest-native,softinstigate/restheart:${{ env.MAJOR }}-native,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-native,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-native"
+          TAGS="softinstigate/restheart:${{ env.MAJOR }}-native,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}-native,softinstigate/restheart:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}-native"
           echo "TAGS=$TAGS" >> $GITHUB_ENV
 
       - name: Build and Push multi-arch native Docker images
