@@ -166,8 +166,7 @@ public class JSStringService extends JSService implements StringService {
      */
     @Override
     public void handle(StringRequest request, StringResponse response) throws Exception {
-        contextQueue().executeWithContext(() -> {
-            var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
+        contextQueue().executeWithContext(ctx -> {
             var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
             handleFunction.executeVoid(request, response);
         });

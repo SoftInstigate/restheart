@@ -23,7 +23,7 @@ package org.restheart.polyglot;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -39,109 +39,141 @@ import com.mongodb.client.MongoClient;
 
 /**
  * Manages a pool of GraalVM Polyglot Context instances for executing JavaScript plugins.
- * 
+ *
  * <p>Performance Optimizations:</p>
  * <ul>
  *   <li><b>Context Pooling:</b> Maintains a pool of pre-initialized contexts (4 × CPU cores)
- *       to avoid expensive context creation on every request</li>
+ *       for reuse. When pool is empty, creates context on-demand to avoid blocking virtual threads</li>
  *   <li><b>Function Caching:</b> Evaluated JavaScript functions are cached in context bindings
- *       to eliminate repeated source evaluation overhead (see {@link #cacheHandleFunction} and 
+ *       to eliminate repeated source evaluation overhead (see {@link #cacheHandleFunction} and
  *       {@link #cacheResolveFunction})</li>
  *   <li><b>Value Sharing:</b> Contexts are created with {@code allowValueSharing(true)} to enable
  *       efficient value passing between Java and JavaScript without expensive marshalling. This is
  *       safe because plugin code is immutable and contexts don't share mutable state.</li>
+ *   <li><b>Virtual Thread Friendly:</b> Non-blocking pool with on-demand context creation ensures
+ *       virtual threads never block waiting for contexts</li>
  * </ul>
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ContextQueue {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextQueue.class);
     private static final String CACHED_HANDLE_KEY = "__cachedHandle";
     private static final String CACHED_RESOLVE_KEY = "__cachedResolve";
-    
-    // ScopedValue for binding context to execution scope
-    private static final ScopedValue<Context> SCOPED_CONTEXT = ScopedValue.newInstance();
-    
-    private final int QUEUE_SIZE = 4 * Runtime.getRuntime().availableProcessors();
-    private final ArrayBlockingQueue<Context> QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+
+    private final int POOL_SIZE = 1 * Runtime.getRuntime().availableProcessors();
+    private final ConcurrentLinkedQueue<Context> pool = new ConcurrentLinkedQueue<>();
+
+    // Context creation parameters - stored for on-demand creation
+    private final Engine engine;
+    private final String name;
+    private final Configuration conf;
+    private final Logger logger;
+    private final Optional<MongoClient> mclient;
+    private final String modulesReplacements;
+    private final Map<String, String> OPTS;
 
     public ContextQueue(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
-        for (var c = 0; c < QUEUE_SIZE; c++) {
-            QUEUE.add(newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS));
+        this.engine = engine;
+        this.name = name;
+        this.conf = conf;
+        this.logger = logger;
+        this.mclient = mclient;
+        this.modulesReplacements = modulesReplacements;
+        this.OPTS = OPTS;
+
+        // Pre-populate pool
+        for (var c = 0; c < POOL_SIZE; c++) {
+            pool.offer(newContext());
         }
     }
 
-    public Context take() throws InterruptedException {
-        return QUEUE.take();
-    }
-
-    public void release(Context ctx) {
-        try {
-            QUEUE.add(ctx);
-        } catch(IllegalStateException ise) {
-            try (ctx) {
-                // queue is full
-                LOGGER.warn("Error releasing Context in {}", Thread.currentThread().getName());
-            }
-        }
-    }
-    
     /**
-     * Executes a task with a context from the pool bound to the execution scope via ScopedValue.
-     * Gets context from blocking queue, binds to ScopedValue, executes task, returns context to pool.
-     * 
-     * @param task the task to execute with the context in scope
-     * @throws Exception if the task throws an exception
+     * Gets a context from the pool, or creates a new one if pool is empty.
+     * Never blocks - virtual thread friendly.
+     *
+     * @return a context ready for use
      */
-    public void executeWithContext(ThrowingRunnable task) throws Exception {
-        Context ctx = null;
-        try {
-            ctx = take();
-            if (ctx == null) {
-                throw new IllegalStateException("Failed to acquire context from pool - take() returned null");
-            }
-            final Context finalCtx = ctx;
-            ScopedValue.where(SCOPED_CONTEXT, finalCtx).call(() -> {
-                task.run();
-                return null;
-            });
-        } finally {
-            if (ctx != null) {
-                release(ctx);
-            }
-        }
-    }
-    
-    /**
-     * Gets the context bound to the current execution scope.
-     * Must be called within a scope established by {@link #executeWithContext}.
-     * 
-     * @return the current context
-     * @throws IllegalStateException if no context is bound to the current scope
-     */
-    public static Context getCurrentContext() {
-        if (!SCOPED_CONTEXT.isBound()) {
-            throw new IllegalStateException("No context bound to current scope. Must call executeWithContext first.");
-        }
-        var ctx = SCOPED_CONTEXT.get();
+    private Context acquire() {
+        Context ctx = pool.poll();
         if (ctx == null) {
-            throw new IllegalStateException("Context is null - this should not happen. Context acquisition may have failed.");
+            LOGGER.debug("Pool empty, creating context on-demand");
+            ctx = newContext();
         }
         return ctx;
     }
-    
+
     /**
-     * Functional interface for tasks that can throw exceptions.
+     * Returns a context to the pool if there's space, otherwise closes it.
+     *
+     * @param ctx the context to release
+     */
+    private void release(Context ctx) {
+        if (!pool.offer(ctx)) {
+            // Pool is full, close the context
+            ctx.close();
+            LOGGER.debug("Pool full, closed excess context");
+        }
+    }
+
+    /**
+     * Executes a task with a context following GraalVM's enter/leave pattern.
+     * Gets context from pool (or creates on-demand), enters it, executes task, leaves and returns to pool.
+     * This pattern ensures proper context lifecycle management as recommended by GraalVM documentation.
+     *
+     * @param task the task to execute with the context
+     * @param <T> the return type
+     * @return the result of the task
+     * @throws Exception if the task throws an exception
+     */
+    public <T> T executeWithContext(ContextTask<T> task) throws Exception {
+        Context ctx = acquire();
+        ctx.enter();
+        try {
+            return task.run(ctx);
+        } finally {
+            ctx.leave();
+            release(ctx);
+        }
+    }
+
+    /**
+     * Executes a task with a context (void return variant).
+     *
+     * @param task the task to execute with the context
+     * @throws Exception if the task throws an exception
+     */
+    public void executeWithContext(VoidContextTask task) throws Exception {
+        Context ctx = acquire();
+        ctx.enter();
+        try {
+            task.run(ctx);
+        } finally {
+            ctx.leave();
+            release(ctx);
+        }
+    }
+
+    /**
+     * Functional interface for tasks that take a context and return a value.
      */
     @FunctionalInterface
-    public interface ThrowingRunnable {
-        void run() throws Exception;
+    public interface ContextTask<T> {
+        T run(Context ctx) throws Exception;
     }
-    
+
+    /**
+     * Functional interface for tasks that take a context and return void.
+     */
+    @FunctionalInterface
+    public interface VoidContextTask {
+        void run(Context ctx) throws Exception;
+    }
+
     /**
      * Caches an evaluated handle function in the context bindings for reuse.
      * This avoids re-evaluating the source on every request.
-     * 
+     *
      * @param ctx the context to cache the function in
      * @param handleSource the source to evaluate and cache
      * @return the cached Value that can be executed
@@ -156,11 +188,11 @@ public class ContextQueue {
         }
         return bindings.getMember(CACHED_HANDLE_KEY);
     }
-    
+
     /**
      * Caches an evaluated resolve function in the context bindings for reuse.
      * This avoids re-evaluating the source on every request.
-     * 
+     *
      * @param ctx the context to cache the function in
      * @param resolveSource the source to evaluate and cache
      * @return the cached Value that can be executed
@@ -176,8 +208,12 @@ public class ContextQueue {
         return bindings.getMember(CACHED_RESOLVE_KEY);
     }
 
-    public static Context newContext(Engine engine, String name, Configuration conf, Logger LOGGER, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
-        if (modulesReplacements!= null) {
+    private Context newContext() {
+        return newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
+    }
+
+    public static Context newContext(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
+        if (modulesReplacements != null) {
             LOGGER.trace("modules-replacements: {} ", modulesReplacements);
             OPTS.put("js.commonjs-core-modules-replacements", modulesReplacements);
         } else {
@@ -194,7 +230,7 @@ public class ContextQueue {
             .options(OPTS)
             .build();
 
-        addBindings(ctx, name, conf, LOGGER, mclient);
+        addBindings(ctx, name, conf, logger, mclient);
 
         return ctx;
     }

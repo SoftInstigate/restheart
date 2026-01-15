@@ -79,8 +79,7 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
      * @throws java.lang.Exception */
     @Override
     public void handle(R request, S response) throws Exception {
-        contextQueue.executeWithContext(() -> {
-            var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
+        contextQueue.executeWithContext(ctx -> {
             var handleFunction = org.restheart.polyglot.ContextQueue.cacheHandleFunction(ctx, handleSource());
             handleFunction.executeVoid(request, response);
         });
@@ -89,21 +88,18 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
     @Override
     public boolean resolve(R request, S response) {
         try {
-            var result = new boolean[1];
-            contextQueue.executeWithContext(() -> {
-                var ctx = org.restheart.polyglot.ContextQueue.getCurrentContext();
+            return contextQueue.executeWithContext(ctx -> {
                 var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
                 Value ret = resolveFunction.execute(request);
                 
                 if (ret != null && ret.isBoolean()) {
-                    result[0] = ret.asBoolean();
+                    return ret.asBoolean();
                 } else {
                     LOGGER.error("resolve() of interceptor {} did not returned a boolean", name());
                     request.setInError(true);
-                    result[0] = false;
+                    return false;
                 }
             });
-            return result[0];
         } catch(Exception e) {
             LOGGER.error("error on interceptor {} resolve()", name(), e);
             request.setInError(true);
