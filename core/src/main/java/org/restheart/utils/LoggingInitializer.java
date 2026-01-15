@@ -108,12 +108,12 @@ public class LoggingInitializer {
 
             if (fullStackTrace) {
                 if (noColors) {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} %prefix%msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%prefix%msg%n%throwable{full}");
                 } else {
-                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{full}");
+                    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%prefix%msg%n%throwable{full}");
                 }
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} %prefix%msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%prefix%msg%n%throwable{short}");
                 // noColors=false and fullStackTrace=false is default
             }
 
@@ -168,15 +168,15 @@ public class LoggingInitializer {
 
         if (fullStacktrace) {
             if (noColors) {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} %prefix%msg%n%throwable{full}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%prefix%msg%n%throwable{full}");
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{full}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%prefix%msg%n%throwable{full}");
             }
         }  else {
             if (noColors) {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%-45logger{45} %prefix%msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%prefix%msg%n%throwable{short}");
             } else {
-                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}");
+                encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%prefix%msg%n%throwable{short}");
             }
         }
         encoder.start();
