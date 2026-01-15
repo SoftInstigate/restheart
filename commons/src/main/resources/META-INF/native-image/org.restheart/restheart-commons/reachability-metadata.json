@@ -1121,6 +1121,15 @@
       "allDeclaredFields": true
     },
     {
+      "type": "org.restheart.logging.LogPrefixConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.google.gson.JsonArray",
       "allPublicFields": true,
       "allPublicConstructors": true,

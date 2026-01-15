@@ -134,6 +134,15 @@
       ]
     },
     {
+      "type": "org.restheart.utils.OptionalTraceConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "ch.qos.logback.classic.pattern.color.HighlightingCompositeConverter",
       "methods": [
         {
@@ -1895,6 +1904,10 @@
           "parameterTypes": [
             "int"
           ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
