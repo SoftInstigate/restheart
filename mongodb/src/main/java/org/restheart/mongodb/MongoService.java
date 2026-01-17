@@ -265,10 +265,10 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     public Function<HttpServerExchange, MongoRequest> request() {
         return e -> {
             var req = MongoRequest.of(e);
-            
+
             // Set the resolver for lazy initialization of resolved context
             req.setResolver(MongoMountResolverImpl.getInstance());
-            
+
             return req;
         };
     }
@@ -316,7 +316,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     /**
      * helper class to store mongo mounts info
-     * 
+     *
      * @param resource the mongo resource (eg. /db/coll)
      * @param uri the mount uri (eg. /myapp/data)
      */
@@ -369,7 +369,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 	// Optimized: only non-CORS-safelisted headers (Accept, Content-Type, etc. are automatically allowed)
 	private final static String ALLOW_HEADERS_BASE = "Authorization, X-Requested-With, No-Auth-Challenge";
 	private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
-	private final static String ALLOW_HEADERS_WITH_IF_MATCH_IF_NONE_MATCH = ALLOW_HEADERS_WITH_IF_MATCH + ", If-None-Match";
+	private final static String ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH = ALLOW_HEADERS_BASE + ", If-Match, If-None-Match";
 
 	@Override
 	public String accessControlAllowHeaders(Request<?> r) {
@@ -381,7 +381,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 				case ROOT, ROOT_SIZE, AGGREGATION, COLLECTION_INDEXES, FILE_BINARY, CHANGE_STREAM -> ALLOW_HEADERS_BASE;
 
-				case DOCUMENT, FILE, SCHEMA -> ALLOW_HEADERS_WITH_IF_MATCH_IF_NONE_MATCH;
+				case DOCUMENT, FILE, SCHEMA -> ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH;
 
 				default -> ALLOW_HEADERS_WITH_IF_MATCH;
 			};
@@ -400,7 +400,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 		return switch (mr.getType()) {
 			case ROOT -> "";
 
-			case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS -> 
+			case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS ->
 				mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
 
 			default -> ETAG_STRING;
