@@ -19,7 +19,6 @@ Scenario: request proxied and secured service with valid credentianls and check 
     Then status 200
     And match responseHeaders contains { Access-Control-Allow-Credentials: [ 'true' ] }
     And match responseHeaders contains any  { Access-Control-Allow-Origin: ['*'] }
-    And match responseHeaders contains any  { Access-Control-Expose-Headers: ['Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By']}
 
 Scenario: request proxied and secured service with invalid credentianls and check CORS
     Given path '/secho'
@@ -28,7 +27,6 @@ Scenario: request proxied and secured service with invalid credentianls and chec
     Then status 401
     And match responseHeaders contains { Access-Control-Allow-Credentials: [ 'true' ] }
     And match responseHeaders contains any  { Access-Control-Allow-Origin: ['*'] }
-    And match responseHeaders contains any  { Access-Control-Expose-Headers: ['Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By']}
 
 Scenario: request proxied and secured service with valid credentianls but forbidden and check CORS
     Given path '/secho'
@@ -37,7 +35,6 @@ Scenario: request proxied and secured service with valid credentianls but forbid
     Then status 403
     And match responseHeaders contains { Access-Control-Allow-Credentials: [ 'true' ] }
     And match responseHeaders contains any  { Access-Control-Allow-Origin: ['*'] }
-    And match responseHeaders contains any  { Access-Control-Expose-Headers: ['Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By']}
 
 Scenario: request service and check CORS
     Given path '/echo'
@@ -45,4 +42,3 @@ Scenario: request service and check CORS
     Then status 200
     And match responseHeaders contains { Access-Control-Allow-Credentials: [ 'true' ] }
     And match responseHeaders contains any  { Access-Control-Allow-Origin: ['*'] }
-    And match responseHeaders contains any  { Access-Control-Expose-Headers: ['Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By']}

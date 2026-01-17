@@ -133,7 +133,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             httpHandler.handleRequest(exchange);
             after(exchange);
         } else {
-            LOGGER.error("Can't find PipelinedHandler({}, {})", request.getType(), request.getMethod());
+            LOGGER.debug("Can't find PipelinedHandler({}, {})", request.getType(), request.getMethod());
             MongoResponse.of(exchange).setInError(HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             next(exchange);

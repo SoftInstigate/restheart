@@ -33,13 +33,11 @@ import java.util.Map;
 
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.*;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.BaseAccount;
-import org.restheart.plugins.ByteArrayService;
-import org.restheart.plugins.Inject;
-import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.RegisterPlugin;
+
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
@@ -296,4 +294,18 @@ public class AuthTokenService implements ByteArrayService {
         exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
         exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
     }
+
+	private static String accessControlExposeHeaders = null;
+
+  	@Override
+  	public String accessControlExposeHeaders(Request<?> r) {
+		  if (accessControlExposeHeaders == null) {
+			  accessControlExposeHeaders = ByteArrayService.super.accessControlExposeHeaders(r)
+				  + ", " + AUTH_TOKEN_HEADER.toString()
+				  + ", " + AUTH_TOKEN_VALID_HEADER.toString()
+				  + ", " + AUTH_TOKEN_LOCATION_HEADER.toString();
+		  }
+
+		  return accessControlExposeHeaders;
+  	}
 }
