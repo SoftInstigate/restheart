@@ -22,6 +22,7 @@ package org.restheart.mongodb;
 
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
+import static io.undertow.util.Headers.*;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 
@@ -39,7 +40,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.ErrorHandler;
-import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
@@ -52,6 +52,7 @@ import org.restheart.plugins.Service;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +118,12 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // Handle OPTIONS requests for CORS preflight
+        if (request.isOptions()) {
+            handleOptions(request);
+            return;
+        }
+
         // see method javadoc for more information
         resetRelativePath(request);
 
@@ -140,7 +147,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         var _pipeline = PipelinedWrappingHandler.wrap(new ErrorHandler(
                 PipelinedHandler.pipe(
-                        new OptionsHandler(),
                         ClientSessionInjector.build(),
                         new ETagPolicyInjector(),
                         RequestDispatcherHandler.getInstance())));
@@ -149,12 +155,12 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         var allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-                .allMatch(url -> isPathTemplate(url));
+                .allMatch(MongoService::isPathTemplate);
 
         var allPaths = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-                .allMatch(url -> !isPathTemplate(url));
+                .noneMatch(MongoService::isPathTemplate);
 
         var pathsTemplates = pathTemplate(false);
 
@@ -269,7 +275,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     @Override
     public Function<HttpServerExchange, MongoResponse> response() {
-        return e -> MongoResponse.of(e);
+        return MongoResponse::of;
     }
 
     private Set<MongoMount> getMongoMounts() {
@@ -334,7 +340,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             }
 
             this.resource = resource;
-            this.uri = org.restheart.utils.URLUtils.removeTrailingSlashes(uri);
+            this.uri = URLUtils.removeTrailingSlashes(uri);
         }
 
         @Override
@@ -357,4 +363,67 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private void resetRelativePath(Request request) {
         request.getExchange().setRelativePath(request.getPath());
     }
+
+	private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
+
+	@Override
+	public String accessControlExposeHeaders(Request<?> r) {
+		var defaultHeaders = Service.super.accessControlExposeHeaders(r);
+
+		if (r instanceof MongoRequest mr) {
+			return switch (mr.getType()) {
+				case ROOT -> "";
+
+				case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS -> {
+					yield mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
+				}
+
+				default -> ETAG_STRING;
+			};
+		} else {
+			return defaultHeaders;
+		}
+	}
+
+	private final static String GET = "GET";
+	private final static String POST = "POST";
+	private final static String DELETE = "DELETE";
+	private final static String GET_POST = "GET, POST";
+	private final static String PUT_DELETE = "PUT, DELETE";
+	private final static String PATCH_DELETE = "PATCH, DELETE";
+	private final static String GET_PUT_DELETE = "GET, PUT, DELETE";
+	private final static String GET_PUT_PATCH_DELETE = "GET, PUT, PATCH, DELETE";
+	private final static String GET_PUT_PATCH_POST_DELETE = "GET, PUT, PATCH, POST, DELETE";
+
+	@Override
+	public String accessControlAllowMethods(Request<?> r) {
+		if (r instanceof MongoRequest mr) {
+			return switch (mr.getType()) {
+				case INVALID -> "";
+
+				case ROOT, ROOT_SIZE, DB_SIZE, DB_META, COLLECTION_META, COLLECTION_SIZE, CHANGE_STREAM,
+					 COLLECTION_INDEXES, FILES_BUCKET_SIZE, FILES_BUCKET_META, FILE_BINARY, AGGREGATION,
+					 SCHEMA_STORE_SIZE, SCHEMA_STORE_META -> GET;
+
+				case DB, DOCUMENT, FILE -> GET_PUT_PATCH_DELETE;
+
+				case SCHEMA -> GET_PUT_DELETE;
+
+				case COLLECTION, FILES_BUCKET, SCHEMA_STORE -> GET_PUT_PATCH_POST_DELETE;
+
+				case BULK_DOCUMENTS, TRANSACTION -> PATCH_DELETE;
+
+				case INDEX -> PUT_DELETE;
+
+				case SESSION -> DELETE;
+
+				case SESSIONS -> POST;
+
+				case TRANSACTIONS -> GET_POST;
+			};
+
+		} else {
+			return Service.super.accessControlAllowMethods(r);
+		}
+	}
 }

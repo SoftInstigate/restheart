@@ -19,13 +19,7 @@
  */
 package org.restheart.exchange;
 
-import static com.google.common.net.HttpHeaders.X_POWERED_BY;
-import static io.undertow.util.Headers.ETAG;
-import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 
 import io.undertow.util.HttpString;
 
@@ -57,33 +51,28 @@ public interface CORSHeaders {
     /** CORS header for specifying which response headers can be accessed by client-side scripts. */
     public static final HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString
             .tryFromString("Access-Control-Expose-Headers");
-    
+
     /** CORS header for controlling whether credentials can be included in cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString
             .tryFromString("Access-Control-Allow-Credentials");
-    
+
     /** CORS header for specifying which origins are allowed to access the resource. */
     public static final HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString
             .tryFromString("Access-Control-Allow-Origin");
-    
+
     /** CORS header for specifying which HTTP methods are allowed for cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_METHODS = HttpString
             .tryFromString("Access-Control-Allow-Methods");
-    
+
     /** CORS header for specifying which request headers are allowed in cross-origin requests. */
     public static final HttpString ACCESS_CONTROL_ALLOW_HEADERS = HttpString
             .tryFromString("Access-Control-Allow-Headers");
 
-    /** 
+    /**
      * Default list of response headers that are exposed to client-side scripts.
      * Includes location, etag, authentication token headers, and server identification.
      */
-    public static final String DEFAULT_ACCESS_CONTROL_EXPOSE_HEADERS = LOCATION_STRING
-            + ", " + ETAG.toString()
-            + ", " + AUTH_TOKEN_HEADER.toString()
-            + ", " + AUTH_TOKEN_VALID_HEADER.toString()
-            + ", " + AUTH_TOKEN_LOCATION_HEADER.toString()
-            + ", " + X_POWERED_BY;
+    public static final String DEFAULT_ACCESS_CONTROL_EXPOSE_HEADERS = "";
 
     /**
      * Returns the headers that should be exposed to client-side scripts.
@@ -141,22 +130,20 @@ public interface CORSHeaders {
     default String accessControlAllowOrigin(Request<?> r) {
         var requestHeaders = r.getHeaders();
         if (requestHeaders.contains(ORIGIN)) {
-            return requestHeaders.get(ORIGIN).getFirst().toString();
+            return requestHeaders.get(ORIGIN).getFirst();
         } else {
             return DEFAULT_ACCESS_CONTROL_ALLOW_ORIGIN;
         }
     }
 
     /** Default list of HTTP methods allowed for cross-origin requests. */
-    public static final String DEFAULT_ACCESS_CONTROL_ALLOW_METHODS = "GET, PUT, POST, PATCH, DELETE, OPTIONS";
+    public static final String DEFAULT_ACCESS_CONTROL_ALLOW_METHODS = "GET, PUT, POST, PATCH, DELETE";
 
     /**
      * Specifies which HTTP methods are allowed for cross-origin requests.
      * <p>
-     * The default implementation allows all standard RESTful methods including
-     * GET, PUT, POST, PATCH, DELETE, and OPTIONS. The OPTIONS method is included
-     * to support preflight requests that browsers send for complex cross-origin
-     * requests.
+     * The default implementation allows all standard HTTP methods including
+     * GET, PUT, POST, PATCH, DELETE.
      * </p>
      *
      * @param r the request context for determining allowed methods
@@ -166,7 +153,7 @@ public interface CORSHeaders {
         return DEFAULT_ACCESS_CONTROL_ALLOW_METHODS;
     }
 
-    /** 
+    /**
      * Default list of request headers allowed in cross-origin requests.
      * Includes standard HTTP headers and RESTHeart-specific headers.
      */
