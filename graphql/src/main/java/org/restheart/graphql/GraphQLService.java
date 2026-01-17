@@ -534,7 +534,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             .collect(Collectors.joining(","));
     }
 
-    public static final String GQL_ACCESS_CONTROL_ALLOW_METHODS = "POST, OPTIONS";
+    public static final String GQL_ACCESS_CONTROL_ALLOW_METHODS = "POST";
 
     @Override
     public String accessControlAllowMethods(Request<?> r) {
