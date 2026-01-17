@@ -129,4 +129,33 @@ public class PingService implements ByteArrayService {
             return exchange.getSourceAddress().getAddress().getHostAddress();
         }
     }
+
+    /**
+     * Override CORS allowed methods to include HEAD which is supported by this service.
+     * This demonstrates how services can customize CORS headers based on their specific needs.
+     */
+    @Override
+    public String accessControlAllowMethods(org.restheart.exchange.Request<?> r) {
+        return "GET, HEAD";
+    }
+
+    /**
+     * Override CORS allowed headers to only include necessary headers for ping service.
+     * Ping service is unsecured and doesn't require authentication or conditional headers.
+     * This demonstrates optimization by only advertising headers the service actually uses.
+     */
+    @Override
+    public String accessControlAllowHeaders(org.restheart.exchange.Request<?> r) {
+        return "X-Requested-With";
+    }
+
+    /**
+     * Override CORS exposed headers.
+     * Ping service doesn't set any custom response headers, so return empty string.
+     * This demonstrates optimization by not exposing headers that aren't set.
+     */
+    @Override
+    public String accessControlExposeHeaders(org.restheart.exchange.Request<?> r) {
+        return "";
+    }
 }
