@@ -366,6 +366,29 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 	private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
 
+	private final static String ALLOW_HEADERS_BASE = "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge";
+	private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
+	private final static String ALLOW_HEADERS_WITH_IF_MATCH_IF_NONE_MATCH = ALLOW_HEADERS_WITH_IF_MATCH + ", If-None-Match";
+
+	@Override
+	public String accessControlAllowHeaders(Request<?> r) {
+		var defaultHeaders = Service.super.accessControlAllowHeaders(r);
+
+		if (r instanceof MongoRequest mr) {
+			return switch (mr.getType()) {
+				case INVALID -> "";
+
+				case ROOT, ROOT_SIZE, AGGREGATION, COLLECTION_INDEXES, FILE_BINARY, CHANGE_STREAM -> ALLOW_HEADERS_BASE;
+
+				case DOCUMENT, FILE, SCHEMA -> ALLOW_HEADERS_WITH_IF_MATCH_IF_NONE_MATCH;
+
+				default -> ALLOW_HEADERS_WITH_IF_MATCH;
+			};
+		} else {
+			return defaultHeaders;
+		}
+	}
+
 	@Override
 	public String accessControlExposeHeaders(Request<?> r) {
 		var defaultHeaders = Service.super.accessControlExposeHeaders(r);
