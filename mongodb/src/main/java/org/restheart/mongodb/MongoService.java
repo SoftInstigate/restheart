@@ -366,7 +366,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 	private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
 
-	private final static String ALLOW_HEADERS_BASE = "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge";
+	// Optimized: only non-CORS-safelisted headers (Accept, Content-Type, etc. are automatically allowed)
+	private final static String ALLOW_HEADERS_BASE = "Authorization, X-Requested-With, No-Auth-Challenge";
 	private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
 	private final static String ALLOW_HEADERS_WITH_IF_MATCH_IF_NONE_MATCH = ALLOW_HEADERS_WITH_IF_MATCH + ", If-None-Match";
 
@@ -391,21 +392,19 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 	@Override
 	public String accessControlExposeHeaders(Request<?> r) {
-		var defaultHeaders = Service.super.accessControlExposeHeaders(r);
-
-		if (r instanceof MongoRequest mr) {
-			return switch (mr.getType()) {
-				case ROOT -> "";
-
-				case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS -> {
-					yield mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
-				}
-
-				default -> ETAG_STRING;
-			};
-		} else {
-			return defaultHeaders;
+		// Only return expose headers for MongoRequest, not for other services
+		if (!(r instanceof MongoRequest mr)) {
+			return "";
 		}
+
+		return switch (mr.getType()) {
+			case ROOT -> "";
+
+			case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS -> 
+				mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
+
+			default -> ETAG_STRING;
+		};
 	}
 
 	private final static String GET = "GET";
