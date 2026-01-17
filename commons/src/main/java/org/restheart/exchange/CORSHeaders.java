@@ -155,11 +155,11 @@ public interface CORSHeaders {
 
     /**
      * Default list of request headers allowed in cross-origin requests.
-     * Includes standard HTTP headers and RESTHeart-specific headers.
+     * Only includes headers that are NOT CORS-safelisted and require explicit permission.
+     * CORS-safelisted headers (Accept, Accept-Language, Content-Language, Content-Type with restrictions)
+     * are automatically allowed by browsers and don't need to be listed.
      */
-    public static final String DEFAULT_ACCESS_CONTROL_ALLOW_HEADERS = "Accept, Accept-Encoding, Authorization, "
-            + "Content-Length, Content-Type, Host, If-Match, "
-            + "Origin, X-Requested-With, User-Agent, No-Auth-Challenge";
+    public static final String DEFAULT_ACCESS_CONTROL_ALLOW_HEADERS = "Authorization, If-Match, X-Requested-With, No-Auth-Challenge";
 
     /**
      * Specifies which request headers are allowed in cross-origin requests.
