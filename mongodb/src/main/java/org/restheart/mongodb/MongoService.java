@@ -366,8 +366,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 	private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
 
-	// Optimized: only non-CORS-safelisted headers (Accept, Content-Type, etc. are automatically allowed)
-	private final static String ALLOW_HEADERS_BASE = "Authorization, X-Requested-With, No-Auth-Challenge";
+	// Optimized: only non-CORS-safelisted headers
+	// Note: Content-Type is safelisted only for form values, not for application/json
+	private final static String ALLOW_HEADERS_BASE = "Authorization, Content-Type, X-Requested-With, No-Auth-Challenge";
 	private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
 	private final static String ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH = ALLOW_HEADERS_BASE + ", If-Match, If-None-Match";
 
