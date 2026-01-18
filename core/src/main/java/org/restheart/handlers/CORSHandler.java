@@ -47,6 +47,11 @@ public class CORSHandler extends PipelinedHandler {
 
         var request = Request.of(exchange);
 
+        // Check if CORS is enabled for this service
+        if (!handlingService.corsEnabled(request)) {
+            return;
+        }
+
         var responseHeaders = exchange.getResponseHeaders();
 
         if (!responseHeaders.contains(ACCESS_CONTROL_ALLOW_ORIGIN)) {
