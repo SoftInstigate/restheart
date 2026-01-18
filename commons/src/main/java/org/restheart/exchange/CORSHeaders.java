@@ -75,6 +75,21 @@ public interface CORSHeaders {
     public static final String DEFAULT_ACCESS_CONTROL_EXPOSE_HEADERS = "";
 
     /**
+     * Determines if CORS headers should be added to the response.
+     * <p>
+     * Override this method to disable CORS for server-to-server communication
+     * or when CORS is not needed (e.g., same-origin requests, API-only services).
+     * When disabled, no CORS headers will be added to responses.
+     * </p>
+     *
+     * @param r the request context
+     * @return true if CORS headers should be added (default), false to disable CORS
+     */
+    default boolean corsEnabled(Request<?> r) {
+        return true;
+    }
+
+    /**
      * Returns the headers that should be exposed to client-side scripts.
      * <p>
      * These headers will be accessible via JavaScript in the browser for cross-origin
