@@ -20,7 +20,7 @@ jobs:
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: graalvm/setup-graalvm@v1
         with:
@@ -72,7 +72,7 @@ jobs:
           chmod +x core/target/restheart
 
       - name: Upload restheart-${{ matrix.arch }} native artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: restheart-${{ matrix.arch }}
           path: ${{ matrix.arch == 'windows-amd64' && 'core/target/restheart.exe' || 'core/target/restheart' }}
@@ -88,7 +88,7 @@ jobs:
     needs: build-and-upload
     if: needs.build-and-upload.outputs.ubuntu == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download Binary Artifact
         uses: actions/download-artifact@v4
