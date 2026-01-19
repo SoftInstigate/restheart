@@ -28,6 +28,8 @@ import com.google.gson.JsonParseException;
 
 import org.bson.BsonDocument;
 import org.restheart.configuration.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
 
@@ -89,6 +91,7 @@ import org.restheart.utils.BsonUtils;
  * @see AclVarsInterpolator
  */
 public class MongoPermissions {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoPermissions.class);
     private final boolean allowManagementRequests;
     private final boolean allowBulkPatch;
     private final boolean allowBulkDelete;
@@ -502,7 +505,15 @@ public class MongoPermissions {
             // return default values
             return new MongoPermissions();
         } else {
-            args = (Map<String, Object>) args.get("mongo");
+            var mongoValue = args.get("mongo");
+
+            // If mongo value is null or empty, return default permissions
+            if (mongoValue == null || (mongoValue instanceof Map && ((Map<?, ?>)mongoValue).isEmpty())) {
+                LOGGER.debug("MongoPermissions.from() called with empty or null mongo section, returning defaults");
+                return new MongoPermissions();
+            }
+
+            args = (Map<String, Object>) mongoValue;
 
             BsonDocument readFilter = null;
             BsonDocument writeFilter = null;
@@ -511,18 +522,22 @@ public class MongoPermissions {
                 try {
                     String __readFilter = argValue(args, "readFilter");
 
-                    var _readFilter = BsonDocument.parse(__readFilter);
+                    if (__readFilter == null || __readFilter.isBlank()) {
+                        readFilter = null;
+                    } else {
+                        var _readFilter = BsonDocument.parse(__readFilter);
 
-                    if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
-                        throw new IllegalArgumentException(
-                                "Wrong permission: readFilter must be a JSON object or null");
-                    }
+                        if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
+                            throw new IllegalArgumentException(
+                                    "Wrong permission: readFilter must be a JSON object or null");
+                        }
 
-                    readFilter = _readFilter == null
-                        ? null
-                        : _readFilter.isNull()
+                        readFilter = _readFilter == null
                             ? null
-                            : BsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
+                            : _readFilter.isNull()
+                                ? null
+                                : BsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
+                    }
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
                             "Wrong permission: the readFilter is not a string containing a JSON Object", jpe);
@@ -535,17 +550,21 @@ public class MongoPermissions {
                 try {
                     String __writeFilter = argValue(args, "writeFilter");
 
-                    var _writeFilter = BsonDocument.parse(__writeFilter);
+                    if (__writeFilter == null || __writeFilter.isBlank()) {
+                        writeFilter = null;
+                    } else {
+                        var _writeFilter = BsonDocument.parse(__writeFilter);
 
-                    if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
-                        throw new ConfigurationException("writeFilter must be a JSON object or null");
-                    }
+                        if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
+                            throw new ConfigurationException("writeFilter must be a JSON object or null");
+                        }
 
-                    writeFilter = _writeFilter == null
-                        ? null
-                        : _writeFilter.isNull()
+                        writeFilter = _writeFilter == null
                             ? null
-                            : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
+                            : _writeFilter.isNull()
+                                ? null
+                                : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
+                    }
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
                             "Wrong permission: the writeFilter is not a string defining a JSON Object", jpe);
@@ -560,17 +579,21 @@ public class MongoPermissions {
                 try {
                     String __mergeRequest = argValue(args, "mergeRequest");
 
-                    var _mergeRequest = BsonDocument.parse(__mergeRequest);
+                    if (__mergeRequest == null || __mergeRequest.isBlank()) {
+                        mergeRequest = null;
+                    } else {
+                        var _mergeRequest = BsonDocument.parse(__mergeRequest);
 
-                    if (!(_mergeRequest == null || _mergeRequest.isNull()) && !_mergeRequest.isDocument()) {
-                        throw new ConfigurationException("mergeRequest must be a JSON object or null");
-                    }
+                        if (!(_mergeRequest == null || _mergeRequest.isNull()) && !_mergeRequest.isDocument()) {
+                            throw new ConfigurationException("mergeRequest must be a JSON object or null");
+                        }
 
-                    mergeRequest = _mergeRequest == null
-                        ? null
-                        : _mergeRequest.isNull()
+                        mergeRequest = _mergeRequest == null
                             ? null
-                            : _mergeRequest.asDocument();
+                            : _mergeRequest.isNull()
+                                ? null
+                                : _mergeRequest.asDocument();
+                    }
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
                             "Wrong permission: the mergeRequest is not a string defining a JSON Object", jpe);
@@ -585,7 +608,10 @@ public class MongoPermissions {
                 try {
                     String __projectResponse = argValue(args, "projectResponse");
 
-                    var _projectResponse = BsonDocument.parse(__projectResponse);
+                    if (__projectResponse == null || __projectResponse.isBlank()) {
+                        projectResponse = null;
+                    } else {
+                        var _projectResponse = BsonDocument.parse(__projectResponse);
 
                     if (!(_projectResponse == null || _projectResponse.isNull()) && !_projectResponse.isDocument()) {
                         throw new ConfigurationException("projectResponse must be a JSON object or null");
@@ -626,6 +652,7 @@ public class MongoPermissions {
                         }
 
                         projectResponse = _projectResponse.asDocument();
+                    }
                     }
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
