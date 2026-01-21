@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-examples</artifactId>
-    <version>9.0.1</version>
+    <version>9.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>csv-interceptor</artifactId>
