@@ -296,7 +296,7 @@ jobs:
   call-native-image-release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: release
-    uses: softinstigate/restheart/.github/workflows/native-image-release.yml@master
+    uses: ./.github/workflows/native-image-release.yml
     secrets: inherit
     with:
       version: "${{ needs.release.outputs.version }}"
