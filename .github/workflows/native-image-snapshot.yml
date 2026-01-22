@@ -25,7 +25,7 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: ${{ matrix.java-version || '25' }}
+          java-version: ${{ matrix.java-version || '25' }} # Default to 25 if not specified
           distribution: "graalvm-community"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: "maven"
