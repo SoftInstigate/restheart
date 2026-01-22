@@ -26,8 +26,6 @@ jobs:
             arch: linux-amd64
           - os: windows-latest
             arch: windows-amd64
-          - os: macos-15-intel
-            arch: "darwin-amd64"
           - os: macos-latest
             arch: "darwin-arm64"
     timeout-minutes: 45
@@ -46,18 +44,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: "maven"
           native-image-job-reports: "true"
-
-      - name: Build MacOS Intel native
-        if: matrix.arch == 'darwin-amd64'
-        run: |
-          echo "GRAALVM_HOME: $GRAALVM_HOME"
-          echo "JAVA_HOME: $JAVA_HOME"
-          java --version
-          native-image -march=list
-          export MAVEN_OPTS="-Xmx8g -Xms4g"
-          mvn package -Pnative -DskipTests \
-            -Dnative.march="-march=x86-64" \
-            -Dquarkus.native.additional-build-args="-J-Xmx10g,-J-Xms6g,--gc=serial"
 
       - name: Build MacOS Apple Silicon native
         if: matrix.arch == 'darwin-arm64'
