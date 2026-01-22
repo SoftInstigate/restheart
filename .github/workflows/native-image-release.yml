@@ -28,20 +28,18 @@ jobs:
             arch: windows-amd64
           - os: macos-15-intel
             arch: "darwin-amd64"
+            java-version: "25.0.1" # Specific Java version for this deprecated arch
           - os: macos-latest
             arch: "darwin-arm64"
     timeout-minutes: 45
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
     steps:
-      - name: Debug Version Input
-        run: echo "Version input is ${{ inputs.version }}"
-
       - uses: actions/checkout@v6
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: "25"
+          java-version: ${{ matrix.java-version || '25' }} # Default to 25 if not specified
           distribution: "graalvm-community"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: "maven"
