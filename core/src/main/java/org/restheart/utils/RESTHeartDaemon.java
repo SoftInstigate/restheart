@@ -64,8 +64,6 @@ public class RESTHeartDaemon {
 
             var args = new LinkedList<>(Arrays.asList(__args.orElseGet(() -> new String[0])));
 
-            LOGGER.info("args: {}", (Object) args);
-
             if (processInfo.command().isEmpty()) {
                 throw new IllegalStateException("Command not available");
             }
@@ -81,8 +79,6 @@ public class RESTHeartDaemon {
             } else {
                 args.addFirst(command);
             }
-
-            LOGGER.info("newArgs: {}", args);
 
             var p = new ProcessBuilder()
                     .command(args.toArray(new String[0]))
