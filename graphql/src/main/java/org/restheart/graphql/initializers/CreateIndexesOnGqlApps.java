@@ -24,6 +24,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.restheart.configuration.Configuration;
 import org.restheart.configuration.ConfigurationException;
@@ -40,7 +41,7 @@ import java.util.stream.StreamSupport;
 import static org.restheart.utils.BsonUtils.document;
 
 @RegisterPlugin(name="createIndexesOnGqlApps",
-                description = "initializes the indexes on the gql-apps collection to speedup fetching of graphql app definitions",
+                description = "initializes the index on the gql-apps collection to speedup fetching of graphql app definitions",
                 enabledByDefault = false
 )
 public class CreateIndexesOnGqlApps implements Initializer {
@@ -91,8 +92,13 @@ public class CreateIndexesOnGqlApps implements Initializer {
 
                 var indexes = gqlApps.listIndexes(BsonDocument.class);
 
-                var uriExists = StreamSupport.stream(indexes.spliterator(), false)
-                    .anyMatch(index -> exists(index, "descriptor.uri", new BsonInt32(1)));
+                var uriId = StreamSupport.stream(indexes.spliterator(), false)
+                    .map(index -> exists(index, "descriptor.uri", new BsonInt32(1)))
+										.filter(id -> !BsonNull.VALUE.equals(id))
+										.findFirst()
+										.orElse(BsonNull.VALUE);
+
+								var uriExists = !BsonNull.VALUE.equals(uriId);
 
                 if (uriExists) {
                     LOGGER.debug("Index {'descriptor.uri':1} exists on {}.{}", this.db, this.coll);
@@ -101,35 +107,42 @@ public class CreateIndexesOnGqlApps implements Initializer {
                     ThreadsUtils.virtualThreadsExecutor().execute(() -> gqlApps.createIndex(document().put("descriptor.uri", 1).get(), INDEX_OPTIONS));
                 }
 
-                var nameExists = StreamSupport.stream(indexes.spliterator(), false)
-                    .anyMatch(index -> exists(index, "descriptor.name", new BsonInt32(1)));
+                var nameId = StreamSupport.stream(indexes.spliterator(), false)
+                    .map(index -> exists(index, "descriptor.name", new BsonInt32(1)))
+										.filter(id -> !BsonNull.VALUE.equals(id))
+										.findFirst()
+										.orElse(BsonNull.VALUE);
+
+								var nameExists = !BsonNull.VALUE.equals(nameId);
 
                 if (nameExists) {
-                    LOGGER.debug("Index {'descriptor.name':1} exists on {}.{}", this.db, this.coll);
-                } else {
-                    LOGGER.info("Creating index {'descriptor.name':1}' on {}.{}", this.db, this.coll);
-                    ThreadsUtils.virtualThreadsExecutor().execute(() -> gqlApps.createIndex(document().put("descriptor.name", 1).get(), INDEX_OPTIONS));
+                    LOGGER.info("Deleting obsolete index {'descriptor.name':1}' on {}.{}", this.db, this.coll);
+                    ThreadsUtils.virtualThreadsExecutor().execute(() -> gqlApps.dropIndex(nameId.asString().getValue()));
                 }
 
             } catch (Throwable e) {
-                LOGGER.warn("Error initializing indexes on {}.{}", this.db, this.coll, e);
+                LOGGER.warn("Error initializing index on {}.{}", this.db, this.coll, e);
             }
         }
     }
 
-    private boolean exists(BsonDocument index, String key, BsonValue value) {
+    private BsonValue exists(BsonDocument index, String key, BsonValue value) {
         var key$$$ = BsonUtils.get(index, "key");
 
         if (key$$$.isEmpty()) {
-            return false;
+            return BsonNull.VALUE;
         } else {
             var key$$ = key$$$.get();
 
             if (!key$$.isDocument()) {
-                return false;
+                return BsonNull.VALUE;
             } else {
                 var key$ = key$$.asDocument();
-                return key$.containsKey(key) && key$.get(key).equals(value);
+                if (key$.containsKey(key) && key$.get(key).equals(value)) {
+									return BsonUtils.get(index, "name").orElse(BsonNull.VALUE);
+								} else {
+									return BsonNull.VALUE;
+								}
             }
         }
     }
