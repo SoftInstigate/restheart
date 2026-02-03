@@ -104,6 +104,46 @@ public class Configuration {
     private static final String LOCALHOST = "localhost";
 
     /**
+     * Regex pattern for masking passwords in MongoDB connection strings.
+     *
+     * <p>Pattern captures three groups:</p>
+     * <ul>
+     *   <li>Group 1: {@code (mongodb(?:\+srv)?://[^:]+:)} - Protocol + username + colon</li>
+     *   <li>Group 2: {@code ([^@]+)} - Password (to be replaced with MASK)</li>
+     *   <li>Group 3: {@code (@.*)} - @ symbol and rest of connection string</li>
+     * </ul>
+     */
+    private static final String CONNECTION_STRING_PASSWORD_REGEX = "(mongodb(?:\\+srv)?://[^:]+:)([^@]+)(@.*)";
+
+    /**
+     * Masks the password in a MongoDB connection string for secure logging.
+     *
+     * <p>This method uses a regex pattern to identify and replace the password portion
+     * of MongoDB connection strings (both mongodb:// and mongodb+srv:// formats) with
+     * asterisks while preserving the username, host, and other connection details.</p>
+     *
+     * <h3>Connection String Format</h3>
+     * <p>MongoDB connection strings follow the format:</p>
+     * <pre>mongodb[+srv]://[username:password@]host[:port][/database][?options]</pre>
+     *
+     * <h3>Example</h3>
+     * <pre>
+     * Input:  mongodb://user:secretPass@host:27017/db
+     * Output: mongodb://user:**********@host:27017/db
+     * </pre>
+     *
+     * @param connectionString the MongoDB connection string to mask
+     * @return the connection string with the password replaced by asterisks, or the
+     *         original string if it doesn't match the expected format
+     */
+    static String maskPasswordInConnectionString(final String connectionString) {
+        if (connectionString == null) {
+            return null;
+        }
+        return connectionString.replaceFirst(CONNECTION_STRING_PASSWORD_REGEX, "$1" + MASK + "$3");
+    }
+
+    /**
      * RESTHeart version string.
      * 
      * <p>The version is read from the JAR's MANIFEST.MF file, which is automatically
@@ -682,8 +722,9 @@ public class Configuration {
                                         final var cs = new ConnectionString(svalue);
                                         final var _pwd = cs.getPassword();
                                         if (_pwd != null) {
-                                            final var pwd = new String(_pwd);
-                                            maskedValue.put(k, svalue.replaceFirst(Pattern.quote(pwd), MASK));
+                                            maskedValue.put(k, maskPasswordInConnectionString(svalue));
+                                        } else {
+                                            maskedValue.put(k, svalue);
                                         }
                                     } catch (final Throwable t) {
                                         maskedValue.put(k, mapValue);
@@ -699,8 +740,9 @@ public class Configuration {
                         final var cs = new ConnectionString(svalue);
                         final var _pwd = cs.getPassword();
                         if (_pwd != null) {
-                            final var pwd = new String(_pwd);
-                            LOGGER.info(LOG_PATTERN, o.path(), svalue.replaceFirst(Pattern.quote(pwd), MASK));
+                            LOGGER.info(LOG_PATTERN, o.path(), maskPasswordInConnectionString(svalue));
+                        } else {
+                            LOGGER.info(LOG_PATTERN, o.path(), svalue);
                         }
                     } catch (final Throwable t) {
                         LOGGER.info(LOG_PATTERN, o.path(), o.value());
