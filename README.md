@@ -341,16 +341,6 @@ docker run -p 8080:8080 \
 
 Stateless architecture supports horizontal scaling. Configure with ConfigMaps and Secrets.
 
-### GraalVM Native Image
-
-Compile to native binary for faster startup (<1s) and lower memory footprint (~50MB):
-
-```bash
-./mvnw clean package -Pnative
-```
-
-Ideal for serverless deployments (AWS Lambda, Cloud Run) and edge computing.
-
 ### RESTHeart Cloud
 
 Managed service alternative: [cloud.restheart.com](https://cloud.restheart.com)
@@ -433,12 +423,12 @@ Yes, for custom business logic. Use the plugin system to add:
 
 Dual-licensed:
 
-- **AGPL:** Free, requires open-sourcing modifications if distributed
-- **Commercial:** For proprietary applications, same features
+- **AGPL v3** for the core components, **Apache 2.0** for common interfaces. Free, requires open-sourcing modifications if distributed. However, extending RESTHeart with your own plugins is under the Apache 2.0 license.
+- **Commercial:** For proprietary applications, same features but no source code re-distribution requirement.
 
-### Can I use it with MongoDB Atlas?
+### Can I use it with MongoDB Atlas Cloud?
 
-Yes. RESTHeart connects to any MongoDB instance:
+Yes, Atlas is a very effective way to manage a MongoDB database. RESTHeart connects to any MongoDB instance:
 
 - MongoDB Atlas
 - Self-hosted MongoDB
@@ -448,7 +438,9 @@ Yes. RESTHeart connects to any MongoDB instance:
 
 ### Can I use RESTHeart with PostgreSQL?
 
-Yes, via FerretDB. FerretDB is an open-source MongoDB-compatible database that uses PostgreSQL as its storage engine. It translates MongoDB wire protocol commands to SQL queries, allowing RESTHeart to work with PostgreSQL while maintaining MongoDB's document-oriented API and query language. This is ideal for organizations that want to use PostgreSQL's reliability and ecosystem while providing MongoDB-style APIs to their applications.
+Yes, via FerretDB. FerretDB is an open-source MongoDB-compatible database that uses PostgreSQL as its storage engine. It translates MongoDB wire protocol commands to SQL queries, allowing RESTHeart to work with PostgreSQL while maintaining MongoDB's document-oriented API and query language. 
+
+This is ideal for organizations that want to use PostgreSQL's reliability and ecosystem while providing MongoDB-style APIs to their applications.
 
 See our [complete FerretDB tutorial](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/) for setup instructions.
 
