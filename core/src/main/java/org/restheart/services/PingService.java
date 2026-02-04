@@ -140,13 +140,14 @@ public class PingService implements ByteArrayService {
     }
 
     /**
-     * Override CORS allowed headers to only include necessary headers for ping service.
-     * Ping service is unsecured and doesn't require authentication or conditional headers.
-     * This demonstrates optimization by only advertising headers the service actually uses.
+     * Override CORS allowed headers to include necessary headers for ping service.
+     * Ping service is unsecured and doesn't require authentication, but clients may send
+     * Authorization header anyway (e.g., when using a global HTTP client configuration).
+     * Includes standard headers used by JavaScript fetch/XMLHttpRequest.
      */
     @Override
     public String accessControlAllowHeaders(org.restheart.exchange.Request<?> r) {
-        return "X-Requested-With";
+        return "Authorization, Content-Type, X-Requested-With";
     }
 
     /**
