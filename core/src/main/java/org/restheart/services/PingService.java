@@ -39,7 +39,7 @@ import io.undertow.server.HttpServerExchange;
  * GET returns a JSON response with the greeting message, client IP, host, version, and build time.
  * HEAD returns only the headers.
  * OPTIONS returns the allowed methods.
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -148,15 +148,5 @@ public class PingService implements ByteArrayService {
     @Override
     public String accessControlAllowHeaders(org.restheart.exchange.Request<?> r) {
         return "Authorization, Content-Type, X-Requested-With";
-    }
-
-    /**
-     * Override CORS exposed headers.
-     * Ping service doesn't set any custom response headers, so return empty string.
-     * This demonstrates optimization by not exposing headers that aren't set.
-     */
-    @Override
-    public String accessControlExposeHeaders(org.restheart.exchange.Request<?> r) {
-        return "";
     }
 }
