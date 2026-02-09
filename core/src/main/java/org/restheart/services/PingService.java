@@ -141,7 +141,7 @@ public class PingService implements ByteArrayService {
         return accessControlAllowMethods;
     }
 
-    private final String accessControlAllowHeaders = "Authorization, Content-Type, X-Requested-With"
+    private final String accessControlAllowHeaders = "Authorization, Content-Type, X-Requested-With";
 
     /**
      * Override CORS allowed headers to include necessary headers for ping service.
