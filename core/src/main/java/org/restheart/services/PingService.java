@@ -130,14 +130,18 @@ public class PingService implements ByteArrayService {
         }
     }
 
+    privare final String accessControlAllowMethods = "GET, HEAD";
+
     /**
      * Override CORS allowed methods to include HEAD which is supported by this service.
      * This demonstrates how services can customize CORS headers based on their specific needs.
      */
     @Override
     public String accessControlAllowMethods(org.restheart.exchange.Request<?> r) {
-        return "GET, HEAD";
+        return accessControlAllowMethods;
     }
+
+    private final String accessControlAllowHeaders = "Authorization, Content-Type, X-Requested-With"
 
     /**
      * Override CORS allowed headers to include necessary headers for ping service.
@@ -147,6 +151,6 @@ public class PingService implements ByteArrayService {
      */
     @Override
     public String accessControlAllowHeaders(org.restheart.exchange.Request<?> r) {
-        return "Authorization, Content-Type, X-Requested-With";
+        return accessControlAllowHeaders;
     }
 }
