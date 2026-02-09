@@ -130,7 +130,7 @@ public class PingService implements ByteArrayService {
         }
     }
 
-    privare final String accessControlAllowMethods = "GET, HEAD";
+    private final String accessControlAllowMethods = "GET, HEAD";
 
     /**
      * Override CORS allowed methods to include HEAD which is supported by this service.
