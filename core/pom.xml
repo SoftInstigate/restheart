@@ -165,6 +165,20 @@
               <excludeArtifactIds>restheart,restheart-security,restheart-mongodb,restheart-graphql,restheart-mongoclient-provider,restheart-polyglot,restheart-metrics</excludeArtifactIds>
             </configuration>
           </execution>
+          <!-- unpack truffleattach resources -->
+          <execution>
+            <id>unpack-truffleattach</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib/truffleattach</outputDirectory>
+              <includes>META-INF/resources/engine/libtruffleattach/**</includes>
+              <includeScope>runtime</includeScope>
+              <includeArtifactIds>org.graalvm.truffle:truffle-api</includeArtifactIds>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -327,7 +341,7 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                   <addHeader>false</addHeader>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                   <resource>META-INF/RESTHEART-LICENSE.txt</resource>
                   <file>../LICENSE.txt</file>
