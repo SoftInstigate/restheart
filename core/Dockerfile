@@ -22,21 +22,22 @@ COPY target/plugins/lib/*.jar plugins/lib/
 # set environment variables
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 
-# JDK 25 optimized for RESTHeart: high-throughput REST API, ≤2GB heap, Virtual Threads
-# G1GC tuned for small heap with many concurrent clients and short-lived request objects
+# JDK 25 optimized for RESTHeart: low-latency REST API, 1-2 vCPU, 1-2GB container RAM
+# ZGC (generational) for predictable pause times with Virtual Threads and short-lived request objects
+# NOTE: Graal JIT is enabled by default to support GraalVM polyglot plugin capabilities.
+# If you are not using polyglot plugins, adding -XX:-UseJVMCICompiler will reduce
+# compiler memory overhead significantly in constrained containers (recommended for <512Mi heap).
 ENTRYPOINT [ "java", \
     "-Dfile.encoding=UTF-8", \
     "--enable-native-access=ALL-UNNAMED", \
     "--sun-misc-unsafe-memory-access=allow", \
-    "-server", \
-    "-XX:+UseG1GC", \
-    "-XX:MaxGCPauseMillis=50", \
-    "-XX:MaxRAMPercentage=80.0", \
-    "-XX:InitialRAMPercentage=50.0", \
+    "-XX:+UseZGC", \
+    "-XX:+ZGenerational", \
+    "-XX:MaxRAMPercentage=70.0", \
+    "-XX:InitialRAMPercentage=25.0", \
     "-XX:+DisableExplicitGC", \
-    "-XX:+UseStringDeduplication", \
-    "-Djdk.tracePinnedThreads=full", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-jar", \
     "restheart.jar" ]
+
 EXPOSE 8009 8080 4443
