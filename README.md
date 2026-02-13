@@ -1,6 +1,6 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**Open Source REST API & GraphQL Server — Instant backend APIs with low code required.**
+**Your Complete Backend Platform**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -14,7 +14,8 @@
 
 ## What is RESTHeart?
 
-RESTHeart is an **open-source Java server** that auto-generates REST, GraphQL, and WebSocket APIs from your database collections.
+RESTHeart is the foundation to build your custom application logic, with user management, declarative security, plugins, and REST, GraphQL, and WebSocket APIs.
+Built on enterprise-grade **Java** technology and proven in large-scale production deployments.
 
 **Core capabilities:**
 
