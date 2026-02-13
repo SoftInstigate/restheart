@@ -158,29 +158,10 @@ FerretDB translates MongoDB wire protocol commands to SQL queries, allowing REST
 
 ## Comparison with Similar Tools
 
-| Feature | RESTHeart | Hasura | Prisma | PostGraphile | Parse |
-|---------|-----------|--------|--------|--------------|-------|
-| **Target Database** | MongoDB + compatible | PostgreSQL, MySQL, SQL Server, BigQuery | PostgreSQL, MySQL, SQL Server, SQLite, MongoDB*, CockroachDB | PostgreSQL | MongoDB, PostgreSQL |
-| **REST API** | ✅ Auto-generated | ⚠️ RESTified endpoints (manual setup) | ❌ | ✅ Auto-generated | ✅ Auto-generated |
-| **GraphQL** | ✅ With schema + mappings | ✅ Auto-generated | ⚠️ Via Nexus/Pothos | ✅ Auto-generated | ✅ Auto-generated |
-| **WebSocket/Subscriptions** | ✅ Native change streams | ✅ GraphQL subscriptions | ❌ | ⚠️ Plugin-based | ✅ Live Queries |
-| **Built-in Auth** | ✅ JWT, OAuth2, LDAP | ✅ JWT, webhooks | ❌ | ⚠️ Postgres RLS | ✅ Built-in user system, OAuth |
-| **Architecture** | API server (zero-code) | API server (zero-code) | ORM/Query builder | API server (zero-code) | Backend-as-a-Service |
-| **Primary Use Case** | Instant APIs for MongoDB | Instant APIs for PostgreSQL | Type-safe database client | Instant APIs for PostgreSQL | Mobile/web app backend |
-| **Language** | Java 25 | Haskell (core), TypeScript | TypeScript/Node.js | TypeScript/Node.js | Node.js |
-| **Runtime** | JVM / GraalVM Native | Binary executable | Node.js (library) | Node.js | Node.js |
-| **License** | AGPL / Commercial | Apache 2.0 | Apache 2.0 | MIT | Apache 2.0 |
+- **RESTHeart vs Supabase** — RESTHeart is a self-hosted API server that auto-generates REST and configurable GraphQL from MongoDB, while Supabase is a full BaaS around PostgreSQL with hosted auth, storage, and edge functions. If you want a managed BaaS like Supabase but centered on MongoDB APIs, [RESTHeart Cloud](https://cloud.restheart.com/) is the direct alternative.
+- **RESTHeart vs Hasura** — Both provide auto-generated APIs; RESTHeart is MongoDB-native (and supports change streams natively), while Hasura focuses on SQL databases and auto-generates GraphQL with optional RESTified endpoints.
 
-_*Prisma's MongoDB support has limitations: no migrations tool, limited aggregation pipeline support, performance concerns documented in GitHub issues. It's primarily designed for relational databases._
-
-**Key differences:**
-
-- **RESTHeart** provides auto-generated REST APIs and configurable GraphQL APIs (with schema definitions); Hasura and PostGraphile focus on auto-generated GraphQL with optional REST endpoints
-- **Hasura's REST endpoints** are "RESTified" - you manually create REST wrappers for GraphQL queries, not auto-generated from database schema
-- **Prisma** is fundamentally different - it's a database client/ORM library, not a standalone API server. You use it to build your own API server
-- **Parse** is a full Backend-as-a-Service (BaaS) platform with additional features like push notifications, file storage, and cloud functions
-- **PostGraphile** is PostgreSQL-exclusive; RESTHeart is MongoDB-exclusive (with PostgreSQL via FerretDB); Hasura supports multiple SQL databases; Parse supports MongoDB and PostgreSQL
-- RESTHeart uses Java Virtual Threads for high-concurrency workloads; others use Node.js async or compiled binaries
+**When to choose RESTHeart** — If you want MongoDB-native APIs with zero-code REST plus configurable GraphQL, or you need first-class change streams and plugin extensibility.
 
 ---
 
