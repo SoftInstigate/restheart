@@ -28,6 +28,21 @@ RESTHeart is an **open-source Java server** that auto-generates REST, GraphQL, a
 
 **Database support:** MongoDB, MongoDB Atlas, Percona Server, AWS DocumentDB, Azure Cosmos DB, FerretDB.
 
+**Quick Start (5 min)**
+
+```bash
+# Docker Compose (recommended)
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
+  --output docker-compose.yml && docker compose up --attach restheart
+
+# First request
+curl http://localhost:8080/ping
+```
+
+Default dev credential: `admin` / `secret` (change before production).
+
+More options: https://restheart.org/docs/foundations/quick-start
+
 ### Example
 
 Query MongoDB directly via HTTP:
@@ -55,7 +70,7 @@ fetch(url)
 | ⚙️ **Plugin System** | Extend via Services, Interceptors, Initializers, and Providers — hot-reload support |
 | 🔐 **Security** | Pluggable authentication (JWT, OAuth2, LDAP, custom) and ACL-based authorization |
 | 💬 **WebSockets** | Native change stream support with automatic client synchronization |
-| 🚀 **Performance** | Undertow NIO server with Java 21 Virtual Threads — 10K+ concurrent connections |
+| 🚀 **Performance** | Undertow NIO server with Java 25 Virtual Threads — 10K+ concurrent connections |
 | 🌐 **Polyglot** | Java, Kotlin native support — JavaScript, TypeScript, Python via GraalVM |
 | 📈 **Observability** | Prometheus metrics, health endpoints, request/response logging |
 | 🧰 **Developer Tools** | CLI for plugin development, Docker images, GraalVM native compilation |
@@ -152,7 +167,7 @@ FerretDB translates MongoDB wire protocol commands to SQL queries, allowing REST
 | **Built-in Auth** | ✅ JWT, OAuth2, LDAP | ✅ JWT, webhooks | ❌ | ⚠️ Postgres RLS | ✅ Built-in user system, OAuth |
 | **Architecture** | API server (zero-code) | API server (zero-code) | ORM/Query builder | API server (zero-code) | Backend-as-a-Service |
 | **Primary Use Case** | Instant APIs for MongoDB | Instant APIs for PostgreSQL | Type-safe database client | Instant APIs for PostgreSQL | Mobile/web app backend |
-| **Language** | Java 21 | Haskell (core), TypeScript | TypeScript/Node.js | TypeScript/Node.js | Node.js |
+| **Language** | Java 25 | Haskell (core), TypeScript | TypeScript/Node.js | TypeScript/Node.js | Node.js |
 | **Runtime** | JVM / GraalVM Native | Binary executable | Node.js (library) | Node.js | Node.js |
 | **License** | AGPL / Commercial | Apache 2.0 | Apache 2.0 | MIT | Apache 2.0 |
 
@@ -240,7 +255,16 @@ ws.send(JSON.stringify({
 
 ## Configuration
 
-Configuration via YAML file or `RHO` environment variable.
+Configuration uses sensible defaults, with optional overrides via `RHO` or a file.
+
+**Common options:**
+
+| Use case | Command |
+| --- | --- |
+| Default config (no file) | `java -jar restheart.jar` |
+| Generate a full config file | `java -jar restheart.jar -t 2> restheart.yml` |
+| Override specific keys | `RHO='/http-listener/port->9090' java -jar restheart.jar` |
+| Override file | `java -jar restheart.jar -o overrides.yml` |
 
 **Key areas:**
 
@@ -253,22 +277,16 @@ Configuration via YAML file or `RHO` environment variable.
 
 Example:
 
-```yaml
-mongo-uri: mongodb://localhost:27017
+```bash
+# Run with default configuration
+java -jar restheart.jar
 
-auth:
-  mechanism: basicAuth
-  users:
-    - userid: admin
-      password: secret
-      roles: [admin]
-
-cors:
-  enabled: true
-  allow-origin: "*"
+# Override a few settings
+RHO='/http-listener/host->"0.0.0.0";/mclient/connection-string->"mongodb://127.0.0.1"' \
+  java -jar restheart.jar
 ```
 
-📖 See the [Configuration Guide](https://restheart.org/docs/configuration) for complete details.
+📖 See the [Configuration Guide](https://restheart.org/docs/deployment/configuration) for complete details.
 
 ---
 
