@@ -352,6 +352,12 @@ Managed service alternative: [cloud.restheart.com](https://cloud.restheart.com)
 - Monitoring and logging
 - Enterprise SLAs
 
+### Native Executables
+
+Prebuilt native binaries for macOS, Linux, and Windows with faster startup and lower memory usage.
+
+See [docs/native-executables.md](docs/native-executables.md) for download links and setup steps.
+
 ---
 
 ## Database Compatibility
