@@ -46,6 +46,8 @@ fetch(url)
 
 ## Architecture & Features
 
+![RESTHeart architecture diagram](docs/restheart-architecture.svg)
+
 | Feature | Description |
 |-------------|--------------|
 | 🧩 **Automatic API Generation** | REST APIs auto-generated from MongoDB collections — no manual endpoint definition |

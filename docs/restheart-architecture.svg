@@ -1,0 +1,102 @@
+<svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+    <rect x="0" y="0" width="900" height="580" fill="#0a1628"/>
+    <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c5cdd8"/>
+        </marker>
+    </defs>
+
+    <!-- Clients row -->
+    <text x="450" y="30" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="13" font-weight="600" letter-spacing="2">YOUR CLIENTS</text>
+    <rect x="60"  y="42" width="120" height="44" rx="8" fill="#1a2332" stroke="#c5cdd8" stroke-width="1.5"/>
+    <text x="120" y="59" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="600">📱 Mobile</text>
+    <text x="120" y="77" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">iOS · Android</text>
+
+    <rect x="210" y="42" width="120" height="44" rx="8" fill="#1a2332" stroke="#c5cdd8" stroke-width="1.5"/>
+    <text x="270" y="59" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="600">🌐 Web</text>
+    <text x="270" y="77" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">React · Vue · Angular</text>
+
+    <rect x="360" y="42" width="120" height="44" rx="8" fill="#1a2332" stroke="#c5cdd8" stroke-width="1.5"/>
+    <text x="420" y="59" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="600">🖥️ Desktop</text>
+    <text x="420" y="77" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Any platform</text>
+
+    <rect x="510" y="42" width="120" height="44" rx="8" fill="#1a2332" stroke="#c5cdd8" stroke-width="1.5"/>
+    <text x="570" y="59" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="600">🔌 IoT</text>
+    <text x="570" y="77" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Devices · CLI</text>
+
+    <rect x="660" y="42" width="180" height="44" rx="8" fill="#1a2332" stroke="#c5cdd8" stroke-width="1.5"/>
+    <text x="750" y="59" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="600">🌍 Browser (SSR)</text>
+    <text x="750" y="77" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Facet server-side rendering</text>
+
+    <!-- Arrow down -->
+    <line x1="450" y1="90" x2="450" y2="112" stroke="#c5cdd8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="460" y="105" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">HTTP · WebSocket</text>
+
+    <!-- RESTHeart main box -->
+    <rect x="40" y="116" width="820" height="340" rx="14" fill="#0f1d30" stroke="#FDB931" stroke-width="2"/>
+    <text x="450" y="144" text-anchor="middle" fill="#FDB931" font-family="Montserrat,sans-serif" font-size="18" font-weight="700">RESTHeart</text>
+
+    <!-- API Layer -->
+    <rect x="60" y="155" width="780" height="54" rx="8" fill="#2563eb" opacity="0.9"/>
+    <text x="450" y="176" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" letter-spacing="1">API LAYER</text>
+    <text x="180" y="197" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">REST APIs</text>
+    <text x="340" y="197" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">GraphQL</text>
+    <text x="500" y="197" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">WebSocket</text>
+    <text x="660" y="197" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">File Storage</text>
+    <!-- separators -->
+    <line x1="265" y1="162" x2="265" y2="202" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    <line x1="425" y1="162" x2="425" y2="202" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    <line x1="585" y1="162" x2="585" y2="202" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+
+    <!-- Security Layer -->
+    <rect x="60" y="220" width="780" height="54" rx="8" fill="#7c3aed" opacity="0.9"/>
+    <text x="450" y="241" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" letter-spacing="1">SECURITY &amp; AUTH</text>
+    <text x="160" y="262" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">JWT</text>
+    <text x="300" y="262" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">OAuth2</text>
+    <text x="450" y="262" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">RBAC / ACL</text>
+    <text x="610" y="262" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">Brute-force protection</text>
+    <line x1="225" y1="227" x2="225" y2="267" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    <line x1="375" y1="227" x2="375" y2="267" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    <line x1="535" y1="227" x2="535" y2="267" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+
+    <!-- Custom Plugins -->
+    <rect x="60" y="285" width="375" height="54" rx="8" fill="#0891b2" opacity="0.9"/>
+    <text x="247" y="306" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" letter-spacing="1">YOUR PLUGINS</text>
+    <text x="160" y="327" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">☕ Java / Kotlin</text>
+    <text x="340" y="327" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">🚀 JavaScript</text>
+    <line x1="247" y1="292" x2="247" y2="332" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+
+    <!-- Premium Plugins -->
+    <rect x="465" y="285" width="375" height="54" rx="8" fill="#0891b2" opacity="0.75"/>
+    <text x="652" y="306" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" letter-spacing="1">PREMIUM PLUGINS</text>
+    <text x="555" y="327" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">🔗 Webhooks</text>
+    <text x="665" y="327" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">🤖 Sophia AI</text>
+    <text x="778" y="327" text-anchor="middle" fill="white" font-family="Montserrat,sans-serif" font-size="11">🎨 Facet</text>
+    <line x1="610" y1="292" x2="610" y2="332" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    <line x1="720" y1="292" x2="720" y2="332" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+
+    <!-- Deploy row inside box -->
+    <text x="450" y="375" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" letter-spacing="1">DEPLOYMENT</text>
+    <rect x="80"  y="385" width="210" height="56" rx="8" fill="#1a2332" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="185" y="406" text-anchor="middle" fill="#3b82f6" font-family="Montserrat,sans-serif" font-size="11" font-weight="700">☁️ Cloud Services</text>
+    <text x="185" y="424" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">AWS · MongoDB Atlas</text>
+    <text x="185" y="436" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Free tier available</text>
+
+    <rect x="345" y="385" width="210" height="56" rx="8" fill="#1a2332" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="450" y="406" text-anchor="middle" fill="#8b5cf6" font-family="Montserrat,sans-serif" font-size="11" font-weight="700">🤝 Managed Services</text>
+    <text x="450" y="424" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Fully operated</text>
+    <text x="450" y="436" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">by SoftInstigate</text>
+
+    <rect x="610" y="385" width="210" height="56" rx="8" fill="#1a2332" stroke="#06b6d4" stroke-width="1.5"/>
+    <text x="715" y="406" text-anchor="middle" fill="#06b6d4" font-family="Montserrat,sans-serif" font-size="11" font-weight="700">🏢 On-Premises</text>
+    <text x="715" y="424" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Your infrastructure</text>
+    <text x="715" y="436" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Commercial license</text>
+
+    <!-- Arrow down to MongoDB -->
+    <line x1="450" y1="460" x2="450" y2="482" stroke="#c5cdd8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- MongoDB box -->
+    <rect x="280" y="486" width="340" height="52" rx="10" fill="#1a2332" stroke="#4ade80" stroke-width="2"/>
+    <text x="450" y="510" text-anchor="middle" fill="#4ade80" font-family="Montserrat,sans-serif" font-size="14" font-weight="700">🍃 MongoDB</text>
+    <text x="450" y="528" text-anchor="middle" fill="#c5cdd8" font-family="Montserrat,sans-serif" font-size="10">Your data · Atlas · Self-hosted</text>
+</svg>
