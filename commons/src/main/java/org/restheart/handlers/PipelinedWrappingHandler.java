@@ -34,7 +34,7 @@ import io.undertow.server.HttpServerExchange;
 /**
  * A specialized PipelinedHandler that wraps standard HttpHandler or Service instances
  * to integrate them into a handler pipeline.
- * 
+ *
  * <p>This class acts as an adapter, allowing non-pipelined handlers (standard Undertow
  * {@link HttpHandler} implementations or RESTHeart {@link Service} implementations)
  * to be used within a {@link PipelinedHandler} chain. This is particularly useful when:</p>
@@ -43,11 +43,11 @@ import io.undertow.server.HttpServerExchange;
  *   <li>Using RESTHeart services as part of a processing chain</li>
  *   <li>Mixing pipelined and non-pipelined handlers in the same flow</li>
  * </ul>
- * 
+ *
  * <p>The wrapper ensures that after the wrapped handler completes its processing,
  * the request is automatically forwarded to the next handler in the pipeline
  * (unless the response has already been completed).</p>
- * 
+ *
  * <p>Example usage:</p>
  * <pre>{@code
  * // Wrap a standard HttpHandler
@@ -55,7 +55,7 @@ import io.undertow.server.HttpServerExchange;
  *     exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/plain");
  *     exchange.getResponseSender().send("Hello");
  * };
- * 
+ *
  * PipelinedHandler pipeline = PipelinedHandler.pipe(
  *     new AuthHandler(),
  *     PipelinedWrappingHandler.wrap(standardHandler),
@@ -77,7 +77,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a new instance of PipelinedWrappingHandler with a specified next handler.
-     * 
+     *
      * <p>This constructor wraps an HttpHandler and links it to the next handler
      * in the pipeline chain.</p>
      *
@@ -91,7 +91,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a new instance of PipelinedWrappingHandler that wraps a Service.
-     * 
+     *
      * <p>This constructor wraps a RESTHeart Service implementation and links it
      * to the next handler in the pipeline chain. The Service is internally
      * wrapped in a ServiceWrapper that adapts it to the HttpHandler interface.</p>
@@ -108,7 +108,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a new instance of PipelinedWrappingHandler without a next handler.
-     * 
+     *
      * <p>This constructor creates a terminal wrapper that doesn't forward
      * requests to any subsequent handler after the wrapped handler completes.</p>
      *
@@ -121,7 +121,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a PipelinedWrappingHandler that wraps an HttpHandler.
-     * 
+     *
      * <p>This factory method creates a wrapper with no next handler,
      * making it suitable as the last handler in a pipeline.</p>
      *
@@ -134,7 +134,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a PipelinedWrappingHandler that wraps a Service.
-     * 
+     *
      * <p>This factory method creates a wrapper with no next handler,
      * making it suitable as the last handler in a pipeline. The Service
      * is adapted to work within the HttpHandler interface.</p>
@@ -150,7 +150,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a PipelinedWrappingHandler that wraps an HttpHandler with a specified next handler.
-     * 
+     *
      * <p>This factory method creates a wrapper that will forward requests to the
      * specified next handler after the wrapped handler completes (unless the
      * response is already complete).</p>
@@ -165,7 +165,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Creates a PipelinedWrappingHandler that wraps a Service with a specified next handler.
-     * 
+     *
      * <p>This factory method creates a wrapper that will forward requests to the
      * specified next handler after the service completes (unless the response
      * is already complete). The Service is adapted to work within the
@@ -183,7 +183,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      * Handles the HTTP request by delegating to the wrapped handler.
-     * 
+     *
      * <p>This method executes the wrapped handler and then, if the response
      * is not already complete, forwards the request to the next handler
      * in the pipeline. This allows wrapped handlers to:</p>
@@ -192,7 +192,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
      *   <li>Complete the response entirely, stopping further processing</li>
      *   <li>Add headers or other modifications that subsequent handlers can use</li>
      * </ul>
-     * 
+     *
      * <p>The response is considered complete if the wrapped handler has
      * already sent response data or explicitly marked it as complete.</p>
      *
@@ -201,14 +201,14 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
      */
     /**
      * Handles the request by converting it to the service's expected types.
-     * 
+     *
      * <p>This method:
      * <ol>
      *   <li>Applies the service's request transformer to create a typed request object</li>
      *   <li>Applies the service's response transformer to create a typed response object</li>
      *   <li>Invokes the service's handle method with the typed objects</li>
      * </ol>
-     * 
+     *
      * @param exchange the HTTP server exchange to process
      * @throws Exception if the service or its transformers throw an exception
      */
@@ -228,18 +228,18 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
 /**
  * Internal adapter class that wraps a RESTHeart Service as a PipelinedHandler.
- * 
+ *
  * <p>This class bridges the gap between the Service interface (which uses
  * typed request/response objects) and the HttpHandler interface (which uses
  * HttpServerExchange). It applies the service's request and response
  * transformers to convert between the two models.</p>
- * 
+ *
  * @param <R> the type of ServiceRequest the service handles
  * @param <S> the type of ServiceResponse the service produces
  */
 class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceWrapper.class);
-    
+
     /**
      * The wrapped service instance.
      */
@@ -247,7 +247,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
 
     /**
      * Creates a new ServiceWrapper for the specified service.
-     * 
+     *
      * @param service the service to wrap
      */
     ServiceWrapper(Service<R, S> service) {
@@ -261,33 +261,33 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
         var serviceName = PluginUtils.name(service);
         var serviceClass = service.getClass().getSimpleName();
         var startTime = System.currentTimeMillis();
-        
+
         RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("SERVICE: {} ({})", serviceName, serviceClass);
-            
+
         try {
             // Apply service transformers and execute
             var serviceRequest = service.request().apply(exchange);
             var serviceResponse = service.response().apply(exchange);
-            
+
             RequestPhaseContext.setPhase(Phase.INFO);
-            LOGGER.debug("Request/Response: {} → {}", 
+            LOGGER.debug("Request/Response: {} → {}",
                 serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
-            
+
             service.handle(serviceRequest, serviceResponse);
-            
+
             var duration = System.currentTimeMillis() - startTime;
             var statusCode = serviceResponse.getStatusCode();
-            
+
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("✓ SERVICE COMPLETED - Status: {} ({}ms)", statusCode, duration);
             RequestPhaseContext.reset();
-                
+
         } catch (Exception ex) {
             var duration = System.currentTimeMillis() - startTime;
             RequestPhaseContext.setPhase(Phase.PHASE_END);
-            LOGGER.error("Service execution failed: {} for {} {} after {}ms - Thread: {}", 
-                serviceName, method, path, duration, Thread.currentThread().getName(), ex);
+            LOGGER.error("Service execution failed: {} for {} {} after {}ms, error: {}",
+                serviceName, method, path, duration, ex.getMessage());
             RequestPhaseContext.reset();
             throw ex;
         }

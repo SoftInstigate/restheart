@@ -24,7 +24,6 @@ import org.bson.BSONException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.Response;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
