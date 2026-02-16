@@ -126,7 +126,7 @@ public class ErrorHandler extends PipelinedHandler {
 				LOGGER.debug("Bad request. Omit error response since response already started", bre);
 			}
 		} catch (Throwable t) {
-			if (t instanceof SocketException || t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
+			if (t.getCause() instanceof SocketException || t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
 				LOGGER.error("Remote peer closed connection before all data could be read");
 				Response.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
 			} else {
@@ -137,7 +137,7 @@ public class ErrorHandler extends PipelinedHandler {
 			if (!exchange.isResponseStarted()) {
 				sender.handleRequest(exchange);
 			} else {
-				LOGGER.debug("Omit error response since response already started", t);
+				LOGGER.trace("Omit error response since response already started", t);
 			}
 		}
 	}

@@ -385,7 +385,7 @@ public class RequestLogger extends PipelinedHandler {
                     }
 
                     // note sc is always null if this handler is chained before
-                    // SecurityHandlerDispacher
+                    // SecurityHandler
                     final SecurityContext sc = exchange1.getSecurityContext();
 
                     if (logLevel == 1) {
