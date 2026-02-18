@@ -229,3 +229,9 @@ Commercial inquiries: [info@softinstigate.com](mailto:info@softinstigate.com)
 ---
 
 _Built with ❤️ by [SoftInstigate](https://www.softinstigate.com) | [GitHub](https://github.com/SoftInstigate/restheart) | [Website](https://restheart.org) | [Cloud](https://cloud.restheart.com)_
+
+---
+
+<div align="center">
+<img src="docs/made-in-eu-logo.svg" alt="Made in EU" width="140px" />
+</div>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 160" width="400" height="160">
+  <defs>
+    <!-- EU Star definition -->
+    <g id="s">
+      <g id="c">
+        <path id="t" d="M0,0v1h0.5z" transform="translate(0,-1)rotate(18)"/>
+        <use xlink:href="#t" transform="scale(-1,1)"/>
+      </g>
+      <g id="a">
+        <use xlink:href="#c" transform="rotate(72)"/>
+        <use xlink:href="#c" transform="rotate(144)"/>
+      </g>
+      <use xlink:href="#a" transform="scale(-1,1)"/>
+    </g>
+
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000033"/>
+    </filter>
+
+    <!-- Subtle gradient for badge -->
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0044aa;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#003399;stop-opacity:1"/>
+    </linearGradient>
+
+    <!-- Gold gradient for stars -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDD00;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#FFBB00;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer badge shape: rounded rectangle -->
+  <rect x="4" y="4" width="392" height="152" rx="16" ry="16" fill="#003399" filter="url(#shadow)"/>
+
+  <!-- Thin gold border -->
+  <rect x="4" y="4" width="392" height="152" rx="16" ry="16" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+
+  <!-- LEFT SECTION: EU flag circle emblem -->
+  <!-- Circle flag background -->
+  <circle cx="76" cy="80" r="56" fill="#003399"/>
+  <circle cx="76" cy="80" r="56" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+
+  <!-- 12 EU Stars arranged in a circle, radius 38, scale 7 -->
+  <g fill="#FFDD00" transform="translate(76,80)">
+    <!-- Top -->
+    <use xlink:href="#s" transform="scale(7) translate(0,-5.4)"/>
+    <!-- Top-right 1 -->
+    <use xlink:href="#s" transform="scale(7) rotate(30) translate(0,-5.4)"/>
+    <!-- Top-right 2 -->
+    <use xlink:href="#s" transform="scale(7) rotate(60) translate(0,-5.4)"/>
+    <!-- Right -->
+    <use xlink:href="#s" transform="scale(7) rotate(90) translate(0,-5.4)"/>
+    <!-- Bottom-right 1 -->
+    <use xlink:href="#s" transform="scale(7) rotate(120) translate(0,-5.4)"/>
+    <!-- Bottom-right 2 -->
+    <use xlink:href="#s" transform="scale(7) rotate(150) translate(0,-5.4)"/>
+    <!-- Bottom -->
+    <use xlink:href="#s" transform="scale(7) rotate(180) translate(0,-5.4)"/>
+    <!-- Bottom-left 1 -->
+    <use xlink:href="#s" transform="scale(7) rotate(210) translate(0,-5.4)"/>
+    <!-- Bottom-left 2 -->
+    <use xlink:href="#s" transform="scale(7) rotate(240) translate(0,-5.4)"/>
+    <!-- Left -->
+    <use xlink:href="#s" transform="scale(7) rotate(270) translate(0,-5.4)"/>
+    <!-- Top-left 1 -->
+    <use xlink:href="#s" transform="scale(7) rotate(300) translate(0,-5.4)"/>
+    <!-- Top-left 2 -->
+    <use xlink:href="#s" transform="scale(7) rotate(330) translate(0,-5.4)"/>
+  </g>
+
+  <!-- Vertical gold divider -->
+  <line x1="148" y1="24" x2="148" y2="136" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+
+  <!-- RIGHT SECTION: Text -->
+  <!-- "MADE IN" label -->
+  <text
+    x="272"
+    y="68"
+    font-family="'Helvetica Neue', 'Arial', sans-serif"
+    font-size="16"
+    font-weight="400"
+    letter-spacing="7"
+    fill="rgba(255,255,255,0.75)"
+    text-anchor="middle"
+  >MADE IN</text>
+
+  <!-- "EU" large text -->
+  <text
+    x="272"
+    y="118"
+    font-family="'Helvetica Neue', 'Arial', sans-serif"
+    font-size="58"
+    font-weight="700"
+    letter-spacing="10"
+    fill="white"
+    text-anchor="middle"
+  >EU</text>
+
+  <!-- Subtle horizontal line under MADE IN -->
+  <line x1="185" y1="76" x2="359" y2="76" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
+
+</svg>
