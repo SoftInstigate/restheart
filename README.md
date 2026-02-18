@@ -233,5 +233,5 @@ _Built with ❤️ by [SoftInstigate](https://www.softinstigate.com) | [GitHub](
 ---
 
 <div align="center">
-<img src="docs/made-in-eu-logo.svg" alt="Made in EU" width="140px" />
+<img src="docs/made-in-eu-logo.svg" alt="Made in EU" width="180px" />
 </div>
