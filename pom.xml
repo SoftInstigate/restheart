@@ -197,12 +197,12 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.6.2</version>
+                <version>5.6.3</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.3.22.Final</version>
+                <version>2.3.23.Final</version>
             </dependency>
             <!-- Update transitive dependency of undertow-core required for the native image build -->
             <dependency>
@@ -254,7 +254,7 @@
             <dependency>
                 <groupId>com.auth0</groupId>
                 <artifactId>java-jwt</artifactId>
-                <version>4.5.0</version>
+                <version>4.5.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -274,7 +274,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.27</version>
+                <version>1.5.32</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -379,7 +379,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>6.0.2</version>
+                <version>6.0.3</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
