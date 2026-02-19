@@ -73,14 +73,11 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         return request.isHandledBy("mongo")
             && request.getCollectionProps() != null
             && (request.isPatch() && !request.isBulkDocuments())
+            && request.isWriteDocument()
             && request.getCollectionProps() != null
-            && request.getCollectionProps()
-                    .containsKey("jsonSchema")
-            && request.getCollectionProps()
-                    .get("jsonSchema")
-                    .isDocument()
-            && (response.getDbOperationResult() != null
-            && response.getDbOperationResult().getHttpCode() < 300);
+            && request.getCollectionProps().containsKey("jsonSchema")
+            && request.getCollectionProps().get("jsonSchema").isDocument()
+            && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
     }
 
     String documentToCheck(MongoRequest request, MongoResponse response) {
