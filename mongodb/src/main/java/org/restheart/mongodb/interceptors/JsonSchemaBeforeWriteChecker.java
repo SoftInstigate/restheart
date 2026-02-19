@@ -238,11 +238,9 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         return request.isHandledBy("mongo")
                 && ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
+                && request.isWriteDocument()
                 && request.getCollectionProps() != null
-                && request.getCollectionProps()
-                        .containsKey("jsonSchema")
-                && request.getCollectionProps()
-                        .get("jsonSchema")
-                        .isDocument();
+                && request.getCollectionProps().containsKey("jsonSchema")
+                && request.getCollectionProps().get("jsonSchema").isDocument();
     }
 }

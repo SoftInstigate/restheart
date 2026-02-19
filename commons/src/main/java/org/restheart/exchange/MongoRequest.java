@@ -105,7 +105,7 @@ public class MongoRequest extends BsonRequest {
 
     /** The URI pattern that matches this request (from path template matching). */
     private final String whereUri;
-    
+
     /** The specific resource URI that this request targets. */
     private final String whatUri;
 
@@ -114,7 +114,7 @@ public class MongoRequest extends BsonRequest {
 
     /** Database properties/metadata document. */
     private BsonDocument dbProps;
-    
+
     /** Collection properties/metadata document. */
     private BsonDocument collectionProps;
 
@@ -123,40 +123,40 @@ public class MongoRequest extends BsonRequest {
 
     /** Current page number for paginated results (1-based). */
     private int page = 1;
-    
+
     /** Number of items per page for paginated results. */
     private int pagesize = 100;
-    
+
     /** Whether to include count information in the response. */
     private boolean count = false;
-    
+
     /** Whether ETag validation is required for this request. */
     private boolean etagCheckRequired = false;
-    
+
     /** The write mode for document operations (insert, update, upsert). */
     private WRITE_MODE writeMode = null;
-    
+
     /** Whether response caching is enabled. */
     private boolean cache;
-    
+
     /** Filter criteria for MongoDB queries. */
     private Deque<String> filter = null;
-    
+
     /** Variables for aggregation pipeline operations. */
     private BsonDocument aggregationVars = null;
-    
+
     /** Field projection keys for limiting returned document fields. */
     private Deque<String> keys = null;
-    
+
     /** Sort criteria for MongoDB queries. */
     private Deque<String> sortBy = null;
-    
+
     /** Query optimization hints for MongoDB operations. */
     private Deque<String> hint = null;
-    
+
     /** Expected document ID type for validation and parsing. */
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
-    
+
     /** The MongoDB resource type determined from the request path. */
     private final TYPE type;
 
@@ -204,10 +204,10 @@ public class MongoRequest extends BsonRequest {
 
     /** Resolved MongoDB context (database, collection, permissions). Lazily initialized. */
     private ResolvedContext resolvedContext;
-    
+
     /** Flag to track if resolved context has been calculated (for lazy initialization). */
     private boolean resolvedContextCalculated = false;
-    
+
     /** Resolver instance for lazy calculation of context. Set by setter. */
     private MongoMountResolver resolver;
 
@@ -1576,9 +1576,10 @@ public class MongoRequest extends BsonRequest {
      * @return true if the request writes a document or a file or a schema
      */
     public boolean isWriteDocument() {
-        return (((isPut() || isPatch()) && (isFile() || isDocument() || isSchema()))
+        return (((isPut() || isPatch())
+                  && (isFile() || isDocument() || isSchema()))
                 || isPost()
-                        && (isCollection() || isFilesBucket() || isSchemaStore()));
+                  && (isCollection() || isFilesBucket() || isSchemaStore()));
     }
 
     /**
@@ -1637,7 +1638,7 @@ public class MongoRequest extends BsonRequest {
      * Lazily initializes the context on first access if resolver is available.
      * This is set during request processing by MongoService and contains
      * information about the target database, collection, and permissions.
-     * 
+     *
      * @return the resolved context, or null if not yet resolved or resolver not available
      */
     public ResolvedContext getResolvedContext() {
@@ -1656,7 +1657,7 @@ public class MongoRequest extends BsonRequest {
      * Sets the resolver for lazy resolution of MongoDB context.
      * Called internally by MongoService during request initialization.
      * The context will be resolved on first call to getResolvedContext().
-     * 
+     *
      * @param resolver the resolver instance
      */
     public void setResolver(MongoMountResolver resolver) {
@@ -1666,7 +1667,7 @@ public class MongoRequest extends BsonRequest {
     /**
      * Sets the resolved MongoDB context for this request directly.
      * Called internally if context is pre-calculated.
-     * 
+     *
      * @param context the resolved context
      */
     public void setResolvedContext(ResolvedContext context) {
