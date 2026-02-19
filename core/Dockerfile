@@ -1,4 +1,4 @@
-ARG GRAALVM_VERSION=25.0.1-graalce
+ARG GRAALVM_VERSION=25.0.2-graalce
 FROM softinstigate/graalvm:${GRAALVM_VERSION}
 
 LABEL org.opencontainers.image.title="RESTHeart"
