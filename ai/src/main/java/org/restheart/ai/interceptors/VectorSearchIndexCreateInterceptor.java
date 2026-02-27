@@ -128,8 +128,17 @@ public class VectorSearchIndexCreateInterceptor implements MongoInterceptor {
 
             LOGGER.info("Created vector search index '{}' on {}/{}", indexName,
                 request.getDBName(), request.getCollectionName());
+        } catch (com.mongodb.MongoCommandException mce) {
+            var msg = "error creating vector search index: [" + mce.getErrorCode() + "] "
+                + mce.getErrorCodeName() + " - " + mce.getErrorMessage();
+            LOGGER.warn(msg);
+            response.setInError(HttpStatus.SC_BAD_REQUEST, msg);
+            return;
         } catch (Exception e) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "error creating vector search index", e);
+            LOGGER.warn("Error creating vector search index '{}' on {}/{}: {}",
+                indexName, request.getDBName(), request.getCollectionName(), e.getMessage(), e);
+            response.setInError(HttpStatus.SC_BAD_REQUEST,
+                "error creating vector search index: " + e.getMessage());
             return;
         }
 
