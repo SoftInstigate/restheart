@@ -8,6 +8,7 @@
         <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../graphql/target/restheart-graphql.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../metrics/target/restheart-metrics.jar" todir="./target/plugins" overwrite="true" />
+        <copy file="../ai/target/restheart-ai.jar" todir="./target/plugins" overwrite="true" />
 
         <echo message="***** Copying plugins dependencies to target/plugins/lib" level="info" />
         <mkdir dir="./target/plugins/lib" />
@@ -26,6 +27,9 @@
         </copy>
         <copy todir="./target/plugins/lib" overwrite="true">
             <fileset dir="../metrics/target/lib"></fileset>
+        </copy>
+        <copy todir="./target/plugins/lib" overwrite="true">
+            <fileset dir="../ai/target/lib"></fileset>
         </copy>
         <echo message="***** Done copying plugins" level="info" />
     </target>

@@ -55,6 +55,7 @@
         <module>polyglot</module>
         <module>metrics</module>
         <module>core</module>
+        <module>ai</module>
     </modules>
 
     <organization>
@@ -294,6 +295,11 @@
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
+                <version>3.2.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-parsers-standard-package</artifactId>
                 <version>3.2.3</version>
             </dependency>
             <dependency>
