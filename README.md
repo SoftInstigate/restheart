@@ -1,6 +1,6 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**REST, GraphQL and WebSocket APIs for MongoDB**
+**The Backend Framework with MongoDB Data APIs.**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -14,11 +14,18 @@
 
 ## What is RESTHeart?
 
-RESTHeart transforms MongoDB into a complete backend platform with automatically generated REST APIs, configurable GraphQL, WebSocket support for real-time data, and a plugin system for custom logic.
+RESTHeart instantly exposes the full power of **MongoDB** through REST, GraphQL, and WebSocket APIs with **zero coding required**. Compatible with MongoDB Atlas, FerretDB, AWS DocumentDB, and Azure Cosmos DB.
 
-Built on Java with proven production deployments at scale.
+Available as a **Docker** image and optimized for **GraalVM** native compilation, RESTHeart delivers instant startup time and a minimal memory footprint. With native binary images available for Linux, Windows, and macOS.
+
+A built-in, battle-tested security layer keeps your application protected out of the box, handling **authentication** and **authorization** without writing a single line of security code.
+
+Extend RESTHeart with a **lightweight plugin framework** that makes it easy to build microservices in Java, Kotlin, JavaScript, or TypeScript, using four simple building blocks: Service, Provider, Interceptor, and Initializer.
+
+Built on modern **Java 25** and Undertow, the high-performance HTTP server powering WildFly, with proven production deployments at enterprise scale.
 
 **Core capabilities:**
+
 - **REST API** — Full CRUD, aggregations, filtering, sorting, pagination
 - **GraphQL** — Define schemas and map them to MongoDB queries
 - **WebSocket** — Real-time change streams and data sync
@@ -26,8 +33,6 @@ Built on Java with proven production deployments at scale.
 - **Plugin system** — Extend with Java, JavaScript, or Python when you need custom logic
 
 **No code required for standard database operations.** Write plugins only for custom business logic.
-
-Works with MongoDB, MongoDB Atlas, Percona, DocumentDB, Cosmos DB, and FerretDB.
 
 ---
 
