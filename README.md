@@ -14,7 +14,7 @@
 
 ## What is RESTHeart?
 
-RESTHeart instantly exposes the full power of **MongoDB** through REST, GraphQL, and WebSocket APIs with **zero coding required**. Compatible with MongoDB Atlas, FerretDB, AWS DocumentDB, and Azure Cosmos DB.
+RESTHeart instantly exposes the full power of **MongoDB** through REST, GraphQL, and WebSocket APIs with **zero coding required**.
 
 Available as a **Docker** image and optimized for **GraalVM** native compilation, RESTHeart delivers instant startup time and a minimal memory footprint. With native binary images available for Linux, Windows, and macOS.
 
