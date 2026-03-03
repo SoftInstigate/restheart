@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *       "uri":  "vector_search",
  *       "stages": [
  *         { "_$vectorSearch": { "index": "myIdx", "path": "embedding",
- *                               "queryVector": {"$var": "qv"},
+ *                               "queryString": {"$var": "q"},
  *                               "numCandidates": 100, "limit": 20 } }
  *       ],
  *       "rerank": {

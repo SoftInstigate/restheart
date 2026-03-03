@@ -86,7 +86,7 @@ public class VectorSearchIndexListInterceptor implements MongoInterceptor {
 
             response.setCount(indexes.asArray().size());
         } catch (Exception e) {
-            // listSearchIndexes is only available on Atlas / MongoDB >= 7.0 with Atlas Search.
+            // listSearchIndexes is only available on Atlas / MongoDB >= 8.2 with Atlas Search.
             // Skip so that standard index listing still works on Community Edition.
             LOGGER.warn("Could not list vector search indexes for {}/{}: {}",
                 request.getDBName(), request.getCollectionName(), e.getMessage());

@@ -43,7 +43,7 @@ import com.mongodb.client.MongoClient;
  * If no matching vector search index is found the interceptor is a no-op and
  * the standard handler proceeds normally.
  *
- * <p>Requires MongoDB Atlas or MongoDB >= 7.0 with Atlas Search enabled.
+ * <p>Requires MongoDB Atlas or MongoDB >= 8.2 with Atlas Search enabled.
  */
 @RegisterPlugin(
     name = "vectorSearchIndexDeleteInterceptor",
