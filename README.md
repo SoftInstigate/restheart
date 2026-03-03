@@ -224,12 +224,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 Dual-licensed:
-- **AGPL v3** — Open source (free). Plugin development under Apache 2.0.
-- **Commercial** — For proprietary applications.
 
-Same features in both licenses.
-
-Commercial inquiries: [info@softinstigate.com](mailto:info@softinstigate.com)
+- RESTHeart core is **AGPL v3**. Plugins you write are yours: the SDK is **Apache 2.0**, so your custom code stays proprietary.
+- **Commercial** — For proprietary applications. See [restheart.com](https://restheart.com/on-premises/) for available options.
 
 ---
 
