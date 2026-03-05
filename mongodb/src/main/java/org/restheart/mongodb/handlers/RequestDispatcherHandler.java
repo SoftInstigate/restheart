@@ -31,6 +31,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.handlers.aggregation.AggregationTransformer;
 import org.restheart.mongodb.handlers.aggregation.GetAggregationHandler;
 import org.restheart.mongodb.handlers.bulk.BulkDeleteDocumentsHandler;
+import org.restheart.mongodb.handlers.bulk.BulkDeleteFilesHandler;
 import org.restheart.mongodb.handlers.bulk.BulkPatchDocumentsHandler;
 import org.restheart.mongodb.handlers.bulk.BulkPostCollectionHandler;
 import org.restheart.mongodb.handlers.collection.DeleteCollectionHandler;
@@ -298,6 +299,9 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         putHandler(TYPE.FILES_BUCKET, METHOD.PATCH, new PatchCollectionHandler());
 
         putHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
+
+        // *** BULK_FILES handler: DELETE /db/bucket.files/*?filter={...}
+        putHandler(TYPE.BULK_FILES, METHOD.DELETE, new BulkDeleteFilesHandler());
 
         putHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
 

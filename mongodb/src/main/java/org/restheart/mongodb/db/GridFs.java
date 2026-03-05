@@ -21,6 +21,7 @@
 package org.restheart.mongodb.db;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -266,6 +267,43 @@ public class GridFs {
         }
 
         return gridFSBucket.find(cfilter).limit(1).iterator().tryNext();
+    }
+
+    /**
+     * Deletes all GridFS files (and their chunks) matching the given filter.
+     *
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param bucketName the bucket collection name (e.g. "fs.files")
+     * @param filter the filter document; if null an empty filter is used (matches all files)
+     * @return the number of files deleted
+     */
+    public long bulkDeleteFiles(
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String bucketName,
+        final BsonDocument filter) {
+        final var db = dbs.db(rsOps, dbName);
+        final var bucket = extractBucketName(bucketName);
+        var gridFSBucket = GridFSBuckets.create(db, bucket);
+
+        Bson _filter = filter != null ? filter : new BsonDocument();
+
+        // collect all matching IDs first to avoid cursor/mutation conflicts
+        var ids = new ArrayList<BsonValue>();
+        gridFSBucket.find(_filter).forEach(file -> ids.add(file.getId()));
+
+        long deleted = 0;
+        for (var id : ids) {
+            try {
+                gridFSBucket.delete(id);
+                deleted++;
+            } catch (MongoGridFSException e) {
+                LOGGER.warn("Could not delete file {}: {}", id, e.getMessage());
+            }
+        }
+
+        return deleted;
     }
 
     /**

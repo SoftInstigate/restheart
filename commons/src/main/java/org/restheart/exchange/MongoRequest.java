@@ -485,6 +485,8 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.FILES_BUCKET;
             } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
+            } else if (pathTokens.length == 4 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+                type = TYPE.BULK_FILES;
             } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES)
                     && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;

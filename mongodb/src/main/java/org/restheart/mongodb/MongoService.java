@@ -436,6 +436,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
 				case BULK_DOCUMENTS, TRANSACTION -> PATCH_DELETE;
 
+			case BULK_FILES -> DELETE;
+
 				case INDEX -> PUT_DELETE;
 
 				case SESSION -> DELETE;

@@ -292,6 +292,9 @@ public interface ExchangeKeys {
         /** GridFS file binary content - the actual binary data of a GridFS file. */
         FILE_BINARY,
 
+        /** Bulk operation target for GridFS files - matches /db/bucket.files/* URLs. */
+        BULK_FILES,
+
         /** Aggregation resource - represents a predefined aggregation pipeline. */
         AGGREGATION,
 
