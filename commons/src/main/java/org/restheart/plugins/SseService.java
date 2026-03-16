@@ -66,7 +66,7 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  * }
  * }</pre>
  *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  * @see RegisterPlugin
  * @see Plugin
  */
