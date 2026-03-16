@@ -218,13 +218,25 @@ jwtTokenManager:
 # - POST /token/cookie - Get access token via cookie (more secure, token not in body)
 # - GET /token - Get current token information
 # - DELETE /token - Invalidate current token
-# Supports both HTTP Basic Auth and OAuth 2.0 form data (grant_type=password)
+# Supports both HTTP Basic Auth and OAuth 2.0 form data:
+#   - grant_type=password with username and password (RFC 6749 §4.3)
+#   - grant_type=client_credentials with client_id and client_secret (RFC 6749 §4.4)
 # Token type in response depends on active TokenManager:
 #   - jwtTokenManager: token_type="Bearer" (use as: Authorization: Bearer <token>)
 #   - rndTokenManager: token_type="Basic-Password" (use as: Authorization: Basic <base64(username:token)>)
 # See: https://restheart.org/docs/security/authentication#token-endpoint
 authTokenService:
   uri: /token
+
+# OAuth 2.0 Authorization Server Metadata (RFC 8414)
+# Endpoint: GET /.well-known/oauth-authorization-server
+# Returns server metadata for automatic client discovery (API gateways, MCP clients, CLI tools).
+# See: https://restheart.org/docs/security/authentication#oauth-discovery
+oauthAuthorizationServerMetadataService:
+  # Optional: specify scheme and host for absolute URLs in metadata responses.
+  # If null, the request Host header is used as fallback.
+  # Example: https://api.example.com
+  base-url: null
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:
