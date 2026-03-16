@@ -68,7 +68,8 @@ public class GetRoleService implements JsonService {
         aclRegistry.registerAllow(req -> req.isAuthenticated()&& req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName()));
 
         // if the request is authorized by any other authenticator (eg root role of MongoRealmAuthenticator), veto it anyway if not requesting own role
-        aclRegistry.registerVeto(req -> req.getPath().startsWith(myURI) && (!req.isAuthenticated() || !req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName())));
+        // OPTIONS (CORS preflight) is always allowed — no credentials are sent with preflight requests
+        aclRegistry.registerVeto(req -> !req.isOptions() && req.getPath().startsWith(myURI) && (!req.isAuthenticated() || !req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName())));
     }
 
     /**
