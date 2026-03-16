@@ -11,7 +11,7 @@
         <jdk.version>25</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>${jdk.version}</maven.compiler.release>
-        <restheart.version>9.0.0-SNAPSHOT</restheart.version>
+        <restheart.version>10.0.0-SNAPSHOT</restheart.version>
     </properties>
 
     <modules>
