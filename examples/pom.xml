@@ -30,6 +30,7 @@
         <module>custom-logging-field</module>
         <module>x-headers-to-qparams</module>
         <module>custom-metrics-example</module>
+        <module>sse-clock</module>
     </modules>
 
     <dependencyManagement>

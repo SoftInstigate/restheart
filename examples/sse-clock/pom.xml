@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.restheart</groupId>
+    <artifactId>restheart-examples</artifactId>
+    <version>10.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>sse-clock</artifactId>
+  <name>sse-clock</name>
+  <description>SSE clock example — pushes a timestamp event every second, works in standalone mode</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-commons</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- Copy runtime dependencies to target/lib so they can be placed
+             in RESTHeart's plugins/ directory alongside the plugin JAR.
+             restheart-commons is provided (already in restheart.jar), so
+             this plugin will produce an empty target/lib for this example. -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <excludeTransitive>true</excludeTransitive>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

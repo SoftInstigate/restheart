@@ -37,6 +37,7 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 
 import org.restheart.graal.ImageInfo;
@@ -594,7 +595,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             PipelinedWrappingHandler.wrap(sseHandler)
         );
 
-        plugPipeline(uri, _handler, new PipelineInfo(SERVICE, uri, MATCH_POLICY.PREFIX, srv.getName()));
+        plugPipeline(uri, _handler, new PipelineInfo(PROXY, uri, MATCH_POLICY.PREFIX, srv.getName()));
     }
 
     /**
