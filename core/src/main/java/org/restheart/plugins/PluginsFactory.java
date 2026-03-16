@@ -226,6 +226,8 @@ public class PluginsFactory {
         return interceptorsCache;
     }
 
+    private Set<PluginRecord<SseService>> sseServicesCache = null;
+
     private Set<PluginRecord<Service<?, ?>>> servicesCache = null;
 
     /**
@@ -237,6 +239,15 @@ public class PluginsFactory {
      * 
      * @return a set of PluginRecord instances containing all enabled services
      */
+    Set<PluginRecord<SseService>> sseServices() {
+        if (this.sseServicesCache == null) {
+            var validPlugins = PluginsScanner.sseServices().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
+            sseServicesCache = createPlugins(validPlugins, "SseService", Bootstrapper.getConfiguration());
+        }
+
+        return sseServicesCache;
+    }
+
     Set<PluginRecord<Service<?, ?>>> services() {
         if (this.servicesCache == null) {
             var validPlugins = PluginsScanner.services().stream().filter(p -> ProvidersChecker.checkDependencies(LOGGER, validProviders, p)).collect(Collectors.toList());
