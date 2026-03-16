@@ -117,6 +117,36 @@ Scenario: POST /token?renew=true with existing JWT - should return a NEW token
     And match response.access_token != firstToken
     And match response.token_type == 'Bearer'
 
+Scenario: POST /token with OAuth 2.0 client_credentials grant - get token in response body
+    Given path '/token'
+    And form field grant_type = 'client_credentials'
+    And form field client_id = 'admin'
+    And form field client_secret = 'secret'
+    When method POST
+    Then status 200
+    And match response.access_token == '#present'
+    And match response.token_type == 'Bearer'
+    And match response.expires_in == '#number'
+    And match response.username == 'admin'
+    And match response.roles == '#array'
+    And match responseHeaders['Auth-Token'][0] == '#present'
+    And match responseHeaders['Cache-Control'][0] == 'no-store'
+
+Scenario: POST /token with invalid grant_type - should fail
+    Given path '/token'
+    And form field grant_type = 'authorization_code'
+    And form field username = 'admin'
+    And form field password = 'secret'
+    When method POST
+    Then status 401
+
+Scenario: POST /token with client_credentials but missing client_secret - should fail
+    Given path '/token'
+    And form field grant_type = 'client_credentials'
+    And form field client_id = 'admin'
+    When method POST
+    Then status 401
+
 Scenario: POST /token without authentication - should fail
     Given path '/token'
     When method POST

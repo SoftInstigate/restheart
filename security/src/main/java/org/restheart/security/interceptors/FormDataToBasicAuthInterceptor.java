@@ -22,18 +22,14 @@ package org.restheart.security.interceptors;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Map;
 
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.exchange.UninitializedRequest;
-import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,24 +57,11 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String GRANT_TYPE_PASSWORD = "password";
+    private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
-
-    @Inject("config")
-    private Map<String, Object> config;
-
-    private boolean enabled = true;
-
-    @OnInit
-    public void init() {
-        this.enabled = argOrDefault(config, "enabled", true);
-    }
 
     @Override
     public void handle(ServiceRequest<?> req, ServiceResponse<?> res) throws Exception {
-        if (!enabled) {
-            return;
-        }
-
         // At REQUEST_BEFORE_EXCHANGE_INIT, request is UninitializedRequest
         if (!(req instanceof UninitializedRequest)) {
             return;
@@ -107,36 +90,57 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
             try {
                 // Parse form data using Undertow's FormParserFactory
                 var parser = FORM_PARSER.createParser(e);
-                
+
                 if (parser == null) {
                     LOGGER.debug("Could not create form parser for {}", path);
                     throw new IllegalArgumentException("Invalid form data");
                 }
 
                 FormData formData = parser.parseBlocking();
-                
+
                 // Only convert to Basic Auth if no auth header exists
                 if (!hasAuthHeader) {
                     // Extract form parameters
                     var grantType = getFormValue(formData, "grant_type");
-                    var username = getFormValue(formData, "username");
-                    var password = getFormValue(formData, "password");
 
-                    // Validate OAuth 2.0 form data
-                    if (grantType == null || !GRANT_TYPE_PASSWORD.equals(grantType)) {
-                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', got '{}'", 
+                    // Validate grant_type
+                    if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType))) {
+                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password' or 'client_credentials', got '{}'",
                             path, grantType);
-                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password' for Resource Owner Password Credentials Grant");
+                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password' or 'client_credentials'");
                     }
 
-                    if (username == null || username.isEmpty()) {
-                        LOGGER.debug("Missing username parameter for {}", path);
-                        throw new IllegalArgumentException("Missing required parameter: username");
-                    }
+                    String username;
+                    String password;
 
-                    if (password == null || password.isEmpty()) {
-                        LOGGER.debug("Missing password parameter for {}", path);
-                        throw new IllegalArgumentException("Missing required parameter: password");
+                    if (GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType)) {
+                        // client_credentials: use client_id and client_secret
+                        username = getFormValue(formData, "client_id");
+                        password = getFormValue(formData, "client_secret");
+
+                        if (username == null || username.isEmpty()) {
+                            LOGGER.debug("Missing client_id parameter for {} with grant_type=client_credentials", path);
+                            throw new IllegalArgumentException("Missing required parameter: client_id");
+                        }
+
+                        if (password == null || password.isEmpty()) {
+                            LOGGER.debug("Missing client_secret parameter for {} with grant_type=client_credentials", path);
+                            throw new IllegalArgumentException("Missing required parameter: client_secret");
+                        }
+                    } else {
+                        // password grant: use username and password
+                        username = getFormValue(formData, "username");
+                        password = getFormValue(formData, "password");
+
+                        if (username == null || username.isEmpty()) {
+                            LOGGER.debug("Missing username parameter for {}", path);
+                            throw new IllegalArgumentException("Missing required parameter: username");
+                        }
+
+                        if (password == null || password.isEmpty()) {
+                            LOGGER.debug("Missing password parameter for {}", path);
+                            throw new IllegalArgumentException("Missing required parameter: password");
+                        }
                     }
 
                     // Convert to Basic Auth format
@@ -148,22 +152,19 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     // Inject Authorization header
                     e.getRequestHeaders().put(Headers.AUTHORIZATION, authHeader);
 
-                    LOGGER.debug("Converted OAuth 2.0 form data to Basic Auth for user '{}' on {}", 
-                        username, path);
+                    LOGGER.debug("Converted OAuth 2.0 form data (grant_type={}) to Basic Auth for user '{}' on {}",
+                        grantType, username, path);
                 } else {
                     LOGGER.debug("Auth header already present, form data parsed but not used for authentication on {}", path);
                 }
 
-                // Initialize the ByteArrayRequest after processing form data
-                ByteArrayRequest.init(e);
-
             } catch (Exception ex) {
-                LOGGER.error("Error processing form data for {}: {}", path, ex.getMessage());
-                // Initialize request even on error
-                ByteArrayRequest.init(e);
-                // Set error status
-                e.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+                LOGGER.debug("Invalid OAuth 2.0 form data for {}: {}", path, ex.getMessage());
+                var r = ByteArrayRequest.init(e);
+                r.setInError(true);
+                return;
             }
+            ByteArrayRequest.init(e);
         });
     }
 
@@ -180,10 +181,6 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
-        if (!enabled) {
-            return false;
-        }
-
         // At REQUEST_BEFORE_EXCHANGE_INIT, request is UninitializedRequest
         if (!(req instanceof UninitializedRequest)) {
             return false;
