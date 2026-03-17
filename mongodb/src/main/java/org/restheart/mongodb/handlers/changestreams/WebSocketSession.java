@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import io.undertow.server.session.SecureRandomSessionIdGenerator;
 import io.undertow.websockets.core.WebSocketChannel;
+
 /**
  *
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
@@ -48,7 +49,8 @@ public class WebSocketSession {
         this.channel.addCloseTask((WebSocketChannel channel1) -> {
             this.changeStreamWorker.websocketSessions().removeIf(s -> s.getId().equals(id));
 
-            if (this.changeStreamWorker.websocketSessions().isEmpty()) {
+            if (this.changeStreamWorker.websocketSessions().isEmpty()
+                    && this.changeStreamWorker.sseSessions().isEmpty()) {
                 if (this.changeStreamWorker.handlingVirtualThread() != null) {
                     LOGGER.debug("Terminating worker {}", this.changeStreamWorker.handlingVirtualThread().getName());
                     this.changeStreamWorker.handlingVirtualThread().interrupt();
@@ -65,15 +67,11 @@ public class WebSocketSession {
         });
     }
 
-    // private void initChannelReceiveListener(WebSocketChannel channel) {
-    //     channel.resumeReceives();
-    // }
-
     public void close() throws IOException {
         if (channel != null) {
             try (channel) {
                 channel.sendClose();
-            } catch(IOException ioe) {
+            } catch (IOException ioe) {
                 // nothing to do
             }
         }

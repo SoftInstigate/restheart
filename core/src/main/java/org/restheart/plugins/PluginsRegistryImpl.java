@@ -37,6 +37,7 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 
 import org.restheart.graal.ImageInfo;
@@ -74,6 +75,7 @@ import com.google.common.collect.Sets;
 
 import static io.undertow.Handlers.path;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.sse.ServerSentEventHandler;
 import io.undertow.util.PathMatcher;
 
 /**
@@ -138,6 +140,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Provider<?>>> providers;
 
+    private final Set<PluginRecord<SseService>> sseServices = new LinkedHashSet<>();
+    private boolean sseServicesInitialized = false;
+
     private final Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
     // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
@@ -169,6 +174,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.authenticators();
         factory.interceptors();
         factory.services();
+        factory.sseServices();
 
         factory.injectDependencies();
         
@@ -432,6 +438,19 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     /**
+     * @return the SSE services
+     */
+    @Override
+    public Set<PluginRecord<SseService>> getSseServices() {
+        if (!sseServicesInitialized) {
+            this.sseServices.addAll(PluginsFactory.getInstance().sseServices());
+            this.sseServicesInitialized = true;
+        }
+
+        return Collections.unmodifiableSet(this.sseServices);
+    }
+
+    /**
      * @return the services
      */
     @Override
@@ -524,6 +543,59 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+    }
+
+    /**
+     * Plugs an SSE service into the root handler binding it to the specified path.
+     *
+     * <p>Builds a lightweight pipeline: ErrorHandler → PipelineInfoInjector →
+     * TracingInstrumentationHandler → RequestLogger → SecurityHandler →
+     * ServerSentEventHandler. The SSE connection lifecycle (keep-alive, close tasks,
+     * event sending) is entirely managed by the plugin's {@code onConnect} method.
+     *
+     * @param srv     the SSE service plugin record to plug
+     * @param uri     the URI path to bind the service to
+     * @param secured {@code true} to invoke the service only after authentication
+     *                and authorization succeed, {@code false} to allow unauthenticated access
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public void plugSseService(PluginRecord<SseService> srv, final String uri, boolean secured) {
+        var _mechanisms = getAuthMechanisms();
+        var _authorizers = getAuthorizers();
+        var _tokenManager = getTokenManager();
+
+        final SecurityHandler securityHandler;
+        if (secured) {
+            securityHandler = new SecurityHandler(_mechanisms, _authorizers, _tokenManager);
+        } else {
+            var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
+            _fauthorizers.add(new PluginRecord<Authorizer>(
+                "fullAuthorizer",
+                "authorize any operation to any user",
+                false,
+                true,
+                FullAuthorizer.class.getName(),
+                new FullAuthorizer(false),
+                null
+            ));
+            securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
+        }
+
+        var sseService = srv.getInstance();
+        var sseHandler = new ServerSentEventHandler(
+            (connection, lastEventId) -> sseService.onConnect(connection, lastEventId)
+        );
+
+        var _handler = pipe(
+            new ErrorHandler(),
+            new PipelineInfoInjector(),
+            new TracingInstrumentationHandler(),
+            new RequestLogger(),
+            securityHandler,
+            PipelinedWrappingHandler.wrap(sseHandler)
+        );
+
+        plugPipeline(uri, _handler, new PipelineInfo(PROXY, uri, MATCH_POLICY.PREFIX, srv.getName()));
     }
 
     /**
