@@ -238,6 +238,16 @@ oauthAuthorizationServerMetadataService:
   # Example: https://api.example.com
   base-url: null
 
+# OAuth 2.0 Protected Resource Metadata (RFC 9728)
+# Endpoint: GET /.well-known/oauth-protected-resource[/{resource-path}]
+# Returns resource metadata required by MCP clients (e.g. Claude.ai) before OAuth token refresh.
+# The optional path suffix identifies the protected resource and is reflected in the 'resource' field.
+oauthProtectedResourceMetadataService:
+  # Optional: explicit server base URL for absolute URLs in metadata responses.
+  # Resolution order: server-url → X-Forwarded-Proto/Host headers → request Host header.
+  # Example: https://api.example.com
+  server-url: null
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/
