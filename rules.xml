@@ -9,9 +9,11 @@
     -->
     <!-- General ignore rules -->
     <ignoreVersions>
-        <ignoreVersion type="regex">.*-alpha.*</ignoreVersion>
-        <ignoreVersion type="regex">.*-beta.*</ignoreVersion>
-        <ignoreVersion type="regex">.*-RC.*</ignoreVersion>
+        <ignoreVersion type="regex">(?i).*[.-](alpha|a)[.-]?\d*.*</ignoreVersion>
+        <ignoreVersion type="regex">(?i).*[.-](beta|b)[.-]?\d*.*</ignoreVersion>
+        <ignoreVersion type="regex">(?i).*[.-](milestone|m)[.-]?\d*.*</ignoreVersion>
+        <ignoreVersion type="regex">(?i).*[.-](rc|cr)[.-]?\d*.*</ignoreVersion>
+        <ignoreVersion type="regex">(?i).*[.-](preview|ea|prerelease|pre)[.-]?\d*.*</ignoreVersion>
     </ignoreVersions>
 
     <!-- Specific rule for com.graphql-java:graphql-java to ignore non-standard versions -->
