@@ -45,20 +45,20 @@
         <skipUpdateLicense>true</skipUpdateLicense>
 
         <!-- Build plugin versions -->
-        <license-maven-plugin.version>2.5.0</license-maven-plugin.version>
+        <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
-        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
-        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
+        <maven-jar-plugin.version>3.5.0</maven-jar-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.5</maven-failsafe-plugin.version>
         <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
-        <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
-        <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
-        <native-maven-plugin.version>0.10.6</native-maven-plugin.version>
-        <maven-dependency-plugin.version>3.9.0</maven-dependency-plugin.version>
-        <versions-maven-plugin.version>2.20.1</versions-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
+        <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
+        <native-maven-plugin.version>0.11.5</native-maven-plugin.version>
+        <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
+        <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
