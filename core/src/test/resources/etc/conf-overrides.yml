@@ -313,11 +313,15 @@
   enabled: true
   uri: /token
 
+/oauthAuthorizationServerMetadataService/enabled: true
+
 /oauthAuthorizationService:
   enabled: true
   login-url: http://localhost:3000/login
   allowed-redirect-uris:
     - http://localhost:*
+
+/oauthProtectedResourceMetadataService/enabled: true
 
 /ping/msg: 'Ping!'
 
