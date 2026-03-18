@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import io.undertow.server.handlers.form.FormData;
 import io.undertow.server.handlers.form.FormParserFactory;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 
 /**
@@ -53,8 +54,13 @@ import io.undertow.util.Headers;
 public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FormDataToBasicAuthInterceptor.class);
 
+    /** Set on the exchange when credentials for {@code POST /authorize} came from the form body. */
+    public static final AttachmentKey<Boolean> FORM_CREDENTIALS_FOR_AUTHORIZE =
+        AttachmentKey.create(Boolean.class);
+
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
+    private static final String AUTHORIZE_ENDPOINT = "/authorize";
     private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String GRANT_TYPE_PASSWORD = "password";
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
@@ -73,8 +79,8 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
         var contentType = uninitReq.getContentType();
         var hasAuthHeader = uninitReq.getHeaders().contains(Headers.AUTHORIZATION);
 
-        // Only process /token or /token/cookie endpoints with form data
-        if ((!TOKEN_ENDPOINT.equals(path) && !TOKEN_COOKIE_ENDPOINT.equals(path)) ||
+        // Only process /token, /token/cookie, or /authorize endpoints with form data
+        if ((!TOKEN_ENDPOINT.equals(path) && !TOKEN_COOKIE_ENDPOINT.equals(path) && !AUTHORIZE_ENDPOINT.equals(path)) ||
             contentType == null ||
             !contentType.startsWith(FORM_CONTENT_TYPE)) {
             return;
@@ -98,6 +104,23 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                 }
 
                 FormData formData = parser.parseBlocking();
+
+                // POST /authorize: extract username+password, inject Basic Auth, mark attachment
+                if (AUTHORIZE_ENDPOINT.equals(path)) {
+                    e.putAttachment(FORM_CREDENTIALS_FOR_AUTHORIZE, Boolean.TRUE);
+                    var username = getFormValue(formData, "username");
+                    var password = getFormValue(formData, "password");
+                    if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
+                        var encoded = Base64.getEncoder()
+                            .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
+                        e.getRequestHeaders().put(Headers.AUTHORIZATION, "Basic " + encoded);
+                        LOGGER.debug("Converted form credentials to Basic Auth for /authorize, user '{}'", username);
+                    } else {
+                        LOGGER.debug("Missing username or password in form body for /authorize");
+                    }
+                    ByteArrayRequest.init(e);
+                    return;
+                }
 
                 // Only convert to Basic Auth if no auth header exists
                 if (!hasAuthHeader) {
@@ -200,9 +223,9 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
         var contentType = uninitReq.getContentType();
         var hasAuthHeader = uninitReq.getHeaders().contains(Headers.AUTHORIZATION);
 
-        // Only resolve for /token or /token/cookie endpoints with form data and no auth header
+        // Only resolve for /token, /token/cookie, or /authorize endpoints with form data and no auth header
         return uninitReq.isPost() &&
-               (TOKEN_ENDPOINT.equals(path) || TOKEN_COOKIE_ENDPOINT.equals(path)) &&
+               (TOKEN_ENDPOINT.equals(path) || TOKEN_COOKIE_ENDPOINT.equals(path) || AUTHORIZE_ENDPOINT.equals(path)) &&
                contentType != null &&
                contentType.startsWith(FORM_CONTENT_TYPE) &&
                !hasAuthHeader;

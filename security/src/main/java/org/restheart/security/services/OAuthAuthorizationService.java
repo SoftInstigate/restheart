@@ -37,6 +37,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
 import org.restheart.security.tokens.JwtConfigProvider;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -207,6 +208,20 @@ public class OAuthAuthorizationService implements ByteArrayService {
      */
     private void handlePost(ByteArrayRequest request, ByteArrayResponse response) {
         if (request.getAuthenticatedAccount() == null) {
+            // If credentials came from form body (browser login UI), redirect back to login with error
+            var fromForm = request.getExchange()
+                .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
+            if (Boolean.TRUE.equals(fromForm) && loginUrl != null && !loginUrl.isBlank()) {
+                var queryString = request.getExchange().getQueryString();
+                var separator   = loginUrl.contains("?") ? "&" : "?";
+                var sb = new StringBuilder(loginUrl).append(separator).append("error=invalid_credentials");
+                if (queryString != null && !queryString.isBlank()) {
+                    sb.append("&").append(queryString);
+                }
+                response.getHeaders().put(Headers.LOCATION, sb.toString());
+                response.setStatusCode(HttpStatus.SC_MOVED_TEMPORARILY);
+                return;
+            }
             response.getHeaders().put(
                 HttpString.tryFromString("WWW-Authenticate"),
                 "Basic realm=\"RESTHeart\"");

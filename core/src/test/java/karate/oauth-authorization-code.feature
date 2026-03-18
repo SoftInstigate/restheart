@@ -145,3 +145,36 @@ Scenario: POST /token with missing code - should return 400
     When method POST
     Then status 400
     And match response.error == 'invalid_request'
+
+Scenario: POST /authorize with form body credentials (valid) - should redirect to callback with code
+    Given path '/authorize'
+    And param response_type = 'code'
+    And param client_id = 'test-client'
+    And param redirect_uri = 'http://localhost:3000/callback'
+    And param code_challenge = codeChallenge
+    And param code_challenge_method = 'S256'
+    And param state = 'form-state-42'
+    And header Content-Type = 'application/x-www-form-urlencoded'
+    And request 'username=admin&password=secret'
+    When method POST
+    Then status 302
+    And def location = responseHeaders['Location'][0]
+    And match location contains 'http://localhost:3000/callback'
+    And match location contains 'code='
+    And match location contains 'state=form-state-42'
+
+Scenario: POST /authorize with form body credentials (invalid) - should redirect to login with error
+    Given path '/authorize'
+    And param response_type = 'code'
+    And param client_id = 'test-client'
+    And param redirect_uri = 'http://localhost:3000/callback'
+    And param code_challenge = codeChallenge
+    And param code_challenge_method = 'S256'
+    And param state = 'form-state-bad'
+    And header Content-Type = 'application/x-www-form-urlencoded'
+    And request 'username=admin&password=wrongpassword'
+    When method POST
+    Then status 302
+    And def location = responseHeaders['Location'][0]
+    And match location contains 'http://localhost:3000/login'
+    And match location contains 'error=invalid_credentials'
