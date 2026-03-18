@@ -313,6 +313,12 @@
   enabled: true
   uri: /token
 
+/oauthAuthorizationService:
+  enabled: true
+  login-url: http://localhost:3000/login
+  allowed-redirect-uris:
+    - http://localhost:*
+
 /ping/msg: 'Ping!'
 
 /roles/uri: /roles

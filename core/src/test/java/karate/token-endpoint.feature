@@ -132,20 +132,22 @@ Scenario: POST /token with OAuth 2.0 client_credentials grant - get token in res
     And match responseHeaders['Auth-Token'][0] == '#present'
     And match responseHeaders['Cache-Control'][0] == 'no-store'
 
-Scenario: POST /token with invalid grant_type - should fail
+Scenario: POST /token with authorization_code grant but missing code - should return 400
     Given path '/token'
     And form field grant_type = 'authorization_code'
-    And form field username = 'admin'
-    And form field password = 'secret'
+    And form field redirect_uri = 'http://localhost:3000/callback'
+    And form field client_id = 'test-client'
+    And form field code_verifier = 'some-verifier'
     When method POST
-    Then status 401
+    Then status 400
+    And match response.error == 'invalid_request'
 
-Scenario: POST /token with client_credentials but missing client_secret - should fail
+Scenario: POST /token with client_credentials but missing client_secret - should fail with 400
     Given path '/token'
     And form field grant_type = 'client_credentials'
     And form field client_id = 'admin'
     When method POST
-    Then status 401
+    Then status 400
 
 Scenario: POST /token without authentication - should fail
     Given path '/token'

@@ -242,7 +242,7 @@ oauthAuthorizationServerMetadataService:
 # Requires: jwtTokenManager enabled, login-url set, allowed-redirect-uris configured.
 # See: https://restheart.org/docs/security/authentication#oauth-authorization-code
 oauthAuthorizationService:
-  enabled: true
+  enabled: false
   # URL of the frontend login page. On GET /authorize, the user-agent is redirected here
   # with all OAuth parameters forwarded as query string.
   # Example: https://myapp.example.com/login

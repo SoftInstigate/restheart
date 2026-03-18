@@ -147,14 +147,16 @@ public class AuthTokenService implements ByteArrayService {
 	 * </ul>
 	 */
 	private void handlePost(ByteArrayRequest request, ByteArrayResponse response, boolean isCookieEndpoint) throws Exception {
-		// --- authorization_code grant (unauthenticated, PKCE-secured) ---
-		if (!isCookieEndpoint && !request.isAuthenticated()) {
-			var bodyParams = parseFormBody(request);
-			if ("authorization_code".equals(bodyParams.get("grant_type"))) {
-				handleAuthorizationCodeGrant(bodyParams, response);
-				return;
+		// --- unauthenticated request ---
+		if (!request.isAuthenticated()) {
+			// authorization_code grant is the only unauthenticated POST to /token (not /token/cookie)
+			if (!isCookieEndpoint) {
+				var bodyParams = parseFormBody(request);
+				if ("authorization_code".equals(bodyParams.get("grant_type"))) {
+					handleAuthorizationCodeGrant(bodyParams, response);
+					return;
+				}
 			}
-			// unauthenticated and not an authorization_code request → 401
 			response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
 			response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			return;
@@ -373,6 +375,12 @@ public class AuthTokenService implements ByteArrayService {
 	 * Handle GET request - return current token info
 	 */
 	private void handleGet(ByteArrayRequest request, ByteArrayResponse response) {
+		if (!request.isAuthenticated()) {
+			response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+			return;
+		}
+
 		var account = request.getAuthenticatedAccount();
 		var authTokenHeader = response.getHeader(AUTH_TOKEN_HEADER);
 		var authTokenValidHeader = response.getHeader(AUTH_TOKEN_VALID_HEADER);
