@@ -68,7 +68,7 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
 
     @OnInit
     public void init() {
-        this.serverUrl = argOrDefault(config, "server-url", null);
+        this.serverUrl = argOrDefault(config, "base-url", argOrDefault(config, "server-url", null));
 
         // allow unauthenticated access to this discovery endpoint and all sub-paths
         aclRegistry.registerAllow(req -> req.getPath().equals(WELL_KNOWN_PREFIX)

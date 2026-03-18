@@ -228,6 +228,7 @@ authTokenService:
 # Returns server metadata for automatic client discovery (API gateways, MCP clients, CLI tools).
 # See: https://restheart.org/docs/security/authentication#oauth-discovery
 oauthAuthorizationServerMetadataService:
+  enabled: false
   # Optional: specify scheme and host for absolute URLs in metadata responses.
   # If null, the request Host header is used as fallback.
   # Example: https://api.example.com
@@ -259,10 +260,12 @@ oauthAuthorizationService:
 # Returns resource metadata required by MCP clients (e.g. Claude.ai) before OAuth token refresh.
 # The optional path suffix identifies the protected resource and is reflected in the 'resource' field.
 oauthProtectedResourceMetadataService:
+  enabled: false
   # Optional: explicit server base URL for absolute URLs in metadata responses.
-  # Resolution order: server-url → X-Forwarded-Proto/Host headers → request Host header.
+  # Useful when RESTHeart is behind a TLS-terminating reverse proxy (Host header arrives as http://).
+  # Resolution order: base-url → X-Forwarded-Proto/Host headers → request Host header.
   # Example: https://api.example.com
-  server-url: null
+  base-url: null
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:
