@@ -237,6 +237,27 @@ oauthAuthorizationServerMetadataService:
   # If null, the request Host header is used as fallback.
   # Example: https://api.example.com
   base-url: null
+  # URI of the authorization endpoint (included in AS metadata as authorization_endpoint).
+  # Must match the URI configured in oauthAuthorizationService.
+  authorize-endpoint-uri: /authorize
+
+# OAuth 2.1 Authorization Code + PKCE endpoint
+# Implements GET /authorize (redirects to login UI) and POST /authorize (issues authorization code).
+# The authorization code is exchanged for a token at POST /token (grant_type=authorization_code).
+# Requires: jwtTokenManager enabled, login-url set, allowed-redirect-uris configured.
+# See: https://restheart.org/docs/security/authentication#oauth-authorization-code
+oauthAuthorizationService:
+  enabled: true
+  # URL of the frontend login page. On GET /authorize, the user-agent is redirected here
+  # with all OAuth parameters forwarded as query string.
+  # Example: https://myapp.example.com/login
+  login-url: null
+  # Allowed redirect_uri values (supports * wildcard).
+  # Example:
+  #   - http://localhost:*
+  #   - https://claude.ai/api/mcp/auth_callback
+  allowed-redirect-uris:
+    - http://localhost:*
 
 # OAuth 2.0 Protected Resource Metadata (RFC 9728)
 # Endpoint: GET /.well-known/oauth-protected-resource[/{resource-path}]

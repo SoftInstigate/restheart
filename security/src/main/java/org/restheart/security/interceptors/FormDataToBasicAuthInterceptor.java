@@ -58,6 +58,7 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
     private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String GRANT_TYPE_PASSWORD = "password";
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
+    private static final String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
     private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
 
     @Override
@@ -104,10 +105,18 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     var grantType = getFormValue(formData, "grant_type");
 
                     // Validate grant_type
-                    if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType))) {
-                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password' or 'client_credentials', got '{}'",
+                    if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType) && !GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType))) {
+                        LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', or 'authorization_code', got '{}'",
                             path, grantType);
-                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password' or 'client_credentials'");
+                        throw new IllegalArgumentException("Invalid grant_type. Must be 'password', 'client_credentials', or 'authorization_code'");
+                    }
+
+                    // authorization_code grant: no Basic Auth conversion needed.
+                    // FormData attachment is already stored by the parser; AuthTokenService will read it.
+                    if (GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType)) {
+                        LOGGER.debug("authorization_code grant for {}: skipping Basic Auth conversion", path);
+                        ByteArrayRequest.init(e);
+                        return;
                     }
 
                     String username;
