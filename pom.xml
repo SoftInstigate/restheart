@@ -227,7 +227,7 @@
             <dependency>
                 <groupId>org.wildfly.common</groupId>
                 <artifactId>wildfly-common</artifactId>
-                <version>1.7.0.Final</version>
+                <version>2.0.1</version>
             </dependency>
             <!-- Update transitive dependency of undertow-core required for the native image build -->
             <dependency>
@@ -238,7 +238,7 @@
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20250517</version>
+                <version>20251224</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -263,7 +263,7 @@
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
                 <artifactId>json-path</artifactId>
-                <version>2.10.0</version>
+                <version>3.0.0</version>
             </dependency>
             <dependency>
                 <groupId>de.svenkubiak</groupId>
@@ -278,7 +278,7 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.20.0</version>
+                <version>1.21.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-jxpath</groupId>
@@ -288,7 +288,7 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>2.5</version>
+                <version>2.6</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -416,7 +416,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>5.20.0</version>
+                <version>5.23.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
