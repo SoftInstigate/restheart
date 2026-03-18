@@ -190,6 +190,7 @@
               <mainClass>org.restheart.Bootstrapper</mainClass>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
+              <useUniqueVersions>false</useUniqueVersions>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
               <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
             </manifest>
