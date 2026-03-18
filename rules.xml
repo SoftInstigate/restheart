@@ -20,9 +20,9 @@
     <rules>
         <rule groupId="com.graphql-java" artifactId="graphql-java" comparisonMethod="maven">
             <ignoreVersions>
-                <!-- Exclude versions that are not in MAJOR.MINOR or MAJOR.MINOR.PATCH format -->
-                <ignoreVersion type="regex">.*[^0-9.]+.*</ignoreVersion>
-                <ignoreVersion type="regex">^\d+\.\d+\.\d+\..*$</ignoreVersion> <!-- Excludes versions with more than 3 numeric segments -->
+                <!-- Ignore versions that are not exactly MAJOR.MINOR or MAJOR.MINOR.PATCH;
+                     allowed: 24.1, 24.1.0; ignored: 24, 24.1.0.1, 24.1-beta -->
+                <ignoreVersion type="regex">^(?!\d+\.\d+(?:\.\d+)?$).*$</ignoreVersion>
             </ignoreVersions>
         </rule>
     </rules>
