@@ -433,6 +433,26 @@ public class JwtTokenManager implements TokenManager {
         }
     }
 
+    /**
+     * Adds the configured {@code account-properties-claims} to the given JWT builder for
+     * the given account. Returns the (possibly updated) builder for chaining.
+     *
+     * <p>This method is used by {@code OAuthAuthorizationService} when building the
+     * authorization-code JWT so that account properties are propagated to the final
+     * access token without duplicating the filtering logic.
+     */
+    public Builder withAccountPropertiesClaims(Builder builder, final Account account) {
+        if (!(account instanceof WithProperties<?> awp)) return builder;
+        var props = awp.propertiesAsMap();
+        if (props == null) return builder;
+        var authDb = getAuthDb(account);
+        if (authDb != null) builder = builder.withClaim("authDb", authDb);
+        for (var e : claimsFromAccountProps(props).entrySet()) {
+            builder = withClaim(builder, e.getKey(), e.getValue());
+        }
+        return builder;
+    }
+
     @Override
     public void invalidate(final Account account) {
         if (!enabled)

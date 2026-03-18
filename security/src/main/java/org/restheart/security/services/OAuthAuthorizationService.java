@@ -35,10 +35,12 @@ import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
 import org.restheart.security.tokens.JwtConfigProvider;
+import org.restheart.security.tokens.JwtTokenManager;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +112,9 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     @Inject("jwtConfigProvider")
     private JwtConfigProvider.JwtConfig jwtConfig;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
@@ -262,7 +267,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
         // Issue authorization code as a short-lived signed JWT.
         // Stateless: any node sharing the same JWT key can later verify it.
         var roles = account.getRoles().toArray(String[]::new);
-        var code  = JWT.create()
+        var codeBuilder = JWT.create()
             .withIssuer(jwtConfig.issuer())
             .withSubject(account.getPrincipal().getName())
             .withExpiresAt(Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
@@ -270,8 +275,15 @@ public class OAuthAuthorizationService implements ByteArrayService {
             .withClaim(CLAIM_CODE_CHALLENGE,        codeChallenge)
             .withClaim(CLAIM_CODE_CHALLENGE_METHOD, codeChallengeMethod)
             .withClaim(CLAIM_REDIRECT_URI,          redirectUri)
-            .withClaim(CLAIM_CLIENT_ID,             clientId)
-            .sign(signingAlgo);
+            .withClaim(CLAIM_CLIENT_ID,             clientId);
+
+        // Propagate account-properties-claims via JwtTokenManager so the logic stays in one place.
+        var tokenMgr = registry.getTokenManager();
+        if (tokenMgr != null && tokenMgr.getInstance() instanceof JwtTokenManager jtm) {
+            codeBuilder = jtm.withAccountPropertiesClaims(codeBuilder, account);
+        }
+
+        var code = codeBuilder.sign(signingAlgo);
 
         var sb = new StringBuilder(redirectUri);
         sb.append(redirectUri.contains("?") ? "&" : "?");

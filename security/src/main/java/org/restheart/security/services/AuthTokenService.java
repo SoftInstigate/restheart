@@ -34,6 +34,7 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.*;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.BaseAccount;
+import org.restheart.security.JwtAccount;
 import org.restheart.security.tokens.JwtConfigProvider;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -257,6 +258,12 @@ public class AuthTokenService implements ByteArrayService {
 		var rolesArr = decoded.getClaim(OAuthAuthorizationService.CLAIM_ROLES).asArray(String.class);
 		var roles = rolesArr != null ? Set.of(rolesArr) : Set.<String>of();
 
+		// Reconstruct account from the full auth-code JWT payload (WithProperties) so that
+		// jwtTokenManager.get(account) can apply account-properties-claims filtering normally.
+		var authCodePayload = new String(
+			java.util.Base64.getUrlDecoder().decode(decoded.getPayload()), StandardCharsets.UTF_8);
+		var account = new JwtAccount(username, roles, authCodePayload);
+
 		// issue access token via the configured token manager
 		var tokenManagerRecord = this.registry.getTokenManager();
 		if (tokenManagerRecord == null) {
@@ -265,7 +272,6 @@ public class AuthTokenService implements ByteArrayService {
 			return;
 		}
 
-		var account = new BaseAccount(username, roles);
 		var credential = tokenManagerRecord.getInstance().get(account);
 
 		if (credential == null) {
