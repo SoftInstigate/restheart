@@ -96,6 +96,16 @@ podDisruptionBudget:
   minAvailable: 1
   maxUnavailable: ""
 
+# Config source for /opt/restheart/etc/restheart.yml
+# false (default): use generated Secret from restHeartConfiguration
+# true: mount external Secret key as restheart.yml
+useExternalConfig: false
+externalConfig:
+  # Required when useExternalConfig=true
+  name: ""
+  # Key in external Secret that contains RESTHeart config
+  key: "restheart.yml"
+
 # reastheart.yml file.
 # At least you should configure options:
 # - instance-base-url - to configure public URL when it is run behind reverse proxy.
