@@ -33,7 +33,7 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
-      secretName: {{ .secretName }}
+      secretName: {{ .secretName | default (printf "%s-resthart-tls" (include "restheart.fullname" $)) }}
     {{- end }}
   {{- end }}
   rules:
