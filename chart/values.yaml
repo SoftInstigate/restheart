@@ -10,6 +10,23 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
+# Optional explicit container command/args override.
+# By default, chart uses the Docker image ENTRYPOINT/CMD.
+# Example for forcing JVM mode:
+# containerCommand: ["java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar", "etc/restheart.yml", "--envFile", "etc/default.properties"]
+# containerArgs: ["etc/restheart.yml"]
+containerCommand: []
+containerArgs:
+  - "etc/restheart.yml"
+
+# Environment variables for RESTHeart container.
+# IMPORTANT: the official image defines a default RHO that overrides config options
+# (for example mclient/connection-string). We set RHO to empty by default so
+# restHeartConfiguration from values is used as-is.
+env:
+  - name: RHO
+    value: ""
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
