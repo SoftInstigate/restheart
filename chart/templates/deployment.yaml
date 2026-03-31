@@ -13,10 +13,14 @@ spec:
       {{- include "restheart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- if or (not .Values.useExternalConfig) .Values.podAnnotations }}
       annotations:
+        {{- if not .Values.useExternalConfig }}
         checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
       {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- end }}
       labels:
         {{- include "restheart.selectorLabels" . | nindent 8 }}
@@ -30,15 +34,18 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.containerCommand }}
           command:
-            - "java"
-            - "-Dfile.encoding=UTF-8"
-            - "-server"
-            - "-jar"
-            - "restheart.jar"
-            - "etc/restheart.yml"
-            - "--envFile"
-            - "etc/default.properties"
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.containerArgs }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -66,9 +73,18 @@ spec:
               mountPath: /opt/restheart/etc/restheart.yml
               subPath: restheart.yml
       volumes:
+        {{- if .Values.useExternalConfig }}
+        - name: configuration
+          secret:
+            secretName: {{ required "externalConfig.name is required when useExternalConfig=true" .Values.externalConfig.name }}
+            items:
+              - key: {{ .Values.externalConfig.key | quote }}
+                path: restheart.yml
+        {{- else }}
         - name: configuration
           secret:
             secretName: {{ include "restheart.fullname" . }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
