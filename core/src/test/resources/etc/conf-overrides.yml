@@ -313,7 +313,10 @@
   enabled: true
   uri: /token
 
-/oauthAuthorizationServerMetadataService/enabled: true
+/oauthAuthorizationServerMetadataService:
+  enabled: true
+  authorize-endpoint-uri: /authorize
+  registration-endpoint-uri: /register
 
 /oauthAuthorizationService:
   enabled: true
@@ -322,6 +325,8 @@
     - http://localhost:*
 
 /oauthProtectedResourceMetadataService/enabled: true
+
+/oauthClientRegistrationService/enabled: true
 
 /ping/msg: 'Ping!'
 

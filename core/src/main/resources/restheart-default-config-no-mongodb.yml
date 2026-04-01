@@ -236,6 +236,10 @@ oauthAuthorizationServerMetadataService:
   # URI of the authorization endpoint (included in AS metadata as authorization_endpoint).
   # Must match the URI configured in oauthAuthorizationService.
   authorize-endpoint-uri: /authorize
+  # Optional: URI of the dynamic client registration endpoint (RFC 7591).
+  # When set, registration_endpoint is included in the AS metadata response.
+  # Enable oauthClientRegistrationService to activate the endpoint.
+  # registration-endpoint-uri: /register
 
 # OAuth 2.1 Authorization Code + PKCE endpoint
 # Implements GET /authorize (redirects to login UI) and POST /authorize (issues authorization code).
@@ -266,6 +270,15 @@ oauthProtectedResourceMetadataService:
   # Resolution order: base-url → X-Forwarded-Proto/Host headers → request Host header.
   # Example: https://api.example.com
   base-url: null
+
+# OAuth 2.0 Dynamic Client Registration (RFC 7591)
+# Endpoint: POST /register
+# Allows OAuth clients (e.g. mcp-inspector, MCP SDKs) to self-register without admin intervention.
+# Returns a generated client_id. Pair with oauthAuthorizationServerMetadataService/registration-endpoint-uri
+# to advertise this endpoint in the AS metadata discovery response.
+# See: https://restheart.org/docs/security/oauth#dynamic-client-registration
+oauthClientRegistrationService:
+  enabled: false
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:
