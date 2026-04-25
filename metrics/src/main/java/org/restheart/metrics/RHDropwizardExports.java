@@ -25,7 +25,6 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
@@ -76,8 +75,33 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
         this.sampleBuilder = new RHSampler();
     }
 
-    private static String getHelpMessage(String metricName, Metric metric) {
-        return String.format("Generated from Dropwizard metric import (metric=%s, type=%s)", metricName, metric.getClass().getName());
+    private static String getHelpMessage(String metricName) {
+        if (metricName.startsWith("http_requests")) {
+            return "HTTP request duration and rate";
+        }
+        if (metricName.startsWith("jvm mem.heap.")) {
+            return metricName.endsWith(".usage")
+                ? "Heap memory utilization as a percentage of the maximum heap"
+                : "JVM heap memory in MB (used, committed, max, init)";
+        }
+        if (metricName.startsWith("jvm mem.non-heap.")) {
+            return "Aggregate non-heap memory in MB (sum of Metaspace, CodeHeap, Compressed Class Space, etc.)";
+        }
+        if (metricName.startsWith("jvm mem.total.")) {
+            return "Total JVM memory in MB (heap + non-heap combined)";
+        }
+        if (metricName.startsWith("jvm mem.pools.G1")) {
+            return "G1 GC region memory details (Eden, Survivor, Old Gen) — sizes in bytes, utilization as a ratio (0.0-1.0)";
+        }
+        if (metricName.startsWith("jvm mem.pools.")) {
+            return "JVM memory pool details — sizes in bytes, utilization as a ratio (0.0-1.0)";
+        }
+        if (metricName.startsWith("jvm garbage-collector.")) {
+            return metricName.endsWith(".count")
+                ? "Number of garbage collections since JVM start"
+                : "Cumulative GC pause time in ms since JVM start";
+        }
+        return metricName;
     }
 
     /**
@@ -85,7 +109,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
      */
     MetricFamilySamples fromCounter(String dropwizardName, Counter counter) {
         MetricFamilySamples.Sample sample = sampleBuilder.createSample(dropwizardName, "", new ArrayList<String>(), new ArrayList<String>(), Long.valueOf(counter.getCount()).doubleValue());
-        return new MetricFamilySamples(sample.name, Type.GAUGE, getHelpMessage(dropwizardName, counter), Arrays.asList(sample));
+        return new MetricFamilySamples(sample.name, Type.GAUGE, getHelpMessage(dropwizardName), Arrays.asList(sample));
     }
 
     /**
@@ -103,7 +127,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
             return null;
         }
         MetricFamilySamples.Sample sample = sampleBuilder.createSample(dropwizardName, "", new ArrayList<String>(), new ArrayList<String>(), value);
-        return new MetricFamilySamples(sample.name, Type.GAUGE, getHelpMessage(dropwizardName, gauge), Arrays.asList(sample));
+        return new MetricFamilySamples(sample.name, Type.GAUGE, getHelpMessage(dropwizardName), Arrays.asList(sample));
     }
 
     /**
@@ -164,7 +188,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
                 sampleBuilder.createSample(dropwizardName, "_count", new ArrayList<String>(), new ArrayList<String>(), histogram.getCount()),
                 sampleBuilder.createSample(dropwizardName, "_window_count", new ArrayList<String>(), new ArrayList<String>(), snapshot.size())
         ));
-        return new MetricFamilySamples(samples.get(0).name, Type.SUMMARY, getHelpMessage(dropwizardName, histogram), samples);
+        return new MetricFamilySamples(samples.get(0).name, Type.SUMMARY, getHelpMessage(dropwizardName), samples);
     }
 
     private static double TIMER_FACTOR = 1.0D / TimeUnit.SECONDS.toNanos(1L);
@@ -173,7 +197,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
      * Export Dropwizard Timer as a histogram. Use TIME_UNIT as time unit.
      */
     MetricFamilySamples fromTimer(String dropwizardName, Timer timer) {
-        return fromTimer(dropwizardName, timer, getHelpMessage(dropwizardName, timer));
+        return fromTimer(dropwizardName, timer, getHelpMessage(dropwizardName));
     }
 
     /**
@@ -184,7 +208,7 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
                 new ArrayList<String>(),
                 new ArrayList<String>(),
                 meter.getCount());
-        return new MetricFamilySamples(sample.name, Type.COUNTER, getHelpMessage(dropwizardName, meter), Arrays.asList(sample));
+        return new MetricFamilySamples(sample.name, Type.COUNTER, getHelpMessage(dropwizardName), Arrays.asList(sample));
     }
 
     @Override
