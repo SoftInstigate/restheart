@@ -12,7 +12,7 @@
 
 ---
 
-## What is RESTHeart?
+# What is RESTHeart?
 
 RESTHeart instantly exposes the full power of **MongoDB** through REST, GraphQL, and WebSocket APIs with **zero coding required**.
 
@@ -221,12 +221,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## License
+## LICENSE
 
-Dual-licensed:
+RESTHeart core is licensed under the **GNU AGPL v3**.
 
-- RESTHeart core is **AGPL v3**. Plugins you write are yours: the SDK is **Apache 2.0**, so your custom code stays proprietary.
-- **Commercial** — For proprietary applications. See [restheart.com](https://restheart.com/on-premises/) for available options.
+The plugin SDK (`restheart-commons`, Maven artifact `org.restheart:restheart-commons`)
+is licensed under the **Apache License 2.0**. Plugins and extensions that depend only on `restheart-commons` are not subject to the AGPL v3 and may be distributed under any license you choose, including proprietary licenses. This follows the same pattern used by MongoDB: the server is AGPL, the drivers and SDKs are Apache 2.0.
+
+See [PLUGIN_EXCEPTION](PLUGIN_EXCEPTION.md) for the formal terms of this permission.
+
+**Commercial license** — If you need to modify RESTHeart core without open-sourcing your changes, commercial licenses are available. See [restheart.com/on-premises](https://restheart.com/on-premises/).
 
 ---
 
