@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoDriverInformation;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.connection.ConnectionPoolSettings;
@@ -49,6 +50,11 @@ public class MongoClientSingleton {
     private String serverVersion = null;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoClientSingleton.class);
+
+    private static final MongoDriverInformation DRIVER_INFO = MongoDriverInformation.builder()
+            .driverName("RESTHeart")
+            .driverVersion(org.restheart.configuration.Configuration.VERSION)
+            .build();
 
     /**
      *
@@ -115,7 +121,7 @@ public class MongoClientSingleton {
                 .applyConnectionString(mongoUri)
                 .build();
 
-        mclient = MongoClients.create(settings);
+        mclient = MongoClients.create(settings, DRIVER_INFO);
 
         // this is the first time we check the connection
         if (connected(mclient)) {
