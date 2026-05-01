@@ -19,14 +19,18 @@
  */
 package org.restheart.mongodb.db.sessions;
 
+import java.util.Objects;
+import java.util.UUID;
+
+import org.jspecify.annotations.Nullable;
+
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.TransactionBody;
+import com.mongodb.internal.observability.micrometer.TransactionSpan;
 import com.mongodb.internal.session.BaseClientSessionImpl;
 import com.mongodb.internal.session.ServerSessionPool;
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Implementation of MongoDB ClientSession for RESTHeart.
@@ -37,18 +41,22 @@ import java.util.UUID;
  * for database operations.
  * </p>
  * 
- * <p>Key features:</p>
+ * <p>
+ * Key features:
+ * </p>
  * <ul>
- *   <li>Session pooling and management through {@link ServerSessionPool}</li>
- *   <li>Configurable causal consistency for read operations</li>
- *   <li>Transaction state tracking</li>
- *   <li>Custom session ID management</li>
+ * <li>Session pooling and management through {@link ServerSessionPool}</li>
+ * <li>Configurable causal consistency for read operations</li>
+ * <li>Transaction state tracking</li>
+ * <li>Custom session ID management</li>
  * </ul>
  * 
- * <p>Note: This implementation provides limited transaction support. The transaction
+ * <p>
+ * Note: This implementation provides limited transaction support. The transaction
  * methods ({@link #startTransaction()}, {@link #commitTransaction()}, {@link #abortTransaction()})
  * throw {@link UnsupportedOperationException} as transactions are handled differently
- * in RESTHeart's architecture.</p>
+ * in RESTHeart's architecture.
+ * </p>
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @see ClientSession
@@ -62,7 +70,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Used to track transaction state and ensure proper transaction semantics.
      */
     protected boolean messageSentInCurrentTransaction;
-    
+
     /**
      * Flag indicating whether this session should enforce causal consistency.
      * When true, read operations will see the results of preceding write operations.
@@ -74,13 +82,14 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Constructs a new ClientSessionImpl with the specified parameters.
      * 
      * @param serverSessionPool the pool from which to acquire server sessions.
-     *                          Manages the lifecycle and reuse of server-side sessions
+     * Manages the lifecycle and reuse of server-side sessions
      * @param originator the object that created this session, typically a MongoClient instance.
-     *                   Used to ensure operations are executed by the same client that created the session
+     * Used to ensure operations are executed by the same client that created the session
      * @param options the client session options including causal consistency settings,
-     *                default transaction options, and other session configuration
+     * default transaction options, and other session configuration
      */
-    public ClientSessionImpl(final ServerSessionPool serverSessionPool, final Object originator, final ClientSessionOptions options) {
+    public ClientSessionImpl(final ServerSessionPool serverSessionPool, final Object originator,
+            final ClientSessionOptions options) {
         super(serverSessionPool, originator, options);
     }
 
@@ -123,7 +132,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Checks if this session has an active transaction.
      * 
      * @return always returns {@code false} as this implementation does not support
-     *         traditional MongoDB transactions
+     * traditional MongoDB transactions
      */
     @Override
     public boolean hasActiveTransaction() {
@@ -154,7 +163,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * </p>
      * 
      * @return {@code true} if this was the first message in the current transaction,
-     *         {@code false} if a message has already been sent
+     * {@code false} if a message has already been sent
      */
     @Override
     public boolean notifyMessageSent() {
@@ -178,7 +187,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Starts a new transaction on this session.
      * 
      * @throws UnsupportedOperationException always thrown as this implementation
-     *         does not support traditional MongoDB transactions
+     * does not support traditional MongoDB transactions
      */
     @Override
     public void startTransaction() {
@@ -190,7 +199,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * 
      * @param transactionOptions the options to apply to the transaction (ignored)
      * @throws UnsupportedOperationException always thrown as this implementation
-     *         does not support traditional MongoDB transactions
+     * does not support traditional MongoDB transactions
      */
     @Override
     public void startTransaction(final TransactionOptions transactionOptions) {
@@ -201,7 +210,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Commits the current transaction.
      * 
      * @throws UnsupportedOperationException always thrown as this implementation
-     *         does not support traditional MongoDB transactions
+     * does not support traditional MongoDB transactions
      */
     @Override
     public void commitTransaction() {
@@ -212,11 +221,25 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Aborts the current transaction.
      * 
      * @throws UnsupportedOperationException always thrown as this implementation
-     *         does not support traditional MongoDB transactions
+     * does not support traditional MongoDB transactions
      */
     @Override
     public void abortTransaction() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Gets the transaction observability span for this session.
+     * <p>
+     * This implementation does not support driver-managed transactions,
+     * therefore no transaction span is available.
+     * </p>
+     *
+     * @return always {@code null}
+     */
+    @Nullable
+    public TransactionSpan getTransactionSpan() {
+        return null;
     }
 
     /**
@@ -231,12 +254,23 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
     public void close() {
         // this release the session from the pool,
         // not required in our implementation
-        // super.close();
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(getSid());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        ClientSessionImpl other = (ClientSessionImpl) obj;
+        return Objects.equals(getSid(), other.getSid());
     }
 
     /**
@@ -260,7 +294,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * </p>
      * 
      * @param causallyConsistent {@code true} to enable causal consistency,
-     *                           {@code false} to disable it
+     * {@code false} to disable it
      */
     public void setCausallyConsistent(boolean causallyConsistent) {
         this.causallyConsistent = causallyConsistent;
@@ -274,7 +308,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * </p>
      * 
      * @param messageSentInCurrentTransaction {@code true} if a message has been sent,
-     *                                        {@code false} otherwise
+     * {@code false} otherwise
      */
     public void setMessageSentInCurrentTransaction(boolean messageSentInCurrentTransaction) {
         this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
@@ -284,7 +318,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * Checks if a message has been sent in the current transaction.
      * 
      * @return {@code true} if a message has been sent in the current transaction,
-     *         {@code false} otherwise
+     * {@code false} otherwise
      */
     public boolean isMessageSentInCurrentTransaction() {
         return this.messageSentInCurrentTransaction;
@@ -345,15 +379,14 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * 
      * @param o the object (typically a MongoClient) from which to extract the delegate
      * @return the value of the delegate field if it exists and is accessible,
-     *         otherwise returns the original object
+     * otherwise returns the original object
      */
     @SuppressWarnings("unused")
     private static Object delegate(Object o) {
         try {
-            var delegateF = o.getClass().getDeclaredField("delegate");
-            delegateF.setAccessible(true);
+            var delegateF = o.getClass().getField("delegate");
             return delegateF.get(o);
-        } catch(Throwable t) {
+        } catch (Exception _e) {
             return o;
         }
     }
