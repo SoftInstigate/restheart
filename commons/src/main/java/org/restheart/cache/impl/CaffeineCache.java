@@ -131,9 +131,9 @@ public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
         }
 
 
-        wrapped = builder.removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) -> {
-            remover.accept(new AbstractMap.SimpleEntry<>(k, v));
-        }).build();
+        wrapped = builder.removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) ->
+            remover.accept(new AbstractMap.SimpleEntry<>(k, v))
+        ).build();
     }
 
     /**
