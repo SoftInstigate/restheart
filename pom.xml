@@ -35,8 +35,8 @@
         -->
         <mongodb.version>8.0</mongodb.version>
         <jdk.version>25</jdk.version>
-        <graalvm.version>25.0.2</graalvm.version>
-        <truffle.version>25.0.2</truffle.version> <!-- Truffle and Graal languages are compatible
+        <graalvm.version>25.0.3</graalvm.version>
+        <truffle.version>25.0.3</truffle.version> <!-- Truffle and Graal languages are compatible
         with the latest version of the GraalVM JDK as well as the latest LTS release.-->
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
@@ -254,7 +254,7 @@
             <dependency>
                 <groupId>com.auth0</groupId>
                 <artifactId>java-jwt</artifactId>
-                <version>4.5.1</version>
+                <version>4.5.2</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
