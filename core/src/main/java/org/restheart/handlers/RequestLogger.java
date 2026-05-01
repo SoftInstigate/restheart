@@ -52,6 +52,7 @@ import io.undertow.util.LocaleUtils;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class RequestLogger extends PipelinedHandler {
 
@@ -131,7 +132,7 @@ public class RequestLogger extends PipelinedHandler {
 
                     if (matchedPattern != null) {
                         // Request matches an exclusion pattern
-                        handleExcludedRequest(exchange, requestPath, matchedPattern);
+                        handleExcludedRequest(exchange, matchedPattern);
                     } else {
                         // Normal request - log it
                         dumpExchange(exchange, requestsLogMode);
@@ -150,7 +151,7 @@ public class RequestLogger extends PipelinedHandler {
      * Finds the first pattern that matches the request path
      * 
      * @param requestPath
-     *            the request path to check
+     * the request path to check
      * @return the matching pattern or null if no match
      */
     private String findMatchingPattern(final String requestPath) {
@@ -178,14 +179,13 @@ public class RequestLogger extends PipelinedHandler {
      * Handles an excluded request with time-based logging
      * 
      * @param exchange
-     *            the HTTP exchange
+     * the HTTP exchange
      * @param requestPath
-     *            the request path
+     * the request path
      * @param matchedPattern
-     *            the pattern that matched
+     * the pattern that matched
      */
-    private void handleExcludedRequest(final HttpServerExchange exchange, final String requestPath,
-            final String matchedPattern) {
+    private void handleExcludedRequest(final HttpServerExchange exchange, final String matchedPattern) {
         final long now = System.currentTimeMillis();
 
         // Use putIfAbsent for thread-safe first-time detection
@@ -201,17 +201,13 @@ public class RequestLogger extends PipelinedHandler {
                         matchedPattern, requestsLogExcludeInterval);
             }
             dumpExchange(exchange, requestsLogMode);
-        } else if (requestsLogExcludeInterval > 0 && (now - previousValue) >= requestsLogExcludeIntervalMs) {
-            // Time interval has elapsed - use replace for atomic update
-            if (LAST_LOGGED_TIME.replace(matchedPattern, previousValue, now)) {
-                final long minutesElapsed = (now - previousValue) / MINUTES_TO_MS;
-                LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
-                        matchedPattern, minutesElapsed);
-                dumpExchange(exchange, requestsLogMode);
-            }
-            // If replace failed, another thread already logged this interval
+        } else if (requestsLogExcludeInterval > 0 && (now - previousValue) >= requestsLogExcludeIntervalMs
+                && LAST_LOGGED_TIME.replace(matchedPattern, previousValue, now)) {
+            final long minutesElapsed = (now - previousValue) / MINUTES_TO_MS;
+            LOGGER.info("Excluded request for pattern '{}' (last logged {} minutes ago):",
+                    matchedPattern, minutesElapsed);
+            dumpExchange(exchange, requestsLogMode);
         }
-        // Otherwise, request is silently excluded
     }
 
     /**
@@ -219,9 +215,9 @@ public class RequestLogger extends PipelinedHandler {
      * Supports exact matches and simple wildcard patterns with '*'.
      * 
      * @param requestPath
-     *            the request path to check
+     * the request path to check
      * @param pattern
-     *            the exclusion pattern
+     * the exclusion pattern
      * @return true if the path matches the pattern
      */
     private boolean matchesPattern(final String requestPath, final String pattern) {
@@ -251,9 +247,9 @@ public class RequestLogger extends PipelinedHandler {
      * Log a complete dump of the HttpServerExchange (both Request and Response)
      *
      * @param exchange
-     *            the HttpServerExchange
+     * the HttpServerExchange
      * @param logLevel
-     *            it can be 0, 1 or 2
+     * it can be 0, 1 or 2
      */
     protected void dumpExchange(final HttpServerExchange exchange, final Integer logLevel) {
         if (logLevel < 1) {
@@ -271,87 +267,12 @@ public class RequestLogger extends PipelinedHandler {
             : System.currentTimeMillis();
 
         if (logLevel == 1) {
-            sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
-
-            if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
-                sb.append("?").append(exchange.getQueryString());
-            }
-
-            sb.append(" from ").append(exchange.getSourceAddress());
+            logRequestSummary(exchange, sb);
         } else if (logLevel >= 2) {
-            sb.append("\n----------------------------REQUEST---------------------------\n");
+            logRequestPipelineInfo(exchange, request, sb);
 
-            sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
-
-            final var pb = request == null
-                ? null
-                : request.getPipelineInfo();
-
-            if (pb != null) {
-                sb.append("          servedBy=")
-                        .append(pb.getType().name().toLowerCase())
-                        .append(" ");
-
-                if (pb.getName() != null) {
-                    sb
-                            .append("'")
-                            .append(pb.getName())
-                            .append("' ");
-                }
-
-                sb
-                        .append("bound to '")
-                        .append(pb.getUri())
-                        .append("'\n");
-            }
-
-            sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING))
-                    .append("\n");
-            sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
-            sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE))
-                    .append("\n");
-
-            @SuppressWarnings("removal")
-            final Map<String, Cookie> cookies = exchange.getRequestCookies();
-            if (cookies != null) {
-                cookies.entrySet().stream().map((entry) -> entry.getValue()).forEach((cookie) -> {
-                    sb.append("            cookie=").append(cookie.getName()).append("=").append(cookie.getValue())
-                            .append("\n");
-                });
-            }
-            for (final HeaderValues header : exchange.getRequestHeaders()) {
-                header.stream().forEach((value) -> {
-                    if (header.getHeaderName() != null
-                            && "Authorization".equalsIgnoreCase(header
-                                    .getHeaderName().toString())) {
-                        value = "**********";
-                    }
-
-                    sb.append("            header=").append(header.getHeaderName()).append("=").append(value)
-                            .append("\n");
-                });
-            }
-            sb.append("            locale=")
-                    .append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)))
-                    .append("\n");
-            sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
-            final Map<String, Deque<String>> pnames = exchange.getQueryParameters();
-            pnames.entrySet().stream().map((entry) -> {
-                final String pname = entry.getKey();
-                final Iterator<String> pvalues = entry.getValue().iterator();
-                sb.append("         parameter=");
-                sb.append(pname);
-                sb.append('=');
-                while (pvalues.hasNext()) {
-                    sb.append(pvalues.next());
-                    if (pvalues.hasNext()) {
-                        sb.append(", ");
-                    }
-                }
-                return entry;
-            }).forEach((_item) -> {
-                sb.append("\n");
-            });
+            final Map<String, Deque<String>> pnames = getQueryParameters(exchange, sb);
+            appendQueryParameters(sb, pnames);
 
             sb.append("          protocol=").append(exchange.getProtocol()).append("\n");
             sb.append("       queryString=").append(exchange.getQueryString()).append("\n");
@@ -363,6 +284,95 @@ public class RequestLogger extends PipelinedHandler {
         }
 
         addExchangeCompleteListener(exchange, logLevel, sb, start);
+    }
+
+    private Map<String, Deque<String>> getQueryParameters(final HttpServerExchange exchange, final StringBuilder sb) {
+        @SuppressWarnings("removal")
+        final Map<String, Cookie> cookies = exchange.getRequestCookies();
+        if (cookies != null) {
+            cookies.entrySet().stream().map(entry -> entry.getValue())
+                    .forEach(cookie -> sb.append("            cookie=")
+                            .append(cookie.getName()).append("=")
+                            .append(cookie.getValue())
+                            .append("\n"));
+        }
+        for (final HeaderValues header : exchange.getRequestHeaders()) {
+            appendHeaderDetails(sb, header);
+        }
+        sb.append("            locale=")
+                .append(LocaleUtils.getLocalesFromHeader(exchange.getRequestHeaders().get(Headers.ACCEPT_LANGUAGE)))
+                .append("\n");
+        sb.append("            method=").append(exchange.getRequestMethod()).append("\n");
+        return exchange.getQueryParameters();
+    }
+
+    private void appendQueryParameters(final StringBuilder sb, final Map<String, Deque<String>> pnames) {
+        pnames.entrySet().stream().map(entry -> {
+            final String pname = entry.getKey();
+            final Iterator<String> pvalues = entry.getValue().iterator();
+            sb.append("         parameter=");
+            sb.append(pname);
+            sb.append('=');
+            while (pvalues.hasNext()) {
+                sb.append(pvalues.next());
+                if (pvalues.hasNext()) {
+                    sb.append(", ");
+                }
+            }
+            return entry;
+        }).forEach(_item -> sb.append("\n"));
+    }
+
+    private void logRequestPipelineInfo(final HttpServerExchange exchange, final JsonProxyRequest request,
+            final StringBuilder sb) {
+        sb.append("\n----------------------------REQUEST---------------------------\n");
+
+        sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
+
+        final var pb = request == null
+            ? null
+            : request.getPipelineInfo();
+
+        if (pb != null) {
+            sb.append("          servedBy=").append(pb.getType().name().toLowerCase()).append(" ");
+
+            if (pb.getName() != null) {
+                sb.append("'").append(pb.getName()).append("' ");
+            }
+
+            sb.append("bound to '").append(pb.getUri()).append("'\n");
+        }
+
+        sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING))
+                .append("\n");
+        sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");
+        sb.append("       contentType=").append(exchange.getRequestHeaders().get(Headers.CONTENT_TYPE))
+                .append("\n");
+    }
+
+    private void appendHeaderDetails(final StringBuilder sb, final HeaderValues header) {
+        header.stream().forEach(value -> {
+            if (header.getHeaderName() != null
+                    && "Authorization".equalsIgnoreCase(header
+                            .getHeaderName().toString())) {
+                value = "**********";
+            }
+
+            sb.append("            header=")
+                    .append(header.getHeaderName())
+                    .append("=").append(value)
+                    .append("\n");
+        });
+    }
+
+    private void logRequestSummary(final HttpServerExchange exchange, final StringBuilder sb) {
+        sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
+
+        if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
+            sb.append("?").append(exchange.getQueryString());
+        }
+
+        sb.append(" from ").append(exchange.getSourceAddress());
     }
 
     private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel,
@@ -389,74 +399,99 @@ public class RequestLogger extends PipelinedHandler {
                     final SecurityContext sc = exchange1.getSecurityContext();
 
                     if (logLevel == 1) {
-                        sb.append(" =>").append(" status=");
-
-                        if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {
-                            sb.append(RED_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
-                        } else {
-                            sb.append(GREEN_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
-                        }
-
-                        sb.append(" elapsed=").append(System.currentTimeMillis() - start).append("ms")
-                                .append(" contentLength=").append(exchange1.getResponseContentLength());
-
-                        if (sc != null && sc.getAuthenticatedAccount() != null) {
-                            sb.append(" ").append(sc.getAuthenticatedAccount().toString());
-                        }
+                        logResponseDetails(exchange, sb, start, exchange1, sc);
                     } else if (logLevel >= 2) {
-                        sb.append("--------------------------RESPONSE--------------------------\n");
-                        if (sc != null) {
-                            if (sc.isAuthenticated()) {
-                                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
-                                sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
-                                        .append("\n");
-                            } else {
-                                sb.append("          authType=none").append("\n");
-                            }
-                        }
-
-                        sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
-                        sb.append("       contentType=")
-                                .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+                        logResponseAuthDetails(sb, exchange1, sc);
 
                         @SuppressWarnings("removal")
                         final Map<String, Cookie> cookies1 = exchange1.getResponseCookies();
                         if (cookies1 != null) {
-                            cookies1.values().stream().forEach((cookie) -> {
-                                sb.append("            cookie=").append(cookie.getName()).append("=")
-                                        .append(cookie.getValue()).append("; domain=").append(cookie.getDomain())
-                                        .append("; path=").append(cookie.getPath()).append("\n");
-                            });
+                            appendCookiesToLog(sb, cookies1);
                         }
                         for (final HeaderValues header : exchange1.getResponseHeaders()) {
-                            header.stream().forEach((value) -> {
-                                if (header.getHeaderName() != null
-                                        && AUTH_TOKEN_HEADER.toString().equalsIgnoreCase(header
-                                                .getHeaderName().toString())) {
-                                    value = "**********";
-                                }
-
-                                sb.append("            header=").append(header.getHeaderName()).append("=")
-                                        .append(value).append("\n");
-                            });
+                            appendHeaderToLog(sb, header);
                         }
-                        sb.append("            status=");
-
-                        if (exchange.getStatusCode() >= 300) {
-                            sb.append(RED_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
-                        } else {
-                            sb.append(GREEN_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
-                        }
-
-                        sb.append("\n");
-
-                        sb.append("           elapsed=").append(System.currentTimeMillis() - start).append("ms\n");
-                        sb.append("==============================================================");
+                        logResponseSummary(exchange, sb, start, exchange1);
                     }
 
                     nextListener.proceed();
                     RequestPhaseContext.setPhase(RequestPhaseContext.Phase.STANDALONE);
                     LOGGER.info(sb.toString());
                 });
+    }
+
+    private void logResponseSummary(final HttpServerExchange exchange, final StringBuilder sb, final long start,
+            final HttpServerExchange exchange1) {
+        sb.append("            status=");
+
+        if (exchange.getStatusCode() >= 300) {
+            sb.append(RED_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
+        } else {
+            sb.append(GREEN_BOLD_FORMAT).append(exchange1.getStatusCode()).append(RESET_FORMAT);
+        }
+
+        sb.append("\n");
+
+        sb.append("           elapsed=").append(System.currentTimeMillis() - start).append("ms\n");
+        sb.append("==============================================================");
+    }
+
+    private void appendHeaderToLog(final StringBuilder sb, final HeaderValues header) {
+        header.stream().forEach(value -> {
+            if (header.getHeaderName() != null
+                    && AUTH_TOKEN_HEADER.toString().equalsIgnoreCase(header
+                            .getHeaderName().toString())) {
+                value = "**********";
+            }
+
+            sb.append("            header=")
+                    .append(header.getHeaderName())
+                    .append("=")
+                    .append(value).append("\n");
+        });
+    }
+
+    private void appendCookiesToLog(final StringBuilder sb, final Map<String, Cookie> cookies1) {
+        cookies1.values().stream()
+                .forEach(cookie -> sb.append("            cookie=").append(cookie.getName())
+                        .append("=")
+                        .append(cookie.getValue()).append("; domain=").append(cookie.getDomain())
+                        .append("; path=").append(cookie.getPath()).append("\n"));
+    }
+
+    private void logResponseAuthDetails(final StringBuilder sb, final HttpServerExchange exchange1,
+            final SecurityContext sc) {
+        sb.append("--------------------------RESPONSE--------------------------\n");
+        if (sc != null) {
+            if (sc.isAuthenticated()) {
+                sb.append("          authType=").append(sc.getMechanismName()).append("\n");
+                sb.append("          account=").append(sc.getAuthenticatedAccount().toString())
+                        .append("\n");
+            } else {
+                sb.append("          authType=none").append("\n");
+            }
+        }
+
+        sb.append("     contentLength=").append(exchange1.getResponseContentLength()).append("\n");
+        sb.append("       contentType=")
+                .append(exchange1.getResponseHeaders().getFirst(Headers.CONTENT_TYPE)).append("\n");
+    }
+
+    private void logResponseDetails(final HttpServerExchange exchange, final StringBuilder sb, final long start,
+            final HttpServerExchange exchange1, final SecurityContext sc) {
+        sb.append(" =>").append(" status=");
+
+        if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {
+            sb.append(RED_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
+        } else {
+            sb.append(GREEN_BOLD_FORMAT).append(exchange.getStatusCode()).append(RESET_FORMAT);
+        }
+
+        sb.append(" elapsed=").append(System.currentTimeMillis() - start).append("ms")
+                .append(" contentLength=").append(exchange1.getResponseContentLength());
+
+        if (sc != null && sc.getAuthenticatedAccount() != null) {
+            sb.append(" ").append(sc.getAuthenticatedAccount().toString());
+        }
     }
 }
