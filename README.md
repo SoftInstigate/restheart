@@ -39,7 +39,7 @@ RESTHeart ships with [Sophia](https://restheart.org/docs/cloud/sophia/mcp), a na
 
 **Public demo endpoints** (no authentication required):
 ```
-https://sophia-api.restheart.com/mcp/restheart/   — RESTHeart docs knowledge base
+https://sophia-api.restheart.com/mcp/restheart/    — RESTHeart docs knowledge base
 https://sophia-api.restheart.com/mcp/cloud/        — RESTHeart Cloud docs knowledge base
 ```
 
