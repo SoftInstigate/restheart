@@ -1,6 +1,6 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**The Backend Framework with MongoDB Data APIs.**
+**The Agent-Ready Backend for MongoDB**
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
@@ -14,18 +14,17 @@
 
 # What is RESTHeart?
 
-RESTHeart is a complete backend framework for MongoDB. It instantly exposes REST, GraphQL, WebSocket, and SSE APIs with zero server code required. Authentication, authorization, and real-time updates included.
+RESTHeart is the agent-ready backend for MongoDB: it exposes your data through a native MCP server and full REST and GraphQL APIs, so AI agents and developers can read and write without custom integration code.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
-**Ship a working backend in hours, not days.** You configure, not code. Write plugins only when you need custom business logic, in Java, Kotlin, JavaScript, or TypeScript.
-
-**Built for AI-assisted development.** Connect Claude Code, Cursor, or VS Code directly to RESTHeart's live MCP server via [Sophia](https://restheart.org/docs/cloud/sophia/mcp) and get accurate, real-time knowledge of every API and plugin pattern while you build.
+RESTHeart gives AI agents and developers instant, secure access to MongoDB. It ships with a native MCP server that any MCP-compatible client (Claude, Claude Code, Cursor, VS Code) can connect to out of the box, plus full REST, GraphQL, and WebSocket APIs for traditional application development. Built-in authentication and authorization, zero backend boilerplate, and a plugin framework for custom business logic when you need it.
 
 Available as a **Docker** image and **GraalVM** native binary. Built on Java 25, Undertow, and virtual threads.
 
 **Core capabilities:**
 
+- **MCP Server**: Native Model Context Protocol server. Connect any MCP-compatible AI client (Claude, Claude Code, Cursor, VS Code) directly to your MongoDB data with one line of config.
 - **REST API**: Full CRUD, aggregations, filtering, sorting, pagination
 - **GraphQL**: Schema-driven mapping to MongoDB queries
 - **WebSocket**: Real-time change streams and data sync
@@ -33,7 +32,50 @@ Available as a **Docker** image and **GraalVM** native binary. Built on Java 25,
 - **IoT / MQTT**: Connect devices and ingest telemetry directly into MongoDB *(coming soon)*
 - **Authentication and Authorization**: JWT, OAuth2, LDAP, MongoDB-based users, ACL rules
 - **Plugin system**: Extend with Java, Kotlin, JavaScript, or TypeScript for custom business logic
-- **MCP server (Sophia)**: AI clients access RESTHeart docs and plugin API directly from your IDE
+
+---
+
+## AI Agents & MCP
+
+RESTHeart ships with a native [Model Context Protocol (MCP)](https://restheart.org/docs/cloud/sophia/mcp) server. Any MCP-compatible AI client can connect directly to your MongoDB data — no custom integration code required.
+
+**MCP endpoint:**
+```
+http(s)://<restheart-host>/mcp/
+```
+
+**Connect with Claude Code:**
+```bash
+claude mcp add --transport http restheart http://localhost:8080/mcp/
+```
+
+**Connect with Claude Desktop** (add to `claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "restheart": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/"
+    }
+  }
+}
+```
+
+**Connect with stdio clients** (VS Code, Zed — requires Node.js 18+):
+```json
+{
+  "restheart": {
+    "command": "npx",
+    "args": ["mcp-remote", "http://localhost:8080/mcp/"]
+  }
+}
+```
+
+**Public demo MCP endpoints** (no authentication required):
+```
+https://sophia-api.restheart.com/mcp/restheart/    — RESTHeart docs knowledge base
+https://sophia-api.restheart.com/mcp/cloud/        — RESTHeart Cloud docs knowledge base
+```
 
 ---
 
@@ -72,10 +114,10 @@ That's it. No Express routes, no Mongoose schemas, no middleware setup.
 
 ## Use Cases
 
+- **AI agent backends**: Give your agents a production-grade MongoDB backend via MCP. No custom integration code.
 - **API development without boilerplate**: Skip CRUD code, focus on business logic
 - **Mobile and web backends**: Get REST/GraphQL APIs immediately
 - **Real-time applications**: WebSocket and SSE for chat, notifications, and live dashboards
-- **AI-assisted development**: Use Sophia MCP to let your AI coding assistant build against RESTHeart directly
 - **IoT backends**: Collect and store sensor data via MQTT, query it via REST *(coming soon)*
 - **MongoDB Data API replacement**: Self-hosted alternative to the deprecated Atlas Data API ([migration guide](https://www.softinstigate.com/en/blog/posts/mongodb-deprecates-data-api/))
 - **Legacy modernization**: Add modern APIs to existing MongoDB databases
