@@ -1,7 +1,5 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**The Agent-Ready Backend for MongoDB**
-
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -12,9 +10,9 @@
 
 ---
 
-# What is RESTHeart?
+# The Agent-Ready Backend for MongoDB
 
-RESTHeart is the agent-ready backend for MongoDB: it exposes your data through a native MCP server and full REST and GraphQL APIs, so AI agents and developers can read and write without custom integration code.
+RESTHeart exposes your data through a native MCP server and full REST and GraphQL APIs, so AI agents and developers can read and write without custom integration code.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
