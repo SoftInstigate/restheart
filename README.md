@@ -37,26 +37,29 @@ Available as a **Docker** image and **GraalVM** native binary. Built on Java 25,
 
 ## AI Agents & MCP
 
-RESTHeart ships with a native [Model Context Protocol (MCP)](https://restheart.org/docs/cloud/sophia/mcp) server. Any MCP-compatible AI client can connect directly to your MongoDB data — no custom integration code required.
+RESTHeart ships with [Sophia](https://restheart.org/docs/cloud/sophia/mcp), a native Model Context Protocol (MCP) server. Any MCP-compatible AI client can connect directly.
 
-**MCP endpoint:**
+**Public demo endpoints** (no authentication required):
 ```
-http(s)://<restheart-host>/mcp/
+https://sophia-api.restheart.com/mcp/restheart/   — RESTHeart docs knowledge base
+https://sophia-api.restheart.com/mcp/cloud/        — RESTHeart Cloud docs knowledge base
 ```
 
 **Connect with Claude Code:**
 ```bash
-claude mcp add --transport http restheart http://localhost:8080/mcp/
+claude mcp add --transport http sophia-restheart https://sophia-api.restheart.com/mcp/restheart
+claude mcp add --transport http sophia-cloud https://sophia-api.restheart.com/mcp/cloud
 ```
 
-**Connect with Claude Desktop** (add to `claude_desktop_config.json`):
+**Connect with Claude Desktop:**
+Open **Settings → Connectors → Add custom connector** and paste one of the context URLs above.
+
+**Connect with Streamable HTTP clients** (add to MCP settings):
 ```json
 {
-  "mcpServers": {
-    "restheart": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/"
-    }
+  "sophia": {
+    "type": "http",
+    "url": "https://sophia-api.restheart.com/mcp/restheart/"
   }
 }
 ```
@@ -64,18 +67,14 @@ claude mcp add --transport http restheart http://localhost:8080/mcp/
 **Connect with stdio clients** (VS Code, Zed — requires Node.js 18+):
 ```json
 {
-  "restheart": {
+  "sophia": {
     "command": "npx",
-    "args": ["mcp-remote", "http://localhost:8080/mcp/"]
+    "args": ["mcp-remote", "https://sophia-api.restheart.com/mcp/restheart/"]
   }
 }
 ```
 
-**Public demo MCP endpoints** (no authentication required):
-```
-https://sophia-api.restheart.com/mcp/restheart/    — RESTHeart docs knowledge base
-https://sophia-api.restheart.com/mcp/cloud/        — RESTHeart Cloud docs knowledge base
-```
+For private Sophia instances, replace the URL with your own base URL and context ID, and add authentication. See the [MCP documentation](https://restheart.org/docs/cloud/sophia/mcp) for details.
 
 ---
 
