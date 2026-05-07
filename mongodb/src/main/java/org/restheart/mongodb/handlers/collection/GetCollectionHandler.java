@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -83,12 +84,18 @@ public class GetCollectionHandler extends PipelinedHandler {
         long size = -1;
 
         if (request.isCount()) {
+            var filters = request.getFiltersDocument();
+            var estimate = request.isEstimatedCount();
             size = dbs.getCollectionSize(
                 Optional.ofNullable(request.getClientSession()),
                 request.rsOps(),
                 request.getDBName(),
                 request.getCollectionName(),
-                request.getFiltersDocument());
+                filters,
+                estimate);
+
+            var actualStrategy = estimate && (filters == null || filters.isEmpty()) ? "estimated" : "exact";
+            exchange.getResponseHeaders().put(new HttpString("X-Count-Strategy"), actualStrategy);
         }
 
         // ***** get data

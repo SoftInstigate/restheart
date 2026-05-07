@@ -119,7 +119,27 @@ class Collections {
      * account the filters in case)
      */
     public long getCollectionSize(final Optional<ClientSession> cs, final Optional<RSOps> rsOps, final String dbName, String collName, final BsonDocument filters) {
-        return getCollectionSize(cs, collection(rsOps, dbName, collName), filters);
+        return getCollectionSize(cs, rsOps, dbName, collName, filters, false);
+    }
+
+    /**
+     * Returns the number of documents in the given collection.
+     * When {@code estimate} is true and no filter is provided, uses
+     * {@code estimatedDocumentCount()} (metadata-based, O(1)) instead of
+     * {@code countDocuments()}. Falls back to exact count when a filter is present.
+     *
+     * @param cs the ClientSession
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
+     * @param filters the filters to apply
+     * @param estimate if true and filters are empty, return an estimated count from collection metadata
+     * @return the number of documents in the given collection
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public long getCollectionSize(final Optional<ClientSession> cs, final Optional<RSOps> rsOps, final String dbName, String collName, final BsonDocument filters, final boolean estimate) {
+        return getCollectionSize(cs, collection(rsOps, dbName, collName), filters, estimate);
     }
 
     /**
@@ -134,7 +154,29 @@ class Collections {
      * account the filters in case)
      */
     long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
-        return cs.isPresent() ?  coll.countDocuments(cs.get(), filters) : coll.countDocuments(filters);
+        return getCollectionSize(cs, coll, filters, false);
+    }
+
+    /**
+     * Returns the number of documents in the given collection.
+     * When {@code estimate} is true and no filter is provided, uses
+     * {@code estimatedDocumentCount()} (metadata-based, O(1)) — note this
+     * does not honor a client session. With a non-empty filter, falls back
+     * to {@code countDocuments()} since estimatedDocumentCount cannot be filtered.
+     *
+     * @param cs the ClientSession
+     * @param coll the MongoCollection
+     * @param filters the filters to apply
+     * @param estimate if true and filters are empty, return an estimated count from collection metadata
+     * @return the number of documents in the given collection
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters, final boolean estimate) {
+        if (estimate && (filters == null || filters.isEmpty())) {
+            return coll.estimatedDocumentCount();
+        }
+        return cs.isPresent() ? coll.countDocuments(cs.get(), filters) : coll.countDocuments(filters);
     }
 
     /**

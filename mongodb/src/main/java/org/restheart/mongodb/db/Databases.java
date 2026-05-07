@@ -467,6 +467,26 @@ public class Databases {
     }
 
     /**
+     * Returns the number of documents in the given collection.
+     * When {@code estimate} is true and {@code filter} is empty, uses
+     * {@code estimatedDocumentCount()} (metadata-based, O(1)) instead of
+     * {@code countDocuments()}. Falls back to exact count when a filter is present.
+     *
+     * @param cs the ClientSession
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
+     * @param filter the filter to apply
+     * @param estimate if true and the filter is empty, return an estimated count from collection metadata
+     * @return the number of documents in the given collection
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public long getCollectionSize(final Optional<ClientSession> cs, Optional<RSOps> rsOps, String dbName, final String collName, BsonDocument filter, boolean estimate) {
+        return collections.getCollectionSize(cs, rsOps, dbName, collName, filter, estimate);
+    }
+
+    /**
      *
      * @param cs the client session
      * @param rsOps the ReplicaSet connection options
