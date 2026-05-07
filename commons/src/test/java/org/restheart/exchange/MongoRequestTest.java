@@ -21,6 +21,8 @@
 package org.restheart.exchange;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -357,6 +359,26 @@ public class MongoRequestTest {
         // Edge case with identical paths for both request and template
         assertEquals("/api/coll", request("/api/coll", "/api/coll", "/api/coll").getMongoResourceUri());
 
+    }
+
+    /**
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    @Test
+    public void testEstimatedCountFlag() {
+        HttpServerExchange ex = mock(HttpServerExchange.class);
+        when(ex.getRequestPath()).thenReturn("/db/coll");
+        when(ex.getRequestMethod()).thenReturn(HttpString.EMPTY);
+
+        MongoRequest request = MongoRequest.init(ex, "/", "/db/coll");
+
+        assertFalse(request.isEstimatedCount(), "default isEstimatedCount must be false");
+
+        request.setEstimatedCount(true);
+        assertTrue(request.isEstimatedCount(), "isEstimatedCount must be true after setEstimatedCount(true)");
+
+        request.setEstimatedCount(false);
+        assertFalse(request.isEstimatedCount(), "isEstimatedCount must be false after setEstimatedCount(false)");
     }
 
     private MongoRequest request(String path, String where, String what) {

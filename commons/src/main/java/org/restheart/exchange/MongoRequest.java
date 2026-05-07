@@ -130,6 +130,9 @@ public class MongoRequest extends BsonRequest {
     /** Whether to include count information in the response. */
     private boolean count = false;
 
+    /** Whether the count should be computed via estimatedDocumentCount (metadata-based, fast) instead of the exact countDocuments. Falls back to exact when a filter is present. */
+    private boolean estimatedCount = false;
+
     /** Whether ETag validation is required for this request. */
     private boolean etagCheckRequired = false;
 
@@ -852,6 +855,24 @@ public class MongoRequest extends BsonRequest {
      */
     public void setCount(boolean count) {
         this.count = count;
+    }
+
+    /**
+     * @return true if the caller opted-in for an estimated count (count=estimated query param)
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public boolean isEstimatedCount() {
+        return estimatedCount;
+    }
+
+    /**
+     * @param estimatedCount whether to compute the count using estimatedDocumentCount when no filter is provided
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    public void setEstimatedCount(boolean estimatedCount) {
+        this.estimatedCount = estimatedCount;
     }
 
     /**

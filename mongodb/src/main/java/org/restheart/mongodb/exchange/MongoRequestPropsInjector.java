@@ -169,6 +169,9 @@ public class MongoRequestPropsInjector {
 
         if (__count != null) {
             request.setCount(true);
+            if ("estimated".equalsIgnoreCase(__count.getFirst())) {
+                request.setEstimatedCount(true);
+            }
         }
 
         // get and check sort_by parameter
