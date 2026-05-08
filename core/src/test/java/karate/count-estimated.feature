@@ -34,6 +34,24 @@ Scenario: GET _size without count param returns exact count and exact strategy h
     And match response._size == 3
     And match responseHeaders contains { X-Count-Strategy: ['exact'] }
 
+Scenario: GET _size?count keeps exact strategy (count is redundant on _size)
+    * header Authorization = authHeader
+    Given path collSize
+    And param count = ''
+    When method GET
+    Then status 200
+    And match response._size == 3
+    And match responseHeaders contains { X-Count-Strategy: ['exact'] }
+
+Scenario: GET _size?count=true keeps exact strategy
+    * header Authorization = authHeader
+    Given path collSize
+    And param count = 'true'
+    When method GET
+    Then status 200
+    And match response._size == 3
+    And match responseHeaders contains { X-Count-Strategy: ['exact'] }
+
 Scenario: GET _size?count=estimated returns count via metadata, header reports estimated
     * header Authorization = authHeader
     Given path collSize
