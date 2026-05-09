@@ -78,6 +78,13 @@ For private Sophia instances, replace the URL with your own base URL and context
 
 ## Quick Start
 
+
+**Option 1 — Deploy on Railway** (no local install required):
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/restheart?referralCode=PMnqg_&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+**Option 2 — Docker Compose** (local):
+
 ```bash
 # Start MongoDB + RESTHeart with Docker Compose
 curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
