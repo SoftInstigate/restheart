@@ -78,12 +78,17 @@ For private Sophia instances, replace the URL with your own base URL and context
 
 ## Quick Start
 
+To get RESTHeart running in few minutes and make your first API call, there are several options. Choose the one that best fits your needs:
 
-**Option 1 — Deploy on Railway** (no local install required):
+**Option 1 — Deploy on RESTHeart Cloud** (no install required)
+
+[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
+
+**Option 2 — Deploy on Railway** (no install required):
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/restheart?referralCode=PMnqg_&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
-**Option 2 — Docker Compose** (local):
+**Option 3 — Docker Compose** (local):
 
 ```bash
 # Start MongoDB + RESTHeart with Docker Compose
