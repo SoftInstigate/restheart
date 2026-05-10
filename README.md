@@ -82,9 +82,13 @@ To get RESTHeart running in few minutes and make your first API call, there are 
 
 **Option 1 — Deploy on RESTHeart Cloud** (no install required)
 
+The fully managed service by SoftInstigate. No infrastructure to configure or maintain — just sign up and start building. Includes a dashboard, SLA, and support.
+
 [![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
 
-**Option 2 — Deploy on Railway** (no install required):
+**Option 2 — Deploy on Railway** (no install required)
+
+Deploy RESTHeart and MongoDB on your own Railway account in one click. You keep full control of the infrastructure. Free to start, pay only for what you use on Railway.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/restheart?referralCode=PMnqg_&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
