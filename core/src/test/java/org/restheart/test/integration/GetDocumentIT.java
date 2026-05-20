@@ -32,7 +32,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Exchange;
@@ -144,44 +143,17 @@ public class GetDocumentIT extends HttpClientAbstactIT {
         // String oto =
         // json.get("_links").asObject().get("oto").asObject().get("href").asString();
 
-        URIBuilder ub = new URIBuilder();
-
         String[] mtms = mtm.split("\\?");
         String[] mtos = mtm.split("\\?");
         String[] otms = mtm.split("\\?");
         String[] otos = mtm.split("\\?");
 
-        URI _mtm = ub
-                .setScheme(uri.getScheme())
-                .setHost(uri.getHost())
-                .setPort(uri.getPort())
-                .setPath(mtms[0])
-                .setCustomQuery(mtms[1])
-                .build();
+        String base = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort();
 
-        URI _mto = ub
-                .setScheme(uri.getScheme())
-                .setHost(uri.getHost())
-                .setPort(uri.getPort())
-                .setPath(mtos[0])
-                .setCustomQuery(mtos[1])
-                .build();
-
-        URI _otm = ub
-                .setScheme(uri.getScheme())
-                .setHost(uri.getHost())
-                .setPort(uri.getPort())
-                .setPath(otms[0])
-                .setCustomQuery(otms[1])
-                .build();
-
-        URI _oto = ub
-                .setScheme(uri.getScheme())
-                .setHost(uri.getHost())
-                .setPort(uri.getPort())
-                .setPath(otos[0])
-                .setCustomQuery(otos[1])
-                .build();
+        URI _mtm = URI.create(base + mtms[0] + "?" + encodeQueryForUri(mtms[1]));
+        URI _mto = URI.create(base + mtos[0] + "?" + encodeQueryForUri(mtos[1]));
+        URI _otm = URI.create(base + otms[0] + "?" + encodeQueryForUri(otms[1]));
+        URI _oto = URI.create(base + otos[0] + "?" + encodeQueryForUri(otos[1]));
 
         Response respMtm = adminExecutor.execute(Request.Get(_mtm));
         HttpResponse httpRespMtm = respMtm.returnResponse();
@@ -206,5 +178,12 @@ public class GetDocumentIT extends HttpClientAbstactIT {
         assertNotNull(httpRespOto, "check not null get oto response");
         assertEquals(HttpStatus.SC_OK,
                 httpRespOto.getStatusLine().getStatusCode(), "check get oto response status code");
+    }
+
+    // Undertow 2.4+ enforces RFC 3986: '[', ']', '{', '}' are illegal unencoded in query strings.
+    // URI.create() also requires '{' and '}' to be encoded to build a valid URI instance.
+    private static String encodeQueryForUri(String query) {
+        return query.replace("{", "%7B").replace("}", "%7D")
+                    .replace("[", "%5B").replace("]", "%5D");
     }
 }
