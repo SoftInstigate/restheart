@@ -151,7 +151,7 @@ public class URLUtilsTest {
                 new BsonString("id") };
 
         var context = prepareRequest();
-        String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
+        String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
         String result;
         try {
             result = MongoURLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
@@ -171,7 +171,7 @@ public class URLUtilsTest {
                 new BsonString("Seventeen Seconds")
         };
         var context = prepareRequest();
-        String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
+        String expResult = "/dbName/collName?filter={'_id':{'$in':['Three Imaginary Boys','Seventeen Seconds']}}";
         String result;
         try {
             result = MongoURLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
