@@ -21,11 +21,13 @@
 package org.restheart.utils;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.lang.reflect.ParameterizedType;
 import java.util.stream.LongStream;
 
 import org.bson.BsonArray;
@@ -52,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Resources;
+import org.restheart.cache.LoadingCache;
 
 /**
  *
@@ -1030,6 +1033,76 @@ public class BsonUtilsTest {
         assertEquals(new BsonInt32(1), BsonUtils.get(doc, "array[1].idx").get());
         assertFalse(BsonUtils.get(doc, "array[100].idx").isPresent());
         assertFalse(BsonUtils.get(doc, "not.exists").isPresent());
+    }
+
+    @Test
+    public void testXPathGetDoesNotCacheDocumentContexts() {
+        var base = BsonUtils.parse("""
+                {
+                    "doc": {
+                        "nested": {
+                            "value": 1
+                        }
+                    }
+                }
+                """).asDocument();
+
+        for (int i = 0; i < 1_000; i++) {
+            var doc = base.clone();
+            doc.put("_id", new BsonInt32(i));
+            assertTrue(BsonUtils.get(doc, "doc.nested.value").isPresent());
+        }
+
+        var hasDocumentKeyedLoadingCache = Arrays.stream(BsonUtils.class.getDeclaredFields())
+                .filter(f -> LoadingCache.class.isAssignableFrom(f.getType()))
+                .anyMatch(f -> {
+                    var genericType = f.getGenericType();
+
+                    if (!(genericType instanceof ParameterizedType)) {
+                        return false;
+                    }
+
+                    var keyTypeName = ((ParameterizedType) genericType).getActualTypeArguments()[0].getTypeName();
+                    return keyTypeName.equals(BsonDocument.class.getName());
+                });
+
+        assertFalse(hasDocumentKeyedLoadingCache);
+    }
+
+    @Test
+    public void testXPathGetDoesNotRetainProcessedDocuments() {
+        final int docs = 8_000;
+        var refs = new ArrayList<WeakReference<BsonDocument>>(docs);
+
+        for (int i = 0; i < docs; i++) {
+            var doc = BsonUtils.parse("""
+                    {
+                        "doc": {
+                            "nested": {
+                                "value": 1
+                            }
+                        }
+                    }
+                    """).asDocument();
+
+            doc.put("_id", new BsonInt32(i));
+
+            assertTrue(BsonUtils.get(doc, "doc.nested.value").isPresent());
+            refs.add(new WeakReference<>(doc));
+        }
+
+        // Give the GC multiple opportunities under allocation pressure.
+        for (int i = 0; i < 10; i++) {
+            byte[] pressure = new byte[4 * 1024 * 1024];
+            pressure[0] = 1;
+            System.gc();
+        }
+
+        var alive = refs.stream().filter(ref -> ref.get() != null).count();
+
+        // A tiny remainder can be normal due to GC nondeterminism, but widespread
+        // retention would indicate strong references are still being held.
+        assertTrue(alive < docs * 0.05, "too many docs still strongly reachable after GC pressure: " + alive + " / " + docs);
     }
 
 
