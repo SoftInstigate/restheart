@@ -289,7 +289,6 @@ public class BsonUtils {
         }
     }
 
-    private final static LoadingCache<BsonDocument, JXPathContext> jXPathContextCache = CacheFactory.createLocalLoadingCache(100, EXPIRE_POLICY.AFTER_READ, 5_000, doc -> JXPathContext.newContext(doc));
     private final static LoadingCache<String, String> xPathCache = CacheFactory.createLocalLoadingCache(1_000, EXPIRE_POLICY.AFTER_READ, 1_000, dotn -> dotNotationToXPath(dotn));
 
     /**
@@ -305,16 +304,10 @@ public class BsonUtils {
             return Optional.of(doc.get(path));
         }
 
-        final var ctx$ = jXPathContextCache.getLoading(doc);
-
-        if (ctx$.isPresent()) {
-            try {
-                final var xpath$ = xPathCache.getLoading(path);
-                return Optional.of((BsonValue) ctx$.get().getValue(xpath$.get()));
-            } catch(Throwable t) {
-                return Optional.empty();
-            }
-        } else {
+        try {
+            final var xpath$ = xPathCache.getLoading(path);
+            return Optional.of((BsonValue) JXPathContext.newContext(doc).getValue(xpath$.get()));
+        } catch(Throwable t) {
             return Optional.empty();
         }
     }
