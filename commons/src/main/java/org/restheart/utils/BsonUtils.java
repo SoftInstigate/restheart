@@ -290,6 +290,7 @@ public class BsonUtils {
     }
 
     private final static LoadingCache<String, String> xPathCache = CacheFactory.createLocalLoadingCache(1_000, EXPIRE_POLICY.AFTER_READ, 1_000, dotn -> dotNotationToXPath(dotn));
+    private final static LoadingCache<String, List<PathToken>> pathTokensCache = CacheFactory.createLocalLoadingCache(1_000, EXPIRE_POLICY.AFTER_READ, 1_000, BsonUtils::parsePathTokens);
 
     /**
      *
@@ -298,15 +299,25 @@ public class BsonUtils {
      * @return
      */
     public static Optional<BsonValue> get(BsonDocument doc, String path) {
-        if (path == null) {
+        if (doc == null || path == null || path.isBlank()) {
             return Optional.empty();
         } else if (doc.containsKey(path)) {
             return Optional.of(doc.get(path));
         }
 
         try {
-            final var xpath$ = xPathCache.getLoading(path);
-            return Optional.of((BsonValue) JXPathContext.newContext(doc).getValue(xpath$.get()));
+            final var tokens$ = pathTokensCache.getLoading(path);
+            var current = (BsonValue) doc;
+
+            for (var token : tokens$.get()) {
+                current = token.resolve(current);
+
+                if (current == null) {
+                    return Optional.empty();
+                }
+            }
+
+            return Optional.of(current);
         } catch(Throwable t) {
             return Optional.empty();
         }
@@ -319,13 +330,108 @@ public class BsonUtils {
      * @return
      */
     public static Optional<BsonValue> get(JXPathContext ctx, String path) {
-        final String xpath = dotNotationToXPath(path);
-
         try {
-            return Optional.of((BsonValue) ctx.getValue(xpath));
+            final var xpath$ = xPathCache.getLoading(path);
+            return Optional.of((BsonValue) ctx.getValue(xpath$.get()));
         } catch(Throwable t) {
             return Optional.empty();
         }
+    }
+
+    private static List<PathToken> parsePathTokens(String path) {
+        var tokens = new ArrayList<PathToken>();
+
+        var i = 0;
+        while (i < path.length()) {
+            var c = path.charAt(i);
+
+            if (c == '.') {
+                i++;
+                continue;
+            }
+
+            if (c == '[') {
+                i = parseBracketToken(path, i, tokens);
+                continue;
+            }
+
+            var start = i;
+            while (i < path.length()) {
+                c = path.charAt(i);
+                if (c == '.' || c == '[') {
+                    break;
+                }
+                i++;
+            }
+
+            if (start == i) {
+                throw new IllegalArgumentException("invalid path: " + path);
+            }
+
+            tokens.add(PathToken.key(path.substring(start, i)));
+        }
+
+        return tokens;
+    }
+
+    private static int parseBracketToken(String path, int start, List<PathToken> tokens) {
+        if (start + 1 >= path.length()) {
+            throw new IllegalArgumentException("invalid path: " + path);
+        }
+
+        var quote = path.charAt(start + 1);
+        if (quote == '\'' || quote == '"') {
+            var keyStart = start + 2;
+            var keyEnd = path.indexOf(quote + "]", keyStart);
+
+            if (keyEnd < 0) {
+                throw new IllegalArgumentException("invalid path: " + path);
+            }
+
+            tokens.add(PathToken.key(path.substring(keyStart, keyEnd)));
+            return keyEnd + 2;
+        }
+
+        var indexEnd = path.indexOf(']', start + 1);
+
+        if (indexEnd < 0) {
+            throw new IllegalArgumentException("invalid path: " + path);
+        }
+
+        var idx = Integer.parseInt(path.substring(start + 1, indexEnd));
+        tokens.add(PathToken.index(idx));
+
+        return indexEnd + 1;
+    }
+
+    private interface PathToken {
+        static PathToken key(String key) {
+            return current -> {
+                if (!current.isDocument()) {
+                    return null;
+                }
+
+                return current.asDocument().containsKey(key)
+                    ? current.asDocument().get(key)
+                    : null;
+            };
+        }
+
+        static PathToken index(int index) {
+            return current -> {
+                if (!current.isArray()) {
+                    return null;
+                }
+
+                var array = current.asArray();
+
+                return index >= 0 && index < array.size()
+                    ? array.get(index)
+                    : null;
+            };
+        }
+
+        BsonValue resolve(BsonValue current);
     }
 
     /**
@@ -344,8 +450,8 @@ public class BsonUtils {
         dn = dn.replaceAll("\\.(?!.*'\\])", "/");
 
         // replace all [' and '] with /
-        dn = dn.replaceAll("\\['", "/");
-        dn = dn.replaceAll("'\\]", "/");
+        dn = dn.replace("\\['", "/");
+        dn = dn.replace("'\\]", "/");
         // remove tailing /
         if (dn.endsWith("/")) {
             dn = dn.substring(0, dn.length() - 1);
