@@ -227,9 +227,12 @@ public class OAuthAuthorizationService implements ByteArrayService {
                 response.setStatusCode(HttpStatus.SC_MOVED_TEMPORARILY);
                 return;
             }
-            response.getHeaders().put(
-                HttpString.tryFromString("WWW-Authenticate"),
-                "Basic realm=\"RESTHeart\"");
+            if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
+                    && !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
+                response.getHeaders().put(
+                    HttpString.tryFromString("WWW-Authenticate"),
+                    "Basic realm=\"RESTHeart\"");
+            }
             response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }

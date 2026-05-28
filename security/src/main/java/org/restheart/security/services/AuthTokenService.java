@@ -158,7 +158,10 @@ public class AuthTokenService implements ByteArrayService {
 					return;
 				}
 			}
-			response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
+					&& !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
+				response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			}
 			response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			return;
 		}
@@ -382,7 +385,10 @@ public class AuthTokenService implements ByteArrayService {
 	 */
 	private void handleGet(ByteArrayRequest request, ByteArrayResponse response) {
 		if (!request.isAuthenticated()) {
-			response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
+					&& !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
+				response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			}
 			response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
 			return;
 		}

@@ -158,3 +158,33 @@ Scenario: GET /token without authentication - should fail
     Given path '/token'
     When method GET
     Then status 401
+
+# --- no-auth-challenge suppression (bug fix) ---
+
+Scenario: GET /token with No-Auth-Challenge header - 401 must NOT contain WWW-Authenticate
+    Given path '/token'
+    And header No-Auth-Challenge = 'true'
+    When method GET
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'
+
+Scenario: GET /token with noauthchallenge query param - 401 must NOT contain WWW-Authenticate
+    Given path '/token'
+    And param noauthchallenge = 'true'
+    When method GET
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'
+
+Scenario: POST /token with No-Auth-Challenge header - 401 must NOT contain WWW-Authenticate
+    Given path '/token'
+    And header No-Auth-Challenge = 'true'
+    When method POST
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'
+
+Scenario: POST /token with noauthchallenge query param - 401 must NOT contain WWW-Authenticate
+    Given path '/token'
+    And param noauthchallenge = 'true'
+    When method POST
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'
