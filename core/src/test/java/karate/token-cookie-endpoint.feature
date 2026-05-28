@@ -88,3 +88,19 @@ Scenario: POST /token/cookie without authentication - should fail
     Given path '/token/cookie'
     When method POST
     Then status 401
+
+# --- no-auth-challenge suppression (bug fix) ---
+
+Scenario: POST /token/cookie with No-Auth-Challenge header - 401 must NOT contain WWW-Authenticate
+    Given path '/token/cookie'
+    And header No-Auth-Challenge = 'true'
+    When method POST
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'
+
+Scenario: POST /token/cookie with noauthchallenge query param - 401 must NOT contain WWW-Authenticate
+    Given path '/token/cookie'
+    And param noauthchallenge = 'true'
+    When method POST
+    Then status 401
+    And match responseHeaders['WWW-Authenticate'] == '#notpresent'

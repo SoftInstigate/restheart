@@ -60,11 +60,15 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
 
     private String baseUrl = null;
     private String tokenEndpointUri = "/token";
+    private String authorizeEndpointUri = "/authorize";
+    private String registrationEndpointUri = null;
 
     @OnInit
     public void init() {
         this.baseUrl = argOrDefault(config, "base-url", null);
         this.tokenEndpointUri = argOrDefault(config, "token-endpoint-uri", "/token");
+        this.authorizeEndpointUri = argOrDefault(config, "authorize-endpoint-uri", "/authorize");
+        this.registrationEndpointUri = argOrDefault(config, "registration-endpoint-uri", null);
 
         // allow unauthenticated access to this discovery endpoint
         aclRegistry.registerAllow(req -> req.getPath().equals("/.well-known/oauth-authorization-server"));
@@ -78,15 +82,24 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
 
                 var metadata = object()
                     .put("issuer", base)
+                    .put("authorization_endpoint", base + authorizeEndpointUri)
                     .put("token_endpoint", base + tokenEndpointUri)
-                    .put("token_endpoint_auth_methods_supported", array()
-                        .add("client_secret_basic")
-                        .add("client_secret_post"))
+                    .put("response_types_supported", array()
+                        .add("code"))
                     .put("grant_types_supported", array()
+                        .add("authorization_code")
                         .add("password")
                         .add("client_credentials"))
-                    .put("response_types_supported", array()
-                        .add("token"));
+                    .put("code_challenge_methods_supported", array()
+                        .add("S256"))
+                    .put("token_endpoint_auth_methods_supported", array()
+                        .add("none")
+                        .add("client_secret_basic")
+                        .add("client_secret_post"));
+
+                if (registrationEndpointUri != null && !registrationEndpointUri.isBlank()) {
+                    metadata.put("registration_endpoint", base + registrationEndpointUri);
+                }
 
                 response.setContent(metadata);
                 response.setStatusCode(HttpStatus.SC_OK);
