@@ -8,7 +8,8 @@ Feature: POST /auth/invite
     * url baseUrl
     * configure followRedirects = false
     # Ensure owner-test@example.com exists and is active (idempotent)
-    * callonce read('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def setupResult = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerJwt = setupResult.ownerJwt
 
   # ---------------------------------------------------------------------------
   Scenario: happy path — owner invites a new user returns 201
@@ -16,7 +17,7 @@ Feature: POST /auth/invite
     * def inviteEmail = 'invite-user-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "user" }
     When method POST
     Then status 201
@@ -27,7 +28,7 @@ Feature: POST /auth/invite
     * def inviteEmail = 'invite-admin-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "admin" }
     When method POST
     Then status 201
@@ -48,7 +49,7 @@ Feature: POST /auth/invite
     # 1. Invite a plain user (role: user) using the owner
     * def regularEmail = 'regular-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(regularEmail)", "role": "user" }
     When method POST
     Then status 201
@@ -73,16 +74,14 @@ Feature: POST /auth/invite
       """
     When method PATCH
     Then status 200
+    # Capture JWT issued on activation
+    * def activateCookie = responseHeaders['Set-Cookie'][0]
+    * def regularJwt = activateCookie.split('Bearer_')[1].split(';')[0]
 
-    # 4. Compute Basic auth for the regular user (role: user, not owner)
-    * def JavaString = Java.type('java.lang.String')
-    * def Base64     = Java.type('java.util.Base64')
-    * def regularAuth = 'Basic ' + Base64.getEncoder().encodeToString(new JavaString(regularEmail + ':Password123!').getBytes('UTF-8'))
-
-    # 5. Attempt to invite with the regular (user-role) account — must be 403
+    # 4. Attempt to invite with the regular (user-role) account — must be 403
     * def inviteTarget = 'invite-403-target-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
-    And header Authorization = regularAuth
+    And header Authorization = 'Bearer ' + regularJwt
     And request { "email": "#(inviteTarget)", "role": "user" }
     When method POST
     Then status 403
@@ -93,13 +92,13 @@ Feature: POST /auth/invite
     * def inviteEmail = 'invite-dup-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "user" }
     When method POST
     Then status 201
 
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "user" }
     When method POST
     Then status 409
@@ -108,7 +107,7 @@ Feature: POST /auth/invite
   Scenario: missing email in body — returns 400
   # ---------------------------------------------------------------------------
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "role": "user" }
     When method POST
     Then status 400
@@ -119,7 +118,7 @@ Feature: POST /auth/invite
     * def inviteEmail = 'invite-db-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "user" }
     When method POST
     Then status 201

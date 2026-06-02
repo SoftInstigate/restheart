@@ -18,7 +18,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,16 +66,12 @@ public class ActivateService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("acl-registry")
-    private ACLRegistry aclRegistry;
 
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
-        // Register /auth/activate as publicly accessible (no auth required).
-        aclRegistry.registerAllow(r -> "/auth/activate".equals(r.getPath()));
     }
 
     @Override

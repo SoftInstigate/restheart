@@ -16,7 +16,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +41,7 @@ import java.util.Set;
  *                   → 302 to {@code frontendUrl}/auth/login?error=token_expired</li>
  * </ul>
  *
- * <p>The endpoint is public — registered via {@link ACLRegistry#registerAllow} in
- * {@link #onInit()}.
+ * <p>The endpoint is public — access is granted by {@code accountsAclInitializer}.
  */
 @RegisterPlugin(
         name             = "emailVerificationService",
@@ -63,16 +61,12 @@ public class EmailVerificationService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("acl-registry")
-    private ACLRegistry aclRegistry;
 
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
-        // Allow unauthenticated access — the link comes from an email, no session yet
-        aclRegistry.registerAllow(r -> "/auth/verify".equals(r.getPath()));
     }
 
     private DbHelper db(JsonRequest req) {

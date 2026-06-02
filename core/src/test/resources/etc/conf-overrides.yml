@@ -285,6 +285,10 @@
 /mongo/mongo-mounts:
   - what: '*'
     where: /
+  - what: 'restheart-test/users'
+    where: /users
+  - what: 'restheart-test/teams'
+    where: /teams
   - what: '*'
     where: /remappedall
   - what: /testdb
@@ -386,5 +390,3 @@
 /accountsConfig/frontend-app-url: http://localhost:4200/app
 /accountsConfig/terms-version: "1.0"
 /accountsConfig/privacy-version: "1.0"
-/ermes/enabled: false
-/oauthConfig/enabled: false
