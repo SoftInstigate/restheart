@@ -93,6 +93,10 @@
           allowBulkDelete: true         # default false
           allowWriteMode: true          # default false
 
+    - role: owner
+      predicate: path-prefix[path="/auth/invite"] or path-prefix[path="/auth/resend-invite"]
+      priority: 100
+
     - role: $unauthenticated
       predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
       priority: 0
@@ -370,3 +374,17 @@
 
 /logging/log-level: DEBUG
 /core/name: integration-test
+
+# restheart-accounts
+/accountsConfig/db: restheart-test
+/accountsConfig/app-name: TestApp
+/accountsConfig/jwt-key: secret
+/accountsConfig/jwt-issuer: restheart.org
+/accountsConfig/jwt-ttl: 15
+/accountsConfig/cookie-domain: localhost
+/accountsConfig/frontend-url: http://localhost:4200
+/accountsConfig/frontend-app-url: http://localhost:4200/app
+/accountsConfig/terms-version: "1.0"
+/accountsConfig/privacy-version: "1.0"
+/ermes/enabled: false
+/oauthConfig/enabled: false

@@ -57,6 +57,11 @@
     </dependency>
     <dependency>
       <groupId>org.restheart</groupId>
+      <artifactId>restheart-accounts</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.restheart</groupId>
       <artifactId>restheart-security</artifactId>
       <scope>test</scope>
     </dependency>
