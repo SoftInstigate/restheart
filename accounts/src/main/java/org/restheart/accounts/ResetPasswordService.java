@@ -19,7 +19,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,16 +63,12 @@ public class ResetPasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("acl-registry")
-    private ACLRegistry aclRegistry;
 
     private JwtHelper  jwt;
 
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
-        // Register as a public endpoint — no authentication required
-        aclRegistry.registerAllow(r -> r.getPath().startsWith("/auth/reset-password"));
     }
 
     @Override

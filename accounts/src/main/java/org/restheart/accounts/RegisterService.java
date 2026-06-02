@@ -21,7 +21,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +53,7 @@ import java.nio.charset.StandardCharsets;
  *   <li>409 — email address already registered</li>
  * </ul>
  *
- * <p>The endpoint is public (no authentication required) — registered via
- * {@link ACLRegistry#registerAllow} in {@link #onInit()}.
+ * <p>The endpoint is public — access is granted by {@code accountsAclInitializer}.
  */
 @RegisterPlugin(
         name             = "registerService",
@@ -75,13 +73,9 @@ public class RegisterService implements JsonService {
     @Inject("ermes")
     private Ermes ermes;
 
-    @Inject("acl-registry")
-    private ACLRegistry aclRegistry;
 
     @OnInit
     public void onInit() {
-        // Allow unauthenticated access to this endpoint only
-        aclRegistry.registerAllow(r -> "/auth/register".equals(r.getPath()));
     }
 
     private DbHelper db(JsonRequest req) {

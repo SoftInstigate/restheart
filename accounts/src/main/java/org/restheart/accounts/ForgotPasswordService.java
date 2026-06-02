@@ -20,7 +20,6 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,13 +56,9 @@ public class ForgotPasswordService implements JsonService {
     @Inject("ermes")
     private Ermes ermes;
 
-    @Inject("acl-registry")
-    private ACLRegistry aclRegistry;
 
     @OnInit
     public void onInit() {
-        // Register as a public endpoint — no authentication required
-        aclRegistry.registerAllow(r -> r.getPath().startsWith("/auth/forgot-password"));
     }
 
     @Override

@@ -12,12 +12,13 @@ Feature: PATCH /auth/activate
     * url baseUrl
     * configure followRedirects = false
     # Ensure owner-test@example.com exists and is active (idempotent)
-    * callonce read('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def setupResult = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerJwt = setupResult.ownerJwt
 
     # Invite a fresh user for this scenario
     * def inviteEmail = 'activate-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
-    And header Authorization = ownerAuth
+    And header Authorization = 'Bearer ' + ownerJwt
     And request { "email": "#(inviteEmail)", "role": "user" }
     When method POST
     Then status 201
