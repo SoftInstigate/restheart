@@ -98,6 +98,8 @@ public class PluginsScanner {
     private static final String INTERCEPTOR_CLASS_NAME = Interceptor.class.getName();
     /** The fully qualified class name of the Service interface. */
     private static final String SERVICE_CLASS_NAME = Service.class.getName();
+    /** The fully qualified class name of the SseService interface. */
+    private static final String SSE_SERVICE_CLASS_NAME = SseService.class.getName();
     /** The fully qualified class name of the Provider interface. */
     private static final String PROVIDER_CLASS_NAME = Provider.class.getName();
 
@@ -115,6 +117,8 @@ public class PluginsScanner {
     private static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
     /** List of discovered service plugin descriptors. */
     private static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
+    /** List of discovered SSE service plugin descriptors. */
+    private static final ArrayList<PluginDescriptor> SSE_SERVICES = new ArrayList<>();
     /** List of discovered provider plugin descriptors. */
     private static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
@@ -140,6 +144,7 @@ public class PluginsScanner {
                 AUTHENTICATORS.addAll(collectPlugins(scanResult, AUTHENTICATOR_CLASS_NAME));
                 INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
                 SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
+                SSE_SERVICES.addAll(collectPlugins(scanResult, SSE_SERVICE_CLASS_NAME));
                 PROVIDERS.addAll(collectProviders(scanResult));
             }
 
@@ -190,6 +195,7 @@ public class PluginsScanner {
             AUTHENTICATORS.addAll(collectPlugins(scanResult, AUTHENTICATOR_CLASS_NAME));
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
+            SSE_SERVICES.addAll(collectPlugins(scanResult, SSE_SERVICE_CLASS_NAME));
             PROVIDERS.addAll(collectProviders(scanResult));
         }
     }
@@ -287,6 +293,15 @@ public class PluginsScanner {
      */
     static final List<PluginDescriptor> services() {
         return SERVICES;
+    }
+
+    /**
+     * Returns the list of discovered SSE service plugin descriptors.
+     *
+     * @return an unmodifiable list of SSE service plugin descriptors
+     */
+    static final List<PluginDescriptor> sseServices() {
+        return SSE_SERVICES;
     }
 
     private static List<PluginDescriptor> collectPlugins(final ScanResult scanResult, final String className) {

@@ -12,9 +12,6 @@ jobs:
             arch: linux-amd64
           - os: windows-latest
             arch: windows-amd64
-          - os: macos-15-intel
-            arch: "darwin-amd64"
-            java-version: "25.0.1" # Specific Java version for this deprecated arch
           - os: macos-latest
             arch: "darwin-arm64"
     timeout-minutes: 45
@@ -25,22 +22,11 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: ${{ matrix.java-version || '25' }} # Default to 25 if not specified
+          java-version: "25"
           distribution: "graalvm-community"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: "maven"
           native-image-job-reports: "true"
-
-      - name: Build MacOS Intel native
-        if: matrix.arch == 'darwin-amd64'
-        run: |
-          echo "GRAALVM_HOME: $GRAALVM_HOME"
-          echo "JAVA_HOME: $JAVA_HOME"
-          java --version
-          native-image -march=list
-          mvn package -Pnative -DskipTests \
-            -Dnative.march="-march=x86-64" \
-            -Dquarkus.native.additional-build-args="-J-Xmx10g,-J-Xms6g,--gc=serial"
 
       - name: Build MacOS Apple Silicon native
         if: matrix.arch == 'darwin-arm64'

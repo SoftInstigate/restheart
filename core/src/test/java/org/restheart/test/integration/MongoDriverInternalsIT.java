@@ -20,16 +20,15 @@
  */
 package org.restheart.test.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.mongodb.ConnectionString;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -40,6 +39,7 @@ import org.restheart.mongodb.RHMongoClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -52,6 +52,7 @@ import com.mongodb.client.internal.MongoBatchCursorAdapter;
  * (used by the cache feature) continues to work across driver updates.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MongoDriverInternalsIT {
 
@@ -67,20 +68,19 @@ public class MongoDriverInternalsIT {
     public static ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
     static {
-		if (RHMongoClients.mclient() == null) {
-			// set the system property test-connection-string to specify a non-default connection string for testing
-			try {
-				var mongoConnectionString = System.getProperty("test-connection-string");
-				if (mongoConnectionString != null) {
-					MONGO_URI = new ConnectionString(mongoConnectionString);
-				}
-			} catch (Throwable t) {
-				LOGGER.warn("wrong property test-connection-string, using default value");
-			}
+        if (RHMongoClients.mclient() == null) {
+            // set the system property test-connection-string to specify a non-default connection string for testing
+            try {
+                var mongoConnectionString = System.getProperty("test-connection-string");
+                if (mongoConnectionString != null) {
+                    MONGO_URI = new ConnectionString(mongoConnectionString);
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("wrong property test-connection-string, using default value");
+            }
 
-
-			RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI));
-		}
+            RHMongoClients.setClients(com.mongodb.client.MongoClients.create(MONGO_URI));
+        }
     }
 
     @BeforeAll
@@ -89,7 +89,8 @@ public class MongoDriverInternalsIT {
             client = RHMongoClients.mclient();
 
             if (client == null) {
-                throw new IllegalStateException("MongoDB client is null - ensure RESTHeart is properly configured and MongoDB is running");
+                throw new IllegalStateException(
+                        "MongoDB client is null - ensure RESTHeart is properly configured and MongoDB is running");
             }
 
             // Clean up any existing test data
@@ -97,7 +98,7 @@ public class MongoDriverInternalsIT {
 
             // Create test collection and insert test documents
             collection = client.getDatabase(TEST_DB)
-                .getCollection(TEST_COLLECTION, BsonDocument.class);
+                    .getCollection(TEST_COLLECTION, BsonDocument.class);
 
             List<BsonDocument> docs = new ArrayList<>();
             for (int i = 0; i < TEST_DOC_COUNT; i++) {
@@ -109,7 +110,7 @@ public class MongoDriverInternalsIT {
             collection.insertMany(docs);
 
             LOGGER.info("Test setup complete: created {} documents in {}.{}",
-                TEST_DOC_COUNT, TEST_DB, TEST_COLLECTION);
+                    TEST_DOC_COUNT, TEST_DB, TEST_COLLECTION);
         } catch (Exception e) {
             LOGGER.error("Failed to set up test: {}", e.getMessage(), e);
             throw e;
@@ -135,7 +136,7 @@ public class MongoDriverInternalsIT {
     @Test
     public void testCursorDocsReflectionAccess() {
         try (var cursor = collection.find().batchSize(1000).cursor()) {
-			cursor.tryNext(); // force fetch
+            cursor.tryNext(); // force fetch
             // Now try to access the internal batch via reflection
             var cursorDocs = cursorDocs(cursor);
 
@@ -143,8 +144,9 @@ public class MongoDriverInternalsIT {
             assertTrue(cursorDocs.size() >= 0, "Cursor docs should be a valid list");
             LOGGER.info("Successfully accessed cursor batch with {} documents", cursorDocs.size());
         } catch (NoSuchFieldException e) {
-            fail("MongoDB driver internal structure has changed! Field 'curBatch' not found in MongoBatchCursorAdapter. " +
-                 "The cache feature needs to be updated. Error: " + e.getMessage());
+            fail("MongoDB driver internal structure has changed! Field 'curBatch' not found in MongoBatchCursorAdapter. "
+                    +
+                    "The cache feature needs to be updated. Error: " + e.getMessage());
         } catch (IllegalAccessException e) {
             fail("Cannot access MongoDB driver internal field 'curBatch'. Error: " + e.getMessage());
         } catch (Exception e) {
@@ -165,7 +167,9 @@ public class MongoDriverInternalsIT {
 
             // After exhaustion, curBatch may be null
             List<BsonDocument> cursorDocs = cursorDocs(cursor);
-            LOGGER.info("Exhausted cursor batch state: {}", cursorDocs == null ? "null" : cursorDocs.size() + " docs");
+            LOGGER.info("Exhausted cursor batch state: {}", cursorDocs == null
+                ? "null"
+                : cursorDocs.size() + " docs");
 
             // We don't assert anything here because null is valid for exhausted cursors
             // This test just documents the behavior
@@ -191,7 +195,7 @@ public class MongoDriverInternalsIT {
 
             if (cursorDocs != null) {
                 // Check if there are any nulls in the batch
-                long nullCount = cursorDocs.stream().filter(doc -> doc == null).count();
+                long nullCount = cursorDocs.stream().filter(Objects::isNull).count();
 
                 if (nullCount > 0) {
                     LOGGER.warn("Found {} null documents in cursor batch - this can cause NPEs!", nullCount);
@@ -209,21 +213,19 @@ public class MongoDriverInternalsIT {
     /**
      * Replicate the cursorDocs() method from Collections class but throwing
      */
-     @SuppressWarnings("unchecked")
-     private List<BsonDocument> cursorDocs(MongoCursor<?> cursor) throws NoSuchFieldException, IllegalAccessException {
-		 var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("curBatch");
-		 _batchCursor.setAccessible(true);
-		 var curBatch = (List<BsonDocument>) _batchCursor.get(cursor);
+    @SuppressWarnings("unchecked")
+    private List<BsonDocument> cursorDocs(MongoCursor<?> cursor) throws NoSuchFieldException, IllegalAccessException {
+        var curBatch = (List<BsonDocument>) getReflectiveField(cursor, MongoBatchCursorAdapter.class, "curBatch");
 
-		 // Filter out null values - the driver's internal list may contain nulls in certain states
-		 if (curBatch != null) {
-			 return curBatch.stream()
-				 .filter(doc -> doc != null)
-				 .collect(Collectors.toList());
-		 }
+        // Filter out null values - the driver's internal list may contain nulls in certain states
+        if (curBatch != null) {
+            return curBatch.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
 
-		 return null;
-     }
+        return null;
+    }
 
     /**
      * Test that the old cursorCount method no longer works (documents why we switched to cursorDocs)
@@ -251,25 +253,38 @@ public class MongoDriverInternalsIT {
     /**
      * Replicate the old cursorCount() method that no longer works reliably
      */
-    @SuppressWarnings("unchecked")
     private int getCursorCount(MongoCursor<?> cursor) {
         try {
-            var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("batchCursor");
-            _batchCursor.setAccessible(true);
-            var batchCursor = _batchCursor.get(cursor);
-
-            var _commandCursorResult = batchCursor.getClass().getDeclaredField("commandCursorResult");
-            _commandCursorResult.setAccessible(true);
-            var commandCursorResult = _commandCursorResult.get(batchCursor);
-
-            var _results = commandCursorResult.getClass().getDeclaredField("results");
-            _results.setAccessible(true);
-            var results = (List) _results.get(commandCursorResult);
-
+            var batchCursor = getReflectiveField(cursor, MongoBatchCursorAdapter.class, "batchCursor");
+            var commandCursorResult = getReflectiveField(batchCursor, batchCursor.getClass(), "commandCursorResult");
+            var results = (List<?>) getReflectiveField(commandCursorResult, commandCursorResult.getClass(), "results");
             return results.size();
-        } catch(NoSuchFieldException | IllegalAccessException ex) {
-            LOGGER.warn("cannot access field Cursor.batchCursor.commandCursorResult.results", ex);
+        } catch (NoSuchFieldException | IllegalAccessException ex) {
+            LOGGER.warn("cannot access field Cursor.batchCursor.commandCursorResult.results: {}", ex.getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Generic helper for reflective field access.
+     *
+     * This method intentionally uses setAccessible(true) to bypass Java access control,
+     * which is necessary for the test to access private fields in the MongoDB driver.
+     * This is a legitimate use case for testing internal driver behavior that the
+     * cache feature depends on.
+     *
+     * @param instance the object to access the field from
+     * @param clazz the class declaring the field
+     * @param fieldName the name of the field to access
+     * @return the field value from the instance
+     * @throws NoSuchFieldException if the field does not exist
+     * @throws IllegalAccessException if the field cannot be accessed
+     */
+    @SuppressWarnings("java:S3011")
+    private Object getReflectiveField(Object instance, Class<?> clazz, String fieldName)
+            throws NoSuchFieldException, IllegalAccessException {
+        var field = clazz.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(instance);
     }
 }

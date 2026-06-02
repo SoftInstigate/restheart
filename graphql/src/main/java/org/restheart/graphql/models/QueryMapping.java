@@ -78,16 +78,17 @@ public class QueryMapping extends FieldMapping implements Batchable {
     @Override
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
-            var options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
+            var optionsBuilder = DataLoaderOptions.newOptions()
+                .setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()))
+                .setBatchingEnabled(this.dataLoaderSettings.getBatching())
+                .setCachingEnabled(this.dataLoaderSettings.getCaching())
+                .setStatisticsCollector(SimpleStatisticsCollector::new);
 
             if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
-                options.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
+                optionsBuilder.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
             }
 
-            options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
-            options.setCachingEnabled(this.dataLoaderSettings.getCaching());
-
-            options.setStatisticsCollector(SimpleStatisticsCollector::new);
+            var options = optionsBuilder.build();
 
             return DataLoaderFactory.newDataLoader(new QueryBatchLoader(this.db, this.collection, this.dataLoaderSettings.getQueryTimeLimit()), options);
         } else {

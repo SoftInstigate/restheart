@@ -73,14 +73,16 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     @Override
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
-            var options = new DataLoaderOptions().setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()));
+            var optionsBuilder = DataLoaderOptions.newOptions()
+                .setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()))
+                .setBatchingEnabled(this.dataLoaderSettings.getBatching())
+                .setCachingEnabled(this.dataLoaderSettings.getCaching());
 
             if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
-                options.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
+                optionsBuilder.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
             }
 
-            options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
-            options.setCachingEnabled(this.dataLoaderSettings.getCaching());
+            var options = optionsBuilder.build();
 
             return DataLoaderFactory.newDataLoader(new AggregationBatchLoader(this.db.getValue(), this.collection.getValue(), this.allowDiskUse.getValue(), this.dataLoaderSettings.getQueryTimeLimit()), options);
         }

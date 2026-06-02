@@ -805,6 +805,8 @@ public final class Bootstrapper {
 
         plugServices();
 
+        plugSseServices();
+
         plugProxies(configuration, authMechanisms, authorizers, tokenManager);
 
         plugStaticResourcesHandlers(configuration);
@@ -889,6 +891,70 @@ public final class Bootstrapper {
             final var duration = System.currentTimeMillis() - startTime;
             BootstrapLogger.endPhase(LOGGER, "SERVICE BINDING COMPLETED in {}ms", duration);
         }
+    }
+
+    /**
+     * Plugs SSE services discovered by the plugin scanner.
+     *
+     * <p>SSE services implement {@link org.restheart.plugins.SseService} and are wired via
+     * Undertow's {@code ServerSentEventHandler}. They are kept in a separate registry bucket
+     * and are not processed by {@code plugServices()}.
+     *
+     * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
+     */
+    private static void plugSseServices() {
+        final var sseServices = PluginsRegistryImpl.getInstance().getSseServices().stream()
+                .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
+                .toList();
+
+        if (sseServices.isEmpty()) {
+            BootstrapLogger.startPhase(LOGGER, "SSE SERVICE BINDING");
+            BootstrapLogger.info(LOGGER, "No SSE services configured");
+            BootstrapLogger.endPhase(LOGGER, "SSE SERVICE BINDING COMPLETED");
+            return;
+        }
+
+        BootstrapLogger.startPhase(LOGGER, "SSE SERVICE BINDING");
+        final var startTime = System.currentTimeMillis();
+
+        sseServices.forEach(srv -> {
+            final var srvConfArgs = srv.getConfArgs();
+
+            final String uri;
+            if (srvConfArgs == null || !srvConfArgs.containsKey("uri") || srvConfArgs.get("uri") == null) {
+                var ann = srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class);
+                var defaultUri = ann.defaultURI();
+                uri = (defaultUri == null || defaultUri.isEmpty()) ? "/" + ann.name() : defaultUri;
+            } else {
+                if (!(srvConfArgs.get("uri") instanceof String)) {
+                    BootstrapLogger.errorItem(LOGGER, "✗ Cannot start SSE service {}: 'uri' must be a string",
+                            srv.getName());
+                    return;
+                }
+                uri = (String) srvConfArgs.get("uri");
+            }
+
+            if (uri == null) {
+                BootstrapLogger.errorItem(LOGGER, "✗ Cannot start SSE service {}: 'uri' is not defined",
+                        srv.getName());
+                return;
+            }
+
+            if (!uri.startsWith("/")) {
+                BootstrapLogger.errorItem(LOGGER, "✗ Cannot start SSE service {}: 'uri' must start with /",
+                        srv.getName());
+                return;
+            }
+
+            final var secured = srv.isSecure();
+
+            PluginsRegistryImpl.getInstance().plugSseService(srv, uri, secured);
+
+            BootstrapLogger.item(LOGGER, "URI {} bound to SSE service {}, secured: {}", uri, srv.getName(), secured);
+        });
+
+        final var duration = System.currentTimeMillis() - startTime;
+        BootstrapLogger.endPhase(LOGGER, "SSE SERVICE BINDING COMPLETED in {}ms", duration);
     }
 
     /**

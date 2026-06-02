@@ -1,7 +1,5 @@
 # <img src="https://cloud.restheart.com/assets/img/restheart%20logo.svg" alt="RESTHeart logo" width="32px" height="auto" /> RESTHeart
 
-**Open Source REST API & GraphQL Server — Instant backend APIs with low code required.**
-
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build snapshot release](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml/badge.svg)](https://github.com/SoftInstigate/restheart/actions/workflows/branch.yml)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -12,25 +10,106 @@
 
 ---
 
-## What is RESTHeart?
+# The Agent-Ready Backend for MongoDB
 
-RESTHeart is an **open-source Java server** that auto-generates REST, GraphQL, and WebSocket APIs from your database collections.
+RESTHeart exposes your data through a native MCP server and full REST and GraphQL APIs, so AI agents and developers can read and write without custom integration code.
+
+![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
+
+RESTHeart gives AI agents and developers instant, secure access to MongoDB. It ships with a native MCP server that any MCP-compatible client (Claude, Claude Code, Cursor, VS Code) can connect to out of the box, plus full REST, GraphQL, and WebSocket APIs for traditional application development. Built-in authentication and authorization, zero backend boilerplate, and a plugin framework for custom business logic when you need it.
+
+Available as a **Docker** image and **GraalVM** native binary. Built on Java 25, Undertow, and virtual threads.
 
 **Core capabilities:**
 
-- **REST API** — Full CRUD operations, aggregations, filtering, sorting, pagination
-- **GraphQL** — Create GraphQL APIs with schema definitions and MongoDB mappings
-- **WebSocket** — Real-time change streams and data synchronization
-- **Authentication** — JWT, OAuth2, LDAP, and MongoDB-based user management
-- **Authorization** — Role-based access control (RBAC) and declarative security policies
+- **MCP Server**: Native Model Context Protocol server. Connect any MCP-compatible AI client (Claude, Claude Code, Cursor, VS Code) directly to your MongoDB data with one line of config.
+- **REST API**: Full CRUD, aggregations, filtering, sorting, pagination
+- **GraphQL**: Schema-driven mapping to MongoDB queries
+- **WebSocket**: Real-time change streams and data sync
+- **SSE**: Server-Sent Events for live dashboards, IoT feeds, and event streams
+- **IoT / MQTT**: Connect devices and ingest telemetry directly into MongoDB *(coming soon)*
+- **Authentication and Authorization**: JWT, OAuth2, LDAP, MongoDB-based users, ACL rules
+- **Plugin system**: Extend with Java, Kotlin, JavaScript, or TypeScript for custom business logic
 
-**No code required** for standard database operations. Write plugins in Java, JavaScript, or Python only when you need custom business logic.
+---
 
-**Database support:** MongoDB, MongoDB Atlas, Percona Server, AWS DocumentDB, Azure Cosmos DB, FerretDB.
+## AI Agents & MCP
 
-### Example
+RESTHeart ships with [Sophia](https://restheart.org/docs/cloud/sophia/mcp), a native Model Context Protocol (MCP) server. Any MCP-compatible AI client can connect directly.
 
-Query MongoDB directly via HTTP:
+**Public demo endpoints** (no authentication required):
+```
+https://sophia-api.restheart.com/mcp/restheart/    — RESTHeart docs knowledge base
+https://sophia-api.restheart.com/mcp/cloud/        — RESTHeart Cloud docs knowledge base
+```
+
+**Connect with Claude Code:**
+```bash
+claude mcp add --transport http sophia-restheart https://sophia-api.restheart.com/mcp/restheart
+claude mcp add --transport http sophia-cloud https://sophia-api.restheart.com/mcp/cloud
+```
+
+**Connect with Claude Desktop:**
+Open **Settings → Connectors → Add custom connector** and paste one of the context URLs above.
+
+**Connect with Streamable HTTP clients** (add to MCP settings):
+```json
+{
+  "sophia": {
+    "type": "http",
+    "url": "https://sophia-api.restheart.com/mcp/restheart/"
+  }
+}
+```
+
+**Connect with stdio clients** (VS Code, Zed — requires Node.js 18+):
+```json
+{
+  "sophia": {
+    "command": "npx",
+    "args": ["mcp-remote", "https://sophia-api.restheart.com/mcp/restheart/"]
+  }
+}
+```
+
+For private Sophia instances, replace the URL with your own base URL and context ID, and add authentication. See the [MCP documentation](https://restheart.org/docs/cloud/sophia/mcp) for details.
+
+---
+
+## Quick Start
+
+To get RESTHeart running in few minutes and make your first API call, there are several options. Choose the one that best fits your needs:
+
+**Option 1 — Deploy on RESTHeart Cloud** (no install required)
+
+The fully managed service by SoftInstigate. No infrastructure to configure or maintain — just sign up and start building. Includes a dashboard, SLA, and support.
+
+[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
+
+**Option 2 — Deploy on Railway** (no install required)
+
+Deploy RESTHeart and MongoDB on your own Railway account in one click. You keep full control of the infrastructure. Free to start, pay only for what you use on Railway.
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/restheart?referralCode=PMnqg_&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+**Option 3 — Docker Compose** (local):
+
+```bash
+# Start MongoDB + RESTHeart with Docker Compose
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
+  --output docker-compose.yml && docker compose up --attach restheart
+
+# Test it
+curl http://localhost:8080/ping
+```
+
+Default credentials: `admin` / `secret` (change in production)
+
+More options: https://restheart.org/docs/foundations/quick-start
+
+---
+
+## Example: Query MongoDB via HTTP
 
 ```javascript
 const url = encodeURI('https://demo.restheart.org/messages?filter={"from":"Bob"}&pagesize=1');
@@ -40,262 +119,33 @@ fetch(url)
   .then(json => console.log(JSON.stringify(json, null, 2)));
 ```
 
-📄 **Complete documentation** available at <https://restheart.org/docs/>
+That's it. No Express routes, no Mongoose schemas, no middleware setup.
 
----
-
-## Architecture & Features
-
-![RESTHeart architecture diagram](docs/restheart-architecture.svg)
-
-| Feature | Description |
-|-------------|--------------|
-| 🧩 **Automatic API Generation** | REST APIs auto-generated from MongoDB collections — no manual endpoint definition |
-| 📊 **GraphQL Support** | Build GraphQL APIs with schema definitions and MongoDB query mappings |
-| ⚙️ **Plugin System** | Extend via Services, Interceptors, Initializers, and Providers — hot-reload support |
-| 🔐 **Security** | Pluggable authentication (JWT, OAuth2, LDAP, custom) and ACL-based authorization |
-| 💬 **WebSockets** | Native change stream support with automatic client synchronization |
-| 🚀 **Performance** | Undertow NIO server with Java 21 Virtual Threads — 10K+ concurrent connections |
-| 🌐 **Polyglot** | Java, Kotlin native support — JavaScript, TypeScript, Python via GraalVM |
-| 📈 **Observability** | Prometheus metrics, health endpoints, request/response logging |
-| 🧰 **Developer Tools** | CLI for plugin development, Docker images, GraalVM native compilation |
-| ☁️ **Deployment** | Stateless architecture — runs on VMs, containers, Kubernetes, or as native binary |
+📄 Full documentation: https://restheart.org/docs/
 
 ---
 
 ## Use Cases
 
-- **Rapid API development** — Skip boilerplate CRUD code, focus on business logic
-- **Mobile/web backends** — REST and GraphQL APIs without Express.js/Fastify setup  
-- **Real-time applications** — WebSocket support for chat, notifications, live updates
-- **Legacy MongoDB modernization** — Add modern APIs to existing databases without data migration
-- **MongoDB Data API replacement** — Drop-in alternative for the deprecated MongoDB Atlas Data API with enhanced features
-- **Prototyping & MVPs** — Functional backend in minutes for proof-of-concepts
-- **Microservices** — Lightweight, stateless architecture with built-in API gateway features
-- **IoT data collection** — Efficient resource usage, fast startup, edge deployment ready
-- **PostgreSQL with MongoDB API** — Use MongoDB query syntax with PostgreSQL via FerretDB translation layer
+- **AI agent backends**: Give your agents a production-grade MongoDB backend via MCP. No custom integration code.
+- **API development without boilerplate**: Skip CRUD code, focus on business logic
+- **Mobile and web backends**: Get REST/GraphQL APIs immediately
+- **Real-time applications**: WebSocket and SSE for chat, notifications, and live dashboards
+- **IoT backends**: Collect and store sensor data via MQTT, query it via REST *(coming soon)*
+- **MongoDB Data API replacement**: Self-hosted alternative to the deprecated Atlas Data API ([migration guide](https://www.softinstigate.com/en/blog/posts/mongodb-deprecates-data-api/))
+- **Legacy modernization**: Add modern APIs to existing MongoDB databases
+- **PostgreSQL with MongoDB API**: Use via FerretDB for PostgreSQL storage ([tutorial](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/))
 
 ---
 
-## MongoDB Data API Replacement
+## Extend with Plugins
 
-**MongoDB deprecated its Atlas Data API in September 2024.** RESTHeart is a powerful, self-hosted alternative that provides everything the Data API offered — and much more.
+Write custom logic only when you need it. RESTHeart handles the rest.
 
-### Why Choose RESTHeart as Your Data API Alternative?
-
-| Feature | MongoDB Data API | RESTHeart |
-|---------|------------------|-----------|
-| **REST API** | ✅ Basic CRUD | ✅ Full CRUD + aggregations |
-| **GraphQL** | ❌ | ✅ With schema definitions |
-| **WebSocket** | ❌ | ✅ Change streams |
-| **Hosting** | Atlas only | Self-hosted or cloud |
-| **Authentication** | API keys | JWT, OAuth2, LDAP, custom |
-| **Real-time** | ❌ | ✅ Native support |
-| **Extensibility** | ❌ | ✅ Plugin system |
-| **Status** | Deprecated | Active development |
-
-### Migration Benefits
-
-- **No vendor lock-in** — Works with MongoDB Atlas, self-hosted MongoDB, or compatible databases
-- **Enhanced features** — GraphQL support, WebSockets, advanced filtering, aggregation pipelines
-- **Better security** — Multiple authentication mechanisms, fine-grained authorization
-- **Cost control** — Self-hosted option eliminates per-request pricing
-- **Future-proof** — Active open-source community and commercial support
-
-📖 **Read more:** [MongoDB Deprecates Data API - What's Next?](https://www.softinstigate.com/en/blog/posts/mongodb-deprecates-data-api/)
-
----
-
-## PostgreSQL Support via FerretDB
-
-While RESTHeart is MongoDB-native, you can use it with **PostgreSQL** through [FerretDB](https://www.ferretdb.com/) — an open-source MongoDB-compatible database that uses PostgreSQL as its storage engine.
-
-### How It Works
-
-```
-Application → RESTHeart → FerretDB → PostgreSQL
-             (MongoDB API) (Translation Layer) (Storage)
-```
-
-FerretDB translates MongoDB wire protocol commands to SQL queries, allowing RESTHeart to:
-
-- Provide MongoDB-style REST and GraphQL APIs
-- Use MongoDB query syntax (filters, projections, aggregations)
-- Store data in PostgreSQL tables
-- Leverage PostgreSQL's ACID guarantees and ecosystem
-
-### When to Use FerretDB with RESTHeart
-
-✅ **Good for:**
-- Teams familiar with MongoDB wanting PostgreSQL's reliability
-- Organizations with PostgreSQL expertise and infrastructure
-- Projects requiring PostgreSQL-specific features (full-text search, PostGIS)
-- Gradual migration from MongoDB to PostgreSQL
-
-⚠️ **Limitations:**
-- Some advanced MongoDB features not yet supported (check [FerretDB compatibility](https://docs.ferretdb.io/reference/supported-commands/))
-- Performance characteristics differ from native MongoDB
-- Change streams support depends on FerretDB version
-
-📖 **Complete tutorial:** [Getting Started with FerretDB and RESTHeart](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/)
-
----
-
-## Comparison with Similar Tools
-
-| Feature | RESTHeart | Hasura | Prisma | PostGraphile | Parse |
-|---------|-----------|--------|--------|--------------|-------|
-| **Target Database** | MongoDB + compatible | PostgreSQL, MySQL, SQL Server, BigQuery | PostgreSQL, MySQL, SQL Server, SQLite, MongoDB*, CockroachDB | PostgreSQL | MongoDB, PostgreSQL |
-| **REST API** | ✅ Auto-generated | ⚠️ RESTified endpoints (manual setup) | ❌ | ✅ Auto-generated | ✅ Auto-generated |
-| **GraphQL** | ✅ With schema + mappings | ✅ Auto-generated | ⚠️ Via Nexus/Pothos | ✅ Auto-generated | ✅ Auto-generated |
-| **WebSocket/Subscriptions** | ✅ Native change streams | ✅ GraphQL subscriptions | ❌ | ⚠️ Plugin-based | ✅ Live Queries |
-| **Built-in Auth** | ✅ JWT, OAuth2, LDAP | ✅ JWT, webhooks | ❌ | ⚠️ Postgres RLS | ✅ Built-in user system, OAuth |
-| **Architecture** | API server (zero-code) | API server (zero-code) | ORM/Query builder | API server (zero-code) | Backend-as-a-Service |
-| **Primary Use Case** | Instant APIs for MongoDB | Instant APIs for PostgreSQL | Type-safe database client | Instant APIs for PostgreSQL | Mobile/web app backend |
-| **Language** | Java 21 | Haskell (core), TypeScript | TypeScript/Node.js | TypeScript/Node.js | Node.js |
-| **Runtime** | JVM / GraalVM Native | Binary executable | Node.js (library) | Node.js | Node.js |
-| **License** | AGPL / Commercial | Apache 2.0 | Apache 2.0 | MIT | Apache 2.0 |
-
-_*Prisma's MongoDB support has limitations: no migrations tool, limited aggregation pipeline support, performance concerns documented in GitHub issues. It's primarily designed for relational databases._
-
-**Key differences:**
-
-- **RESTHeart** provides auto-generated REST APIs and configurable GraphQL APIs (with schema definitions); Hasura and PostGraphile focus on auto-generated GraphQL with optional REST endpoints
-- **Hasura's REST endpoints** are "RESTified" - you manually create REST wrappers for GraphQL queries, not auto-generated from database schema
-- **Prisma** is fundamentally different - it's a database client/ORM library, not a standalone API server. You use it to build your own API server
-- **Parse** is a full Backend-as-a-Service (BaaS) platform with additional features like push notifications, file storage, and cloud functions
-- **PostGraphile** is PostgreSQL-exclusive; RESTHeart is MongoDB-exclusive (with PostgreSQL via FerretDB); Hasura supports multiple SQL databases; Parse supports MongoDB and PostgreSQL
-- RESTHeart uses Java Virtual Threads for high-concurrency workloads; others use Node.js async or compiled binaries
-
----
-
-## Quick Start
-
-Start MongoDB and RESTHeart with Docker Compose:
-
-```bash
-curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
-  --output docker-compose.yml && docker compose up --pull=always --attach restheart
-```
-
-Test the deployment:
-
-```bash
-curl localhost:8080/ping
-```
-
-RESTHeart is now running. APIs are available at `http://localhost:8080/`.
-
----
-
-## API Examples
-
-### REST API
-
-```bash
-# Query with filters
-curl 'http://localhost:8080/people?filter={"age":{"$gt":30}}'
-
-# Pagination and sorting
-curl 'http://localhost:8080/people?pagesize=10&page=1&sort={"name":1}'
-
-# Projection (select specific fields)
-curl 'http://localhost:8080/people?keys={"name":1,"age":1}'
-```
-
-### GraphQL API
-
-> **Note:** GraphQL APIs require creating a GraphQL app definition with schema and mappings. See the [GraphQL documentation](https://restheart.org/docs/mongodb-graphql/getting-started) for setup instructions.
-
-```graphql
-{
-  people(filter: "{'age': {'$gt': 30}}", pagesize: 5, sort: NAME_ASC) {
-    _id
-    name
-    age
-    email
-  }
-}
-```
-
-### WebSocket API
-
-```javascript
-// Connect to change streams
-const ws = new WebSocket("wss://demo.restheart.org/ws/messages");
-
-// Receive updates when data changes
-ws.onmessage = e => {
-  const update = JSON.parse(e.data);
-  console.log("Update:", update);
-};
-
-// Optional: filter updates
-ws.send(JSON.stringify({ 
-  filter: { from: "Alice" } 
-}));
-```
-
----
-
-## Configuration
-
-Configuration via YAML file or `RHO` environment variable.
-
-**Key areas:**
-
-- 🔌 **MongoDB Connection** — Connection strings, replica sets, authentication
-- 👥 **User Management** — Define users, roles, and permissions
-- 🔐 **Authentication** — JWT, OAuth2, LDAP, custom mechanisms
-- 🛡️ **Authorization** — ACL rules, role-based access control
-- 🔧 **Plugin System** — Register and configure custom extensions
-- 📊 **Monitoring** — Metrics collection, logging levels, health checks
-
-Example:
-
-```yaml
-mongo-uri: mongodb://localhost:27017
-
-auth:
-  mechanism: basicAuth
-  users:
-    - userid: admin
-      password: secret
-      roles: [admin]
-
-cors:
-  enabled: true
-  allow-origin: "*"
-```
-
-📖 See the [Configuration Guide](https://restheart.org/docs/configuration) for complete details.
-
----
-
-## Plugin Architecture
-
-Extend RESTHeart via plugins when you need custom logic beyond generated APIs.
-
-**Plugin Types:**
-
-- **Services** — Custom REST endpoints and APIs
-- **Interceptors** — Modify requests/responses, add validation, logging
-- **Initializers** — Run code at startup (database setup, caching)
-- **Providers** — Dependency injection for shared components
-
-**Supported Languages:**
-
-- Java, Kotlin (native JVM support)
-- JavaScript, TypeScript (via GraalVM)
-- Python (via GraalVM)
-
-### Example Plugin (Java)
+### Java Plugin
 
 ```java
-@RegisterPlugin(
-    name = "greetings",
-    description = "A simple greeting service"
-)
+@RegisterPlugin(name = "greetings")
 public class GreeterService implements JsonService {
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
@@ -306,12 +156,12 @@ public class GreeterService implements JsonService {
 }
 ```
 
-### Example Plugin (JavaScript)
+### JavaScript Plugin
 
 ```javascript
 export const options = {
     name: "greetings",
-    description: "A simple greeting service"
+    uri: "/greetings"
 }
 
 export function handle(request, response) {
@@ -323,7 +173,16 @@ export function handle(request, response) {
 }
 ```
 
-🔧 Use [restheart-cli](https://github.com/SoftInstigate/restheart-cli) for plugin scaffolding, testing, and hot-reload during development.
+**Plugin types:**
+
+- **Services**: custom REST endpoints
+- **Interceptors**: modify requests and responses, add validation
+- **Initializers**: run code at startup
+- **Providers**: dependency injection
+
+📖 Plugin development: https://restheart.org/docs/plugins/overview/
+
+🔧 Use [restheart-cli](https://github.com/SoftInstigate/restheart-cli) for scaffolding, testing, and hot-reload.
 
 ---
 
@@ -343,127 +202,43 @@ docker run -p 8080:8080 \
 
 Stateless architecture supports horizontal scaling. Configure with ConfigMaps and Secrets.
 
-### GraalVM Native Image
+### Native Executables
 
-Compile to native binary for faster startup (<1s) and lower memory footprint (~50MB):
+Prebuilt binaries for macOS, Linux, and Windows with faster startup and lower memory footprint.
 
-```bash
-./mvnw clean package -Pnative
-```
-
-Ideal for serverless deployments (AWS Lambda, Cloud Run) and edge computing.
+See [docs/native-executables.md](docs/native-executables.md) for download links.
 
 ### RESTHeart Cloud
 
-Managed service alternative: [cloud.restheart.com](https://cloud.restheart.com)
+Fully managed service: [cloud.restheart.com](https://cloud.restheart.com)
 
-- Fully managed infrastructure
+- Instant provisioning
 - Automatic scaling
-- Monitoring and logging
-- Enterprise SLAs
+- Free tier available
+- Premium plugins (Webhooks, Sophia AI, Facet)
 
 ---
 
 ## Database Compatibility
 
-| Database | Support Level | Notes |
-|----------|---------------|-------|
-| ✅ **MongoDB** | Full | All versions 3.6+ |
-| ✅ **MongoDB Atlas** | Full | Cloud-native support |
-| ✅ **Percona Server** | Full | Drop-in MongoDB replacement |
-| ⚙️ **FerretDB** | Partial | PostgreSQL-backed MongoDB alternative |
-| ⚙️ **AWS DocumentDB** | Partial | Most features work, some MongoDB 4.0+ features missing |
-| ⚙️ **Azure Cosmos DB** | Partial | MongoDB API compatibility layer |
-
-_Compatibility depends on MongoDB wire protocol implementation._
+| Database              | Support Level | Notes                                                                                          |
+| --------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| ✅ **MongoDB**         | Full          | All versions 3.6+                                                                              |
+| ✅ **MongoDB Atlas**   | Full          | Cloud-native support                                                                           |
+| ✅ **Percona Server**  | Full          | Drop-in MongoDB replacement                                                                    |
+| ⚙️ **FerretDB**        | Partial       | PostgreSQL-backed ([tutorial](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/)) |
+| ⚙️ **AWS DocumentDB**  | Partial       | Most features work                                                                             |
+| ⚙️ **Azure Cosmos DB** | Partial       | MongoDB API compatibility layer                                                                |
 
 ---
 
-## FAQ
+## Community and Support
 
-### How does RESTHeart compare to Express.js + Mongoose?
-
-RESTHeart auto-generates APIs from MongoDB collections, eliminating the need for:
-
-- Manual route definitions and controllers
-- Request validation and error handling middleware
-- Authentication/authorization setup
-- WebSocket server configuration
-
-You only write code for custom business logic via plugins.
-
-### Can RESTHeart replace the deprecated MongoDB Data API?
-
-Yes. RESTHeart is an excellent replacement for the MongoDB Atlas Data API (deprecated in September 2024). It provides:
-
-- **Full MongoDB REST API** with filtering, sorting, pagination, and aggregations
-- **GraphQL support** with schema definitions and MongoDB mappings
-- **WebSocket/real-time** capabilities via change streams
-- **Self-hosted control** — no vendor lock-in
-- **Enhanced security** with JWT, OAuth2, and custom authentication
-- **Plugin extensibility** for custom business logic
-
-Migration is straightforward since RESTHeart uses standard MongoDB connections and can connect to MongoDB Atlas or any MongoDB instance.
-
-### How does RESTHeart differ from Hasura or Prisma?
-
-- **Hasura/PostGraphile:** PostgreSQL-focused, auto-generated GraphQL APIs
-- **Prisma:** ORM/query builder, not a standalone API server
-- **RESTHeart:** MongoDB-native, auto-generates REST APIs, GraphQL APIs require schema definitions
-
-### Does RESTHeart scale for production?
-
-Yes. Architecture features:
-
-- Stateless design enables horizontal scaling
-- Java Virtual Threads handle 10K+ concurrent connections
-- Used in production by Fortune 500 companies
-- Clustering and load balancing support
-
-### Do I need to write code?
-
-No, for standard CRUD operations and queries. RESTHeart auto-generates all endpoints.
-
-Yes, for custom business logic. Use the plugin system to add:
-
-- Custom validation
-- Business rules
-- Third-party integrations
-- Custom authentication flows
-
-### What's the license?
-
-Dual-licensed:
-
-- **AGPL:** Free, requires open-sourcing modifications if distributed
-- **Commercial:** For proprietary applications, same features
-
-### Can I use it with MongoDB Atlas?
-
-Yes. RESTHeart connects to any MongoDB instance:
-
-- MongoDB Atlas
-- Self-hosted MongoDB
-- Replica sets and sharded clusters
-- AWS DocumentDB (partial compatibility)
-- Azure Cosmos DB (partial compatibility)
-
-### Can I use RESTHeart with PostgreSQL?
-
-Yes, via FerretDB. FerretDB is an open-source MongoDB-compatible database that uses PostgreSQL as its storage engine. It translates MongoDB wire protocol commands to SQL queries, allowing RESTHeart to work with PostgreSQL while maintaining MongoDB's document-oriented API and query language. This is ideal for organizations that want to use PostgreSQL's reliability and ecosystem while providing MongoDB-style APIs to their applications.
-
-See our [complete FerretDB tutorial](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/) for setup instructions.
-
----
-
-## Community & Support
-
-- 📄 **[Documentation](https://restheart.org/docs/)** — API reference and guides
-- 🤖 **[Ask Sophia](https://sophia.restheart.com)** — AI documentation assistant
-- 💬 **[Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)** — Community chat
-- 🐛 **[GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new)** — Bug reports and feature requests
-- 💡 **[Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart)** — Tag: `restheart`
-- 📅 **[Book a Demo](https://calendly.com/restheart)** — Technical consultation
+- 📄 **[Documentation](https://restheart.org/docs/)**: API reference and guides
+- 🤖 **[Ask Sophia](https://sophia.restheart.com)**: AI documentation assistant
+- 💬 **[Slack](https://join.slack.com/t/restheart/shared_invite/zt-1olrhtoq8-5DdYLBWYDonFGEALhmgSXQ)**: Community chat
+- 🐛 **[GitHub Issues](https://github.com/SoftInstigate/restheart/issues/new)**: Bug reports and feature requests
+- 💡 **[Stack Overflow](https://stackoverflow.com/questions/ask?tags=restheart)**: Tag `restheart`
 
 ---
 
@@ -482,15 +257,20 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-Dual-licensed:
+RESTHeart core is licensed under the **GNU AGPL v3**.
 
-- **AGPL v3** — Open source
-- **Commercial License** — For proprietary applications
+The plugin SDK (`restheart-commons`, Maven artifact `org.restheart:restheart-commons`) is licensed under the **Apache License 2.0**. Plugins and extensions that depend only on `restheart-commons` are not subject to the AGPL v3 and may be distributed under any license you choose, including proprietary licenses. This follows the same pattern used by MongoDB: the server is AGPL, the drivers and SDKs are Apache 2.0.
 
-Same features in both licenses.
+See [PLUGIN_EXCEPTION](PLUGIN_EXCEPTION.md) for the formal terms of this permission.
 
-Commercial inquiries: [info@softinstigate.com](mailto:info@softinstigate.com)
+**Commercial license**: If you need to modify RESTHeart core without open-sourcing your changes, commercial licenses are available. See [restheart.com/on-premises](https://restheart.com/on-premises/).
 
 ---
 
 _Built with ❤️ by [SoftInstigate](https://www.softinstigate.com) | [GitHub](https://github.com/SoftInstigate/restheart) | [Website](https://restheart.org) | [Cloud](https://cloud.restheart.com)_
+
+---
+
+<div align="center">
+<img src="docs/made-in-eu-logo.svg" alt="Made in EU" width="180px" />
+</div>

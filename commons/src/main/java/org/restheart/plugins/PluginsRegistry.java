@@ -163,11 +163,22 @@ public interface PluginsRegistry {
     public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor<?, ?>>> filter);
 
     /**
+     * Retrieves all registered SSE services.
+     *
+     * SSE services push events to clients over a persistent HTTP connection
+     * and do not follow the synchronous request/response lifecycle of regular
+     * {@link Service} plugins.
+     *
+     * @return a set of all registered SSE service plugin records
+     */
+    public Set<PluginRecord<SseService>> getSseServices();
+
+    /**
      * Retrieves all registered services.
-     * 
+     *
      * Services are the main business logic components that handle HTTP requests
      * and generate responses in the RESTHeart framework.
-     * 
+     *
      * @return a set of all registered service plugin records
      */
     public Set<PluginRecord<Service<?, ?>>> getServices();
