@@ -21,6 +21,7 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,14 @@ public class WebSocketSession {
     private final String id;
     private final WebSocketChannel channel;
     private final ChangeStreamWorker changeStreamWorker;
+    private final Map<String, String> boundVars;
 
-    public WebSocketSession(WebSocketChannel channel, ChangeStreamWorker csw) {
+    public WebSocketSession(WebSocketChannel channel, ChangeStreamWorker csw, Map<String, String> boundVars) {
         this.id = new SecureRandomSessionIdGenerator().createSessionId();
         this.channel = channel;
         this.channel.resumeReceives(); // required to get close messages from client
         this.changeStreamWorker = csw;
+        this.boundVars = boundVars != null ? Map.copyOf(boundVars) : Map.of();
 
         this.channel.addCloseTask((WebSocketChannel channel1) -> {
             this.changeStreamWorker.websocketSessions().removeIf(s -> s.getId().equals(id));
@@ -85,5 +88,9 @@ public class WebSocketSession {
 
     public WebSocketChannel getChannel() {
         return this.channel;
+    }
+
+    public Map<String, String> getBoundVars() {
+        return boundVars;
     }
 }

@@ -36,6 +36,7 @@ public class ChangeStreamOperation {
     public static final String STREAM_ELEMENT_NAME = "streams";
     public static final String URI_ELEMENT_NAME = "uri";
     public static final String STAGES_ELEMENT_NAME = "stages";
+    public static final String NOTIFY_WHEN_ELEMENT_NAME = "notify_when";
 
     /**
      *
@@ -79,6 +80,7 @@ public class ChangeStreamOperation {
 
     private final String uri;
     private final BsonArray stages;
+    private final BsonDocument notifyWhen;
 
     /**
      *
@@ -117,6 +119,13 @@ public class ChangeStreamOperation {
         }
 
         this.stages = _stages.asArray();
+
+        var _notifyWhen = properties.get(NOTIFY_WHEN_ELEMENT_NAME);
+        if (_notifyWhen != null && !_notifyWhen.isDocument()) {
+            throw new InvalidMetadataException("query /" + this.uri
+                    + " has invalid '" + NOTIFY_WHEN_ELEMENT_NAME + "': must be a document");
+        }
+        this.notifyWhen = (_notifyWhen != null && _notifyWhen.isDocument()) ? _notifyWhen.asDocument() : null;
     }
 
     /**
@@ -131,5 +140,12 @@ public class ChangeStreamOperation {
      */
     public BsonArray getStages() {
         return stages;
+    }
+
+    /**
+     * @return the notify_when document, or {@code null} if absent (broadcast mode)
+     */
+    public BsonDocument getNotifyWhen() {
+        return notifyWhen;
     }
 }

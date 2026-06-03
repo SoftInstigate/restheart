@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonArray;
@@ -45,6 +46,7 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.FullDocument;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
+import io.undertow.util.AttachmentKey;
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
@@ -65,11 +67,14 @@ public class ChangeStreamWorker implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamWorker.class);
 
+    public static final AttachmentKey<Map<String, String>> BOUND_VARS_KEY = AttachmentKey.create(Map.class);
+
     private final ChangeStreamWorkerKey key;
     private final List<BsonDocument> resolvedStages;
     private final String dbName;
     private final String collName;
     private final BsonDocument resumeToken;
+    private final NotifyWhenEvaluator notifyWhenEvaluator;
 
     private final Set<WebSocketSession> websocketSessions = Collections.synchronizedSet(new HashSet<>());
     private final Set<ServerSentEventConnection> sseSessions = Collections.synchronizedSet(new HashSet<>());
@@ -80,7 +85,7 @@ public class ChangeStreamWorker implements Runnable {
      * Creates a worker without a resume token (stream starts from now).
      */
     public ChangeStreamWorker(ChangeStreamWorkerKey key, List<BsonDocument> resolvedStages, String dbName, String collName) {
-        this(key, resolvedStages, dbName, collName, null);
+        this(key, resolvedStages, dbName, collName, null, null);
     }
 
     /**
@@ -90,12 +95,26 @@ public class ChangeStreamWorker implements Runnable {
      *                    identified by this token (sourced from {@code Last-Event-ID})
      */
     public ChangeStreamWorker(ChangeStreamWorkerKey key, List<BsonDocument> resolvedStages, String dbName, String collName, BsonDocument resumeToken) {
+        this(key, resolvedStages, dbName, collName, resumeToken, null);
+    }
+
+    /**
+     * Creates a worker with an optional SSE resume token and a per-client dispatch predicate.
+     *
+     * @param resumeToken         if non-null, the change stream resumes from the event
+     *                            identified by this token (sourced from {@code Last-Event-ID})
+     * @param notifyWhenEvaluator if non-null, evaluated per session before dispatching;
+     *                            null means broadcast to all sessions
+     */
+    public ChangeStreamWorker(ChangeStreamWorkerKey key, List<BsonDocument> resolvedStages,
+            String dbName, String collName, BsonDocument resumeToken, NotifyWhenEvaluator notifyWhenEvaluator) {
         super();
         this.key = key;
         this.resolvedStages = resolvedStages;
         this.dbName = dbName;
         this.collName = collName;
         this.resumeToken = resumeToken;
+        this.notifyWhenEvaluator = notifyWhenEvaluator;
     }
 
     public ChangeStreamWorkerKey getKey() {
@@ -171,8 +190,8 @@ public class ChangeStreamWorker implements Runnable {
                 LambdaUtils.throwsSneakyException(new NoMoreSessionsException());
             }
 
-            var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
-            // Capture MongoDB resume token — sent as SSE event id to enable Last-Event-ID resume
+            final var doc    = getDocument(changeEvent);
+            final var msg    = BsonUtils.toJson(doc, key.getJsonMode());
             final var eventId = changeEvent.getResumeToken() != null
                     ? changeEvent.getResumeToken().toJson()
                     : null;
@@ -180,8 +199,10 @@ public class ChangeStreamWorker implements Runnable {
             // fan out to WebSocket sessions
             this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
-                    this.send(session, msg);
-                    LOGGER.trace("Change event sent to WebSocket session {}", session.getId());
+                    if (notifyWhenEvaluator == null || notifyWhenEvaluator.matches(doc, session.getBoundVars())) {
+                        this.send(session, msg);
+                        LOGGER.trace("Change event sent to WebSocket session {}", session.getId());
+                    }
                 } catch (Throwable t) {
                     LOGGER.error("Error sending change event to WebSocket session {}", session.getId(), t);
                 }
@@ -190,8 +211,11 @@ public class ChangeStreamWorker implements Runnable {
             // fan out to SSE sessions
             this.sseSessions.stream().forEach(conn -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
-                    conn.send(msg, "change", eventId, null);
-                    LOGGER.trace("Change event sent to SSE connection");
+                    var boundVars = conn.getAttachment(BOUND_VARS_KEY);
+                    if (notifyWhenEvaluator == null || notifyWhenEvaluator.matches(doc, boundVars)) {
+                        conn.send(msg, "change", eventId, null);
+                        LOGGER.trace("Change event sent to SSE connection");
+                    }
                 } catch (Throwable t) {
                     LOGGER.error("Error sending change event to SSE connection", t);
                     conn.shutdown();
