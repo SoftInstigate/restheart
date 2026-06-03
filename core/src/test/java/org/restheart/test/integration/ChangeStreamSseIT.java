@@ -165,7 +165,7 @@ public class ChangeStreamSseIT extends AbstactIT {
         // (event:<type> + data:<json>) because no id is set
         var linesFuture = CompletableFuture.supplyAsync(() -> {
             try {
-                return readSseLines(req, 2, 10);
+                return readSseLines(req, 3, 10);
             } catch (Exception e) {
                 return List.<String>of();
             }
@@ -229,7 +229,7 @@ public class ChangeStreamSseIT extends AbstactIT {
     void websocketAndSseClientsBothReceiveEvent() throws Exception {
         // SSE client in background
         var sseFuture = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(sseRequest(), 2, 12); }
+            try { return readSseLines(sseRequest(), 3, 12); }
             catch (Exception e) { return List.<String>of(); }
         });
 
@@ -294,7 +294,7 @@ public class ChangeStreamSseIT extends AbstactIT {
         // 4. A fresh SSE connection must succeed and serve new events,
         //    which proves the old worker was removed and a new one was created.
         var secondLines = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(sseRequest(), 2, 10); }
+            try { return readSseLines(sseRequest(), 3, 10); }
             catch (Exception e) { return List.<String>of(); }
         });
         Thread.sleep(1_000);
@@ -339,7 +339,7 @@ public class ChangeStreamSseIT extends AbstactIT {
                 .build();
 
         var secondLines = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(resumeReq, 2, 12); }
+            try { return readSseLines(resumeReq, 3, 12); }
             catch (Exception e) { return List.<String>of(); }
         });
 
