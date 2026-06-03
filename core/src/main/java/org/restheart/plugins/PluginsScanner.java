@@ -218,6 +218,7 @@ public class PluginsScanner {
         AUTHENTICATORS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
         INTERCEPTORS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
         SERVICES.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
+        SSE_SERVICES.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
         PROVIDERS.stream().map(PluginDescriptor::clazz).forEachOrdered(ret::add);
 
         return ret;
