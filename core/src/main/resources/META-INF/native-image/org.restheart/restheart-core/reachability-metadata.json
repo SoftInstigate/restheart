@@ -3521,6 +3521,15 @@
     },
     {
       "glob": "META-INF/services/org.apache.commons.jxpath.JXPathContextFactory"
+    },
+    {
+      "glob": "email-templates/invite.html"
+    },
+    {
+      "glob": "email-templates/verification.html"
+    },
+    {
+      "glob": "email-templates/password-reset.html"
     }
   ],
   "bundles": [

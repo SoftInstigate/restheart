@@ -10,7 +10,7 @@
 
   <properties>
     <native.gc>--gc=serial</native.gc>
-    <native.march>-march=native</native.march>
+    <native.march>-march=compatibility</native.march>
     <mongodb.port>27017</mongodb.port>
   </properties>
 
@@ -542,6 +542,10 @@
           <artifactId>restheart-metrics</artifactId>
         </dependency>
         <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-accounts</artifactId>
+        </dependency>
+        <dependency>
           <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->
           <artifactId>js-language</artifactId>
           <scope>runtime</scope>
@@ -580,6 +584,18 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <!-- activate with: mvn ... -Pnative,test-native -->
+    <profile>
+      <id>test-native</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-test-plugins</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>
