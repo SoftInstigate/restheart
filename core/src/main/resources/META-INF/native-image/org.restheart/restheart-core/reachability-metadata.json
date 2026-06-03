@@ -1,6 +1,11 @@
 {
   "reflection": [
     {
+      "type": "ch.qos.logback.core.status.NopStatusListener",
+      "allPublicConstructors": true,
+      "allPublicMethods": true
+    },
+    {
       "type": "[B"
     },
     {
