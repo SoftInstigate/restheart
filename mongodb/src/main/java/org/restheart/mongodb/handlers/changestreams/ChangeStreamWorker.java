@@ -172,6 +172,10 @@ public class ChangeStreamWorker implements Runnable {
             }
 
             var msg = BsonUtils.toJson(getDocument(changeEvent), key.getJsonMode());
+            // Capture MongoDB resume token — sent as SSE event id to enable Last-Event-ID resume
+            final var eventId = changeEvent.getResumeToken() != null
+                    ? changeEvent.getResumeToken().toJson()
+                    : null;
 
             // fan out to WebSocket sessions
             this.websocketSessions.stream().forEach(session -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
@@ -186,7 +190,7 @@ public class ChangeStreamWorker implements Runnable {
             // fan out to SSE sessions
             this.sseSessions.stream().forEach(conn -> ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 try {
-                    conn.send(msg, "change", null, null);
+                    conn.send(msg, "change", eventId, null);
                     LOGGER.trace("Change event sent to SSE connection");
                 } catch (Throwable t) {
                     LOGGER.error("Error sending change event to SSE connection", t);

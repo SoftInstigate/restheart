@@ -21,6 +21,7 @@
 package org.restheart.test.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -30,12 +31,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -90,6 +94,14 @@ public class ChangeStreamSseIT extends AbstactIT {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    private HttpRequest sseRequest() {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(STREAM_URI))
+                .header("Accept", "text/event-stream")
+                .header("Authorization", ADMIN_BASIC)
+                .build();
+    }
 
     /**
      * Opens an SSE connection and collects non-blank lines until {@code count}
@@ -195,5 +207,150 @@ public class ChangeStreamSseIT extends AbstactIT {
         } finally {
             resp.body().close();
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // New tests for issue #628
+    // -----------------------------------------------------------------------
+
+    @Test
+    void unauthenticatedSseRequestReturns401() throws Exception {
+        var req = HttpRequest.newBuilder()
+                .uri(URI.create(STREAM_URI))
+                .header("Accept", "text/event-stream")
+                .build(); // no Authorization header
+
+        var resp = SSE_CLIENT.send(req, BodyHandlers.discarding());
+        assertEquals(401, resp.statusCode(),
+                "Unauthenticated SSE request to a change stream must return 401");
+    }
+
+    @Test
+    void websocketAndSseClientsBothReceiveEvent() throws Exception {
+        // SSE client in background
+        var sseFuture = CompletableFuture.supplyAsync(() -> {
+            try { return readSseLines(sseRequest(), 2, 12); }
+            catch (Exception e) { return List.<String>of(); }
+        });
+
+        // WebSocket client
+        var wsMessages = Collections.synchronizedList(new ArrayList<String>());
+        var wsLatch    = new CountDownLatch(1);
+        var ws = SSE_CLIENT.newWebSocketBuilder()
+                .header("Authorization", ADMIN_BASIC)
+                .buildAsync(URI.create(STREAM_URI.replace("http://", "ws://")),
+                        new WebSocket.Listener() {
+                            private final StringBuilder buf = new StringBuilder();
+                            @Override
+                            public CompletionStage<?> onText(WebSocket w, CharSequence data, boolean last) {
+                                buf.append(data);
+                                if (last) {
+                                    wsMessages.add(buf.toString());
+                                    buf.setLength(0);
+                                    wsLatch.countDown();
+                                }
+                                w.request(1);
+                                return null;
+                            }
+                        }).join();
+
+        Thread.sleep(1_500); // let both connections and the shared worker settle
+
+        Unirest.post(TEST_COLL)
+               .basicAuth("admin", "secret")
+               .contentType("application/json")
+               .body("{\"both\": true}")
+               .asEmpty();
+
+        var sseLines = sseFuture.get(12, TimeUnit.SECONDS);
+        assertTrue(sseLines.stream().anyMatch(l -> l.contains("insert")),
+                "SSE must receive the insert event; got: " + sseLines);
+
+        assertTrue(wsLatch.await(8, TimeUnit.SECONDS),
+                "WebSocket must receive at least one event within 8 s");
+        assertTrue(wsMessages.stream().anyMatch(m -> m.contains("insert")),
+                "WebSocket must receive the insert event; got: " + wsMessages);
+
+        ws.abort();
+    }
+
+    @Test
+    void workerSelfTerminatesWhenAllSessionsClose() throws Exception {
+        // 1. Open an SSE connection and confirm it is alive
+        var resp1 = SSE_CLIENT.send(sseRequest(), BodyHandlers.ofInputStream());
+        assertEquals(200, resp1.statusCode(), "First SSE connection must return 200");
+
+        Thread.sleep(1_000);
+        Unirest.post(TEST_COLL).basicAuth("admin", "secret")
+               .contentType("application/json").body("{\"v\":1}").asEmpty();
+        Thread.sleep(500);
+
+        // 2. Close the only session — the worker should self-terminate
+        resp1.body().close();
+
+        // 3. Wait for the worker's virtual thread to exit and deregister itself
+        Thread.sleep(2_500);
+
+        // 4. A fresh SSE connection must succeed and serve new events,
+        //    which proves the old worker was removed and a new one was created.
+        var secondLines = CompletableFuture.supplyAsync(() -> {
+            try { return readSseLines(sseRequest(), 2, 10); }
+            catch (Exception e) { return List.<String>of(); }
+        });
+        Thread.sleep(1_000);
+        Unirest.post(TEST_COLL).basicAuth("admin", "secret")
+               .contentType("application/json").body("{\"v\":2}").asEmpty();
+
+        var lines = secondLines.get(12, TimeUnit.SECONDS);
+        assertTrue(lines.stream().anyMatch(l -> l.contains("insert")),
+                "Fresh SSE connection after worker cleanup must receive events; got: " + lines);
+    }
+
+    @Test
+    void lastEventIdResumesContinuesFromToken() throws Exception {
+        // 1. First connection: receive one event and capture its resume token (the SSE id: field)
+        var firstLines = CompletableFuture.supplyAsync(() -> {
+            try { return readSseLines(sseRequest(), 3, 12); } // event: + data: + id:
+            catch (Exception e) { return List.<String>of(); }
+        });
+
+        Thread.sleep(1_000);
+        Unirest.post(TEST_COLL).basicAuth("admin", "secret")
+               .contentType("application/json").body("{\"seq\":1}").asEmpty();
+
+        var lines1 = firstLines.get(15, TimeUnit.SECONDS);
+        var resumeToken = lines1.stream()
+                .filter(l -> l.startsWith("id:"))
+                .map(l -> l.substring(3).trim())
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(resumeToken,
+                "SSE change event must include an 'id:' resume token; got lines: " + lines1);
+
+        Thread.sleep(2_500); // wait for first worker to self-terminate (connection closed by readSseLines)
+
+        // 2. Reconnect with Last-Event-ID — stream should resume AFTER the first event
+        var resumeReq = HttpRequest.newBuilder()
+                .uri(URI.create(STREAM_URI))
+                .header("Accept", "text/event-stream")
+                .header("Authorization", ADMIN_BASIC)
+                .header("Last-Event-ID", resumeToken)
+                .build();
+
+        var secondLines = CompletableFuture.supplyAsync(() -> {
+            try { return readSseLines(resumeReq, 2, 12); }
+            catch (Exception e) { return List.<String>of(); }
+        });
+
+        Thread.sleep(1_000);
+        Unirest.post(TEST_COLL).basicAuth("admin", "secret")
+               .contentType("application/json").body("{\"seq\":2}").asEmpty();
+
+        var lines2 = secondLines.get(15, TimeUnit.SECONDS);
+        assertTrue(lines2.stream().anyMatch(l -> l.contains("insert")),
+                "Resumed SSE connection must receive new events; got: " + lines2);
+        assertTrue(lines2.stream().noneMatch(l -> l.contains("\"seq\":1")),
+                "Resumed stream must NOT replay seq:1 (already seen); got: " + lines2);
     }
 }
