@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
     <conversionRule conversionWord="trace" class="org.restheart.utils.OptionalTraceConverter" />
     <conversionRule conversionWord="prefix" class="org.restheart.logging.LogPrefixConverter" />
 
