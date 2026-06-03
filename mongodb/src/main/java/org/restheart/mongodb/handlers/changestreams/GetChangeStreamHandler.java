@@ -23,6 +23,7 @@ package org.restheart.mongodb.handlers.changestreams;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -77,13 +78,19 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
     private final AggregationPipelineSecurityChecker securityChecker;
 
+    public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
+    public static final AttachmentKey<JsonMode>     JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
+    /** Bound query-parameter variables for {@code notify_when} filtering, keyed by variable name. */
+    public static final AttachmentKey<Map<String, String>> BOUND_VARS_EXCHANGE_KEY = AttachmentKey.create(Map.class);
+
     private static final HttpHandler WEBSOCKET_HANDLER = Handlers.websocket((exchange, channel) -> {
         var csKey = new ChangeStreamWorkerKey(exchange);
         var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
 
         if (csw$.isPresent()) {
             var csw = csw$.get();
-            var wss = new WebSocketSession(channel, csw);
+            var boundVars = exchange.getAttachment(BOUND_VARS_EXCHANGE_KEY);
+            var wss = new WebSocketSession(channel, csw, boundVars);
             csw.websocketSessions().add(wss);
             LOGGER.debug("New Change Stream WebSocket session, sessionkey={} for changeStreamKey={}", wss.getId(), csKey);
         } else {
@@ -95,9 +102,6 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             }
         }
     });
-
-    public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
-    public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
 
     public GetChangeStreamHandler() {
         super();
@@ -116,6 +120,12 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         }
 
         try {
+            // Resolve the stream operation early — needed for notify_when and bound vars
+            var operation = findOperation(request);
+            var evaluator = NotifyWhenEvaluator.from(operation.getNotifyWhen());
+            var boundVars = extractBoundVars(exchange, evaluator);
+            exchange.putAttachment(BOUND_VARS_EXCHANGE_KEY, boundVars);
+
             if (isWebSocketHandshakeRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
 
@@ -126,7 +136,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 StagesInterpolator.injectAvars(request, _avars);
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
 
-                initChangeStreamWorker(exchange, null);
+                initChangeStreamWorker(exchange, null, evaluator);
                 WEBSOCKET_HANDLER.handleRequest(exchange);
 
             } else if (isSseRequest(exchange)) {
@@ -139,10 +149,17 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 StagesInterpolator.injectAvars(request, _avars);
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, _avars);
 
-                // parse Last-Event-ID header as a resume token (may be null on first connect)
-                var resumeToken = parseResumeToken(exchange);
+                // Last-Event-ID is not supported when notify_when is defined
+                BsonDocument resumeToken = null;
+                if (evaluator != null) {
+                    if (exchange.getRequestHeaders().getFirst("Last-Event-ID") != null) {
+                        LOGGER.warn("Last-Event-ID is not supported when notify_when is defined; ignoring");
+                    }
+                } else {
+                    resumeToken = parseResumeToken(exchange);
+                }
 
-                initChangeStreamWorker(exchange, resumeToken);
+                initChangeStreamWorker(exchange, resumeToken, evaluator);
                 sseHandlerFor(exchange).handleRequest(exchange);
 
             } else {
@@ -199,6 +216,10 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      */
     private static HttpHandler sseHandlerFor(HttpServerExchange exchange) {
         return new ServerSentEventHandler((connection, lastEventId) -> {
+            // Attach bound vars so the worker can evaluate notify_when per-connection
+            var boundVars = exchange.getAttachment(BOUND_VARS_EXCHANGE_KEY);
+            connection.putAttachment(ChangeStreamWorker.BOUND_VARS_KEY, boundVars != null ? boundVars : Map.of());
+
             var csKey = new ChangeStreamWorkerKey(exchange);
             var csw$ = ChangeStreamWorkers.getInstance().get(csKey);
 
@@ -243,19 +264,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
             throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException, SecurityException {
-        var changesStreamOperation = request.getChangeStreamOperation();
-        var streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
-
-        var _query = streams
-            .stream()
-            .filter(q -> q.getUri().equals(changesStreamOperation))
-            .findFirst();
-
-        if (_query.isEmpty()) {
-            throw new QueryNotFoundException("Stream " + request.getMongoResourceUri() + "  does not exist");
-        }
-
-        var pipeline = _query.get();
+        var pipeline = findOperation(request);
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
         var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
 
@@ -266,18 +275,42 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         return resolvedStages;
     }
 
+    /** Finds the matching {@link ChangeStreamOperation} for the current request. */
+    private ChangeStreamOperation findOperation(MongoRequest request)
+            throws InvalidMetadataException, QueryNotFoundException {
+        var changesStreamOperation = request.getChangeStreamOperation();
+        var streams = ChangeStreamOperation.getFromJson(request.getCollectionProps());
+
+        return streams.stream()
+                .filter(q -> q.getUri().equals(changesStreamOperation))
+                .findFirst()
+                .orElseThrow(() -> new QueryNotFoundException(
+                        "Stream " + request.getMongoResourceUri() + " does not exist"));
+    }
+
+    /**
+     * Extracts the single query-parameter variable required by the {@code notify_when}
+     * evaluator. Returns an empty map when {@code evaluator} is {@code null} or the
+     * parameter is absent.
+     */
+    private static Map<String, String> extractBoundVars(HttpServerExchange exchange, NotifyWhenEvaluator evaluator) {
+        if (evaluator == null) return Map.of();
+        var varName = evaluator.getVarName();
+        var params  = exchange.getQueryParameters().get(varName);
+        if (params == null || params.isEmpty()) return Map.of();
+        return Map.of(varName, params.getFirst());
+    }
+
     /**
      * Ensures a {@link ChangeStreamWorker} exists for the given exchange.
      *
      * <p>If a worker with the same {@link ChangeStreamWorkerKey} already exists it
-     * is reused (the {@code resumeToken} is ignored in that case — the shared cursor
-     * continues from its current position). Otherwise a new worker is created and
-     * started, applying the resume token when non-null.
-     *
-     * @param resumeToken optional SSE resume token from {@code Last-Event-ID}; pass
-     *                    {@code null} for WebSocket connections or on first connect
+     * is reused (the {@code resumeToken} and {@code evaluator} are ignored — the
+     * shared cursor continues from its current position). Otherwise a new worker is
+     * created and started.
      */
-    private synchronized void initChangeStreamWorker(HttpServerExchange exchange, BsonDocument resumeToken)
+    private synchronized void initChangeStreamWorker(HttpServerExchange exchange,
+            BsonDocument resumeToken, NotifyWhenEvaluator evaluator)
             throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
         var csKey = new ChangeStreamWorkerKey(exchange);
         var request = MongoRequest.of(exchange);
@@ -290,7 +323,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 resolvedStages,
                 request.getDBName(),
                 request.getCollectionName(),
-                resumeToken);
+                resumeToken,
+                evaluator);
 
             ChangeStreamWorkers.getInstance().put(changeStreamWorker);
             ThreadsUtils.virtualThreadsExecutor().execute(changeStreamWorker);
