@@ -33,6 +33,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-security</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>com.softinstigate</groupId>
       <artifactId>ermes-mail</artifactId>
       <classifier>shaded</classifier>
