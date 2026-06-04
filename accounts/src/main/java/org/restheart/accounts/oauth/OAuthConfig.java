@@ -89,7 +89,7 @@ public class OAuthConfig implements Provider<OAuthConfig> {
     @SuppressWarnings("unchecked")
     public void onInit() {
         if (config == null) {
-            LOGGER.warn("oauthConfig section not found — OAuth social login is disabled");
+            LOGGER.info("oauthConfig section not found — OAuth social login is disabled");
             return;
         }
 
