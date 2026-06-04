@@ -40,7 +40,6 @@ Feature: setup second team for multi-tenant tests
 
     # 4. Fallback: if JWT not obtained from verify cookie (user was already active),
     #    login via GET /token using pre-computed Basic auth from karate-config.js.
-    * if (!secondOwnerJwt) karate.call('classpath:karate/accounts/helpers/setup-second-team-login.feature')
     * def loginResult = (!secondOwnerJwt) ? karate.call('classpath:karate/accounts/helpers/setup-second-team-login.feature') : null
     * def secondOwnerJwt = loginResult != null && loginResult.secondOwnerJwt ? loginResult.secondOwnerJwt : secondOwnerJwt
 
