@@ -19,6 +19,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,9 @@ public class ResetPasswordService implements JsonService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ResetPasswordService.class);
     private static final int PASSWORD_MIN_LENGTH = 8;
 
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -69,6 +73,8 @@ public class ResetPasswordService implements JsonService {
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/reset-password") && (r.isPatch() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/reset-password"));
     }
 
     @Override
@@ -113,7 +119,7 @@ public class ResetPasswordService implements JsonService {
         // 2. Find user by token (avoids timing leaks — same lookup regardless of email)
         var userOpt = db(req).findUserByToken("passwordResetToken", token);
         if (userOpt.isEmpty()) {
-            Errors.error(res, 400, "Invalid or expired token");
+            Errors.error(res, 401, "Invalid or expired token");
             return;
         }
         var user = userOpt.get();
@@ -122,18 +128,18 @@ public class ResetPasswordService implements JsonService {
         var storedEmail = user.getString("_id").getValue();
         if (!storedEmail.equalsIgnoreCase(email)) {
             LOGGER.warn("resetPassword: token/email mismatch — possible token-swap attempt");
-            Errors.error(res, 400, "Invalid or expired token");
+            Errors.error(res, 401, "Invalid or expired token");
             return;
         }
 
         // 4. Check token expiry (TTL: 1 hour)
         if (!user.containsKey("passwordResetCreatedAt")) {
-            Errors.error(res, 400, "Invalid or expired token");
+            Errors.error(res, 401, "Invalid or expired token");
             return;
         }
         var createdAt = user.getDateTime("passwordResetCreatedAt");
         if (TokenUtils.isExpired(createdAt, 1)) {
-            Errors.error(res, 400, "Invalid or expired token");
+            Errors.error(res, 401, "Invalid or expired token");
             return;
         }
 

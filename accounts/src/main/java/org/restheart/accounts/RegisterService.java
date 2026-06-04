@@ -21,6 +21,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ import java.nio.charset.StandardCharsets;
  *   <li>409 — email address already registered</li>
  * </ul>
  *
- * <p>The endpoint is public — access is granted by {@code accountsAclInitializer}.
+ * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
         name             = "registerService",
@@ -63,6 +64,9 @@ import java.nio.charset.StandardCharsets;
 public class RegisterService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterService.class);
+
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -76,6 +80,8 @@ public class RegisterService implements JsonService {
 
     @OnInit
     public void onInit() {
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/register") && (r.isPost() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/register"));
     }
 
     private DbHelper db(JsonRequest req) {
