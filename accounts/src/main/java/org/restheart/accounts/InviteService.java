@@ -74,6 +74,10 @@ public class InviteService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
