@@ -20,10 +20,16 @@ public record AccountsConfigData(
 
     // ── JWT ──────────────────────────────────────────────────────────────────
 
-    /** HS256 secret key — must match {@code jwtConfigProvider.key}. */
+    /**
+     * HS256 secret key — sourced from {@code jwtConfigProvider.key()}.
+     * Never read from {@code accountsConfig} directly.
+     */
     String jwtKey,
 
-    /** JWT issuer claim, e.g. {@code "myapp.example.com"}. */
+    /**
+     * JWT issuer claim — sourced from {@code jwtConfigProvider.issuer()}.
+     * Never read from {@code accountsConfig} directly.
+     */
     String jwtIssuer,
 
     /** JWT time-to-live in minutes, e.g. {@code 15}. */

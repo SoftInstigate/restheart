@@ -7,18 +7,23 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.tokens.JwtConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RESTHeart {@link Provider} that reads the {@code accountsConfig} YAML block
  * and exposes an {@link AccountsConfigData} instance to other plugins via DI.
+ *
+ * <p>JWT key and issuer are sourced automatically from {@code jwtConfigProvider},
+ * ensuring restheart-accounts always signs tokens with the same key used by
+ * {@code jwtAuthenticationMechanism} to verify them.
  *
  * <p>Expected YAML configuration:
  * <pre>{@code
  * accountsConfig:
  *   db: myapp
  *   app-name: "My App"
- *   jwt-key: your-secret
- *   jwt-issuer: myapp.example.com
  *   jwt-ttl: 15
  *   cookie-domain: app.example.com
  *   frontend-url: https://app.example.com
@@ -35,18 +40,31 @@ import org.restheart.plugins.RegisterPlugin;
 @RegisterPlugin(
     name = "accountsConfig",
     description = "Provides AccountsConfigData loaded from the plugin YAML block",
-    enabledByDefault = true
+    enabledByDefault = true,
+    priority = 20  // must be > jwtConfigProvider priority (10) so jwtConfig is ready at @OnInit
 )
 public class AccountsConfig implements Provider<AccountsConfigData> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccountsConfig.class);
 
     @Inject("config")
     private Map<String, Object> config;
+
+    @Inject("jwtConfigProvider")
+    private JwtConfigProvider.JwtConfig jwtConfig;
 
     private AccountsConfigData data;
 
     @OnInit
     @SuppressWarnings("unchecked")
     public void onInit() {
+        // Warn if jwt-key or jwt-issuer are still in the config — they are now ignored
+        if (config != null && config.containsKey("jwt-key")) {
+            LOGGER.warn("accountsConfig/jwt-key is ignored: JWT key is now sourced from jwtConfigProvider. Remove it from your configuration.");
+        }
+        if (config != null && config.containsKey("jwt-issuer")) {
+            LOGGER.warn("accountsConfig/jwt-issuer is ignored: JWT issuer is now sourced from jwtConfigProvider. Remove it from your configuration.");
+        }
+
         // Read optional templates sub-map
         var templates = config != null && config.get("templates") instanceof Map<?, ?>
                 ? (Map<String, Object>) config.get("templates")
@@ -55,8 +73,8 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
         data = new AccountsConfigData(
             configVal(config, "db",                "restheart"),
             configVal(config, "app-name",          "App"),
-            configVal(config, "jwt-key",           "change-me"),
-            configVal(config, "jwt-issuer",        "restheart.com"),
+            jwtConfig.key(),
+            jwtConfig.issuer(),
             configVal(config, "jwt-ttl",           15),
             configVal(config, "cookie-domain",     "localhost"),
             configVal(config, "cookie-name",      "rh_auth"),
