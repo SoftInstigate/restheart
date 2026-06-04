@@ -49,6 +49,12 @@
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>nativeimage</artifactId>
     </dependency>
+    <!-- truffle-api on main classpath so system classloader can find libtruffleattach -->
+    <dependency>
+      <groupId>org.graalvm.truffle</groupId>
+      <artifactId>truffle-api</artifactId>
+      <version>${truffle.version}</version>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.restheart</groupId>
@@ -181,7 +187,7 @@
               <outputDirectory>${project.build.directory}/lib/truffleattach</outputDirectory>
               <includes>META-INF/resources/engine/libtruffleattach/**</includes>
               <includeScope>runtime</includeScope>
-              <includeArtifactIds>org.graalvm.truffle:truffle-api</includeArtifactIds>
+              <includeArtifactIds>truffle-api</includeArtifactIds>
             </configuration>
           </execution>
         </executions>
@@ -201,6 +207,7 @@
             </manifest>
             <manifestEntries>
               <Build-Time>${maven.build.timestamp}</Build-Time>
+              <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
             </manifestEntries>
           </archive>
         </configuration>

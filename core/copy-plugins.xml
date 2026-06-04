@@ -31,6 +31,13 @@
         <copy todir="./target/plugins/lib" overwrite="true">
             <fileset dir="../accounts/target/lib"></fileset>
         </copy>
+
+        <!-- Remove any JAR from plugins/lib that is already present in lib/ -->
+        <delete verbose="false">
+            <fileset dir="./target/plugins/lib">
+                <present present="both" targetdir="./target/lib"/>
+            </fileset>
+        </delete>
         <echo message="***** Done copying plugins" level="info" />
     </target>
 </project>
