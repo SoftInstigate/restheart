@@ -55,7 +55,7 @@ Feature: PATCH /auth/activate
     And match response.message == '#notnull'
 
   # ---------------------------------------------------------------------------
-  Scenario: token not found — returns 400
+  Scenario: token not found — returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/activate'
     And request
@@ -68,10 +68,10 @@ Feature: PATCH /auth/activate
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401
 
   # ---------------------------------------------------------------------------
-  Scenario: email mismatch — valid token but wrong email returns 400
+  Scenario: email mismatch — valid token but wrong email returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/activate'
     And request
@@ -84,7 +84,7 @@ Feature: PATCH /auth/activate
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401
 
   # ---------------------------------------------------------------------------
   Scenario: missing consents — returns 400
@@ -102,7 +102,7 @@ Feature: PATCH /auth/activate
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: token already used (one-shot) — second activation returns 400
+  Scenario: token already used (one-shot) — second activation returns 401
   # ---------------------------------------------------------------------------
     # First activation — must succeed and remove the token
     Given path '/auth/activate'
@@ -130,7 +130,7 @@ Feature: PATCH /auth/activate
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401
 
   # ---------------------------------------------------------------------------
   Scenario: verify DB — after activation user has status=active and inviteToken removed

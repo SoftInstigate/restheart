@@ -16,6 +16,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ import java.util.Set;
  *                   → 302 to {@code frontendUrl}/auth/login?error=token_expired</li>
  * </ul>
  *
- * <p>The endpoint is public — access is granted by {@code accountsAclInitializer}.
+ * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
         name             = "emailVerificationService",
@@ -55,6 +56,9 @@ public class EmailVerificationService implements JsonService {
     /** Token TTL: 7 days expressed in hours. */
     private static final int VERIFICATION_TTL_HOURS = 7 * 24;
 
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -67,6 +71,8 @@ public class EmailVerificationService implements JsonService {
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/verify") && (r.isGet() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/verify"));
     }
 
     private DbHelper db(JsonRequest req) {

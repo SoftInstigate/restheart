@@ -78,7 +78,7 @@ Feature: PATCH /auth/reset-password
     And match response.message == '#notnull'
 
   # ---------------------------------------------------------------------------
-  Scenario: token not found — returns 400
+  Scenario: token not found — returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/reset-password'
     And request
@@ -90,10 +90,10 @@ Feature: PATCH /auth/reset-password
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401
 
   # ---------------------------------------------------------------------------
-  Scenario: email mismatch — valid token but wrong email returns 400
+  Scenario: email mismatch — valid token but wrong email returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/reset-password'
     And request
@@ -105,7 +105,7 @@ Feature: PATCH /auth/reset-password
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401
 
   # ---------------------------------------------------------------------------
   Scenario: password too short (< 8 chars) — returns 400
@@ -123,7 +123,7 @@ Feature: PATCH /auth/reset-password
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: token already used (one-shot) — second call with same token returns 400
+  Scenario: token already used (one-shot) — second call with same token returns 401
   # ---------------------------------------------------------------------------
     # First call — must succeed and consume the token
     Given path '/auth/reset-password'
@@ -149,4 +149,4 @@ Feature: PATCH /auth/reset-password
       }
       """
     When method PATCH
-    Then status 400
+    Then status 401

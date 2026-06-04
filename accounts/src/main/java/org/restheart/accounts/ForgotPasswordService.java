@@ -20,6 +20,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,9 @@ public class ForgotPasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForgotPasswordService.class);
 
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -59,6 +63,8 @@ public class ForgotPasswordService implements JsonService {
 
     @OnInit
     public void onInit() {
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/forgot-password") && (r.isPost() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/forgot-password"));
     }
 
     @Override

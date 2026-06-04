@@ -18,6 +18,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,9 @@ public class ActivateService implements JsonService {
     /** Invite token TTL = 7 days expressed in hours. */
     private static final int INVITE_TTL_HOURS = 7 * 24;
 
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -72,6 +76,8 @@ public class ActivateService implements JsonService {
     @OnInit
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/activate") && (r.isPatch() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/activate"));
     }
 
     @Override
@@ -124,7 +130,7 @@ public class ActivateService implements JsonService {
         // 2. Cerca l'utente tramite inviteToken
         var userOpt = db(req).findUserByToken("inviteToken", token);
         if (userOpt.isEmpty()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invalid or expired invite token");
+            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
         var user = userOpt.get();
@@ -133,17 +139,17 @@ public class ActivateService implements JsonService {
         var storedEmail = user.containsKey("_id") && user.get("_id").isString()
                 ? user.getString("_id").getValue() : null;
         if (!email.trim().toLowerCase().equals(storedEmail)) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Email does not match the invite token");
+            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
 
         // 4. Controlla scadenza (TTL 7 giorni)
         if (!user.containsKey("inviteCreatedAt") || !user.get("inviteCreatedAt").isDateTime()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Malformed invite token");
+            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
         if (TokenUtils.isExpired(user.getDateTime("inviteCreatedAt"), INVITE_TTL_HOURS)) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invite token has expired");
+            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
 

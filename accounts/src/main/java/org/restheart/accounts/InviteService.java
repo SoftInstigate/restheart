@@ -18,6 +18,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.utils.HttpStatus;
@@ -52,6 +53,9 @@ public class InviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
 
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -63,8 +67,9 @@ public class InviteService implements JsonService {
 
     @OnInit
     public void onInit() {
-        // NOTE: intentionally not calling aclRegistry.registerAllow —
-        // this endpoint requires authentication and is restricted to owner/admin.
+        // Allow all requests to reach the service; auth and role enforcement is done in handle()
+        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/invite") && (r.isPost() || r.isOptions()));
+        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/invite"));
     }
 
     @Override
