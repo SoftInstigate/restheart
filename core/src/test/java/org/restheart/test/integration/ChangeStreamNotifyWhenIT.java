@@ -33,7 +33,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.List;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -97,33 +97,6 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     // Helpers
     // -----------------------------------------------------------------------
 
-    /**
-     * Opens an SSE connection and collects all non-blank lines until the given
-     * deadline, then closes the stream. Used for both positive and negative
-     * assertions in the same test.
-     */
-    private List<String> collectSseLines(HttpRequest req, long durationMs) throws Exception {
-        var resp   = CLIENT.send(req, BodyHandlers.ofInputStream());
-        var is     = resp.body();
-        var lines  = Collections.synchronizedList(new ArrayList<String>());
-
-        var reader = CompletableFuture.runAsync(() -> {
-            try (var br = new BufferedReader(new InputStreamReader(is))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (!line.isBlank()) lines.add(line);
-                }
-            } catch (Exception ignored) {}
-        });
-
-        // collect for the specified window, then close
-        Thread.sleep(durationMs);
-        is.close();
-        reader.orTimeout(1, TimeUnit.SECONDS);
-
-        return new ArrayList<>(lines);
-    }
-
     private HttpRequest sseFor(String tenantId) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(STREAM_URI + "?tid=" + tenantId))
@@ -141,23 +114,48 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
      *
      * <p>Both clients share one MongoDB cursor (same {@code ChangeStreamWorkerKey});
      * the {@code notify_when} predicate dispatches each event to the matching client only.
+     *
+     * <p>Connections are opened synchronously on the main thread: {@code CLIENT.send()}
+     * blocks until the server sends HTTP 200 headers, which means the
+     * {@code ServerSentEventHandler} callback has already fired and both SSE sessions
+     * are registered in the {@code ChangeStreamWorker} before any insert happens.
+     * This avoids the race condition that occurs when connections are opened
+     * asynchronously and a fixed sleep is used as the only synchronisation point.
      */
     @Test
     void eachClientReceivesOnlyItsOwnEvents() throws Exception {
+        // Open both SSE connections synchronously: CLIENT.send() returns only after
+        // the server has sent the 200 headers, so both sessions are already registered
+        // in the ChangeStreamWorker by the time we proceed.
+        var respA = CLIENT.send(sseFor("tenant-A"), BodyHandlers.ofInputStream());
+        var respB = CLIENT.send(sseFor("tenant-B"), BodyHandlers.ofInputStream());
+        var isA = respA.body();
+        var isB = respB.body();
+
         var linesA = Collections.synchronizedList(new ArrayList<String>());
         var linesB = Collections.synchronizedList(new ArrayList<String>());
 
-        // Open both SSE streams in background, collecting lines for the whole test window
-        var futureA = CompletableFuture.supplyAsync(() -> {
-            try { return collectSseLines(sseFor("tenant-A"), 9_000); }
-            catch (Exception e) { return List.<String>of(); }
+        // Read lines asynchronously in background
+        var readerA = CompletableFuture.runAsync(() -> {
+            try (var br = new BufferedReader(new InputStreamReader(isA))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.isBlank()) linesA.add(line);
+                }
+            } catch (Exception ignored) {}
         });
-        var futureB = CompletableFuture.supplyAsync(() -> {
-            try { return collectSseLines(sseFor("tenant-B"), 9_000); }
-            catch (Exception e) { return List.<String>of(); }
+        var readerB = CompletableFuture.runAsync(() -> {
+            try (var br = new BufferedReader(new InputStreamReader(isB))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.isBlank()) linesB.add(line);
+                }
+            } catch (Exception ignored) {}
         });
 
-        Thread.sleep(1_500); // let both connections and the shared worker settle
+        // Short settle: connections are already open; we only wait for the
+        // ChangeStreamWorker virtual thread to enter its forEach loop.
+        Thread.sleep(500);
 
         // Insert a document for tenant-A
         Unirest.post(TEST_COLL)
@@ -177,24 +175,27 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
 
         Thread.sleep(1_500);
 
-        var collectedA = futureA.get(12, TimeUnit.SECONDS);
-        var collectedB = futureB.get(12, TimeUnit.SECONDS);
+        // Close streams — causes readLine() to return null and the reader futures to complete
+        isA.close();
+        isB.close();
+        readerA.get(2, TimeUnit.SECONDS);
+        readerB.get(2, TimeUnit.SECONDS);
 
         // Client A must have received the tenant-A event
-        assertTrue(collectedA.stream().anyMatch(l -> l.contains("tenant-A")),
-                "Client-A must receive the tenant-A insert event; got: " + collectedA);
+        assertTrue(linesA.stream().anyMatch(l -> l.contains("tenant-A")),
+                "Client-A must receive the tenant-A insert event; got: " + linesA);
 
         // Client A must NOT have received the tenant-B event
-        assertFalse(collectedA.stream().anyMatch(l -> l.contains("tenant-B")),
-                "Client-A must NOT receive the tenant-B event; got: " + collectedA);
+        assertFalse(linesA.stream().anyMatch(l -> l.contains("tenant-B")),
+                "Client-A must NOT receive the tenant-B event; got: " + linesA);
 
         // Client B must have received the tenant-B event
-        assertTrue(collectedB.stream().anyMatch(l -> l.contains("tenant-B")),
-                "Client-B must receive the tenant-B insert event; got: " + collectedB);
+        assertTrue(linesB.stream().anyMatch(l -> l.contains("tenant-B")),
+                "Client-B must receive the tenant-B insert event; got: " + linesB);
 
         // Client B must NOT have received the tenant-A event
-        assertFalse(collectedB.stream().anyMatch(l -> l.contains("tenant-A")),
-                "Client-B must NOT receive the tenant-A event; got: " + collectedB);
+        assertFalse(linesB.stream().anyMatch(l -> l.contains("tenant-A")),
+                "Client-B must NOT receive the tenant-A event; got: " + linesB);
     }
 
     /**
@@ -212,12 +213,22 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                 .header("Authorization", ADMIN_BASIC)
                 .build();
 
-        var future = CompletableFuture.supplyAsync(() -> {
-            try { return collectSseLines(reqAll, 7_000); }
-            catch (Exception e) { return List.<String>of(); }
+        // Open connection synchronously so the session is registered before any insert
+        var resp = CLIENT.send(reqAll, BodyHandlers.ofInputStream());
+        var is   = resp.body();
+
+        var lines = Collections.synchronizedList(new ArrayList<String>());
+
+        var reader = CompletableFuture.runAsync(() -> {
+            try (var br = new BufferedReader(new InputStreamReader(is))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.isBlank()) lines.add(line);
+                }
+            } catch (Exception ignored) {}
         });
 
-        Thread.sleep(1_500);
+        Thread.sleep(500); // let the ChangeStreamWorker enter its forEach loop
 
         Unirest.post(TEST_COLL)
                .basicAuth("admin", "secret")
@@ -233,9 +244,10 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                .body("{\"tenantId\": \"tenant-Y\", \"msg\": \"broadcast\"}")
                .asEmpty();
 
-        Thread.sleep(1_000);
+        Thread.sleep(1_500);
 
-        var lines = future.get(10, TimeUnit.SECONDS);
+        is.close();
+        reader.get(2, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.contains("tenant-X")),
                 "Unbound client must receive tenant-X event; got: " + lines);
