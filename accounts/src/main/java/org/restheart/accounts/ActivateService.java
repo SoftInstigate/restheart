@@ -82,6 +82,10 @@ public class ActivateService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
         if (!req.isPatch()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
