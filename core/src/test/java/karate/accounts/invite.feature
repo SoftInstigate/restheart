@@ -75,7 +75,8 @@ Feature: POST /auth/invite
     When method PATCH
     Then status 200
     # Capture JWT issued on activation
-    * def activateCookie = responseHeaders['Set-Cookie'][0]
+    * def activateCookieList = responseHeaders['Set-Cookie']
+    * def activateCookie = activateCookieList != null && activateCookieList.length > 0 ? activateCookieList[0] : ''
     * def regularJwt = activateCookie.split('Bearer_')[1].split(';')[0]
 
     # 4. Attempt to invite with the regular (user-role) account — must be 403
