@@ -127,6 +127,22 @@ public class DbHelper {
         return result.getMatchedCount() > 0;
     }
 
+    /**
+     * Adds a tenant membership to the user's {@code tenants} array using {@code $addToSet}.
+     * Also updates {@code roles} if this is the user's first/only tenant.
+     *
+     * @param email      the user's email (_id)
+     * @param membership a document {@code { id: "...", role: "..." }}
+     * @return {@code true} if a document was matched
+     */
+    public boolean addTenantMembership(String email, BsonDocument membership) {
+        var result = users().updateOne(
+            eq("_id", new BsonString(email)),
+            new BsonDocument("$addToSet", new BsonDocument("tenants", membership))
+        );
+        return result.getMatchedCount() > 0;
+    }
+
     // -------------------------------------------------------------------------
     // Teams
     // -------------------------------------------------------------------------

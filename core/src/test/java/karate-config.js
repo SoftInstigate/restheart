@@ -18,6 +18,8 @@ function fn() {
     ownerEmail: 'owner-test@example.com',
     ownerPass: 'OwnerPass123!',
     ownerAuth: 'Basic b3duZXItdGVzdEBleGFtcGxlLmNvbTpPd25lclBhc3MxMjMh',
+    // second-team-owner@example.com:SecondPass123!
+    secondOwnerAuth: 'Basic c2Vjb25kLXRlYW0tb3duZXJAZXhhbXBsZS5jb206U2Vjb25kUGFzczEyMyE=',
     jwtSecret: 'secret'
   };
 

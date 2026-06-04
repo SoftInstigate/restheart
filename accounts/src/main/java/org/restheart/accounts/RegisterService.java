@@ -170,12 +170,18 @@ public class RegisterService implements JsonService {
                 .append("firstName", new BsonString(firstName))
                 .append("lastName",  new BsonString(lastName));
 
+        var tenantsArray = new BsonArray();
+        tenantsArray.add(new BsonDocument()
+                .append("id",   new BsonString(teamId))
+                .append("role", new BsonString("owner")));
+
         var userDoc = new BsonDocument()
                 .append("_id",                        new BsonString(email))
                 .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
                 .append("roles",                      rolesArray)
                 .append("status",                     new BsonString("pending_verification"))
                 .append("tenant",                     new BsonString(teamId))
+                .append("tenants",                    tenantsArray)
                 .append("profile",                    profile)
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);

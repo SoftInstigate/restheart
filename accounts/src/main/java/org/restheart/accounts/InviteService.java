@@ -130,15 +130,35 @@ public class InviteService implements JsonService {
         // 5. Controlla se l'utente esiste già
         var existing = db(req).findUser(invitedEmail);
         if (existing.isPresent()) {
-            var existingDoc    = existing.get();
-            var existingTenant = existingDoc.containsKey("tenant") && existingDoc.get("tenant").isString()
-                    ? existingDoc.getString("tenant").getValue() : null;
-            if (callerTenant.equals(existingTenant)) {
+            var existingDoc = existing.get();
+            // Check if already in this team
+            if (isAlreadyInTenant(existingDoc, callerTenant)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
-            } else {
-                // Multi-team not supported in v1
-                Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
+                return;
             }
+            // Multi-team: add membership to existing active user
+            var membership = new BsonDocument()
+                    .append("id",   new BsonString(callerTenant))
+                    .append("role", new BsonString(role));
+            db(req).addTenantMembership(invitedEmail, membership);
+            // Send notification email (best-effort)
+            if (ermes != null && ermes.isEnabled()) {
+                try {
+                    var teamName = loadTeamName(db(req), callerTenant);
+                    var inviterName = account.getPrincipal() != null
+                            ? account.getPrincipal().getName() : invitedEmail;
+                    ermes.sendEmail(
+                            invitedEmail,
+                            invitedEmail,
+                            EmailTemplates.inviteSubject(teamName, conf.appName()),
+                            EmailTemplates.inviteBody(teamName, inviterName,
+                                    conf.frontendUrl(), conf.appName()));
+                    LOGGER.info("Added existing user <{}> to tenant={}", invitedEmail, callerTenant);
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to send team-added email to <{}>: {}", invitedEmail, e.getMessage());
+                }
+            }
+            res.setStatusCode(HttpStatus.SC_CREATED);
             return;
         }
 
@@ -151,12 +171,18 @@ public class InviteService implements JsonService {
         var rolesArr = new BsonArray();
         rolesArr.add(new BsonString(role));
 
+        var tenantsArr = new BsonArray();
+        tenantsArr.add(new BsonDocument()
+                .append("id",   new BsonString(callerTenant))
+                .append("role", new BsonString(role)));
+
         var userDoc = new BsonDocument();
         userDoc.put("_id",             new BsonString(invitedEmail));
         userDoc.put("password",        new BsonString(hashedPwd));
         userDoc.put("roles",           rolesArr);
         userDoc.put("status",          new BsonString("invited"));
         userDoc.put("tenant",          new BsonString(callerTenant));
+        userDoc.put("tenants",         tenantsArr);
         userDoc.put("profile",         new BsonDocument());
         userDoc.put("inviteToken",     new BsonString(inviteToken));
         userDoc.put("inviteCreatedAt", now);
@@ -168,18 +194,7 @@ public class InviteService implements JsonService {
         }
 
         // 7. Carica il nome del team per l'email
-        String teamName = callerTenant; // fallback all'ID se il team non ha un campo "name"
-        try {
-            var teamOpt = db(req).findTeam(callerTenant);
-            if (teamOpt.isPresent()) {
-                var teamDoc = teamOpt.get();
-                if (teamDoc.containsKey("name") && teamDoc.get("name").isString()) {
-                    teamName = teamDoc.getString("name").getValue();
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Could not load team for tenant '{}': {}", callerTenant, e.getMessage());
-        }
+        var teamName = loadTeamName(db(req), callerTenant);
 
         // 8. Invia email invito
         if (ermes != null && ermes.isEnabled()) {
@@ -217,6 +232,40 @@ public class InviteService implements JsonService {
 
     private DbHelper db(JsonRequest req) {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
+    }
+
+    /** Returns true if the user document already has {@code tenantId} in its {@code tenants} array. */
+    private static boolean isAlreadyInTenant(BsonDocument userDoc, String tenantId) {
+        // Check legacy single-tenant field
+        if (userDoc.containsKey("tenant") && userDoc.get("tenant").isString()
+                && tenantId.equals(userDoc.getString("tenant").getValue())) {
+            return true;
+        }
+        // Check tenants array
+        if (userDoc.containsKey("tenants") && userDoc.get("tenants").isArray()) {
+            for (var entry : userDoc.getArray("tenants")) {
+                if (entry.isDocument()) {
+                    var doc = entry.asDocument();
+                    if (doc.containsKey("id") && doc.get("id").isString()
+                            && tenantId.equals(doc.getString("id").getValue())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Loads the team display name for the given tenantId, falling back to the raw ID. */
+    private static String loadTeamName(DbHelper db, String tenantId) {
+        try {
+            return db.findTeam(tenantId)
+                    .filter(t -> t.containsKey("name") && t.get("name").isString())
+                    .map(t -> t.getString("name").getValue())
+                    .orElse(tenantId);
+        } catch (Exception e) {
+            return tenantId;
+        }
     }
 
     /**
