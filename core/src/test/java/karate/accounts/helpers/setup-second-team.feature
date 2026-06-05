@@ -1,8 +1,8 @@
 Feature: setup second team for multi-tenant tests
 
-  # Idempotent: safe to call multiple times via karate.callSingle.
+  # Deletes second-team-owner@example.com first so each run starts fresh on any DB.
   # Creates second-team-owner@example.com (owner of "Second Test Team"),
-  # then invites owner-test@example.com into it with role=user.
+  # then invites owner-test@example.com into it with role=member.
   # Returns: { secondOwnerJwt, secondTenantId }
 
   @helper
@@ -11,7 +11,13 @@ Feature: setup second team for multi-tenant tests
     * configure followRedirects = false
     * def secondOwnerJwt = ''
 
-    # 1. Register second owner (409 = already exists, that's fine)
+    # 0. Cleanup — delete second-team-owner if it exists from a previous run
+    Given path '/users/second-team-owner@example.com'
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [200, 204, 404] contains responseStatus
+
+    # 1. Register fresh
     Given path '/auth/register'
     And request
       """
@@ -24,8 +30,9 @@ Feature: setup second team for multi-tenant tests
       }
       """
     When method POST
+    Then status 201
 
-    # 2. Fetch user doc to get tokens/tenant
+    # 2. Fetch user doc to get emailVerificationToken and tenant
     Given path '/users/second-team-owner@example.com'
     And header Authorization = adminAuth
     When method GET
@@ -33,21 +40,15 @@ Feature: setup second team for multi-tenant tests
     * def secondTenantId = response.tenant
     * def verifyToken = response.emailVerificationToken
 
-    # 3. Verify email — extract JWT from Set-Cookie (same pattern as setup-owner.feature).
-    #    If verifyToken is absent (user already active) skip the call.
-    * def verifyResult = verifyToken ? karate.call('classpath:karate/accounts/helpers/setup-second-team-verify.feature', { token: verifyToken }) : null
-    * def secondOwnerJwt = verifyResult != null && verifyResult.secondOwnerJwt ? verifyResult.secondOwnerJwt : secondOwnerJwt
+    # 3. Verify email — get JWT from Set-Cookie
+    * def verifyResult = karate.call('classpath:karate/accounts/helpers/setup-second-team-verify.feature', { token: verifyToken })
+    * def secondOwnerJwt = verifyResult.secondOwnerJwt
 
-    # 4. Fallback: if JWT not obtained from verify cookie (user was already active),
-    #    login via GET /token using pre-computed Basic auth from karate-config.js.
-    * def loginResult = (!secondOwnerJwt) ? karate.call('classpath:karate/accounts/helpers/setup-second-team-login.feature') : null
-    * def secondOwnerJwt = loginResult != null && loginResult.secondOwnerJwt ? loginResult.secondOwnerJwt : secondOwnerJwt
-
-    # 5. Invite owner-test@example.com (409 = already invited/member, that's fine)
+    # 4. Invite owner-test@example.com into the second team
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + secondOwnerJwt
     And request { "email": "owner-test@example.com", "role": "member" }
     When method POST
-    * match [201, 409] contains responseStatus
+    Then status 201
 
     * karate.log('Second team setup done, tenantId:', secondTenantId, 'jwt present:', secondOwnerJwt != '')
