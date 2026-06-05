@@ -6,6 +6,7 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.plugins.accounts.Membership;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.TenantRef;
@@ -41,8 +42,8 @@ import java.util.Optional;
  * </pre>
  *
  * <p>This class is <em>not</em> a RESTHeart plugin. It is instantiated directly by
- * {@link org.restheart.accounts.AccountsService} and receives a {@link DbHelper} and
- * the configured database name via constructor injection.
+ * {@link org.restheart.accounts.AccountsService}, which passes a {@link MongoClient} and
+ * the configured database name to the constructor.
  */
 public class DefaultMembershipProvider implements MembershipProvider {
 
@@ -62,6 +63,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
      * the user document.
      *
      * <p>The user document must already exist when this method is called.
+     *
+     * @param userId   the user's email address
+     * @param teamName the display name for the new team
+     * @return a {@link TenantRef} with the new team's ID and display name
      */
     @Override
     public TenantRef createInitialTeam(String userId, String teamName) {
@@ -129,6 +134,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
      * Adds a {@code {id, role}} entry to the user's {@code tenants} array via
      * {@code $addToSet} (idempotent). If the user has no active tenant yet, also
      * sets {@code tenant} to this tenant so they are immediately able to use it.
+     *
+     * @param userId   the user's email address
+     * @param tenantId the tenant identifier
+     * @param role     the role to assign (e.g. {@code "owner"} or {@code "member"})
      */
     @Override
     public void addMember(String userId, String tenantId, String role) {
@@ -182,7 +191,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         return result;
     }
 
-    // ── setActiveMembership ───────────────────────────────────────────────────
+    // ── setActiveMembership ──────────────────────────────────────────────
 
     @Override
     public void setActiveMembership(String userId, String tenantId) {
@@ -193,7 +202,68 @@ public class DefaultMembershipProvider implements MembershipProvider {
         db.setActiveTenant(userId, tenantId);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── activateViaOAuth ──────────────────────────────────────────────────
+
+    /**
+     * Activates an invited user via OAuth.
+     *
+     * <p>Activates any user whose {@code status} is {@code "invited"} and who
+     * already has an active {@code tenant} set (assigned when the invite was sent).
+     * Sets {@code status} to {@code "active"}, removes the {@code inviteToken} field,
+     * and optionally stores the accepted consents.
+     *
+     * @param userId   the user's email address
+     * @param consents consent record to persist, or {@code null} if no consent was given
+     * @return an {@link Optional} with the activated membership, or empty if the user
+     *         is not in the {@code "invited"} state or has no pending tenant
+     */
+    @Override
+    public Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
+        var userOpt = db.findUser(userId);
+        if (userOpt.isEmpty()) return Optional.empty();
+        var user = userOpt.get();
+
+        // Only activate users that are in the "invited" state
+        if (!user.containsKey("status") || !"invited".equals(user.getString("status").getValue())) {
+            return Optional.empty();
+        }
+
+        // User must already have an active tenant (set when the invite was sent)
+        if (!user.containsKey("tenant") || !user.get("tenant").isString()) {
+            LOGGER.warn("DefaultMembershipProvider.activateViaOAuth: invited user <{}> has no tenant", userId);
+            return Optional.empty();
+        }
+        var tenantId = user.getString("tenant").getValue();
+
+        // Activate: set status and optionally record consents
+        var updates = new BsonDocument().append("status", new BsonString("active"));
+        if (consents != null) {
+            updates.append("consents", buildConsentsDoc(consents));
+        }
+        db.updateUser(userId, updates);
+        db.unsetUserFields(userId, List.of("inviteToken"));
+
+        var role        = findRoleInTenants(user, tenantId);
+        var displayName = loadTeamName(tenantId);
+
+        LOGGER.info("DefaultMembershipProvider: invited user <{}> activated via OAuth (tenant={})",
+                userId, tenantId);
+
+        return Optional.of(new Membership(tenantId, displayName, role, true));
+    }
+
+    private BsonDocument buildConsentsDoc(ConsentRecord consents) {
+        var doc = new BsonDocument()
+                .append("termsVersion",   new BsonString(consents.termsVersion()))
+                .append("privacyVersion", new BsonString(consents.privacyVersion()))
+                .append("acceptedAt",     new BsonDateTime(consents.acceptedAt().toEpochMilli()));
+        if (consents.ip() != null) {
+            doc.append("ip", new BsonString(consents.ip()));
+        }
+        return doc;
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────
 
     private String findRoleInTenants(BsonDocument user, String tenantId) {
         if (user.containsKey("tenants") && user.get("tenants").isArray()) {

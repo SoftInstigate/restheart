@@ -9,18 +9,18 @@ import com.google.gson.JsonParser;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.restheart.accounts.oauth.OAuthService;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.accounts.OAuthProvider;
+import org.restheart.plugins.accounts.OAuthProviderRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * GitHub OAuth 2.0 provider.
  *
- * <p>Registers itself with {@link OAuthService} on startup.
+ * <p>Registers itself with the OAuth service on startup.
  *
  * <p>Fetches user profile from the GitHub REST API:
  * <ul>
@@ -60,7 +60,7 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
     private static final String EMAILS_URL    = "https://api.github.com/user/emails";
 
     @Inject("oauthService")
-    private OAuthService oauthService;
+    private OAuthProviderRegistry oauthService;
 
     @Override
     public void init() {
@@ -114,7 +114,7 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
                     : fetchPrimaryEmail(service, accessToken);
 
             if (email == null || email.isBlank()) {
-                throw new OAuthService.OAuthException(
+                throw new Exception(
                         "GitHub account has no verified email address. "
                         + "Ensure the 'user:email' scope is requested.");
             }

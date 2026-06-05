@@ -9,18 +9,18 @@ import com.google.gson.JsonParser;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.restheart.accounts.oauth.OAuthService;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.accounts.OAuthProvider;
+import org.restheart.plugins.accounts.OAuthProviderRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Google OAuth 2.0 provider.
  *
- * <p>Registers itself with {@link OAuthService} on startup.
+ * <p>Registers itself with the OAuth service on startup.
  *
  * <p>Fetches user profile from {@code https://www.googleapis.com/oauth2/v2/userinfo}
  * and returns a {@link BsonDocument} with fields:
@@ -42,7 +42,7 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
     private static final String USERINFO_URL  = "https://www.googleapis.com/oauth2/v2/userinfo";
 
     @Inject("oauthService")
-    private OAuthService oauthService;
+    private OAuthProviderRegistry oauthService;
 
     @Override
     public void init() {
@@ -81,12 +81,12 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
             var json = JsonParser.parseString(response.getBody()).getAsJsonObject();
 
             if (json.has("verified_email") && !json.get("verified_email").getAsBoolean()) {
-                throw new OAuthService.OAuthException("Google email is not verified");
+                throw new Exception("Google email is not verified");
             }
 
             var email = json.has("email") ? json.get("email").getAsString() : null;
             if (email == null || email.isBlank()) {
-                throw new OAuthService.OAuthException("Google account has no email address");
+                throw new Exception("Google account has no email address");
             }
 
             var providerId = json.has("id")   ? json.get("id").getAsString()   : "";

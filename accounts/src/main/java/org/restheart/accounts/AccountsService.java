@@ -4,6 +4,7 @@ import com.mongodb.client.MongoClient;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.spi.DefaultMembershipProvider;
 import org.restheart.plugins.accounts.MembershipProvider;
+import org.restheart.plugins.accounts.MembershipProviderRegistry;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
     enabledByDefault = false,
     priority         = 25   // after accountsConfig (priority 20) so conf is ready at @OnInit
 )
-public class AccountsService implements Provider<AccountsService> {
+public class AccountsService implements Provider<AccountsService>, MembershipProviderRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountsService.class);
 
@@ -75,6 +76,7 @@ public class AccountsService implements Provider<AccountsService> {
      * before the server starts accepting requests.
      *
      * @param provider the custom provider to use; must not be {@code null}
+     * @throws IllegalArgumentException if {@code provider} is {@code null}
      */
     public void registerMembershipProvider(MembershipProvider provider) {
         if (provider == null) throw new IllegalArgumentException("provider must not be null");
@@ -86,6 +88,8 @@ public class AccountsService implements Provider<AccountsService> {
      * Returns the currently active {@link MembershipProvider}.
      * This is the custom provider if one has been registered, or the
      * {@link DefaultMembershipProvider} otherwise.
+     *
+     * @return the active {@link MembershipProvider}; never {@code null}
      */
     public MembershipProvider getMembershipProvider() {
         return membershipProvider;

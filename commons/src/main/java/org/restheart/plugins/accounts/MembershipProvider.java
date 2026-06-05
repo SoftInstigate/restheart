@@ -17,7 +17,7 @@ import java.util.Optional;
  * <pre>{@code
  * @RegisterPlugin(name = "myMembershipProvider", description = "...")
  * public class MyMembershipProvider implements MembershipProvider, Initializer {
- *     @Inject("accountsService") private AccountsService accountsService;
+ *     @Inject("accountsService") private MembershipProviderRegistry accountsService;
  *
  *     @Override
  *     public void init() {
@@ -53,6 +53,7 @@ public interface MembershipProvider {
      *
      * @param userId   the user's identifier
      * @param tenantId the tenant identifier
+     * @return {@code true} if the user belongs to the given tenant
      */
     boolean isMember(String userId, String tenantId);
 
@@ -99,4 +100,26 @@ public interface MembershipProvider {
      * @throws IllegalArgumentException if the user does not belong to the tenant
      */
     void setActiveMembership(String userId, String tenantId);
+
+    /**
+     * Called by the OAuth callback when the OAuth-authenticated user has
+     * {@code status: "invited"}. Implementations should activate the pending
+     * invite, record consents if provided, and return the membership to use
+     * for JWT issuance.
+     *
+     * <p>Return {@link Optional#empty()} to fall back to the default
+     * behaviour (redirect to {@code frontendErrorUrl}). The default implementation
+     * returns empty — preserving the 9.4.1 behaviour of blocking invited users
+     * from OAuth login.
+     *
+     * @param userId   the user's email / identifier
+     * @param consents consent versions collected before the OAuth redirect,
+     *                 or {@code null} if {@code consentsAccepted=true} was not
+     *                 passed through the OAuth state
+     * @return an {@link Optional} containing the active
+     *         {@link Membership} to embed in the JWT, or empty to redirect to the error URL
+     */
+    default Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
+        return Optional.empty();
+    }
 }

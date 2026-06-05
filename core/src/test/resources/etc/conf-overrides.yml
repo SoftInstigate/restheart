@@ -405,3 +405,17 @@
 /tokenFailedAuthInterceptor/enabled: true
 
 /ermes/enabled: true
+
+/oauthConfig/enabled: true
+/oauthConfig/api-base-url: http://localhost:8080
+/oauthConfig/frontend-success-url: http://localhost:4200/app
+/oauthConfig/frontend-error-url: http://localhost:4200/login?error=oauth_error
+/oauthConfig/providers/test/enabled: true
+/oauthConfig/providers/test/client-id: test-client
+/oauthConfig/providers/test/client-secret: test-secret
+/oauthConfig/providers/test/scope: email
+
+/oauthService/enabled: true
+/oauthInitiator/enabled: true
+/oauthCallback/enabled: true
+/testOAuthProvider/enabled: true

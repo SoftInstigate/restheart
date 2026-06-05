@@ -20,6 +20,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -35,19 +37,20 @@ import java.util.function.Predicate;
 import static java.util.function.Predicate.not;
 
 /**
- * Handles the Google OAuth 2.0 callback.
+ * Handles the OAuth 2.0 callback for any configured provider.
  *
  * <pre>
- *   GET /auth/oauth/callback/{provider}?code=...&state=...
+ *   GET /auth/oauth/callback/{provider}?code=...&amp;state=...
  * </pre>
  *
  * <p>Flow:
  * <ol>
- *   <li>Verify state token (CSRF protection)</li>
- *   <li>Exchange authorization code for access token</li>
- *   <li>Fetch user profile from the provider</li>
+ *   <li>Verify CSRF state token (consumed atomically from MongoDB)</li>
+ *   <li>Delegate code exchange and profile fetch to the {@link org.restheart.plugins.accounts.OAuthProvider}</li>
  *   <li>Find or create the user in MongoDB</li>
- *   <li>Issue JWT and set {@code rh_auth} cookie</li>
+ *   <li>If user has {@code status:"invited"}, invoke
+ *       {@link org.restheart.plugins.accounts.MembershipProvider#activateViaOAuth} to activate</li>
+ *   <li>Issue JWT and set the auth cookie ({@code conf.cookieName()})</li>
  *   <li>Redirect to {@code frontendSuccessUrl}</li>
  * </ol>
  *
@@ -140,31 +143,50 @@ public class OAuthCallback implements StringService {
         var state = stateParam.getFirst();
 
         try {
-            // 1. Exchange code + verify state → user profile from provider
-            var profile = oauthService.handleCallback(provider, code, state);
-            var email   = profile.getString("email").getValue();
+            // 1. Exchange code + verify state → user profile + invite context
+            var callbackResult = oauthService.handleCallback(provider, code, state);
+            var profile        = callbackResult.profile();
+            var email          = profile.getString("email").getValue();
 
             LOGGER.info("OAuth callback: authenticated {} via {}", email, provider);
 
             // 2. Find or create user (membership delegated to the provider)
-            var user = findOrCreateUser(req, profile, provider);
+            var user   = findOrCreateUser(req, profile, provider);
+            var roles  = extractRoles(user);
+            var status = user.containsKey("status") ? user.getString("status").getValue() : "active";
 
-            // 3. Issue JWT + set cookie using the active MembershipProvider for the tenant claim
-            var roles        = extractRoles(user);
+            // 3. Handle invited users: give MembershipProvider a chance to activate
+            if ("invited".equals(status)) {
+                ConsentRecord consents = null;
+                if (callbackResult.consentsAccepted()) {
+                    var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
+                    consents = new ConsentRecord(conf.termsVersion(), conf.privacyVersion(),
+                            ip, Instant.now());
+                }
+
+                var membership = accountsService.getMembershipProvider()
+                        .activateViaOAuth(email, consents);
+
+                if (membership.isPresent()) {
+                    LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
+                    var jwtToken = jwt.issueToken(email, roles, Map.of(
+                            conf.tenantClaimName(), membership.get().tenantId(),
+                            "status", "active"));
+                    setAuthCookieAndRedirect(res, req, jwtToken);
+                    return;
+                }
+                // activateViaOAuth returned empty — redirect to frontendErrorUrl (spec: deny access)
+                LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
+                redirectError(res, "Account is pending activation");
+                return;
+            }
+
+            // 4. Issue JWT + set cookie for normal / non-activated users
             var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
-            var tenantId     = activeMembership.map(m -> m.tenantId()).orElse("");
-            var status       = user.containsKey("status") ? user.getString("status").getValue() : "active";
-
+            var tenantId         = activeMembership.map(m -> m.tenantId()).orElse("");
             var jwtToken = jwt.issueToken(email, roles,
                     Map.of(conf.tenantClaimName(), tenantId, "status", status));
-            res.getHeaders().add(
-                    HttpString.tryFromString("Set-Cookie"),
-                    JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
-                            RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
-
-            // 4. Redirect to app
-            res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
-            res.getHeaders().put(Headers.LOCATION, oauthConfig.frontendSuccessUrl());
+            setAuthCookieAndRedirect(res, req, jwtToken);
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
@@ -173,6 +195,17 @@ public class OAuthCallback implements StringService {
             LOGGER.error("Unexpected error in OAuth callback ({})", provider, e);
             redirectError(res, "Internal error");
         }
+    }
+
+    // ── Cookie + redirect helper ──────────────────────────────────────────────
+
+    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken) {
+        res.getHeaders().add(
+                HttpString.tryFromString("Set-Cookie"),
+                JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
+                        RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
+        res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
+        res.getHeaders().put(Headers.LOCATION, oauthConfig.frontendSuccessUrl());
     }
 
     // ── User creation / lookup ────────────────────────────────────────────────

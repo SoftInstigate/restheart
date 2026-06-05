@@ -10,14 +10,14 @@ import org.bson.BsonDocument;
  * an access token, then fetching the user profile.
  *
  * <p>Implementations must also implement RESTHeart's {@code Initializer} and
- * register themselves with {@code OAuthService} via {@code @Inject("oauthService")}:
+ * register themselves with {@link OAuthProviderRegistry} via {@code @Inject("oauthService")}:
  *
  * <pre>{@code
  * @RegisterPlugin(name = "myOAuthProvider", description = "...")
  * public class MyOAuthProvider implements OAuthProvider, Initializer {
  *
  *     @Inject("oauthService")
- *     private OAuthService oauthService;
+ *     private OAuthProviderRegistry oauthService;
  *
  *     @Override
  *     public void init() {
@@ -45,7 +45,11 @@ import org.bson.BsonDocument;
  */
 public interface OAuthProvider {
 
-    /** Returns the provider name, e.g. {@code "google"} or {@code "github"}. */
+    /**
+     * Returns the provider name, e.g. {@code "google"} or {@code "github"}.
+     *
+     * @return the lower-case provider name matching the key in {@code oauthConfig.providers}
+     */
     String getProviderName();
 
     /**
