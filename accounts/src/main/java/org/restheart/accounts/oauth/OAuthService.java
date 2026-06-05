@@ -1,11 +1,12 @@
 package org.restheart.accounts.oauth;
 
-import com.github.scribejava.core.oauth.OAuth20Service;
+import org.bson.BsonDocument;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.OAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +37,8 @@ public class OAuthService implements Provider<OAuthService> {
     private OAuthConfig config;
 
     /** Registered providers keyed by name, e.g. {@code "google"}. */
-    private final Map<String, OAuthProvider>  providers     = new HashMap<>();
-    private final Map<String, OAuth20Service> serviceCache  = new ConcurrentHashMap<>();
-    private final Map<String, StateToken>     stateTokens   = new ConcurrentHashMap<>();
+    private final Map<String, OAuthProvider> providers   = new HashMap<>();
+    private final Map<String, StateToken>    stateTokens = new ConcurrentHashMap<>();
 
     @OnInit
     public void onInit() {
@@ -63,15 +63,16 @@ public class OAuthService implements Provider<OAuthService> {
      */
     public AuthResult getAuthorizationUrl(String providerName,
             org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
-        var providerCfg = resolveProviderConfig(providerName, req);
-        var provider    = resolveProvider(providerName);
-        var service     = getOrBuildService(provider, providerCfg, providerName);
-        var state       = generateState();
+        var cfg      = resolveProviderConfig(providerName, req);
+        var provider = resolveProvider(providerName);
+        var state    = generateState();
         stateTokens.put(state, new StateToken(providerName, System.currentTimeMillis()));
-        return new AuthResult(service.getAuthorizationUrl(state), state);
+        var url = provider.getAuthorizationUrl(cfg.clientId(), cfg.clientSecret(),
+                config.callbackUrl(providerName), cfg.scope(), state);
+        return new AuthResult(url, state);
     }
 
-    /** @deprecated Use {@link #getAuthorizationUrl(String, ServiceRequest)} instead. */
+    /** @deprecated Use {@link #getAuthorizationUrl(String, org.restheart.exchange.ServiceRequest)} instead. */
     @Deprecated
     public AuthResult getAuthorizationUrl(String providerName) throws OAuthException {
         return getAuthorizationUrl(providerName, null);
@@ -80,26 +81,25 @@ public class OAuthService implements Provider<OAuthService> {
     // ── Callback / code exchange ──────────────────────────────────────────────
 
     /**
-     * Handles the OAuth callback: verifies the state token, exchanges the
-     * authorization code for an access token, and fetches the user profile.
+     * Handles the OAuth callback: verifies the state token, then delegates
+     * token exchange and profile fetch to the provider.
      *
      * @return the user profile as a {@code BsonDocument} (fields: email, name,
      *         providerId, avatarUrl)
      */
-    public org.bson.BsonDocument handleCallback(String providerName, String code, String state)
+    public BsonDocument handleCallback(String providerName, String code, String state)
             throws OAuthException {
 
         if (!verifyAndConsumeState(state, providerName)) {
             throw new OAuthException("Invalid or expired state token (possible CSRF)");
         }
 
-        var providerCfg = resolveProviderConfig(providerName);
-        var provider    = resolveProvider(providerName);
-        var service     = getOrBuildService(provider, providerCfg, providerName);
+        var cfg      = resolveProviderConfig(providerName);
+        var provider = resolveProvider(providerName);
 
         try {
-            var accessToken = service.getAccessToken(code);
-            return provider.fetchUserProfile(service, accessToken.getAccessToken());
+            return provider.fetchUserProfile(cfg.clientId(), cfg.clientSecret(),
+                    config.callbackUrl(providerName), cfg.scope(), code);
         } catch (OAuthException e) {
             throw e;
         } catch (Exception e) {
@@ -119,7 +119,8 @@ public class OAuthService implements Provider<OAuthService> {
 
     /**
      * Resolves the provider configuration for the given request, checking per-tenant
-     * overrides (from {@link RequestOverrides}) before falling back to the static config.
+     * overrides (from {@link org.restheart.accounts.util.RequestOverrides}) before
+     * falling back to the static config.
      *
      * <p>Currently only Google supports per-tenant override via:
      * <ul>
@@ -132,7 +133,6 @@ public class OAuthService implements Provider<OAuthService> {
      */
     public OAuthConfig.ProviderConfig resolveProviderConfig(String name,
             org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
-        // Check per-tenant Google override first
         if ("google".equalsIgnoreCase(name) && req != null) {
             var tenantCfg = org.restheart.accounts.util.RequestOverrides.oauthGoogle(req);
             if (tenantCfg != null && tenantCfg.isValid()) {
@@ -148,14 +148,6 @@ public class OAuthService implements Provider<OAuthService> {
         return p;
     }
 
-    private OAuth20Service getOrBuildService(OAuthProvider provider,
-                                              OAuthConfig.ProviderConfig cfg,
-                                              String name) {
-        return serviceCache.computeIfAbsent(name, k ->
-                provider.buildService(cfg.clientId(), cfg.clientSecret(),
-                        config.callbackUrl(name), cfg.scope()));
-    }
-
     private String generateState() {
         var bytes = new byte[32];
         RANDOM.nextBytes(bytes);
@@ -167,7 +159,6 @@ public class OAuthService implements Provider<OAuthService> {
         var token = stateTokens.remove(state);
         if (token == null) return false;
         if (System.currentTimeMillis() - token.timestamp() > STATE_TOKEN_TTL_MS) return false;
-        // periodically purge expired entries
         stateTokens.entrySet().removeIf(e ->
                 System.currentTimeMillis() - e.getValue().timestamp() > STATE_TOKEN_TTL_MS);
         return token.providerName().equalsIgnoreCase(expectedProvider);
@@ -180,7 +171,7 @@ public class OAuthService implements Provider<OAuthService> {
     private record StateToken(String providerName, long timestamp) {}
 
     public static class OAuthException extends Exception {
-        public OAuthException(String msg)                    { super(msg); }
-        public OAuthException(String msg, Throwable cause)  { super(msg, cause); }
+        public OAuthException(String msg)                   { super(msg); }
+        public OAuthException(String msg, Throwable cause) { super(msg, cause); }
     }
 }

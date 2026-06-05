@@ -54,7 +54,7 @@ import static java.util.function.Predicate.not;
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
  *
  * <p>New user creation delegates team / tenant initialization to the active
- * {@link org.restheart.accounts.spi.MembershipProvider} via {@link AccountsService}.
+ * {@link org.restheart.plugins.accounts.MembershipProvider} via {@link AccountsService}.
  */
 @RegisterPlugin(
         name             = "oauthCallback",

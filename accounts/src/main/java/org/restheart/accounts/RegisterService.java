@@ -8,7 +8,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
-import org.restheart.accounts.spi.MembershipProvider;
+import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailTemplates;
 import org.restheart.accounts.util.Errors;

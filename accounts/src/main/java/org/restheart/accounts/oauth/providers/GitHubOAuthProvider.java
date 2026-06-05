@@ -9,11 +9,11 @@ import com.google.gson.JsonParser;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.restheart.accounts.oauth.OAuthProvider;
 import org.restheart.accounts.oauth.OAuthService;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.OAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,18 +76,17 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
     public String getProviderName() { return PROVIDER_NAME; }
 
     @Override
-    public OAuth20Service buildService(String clientId, String clientSecret,
-                                       String callbackUrl, String scope) {
-        return new ServiceBuilder(clientId)
-                .apiSecret(clientSecret)
-                .defaultScope(scope)
-                .callback(callbackUrl)
-                .build(GitHubApi.instance());
+    public String getAuthorizationUrl(String clientId, String clientSecret,
+                                      String callbackUrl, String scope, String state) {
+        return buildService(clientId, clientSecret, callbackUrl, scope).getAuthorizationUrl(state);
     }
 
     @Override
-    public BsonDocument fetchUserProfile(OAuth20Service service, String accessToken)
+    public BsonDocument fetchUserProfile(String clientId, String clientSecret,
+                                         String callbackUrl, String scope, String code)
             throws Exception {
+        var service     = buildService(clientId, clientSecret, callbackUrl, scope);
+        var accessToken = service.getAccessToken(code).getAccessToken();
 
         var request = new OAuthRequest(Verb.GET, USER_URL);
         service.signRequest(accessToken, request);
@@ -132,6 +131,15 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private OAuth20Service buildService(String clientId, String clientSecret,
+                                        String callbackUrl, String scope) {
+        return new ServiceBuilder(clientId)
+                .apiSecret(clientSecret)
+                .defaultScope(scope)
+                .callback(callbackUrl)
+                .build(GitHubApi.instance());
+    }
+
     /**
      * Fetches the primary verified email from the GitHub emails endpoint.
      * Returns {@code null} if no verified email is found.
@@ -151,9 +159,9 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
                 // 1. Prefer primary + verified
                 for (var el : arr) {
-                    var obj       = el.getAsJsonObject();
-                    var primary   = obj.has("primary")  && obj.get("primary").getAsBoolean();
-                    var verified  = obj.has("verified") && obj.get("verified").getAsBoolean();
+                    var obj      = el.getAsJsonObject();
+                    var primary  = obj.has("primary")  && obj.get("primary").getAsBoolean();
+                    var verified = obj.has("verified") && obj.get("verified").getAsBoolean();
                     if (primary && verified) return obj.get("email").getAsString();
                 }
 

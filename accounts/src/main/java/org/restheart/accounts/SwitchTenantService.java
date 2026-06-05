@@ -3,7 +3,7 @@ package org.restheart.accounts;
 import com.google.gson.JsonObject;
 import io.undertow.util.HttpString;
 import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.spi.MembershipProvider;
+import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;

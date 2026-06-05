@@ -1,4 +1,4 @@
-package org.restheart.accounts.spi;
+package org.restheart.plugins.accounts;
 
 /**
  * Represents a single tenant membership for a user.

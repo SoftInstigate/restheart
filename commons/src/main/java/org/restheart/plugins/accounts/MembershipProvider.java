@@ -1,4 +1,4 @@
-package org.restheart.accounts.spi;
+package org.restheart.plugins.accounts;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,9 +10,9 @@ import java.util.Optional;
  * with them, and how active memberships are read and switched. The plugin consults
  * this interface for every membership read/write operation.
  *
- * <p>A default implementation ({@link DefaultMembershipProvider}) is provided and
- * preserves the built-in {@code tenant}/{@code tenants} schema. Custom implementations
- * can be registered at startup via:
+ * <p>A default implementation ({@code DefaultMembershipProvider}) is provided in the
+ * {@code restheart-accounts} module and preserves the built-in {@code tenant}/{@code tenants}
+ * schema. Custom implementations can be registered at startup via:
  *
  * <pre>{@code
  * @RegisterPlugin(name = "myMembershipProvider", description = "...")
@@ -28,7 +28,7 @@ import java.util.Optional;
  * }</pre>
  *
  * <p>If no custom provider is registered, the plugin falls back to the built-in
- * {@link DefaultMembershipProvider}.
+ * {@code DefaultMembershipProvider}.
  */
 public interface MembershipProvider {
 

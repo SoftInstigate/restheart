@@ -6,6 +6,9 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.plugins.accounts.Membership;
+import org.restheart.plugins.accounts.MembershipProvider;
+import org.restheart.plugins.accounts.TenantRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

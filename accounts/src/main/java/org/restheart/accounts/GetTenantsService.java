@@ -19,7 +19,7 @@ import org.restheart.utils.HttpStatus;
  * GET /auth/tenants
  *
  * <p>Returns the list of tenant memberships for the authenticated user via the
- * active {@link org.restheart.accounts.spi.MembershipProvider}.
+ * active {@link org.restheart.plugins.accounts.MembershipProvider}.
  *
  * <p>Response body example:
  * <pre>{@code

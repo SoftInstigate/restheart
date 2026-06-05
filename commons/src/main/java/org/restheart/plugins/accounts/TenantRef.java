@@ -1,4 +1,4 @@
-package org.restheart.accounts.spi;
+package org.restheart.plugins.accounts;
 
 /**
  * Lightweight reference to a tenant returned by

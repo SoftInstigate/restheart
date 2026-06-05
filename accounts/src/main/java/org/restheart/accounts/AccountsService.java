@@ -3,7 +3,7 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.spi.DefaultMembershipProvider;
-import org.restheart.accounts.spi.MembershipProvider;
+import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
