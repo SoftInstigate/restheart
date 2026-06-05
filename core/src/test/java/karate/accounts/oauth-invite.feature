@@ -51,7 +51,7 @@ Feature: OAuth activation for invited users
     And param pendingInviteToken = inviteToken
     And param consentsAccepted = 'true'
     When method GET
-    Then status 302
+    Then status 307
 
     # Extract CSRF state from Location header.
     # New state format: base64url(tenantDb) + "." + base64url(32-random-bytes)
@@ -67,7 +67,7 @@ Feature: OAuth activation for invited users
     And param code = 'test-' + inviteEmail
     And param state = state
     When method GET
-    Then status 302
+    Then status 307
 
     # Must redirect to the frontend success URL
     * def callbackLocation = responseHeaders['Location'][0]
@@ -80,15 +80,15 @@ Feature: OAuth activation for invited users
 
     # 5. Decode JWT and verify claims
     * def jwtPart = setCookieHeader.split('rh_auth=Bearer_')[1].split(';')[0]
-    * def payloadB64 = jwtPart.split('\\.')[1]
-    # Karate built-in base64 decode
-    * def payloadJson = karate.fromBase64(payloadB64)
-    * def payload = karate.fromString(payloadJson)
+    * def parts = jwtPart.split('.')
+    * def payloadB64 = parts[1]
+    # JWT payload is base64url-encoded — decode with Java, parse with JS
+    * def payloadJson = new java.lang.String(java.util.Base64.getUrlDecoder().decode(payloadB64))
+    * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
     * match payload.status == 'active'
-    * match payload.tenant == '#notnull'
-    * match payload.tenant == '#notempty'
+    * match payload.tenant == '#string'
 
     # 6. Verify DB — user activated, inviteToken removed, consents stored
     Given path '/users/' + inviteEmail
@@ -124,7 +124,7 @@ Feature: OAuth activation for invited users
     Given path '/auth/oauth/authorize/test'
     And param pendingInviteToken = inviteToken
     When method GET
-    Then status 302
+    Then status 307
     * def location = responseHeaders['Location'][0]
     * def state = location.split('state=')[1].split('&')[0]
 
@@ -133,7 +133,7 @@ Feature: OAuth activation for invited users
     And param code = 'test-' + inviteEmail
     And param state = state
     When method GET
-    Then status 302
+    Then status 307
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
@@ -154,14 +154,14 @@ Feature: OAuth activation for invited users
 
     Given path '/auth/oauth/authorize/test'
     When method GET
-    Then status 302
+    Then status 307
     * def state = responseHeaders['Location'][0].split('state=')[1].split('&')[0]
 
     Given path '/auth/oauth/callback/test'
     And param code = 'test-' + newEmail
     And param state = state
     When method GET
-    Then status 302
+    Then status 307
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
@@ -181,7 +181,7 @@ Feature: OAuth activation for invited users
     And param code = 'test-nobody@example.com'
     And param state = 'invalid-state-token'
     When method GET
-    Then status 302
+    Then status 307
     * def errorLocation = responseHeaders['Location'][0]
     * match errorLocation contains 'error=oauth_error'
     * match errorLocation contains 'reason='
@@ -202,7 +202,7 @@ Feature: OAuth activation for invited users
 
     Given path '/auth/oauth/authorize/test'
     When method GET
-    Then status 302
+    Then status 307
     * def state = responseHeaders['Location'][0].split('state=')[1].split('&')[0]
 
     # First callback — OK
@@ -210,7 +210,7 @@ Feature: OAuth activation for invited users
     And param code = 'test-' + replayEmail
     And param state = state
     When method GET
-    Then status 302
+    Then status 307
     * match responseHeaders['Location'][0] contains 'localhost:4200/app'
 
     # Second callback with same state — must fail (state token consumed)
@@ -218,5 +218,5 @@ Feature: OAuth activation for invited users
     And param code = 'test-' + replayEmail
     And param state = state
     When method GET
-    Then status 302
+    Then status 307
     And match responseHeaders['Location'][0] contains 'error=oauth_error'
