@@ -285,6 +285,151 @@ oauthProtectedResourceMetadataService:
 oauthClientRegistrationService:
   enabled: false
 
+# ─────────────────────────────────────────────────────────────────────────────
+# restheart-accounts — application-level account management
+# Requires: restheart-accounts.jar in plugins/
+# See https://restheart.org/docs/accounts/overview
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Core configuration provider — enabling this activates the whole plugin.
+# See https://restheart.org/docs/accounts/configuration
+accountsConfig:
+  enabled: false
+  # MongoDB database where users and teams are stored.
+  # Must match mongoRealmAuthenticator.users-db.
+  db: restheart
+  app-name: "My App"
+  # JWT access token TTL in minutes. Key and issuer are sourced from jwtConfigProvider.
+  jwt-ttl: 15
+  cookie-domain: localhost
+  cookie-name: rh_auth
+  frontend-url: http://localhost:4200
+  frontend-app-url: http://localhost:4200/app
+  terms-version: "1.0"
+  privacy-version: "1.0"
+  default-locale: en
+  # Custom email template paths (null = use built-in templates)
+  # templates:
+  #   verification:   etc/email-templates/verification.html
+  #   password-reset: etc/email-templates/password-reset.html
+  #   invite:         etc/email-templates/invite.html
+
+  # ── Membership SPI (9.4.1+) ─────────────────────────────────────────────
+  # See https://restheart.org/docs/accounts/membership-providers
+
+  # JWT claim name for the active tenant identifier.
+  # Default: "tenant". Change to e.g. "org" if your domain uses organisations.
+  tenant-claim-name: tenant
+
+  # Role name for regular (non-admin) team members.
+  # Default: "member". Set to "user" if existing ACL rules already use that label.
+  member-role-name: member
+
+  # Set to false to disable /auth/invite, /auth/resend-invite,
+  # /auth/tenants and /auth/switch-tenant.
+  # Useful when a custom MembershipProvider exposes its own equivalent endpoints.
+  membership-endpoints-enabled: true
+
+# Dependency-injection service holding the active MembershipProvider.
+accountsService:
+  enabled: false
+
+# Ensures MongoDB collections and indexes required by restheart-accounts are in place.
+accountsInitializer:
+  enabled: false
+
+# POST /auth/register — public user signup with email verification
+registerService:
+  enabled: false
+
+# GET  /auth/verify — email verification via one-time token link
+emailVerificationService:
+  enabled: false
+
+# POST /auth/forgot-password — sends a password-reset link
+forgotPasswordService:
+  enabled: false
+
+# PATCH /auth/reset-password — applies a reset token and sets a new password
+resetPasswordService:
+  enabled: false
+
+# PATCH /auth/activate — activates an invited user and sets their password
+activateService:
+  enabled: false
+
+# POST /auth/invite — invites a user to the caller's team
+inviteService:
+  enabled: false
+
+# POST /auth/resend-invite — re-sends an expired invitation email
+resendInviteService:
+  enabled: false
+
+# GET  /auth/tenants — lists the authenticated user's team memberships
+getTenantsService:
+  enabled: false
+
+# POST /auth/switch-tenant — switches the active team and reissues the JWT cookie
+switchTenantService:
+  enabled: false
+
+# Interceptor: clears the auth cookie when token authentication fails
+tokenFailedAuthInterceptor:
+  enabled: false
+
+# ── OAuth 2.0 social login (Google, GitHub, custom providers) ────────────────
+# See https://restheart.org/docs/accounts/google-oauth
+oauthConfig:
+  enabled: false
+  # Base URL of this RESTHeart instance (used to build OAuth callback URLs).
+  api-base-url: http://localhost:8080
+  frontend-success-url: http://localhost:4200/app
+  frontend-error-url: http://localhost:4200/login?error=oauth_error
+  providers:
+    google:
+      enabled: false
+      client-id: null
+      client-secret: null
+      scope: "openid email profile"
+    # github:
+    #   enabled: false
+    #   client-id: null
+    #   client-secret: null
+    #   scope: "user:email"
+
+# Core OAuth service — manages provider registration and authorization-code exchange.
+oauthService:
+  enabled: false
+
+# GET  /auth/oauth/authorize/{provider} — starts the OAuth flow
+oauthInitiator:
+  enabled: false
+
+# GET  /auth/oauth/callback/{provider}  — handles the OAuth callback
+oauthCallback:
+  enabled: false
+
+# Built-in Google OAuth 2.0 provider
+googleOAuthProvider:
+  enabled: false
+
+# Built-in GitHub OAuth 2.0 provider
+githubOAuthProvider:
+  enabled: false
+
+# ── Ermes SMTP email sender ──────────────────────────────────────────────────
+# Required for registration, invitations, and password-reset flows.
+# See https://restheart.org/docs/accounts/configuration
+ermes:
+  enabled: false
+  appName: "My App"
+  senderEmail: noreply@example.com
+  smtpHostname: localhost
+  smtpPort: 465
+  smtpUsername: null
+  smtpPassword: null
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/

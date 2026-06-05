@@ -9,18 +9,18 @@ import com.google.gson.JsonParser;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.restheart.accounts.oauth.OAuthProvider;
-import org.restheart.accounts.oauth.OAuthService;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.OAuthProvider;
+import org.restheart.plugins.accounts.OAuthProviderRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Google OAuth 2.0 provider.
  *
- * <p>Registers itself with {@link OAuthService} on startup.
+ * <p>Registers itself with the OAuth service on startup.
  *
  * <p>Fetches user profile from {@code https://www.googleapis.com/oauth2/v2/userinfo}
  * and returns a {@link BsonDocument} with fields:
@@ -34,15 +34,15 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name             = "googleOAuthProvider",
         description      = "Google OAuth 2.0 provider for restheart-accounts",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class GoogleOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthProvider.class);
-    private static final String PROVIDER_NAME  = "google";
-    private static final String USERINFO_URL   = "https://www.googleapis.com/oauth2/v2/userinfo";
+    private static final String PROVIDER_NAME = "google";
+    private static final String USERINFO_URL  = "https://www.googleapis.com/oauth2/v2/userinfo";
 
     @Inject("oauthService")
-    private OAuthService oauthService;
+    private OAuthProviderRegistry oauthService;
 
     @Override
     public void init() {
@@ -58,18 +58,17 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
     public String getProviderName() { return PROVIDER_NAME; }
 
     @Override
-    public OAuth20Service buildService(String clientId, String clientSecret,
-                                       String callbackUrl, String scope) {
-        return new ServiceBuilder(clientId)
-                .apiSecret(clientSecret)
-                .defaultScope(scope)
-                .callback(callbackUrl)
-                .build(GoogleApi20.instance());
+    public String getAuthorizationUrl(String clientId, String clientSecret,
+                                      String callbackUrl, String scope, String state) {
+        return buildService(clientId, clientSecret, callbackUrl, scope).getAuthorizationUrl(state);
     }
 
     @Override
-    public BsonDocument fetchUserProfile(OAuth20Service service, String accessToken)
+    public BsonDocument fetchUserProfile(String clientId, String clientSecret,
+                                         String callbackUrl, String scope, String code)
             throws Exception {
+        var service     = buildService(clientId, clientSecret, callbackUrl, scope);
+        var accessToken = service.getAccessToken(code).getAccessToken();
 
         var request = new OAuthRequest(Verb.GET, USERINFO_URL);
         service.signRequest(accessToken, request);
@@ -81,14 +80,13 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
 
             var json = JsonParser.parseString(response.getBody()).getAsJsonObject();
 
-            // email_verified check
             if (json.has("verified_email") && !json.get("verified_email").getAsBoolean()) {
-                throw new OAuthService.OAuthException("Google email is not verified");
+                throw new Exception("Google email is not verified");
             }
 
             var email = json.has("email") ? json.get("email").getAsString() : null;
             if (email == null || email.isBlank()) {
-                throw new OAuthService.OAuthException("Google account has no email address");
+                throw new Exception("Google account has no email address");
             }
 
             var providerId = json.has("id")   ? json.get("id").getAsString()   : "";
@@ -104,5 +102,16 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
                     .append("providerId", new BsonString(providerId))
                     .append("avatarUrl",  avatarUrl != null ? new BsonString(avatarUrl) : BsonNull.VALUE);
         }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private OAuth20Service buildService(String clientId, String clientSecret,
+                                        String callbackUrl, String scope) {
+        return new ServiceBuilder(clientId)
+                .apiSecret(clientSecret)
+                .defaultScope(scope)
+                .callback(callbackUrl)
+                .build(GoogleApi20.instance());
     }
 }

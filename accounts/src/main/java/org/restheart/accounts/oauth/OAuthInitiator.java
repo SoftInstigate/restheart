@@ -34,7 +34,7 @@ import static java.util.function.Predicate.not;
         name             = "oauthInitiator",
         description      = "GET /auth/oauth/authorize/{provider} — starts the OAuth flow",
         defaultURI       = "/auth/oauth/authorize",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class OAuthInitiator implements StringService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthInitiator.class);

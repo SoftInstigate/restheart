@@ -52,7 +52,7 @@ import io.undertow.util.Headers;
         name             = "resetPasswordService",
         description      = "PATCH /auth/reset-password — validates token and sets new password",
         defaultURI       = "/auth/reset-password",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class ResetPasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResetPasswordService.class);

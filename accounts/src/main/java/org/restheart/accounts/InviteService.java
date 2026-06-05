@@ -7,6 +7,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.EmailTemplates;
@@ -40,15 +41,17 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Expected body:
  * <pre>{@code
- * { "email": "...", "role": "user|admin" }
+ * { "email": "...", "role": "<memberRoleName>|admin" }
  * }</pre>
- * {@code role} is optional and defaults to {@code "user"}.
+ * {@code role} is optional and defaults to the configured {@code member-role-name}.
+ *
+ * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
         name             = "inviteService",
         description      = "POST /auth/invite — invites a user to the caller's tenant",
         defaultURI       = "/auth/invite",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class InviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
@@ -65,11 +68,16 @@ public class InviteService implements JsonService {
     @Inject("ermes")
     private Ermes ermes;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
     @OnInit
     public void onInit() {
-        // Allow all requests to reach the service; auth and role enforcement is done in handle()
-        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/invite") && (r.isPost() || r.isOptions()));
-        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/invite"));
+        if (conf.membershipEndpointsEnabled()) {
+            // Allow all requests to reach the service; auth and role enforcement is done in handle()
+            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/invite") && (r.isPost() || r.isOptions()));
+            aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/invite"));
+        }
     }
 
     @Override
@@ -78,6 +86,12 @@ public class InviteService implements JsonService {
             handleOptions(req);
             return;
         }
+
+        if (!conf.membershipEndpointsEnabled()) {
+            Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
+            return;
+        }
+
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
@@ -98,7 +112,7 @@ public class InviteService implements JsonService {
         }
 
         // 3. Leggi il tenant del chiamante
-        var callerTenant = extractTenant(account);
+        var callerTenant = extractTenant(account, conf.tenantClaimName());
         if (callerTenant == null || callerTenant.isBlank()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
@@ -118,29 +132,29 @@ public class InviteService implements JsonService {
         }
         var invitedEmail = jo.get("email").getAsString().trim().toLowerCase();
 
-        var role = "user";
+        var defaultRole = conf.memberRoleName();
+        var role = defaultRole;
         if (jo.has("role") && !jo.get("role").isJsonNull()) {
             role = jo.get("role").getAsString().trim().toLowerCase();
-            if (!"user".equals(role) && !"admin".equals(role)) {
-                Errors.error(res, HttpStatus.SC_BAD_REQUEST, "role must be 'user' or 'admin'");
+            if (!defaultRole.equals(role) && !"admin".equals(role)) {
+                Errors.error(res, HttpStatus.SC_BAD_REQUEST,
+                        "role must be '" + defaultRole + "' or 'admin'");
                 return;
             }
         }
 
+        var membership = accountsService.getMembershipProvider();
+
         // 5. Controlla se l'utente esiste già
         var existing = db(req).findUser(invitedEmail);
         if (existing.isPresent()) {
-            var existingDoc = existing.get();
-            // Check if already in this team
-            if (isAlreadyInTenant(existingDoc, callerTenant)) {
+            // Check if already in this team via the SPI
+            if (membership.isMember(invitedEmail, callerTenant)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
                 return;
             }
-            // Multi-team: add membership to existing active user
-            var membership = new BsonDocument()
-                    .append("id",   new BsonString(callerTenant))
-                    .append("role", new BsonString(role));
-            db(req).addTenantMembership(invitedEmail, membership);
+            // Multi-team: add membership to existing active user via SPI
+            membership.addMember(invitedEmail, callerTenant, role);
             // Send notification email (best-effort)
             if (ermes != null && ermes.isEnabled()) {
                 try {
@@ -162,7 +176,7 @@ public class InviteService implements JsonService {
             return;
         }
 
-        // 6. Crea utente con status="invited"
+        // 6. Crea utente con status="invited" (tenant fields managed by SPI)
         var inviteToken = TokenUtils.generateToken();
         var now         = new BsonDateTime(System.currentTimeMillis());
         // password casuale hashata — l'utente non può loggarsi finché non attiva l'account
@@ -171,32 +185,28 @@ public class InviteService implements JsonService {
         var rolesArr = new BsonArray();
         rolesArr.add(new BsonString(role));
 
-        var tenantsArr = new BsonArray();
-        tenantsArr.add(new BsonDocument()
-                .append("id",   new BsonString(callerTenant))
-                .append("role", new BsonString(role)));
-
         var userDoc = new BsonDocument();
         userDoc.put("_id",             new BsonString(invitedEmail));
         userDoc.put("password",        new BsonString(hashedPwd));
         userDoc.put("roles",           rolesArr);
         userDoc.put("status",          new BsonString("invited"));
-        userDoc.put("tenant",          new BsonString(callerTenant));
-        userDoc.put("tenants",         tenantsArr);
         userDoc.put("profile",         new BsonDocument());
         userDoc.put("inviteToken",     new BsonString(inviteToken));
         userDoc.put("inviteCreatedAt", now);
 
         if (!db(req).insertUser(userDoc)) {
-            // Race condition: un'altra richiesta ha inserito lo stesso utente
+            // Race condition
             Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
             return;
         }
 
-        // 7. Carica il nome del team per l'email
+        // 7. Delega la gestione della membership al provider
+        membership.addMember(invitedEmail, callerTenant, role);
+
+        // 8. Carica il nome del team per l'email
         var teamName = loadTeamName(db(req), callerTenant);
 
-        // 8. Invia email invito
+        // 9. Invia email invito
         if (ermes != null && ermes.isEnabled()) {
             try {
                 var link = conf.frontendUrl().replaceAll("/$", "")
@@ -222,7 +232,7 @@ public class InviteService implements JsonService {
             LOGGER.warn("Ermes disabled — invite email not sent to <{}>", invitedEmail);
         }
 
-        // 9. Risponde 201
+        // 10. Risponde 201
         res.setStatusCode(HttpStatus.SC_CREATED);
     }
 
@@ -232,28 +242,6 @@ public class InviteService implements JsonService {
 
     private DbHelper db(JsonRequest req) {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
-    }
-
-    /** Returns true if the user document already has {@code tenantId} in its {@code tenants} array. */
-    private static boolean isAlreadyInTenant(BsonDocument userDoc, String tenantId) {
-        // Check legacy single-tenant field
-        if (userDoc.containsKey("tenant") && userDoc.get("tenant").isString()
-                && tenantId.equals(userDoc.getString("tenant").getValue())) {
-            return true;
-        }
-        // Check tenants array
-        if (userDoc.containsKey("tenants") && userDoc.get("tenants").isArray()) {
-            for (var entry : userDoc.getArray("tenants")) {
-                if (entry.isDocument()) {
-                    var doc = entry.asDocument();
-                    if (doc.containsKey("id") && doc.get("id").isString()
-                            && tenantId.equals(doc.getString("id").getValue())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     /** Loads the team display name for the given tenantId, falling back to the raw ID. */
@@ -269,21 +257,22 @@ public class InviteService implements JsonService {
     }
 
     /**
-     * Extracts the {@code tenant} claim from the authenticated account,
-     * supporting both {@link MongoRealmAccount} and {@link JwtAccount} pipelines.
+     * Extracts the active tenant claim from the authenticated account using the
+     * configured claim name, supporting both {@link MongoRealmAccount} and
+     * {@link JwtAccount} pipelines.
      */
-    private static String extractTenant(io.undertow.security.idm.Account account) {
+    private static String extractTenant(io.undertow.security.idm.Account account, String claimName) {
         return switch (account) {
             case MongoRealmAccount mra -> {
                 var props = mra.properties();
                 if (props == null) yield null;
-                var v = props.get("tenant");
+                var v = props.get(claimName);
                 yield v != null && v.isString() ? v.asString().getValue() : null;
             }
             case JwtAccount jwt -> {
                 var props = jwt.propertiesAsMap();
                 if (props == null) yield null;
-                var v = props.get("tenant");
+                var v = props.get(claimName);
                 yield v instanceof String s ? s : null;
             }
             default -> null;

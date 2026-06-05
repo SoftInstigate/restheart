@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
         name             = "tokenFailedAuthInterceptor",
         description      = "Counts token-validation failures into the AUTH metric registry for bruteForceAttackGuard",
         interceptPoint   = InterceptPoint.RESPONSE,
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class TokenFailedAuthInterceptor implements WildcardInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenFailedAuthInterceptor.class);

@@ -7,6 +7,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.restheart.accounts.AccountsService;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
@@ -19,6 +20,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,29 +37,33 @@ import java.util.function.Predicate;
 import static java.util.function.Predicate.not;
 
 /**
- * Handles the Google OAuth 2.0 callback.
+ * Handles the OAuth 2.0 callback for any configured provider.
  *
  * <pre>
- *   GET /auth/oauth/callback/{provider}?code=...&state=...
+ *   GET /auth/oauth/callback/{provider}?code=...&amp;state=...
  * </pre>
  *
  * <p>Flow:
  * <ol>
- *   <li>Verify state token (CSRF protection)</li>
- *   <li>Exchange authorization code for access token</li>
- *   <li>Fetch user profile from the provider</li>
+ *   <li>Verify CSRF state token (consumed atomically from MongoDB)</li>
+ *   <li>Delegate code exchange and profile fetch to the {@link org.restheart.plugins.accounts.OAuthProvider}</li>
  *   <li>Find or create the user in MongoDB</li>
- *   <li>Issue JWT and set {@code rh_auth} cookie</li>
+ *   <li>If user has {@code status:"invited"}, invoke
+ *       {@link org.restheart.plugins.accounts.MembershipProvider#activateViaOAuth} to activate</li>
+ *   <li>Issue JWT and set the auth cookie ({@code conf.cookieName()})</li>
  *   <li>Redirect to {@code frontendSuccessUrl}</li>
  * </ol>
  *
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
+ *
+ * <p>New user creation delegates team / tenant initialization to the active
+ * {@link org.restheart.plugins.accounts.MembershipProvider} via {@link AccountsService}.
  */
 @RegisterPlugin(
         name             = "oauthCallback",
         description      = "GET /auth/oauth/callback/{provider} — handles the OAuth callback",
         defaultURI       = "/auth/oauth/callback",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class OAuthCallback implements StringService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthCallback.class);
@@ -75,6 +82,9 @@ public class OAuthCallback implements StringService {
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
+
+    @Inject("accountsService")
+    private AccountsService accountsService;
 
     private JwtHelper jwt;
 
@@ -133,28 +143,50 @@ public class OAuthCallback implements StringService {
         var state = stateParam.getFirst();
 
         try {
-            // 1. Exchange code + verify state → user profile from provider
-            var profile = oauthService.handleCallback(provider, code, state);
-            var email   = profile.getString("email").getValue();
+            // 1. Exchange code + verify state → user profile + invite context
+            var callbackResult = oauthService.handleCallback(provider, code, state);
+            var profile        = callbackResult.profile();
+            var email          = profile.getString("email").getValue();
 
             LOGGER.info("OAuth callback: authenticated {} via {}", email, provider);
 
-            // 2. Find or create user
-            var user = findOrCreateUser(req, profile, provider);
-
-            // 3. Issue JWT + set cookie
+            // 2. Find or create user (membership delegated to the provider)
+            var user   = findOrCreateUser(req, profile, provider);
             var roles  = extractRoles(user);
-            var tenant = user.containsKey("tenant") ? user.getString("tenant").getValue() : "";
-            var status = user.containsKey("status")  ? user.getString("status").getValue()  : "active";
+            var status = user.containsKey("status") ? user.getString("status").getValue() : "active";
 
-            var jwtToken = jwt.issueToken(email, roles, Map.of("tenant", tenant, "status", status));
-            res.getHeaders().add(
-                    HttpString.tryFromString("Set-Cookie"),
-                    JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
+            // 3. Handle invited users: give MembershipProvider a chance to activate
+            if ("invited".equals(status)) {
+                ConsentRecord consents = null;
+                if (callbackResult.consentsAccepted()) {
+                    var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
+                    consents = new ConsentRecord(conf.termsVersion(), conf.privacyVersion(),
+                            ip, Instant.now());
+                }
 
-            // 4. Redirect to app
-            res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
-            res.getHeaders().put(Headers.LOCATION, oauthConfig.frontendSuccessUrl());
+                var membership = accountsService.getMembershipProvider()
+                        .activateViaOAuth(email, consents);
+
+                if (membership.isPresent()) {
+                    LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
+                    var jwtToken = jwt.issueToken(email, roles, Map.of(
+                            conf.tenantClaimName(), membership.get().tenantId(),
+                            "status", "active"));
+                    setAuthCookieAndRedirect(res, req, jwtToken);
+                    return;
+                }
+                // activateViaOAuth returned empty — redirect to frontendErrorUrl (spec: deny access)
+                LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
+                redirectError(res, "Account is pending activation");
+                return;
+            }
+
+            // 4. Issue JWT + set cookie for normal / non-activated users
+            var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
+            var tenantId         = activeMembership.map(m -> m.tenantId()).orElse("");
+            var jwtToken = jwt.issueToken(email, roles,
+                    Map.of(conf.tenantClaimName(), tenantId, "status", status));
+            setAuthCookieAndRedirect(res, req, jwtToken);
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
@@ -165,13 +197,25 @@ public class OAuthCallback implements StringService {
         }
     }
 
+    // ── Cookie + redirect helper ──────────────────────────────────────────────
+
+    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken) {
+        res.getHeaders().add(
+                HttpString.tryFromString("Set-Cookie"),
+                JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
+                        RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
+        res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
+        res.getHeaders().put(Headers.LOCATION, oauthConfig.frontendSuccessUrl());
+    }
+
     // ── User creation / lookup ────────────────────────────────────────────────
 
     /**
      * Finds the existing user or creates a new one from the OAuth profile.
      *
-     * <p>New users get {@code status: "active"} (provider has already verified the email)
-     * and a default team is created for them.
+     * <p>New users get {@code status: "active"} (provider has already verified the email).
+     * Team / tenant initialization is delegated to the active {@link AccountsService}
+     * MembershipProvider via {@code createInitialTeam}.
      */
     private BsonDocument findOrCreateUser(StringRequest req, BsonDocument profile, String provider) {
         var email = profile.getString("email").getValue();
@@ -179,9 +223,8 @@ public class OAuthCallback implements StringService {
         var existing = db(req).findUser(email);
         if (existing.isPresent()) {
             // Optionally update name / avatar from provider on every login
-            var user = existing.get();
             maybeUpdateProfile(req, email, profile);
-            return user;
+            return existing.get();
         }
 
         // ── New user ──────────────────────────────────────────────────────────
@@ -189,22 +232,7 @@ public class OAuthCallback implements StringService {
         var name = profile.containsKey("name") ? profile.getString("name").getValue()
                                                 : email.split("@")[0];
 
-        // Create a default team for this user
-        var teamDoc = new BsonDocument()
-                .append("name",      new BsonString(name + "'s Team"))
-                .append("createdBy", new BsonString(email))
-                .append("createdAt", now)
-                .append("members",   new BsonArray());
-
-        // Add owner membership
-        teamDoc.getArray("members").add(new BsonDocument()
-                .append("userId",   new BsonString(email))
-                .append("role",     new BsonString("owner"))
-                .append("joinedAt", now));
-
-        var teamId = db(req).insertTeam(teamDoc);
-
-        // Build user document
+        // Build user document (tenant/membership fields will be set by the provider)
         var roles = new BsonArray();
         roles.add(new BsonString("user"));
 
@@ -227,15 +255,19 @@ public class OAuthCallback implements StringService {
                 .append("_id",         new BsonString(email))
                 .append("password",    new BsonString("")) // no password for OAuth users
                 .append("roles",       roles)
-                .append("status",      new BsonString("active")) // Google verified the email
-                .append("tenant",      new BsonString(teamId))
+                .append("status",      new BsonString("active")) // provider verified the email
                 .append("profile",     profileDoc)
                 .append("socialAuths", socialAuths);
 
         db(req).insertUser(userDoc);
+
+        // Delegate team creation and membership linking to the MembershipProvider
+        accountsService.getMembershipProvider().createInitialTeam(email, name + "'s Team");
+
         LOGGER.info("New user created via {} OAuth: <{}>", provider, email);
 
-        return userDoc;
+        // Return the updated user doc (with tenant fields set by provider)
+        return db(req).findUser(email).orElse(userDoc);
     }
 
     /** Updates name/avatar from the latest OAuth profile if they have changed. */

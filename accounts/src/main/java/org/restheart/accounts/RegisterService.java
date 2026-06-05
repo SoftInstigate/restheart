@@ -8,6 +8,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailTemplates;
 import org.restheart.accounts.util.Errors;
@@ -60,7 +61,7 @@ import java.nio.charset.StandardCharsets;
         name             = "registerService",
         description      = "POST /auth/register — public user signup with email verification",
         defaultURI       = "/auth/register",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class RegisterService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterService.class);
@@ -77,6 +78,8 @@ public class RegisterService implements JsonService {
     @Inject("ermes")
     private Ermes ermes;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
 
     @OnInit
     public void onInit() {
@@ -86,6 +89,10 @@ public class RegisterService implements JsonService {
 
     private DbHelper db(JsonRequest req) {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
+    }
+
+    private MembershipProvider membership() {
+        return accountsService.getMembershipProvider();
     }
 
     @Override
@@ -145,43 +152,19 @@ public class RegisterService implements JsonService {
         var verificationToken = TokenUtils.generateToken();
         var now               = new BsonDateTime(System.currentTimeMillis());
 
-        // ── 5. Create and insert team ────────────────────────────────────────
-        var ownerMember = new BsonDocument()
-                .append("userId",   new BsonString(email))
-                .append("role",     new BsonString("owner"))
-                .append("joinedAt", now);
-
-        var membersList = new BsonArray();
-        membersList.add(ownerMember);
-
-        var teamDoc = new BsonDocument()
-                .append("name",      new BsonString(teamName))
-                .append("createdBy", new BsonString(email))
-                .append("createdAt", now)
-                .append("members",   membersList);
-
-        var teamId = db(req).insertTeam(teamDoc);  // returns hex ObjectId string
-
-        // ── 6. Create and insert user ────────────────────────────────────────
+        // ── 5. Create and insert user (without tenant — MembershipProvider sets it) ──
         var rolesArray = new BsonArray();
-        rolesArray.add(new BsonString("owner")); // first user creates the team → is the owner
+        rolesArray.add(new BsonString("owner")); // creator of the team → owner role
 
         var profile = new BsonDocument()
                 .append("firstName", new BsonString(firstName))
                 .append("lastName",  new BsonString(lastName));
-
-        var tenantsArray = new BsonArray();
-        tenantsArray.add(new BsonDocument()
-                .append("id",   new BsonString(teamId))
-                .append("role", new BsonString("owner")));
 
         var userDoc = new BsonDocument()
                 .append("_id",                        new BsonString(email))
                 .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
                 .append("roles",                      rolesArray)
                 .append("status",                     new BsonString("pending_verification"))
-                .append("tenant",                     new BsonString(teamId))
-                .append("tenants",                    tenantsArray)
                 .append("profile",                    profile)
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
@@ -191,6 +174,10 @@ public class RegisterService implements JsonService {
             Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
             return;
         }
+
+        // ── 6. Delegate team creation + membership linking to the provider ────
+        var tenantRef = membership().createInitialTeam(email, teamName);
+        var teamId    = tenantRef.id();
 
         LOGGER.info("User registered: <{}>, tenant={}", email, teamId);
 

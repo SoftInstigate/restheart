@@ -43,7 +43,7 @@ import com.mongodb.client.MongoClient;
         name             = "forgotPasswordService",
         description      = "POST /auth/forgot-password — initiates password reset (always 202)",
         defaultURI       = "/auth/forgot-password",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class ForgotPasswordService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForgotPasswordService.class);

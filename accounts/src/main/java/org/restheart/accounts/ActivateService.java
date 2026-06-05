@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
-import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -53,7 +52,7 @@ import java.util.List;
         name             = "activateService",
         description      = "PATCH /auth/activate — activates an invitation and sets password",
         defaultURI       = "/auth/activate",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class ActivateService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivateService.class);
@@ -70,6 +69,8 @@ public class ActivateService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
 
     private JwtHelper jwt;
 
@@ -167,8 +168,6 @@ public class ActivateService implements JsonService {
 
         // 6. Controlla versioni consensi — la versione accettata viene registrata
         //    dalla configurazione corrente (conf.termsVersion() / conf.privacyVersion()).
-        //    Il client indica solo { "terms": true, "privacy": true }, il server
-        //    abbina la versione in vigore al momento dell'attivazione.
 
         var now = new BsonDateTime(System.currentTimeMillis());
 
@@ -209,10 +208,10 @@ public class ActivateService implements JsonService {
             }
         }
 
+        // Use the MembershipProvider to get the active tenant for the JWT claim
         var extraClaims = new HashMap<String, String>();
-        if (user.containsKey("tenant") && user.get("tenant").isString()) {
-            extraClaims.put("tenant", user.getString("tenant").getValue());
-        }
+        var activeMembership = accountsService.getMembershipProvider().activeMembership(normalizedEmail);
+        activeMembership.ifPresent(m -> extraClaims.put(conf.tenantClaimName(), m.tenantId()));
         extraClaims.put("status", "active");
 
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles, extraClaims);

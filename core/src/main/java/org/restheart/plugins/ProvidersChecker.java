@@ -189,11 +189,15 @@ public class ProvidersChecker {
     static Set<PluginDescriptor> validProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         MutableGraph<PluginDescriptor> providersGraph = GraphBuilder.directed().allowsSelfLoops(true).build();
 
-        // add nodes
-        enabledProviders(LOGGER, providers).stream().forEach(providersGraph::addNode);
+        // filter to enabled providers once — reused for both nodes and edges
+        var enabled = enabledProviders(LOGGER, providers);
 
-        // add edges
-        for (var thisProvider: providers) {
+        // add nodes
+        enabled.stream().forEach(providersGraph::addNode);
+
+        // add edges — only for enabled providers to avoid implicitly adding
+        // disabled providers as graph nodes (which would trigger false ERROR logs)
+        for (var thisProvider: enabled) {
             thisProvider.injections().stream()
                 .filter(i -> i instanceof FieldInjectionDescriptor a)
                 .map(i -> (FieldInjectionDescriptor) i)

@@ -8,7 +8,7 @@ hidden
 .claude
 
 ### native binary ###
-restheart
+/restheart
 core/restheart
 
 ### Code ###

@@ -143,6 +143,39 @@ public class DbHelper {
         return result.getMatchedCount() > 0;
     }
 
+    /**
+     * Sets the user's active tenant (the {@code tenant} field) unconditionally.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant to make active
+     * @return {@code true} if a document was matched
+     */
+    public boolean setActiveTenant(String email, String tenantId) {
+        return updateUser(email, new BsonDocument("tenant", new BsonString(tenantId)));
+    }
+
+    /**
+     * Sets the user's active tenant only if the {@code tenant} field is absent or null.
+     * Safe to call idempotently after every {@code addTenantMembership} for new users.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant to set as active
+     * @return {@code true} if the field was set (document matched and had no prior tenant)
+     */
+    public boolean setActiveTenantIfAbsent(String email, String tenantId) {
+        var result = users().updateOne(
+            Filters.and(
+                eq("_id", new BsonString(email)),
+                Filters.or(
+                    Filters.exists("tenant", false),
+                    Filters.eq("tenant", null)
+                )
+            ),
+            Updates.set("tenant", tenantId)
+        );
+        return result.getModifiedCount() > 0;
+    }
+
     // -------------------------------------------------------------------------
     // Teams
     // -------------------------------------------------------------------------
