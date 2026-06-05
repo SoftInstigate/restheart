@@ -50,7 +50,7 @@ Feature: POST /auth/switch-tenant
     When method POST
     Then status 200
     And match response.tenant == secondTenantId
-    And match response.role == 'user'
+    And match response.role == 'member'
     And match responseHeaders['Set-Cookie'] != null
 
   # ---------------------------------------------------------------------------

@@ -18,7 +18,7 @@ Feature: POST /auth/invite
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 201
 
@@ -39,7 +39,7 @@ Feature: POST /auth/invite
     * def inviteEmail = 'invite-unauth-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 401
 
@@ -50,7 +50,7 @@ Feature: POST /auth/invite
     * def regularEmail = 'regular-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(regularEmail)", "role": "user" }
+    And request { "email": "#(regularEmail)", "role": "member" }
     When method POST
     Then status 201
 
@@ -79,11 +79,11 @@ Feature: POST /auth/invite
     * def activateCookie = activateCookieList != null && activateCookieList.length > 0 ? activateCookieList[0] : ''
     * def regularJwt = activateCookie.split('Bearer_')[1].split(';')[0]
 
-    # 4. Attempt to invite with the regular (user-role) account — must be 403
+    # 4. Attempt to invite with the regular (member-role) account — must be 403
     * def inviteTarget = 'invite-403-target-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + regularJwt
-    And request { "email": "#(inviteTarget)", "role": "user" }
+    And request { "email": "#(inviteTarget)", "role": "member" }
     When method POST
     Then status 403
 
@@ -94,13 +94,13 @@ Feature: POST /auth/invite
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 201
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 409
 
@@ -109,7 +109,7 @@ Feature: POST /auth/invite
   # ---------------------------------------------------------------------------
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "role": "user" }
+    And request { "role": "member" }
     When method POST
     Then status 400
 
@@ -120,7 +120,7 @@ Feature: POST /auth/invite
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 201
 

@@ -48,7 +48,7 @@ import java.util.Set;
         name             = "emailVerificationService",
         description      = "GET /auth/verify — validates email verification token and activates user",
         defaultURI       = "/auth/verify",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class EmailVerificationService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailVerificationService.class);

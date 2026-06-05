@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
         name             = "accountsInitializer",
         description      = "Ensures collections and indexes required by restheart-accounts",
         initPoint        = InitPoint.AFTER_STARTUP,
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class AccountsInitializer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountsInitializer.class);

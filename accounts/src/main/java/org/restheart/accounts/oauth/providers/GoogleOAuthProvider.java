@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name             = "googleOAuthProvider",
         description      = "Google OAuth 2.0 provider for restheart-accounts",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class GoogleOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthProvider.class);

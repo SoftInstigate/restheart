@@ -39,12 +39,14 @@ import java.nio.charset.StandardCharsets;
  * The target user must belong to the same tenant as the caller.
  *
  * <p>Expected body: {@code { "email": "invited@example.com" }}
+ *
+ * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
         name             = "resendInviteService",
         description      = "POST /auth/resend-invite — re-sends the activation email",
         defaultURI       = "/auth/resend-invite",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class ResendInviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResendInviteService.class);
@@ -63,9 +65,11 @@ public class ResendInviteService implements JsonService {
 
     @OnInit
     public void onInit() {
-        // Allow all requests to reach the service; auth and role enforcement is done in handle()
-        aclRegistry.registerAllow(r -> r.getPath().equals("/auth/resend-invite") && (r.isPost() || r.isOptions()));
-        aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/resend-invite"));
+        if (conf.membershipEndpointsEnabled()) {
+            // Allow all requests to reach the service; auth and role enforcement is done in handle()
+            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/resend-invite") && (r.isPost() || r.isOptions()));
+            aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/resend-invite"));
+        }
     }
 
     @Override
@@ -74,6 +78,12 @@ public class ResendInviteService implements JsonService {
             handleOptions(req);
             return;
         }
+
+        if (!conf.membershipEndpointsEnabled()) {
+            Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
+            return;
+        }
+
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
@@ -90,7 +100,7 @@ public class ResendInviteService implements JsonService {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires owner or admin role");
             return;
         }
-        var callerTenant = extractTenant(account);
+        var callerTenant = extractTenant(account, conf.tenantClaimName());
         if (callerTenant == null || callerTenant.isBlank()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
@@ -204,21 +214,22 @@ public class ResendInviteService implements JsonService {
     }
 
     /**
-     * Extracts the {@code tenant} claim from the authenticated account,
-     * supporting both {@link MongoRealmAccount} and {@link JwtAccount} pipelines.
+     * Extracts the active tenant claim from the authenticated account using the
+     * configured claim name, supporting both {@link MongoRealmAccount} and
+     * {@link JwtAccount} pipelines.
      */
-    private static String extractTenant(io.undertow.security.idm.Account account) {
+    private static String extractTenant(io.undertow.security.idm.Account account, String claimName) {
         return switch (account) {
             case MongoRealmAccount mra -> {
                 var props = mra.properties();
                 if (props == null) yield null;
-                var v = props.get("tenant");
+                var v = props.get(claimName);
                 yield v != null && v.isString() ? v.asString().getValue() : null;
             }
             case JwtAccount jwt -> {
                 var props = jwt.propertiesAsMap();
                 if (props == null) yield null;
-                var v = props.get("tenant");
+                var v = props.get(claimName);
                 yield v instanceof String s ? s : null;
             }
             default -> null;

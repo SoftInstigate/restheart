@@ -88,6 +88,32 @@ public record AccountsConfigData(
      * {@code null} or blank → use the built-in resource
      * {@code email-templates/invite.html}.
      */
-    String inviteTemplatePath
+    String inviteTemplatePath,
+
+    // ── Membership SPI ───────────────────────────────────────────────────────
+
+    /**
+     * JWT claim name used to carry the active tenant identifier.
+     * Defaults to {@code "tenant"}. Change to e.g. {@code "org"} if your domain
+     * uses a different terminology.
+     */
+    String tenantClaimName,
+
+    /**
+     * Role name assigned to non-admin team members.
+     * Defaults to {@code "member"}. Configure to {@code "user"} if your ACL rules
+     * already use that label.
+     */
+    String memberRoleName,
+
+    /**
+     * Whether the membership management endpoints are enabled.
+     * When {@code false}, the following endpoints return 404:
+     * {@code /auth/invite}, {@code /auth/resend-invite},
+     * {@code /auth/tenants}, {@code /auth/switch-tenant}.
+     * Useful when you expose equivalent endpoints via a custom provider.
+     * Defaults to {@code true}.
+     */
+    boolean membershipEndpointsEnabled
 
 ) {}

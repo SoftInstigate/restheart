@@ -38,7 +38,7 @@ import java.util.Map;
 @RegisterPlugin(
         name             = "ermes",
         description      = "SMTP email wrapper for restheart-accounts (wraps ermes-mail)",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class Ermes implements Provider<Ermes> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ermes.class);

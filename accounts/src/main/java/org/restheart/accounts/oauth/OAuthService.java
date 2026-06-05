@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RegisterPlugin(
         name             = "oauthService",
         description      = "Core OAuth 2.0 service for restheart-accounts",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class OAuthService implements Provider<OAuthService> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthService.class);

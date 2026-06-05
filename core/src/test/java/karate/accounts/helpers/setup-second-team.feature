@@ -46,7 +46,7 @@ Feature: setup second team for multi-tenant tests
     # 5. Invite owner-test@example.com (409 = already invited/member, that's fine)
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + secondOwnerJwt
-    And request { "email": "owner-test@example.com", "role": "user" }
+    And request { "email": "owner-test@example.com", "role": "member" }
     When method POST
     * match [201, 409] contains responseStatus
 

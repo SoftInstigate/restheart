@@ -64,7 +64,7 @@ import java.util.Map;
 @RegisterPlugin(
         name             = "oauthConfig",
         description      = "OAuth 2.0 configuration provider for restheart-accounts",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class OAuthConfig implements Provider<OAuthConfig> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthConfig.class);

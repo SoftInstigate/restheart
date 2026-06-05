@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name             = "githubOAuthProvider",
         description      = "GitHub OAuth 2.0 provider for restheart-accounts",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubOAuthProvider.class);

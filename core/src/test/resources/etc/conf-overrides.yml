@@ -380,13 +380,28 @@
 /core/name: integration-test
 
 # restheart-accounts
+/accountsConfig/enabled: true
 /accountsConfig/db: restheart-test
 /accountsConfig/app-name: TestApp
-/accountsConfig/jwt-key: secret
-/accountsConfig/jwt-issuer: restheart.org
 /accountsConfig/jwt-ttl: 15
 /accountsConfig/cookie-domain: localhost
 /accountsConfig/frontend-url: http://localhost:4200
 /accountsConfig/frontend-app-url: http://localhost:4200/app
 /accountsConfig/terms-version: "1.0"
 /accountsConfig/privacy-version: "1.0"
+
+/accountsService/enabled: true
+/accountsInitializer/enabled: true
+
+/registerService/enabled: true
+/emailVerificationService/enabled: true
+/forgotPasswordService/enabled: true
+/resetPasswordService/enabled: true
+/activateService/enabled: true
+/inviteService/enabled: true
+/resendInviteService/enabled: true
+/getTenantsService/enabled: true
+/switchTenantService/enabled: true
+/tokenFailedAuthInterceptor/enabled: true
+
+/ermes/enabled: true

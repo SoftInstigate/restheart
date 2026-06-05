@@ -19,7 +19,7 @@ Feature: PATCH /auth/activate
     * def inviteEmail = 'activate-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "user" }
+    And request { "email": "#(inviteEmail)", "role": "member" }
     When method POST
     Then status 201
 

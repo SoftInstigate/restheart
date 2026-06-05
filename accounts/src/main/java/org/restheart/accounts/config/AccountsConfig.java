@@ -38,10 +38,10 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-    name = "accountsConfig",
-    description = "Provides AccountsConfigData loaded from the plugin YAML block",
-    enabledByDefault = true,
-    priority = 20  // must be > jwtConfigProvider priority (10) so jwtConfig is ready at @OnInit
+    name             = "accountsConfig",
+    description      = "Provides AccountsConfigData loaded from the plugin YAML block",
+    enabledByDefault = false,
+    priority         = 20  // must be > jwtConfigProvider priority (10) so jwtConfig is ready at @OnInit
 )
 public class AccountsConfig implements Provider<AccountsConfigData> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountsConfig.class);
@@ -85,7 +85,10 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             configVal(config, "default-locale",    "en"),
             configVal(templates, "verification",   null),
             configVal(templates, "password-reset", null),
-            configVal(templates, "invite",         null)
+            configVal(templates, "invite",         null),
+            configVal(config, "tenant-claim-name",            "tenant"),
+            configVal(config, "member-role-name",             "member"),
+            configVal(config, "membership-endpoints-enabled", true)
         );
     }
 
