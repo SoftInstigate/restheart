@@ -405,6 +405,12 @@
 /tokenFailedAuthInterceptor/enabled: true
 
 /ermes/enabled: true
+# Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
+/ermes/smtpHostname: localhost
+/ermes/smtpPort: 25
+/ermes/smtpUsername: test
+/ermes/smtpPassword: test
+/ermes/senderEmail: noreply@test.example.com
 
 /oauthConfig/enabled: true
 /oauthConfig/api-base-url: http://localhost:8080

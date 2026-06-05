@@ -62,7 +62,8 @@ import java.util.Map;
 @RegisterPlugin(
         name             = "oauthService",
         description      = "Core OAuth 2.0 service for restheart-accounts",
-        enabledByDefault = false)
+        enabledByDefault = false,
+        priority         = 30)  // after mclient (11), accountsConfig (20), accountsService (25)
 public class OAuthService implements Provider<OAuthService>, OAuthProviderRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthService.class);
