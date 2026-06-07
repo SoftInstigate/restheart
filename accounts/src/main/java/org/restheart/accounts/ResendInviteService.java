@@ -63,6 +63,9 @@ public class ResendInviteService implements JsonService {
     @Inject("ermes")
     private Ermes ermes;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
     @OnInit
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
@@ -137,9 +140,11 @@ public class ResendInviteService implements JsonService {
         }
 
         // 5. Verifica che il tenant dell'utente corrisponda al tenant del chiamante
-        var userTenant = user.containsKey("tenant") && user.get("tenant").isString()
-                ? user.getString("tenant").getValue() : null;
-        if (!callerTenant.equals(userTenant)) {
+        var userTenant = accountsService.getMembershipProvider()
+                .activeMembership(normalizedEmail)
+                .map(m -> m.tenantId())
+                .orElse("");
+        if (userTenant.isBlank() || !callerTenant.equals(userTenant)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "User belongs to a different team");
             return;
         }

@@ -67,6 +67,9 @@ public class ResetPasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
 
     private JwtHelper  jwt;
 
@@ -161,7 +164,10 @@ public class ResetPasswordService implements JsonService {
         db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
-        var tenant    = user.containsKey("tenant") ? user.getString("tenant").getValue() : "";
+        var tenant = accountsService.getMembershipProvider()
+                .activeMembership(storedEmail)
+                .map(m -> m.tenantId())
+                .orElse("");
         var roles     = extractRoles(user);
         var jwtToken  = jwt.issueToken(storedEmail, roles,
                 Map.of("tenant", tenant, "status", "active"));

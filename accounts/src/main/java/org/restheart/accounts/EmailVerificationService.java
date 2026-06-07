@@ -65,6 +65,9 @@ public class EmailVerificationService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
 
     private JwtHelper jwt;
 
@@ -145,9 +148,10 @@ public class EmailVerificationService implements JsonService {
         }
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var tenant = user.containsKey("tenant")
-                ? user.getString("tenant").getValue()
-                : "";
+        var tenant = accountsService.getMembershipProvider()
+                .activeMembership(storedEmail)
+                .map(m -> m.tenantId())
+                .orElse("");
 
         var jwtToken = jwt.issueToken(
                 storedEmail,
