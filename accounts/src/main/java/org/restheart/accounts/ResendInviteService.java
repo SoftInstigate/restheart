@@ -22,6 +22,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,8 +170,7 @@ public class ResendInviteService implements JsonService {
         }
 
         // 8. Carica nome del team e reinvia email
-        var mp = accountsService.getMembershipProvider();
-        var teamNameFallback = mp.tenantIdToString(callerTenant);
+        var teamNameFallback = callerTenant.isString() ? callerTenant.asString().getValue() : BsonUtils.toJson(callerTenant);
         String teamName = teamNameFallback;
         try {
             var teamOpt = db(req).findTeam(callerTenant);

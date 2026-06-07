@@ -10,6 +10,7 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.plugins.accounts.ConsentRecord;
+import org.restheart.utils.BsonUtils;
 import org.restheart.plugins.accounts.Membership;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.TenantRef;
@@ -281,13 +282,14 @@ public class DefaultMembershipProvider implements MembershipProvider {
     }
 
     private String loadTeamName(BsonValue tenantId) {
+        var fallback = tenantId.isString() ? tenantId.asString().getValue() : BsonUtils.toJson(tenantId);
         try {
             return db.findTeam(tenantId)
                     .filter(t -> t.containsKey("name") && t.get("name").isString())
                     .map(t -> t.getString("name").getValue())
-                    .orElseGet(() -> tenantIdToString(tenantId));
+                    .orElse(fallback);
         } catch (Exception e) {
-            return tenantIdToString(tenantId);
+            return fallback;
         }
     }
 }

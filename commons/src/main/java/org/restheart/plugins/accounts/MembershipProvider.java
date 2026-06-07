@@ -2,10 +2,7 @@ package org.restheart.plugins.accounts;
 
 import java.util.List;
 import java.util.Optional;
-import org.bson.BsonObjectId;
-import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.bson.types.ObjectId;
 
 /**
  * Service Provider Interface (SPI) for membership management in restheart-accounts.
@@ -127,36 +124,4 @@ public interface MembershipProvider {
         return Optional.empty();
     }
 
-    /**
-     * Parses a tenant identifier received as a raw string (URL param, query string, request body)
-     * into its native {@link BsonValue} type.
-     *
-     * <p>Override when your tenant IDs are not MongoDB ObjectIds. The default implementation
-     * tries to parse as an ObjectId hex string, falling back to {@link BsonString}.
-     *
-     * @param raw the string representation of the tenant ID
-     * @return the corresponding {@link BsonValue}
-     */
-    default BsonValue parseTenantId(String raw) {
-        try {
-            return new BsonObjectId(new ObjectId(raw));
-        } catch (IllegalArgumentException e) {
-            return new BsonString(raw);
-        }
-    }
-
-    /**
-     * Converts a tenant ID {@link BsonValue} to its canonical string representation,
-     * suitable for URLs, response bodies, and log messages.
-     *
-     * <p>This is the inverse of {@link #parseTenantId(String)}.
-     *
-     * @param tenantId the tenant ID
-     * @return the string representation
-     */
-    default String tenantIdToString(BsonValue tenantId) {
-        if (tenantId.isObjectId()) return tenantId.asObjectId().getValue().toHexString();
-        if (tenantId.isString())   return tenantId.asString().getValue();
-        return tenantId.toString();
-    }
 }

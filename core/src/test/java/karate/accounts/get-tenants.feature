@@ -29,7 +29,7 @@ Feature: GET /auth/tenants
     And header Authorization = 'Bearer ' + ownerJwt
     When method GET
     Then status 200
-    And match each response == { id: '#string', name: '#string', role: '#string', active: '#boolean' }
+    And match each response == { id: '#notnull', name: '#string', role: '#string', active: '#boolean' }
 
   # ---------------------------------------------------------------------------
   Scenario: exactly one entry has active=true (the current JWT tenant)

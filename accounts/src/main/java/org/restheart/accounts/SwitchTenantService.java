@@ -1,7 +1,10 @@
 package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
+import org.bson.BsonValue;
+import org.restheart.utils.BsonUtils;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
@@ -25,11 +28,11 @@ import java.util.Set;
  * {@link MembershipProvider}, issues a new JWT for the target tenant with
  * the correct role, and sets the auth cookie.
  *
- * <p>Request body:
- * <pre>{@code { "tenantId": "def456" }}</pre>
+ * <p>Request body ({@code tenantId} in MongoDB extended JSON, matching the value from {@code GET /auth/tenants}):
+ * <pre>{@code { "tenantId": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"} }}</pre>
  *
  * <p>Response: 200 with updated cookie. Body:
- * <pre>{@code { "tenant": "def456", "role": "member" }}</pre>
+ * <pre>{@code { "tenant": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"}, "role": "member" }}</pre>
  *
  * <p>Errors:
  * <ul>
@@ -94,15 +97,20 @@ public class SwitchTenantService implements JsonService {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
             return;
         }
-        var targetTenantStr = jo.get("tenantId").getAsString().trim();
-        if (targetTenantStr.isBlank()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId must not be blank");
+        BsonValue targetTenantId;
+        try {
+            targetTenantId = BsonUtils.parse(jo.get("tenantId").toString());
+        } catch (Exception e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invalid tenantId format");
+            return;
+        }
+        if (targetTenantId == null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
             return;
         }
 
         var email      = account.getPrincipal().getName();
         var membership = accountsService.getMembershipProvider();
-        var targetTenantId = membership.parseTenantId(targetTenantStr);
 
         // Find the target membership via the SPI
         var memberships = membership.listMemberships(email);
@@ -143,7 +151,7 @@ public class SwitchTenantService implements JsonService {
 
         // Response body
         var responseBody = new JsonObject();
-        responseBody.addProperty(conf.tenantClaimName(), membership.tenantIdToString(matched.tenantId()));
+        responseBody.add(conf.tenantClaimName(), JsonParser.parseString(BsonUtils.toJson(matched.tenantId())));
         responseBody.addProperty("role", matched.role());
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);

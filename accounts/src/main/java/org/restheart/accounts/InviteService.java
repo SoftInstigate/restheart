@@ -23,6 +23,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,9 +260,9 @@ public class InviteService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    /** Loads the team display name for the given tenantId, falling back to its string form. */
+    /** Loads the team display name for the given tenantId, falling back to its extended JSON form. */
     private String loadTeamName(DbHelper db, BsonValue tenantId) {
-        var fallback = accountsService.getMembershipProvider().tenantIdToString(tenantId);
+        var fallback = tenantId.isString() ? tenantId.asString().getValue() : BsonUtils.toJson(tenantId);
         try {
             return db.findTeam(tenantId)
                     .filter(t -> t.containsKey("name") && t.get("name").isString())
