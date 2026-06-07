@@ -183,17 +183,22 @@ public class RegisterService implements JsonService {
 
         // ── 7. Send verification email (best-effort) ─────────────────────────
         try {
-            var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-            var verifyLink   = conf.frontendUrl()
-                               + "/auth/verify"
-                               + "?email=" + encodedEmail
-                               + "&token=" + verificationToken;
+            // Check X-Skip-Email header for integration tests
+            if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
+            } else {
+                var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+                var verifyLink   = conf.frontendUrl()
+                                   + "/auth/verify"
+                                   + "?email=" + encodedEmail
+                                   + "&token=" + verificationToken;
 
-            ermes.sendEmail(
-                    email,
-                    firstName,
-                    EmailTemplates.verifyEmailSubject(conf.appName()),
-                    EmailTemplates.verifyEmailBody(firstName, verifyLink, conf.appName()));
+                ermes.sendEmail(
+                        email,
+                        firstName,
+                        EmailTemplates.verifyEmailSubject(conf.appName()),
+                        EmailTemplates.verifyEmailBody(firstName, verifyLink, conf.appName()));
+            }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later
             LOGGER.warn("Failed to send verification email to <{}>: {}", email, e.getMessage());

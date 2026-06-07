@@ -183,11 +183,16 @@ public class ResendInviteService implements JsonService {
                         ? account.getPrincipal().getName()
                         : email;
 
-                ermes.sendEmail(
-                        email,
-                        email,
-                        EmailTemplates.inviteSubject(teamName, conf.appName()),
-                        EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                // Check X-Skip-Email header for integration tests
+                if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                    LOGGER.debug("Skipping re-send invite email to <{}> (X-Skip-Email header)", email);
+                } else {
+                    ermes.sendEmail(
+                            email,
+                            email,
+                            EmailTemplates.inviteSubject(teamName, conf.appName()),
+                            EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (tenant={})",
                         email, inviterName, callerTenant);

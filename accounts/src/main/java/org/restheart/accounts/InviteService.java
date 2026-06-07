@@ -161,12 +161,17 @@ public class InviteService implements JsonService {
                     var teamName = loadTeamName(db(req), callerTenant);
                     var inviterName = account.getPrincipal() != null
                             ? account.getPrincipal().getName() : invitedEmail;
-                    ermes.sendEmail(
-                            invitedEmail,
-                            invitedEmail,
-                            EmailTemplates.inviteSubject(teamName, conf.appName()),
-                            EmailTemplates.inviteBody(teamName, inviterName,
-                                    conf.frontendUrl(), conf.appName()));
+                    // Check X-Skip-Email header for integration tests
+                    if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                        LOGGER.debug("Skipping team-added email to <{}> (X-Skip-Email header)", invitedEmail);
+                    } else {
+                        ermes.sendEmail(
+                                invitedEmail,
+                                invitedEmail,
+                                EmailTemplates.inviteSubject(teamName, conf.appName()),
+                                EmailTemplates.inviteBody(teamName, inviterName,
+                                        conf.frontendUrl(), conf.appName()));
+                    }
                     LOGGER.info("Added existing user <{}> to tenant={}", invitedEmail, callerTenant);
                 } catch (Exception e) {
                     LOGGER.warn("Failed to send team-added email to <{}>: {}", invitedEmail, e.getMessage());
@@ -218,11 +223,16 @@ public class InviteService implements JsonService {
                         ? account.getPrincipal().getName()
                         : invitedEmail;
 
-                ermes.sendEmail(
-                        invitedEmail,
-                        invitedEmail,
-                        EmailTemplates.inviteSubject(teamName, conf.appName()),
-                        EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                // Check X-Skip-Email header for integration tests
+                if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                    LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
+                } else {
+                    ermes.sendEmail(
+                            invitedEmail,
+                            invitedEmail,
+                            EmailTemplates.inviteSubject(teamName, conf.appName()),
+                            EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                }
 
                 LOGGER.info("Invite sent to <{}> by {} (tenant={})", invitedEmail, inviterName, callerTenant);
             } catch (Exception e) {

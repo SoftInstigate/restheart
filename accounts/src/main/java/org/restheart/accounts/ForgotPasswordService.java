@@ -95,7 +95,7 @@ public class ForgotPasswordService implements JsonService {
         // 3. Async logic on the same thread; any exception is swallowed after logging
         var dbName = RequestOverrides.db(req, conf);
         try {
-            processResetRequest(email, dbName);
+            processResetRequest(req, email, dbName);
         } catch (Exception e) {
             LOGGER.warn("forgotPassword: unexpected error during reset processing", e);
         }
@@ -110,7 +110,7 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(String email, String dbName) {
+    private void processResetRequest(JsonRequest req, String email, String dbName) {
         // a. Locate user
         var userOpt = new DbHelper(mclient, dbName).findUser(email);
         if (userOpt.isEmpty()) {
@@ -148,11 +148,16 @@ public class ForgotPasswordService implements JsonService {
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
-        ermes.sendEmail(
-                email,
-                firstName,
-                EmailTemplates.resetPasswordSubject(conf.appName()),
-                EmailTemplates.resetPasswordBody(firstName, resetLink, conf.appName()));
+        // Check X-Skip-Email header for integration tests
+        if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+            LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
+        } else {
+            ermes.sendEmail(
+                    email,
+                    firstName,
+                    EmailTemplates.resetPasswordSubject(conf.appName()),
+                    EmailTemplates.resetPasswordBody(firstName, resetLink, conf.appName()));
+        }
 
         // f. Audit log — no PII at INFO level
         LOGGER.info("forgotPassword: password reset email dispatched");
