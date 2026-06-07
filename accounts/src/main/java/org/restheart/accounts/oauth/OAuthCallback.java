@@ -90,7 +90,7 @@ public class OAuthCallback implements StringService {
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
 
         Predicate<Request<?>> isCallback = r ->
                 r.getMethod() == METHOD.GET &&
@@ -185,6 +185,8 @@ public class OAuthCallback implements StringService {
             var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
             var tenantId         = activeMembership.map(m -> m.tenantId()).orElse("");
             var jwtToken = jwt.issueToken(email, roles,
+                    RequestOverrides.db(req, conf),
+                    req.attachedParams(),
                     Map.of(conf.tenantClaimName(), tenantId, "status", status));
             setAuthCookieAndRedirect(res, req, jwtToken);
 

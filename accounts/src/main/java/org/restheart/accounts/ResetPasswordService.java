@@ -75,7 +75,7 @@ public class ResetPasswordService implements JsonService {
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/reset-password") && (r.isPatch() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/reset-password"));
     }
@@ -170,6 +170,8 @@ public class ResetPasswordService implements JsonService {
                 .orElse("");
         var roles     = extractRoles(user);
         var jwtToken  = jwt.issueToken(storedEmail, roles,
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
                 Map.of(conf.tenantClaimName(), tenant, "status", "active"));
 
         res.getHeaders().add(Headers.SET_COOKIE,

@@ -1,5 +1,7 @@
 package org.restheart.accounts.config;
 
+import java.util.List;
+
 /**
  * Immutable record holding all configuration parameters shared across
  * restheart-accounts plugins (signup, email verification, invitations,
@@ -114,6 +116,21 @@ public record AccountsConfigData(
      * Useful when you expose equivalent endpoints via a custom provider.
      * Defaults to {@code true}.
      */
-    boolean membershipEndpointsEnabled
+    boolean membershipEndpointsEnabled,
+
+    // ── JWT extra claims ─────────────────────────────────────────────────────
+
+    /**
+     * List of request attached-parameter names that should be propagated as JWT claims.
+     * Mirrors {@code jwtTokenManager.account-properties-claims} and is applied
+     * by {@link org.restheart.accounts.util.JwtHelper} when issuing tokens from
+     * accounts endpoints (verify, activate, reset-password, switch-tenant, OAuth).
+     *
+     * <p>Example: {@code [srvNode, customClaim]}.
+     *
+     * <p>{@code null} or empty list → no additional properties are propagated
+     * (only {@code authDb} and explicit extra claims are included).
+     */
+    List<String> accountPropertiesClaims
 
 ) {}

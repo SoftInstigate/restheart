@@ -73,7 +73,7 @@ public class EmailVerificationService implements JsonService {
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/verify") && (r.isGet() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/verify"));
     }
@@ -153,9 +153,12 @@ public class EmailVerificationService implements JsonService {
                 .map(m -> m.tenantId())
                 .orElse("");
 
+        // ── 5d. Issue JWT ──────────────────────────────────────────────────
         var jwtToken = jwt.issueToken(
                 storedEmail,
                 roles,
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
                 Map.of(conf.tenantClaimName(), tenant, "status", "active"));
 
         // ── 5e. Set auth cookie ───────────────────────────────────────────────

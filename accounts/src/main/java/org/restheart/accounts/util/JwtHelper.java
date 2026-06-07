@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,33 +28,105 @@ public class JwtHelper {
     private final int ttlMinutes;
 
     /**
-     * @param key        chiave HMAC-256 condivisa con RESTHeart ({@code jwtAuthenticationMechanism.key})
-     * @param issuer     valore del claim {@code iss}
-     * @param ttlMinutes durata del token in minuti
+     * Elenco di nomi di claim da includere nel JWT leggendoli dagli attached-params della
+     * request. Replica {@code jwtTokenManager.account-properties-claims}.
+     * {@code null} significa "nessuna propagazione di attached-params".
+     */
+    private final List<String> accountPropertiesClaims;
+
+    /**
+     * Costruisce un helper senza propagazione di attached-params (backward-compat).
      */
     public JwtHelper(String key, String issuer, int ttlMinutes) {
-        this.key = key;
-        this.issuer = issuer;
-        this.ttlMinutes = ttlMinutes;
+        this(key, issuer, ttlMinutes, null);
     }
 
     /**
-     * Emette un JWT per l'utente specificato.
+     * Costruisce un helper con supporto a {@code account-properties-claims}.
      *
-     * <p>Include le claims standard:
-     * <ul>
-     *   <li>{@code sub} — email dell'utente</li>
-     *   <li>{@code iss} — issuer configurato</li>
-     *   <li>{@code exp} — scadenza (now + ttlMinutes)</li>
-     *   <li>{@code roles} — array di ruoli (richiesto da mongoRealmAuthenticator)</li>
-     * </ul>
-     * Più tutti i campi presenti in {@code extraClaims} (es. {@code tenant}, {@code status}).
-     *
-     * @param email       l'identità dell'utente (claim {@code sub})
-     * @param roles       i ruoli (claim {@code roles})
-     * @param extraClaims mappa di claims aggiuntivi, può essere {@code null} o vuota
-     * @return il JWT firmato come stringa
+     * @param accountPropertiesClaims nomi degli attached-params da includere come claim JWT;
+     *                                {@code null} = nessuna propagazione aggiuntiva
      */
+    public JwtHelper(String key, String issuer, int ttlMinutes, List<String> accountPropertiesClaims) {
+        this.key = key;
+        this.issuer = issuer;
+        this.ttlMinutes = ttlMinutes;
+        this.accountPropertiesClaims = accountPropertiesClaims;
+    }
+
+    /**
+     * Emette un JWT replicando la logica di {@code JwtTokenManager}, senza dipendere
+     * dal plugin (che potrebbe non essere configurato o potrebbe essere sostituito).
+     *
+     * <ul>
+     *   <li>{@code authDb} — sempre incluso se non nullo/blank (richiesto da
+     *       {@code JwtAuthDbVerifier} per il routing multi-tenant)</li>
+     *   <li>{@code accountProperties} — filtrato da {@code accountPropertiesClaims}:
+     *       solo i nomi presenti nella lista sono aggiunti come claim
+     *       (es. {@code srvNode} impostato da {@code SrvNodeEnricher})</li>
+     *   <li>{@code extraClaims} — sempre inclusi (es. {@code tenant}, {@code status})</li>
+     * </ul>
+     *
+     * @param email             identità dell'utente ({@code sub})
+     * @param roles             ruoli ({@code roles})
+     * @param authDb            database MongoDB di autenticazione ({@code authDb}); può essere {@code null}
+     * @param accountProperties tutti gli attached-params della request (vedi {@code Request.attachedParams()});
+     *                          filtrati da {@code accountPropertiesClaims}; può essere {@code null}
+     * @param extraClaims       claim aggiuntivi sempre inclusi (es. tenant, status); può essere {@code null}
+     * @return JWT firmato
+     */
+    public String issueToken(String email,
+                             Set<String> roles,
+                             String authDb,
+                             Map<String, Object> accountProperties,
+                             Map<String, String> extraClaims) {
+        var algo = Algorithm.HMAC256(key);
+
+        var builder = JWT.create()
+                .withSubject(email)
+                .withIssuer(issuer)
+                .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
+                .withArrayClaim("roles", roles.toArray(new String[0]));
+
+        // authDb è sempre incluso (come in JwtTokenManager) — serve a JwtAuthDbVerifier
+        if (authDb != null && !authDb.isBlank()) {
+            builder = builder.withClaim("authDb", authDb);
+        }
+
+        // Propaga gli attached-params filtrati da accountPropertiesClaims
+        if (accountProperties != null && accountPropertiesClaims != null) {
+            for (var claim : accountPropertiesClaims) {
+                var val = accountProperties.get(claim);
+                if (val == null) continue;
+                builder = switch (val) {
+                    case String s   -> builder.withClaim(claim, s);
+                    case Boolean b  -> builder.withClaim(claim, b);
+                    case Integer i  -> builder.withClaim(claim, i);
+                    case Long l     -> builder.withClaim(claim, l);
+                    case Double d   -> builder.withClaim(claim, d);
+                    default         -> builder.withClaim(claim, val.toString());
+                };
+            }
+        }
+
+        // Extra claims sempre inclusi (tenant, status, ecc.)
+        if (extraClaims != null) {
+            for (var entry : extraClaims.entrySet()) {
+                builder = builder.withClaim(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return builder.sign(algo);
+    }
+
+    /**
+     * Emette un JWT con i soli claim espliciti passati in {@code extraClaims}.
+     * Non include {@code authDb} né propaga gli attached-params.
+     *
+     * @deprecated Usare {@link #issueToken(String, Set, String, Map, Map)} per includere
+     *             {@code authDb} e i claim configurati in {@code account-properties-claims}.
+     */
+    @Deprecated
     public String issueToken(String email, Set<String> roles, Map<String, String> extraClaims) {
         var algo = Algorithm.HMAC256(key);
 

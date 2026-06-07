@@ -76,7 +76,7 @@ public class ActivateService implements JsonService {
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/activate") && (r.isPatch() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/activate"));
     }
@@ -214,7 +214,10 @@ public class ActivateService implements JsonService {
         activeMembership.ifPresent(m -> extraClaims.put(conf.tenantClaimName(), m.tenantId()));
         extraClaims.put("status", "active");
 
-        var jwtToken = jwt.issueToken(normalizedEmail, userRoles, extraClaims);
+        var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
+                extraClaims);
         var cookie   = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
         req.getExchange().getResponseHeaders().add(Headers.SET_COOKIE, cookie);
 

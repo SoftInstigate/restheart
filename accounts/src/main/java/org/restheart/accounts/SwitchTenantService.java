@@ -60,7 +60,7 @@ public class SwitchTenantService implements JsonService {
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-tenant") && (r.isPost() || r.isOptions()));
         }
@@ -133,6 +133,8 @@ public class SwitchTenantService implements JsonService {
         var token = jwt.issueToken(
                 email,
                 Set.of(roleInTenant),
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
                 java.util.Map.of(conf.tenantClaimName(), targetTenantId, "status", "active"));
 
         // Set cookie

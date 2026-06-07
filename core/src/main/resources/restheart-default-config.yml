@@ -330,6 +330,14 @@ accountsConfig:
   # Useful when a custom MembershipProvider exposes its own equivalent endpoints.
   membership-endpoints-enabled: true
 
+  # Additional JWT claims propagated from request attached-parameters to tokens
+  # issued by accounts endpoints (verify, activate, reset-password, switch-tenant, OAuth).
+  # Mirrors jwtTokenManager.account-properties-claims: use the same list so that
+  # all token-issuance paths produce identical JWTs.
+  # authDb is always included automatically (no need to list it here).
+  account-properties-claims:
+  # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-tenant deployments
+
 # Dependency-injection service holding the active MembershipProvider.
 accountsService:
   enabled: false
