@@ -142,7 +142,7 @@ public class SwitchTenantService implements JsonService {
 
         // Response body
         var responseBody = new JsonObject();
-        responseBody.addProperty("tenant", targetTenantId);
+        responseBody.addProperty(conf.tenantClaimName(), targetTenantId);
         responseBody.addProperty("role",   roleInTenant);
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);

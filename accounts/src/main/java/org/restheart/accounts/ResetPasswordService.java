@@ -170,7 +170,7 @@ public class ResetPasswordService implements JsonService {
                 .orElse("");
         var roles     = extractRoles(user);
         var jwtToken  = jwt.issueToken(storedEmail, roles,
-                Map.of("tenant", tenant, "status", "active"));
+                Map.of(conf.tenantClaimName(), tenant, "status", "active"));
 
         res.getHeaders().add(Headers.SET_COOKIE,
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf)));

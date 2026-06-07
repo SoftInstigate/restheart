@@ -156,7 +156,7 @@ public class EmailVerificationService implements JsonService {
         var jwtToken = jwt.issueToken(
                 storedEmail,
                 roles,
-                Map.of("tenant", tenant, "status", "active"));
+                Map.of(conf.tenantClaimName(), tenant, "status", "active"));
 
         // ── 5e. Set auth cookie ───────────────────────────────────────────────
         var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
