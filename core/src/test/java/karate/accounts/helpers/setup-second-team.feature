@@ -37,7 +37,9 @@ Feature: setup second team for multi-tenant tests
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    * def secondTenantId = response.tenant
+    # tenant may be stored as ObjectId {"$oid":"..."} or plain string — normalise to hex string
+    * def rawTenant = response.tenant
+    * def secondTenantId = (typeof rawTenant == 'object') ? rawTenant['$oid'] : rawTenant
     * def verifyToken = response.emailVerificationToken
 
     # 3. Verify email — get JWT from Set-Cookie

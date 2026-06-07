@@ -94,36 +94,34 @@ public class SwitchTenantService implements JsonService {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
             return;
         }
-        var targetTenantId = jo.get("tenantId").getAsString().trim();
-        if (targetTenantId.isBlank()) {
+        var targetTenantStr = jo.get("tenantId").getAsString().trim();
+        if (targetTenantStr.isBlank()) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId must not be blank");
             return;
         }
 
         var email      = account.getPrincipal().getName();
         var membership = accountsService.getMembershipProvider();
+        var targetTenantId = membership.parseTenantId(targetTenantStr);
 
         // Find the target membership via the SPI
-        var memberships    = membership.listMemberships(email);
-        String roleInTenant = null;
+        var memberships = membership.listMemberships(email);
+        org.restheart.plugins.accounts.Membership matched = null;
         for (var m : memberships) {
             if (targetTenantId.equals(m.tenantId())) {
-                roleInTenant = m.role();
+                matched = m;
                 break;
             }
         }
 
-        if (roleInTenant == null) {
+        if (matched == null) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "User does not belong to this tenant");
             return;
         }
 
-        // Verify user is active by checking the user document
-        // (status check is a safety guard; membership confirms the user exists)
-
         // Switch the active membership via the SPI
         try {
-            membership.setActiveMembership(email, targetTenantId);
+            membership.setActiveMembership(email, matched.tenantId());
         } catch (IllegalArgumentException e) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, e.getMessage());
             return;
@@ -132,10 +130,11 @@ public class SwitchTenantService implements JsonService {
         // Issue new JWT with the configured tenant claim name
         var token = jwt.issueToken(
                 email,
-                Set.of(roleInTenant),
+                Set.of(matched.role()),
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.of(conf.tenantClaimName(), targetTenantId, "status", "active"));
+                java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId(), "status", "active"),
+                null);
 
         // Set cookie
         var domain       = RequestOverrides.cookieDomain(req, conf);
@@ -144,8 +143,8 @@ public class SwitchTenantService implements JsonService {
 
         // Response body
         var responseBody = new JsonObject();
-        responseBody.addProperty(conf.tenantClaimName(), targetTenantId);
-        responseBody.addProperty("role",   roleInTenant);
+        responseBody.addProperty(conf.tenantClaimName(), membership.tenantIdToString(matched.tenantId()));
+        responseBody.addProperty("role", matched.role());
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
     }

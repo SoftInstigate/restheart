@@ -5,6 +5,7 @@ import com.mongodb.client.MongoClient;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.accounts.util.DbHelper;
@@ -98,13 +99,17 @@ public class ResendInviteService implements JsonService {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
             return;
         }
+        var callerEmail = account.getPrincipal().getName();
         var roles = account.getRoles();
         if (!roles.contains("owner") && !roles.contains("admin")) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires owner or admin role");
             return;
         }
-        var callerTenant = extractTenant(account, conf.tenantClaimName());
-        if (callerTenant == null || callerTenant.isBlank()) {
+        var callerTenant = accountsService.getMembershipProvider()
+                .activeMembership(callerEmail)
+                .map(m -> m.tenantId())
+                .orElse(null);
+        if (callerTenant == null || callerTenant.isNull()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
         }
@@ -143,8 +148,8 @@ public class ResendInviteService implements JsonService {
         var userTenant = accountsService.getMembershipProvider()
                 .activeMembership(email)
                 .map(m -> m.tenantId())
-                .orElse("");
-        if (userTenant.isBlank() || !callerTenant.equals(userTenant)) {
+                .orElse(null);
+        if (userTenant == null || !callerTenant.equals(userTenant)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "User belongs to a different team");
             return;
         }
@@ -164,7 +169,9 @@ public class ResendInviteService implements JsonService {
         }
 
         // 8. Carica nome del team e reinvia email
-        String teamName = callerTenant; // fallback all'ID se il team non ha un campo "name"
+        var mp = accountsService.getMembershipProvider();
+        var teamNameFallback = mp.tenantIdToString(callerTenant);
+        String teamName = teamNameFallback;
         try {
             var teamOpt = db(req).findTeam(callerTenant);
             if (teamOpt.isPresent()) {
@@ -174,7 +181,7 @@ public class ResendInviteService implements JsonService {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Could not load team for tenant '{}': {}", callerTenant, e.getMessage());
+            LOGGER.warn("Could not load team for tenant '{}': {}", teamNameFallback, e.getMessage());
         }
 
         if (ermes != null && ermes.isEnabled()) {

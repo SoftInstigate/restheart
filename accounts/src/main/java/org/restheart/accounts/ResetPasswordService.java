@@ -167,12 +167,18 @@ public class ResetPasswordService implements JsonService {
         var tenant = accountsService.getMembershipProvider()
                 .activeMembership(storedEmail)
                 .map(m -> m.tenantId())
-                .orElse("");
+                .orElse(null);
         var roles     = extractRoles(user);
+        var extraClaims = new java.util.HashMap<String, Object>();
+        if (tenant != null) {
+            extraClaims.put(conf.tenantClaimName(), tenant);
+        }
+        extraClaims.put("status", "active");
         var jwtToken  = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                Map.of(conf.tenantClaimName(), tenant, "status", "active"));
+                extraClaims,
+                user);
 
         res.getHeaders().add(Headers.SET_COOKIE,
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf)));

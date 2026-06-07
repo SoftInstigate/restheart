@@ -169,9 +169,12 @@ public class OAuthCallback implements StringService {
 
                 if (membership.isPresent()) {
                     LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
-                    var jwtToken = jwt.issueToken(email, roles, Map.of(
-                            conf.tenantClaimName(), membership.get().tenantId(),
-                            "status", "active"));
+                    var jwtToken = jwt.issueToken(email, roles,
+                            RequestOverrides.db(req, conf),
+                            req.attachedParams(),
+                            java.util.Map.<String, Object>of(conf.tenantClaimName(), membership.get().tenantId(),
+                                    "status", "active"),
+                            null);
                     setAuthCookieAndRedirect(res, req, jwtToken);
                     return;
                 }
@@ -183,11 +186,12 @@ public class OAuthCallback implements StringService {
 
             // 4. Issue JWT + set cookie for normal / non-activated users
             var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
-            var tenantId         = activeMembership.map(m -> m.tenantId()).orElse("");
+            var tenantId         = activeMembership.map(m -> m.tenantId()).orElse(null);
             var jwtToken = jwt.issueToken(email, roles,
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
-                    Map.of(conf.tenantClaimName(), tenantId, "status", status));
+                    java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId, "status", status),
+                    null);
             setAuthCookieAndRedirect(res, req, jwtToken);
 
         } catch (OAuthService.OAuthException e) {

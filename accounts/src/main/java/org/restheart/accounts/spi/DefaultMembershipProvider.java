@@ -4,7 +4,10 @@ import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.types.ObjectId;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.plugins.accounts.Membership;
@@ -86,40 +89,37 @@ public class DefaultMembershipProvider implements MembershipProvider {
                 .append("createdAt", now)
                 .append("members",   membersList);
 
-        var teamId = db.insertTeam(teamDoc);
+        var teamId    = db.insertTeam(teamDoc);
+        var teamIdBson = new BsonObjectId(new ObjectId(teamId));
 
         // Link user → team
         db.addTenantMembership(userId, new BsonDocument()
-                .append("id",   new BsonString(teamId))
+                .append("id",   teamIdBson)
                 .append("role", new BsonString("owner")));
-        db.setActiveTenantIfAbsent(userId, teamId);
+        db.setActiveTenantIfAbsent(userId, teamIdBson);
 
         LOGGER.debug("DefaultMembershipProvider: created team '{}' ({}) for user <{}>",
                 teamName, teamId, userId);
 
-        return new TenantRef(teamId, teamName);
+        return new TenantRef(teamIdBson, teamName);
     }
 
     // ── isMember ─────────────────────────────────────────────────────────────
 
     @Override
-    public boolean isMember(String userId, String tenantId) {
+    public boolean isMember(String userId, BsonValue tenantId) {
         var userOpt = db.findUser(userId);
         if (userOpt.isEmpty()) return false;
         var user = userOpt.get();
 
-        // Check the active-tenant field (legacy single-tenant support)
-        if (user.containsKey("tenant") && user.get("tenant").isString()
-                && tenantId.equals(user.getString("tenant").getValue())) {
+        if (user.containsKey("tenant") && tenantId.equals(user.get("tenant"))) {
             return true;
         }
-        // Check tenants array
         if (user.containsKey("tenants") && user.get("tenants").isArray()) {
             for (var entry : user.getArray("tenants")) {
                 if (entry.isDocument()) {
                     var e = entry.asDocument();
-                    if (e.containsKey("id") && e.get("id").isString()
-                            && tenantId.equals(e.getString("id").getValue())) {
+                    if (e.containsKey("id") && tenantId.equals(e.get("id"))) {
                         return true;
                     }
                 }
@@ -140,9 +140,9 @@ public class DefaultMembershipProvider implements MembershipProvider {
      * @param role     the role to assign (e.g. {@code "owner"} or {@code "member"})
      */
     @Override
-    public void addMember(String userId, String tenantId, String role) {
+    public void addMember(String userId, BsonValue tenantId, String role) {
         db.addTenantMembership(userId, new BsonDocument()
-                .append("id",   new BsonString(tenantId))
+                .append("id",   tenantId)
                 .append("role", new BsonString(role)));
         db.setActiveTenantIfAbsent(userId, tenantId);
     }
@@ -155,11 +155,11 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return Optional.empty();
         var user = userOpt.get();
 
-        if (!user.containsKey("tenant") || !user.get("tenant").isString()) {
+        if (!user.containsKey("tenant") || user.get("tenant").isNull()) {
             return Optional.empty();
         }
-        var tenantId = user.getString("tenant").getValue();
-        var role = findRoleInTenants(user, tenantId);
+        var tenantId    = user.get("tenant");
+        var role        = findRoleInTenants(user, tenantId);
         var displayName = loadTeamName(tenantId);
 
         return Optional.of(new Membership(tenantId, displayName, role, true));
@@ -173,16 +173,17 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return List.of();
         var user = userOpt.get();
 
-        var activeTenant = user.containsKey("tenant") && user.get("tenant").isString()
-                ? user.getString("tenant").getValue() : null;
+        var activeTenant = user.containsKey("tenant") && !user.get("tenant").isNull()
+                ? user.get("tenant") : null;
 
         var result = new ArrayList<Membership>();
         if (user.containsKey("tenants") && user.get("tenants").isArray()) {
             for (var entry : user.getArray("tenants")) {
                 if (!entry.isDocument()) continue;
                 var e        = entry.asDocument();
-                var tenantId = e.containsKey("id")   && e.get("id").isString()   ? e.getString("id").getValue()   : null;
-                var role     = e.containsKey("role")  && e.get("role").isString()  ? e.getString("role").getValue()  : "member";
+                var tenantId = e.containsKey("id") && !e.get("id").isNull() ? e.get("id") : null;
+                var role     = e.containsKey("role") && e.get("role").isString()
+                        ? e.getString("role").getValue() : "member";
                 if (tenantId == null) continue;
                 var displayName = loadTeamName(tenantId);
                 result.add(new Membership(tenantId, displayName, role, tenantId.equals(activeTenant)));
@@ -194,7 +195,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
     // ── setActiveMembership ──────────────────────────────────────────────
 
     @Override
-    public void setActiveMembership(String userId, String tenantId) {
+    public void setActiveMembership(String userId, BsonValue tenantId) {
         if (!isMember(userId, tenantId)) {
             throw new IllegalArgumentException(
                     "User <" + userId + "> is not a member of tenant " + tenantId);
@@ -229,11 +230,11 @@ public class DefaultMembershipProvider implements MembershipProvider {
         }
 
         // User must already have an active tenant (set when the invite was sent)
-        if (!user.containsKey("tenant") || !user.get("tenant").isString()) {
+        if (!user.containsKey("tenant") || user.get("tenant").isNull()) {
             LOGGER.warn("DefaultMembershipProvider.activateViaOAuth: invited user <{}> has no tenant", userId);
             return Optional.empty();
         }
-        var tenantId = user.getString("tenant").getValue();
+        var tenantId = user.get("tenant");
 
         // Activate: set status and optionally record consents
         var updates = new BsonDocument().append("status", new BsonString("active"));
@@ -265,13 +266,12 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
     // ── Helpers ─────────────────────────────────────────────────────
 
-    private String findRoleInTenants(BsonDocument user, String tenantId) {
+    private String findRoleInTenants(BsonDocument user, BsonValue tenantId) {
         if (user.containsKey("tenants") && user.get("tenants").isArray()) {
             for (var entry : user.getArray("tenants")) {
                 if (!entry.isDocument()) continue;
                 var e = entry.asDocument();
-                if (e.containsKey("id") && e.get("id").isString()
-                        && tenantId.equals(e.getString("id").getValue())) {
+                if (e.containsKey("id") && tenantId.equals(e.get("id"))) {
                     return e.containsKey("role") && e.get("role").isString()
                             ? e.getString("role").getValue() : "member";
                 }
@@ -280,14 +280,14 @@ public class DefaultMembershipProvider implements MembershipProvider {
         return "member";
     }
 
-    private String loadTeamName(String tenantId) {
+    private String loadTeamName(BsonValue tenantId) {
         try {
             return db.findTeam(tenantId)
                     .filter(t -> t.containsKey("name") && t.get("name").isString())
                     .map(t -> t.getString("name").getValue())
-                    .orElse(tenantId);
+                    .orElseGet(() -> tenantIdToString(tenantId));
         } catch (Exception e) {
-            return tenantId;
+            return tenantIdToString(tenantId);
         }
     }
 }

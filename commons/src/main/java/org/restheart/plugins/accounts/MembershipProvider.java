@@ -2,6 +2,10 @@ package org.restheart.plugins.accounts;
 
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.types.ObjectId;
 
 /**
  * Service Provider Interface (SPI) for membership management in restheart-accounts.
@@ -55,7 +59,7 @@ public interface MembershipProvider {
      * @param tenantId the tenant identifier
      * @return {@code true} if the user belongs to the given tenant
      */
-    boolean isMember(String userId, String tenantId);
+    boolean isMember(String userId, BsonValue tenantId);
 
     /**
      * Adds a user to a tenant with the specified role (operation must be idempotent).
@@ -68,7 +72,7 @@ public interface MembershipProvider {
      * @param tenantId the tenant identifier
      * @param role     the role to assign (e.g. {@code "admin"} or the configured member role)
      */
-    void addMember(String userId, String tenantId, String role);
+    void addMember(String userId, BsonValue tenantId, String role);
 
     /**
      * Returns the user's currently active membership, or {@link Optional#empty()} if
@@ -99,7 +103,7 @@ public interface MembershipProvider {
      * @param tenantId the tenant to activate
      * @throws IllegalArgumentException if the user does not belong to the tenant
      */
-    void setActiveMembership(String userId, String tenantId);
+    void setActiveMembership(String userId, BsonValue tenantId);
 
     /**
      * Called by the OAuth callback when the OAuth-authenticated user has
@@ -121,5 +125,38 @@ public interface MembershipProvider {
      */
     default Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
         return Optional.empty();
+    }
+
+    /**
+     * Parses a tenant identifier received as a raw string (URL param, query string, request body)
+     * into its native {@link BsonValue} type.
+     *
+     * <p>Override when your tenant IDs are not MongoDB ObjectIds. The default implementation
+     * tries to parse as an ObjectId hex string, falling back to {@link BsonString}.
+     *
+     * @param raw the string representation of the tenant ID
+     * @return the corresponding {@link BsonValue}
+     */
+    default BsonValue parseTenantId(String raw) {
+        try {
+            return new BsonObjectId(new ObjectId(raw));
+        } catch (IllegalArgumentException e) {
+            return new BsonString(raw);
+        }
+    }
+
+    /**
+     * Converts a tenant ID {@link BsonValue} to its canonical string representation,
+     * suitable for URLs, response bodies, and log messages.
+     *
+     * <p>This is the inverse of {@link #parseTenantId(String)}.
+     *
+     * @param tenantId the tenant ID
+     * @return the string representation
+     */
+    default String tenantIdToString(BsonValue tenantId) {
+        if (tenantId.isObjectId()) return tenantId.asObjectId().getValue().toHexString();
+        if (tenantId.isString())   return tenantId.asString().getValue();
+        return tenantId.toString();
     }
 }

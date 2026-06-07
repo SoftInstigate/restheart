@@ -177,7 +177,9 @@ public class RegisterService implements JsonService {
 
         // ── 6. Delegate team creation + membership linking to the provider ────
         var tenantRef = membership().createInitialTeam(email, teamName);
-        var teamId    = tenantRef.id();
+        var teamId    = tenantRef.id().isString()
+                ? tenantRef.id().asString().getValue()
+                : tenantRef.id().asObjectId().getValue().toHexString();
 
         LOGGER.info("User registered: <{}>, tenant={}", email, teamId);
 

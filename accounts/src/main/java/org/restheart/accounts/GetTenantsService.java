@@ -2,6 +2,7 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.bson.BsonValue;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.exchange.JsonRequest;
@@ -81,7 +82,7 @@ public class GetTenantsService implements JsonService {
         var result = new JsonArray();
         for (var m : memberships) {
             var obj = new JsonObject();
-            obj.addProperty("id",     m.tenantId());
+            obj.addProperty("id",     tenantIdToString(m.tenantId()));
             obj.addProperty("name",   m.displayName());
             obj.addProperty("role",   m.role());
             obj.addProperty("active", m.active());
@@ -90,5 +91,12 @@ public class GetTenantsService implements JsonService {
 
         res.setContent(result);
         res.setStatusCode(HttpStatus.SC_OK);
+    }
+
+    private static String tenantIdToString(BsonValue v) {
+        if (v == null) return "";
+        if (v.isString()) return v.asString().getValue();
+        if (v.isObjectId()) return v.asObjectId().getValue().toHexString();
+        return v.toString();
     }
 }

@@ -1,7 +1,11 @@
 package org.restheart.accounts.util;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -79,7 +83,8 @@ public class JwtHelper {
                              Set<String> roles,
                              String authDb,
                              Map<String, Object> accountProperties,
-                             Map<String, String> extraClaims) {
+                             Map<String, Object> extraClaims,
+                             BsonDocument userDocument) {
         var algo = Algorithm.HMAC256(key);
 
         var builder = JWT.create()
@@ -93,26 +98,32 @@ public class JwtHelper {
             builder = builder.withClaim("authDb", authDb);
         }
 
+        // Merge user document properties into accountProperties
+        // Only fields listed in accountPropertiesClaims are included (like JwtTokenManager)
+        if (userDocument != null && accountPropertiesClaims != null) {
+            if (accountProperties == null) accountProperties = new java.util.HashMap<>();
+            for (var claim : accountPropertiesClaims) {
+                if (userDocument.containsKey(claim) && !accountProperties.containsKey(claim)) {
+                    accountProperties.put(claim, bsonValueToObject(userDocument.get(claim)));
+                }
+            }
+        }
+
         // Propaga gli attached-params filtrati da accountPropertiesClaims
         if (accountProperties != null && accountPropertiesClaims != null) {
             for (var claim : accountPropertiesClaims) {
                 var val = accountProperties.get(claim);
                 if (val == null) continue;
-                builder = switch (val) {
-                    case String s   -> builder.withClaim(claim, s);
-                    case Boolean b  -> builder.withClaim(claim, b);
-                    case Integer i  -> builder.withClaim(claim, i);
-                    case Long l     -> builder.withClaim(claim, l);
-                    case Double d   -> builder.withClaim(claim, d);
-                    default         -> builder.withClaim(claim, val.toString());
-                };
+                builder = withClaim(builder, claim, val);
             }
         }
 
         // Extra claims sempre inclusi (tenant, status, ecc.)
         if (extraClaims != null) {
             for (var entry : extraClaims.entrySet()) {
-                builder = builder.withClaim(entry.getKey(), entry.getValue());
+                // BsonValue viene prima convertito al tipo Java corrispondente
+                var val = entry.getValue() instanceof BsonValue bv ? bsonValueToObject(bv) : entry.getValue();
+                builder = withClaim(builder, entry.getKey(), val);
             }
         }
 
@@ -190,5 +201,55 @@ public class JwtHelper {
     @Deprecated
     public static String setCookieHeader(String jwt, String domain) {
         return setCookieHeader(jwt, "rh_auth", domain);
+    }
+
+    private static JWTCreator.Builder withClaim(JWTCreator.Builder b, String k, Object v) {
+        if (k == null || v == null) return b;
+        return switch (v) {
+            case String s    -> b.withClaim(k, s);
+            case Boolean boo -> b.withClaim(k, boo);
+            case Integer i   -> b.withClaim(k, i);
+            case Long l      -> b.withClaim(k, l);
+            case Double d    -> b.withClaim(k, d);
+            case Map m       -> { try { yield b.withClaim(k, (Map<String, ?>) m); } catch (ClassCastException e) { yield b; } }
+            case List l      -> b.withClaim(k, (List<?>) l);
+            default          -> b.withClaim(k, v.toString());
+        };
+    }
+
+    private static String bsonValueToString(Object v) {
+        if (v == null) return null;
+        if (v instanceof BsonValue bv) {
+            if (bv.isString()) return bv.asString().getValue();
+            if (bv.isObjectId()) return bv.asObjectId().getValue().toHexString();
+            return bv.toString();
+        }
+        return v.toString();
+    }
+
+    private static Object bsonValueToObject(BsonValue value) {
+        return switch (value) {
+            case org.bson.BsonString s -> s.getValue();
+            case org.bson.BsonBoolean b -> b.getValue();
+            case org.bson.BsonInt32 i -> i.getValue();
+            case org.bson.BsonInt64 l -> l.getValue();
+            case org.bson.BsonDouble d -> d.getValue();
+            case org.bson.BsonObjectId oid -> Map.of("$oid", oid.getValue().toHexString());
+            case BsonArray a -> {
+                var list = new java.util.ArrayList<>();
+                for (var item : a) {
+                    list.add(bsonValueToObject(item));
+                }
+                yield list;
+            }
+            case BsonDocument d -> {
+                var map = new java.util.HashMap<String, Object>();
+                for (var entry : d.entrySet()) {
+                    map.put(entry.getKey(), bsonValueToObject(entry.getValue()));
+                }
+                yield map;
+            }
+            default -> value.toString();
+        };
     }
 }

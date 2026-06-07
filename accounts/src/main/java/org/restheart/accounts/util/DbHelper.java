@@ -6,9 +6,8 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.types.ObjectId;
+import org.bson.BsonValue;
 
 import java.util.List;
 import java.util.Optional;
@@ -150,8 +149,8 @@ public class DbHelper {
      * @param tenantId the tenant to make active
      * @return {@code true} if a document was matched
      */
-    public boolean setActiveTenant(String email, String tenantId) {
-        return updateUser(email, new BsonDocument("tenant", new BsonString(tenantId)));
+    public boolean setActiveTenant(String email, BsonValue tenantId) {
+        return updateUser(email, new BsonDocument("tenant", tenantId));
     }
 
     /**
@@ -162,7 +161,7 @@ public class DbHelper {
      * @param tenantId the tenant to set as active
      * @return {@code true} if the field was set (document matched and had no prior tenant)
      */
-    public boolean setActiveTenantIfAbsent(String email, String tenantId) {
+    public boolean setActiveTenantIfAbsent(String email, BsonValue tenantId) {
         var result = users().updateOne(
             Filters.and(
                 eq("_id", new BsonString(email)),
@@ -197,10 +196,10 @@ public class DbHelper {
      * @param teamId the ObjectId hex string
      * @return the team document, or {@link Optional#empty()} if not found
      */
-    public Optional<BsonDocument> findTeam(String teamId) {
+    public Optional<BsonDocument> findTeam(BsonValue teamId) {
         return Optional.ofNullable(
             teams()
-                .find(eq("_id", new BsonObjectId(new ObjectId(teamId))))
+                .find(eq("_id", teamId))
                 .first()
         );
     }

@@ -88,7 +88,10 @@ Feature: OAuth activation for invited users
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
     * match payload.status == 'active'
-    * match payload.tenant == '#string'
+    # tenant claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
+    * def tenantClaim = payload.tenant
+    * def tenantStr = (typeof tenantClaim == 'object') ? tenantClaim['$oid'] : tenantClaim
+    * match tenantStr == '#string'
 
     # 6. Verify DB — user activated, inviteToken removed, consents stored
     Given path '/users/' + inviteEmail

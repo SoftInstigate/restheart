@@ -209,7 +209,7 @@ public class ActivateService implements JsonService {
         }
 
         // Use the MembershipProvider to get the active tenant for the JWT claim
-        var extraClaims = new HashMap<String, String>();
+        var extraClaims = new HashMap<String, Object>();
         var activeMembership = accountsService.getMembershipProvider().activeMembership(normalizedEmail);
         activeMembership.ifPresent(m -> extraClaims.put(conf.tenantClaimName(), m.tenantId()));
         extraClaims.put("status", "active");
@@ -217,7 +217,8 @@ public class ActivateService implements JsonService {
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                extraClaims);
+                extraClaims,
+                user);
         var cookie   = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
         req.getExchange().getResponseHeaders().add(Headers.SET_COOKIE, cookie);
 

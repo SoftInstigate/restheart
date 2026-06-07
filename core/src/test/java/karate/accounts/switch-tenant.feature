@@ -112,5 +112,6 @@ Feature: POST /auth/switch-tenant
     Then status 200
     And match response.tenants == '#array'
     * assert response.tenants.length >= 2
-    * def tenantIds = karate.map(response.tenants, function(x){ return x.id })
+    # tenants[].id may be ObjectId {"$oid":"..."} or plain string — normalise to hex
+    * def tenantIds = karate.map(response.tenants, function(x){ return typeof x.id == 'object' ? x.id['$oid'] : x.id })
     And match tenantIds contains secondTenantId

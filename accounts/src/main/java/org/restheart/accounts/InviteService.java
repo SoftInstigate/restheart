@@ -5,6 +5,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
@@ -103,6 +104,7 @@ public class InviteService implements JsonService {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
             return;
         }
+        var email = account.getPrincipal().getName();
 
         // 2. Verifica ruolo: deve essere owner o admin
         var roles = account.getRoles();
@@ -112,8 +114,11 @@ public class InviteService implements JsonService {
         }
 
         // 3. Leggi il tenant del chiamante
-        var callerTenant = extractTenant(account, conf.tenantClaimName());
-        if (callerTenant == null || callerTenant.isBlank()) {
+        var callerTenant = accountsService.getMembershipProvider()
+                .activeMembership(email)
+                .map(m -> m.tenantId())
+                .orElse(null);
+        if (callerTenant == null || callerTenant.isNull()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
         }
@@ -254,15 +259,16 @@ public class InviteService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    /** Loads the team display name for the given tenantId, falling back to the raw ID. */
-    private static String loadTeamName(DbHelper db, String tenantId) {
+    /** Loads the team display name for the given tenantId, falling back to its string form. */
+    private String loadTeamName(DbHelper db, BsonValue tenantId) {
+        var fallback = accountsService.getMembershipProvider().tenantIdToString(tenantId);
         try {
             return db.findTeam(tenantId)
                     .filter(t -> t.containsKey("name") && t.get("name").isString())
                     .map(t -> t.getString("name").getValue())
-                    .orElse(tenantId);
+                    .orElse(fallback);
         } catch (Exception e) {
-            return tenantId;
+            return fallback;
         }
     }
 

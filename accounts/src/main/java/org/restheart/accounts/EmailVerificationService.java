@@ -148,18 +148,24 @@ public class EmailVerificationService implements JsonService {
         }
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var tenant = accountsService.getMembershipProvider()
+        var tenantBson = accountsService.getMembershipProvider()
                 .activeMembership(storedEmail)
                 .map(m -> m.tenantId())
-                .orElse("");
+                .orElse(null);
 
-        // ── 5d. Issue JWT ──────────────────────────────────────────────────
+        var extraClaims = new java.util.HashMap<String, Object>();
+        if (tenantBson != null) {
+            extraClaims.put(conf.tenantClaimName(), tenantBson);
+        }
+        extraClaims.put("status", "active");
+
         var jwtToken = jwt.issueToken(
                 storedEmail,
                 roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                Map.of(conf.tenantClaimName(), tenant, "status", "active"));
+                extraClaims,
+                user);
 
         // ── 5e. Set auth cookie ───────────────────────────────────────────────
         var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
