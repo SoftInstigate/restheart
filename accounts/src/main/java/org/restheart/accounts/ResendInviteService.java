@@ -141,7 +141,7 @@ public class ResendInviteService implements JsonService {
 
         // 5. Verifica che il tenant dell'utente corrisponda al tenant del chiamante
         var userTenant = accountsService.getMembershipProvider()
-                .activeMembership(normalizedEmail)
+                .activeMembership(email)
                 .map(m -> m.tenantId())
                 .orElse("");
         if (userTenant.isBlank() || !callerTenant.equals(userTenant)) {
