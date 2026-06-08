@@ -153,7 +153,7 @@ Feature: PATCH /auth/activate
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    And match response.status == 'active'
+    And match response.roles contains 'user'
     # inviteToken and inviteCreatedAt must have been $unset
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'

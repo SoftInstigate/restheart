@@ -45,8 +45,9 @@ import java.util.Set;
  */
 @RegisterPlugin(
         name             = "switchTenantService",
-        description      = "POST /auth/switch-tenant — switch active tenant and reissue JWT cookie",
+        description      = "POST /auth/switch-tenant \u2014 switch active tenant and reissue JWT cookie",
         defaultURI       = "/auth/switch-tenant",
+        secure           = true,
         enabledByDefault = false)
 public class SwitchTenantService implements JsonService {
 
@@ -81,10 +82,6 @@ public class SwitchTenantService implements JsonService {
         if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
 
         // Parse body
         var body = req.getContent();
@@ -141,7 +138,7 @@ public class SwitchTenantService implements JsonService {
                 Set.of(matched.role()),
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId(), "status", "active"),
+                java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId()),
                 null);
 
         // Set cookie

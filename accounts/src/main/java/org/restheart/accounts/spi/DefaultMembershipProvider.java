@@ -54,9 +54,13 @@ public class DefaultMembershipProvider implements MembershipProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMembershipProvider.class);
 
     private final DbHelper db;
+    private final String ownershipRole;
+    private final String defaultRole;
 
-    public DefaultMembershipProvider(MongoClient mclient, String database) {
+    public DefaultMembershipProvider(MongoClient mclient, String database, String ownershipRole, String defaultRole) {
         this.db = new DbHelper(mclient, database);
+        this.ownershipRole = ownershipRole != null ? ownershipRole : "owner";
+        this.defaultRole = defaultRole != null ? defaultRole : "user";
     }
 
     // ── createInitialTeam ─────────────────────────────────────────────────────
@@ -78,7 +82,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
         var ownerMember = new BsonDocument()
                 .append("userId",   new BsonString(userId))
-                .append("role",     new BsonString("owner"))
+                .append("role",     new BsonString(ownershipRole))
                 .append("joinedAt", now);
 
         var membersList = new BsonArray();
@@ -96,7 +100,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         // Link user → team
         db.addTenantMembership(userId, new BsonDocument()
                 .append("id",   teamIdBson)
-                .append("role", new BsonString("owner")));
+                .append("role", new BsonString(ownershipRole)));
         db.setActiveTenantIfAbsent(userId, teamIdBson);
 
         LOGGER.debug("DefaultMembershipProvider: created team '{}' ({}) for user <{}>",
@@ -209,15 +213,15 @@ public class DefaultMembershipProvider implements MembershipProvider {
     /**
      * Activates an invited user via OAuth.
      *
-     * <p>Activates any user whose {@code status} is {@code "invited"} and who
+     * <p>Activates any unverified user ({@code roles: ["$unauthenticated"]}) who
      * already has an active {@code tenant} set (assigned when the invite was sent).
-     * Sets {@code status} to {@code "active"}, removes the {@code inviteToken} field,
-     * and optionally stores the accepted consents.
+     * Assigns the configured {@code default-role}, removes the {@code inviteToken}
+     * field, and optionally stores the accepted consents.
      *
      * @param userId   the user's email address
      * @param consents consent record to persist, or {@code null} if no consent was given
      * @return an {@link Optional} with the activated membership, or empty if the user
-     *         is not in the {@code "invited"} state or has no pending tenant
+     *         is not unverified or has no pending tenant
      */
     @Override
     public Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
@@ -225,8 +229,12 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return Optional.empty();
         var user = userOpt.get();
 
-        // Only activate users that are in the "invited" state
-        if (!user.containsKey("status") || !"invited".equals(user.getString("status").getValue())) {
+        // Only activate unverified users (roles == ["$unauthenticated"])
+        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
+                ? user.getArray("roles") : new BsonArray();
+        boolean isUnverified = userRoles.size() == 1
+                && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
+        if (!isUnverified) {
             return Optional.empty();
         }
 
@@ -237,8 +245,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
         }
         var tenantId = user.get("tenant");
 
-        // Activate: set status and optionally record consents
-        var updates = new BsonDocument().append("status", new BsonString("active"));
+        // Activate: assign defaultRole and optionally record consents
+        var rolesArray = new BsonArray();
+        rolesArray.add(new BsonString(defaultRole));
+        var updates = new BsonDocument().append("roles", rolesArray);
         if (consents != null) {
             updates.append("consents", buildConsentsDoc(consents));
         }

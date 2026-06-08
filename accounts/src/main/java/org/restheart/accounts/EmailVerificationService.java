@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
@@ -131,21 +132,19 @@ public class EmailVerificationService implements JsonService {
 
         // ── 5a. Remove verification token fields ─────────────────────────────
         db(req).unsetUserFields(storedEmail,
-                List.of("emailVerificationToken", "emailVerificationCreatedAt"));
+                List.of("emailVerificationToken", "emailVerificationCreatedAt", "status"));
 
-        // ── 5b. Activate account ─────────────────────────────────────────────
-        db(req).updateUser(storedEmail, new BsonDocument("status", new BsonString("active")));
+        // ── 5b. Assign system ACL role (user is now verified) ───────────────
+        var effectiveRole = RequestOverrides.defaultRole(req, conf);
+        var updateDoc = new BsonDocument();
+        var rolesArray = new BsonArray();
+        rolesArray.add(new BsonString(effectiveRole));
+        updateDoc.put("roles", rolesArray);
+        db(req).updateUser(storedEmail, updateDoc);
 
-        // ── 5c. Build roles set from document ────────────────────────────────
+        // ── 5c. Build roles set for JWT ───────────────────────────────────────
         Set<String> roles = new HashSet<>();
-        if (user.containsKey("roles") && user.get("roles").isArray()) {
-            for (var rv : user.getArray("roles")) {
-                roles.add(rv.asString().getValue());
-            }
-        }
-        if (roles.isEmpty()) {
-            roles.add("user");
-        }
+        roles.add(effectiveRole);
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
         var tenantBson = accountsService.getMembershipProvider()
@@ -157,7 +156,6 @@ public class EmailVerificationService implements JsonService {
         if (tenantBson != null) {
             extraClaims.put(conf.tenantClaimName(), tenantBson);
         }
-        extraClaims.put("status", "active");
 
         var jwtToken = jwt.issueToken(
                 storedEmail,

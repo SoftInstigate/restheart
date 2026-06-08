@@ -43,8 +43,8 @@ Feature: OAuth activation for invited users
     * def inviteToken = response.inviteToken
     * match inviteToken == '#notnull'
 
-    # Verify: user starts with status "invited"
-    And match response.status == 'invited'
+    # Verify: user starts with roles: ["$unauthenticated"]
+    And match response.roles contains '$unauthenticated'
 
     # 3. Initiate OAuth — pass pendingInviteToken and consentsAccepted=true
     Given path '/auth/oauth/authorize/test'
@@ -87,7 +87,6 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
-    * match payload.status == 'active'
     # tenant claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
     * def tenantClaim = payload.tenant
     * def tenantStr = (typeof tenantClaim == 'object') ? tenantClaim['$oid'] : tenantClaim
@@ -98,7 +97,7 @@ Feature: OAuth activation for invited users
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    And match response.status == 'active'
+    And match response.roles contains 'user'
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
     And match response.consents.termsVersion == '#notnull'
@@ -145,7 +144,7 @@ Feature: OAuth activation for invited users
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    And match response.status == 'active'
+    And match response.roles contains 'user'
     And match response.inviteToken == '#notpresent'
     And match response.consents == '#notpresent'
 
@@ -172,7 +171,7 @@ Feature: OAuth activation for invited users
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    And match response.status == 'active'
+    And match response.roles contains 'user'
 
   # ---------------------------------------------------------------------------
   Scenario: invalid CSRF state (no "." separator) — callback returns redirect to error URL

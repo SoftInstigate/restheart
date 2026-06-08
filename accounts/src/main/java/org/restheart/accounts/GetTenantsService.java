@@ -37,8 +37,9 @@ import org.restheart.utils.HttpStatus;
  */
 @RegisterPlugin(
         name             = "getTenantsService",
-        description      = "GET /auth/tenants — list current user's tenant memberships",
+        description      = "GET /auth/tenants \u2014 list current user's tenant memberships",
         defaultURI       = "/auth/tenants",
+        secure           = true,
         enabledByDefault = false)
 public class GetTenantsService implements JsonService {
 
@@ -70,11 +71,6 @@ public class GetTenantsService implements JsonService {
         if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
-
         var email = account.getPrincipal().getName();
 
         // Delegate to the MembershipProvider

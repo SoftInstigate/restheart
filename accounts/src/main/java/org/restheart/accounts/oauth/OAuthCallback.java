@@ -152,11 +152,13 @@ public class OAuthCallback implements StringService {
 
             // 2. Find or create user (membership delegated to the provider)
             var user   = findOrCreateUser(req, profile, provider);
-            var roles  = extractRoles(user);
-            var status = user.containsKey("status") ? user.getString("status").getValue() : "active";
-
-            // 3. Handle invited users: give MembershipProvider a chance to activate
-            if ("invited".equals(status)) {
+            // 3. Handle unverified invited users: give MembershipProvider a chance to activate
+            //    Unverified users have roles == ["$unauthenticated"]
+            var userRoles = user.containsKey("roles") && user.get("roles").isArray()
+                    ? user.getArray("roles") : new org.bson.BsonArray();
+            boolean isUnverified = userRoles.size() == 1
+                    && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
+            if (isUnverified) {
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
                     var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
@@ -169,11 +171,11 @@ public class OAuthCallback implements StringService {
 
                 if (membership.isPresent()) {
                     LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
-                    var jwtToken = jwt.issueToken(email, roles,
+                    var activatedRoles = extractRoles(user);
+                    var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
                             req.attachedParams(),
-                            java.util.Map.<String, Object>of(conf.tenantClaimName(), membership.get().tenantId(),
-                                    "status", "active"),
+                            java.util.Map.<String, Object>of(conf.tenantClaimName(), membership.get().tenantId()),
                             null);
                     setAuthCookieAndRedirect(res, req, jwtToken);
                     return;
@@ -185,12 +187,13 @@ public class OAuthCallback implements StringService {
             }
 
             // 4. Issue JWT + set cookie for normal / non-activated users
+            var roles  = extractRoles(user);
             var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
             var tenantId         = activeMembership.map(m -> m.tenantId()).orElse(null);
             var jwtToken = jwt.issueToken(email, roles,
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
-                    java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId, "status", status),
+                    java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
                     null);
             setAuthCookieAndRedirect(res, req, jwtToken);
 
@@ -219,7 +222,7 @@ public class OAuthCallback implements StringService {
     /**
      * Finds the existing user or creates a new one from the OAuth profile.
      *
-     * <p>New users get {@code status: "active"} (provider has already verified the email).
+     * <p>New users get {@code roles: ["user"]} (provider has already verified the email).
      * Team / tenant initialization is delegated to the active {@link AccountsService}
      * MembershipProvider via {@code createInitialTeam}.
      */
@@ -243,8 +246,8 @@ public class OAuthCallback implements StringService {
         roles.add(new BsonString("user"));
 
         var profileDoc = new BsonDocument()
-                .append("firstName", new BsonString(extractFirstName(name)))
-                .append("lastName",  new BsonString(extractLastName(name)));
+                .append("name",    new BsonString(extractFirstName(name)))
+                .append("surname", new BsonString(extractLastName(name)));
 
         if (profile.containsKey("avatarUrl")) {
             profileDoc.append("avatarUrl", profile.get("avatarUrl"));
@@ -261,7 +264,6 @@ public class OAuthCallback implements StringService {
                 .append("_id",         new BsonString(email))
                 .append("password",    new BsonString("")) // no password for OAuth users
                 .append("roles",       roles)
-                .append("status",      new BsonString("active")) // provider verified the email
                 .append("profile",     profileDoc)
                 .append("socialAuths", socialAuths);
 
@@ -282,8 +284,8 @@ public class OAuthCallback implements StringService {
 
         if (profile.containsKey("name")) {
             var name = profile.getString("name").getValue();
-            updates.append("profile.firstName", new BsonString(extractFirstName(name)));
-            updates.append("profile.lastName",  new BsonString(extractLastName(name)));
+            updates.append("profile.name",    new BsonString(extractFirstName(name)));
+            updates.append("profile.surname", new BsonString(extractLastName(name)));
         }
         if (profile.containsKey("avatarUrl")) {
             updates.append("profile.avatarUrl", profile.get("avatarUrl"));

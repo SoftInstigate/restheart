@@ -153,12 +153,15 @@ public class RegisterService implements JsonService {
         var now               = new BsonDateTime(System.currentTimeMillis());
 
         // ── 5. Create and insert user (without tenant — MembershipProvider sets it) ──
+        // New users start with $unauthenticated role — they can only access
+        // public endpoints until email verification assigns the real role.
+        // "owner"/"admin"/"member" are team/membership roles, not system ACL roles.
         var rolesArray = new BsonArray();
-        rolesArray.add(new BsonString("owner")); // creator of the team → owner role
+        rolesArray.add(new BsonString("$unauthenticated"));
 
         var profile = new BsonDocument()
-                .append("firstName", new BsonString(firstName))
-                .append("lastName",  new BsonString(lastName));
+                .append("name",    new BsonString(firstName))
+                .append("surname", new BsonString(lastName));
 
         var userDoc = new BsonDocument()
                 .append("_id",                        new BsonString(email))

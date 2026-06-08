@@ -146,12 +146,11 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
-        // 5. Only active accounts may reset their password
-        var status = user.containsKey("status")
-                ? user.getString("status").getValue()
-                : "";
-        if (!"active".equals(status)) {
-            Errors.error(res, 400, "Account not active");
+        // 5. Only verified accounts may reset their password
+        //    Verified users have roles != ["$unauthenticated"]
+        var roles = extractRoles(user);
+        if (roles.isEmpty() || (roles.size() == 1 && roles.contains("$unauthenticated"))) {
+            Errors.error(res, 400, "Account not verified");
             return;
         }
 
@@ -168,12 +167,10 @@ public class ResetPasswordService implements JsonService {
                 .activeMembership(storedEmail)
                 .map(m -> m.tenantId())
                 .orElse(null);
-        var roles     = extractRoles(user);
         var extraClaims = new java.util.HashMap<String, Object>();
         if (tenant != null) {
             extraClaims.put(conf.tenantClaimName(), tenant);
         }
-        extraClaims.put("status", "active");
         var jwtToken  = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),

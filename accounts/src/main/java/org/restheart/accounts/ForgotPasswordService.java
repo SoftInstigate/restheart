@@ -7,6 +7,7 @@ import java.time.Instant;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonArray;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.accounts.util.DbHelper;
@@ -119,13 +120,15 @@ public class ForgotPasswordService implements JsonService {
         }
 
         var user   = userOpt.get();
-        var status = user.containsKey("status")
-                ? user.getString("status").getValue()
-                : "";
 
-        // b. Only send reset emails for active accounts
-        if (!"active".equals(status)) {
-            LOGGER.debug("forgotPassword: account status is '{}', skipping reset", status);
+        // Only send reset emails for verified accounts
+        // Verified users have roles != ["$unauthenticated"]
+        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
+                ? user.getArray("roles") : new BsonArray();
+        boolean isVerified = !userRoles.isEmpty()
+                && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
+        if (!isVerified) {
+            LOGGER.debug("forgotPassword: account not verified (roles={}), skipping reset", userRoles);
             return;
         }
 
@@ -140,8 +143,9 @@ public class ForgotPasswordService implements JsonService {
         new DbHelper(mclient, dbName).updateUser(email, updates);
 
         // e. Build reset link and send email
-        var firstName  = user.containsKey("firstName")
-                ? user.getString("firstName").getValue()
+        var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
+                && user.getDocument("profile").containsKey("name")
+                ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
         var resetLink    = conf.frontendUrl()

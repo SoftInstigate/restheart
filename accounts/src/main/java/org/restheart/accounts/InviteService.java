@@ -35,11 +35,11 @@ import java.nio.charset.StandardCharsets;
  * POST /auth/invite
  *
  * <p>Invites a user to the caller's tenant. Creates the user with
- * {@code status="invited"}, a random password placeholder, and an
- * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation
+ * {@code roles: ["$unauthenticated"]}, a random password placeholder, and an
+ * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation email.
  * email.
  *
- * <p>Requires authentication. Callable by roles: {@code owner}, {@code admin}.
+ * <p>Requires authentication. Callable by membership roles: {@code <ownershipRole>} or {@code admin}.
  *
  * <p>Expected body:
  * <pre>{@code
@@ -51,8 +51,9 @@ import java.nio.charset.StandardCharsets;
  */
 @RegisterPlugin(
         name             = "inviteService",
-        description      = "POST /auth/invite — invites a user to the caller's tenant",
+        description      = "POST /auth/invite \u2014 invites a user to the caller's tenant",
         defaultURI       = "/auth/invite",
+        secure           = true,
         enabledByDefault = false)
 public class InviteService implements JsonService {
 
@@ -76,9 +77,7 @@ public class InviteService implements JsonService {
     @OnInit
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
-            // Allow all requests to reach the service; auth and role enforcement is done in handle()
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/invite") && (r.isPost() || r.isOptions()));
-            aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/invite"));
         }
     }
 
@@ -99,32 +98,28 @@ public class InviteService implements JsonService {
             return;
         }
 
-        // 1. Verifica autenticazione
+        // 1. Get authenticated account (enforced by secure=true)
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
         var email = account.getPrincipal().getName();
 
-        // 2. Verifica ruolo: deve essere owner o admin
-        var roles = account.getRoles();
-        if (!roles.contains("owner") && !roles.contains("admin")) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires owner or admin role");
+        // 2. Verify membership role: must be ownership-role or admin
+        var membership = accountsService.getMembershipProvider()
+                .activeMembership(email);
+        var membershipRole = membership.map(m -> m.role()).orElse(null);
+        var ownershipRole = conf.ownershipRole();
+        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
             return;
         }
 
-        // 3. Leggi il tenant del chiamante
-        var callerTenant = accountsService.getMembershipProvider()
-                .activeMembership(email)
-                .map(m -> m.tenantId())
-                .orElse(null);
+        // 3. Read caller's tenant
+        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
         if (callerTenant == null || callerTenant.isNull()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
         }
 
-        // 4. Valida body
+        // 4. Validate body
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Request body must be a JSON object");
@@ -149,18 +144,18 @@ public class InviteService implements JsonService {
             }
         }
 
-        var membership = accountsService.getMembershipProvider();
+        var membershipProvider = accountsService.getMembershipProvider();
 
-        // 5. Controlla se l'utente esiste già
+        // 5. Check if user already exists
         var existing = db(req).findUser(invitedEmail);
         if (existing.isPresent()) {
             // Check if already in this team via the SPI
-            if (membership.isMember(invitedEmail, callerTenant)) {
+            if (membershipProvider.isMember(invitedEmail, callerTenant)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
                 return;
             }
-            // Multi-team: add membership to existing active user via SPI
-            membership.addMember(invitedEmail, callerTenant, role);
+            // Multi-team: add membership to existing user via SPI
+            membershipProvider.addMember(invitedEmail, callerTenant, role);
             // Send notification email (best-effort)
             if (ermes != null && ermes.isEnabled()) {
                 try {
@@ -187,20 +182,18 @@ public class InviteService implements JsonService {
             return;
         }
 
-        // 6. Crea utente con status="invited" (tenant fields managed by SPI)
+        // 6. Create user with roles=["$unauthenticated"] (tenant fields managed by SPI)
         var inviteToken = TokenUtils.generateToken();
         var now         = new BsonDateTime(System.currentTimeMillis());
-        // password casuale hashata — l'utente non può loggarsi finché non attiva l'account
         var hashedPwd   = TokenUtils.hashPassword(TokenUtils.generateToken());
 
         var rolesArr = new BsonArray();
-        rolesArr.add(new BsonString(role));
+        rolesArr.add(new BsonString("$unauthenticated"));
 
         var userDoc = new BsonDocument();
         userDoc.put("_id",             new BsonString(invitedEmail));
         userDoc.put("password",        new BsonString(hashedPwd));
         userDoc.put("roles",           rolesArr);
-        userDoc.put("status",          new BsonString("invited"));
         userDoc.put("profile",         new BsonDocument());
         userDoc.put("inviteToken",     new BsonString(inviteToken));
         userDoc.put("inviteCreatedAt", now);
@@ -211,13 +204,13 @@ public class InviteService implements JsonService {
             return;
         }
 
-        // 7. Delega la gestione della membership al provider
-        membership.addMember(invitedEmail, callerTenant, role);
+        // 7. Delegate membership management to the provider
+        membershipProvider.addMember(invitedEmail, callerTenant, role);
 
-        // 8. Carica il nome del team per l'email
+        // 8. Load team name for the email
         var teamName = loadTeamName(db(req), callerTenant);
 
-        // 9. Invia email invito
+        // 9. Send invite email
         if (ermes != null && ermes.isEnabled()) {
             try {
                 var link = conf.frontendUrl().replaceAll("/$", "")
@@ -248,7 +241,7 @@ public class InviteService implements JsonService {
             LOGGER.warn("Ermes disabled — invite email not sent to <{}>", invitedEmail);
         }
 
-        // 10. Risponde 201
+        // 10. Respond 201
         res.setStatusCode(HttpStatus.SC_CREATED);
     }
 

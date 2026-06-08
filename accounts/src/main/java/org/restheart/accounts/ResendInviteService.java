@@ -37,7 +37,7 @@ import java.nio.charset.StandardCharsets;
  * re-sends the activation email to a user who has not yet completed the
  * activation flow.
  *
- * <p>Requires authentication. Callable by roles: {@code owner}, {@code admin}.
+ * <p>Requires authentication. Callable by membership roles: {@code <ownershipRole>} or {@code admin}.
  * The target user must belong to the same tenant as the caller.
  *
  * <p>Expected body: {@code { "email": "invited@example.com" }}
@@ -46,8 +46,9 @@ import java.nio.charset.StandardCharsets;
  */
 @RegisterPlugin(
         name             = "resendInviteService",
-        description      = "POST /auth/resend-invite — re-sends the activation email",
+        description      = "POST /auth/resend-invite \u2014 re-sends the activation email",
         defaultURI       = "/auth/resend-invite",
+        secure           = true,
         enabledByDefault = false)
 public class ResendInviteService implements JsonService {
 
@@ -71,9 +72,7 @@ public class ResendInviteService implements JsonService {
     @OnInit
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
-            // Allow all requests to reach the service; auth and role enforcement is done in handle()
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/resend-invite") && (r.isPost() || r.isOptions()));
-            aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/resend-invite"));
         }
     }
 
@@ -94,28 +93,26 @@ public class ResendInviteService implements JsonService {
             return;
         }
 
-        // 1. Verifica autenticazione e ruolo
+        // 1. Get authenticated account (enforced by secure=true)
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
         var callerEmail = account.getPrincipal().getName();
-        var roles = account.getRoles();
-        if (!roles.contains("owner") && !roles.contains("admin")) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires owner or admin role");
+
+        // 2. Verify membership role: must be ownership-role or admin
+        var membership = accountsService.getMembershipProvider()
+                .activeMembership(callerEmail);
+        var membershipRole = membership.map(m -> m.role()).orElse(null);
+        var ownershipRole = conf.ownershipRole();
+        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
             return;
         }
-        var callerTenant = accountsService.getMembershipProvider()
-                .activeMembership(callerEmail)
-                .map(m -> m.tenantId())
-                .orElse(null);
+        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
         if (callerTenant == null || callerTenant.isNull()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
         }
 
-        // 2. Leggi email dal body
+        // 3. Read email from body
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Request body must be a JSON object");
@@ -128,7 +125,7 @@ public class ResendInviteService implements JsonService {
         }
         var email = jo.get("email").getAsString().trim().toLowerCase();
 
-        // 3. Cerca l'utente
+        // 4. Find user
         var userOpt = db(req).findUser(email);
         if (userOpt.isEmpty()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "User not found");
@@ -136,16 +133,18 @@ public class ResendInviteService implements JsonService {
         }
         var user = userOpt.get();
 
-        // 4. Verifica status == "invited"
-        var status = user.containsKey("status") && user.get("status").isString()
-                ? user.getString("status").getValue() : null;
-        if (!"invited".equals(status)) {
+        // 5. Verify user is unverified (roles == ["$unauthenticated"])
+        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
+                ? user.getArray("roles") : new org.bson.BsonArray();
+        boolean isUnverified = userRoles.size() == 1
+                && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
+        if (!isUnverified) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                    "Invite can only be resent to users in 'invited' status");
+                    "Invite can only be resent to unverified users");
             return;
         }
 
-        // 5. Verifica che il tenant dell'utente corrisponda al tenant del chiamante
+        // 6. Verify user belongs to the same tenant
         var userTenant = accountsService.getMembershipProvider()
                 .activeMembership(email)
                 .map(m -> m.tenantId())
@@ -155,7 +154,7 @@ public class ResendInviteService implements JsonService {
             return;
         }
 
-        // 6. Genera nuovo inviteToken e inviteCreatedAt (invalida il vecchio)
+        // 7. Generate new inviteToken (invalidates the previous one)
         var newToken = TokenUtils.generateToken();
         var now      = new BsonDateTime(System.currentTimeMillis());
 
@@ -163,13 +162,13 @@ public class ResendInviteService implements JsonService {
         updateDoc.put("inviteToken",     new BsonString(newToken));
         updateDoc.put("inviteCreatedAt", now);
 
-        // 7. Aggiorna l'utente
+        // 8. Update user
         if (!db(req).updateUser(email, updateDoc)) {
             Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Failed to update user");
             return;
         }
 
-        // 8. Carica nome del team e reinvia email
+        // 9. Load team name and resend email
         var teamNameFallback = callerTenant.isString() ? callerTenant.asString().getValue() : BsonUtils.toJson(callerTenant);
         String teamName = teamNameFallback;
         try {
@@ -215,7 +214,7 @@ public class ResendInviteService implements JsonService {
             LOGGER.warn("Ermes disabled — invite email not re-sent to <{}>", email);
         }
 
-        // 9. Risponde 200
+        // 10. Respond 200
         var responseBody = new JsonObject();
         responseBody.addProperty("message", "Invite resent successfully");
         res.setContent(responseBody);

@@ -128,6 +128,6 @@ Feature: POST /auth/invite
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    And match response.status == 'invited'
+    And match response.roles contains '$unauthenticated'
     And match response.inviteToken == '#notnull'
     And match response.inviteCreatedAt == '#notnull'

@@ -118,6 +118,19 @@ public record AccountsConfigData(
      */
     boolean membershipEndpointsEnabled,
 
+    /**
+     * Team role assigned to the user who creates a new team (e.g. {@code "owner"}).
+     * Stored in {@code user.tenants[].role} and {@code team.members[].role}.
+     * Defaults to {@code "owner"}.
+     */
+    String ownershipRole,
+
+    /**
+     * System ACL role assigned to users after email verification or OAuth login.
+     * Stored in {@code user.roles}. Defaults to {@code "user"}.
+     */
+    String defaultRole,
+
     // ── JWT extra claims ─────────────────────────────────────────────────────
 
     /**

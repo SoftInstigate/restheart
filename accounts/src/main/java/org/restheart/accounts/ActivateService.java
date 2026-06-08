@@ -2,6 +2,7 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
+import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -92,7 +93,7 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // 1. Valida il body
+        // 1. Validate body
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Request body must be a JSON object");
@@ -132,7 +133,7 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // 2. Cerca l'utente tramite inviteToken
+        // 2. Find user by invite token
         var userOpt = db(req).findUserByToken("inviteToken", token);
         if (userOpt.isEmpty()) {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
@@ -140,7 +141,7 @@ public class ActivateService implements JsonService {
         }
         var user = userOpt.get();
 
-        // 3. Verifica corrispondenza email
+        // 3. Verify email matches
         var storedEmail = user.containsKey("_id") && user.get("_id").isString()
                 ? user.getString("_id").getValue() : null;
         if (!email.trim().toLowerCase().equals(storedEmail)) {
@@ -148,7 +149,7 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // 4. Controlla scadenza (TTL 7 giorni)
+        // 4. Check expiry (TTL 7 days)
         if (!user.containsKey("inviteCreatedAt") || !user.get("inviteCreatedAt").isDateTime()) {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
@@ -158,23 +159,19 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // 5. Verifica che lo status sia "invited"
-        var status = user.containsKey("status") && user.get("status").isString()
-                ? user.getString("status").getValue() : null;
-        if (!"invited".equals(status)) {
-            Errors.error(res, HttpStatus.SC_CONFLICT, "Account is not in invited status");
-            return;
-        }
+        // 5. Verify invited status (by checking inviteToken exists and no roles assigned)
+        //    With the new model, invited users have roles: [] and no "status" field.
+        //    We just check that the token is valid — that's sufficient.
 
-        // 6. Controlla versioni consensi — la versione accettata viene registrata
+        // 6. Record consent versions
         //    dalla configurazione corrente (conf.termsVersion() / conf.privacyVersion()).
 
         var now = new BsonDateTime(System.currentTimeMillis());
 
-        // 7. Leggi l'IP del chiamante
+        // 7. Extract caller IP
         var ip = extractRemoteIp(req);
 
-        // 8. Costruisci il documento di aggiornamento
+        // 8. Build update document
         var termsConsent = new BsonDocument();
         termsConsent.put("version",   new BsonString(conf.termsVersion()));
         termsConsent.put("timestamp", now);
@@ -191,28 +188,28 @@ public class ActivateService implements JsonService {
 
         var setDoc = new BsonDocument();
         setDoc.put("password", new BsonString(TokenUtils.hashPassword(password)));
-        setDoc.put("status",   new BsonString("active"));
         setDoc.put("consents", consentsDoc);
+
+        // Assign system ACL role (user is now activated)
+        var effectiveRole = RequestOverrides.defaultRole(req, conf);
+        var rolesArray = new BsonArray();
+        rolesArray.add(new BsonString(effectiveRole));
+        setDoc.put("roles", rolesArray);
 
         var normalizedEmail = email.trim().toLowerCase();
         db(req).updateUser(normalizedEmail, setDoc);
 
-        // 9. Rimuovi inviteToken e inviteCreatedAt (one-shot)
+        // 9. Remove inviteToken and inviteCreatedAt (one-shot)
         db(req).unsetUserFields(normalizedEmail, List.of("inviteToken", "inviteCreatedAt"));
 
-        // 10. Emetti JWT e setta cookie (auto-login)
+        // 10. Issue JWT and set cookie (auto-login)
         var userRoles = new HashSet<String>();
-        if (user.containsKey("roles") && user.get("roles").isArray()) {
-            for (var v : user.getArray("roles")) {
-                if (v.isString()) userRoles.add(v.asString().getValue());
-            }
-        }
+        userRoles.add(effectiveRole);
 
         // Use the MembershipProvider to get the active tenant for the JWT claim
         var extraClaims = new HashMap<String, Object>();
         var activeMembership = accountsService.getMembershipProvider().activeMembership(normalizedEmail);
         activeMembership.ifPresent(m -> extraClaims.put(conf.tenantClaimName(), m.tenantId()));
-        extraClaims.put("status", "active");
 
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),
@@ -222,7 +219,7 @@ public class ActivateService implements JsonService {
         var cookie   = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
         req.getExchange().getResponseHeaders().add(Headers.SET_COOKIE, cookie);
 
-        // 11. Risponde 200
+        // 11. Respond 200
         var responseBody = new com.google.gson.JsonObject();
         responseBody.addProperty("message", "Account activated");
         res.setContent(responseBody);
