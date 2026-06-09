@@ -551,7 +551,7 @@ metrics:
   missing-registry-status-code: 404 # use 404 or 200
 
 requestsMetricsCollector:
-  enabled: false
+  enabled: true
   include: ["/*"]
   exclude: ["/metrics", "/metrics/*"]
 
