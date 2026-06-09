@@ -64,7 +64,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,6 +92,7 @@ import org.restheart.handlers.injectors.RequestContentInjector;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.PluginsClassloader;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -808,6 +808,13 @@ public final class Bootstrapper {
         plugSseServices();
 
         plugProxies(configuration, authMechanisms, authorizers, tokenManager);
+
+        // Set the plugins classloader as fallback for ResourcesExtractor,
+        // so that embedded static resources in plugin JARs (e.g. metrics UI)
+        // can be found and extracted at runtime.
+        if (PluginsClassloader.isInitialized()) {
+            ResourcesExtractor.setFallbackClassLoader(PluginsClassloader.getInstance());
+        }
 
         plugStaticResourcesHandlers(configuration);
 
