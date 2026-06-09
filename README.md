@@ -27,6 +27,7 @@ Available as a **Docker** image and **GraalVM** native binary. Built on Java 25,
 - **GraphQL**: Schema-driven mapping to MongoDB queries
 - **WebSocket**: Real-time change streams and data sync
 - **SSE**: Server-Sent Events for live dashboards, IoT feeds, and event streams
+- **Metrics & Monitoring**: Built-in Prometheus-compatible metrics endpoint with a real-time browser dashboard at `/metrics-ui` — track request rates, latency percentiles, and HTTP status distribution
 - **IoT / MQTT**: Connect devices and ingest telemetry directly into MongoDB *(coming soon)*
 - **Authentication and Authorization**: JWT, OAuth2, LDAP, MongoDB-based users, ACL rules
 - **Plugin system**: Extend with Java, Kotlin, JavaScript, or TypeScript for custom business logic
@@ -135,6 +136,40 @@ That's it. No Express routes, no Mongoose schemas, no middleware setup.
 - **MongoDB Data API replacement**: Self-hosted alternative to the deprecated Atlas Data API ([migration guide](https://www.softinstigate.com/en/blog/posts/mongodb-deprecates-data-api/))
 - **Legacy modernization**: Add modern APIs to existing MongoDB databases
 - **PostgreSQL with MongoDB API**: Use via FerretDB for PostgreSQL storage ([tutorial](https://www.softinstigate.com/en/blog/posts/ferretdb-tutorial/))
+
+---
+
+## Metrics & Monitoring
+
+RESTHeart ships with a built-in real-time metrics dashboard and a Prometheus-compatible endpoint. No external tools required.
+
+**Metrics UI** — Open `/metrics-ui` in your browser after starting RESTHeart to access the real-time dashboard.
+
+The dashboard displays:
+- **KPIs**: total requests, request rate (1-min / 5-min), latency percentiles (p50, p95, p99)
+- **Time-series chart**: request rate over time per method+status
+- **Bar chart**: cumulative request counts per method+status
+- **Latency distribution**: p50, p75, p95, p98, p99, p999 breakdowns
+
+**Prometheus endpoint** — Scrape `/metrics` (or `/metrics/requests`, `/metrics/jvm`) in Prometheus format for integration with external monitoring stacks.
+
+**Configuration** — Enabled by default. Key settings in `restheart.yml`:
+
+```yaml
+metrics:
+  enabled: true
+  uri: /metrics
+
+requestsMetricsCollector:
+  enabled: true
+  include: ["/*"]
+  exclude: ["/metrics", "/metrics/*"]
+
+jvmMetricsCollector:
+  enabled: false   # set to true for JVM memory and GC metrics
+```
+
+📖 Full documentation: [docs/metrics.md](docs/metrics.md)
 
 ---
 
