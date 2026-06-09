@@ -428,10 +428,10 @@ proxies:
 # Static Web Resources - serve static files with RESTHeart acting a web server
 # See https://restheart.org/docs/static-resources
 static-resources:
-#  - what: /path/to/resources
-#    where: /static
-#    welcome-file: index.html
-#    embedded: false
+  - what: static/metrics
+    where: /metrics-ui
+    welcome-file: restheart-metrics.html
+    embedded: true
 
 # Simple ping service
 # Must respond with HTTP 200 OK

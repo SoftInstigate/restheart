@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RESTHeart Metrics Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f12; --surface: #141720; --surface2: #1c2030; --surface3: #232840;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.14);
+  --text: #e8eaf0; --muted: #6b7280; --muted2: #3d4455;
+  --accent: #3b82f6; --green: #10b981; --amber: #f59e0b; --red: #ef4444; --violet: #a78bfa;
+  --font: 'IBM Plex Mono', monospace; --radius: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;gap:10px;flex-wrap:wrap;}
+.logo{font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--muted);user-select:none;white-space:nowrap;}
+.logo em{color:var(--accent);font-style:normal;}
+.hctrl{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+
+.status-pill{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 8px;font-size:11px;color:var(--muted);white-space:nowrap;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background .3s;}
+.dot.loading{background:var(--amber);animation:blink .8s infinite;}
+.dot.err{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+button,select,input[type=text],input[type=password]{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:5px 10px;border-radius:var(--radius);cursor:pointer;outline:none;transition:border-color .15s,background .15s;}
+button:hover,select:hover{border-color:var(--border2);background:var(--surface3);}
+button:active{opacity:.7;}
+input[type=text]:focus,input[type=password]:focus{border-color:var(--accent);}
+label.chk{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;cursor:pointer;user-select:none;white-space:nowrap;}
+input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;}
+
+.cfgbar{background:var(--surface);border-bottom:1px solid var(--border);padding:7px 1.5rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cfgbar .lbl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);white-space:nowrap;}
+#cfg-host{width:260px;}#cfg-user{width:90px;}#cfg-pass{width:130px;}
+.cfg-ep{font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
+
+.err-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:9px 14px;color:#fca5a5;font-size:12px;margin-bottom:1rem;display:none;}
+
+main{padding:1.25rem 1.5rem;max-width:1200px;margin:0 auto;width:100%;flex:1;}
+
+/* filter panel */
+.filter-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1.25rem;display:none;}
+.filter-panel.open{display:block;}
+.filter-lbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;}
+.filter-grid{display:flex;flex-wrap:wrap;gap:6px;}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:20px;font-size:11px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;user-select:none;transition:all .15s;white-space:nowrap;}
+.chip:hover{border-color:rgba(255,255,255,.25);background:var(--surface3);}
+.chip.off{opacity:.3;border-style:dashed;color:var(--muted);}
+.chip .cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.chip .cx{font-size:13px;line-height:1;color:var(--muted2);margin-left:2px;}
+.chip.off .cx{color:var(--green);}
+
+/* kpi */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.25rem;}
+.kpi{background:var(--surface);padding:13px 15px;position:relative;}
+.kpi:hover::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+.kpi-lbl{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);margin-bottom:7px;}
+.kpi-val{font-size:28px;font-weight:600;line-height:1;margin-bottom:4px;}
+.kpi-val.ca{color:var(--accent)}.kpi-val.cg{color:var(--green)}.kpi-val.cam{color:var(--amber)}
+.kpi-sub{font-size:10px;color:var(--muted2);}
+
+/* charts */
+.charts-top{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1rem;}
+.charts-bot{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+@media(max-width:720px){.charts-top,.charts-bot{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;}
+.ptitle{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;}
+.legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.legend-sq{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+footer{padding:.7rem 1.5rem;border-top:1px solid var(--border);color:var(--muted2);font-size:11px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+
+.note{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:8px 12px;font-size:11px;color:var(--muted);margin-bottom:1rem;display:none;}
+.note.show{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">REST<em>Heart</em> metrics</div>
+  <div class="hctrl">
+    <div class="status-pill"><div class="dot loading" id="dot"></div><span id="status-text">in attesa</span></div>
+    <button id="btn-filter" style="display:none" onclick="toggleFilter()">⚙ filtri</button>
+    <label class="chk"><input type="checkbox" id="autoref" checked> auto</label>
+    <select id="interval">
+      <option value="5000">5s</option><option value="10000">10s</option>
+      <option value="15000">15s</option><option value="30000" selected>30s</option>
+      <option value="60000">1m</option>
+    </select>
+    <button onclick="fetchMetrics()">↻</button>
+  </div>
+</header>
+
+<div class="cfgbar">
+  <span class="lbl">server</span>
+  <input type="text" id="cfg-host" value="" placeholder="http://host:8080">
+  <span class="lbl">utente</span>
+  <input type="text" id="cfg-user" value="admin">
+  <span class="lbl">password</span>
+  <input type="password" id="cfg-pass" value="">
+  <button onclick="togglePass()" id="btn-pass" title="mostra/nascondi password">👁</button>
+  <button onclick="connect()">→ connetti</button>
+  <span class="cfg-ep" id="cfg-ep"></span>
+</div>
+
+<main>
+  <div class="err-banner" id="err-banner"></div>
+  <div class="note" id="note-storage">Le preferenze vengono salvate localmente per questo host e ripristinate automaticamente alla prossima connessione.</div>
+
+  <div class="filter-panel" id="filter-panel">
+    <div class="filter-lbl">metriche disponibili · clicca per escludere / ri-aggiungere</div>
+    <div class="filter-grid" id="filter-grid"></div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">totale richieste</div><div class="kpi-val" id="k-total">--</div><div class="kpi-sub">dall'avvio</div></div>
+    <div class="kpi"><div class="kpi-lbl">rate · 1 min</div><div class="kpi-val ca" id="k-rate1m">--</div><div class="kpi-sub">req/sec</div></div>
+    <div class="kpi"><div class="kpi-lbl">rate · 5 min</div><div class="kpi-val ca" id="k-rate5m">--</div><div class="kpi-sub">req/sec</div></div>
+    <div class="kpi"><div class="kpi-lbl">latenza p50</div><div class="kpi-val cg" id="k-p50">--</div><div class="kpi-sub" id="k-p50-sub">ms</div></div>
+    <div class="kpi"><div class="kpi-lbl">latenza p95</div><div class="kpi-val cam" id="k-p95">--</div><div class="kpi-sub" id="k-p95-sub">ms</div></div>
+    <div class="kpi"><div class="kpi-lbl">latenza p99</div><div class="kpi-val" id="k-p99">--</div><div class="kpi-sub" id="k-p99-sub">ms</div></div>
+  </div>
+
+  <div class="charts-top">
+    <div class="panel">
+      <div class="ptitle">request rate nel tempo (req/sec · 1 min)</div>
+      <div class="legend" id="rate-legend"></div>
+      <div style="position:relative;height:200px;"><canvas id="rateChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">conteggio per metrica</div>
+      <div style="position:relative;" id="count-wrap"><canvas id="countChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-bot" id="lat-grid"></div>
+</main>
+
+<footer>
+  <span id="last-update">--</span>
+  <span id="footer-url"></span>
+</footer>
+
+<script>
+// ── config ──────────────────────────────────────────────
+let BASE = '', AUTH = '';
+const MAX_PTS = 40;
+const QUANT_KEYS   = ['0.5','0.75','0.95','0.98','0.99','0.999'];
+const QUANT_LABELS = ['p50','p75','p95','p98','p99','p999'];
+const GRID = 'rgba(255,255,255,0.04)';
+const TICK = '#3d4455';
+const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#a78bfa','#f472b6','#38bdf8','#fb923c','#a3e635','#e879f9','#2dd4bf','#facc15','#60a5fa','#4ade80','#f97316','#c084fc','#fb7185','#22d3ee','#84cc16','#e11d48'];
+
+// ── state ────────────────────────────────────────────────
+let allMetrics   = [];
+let excluded     = new Set();
+let history      = {};
+let histLabels   = [];
+let lastData     = null;
+let rateChart, countChart, latCharts = [null, null];
+
+// ── localStorage ─────────────────────────────────────────
+function lsKey(host){ return 'rh_ex_' + host.replace(/[^a-z0-9]/gi,'_'); }
+function savePrefs(){ try{ localStorage.setItem(lsKey(BASE), JSON.stringify([...excluded])); }catch(e){} }
+function loadPrefs(){ try{ const r = localStorage.getItem(lsKey(BASE)); excluded = r ? new Set(JSON.parse(r)) : new Set(); }catch(e){ excluded = new Set(); } }
+
+// ── parser (identico all'originale che funzionava) ───────
+function parsePrometheus(text) {
+  const result = [];
+  for (const line of text.split('\n')) {
+    if (line.startsWith('#') || !line.trim()) continue;
+    const m = line.match(/^(\w+)\{([^}]*)\}\s+([\d.eE+-]+)/);
+    if (!m) continue;
+    const [, metric, lblStr, val] = m;
+    const labels = {};
+    for (const l of lblStr.split(',')) {
+      const [k, v] = l.split('=');
+      if (k && v) labels[k.trim()] = v.replace(/"/g,'').trim();
+    }
+    result.push({ metric, labels, value: parseFloat(val) });
+  }
+  return result;
+}
+
+function find(data, metric, match) {
+  for (const e of data) {
+    if (e.metric !== metric) continue;
+    if (Object.entries(match).every(([k,v]) => e.labels[k] === v)) return e.value;
+  }
+  return 0;
+}
+
+// ── discover metriche ────────────────────────────────────
+function discoverMetrics(data) {
+  const seen = new Map();
+  for (const e of data) {
+    if (e.metric !== 'http_requests_count') continue;
+    const m = e.labels.request_method;
+    const s = e.labels.response_status_code;
+    if (!m || !s) continue;
+    const key = m + '_' + s;
+    if (!seen.has(key)) seen.set(key, { key, method: m, status: s, count: e.value });
+  }
+  // ordina per conteggio decrescente: le metriche con più traffico vengono prima
+  return [...seen.values()].sort((a,b) => b.count - a.count);
+}
+
+function assignColors(metrics) {
+  metrics.forEach((m,i) => { m.color = PALETTE[i % PALETTE.length]; });
+}
+
+// ── filter chips ──────────────────────────────────────────
+function renderChips() {
+  const grid = document.getElementById('filter-grid');
+  grid.innerHTML = '';
+  allMetrics.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (excluded.has(m.key) ? ' off' : '');
+    chip.innerHTML = `<span class="cdot" style="background:${m.color}"></span><span>${m.method} ${m.status}</span><span class="cx">${excluded.has(m.key) ? '+' : '×'}</span>`;
+    chip.addEventListener('click', () => {
+      excluded.has(m.key) ? excluded.delete(m.key) : excluded.add(m.key);
+      savePrefs(); renderChips(); redraw();
+    });
+    grid.appendChild(chip);
+  });
+}
+
+function toggleFilter() { document.getElementById('filter-panel').classList.toggle('open'); }
+
+// ── chart init ────────────────────────────────────────────
+function initCharts() {
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { display: false }, tooltip: { backgroundColor:'#1e2436', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#8892a4', bodyColor:'#e8eaf0', padding:10, titleFont:{family:"'IBM Plex Mono'",size:11}, bodyFont:{family:"'IBM Plex Mono'",size:11} } },
+    scales: {
+      x: { grid:{color:GRID}, ticks:{color:TICK,font:{size:10,family:"'IBM Plex Mono'"},maxTicksLimit:8,maxRotation:0} },
+      y: { grid:{color:GRID}, ticks:{color:TICK,font:{size:10,family:"'IBM Plex Mono'"}}, beginAtZero:true }
+    }
+  };
+
+  rateChart = new Chart(document.getElementById('rateChart'), { type:'line', data:{ labels:[], datasets:[] }, options: JSON.parse(JSON.stringify(baseOpts)) });
+
+  const countOpts = JSON.parse(JSON.stringify(baseOpts));
+  countOpts.indexAxis = 'y';
+  countChart = new Chart(document.getElementById('countChart'), { type:'bar', data:{ labels:[], datasets:[{data:[],backgroundColor:[],borderRadius:3,borderSkipped:false}] }, options: countOpts });
+
+  const latCfg = (color) => ({
+    type: 'bar',
+    data: { labels: QUANT_LABELS, datasets: [{ data:[], backgroundColor: color, borderRadius:3, borderSkipped:false }] },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{color:GRID}, ticks:{color:TICK, font:{size:10,family:"'IBM Plex Mono'"}} },
+        y:{ grid:{color:GRID}, ticks:{color:TICK, font:{size:10,family:"'IBM Plex Mono'"}}, beginAtZero:true,
+            title:{display:true, text:'ms', color:TICK, font:{size:10}} }
+      }
+    }
+  });
+  // latCharts creati dinamicamente in updateCharts
+}
+
+// ── update charts ─────────────────────────────────────────
+function redraw() { if (lastData) updateCharts(lastData); }
+
+function updateCharts(data) {
+  lastData = data;
+  const active = allMetrics.filter(m => !excluded.has(m.key));
+
+  // rate chart
+  rateChart.data.labels = [...histLabels];
+  rateChart.data.datasets = active.map(m => ({
+    label: m.method + ' ' + m.status,
+    data: [...(history[m.key] || [])],
+    borderColor: m.color, backgroundColor: m.color + '18',
+    tension: 0.4, fill: true, pointRadius: 0, borderWidth: 1.5
+  }));
+  rateChart.update();
+
+  document.getElementById('rate-legend').innerHTML = active.map(m =>
+    `<div class="legend-item"><div class="legend-sq" style="background:${m.color}"></div>${m.method} ${m.status}</div>`
+  ).join('');
+
+  // count chart
+  countChart.data.labels = active.map(m => m.method + ' ' + m.status);
+  countChart.data.datasets[0].data = active.map(m => Math.round(find(data, 'http_requests_count', { request_method:m.method, response_status_code:m.status })));
+  countChart.data.datasets[0].backgroundColor = active.map(m => m.color);
+  document.getElementById('count-wrap').style.height = Math.max(120, active.length * 34 + 40) + 'px';
+  countChart.update();
+
+  // kpi totals
+  let tot=0, r1=0, r5=0;
+  active.forEach(m => {
+    tot += find(data, 'http_requests_count',  { request_method:m.method, response_status_code:m.status });
+    r1  += find(data, 'http_requests_rate',   { request_method:m.method, response_status_code:m.status, period:'1 minute' });
+    r5  += find(data, 'http_requests_rate',   { request_method:m.method, response_status_code:m.status, period:'5 minutes' });
+  });
+  document.getElementById('k-total').textContent  = Math.round(tot).toLocaleString('it-IT');
+  document.getElementById('k-rate1m').textContent = r1.toFixed(2);
+  document.getElementById('k-rate5m').textContent = r5.toFixed(2);
+
+  // latency panels: solo metriche con almeno un quantile > 0
+  const withLat = active.filter(m => {
+    return QUANT_KEYS.some(q => find(data, 'http_requests_duration', { request_method:m.method, response_status_code:m.status, quantile:q }) > 0);
+  });
+
+  // ridimensiona la griglia latenze in base al numero di metriche con dati
+  const latGrid = document.getElementById('lat-grid');
+  const latCount = withLat.length;
+  if (latCount === 0) {
+    latGrid.style.display = 'none';
+  } else {
+    latGrid.style.display = 'grid';
+    latGrid.style.gridTemplateColumns = latCount === 1 ? '1fr' : latCount === 2 ? '1fr 1fr' : latCount === 3 ? '1fr 1fr 1fr' : 'repeat(auto-fit, minmax(260px,1fr))';
+  }
+
+  // aggiorna o crea i canvas latenze dinamicamente
+  latGrid.innerHTML = '';
+  latCharts = [];
+  withLat.forEach((m, i) => {
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = `<div class="ptitle">latenze ${m.method} ${m.status} (ms)</div><div style="position:relative;height:170px;"><canvas id="dynLat${i}"></canvas></div>`;
+    latGrid.appendChild(panel);
+    const chart = new Chart(document.getElementById('dynLat'+i), {
+      type: 'bar',
+      data: { labels: QUANT_LABELS, datasets: [{ data:[], backgroundColor: m.color, borderRadius:3, borderSkipped:false }] },
+      options: {
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ grid:{color:GRID}, ticks:{color:TICK, font:{size:10,family:"'IBM Plex Mono'"}} },
+          y:{ grid:{color:GRID}, ticks:{color:TICK, font:{size:10,family:"'IBM Plex Mono'"}}, beginAtZero:true,
+              title:{display:true, text:'ms', color:TICK, font:{size:10}} }
+        }
+      }
+    });
+    const lats = QUANT_KEYS.map(q => parseFloat((find(data, 'http_requests_duration', { request_method:m.method, response_status_code:m.status, quantile:q }) * 1000).toFixed(1)));
+    chart.data.datasets[0].data = lats;
+    chart.update();
+    latCharts.push(chart);
+
+    if (i === 0) {
+      document.getElementById('k-p50').textContent = lats[0].toFixed(1);
+      document.getElementById('k-p95').textContent = lats[2].toFixed(1);
+      document.getElementById('k-p99').textContent = lats[4].toFixed(1);
+      const sub = 'ms · ' + m.method + ' ' + m.status;
+      ['k-p50-sub','k-p95-sub','k-p99-sub'].forEach(id => document.getElementById(id).textContent = sub);
+    }
+  });
+}
+
+// ── fetch ─────────────────────────────────────────────────
+async function fetchMetrics() {
+  if (!BASE) return;
+  const dot = document.getElementById('dot');
+  const st  = document.getElementById('status-text');
+  const err = document.getElementById('err-banner');
+  dot.className = 'dot loading'; st.textContent = 'aggiornamento...';
+
+  try {
+    const hdrs = { Authorization: AUTH, 'No-Auth-Challenge': 'true' };
+
+    // 1. Get the list of available registries
+    const listRes = await fetch(BASE + '/metrics', { headers: hdrs });
+    if (!listRes.ok) throw new Error('HTTP ' + listRes.status);
+    const registries = await listRes.json();
+
+    // 2. Fetch each registry's Prometheus text and concatenate
+    const texts = await Promise.all(
+      registries.map(async name => {
+        // name comes as "/jvm" — strip leading slash since the service
+        // already prepends "/" to the path segment internally
+        const path = name.replace(/^\//, '');
+        const r = await fetch(BASE + '/metrics/' + encodeURIComponent(path), { headers: hdrs });
+        return r.ok ? await r.text() : '';
+      })
+    );
+    const data = parsePrometheus(texts.join('\n'));
+    dot.className = 'dot'; st.textContent = 'connesso'; err.style.display = 'none';
+
+    // aggiorna lista metriche
+    const discovered = discoverMetrics(data);
+    const existing = new Set(allMetrics.map(m => m.key));
+    let changed = false;
+    discovered.forEach(d => { if (!existing.has(d.key)) { allMetrics.push(d); changed = true; } });
+    if (changed || allMetrics.length === 0) {
+      assignColors(allMetrics);
+      renderChips();
+      document.getElementById('btn-filter').style.display = '';
+    }
+
+    // aggiorna history rate
+    const now = new Date().toLocaleTimeString('it-IT');
+    histLabels.push(now);
+    if (histLabels.length > MAX_PTS) histLabels.shift();
+    allMetrics.forEach(m => {
+      if (!history[m.key]) history[m.key] = [];
+      history[m.key].push(parseFloat(find(data, 'http_requests_rate', { request_method:m.method, response_status_code:m.status, period:'1 minute' }).toFixed(4)));
+      if (history[m.key].length > MAX_PTS) history[m.key].shift();
+    });
+
+    updateCharts(data);
+    document.getElementById('last-update').textContent = 'aggiornato ' + now;
+
+  } catch(e) {
+    dot.className = 'dot err'; st.textContent = 'errore';
+    err.style.display = 'block';
+    err.textContent = '⚠ impossibile raggiungere il server. Verifica che la VPN sia attiva e che le credenziali siano corrette. (' + e.message + ')';
+  }
+}
+
+// ── connect ───────────────────────────────────────────────
+function connect() {
+  BASE = document.getElementById('cfg-host').value.replace(/\/$/, '');
+  const user = document.getElementById('cfg-user').value;
+  const pass = document.getElementById('cfg-pass').value;
+  AUTH = 'Basic ' + btoa(user + ':' + pass);
+  try { localStorage.setItem('rh_conn', JSON.stringify({ host: BASE, user, pass })); } catch(e) {}
+  const ep = BASE + '/metrics/*';
+  document.getElementById('cfg-ep').textContent = ep;
+  document.getElementById('footer-url').textContent = ep;
+
+  allMetrics = []; excluded = new Set(); history = {}; histLabels = []; lastData = null;
+  document.getElementById('filter-panel').classList.remove('open');
+  document.getElementById('btn-filter').style.display = 'none';
+  document.getElementById('filter-grid').innerHTML = '';
+
+  loadPrefs();
+
+  const note = document.getElementById('note-storage');
+  note.classList.add('show');
+  setTimeout(() => note.classList.remove('show'), 4000);
+
+  fetchMetrics();
+  setupTimer();
+}
+
+// ── timer ─────────────────────────────────────────────────
+let timer = null;
+function setupTimer() {
+  clearInterval(timer);
+  if (document.getElementById('autoref').checked && BASE)
+    timer = setInterval(fetchMetrics, parseInt(document.getElementById('interval').value));
+}
+document.getElementById('autoref').addEventListener('change', setupTimer);
+document.getElementById('interval').addEventListener('change', setupTimer);
+
+// ── init ──────────────────────────────────────────────────
+function togglePass() {
+  const f = document.getElementById('cfg-pass');
+  f.type = f.type === 'password' ? 'text' : 'password';
+}
+
+// ripristina credenziali salvate, altrimenti usa origin corrente come default
+try {
+  const saved = localStorage.getItem('rh_conn');
+  if (saved) {
+    const c = JSON.parse(saved);
+    document.getElementById('cfg-host').value = c.host || window.location.origin;
+    document.getElementById('cfg-user').value = c.user || 'admin';
+    document.getElementById('cfg-pass').value = c.pass || '';
+  } else {
+    document.getElementById('cfg-host').value = window.location.origin;
+    document.getElementById('cfg-user').value = 'admin';
+  }
+} catch(e) {
+  document.getElementById('cfg-host').value = window.location.origin;
+}
+
+initCharts();
+</script>
+</body>
+</html>
