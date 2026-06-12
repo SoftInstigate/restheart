@@ -10,7 +10,8 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 
 import org.restheart.accounts.util.RequestOverrides;
@@ -198,11 +199,16 @@ public class RegisterService implements JsonService {
                                    + "?email=" + encodedEmail
                                    + "&token=" + verificationToken;
 
-                ermes.sendEmail(
-                        email,
-                        firstName,
-                        EmailTemplates.verifyEmailSubject(conf.appName()),
-                        EmailTemplates.verifyEmailBody(firstName, verifyLink, conf.appName()));
+                var tmpl = EmailTemplateLoader.loadWithFallback(
+                        null, conf.verificationTemplatePath(), "verification.html");
+                var vars = java.util.Map.of(
+                        "app-name", conf.appName(),
+                        "first-name", firstName != null ? firstName : "",
+                        "email", email,
+                        "frontend-url", conf.frontendUrl(),
+                        "verification-url", verifyLink);
+                var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later

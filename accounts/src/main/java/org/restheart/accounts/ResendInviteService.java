@@ -10,7 +10,8 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
@@ -198,11 +199,18 @@ public class ResendInviteService implements JsonService {
                 if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
                     LOGGER.debug("Skipping re-send invite email to <{}> (X-Skip-Email header)", email);
                 } else {
-                    ermes.sendEmail(
-                            email,
-                            email,
-                            EmailTemplates.inviteSubject(teamName, conf.appName()),
-                            EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                    var tmpl = EmailTemplateLoader.loadWithFallback(
+                            null, conf.inviteTemplatePath(), "invite.html");
+                    var vars = java.util.Map.of(
+                            "app-name", conf.appName(),
+                            "first-name", inviterName != null ? inviterName : "",
+                            "email", email,
+                            "frontend-url", conf.frontendUrl(),
+                            "invite-url", link,
+                            "inviter-name", inviterName != null ? inviterName : "",
+                            "team-name", teamName != null ? teamName : "");
+                    var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                    ermes.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (tenant={})",

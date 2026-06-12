@@ -11,7 +11,8 @@ import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
@@ -166,12 +167,18 @@ public class InviteService implements JsonService {
                     if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
                         LOGGER.debug("Skipping team-added email to <{}> (X-Skip-Email header)", invitedEmail);
                     } else {
-                        ermes.sendEmail(
-                                invitedEmail,
-                                invitedEmail,
-                                EmailTemplates.inviteSubject(teamName, conf.appName()),
-                                EmailTemplates.inviteBody(teamName, inviterName,
-                                        conf.frontendUrl(), conf.appName()));
+                        var tmpl = EmailTemplateLoader.loadWithFallback(
+                                null, conf.inviteTemplatePath(), "invite.html");
+                        var vars = java.util.Map.of(
+                                "app-name", conf.appName(),
+                                "first-name", inviterName != null ? inviterName : "",
+                                "email", invitedEmail,
+                                "frontend-url", conf.frontendUrl(),
+                                "invite-url", conf.frontendUrl(),
+                                "inviter-name", inviterName != null ? inviterName : "",
+                                "team-name", teamName != null ? teamName : "");
+                        var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                        ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                     }
                     LOGGER.info("Added existing user <{}> to tenant={}", invitedEmail, callerTenant);
                 } catch (Exception e) {
@@ -226,11 +233,18 @@ public class InviteService implements JsonService {
                 if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
                     LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
                 } else {
-                    ermes.sendEmail(
-                            invitedEmail,
-                            invitedEmail,
-                            EmailTemplates.inviteSubject(teamName, conf.appName()),
-                            EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                    var tmpl = EmailTemplateLoader.loadWithFallback(
+                            null, conf.inviteTemplatePath(), "invite.html");
+                    var vars = java.util.Map.of(
+                            "app-name", conf.appName(),
+                            "first-name", inviterName != null ? inviterName : "",
+                            "email", invitedEmail,
+                            "frontend-url", conf.frontendUrl(),
+                            "invite-url", link,
+                            "inviter-name", inviterName != null ? inviterName : "",
+                            "team-name", teamName != null ? teamName : "");
+                    var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                    ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite sent to <{}> by {} (tenant={})", invitedEmail, inviterName, callerTenant);

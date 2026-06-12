@@ -11,7 +11,8 @@ import org.bson.BsonArray;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
@@ -156,11 +157,16 @@ public class ForgotPasswordService implements JsonService {
         if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
             LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
         } else {
-            ermes.sendEmail(
-                    email,
-                    firstName,
-                    EmailTemplates.resetPasswordSubject(conf.appName()),
-                    EmailTemplates.resetPasswordBody(firstName, resetLink, conf.appName()));
+            var tmpl = EmailTemplateLoader.loadWithFallback(
+                    null, conf.passwordResetTemplatePath(), "password-reset.html");
+            var vars = java.util.Map.of(
+                    "app-name", conf.appName(),
+                    "first-name", firstName != null ? firstName : "",
+                    "email", email,
+                    "frontend-url", conf.frontendUrl(),
+                    "reset-url", resetLink);
+            var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+            ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // f. Audit log — no PII at INFO level
