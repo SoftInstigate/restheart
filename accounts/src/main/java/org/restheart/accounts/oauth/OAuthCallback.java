@@ -152,12 +152,23 @@ public class OAuthCallback implements StringService {
 
             // 2. Find or create user (membership delegated to the provider)
             var user   = findOrCreateUser(req, profile, provider);
-            // 3. Handle unverified invited users: give MembershipProvider a chance to activate
-            //    Unverified users have roles == ["$unauthenticated"]
+
+            // Check if user is unverified (invited but not yet activated)
             var userRoles = user.containsKey("roles") && user.get("roles").isArray()
                     ? user.getArray("roles") : new org.bson.BsonArray();
             boolean isUnverified = userRoles.size() == 1
                     && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
+
+            // 2b. If OAuth was initiated from an invite link, the email must match
+            var pendingInviteToken = callbackResult.pendingInviteToken();
+            if (pendingInviteToken != null && !pendingInviteToken.isBlank() && !isUnverified) {
+                // OAuth email doesn't match the invited email — deny
+                LOGGER.warn("OAuth invite mismatch: invited token present but user <{}> is not unverified (OAuth email != invited email)", email);
+                redirectError(res, "The email used for social login does not match the invited email. Please use the same email address that received the invitation.");
+                return;
+            }
+
+            // 3. Handle unverified invited users: give MembershipProvider a chance to activate
             if (isUnverified) {
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
