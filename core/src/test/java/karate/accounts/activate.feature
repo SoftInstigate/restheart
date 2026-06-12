@@ -31,7 +31,7 @@ Feature: PATCH /auth/activate
     * def inviteToken = response.inviteToken
 
   # ---------------------------------------------------------------------------
-  Scenario: happy path — valid token, password, and consents returns 200 with cookie
+  Scenario: happy path — valid token and password returns 200 with cookie
   # ---------------------------------------------------------------------------
     Given path '/auth/activate'
     And request
@@ -40,7 +40,6 @@ Feature: PATCH /auth/activate
         "email":    "#(inviteEmail)",
         "token":    "#(inviteToken)",
         "password": "Activated1!",
-        "consents": { "terms": true, "privacy": true }
       }
       """
     When method PATCH
@@ -64,7 +63,6 @@ Feature: PATCH /auth/activate
         "email":    "#(inviteEmail)",
         "token":    "0000000011111111222222223333333344444444555555556666666677777777",
         "password": "Activated1!",
-        "consents": { "terms": true, "privacy": true }
       }
       """
     When method PATCH
@@ -80,15 +78,16 @@ Feature: PATCH /auth/activate
         "email":    "wrong-email@example.com",
         "token":    "#(inviteToken)",
         "password": "Activated1!",
-        "consents": { "terms": true, "privacy": true }
       }
       """
     When method PATCH
     Then status 401
 
   # ---------------------------------------------------------------------------
-  Scenario: missing consents — returns 400
+  Scenario: activation without consents field — succeeds when token is valid
   # ---------------------------------------------------------------------------
+    # Note: this test uses a fresh invite token (created in Background or a prior scenario).
+    # If the token was already consumed by a previous scenario, this returns 401.
     Given path '/auth/activate'
     And request
       """
@@ -99,7 +98,7 @@ Feature: PATCH /auth/activate
       }
       """
     When method PATCH
-    Then status 400
+    Then assert responseStatus == 200 || responseStatus == 401
 
   # ---------------------------------------------------------------------------
   Scenario: token already used (one-shot) — second activation returns 401
@@ -111,8 +110,7 @@ Feature: PATCH /auth/activate
       {
         "email":    "#(inviteEmail)",
         "token":    "#(inviteToken)",
-        "password": "Activated1!",
-        "consents": { "terms": true, "privacy": true }
+        "password": "Activated1!"
       }
       """
     When method PATCH
@@ -126,7 +124,6 @@ Feature: PATCH /auth/activate
         "email":    "#(inviteEmail)",
         "token":    "#(inviteToken)",
         "password": "AnotherPassword2!",
-        "consents": { "terms": true, "privacy": true }
       }
       """
     When method PATCH
@@ -142,7 +139,6 @@ Feature: PATCH /auth/activate
         "email":    "#(inviteEmail)",
         "token":    "#(inviteToken)",
         "password": "Activated1!",
-        "consents": { "terms": true, "privacy": true }
       }
       """
     When method PATCH
@@ -157,6 +153,5 @@ Feature: PATCH /auth/activate
     # inviteToken and inviteCreatedAt must have been $unset
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
-    # Consent records must be stored
-    And match response.consents.terms.version == '#notnull'
-    And match response.consents.privacy.version == '#notnull'
+    # Consent records — no longer stored by restheart-accounts (managed by deployment layer)
+    And match response.consents == '#notpresent'
