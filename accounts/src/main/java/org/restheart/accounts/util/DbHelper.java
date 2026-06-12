@@ -22,7 +22,7 @@ import static com.mongodb.client.model.Filters.eq;
 public class DbHelper {
 
     private static final String USERS_COLLECTION = "users";
-    private static final String TEAMS_COLLECTION = "teams";
+    private static final String TEAMS_COLLECTION = "orgs";
 
     /** Duplicate-key error code returned by MongoDB. */
     private static final int DUPLICATE_KEY_CODE = 11000;

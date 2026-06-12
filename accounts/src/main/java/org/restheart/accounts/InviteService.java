@@ -160,7 +160,7 @@ public class InviteService implements JsonService {
             // Send notification email (best-effort)
             if (ermes != null && ermes.isEnabled()) {
                 try {
-                    var teamName = loadTeamName(db(req), callerTenant);
+                    var teamName = loadTeamName(email, callerTenant);
                     var inviterName = account.getPrincipal() != null
                             ? account.getPrincipal().getName() : invitedEmail;
                     // Check X-Skip-Email header for integration tests
@@ -169,6 +169,7 @@ public class InviteService implements JsonService {
                     } else {
                         var tmpl = EmailTemplateLoader.loadWithFallback(
                                 null, conf.inviteTemplatePath(), "invite.html");
+                        var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                         var vars = java.util.Map.of(
                                 "app-name", conf.appName(),
                                 "first-name", inviterName != null ? inviterName : "",
@@ -176,7 +177,8 @@ public class InviteService implements JsonService {
                                 "frontend-url", conf.frontendUrl(),
                                 "invite-url", conf.frontendUrl(),
                                 "inviter-name", inviterName != null ? inviterName : "",
-                                "team-name", teamName != null ? teamName : "");
+                                "team-name", teamName != null ? teamName : "",
+                                "role", roleDisplay);
                         var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
                         ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                     }
@@ -215,7 +217,7 @@ public class InviteService implements JsonService {
         membershipProvider.addMember(invitedEmail, callerTenant, role);
 
         // 8. Load team name for the email
-        var teamName = loadTeamName(db(req), callerTenant);
+        var teamName = loadTeamName(email, callerTenant);
 
         // 9. Send invite email
         if (ermes != null && ermes.isEnabled()) {
@@ -235,6 +237,7 @@ public class InviteService implements JsonService {
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
                             null, conf.inviteTemplatePath(), "invite.html");
+                    var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                     var vars = java.util.Map.of(
                             "app-name", conf.appName(),
                             "first-name", inviterName != null ? inviterName : "",
@@ -242,7 +245,8 @@ public class InviteService implements JsonService {
                             "frontend-url", conf.frontendUrl(),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
-                            "team-name", teamName != null ? teamName : "");
+                            "team-name", teamName != null ? teamName : "",
+                            "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
                     ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
@@ -268,12 +272,17 @@ public class InviteService implements JsonService {
     }
 
     /** Loads the team display name for the given tenantId, falling back to its extended JSON form. */
-    private String loadTeamName(DbHelper db, BsonValue tenantId) {
-        var fallback = tenantId.isString() ? tenantId.asString().getValue() : BsonUtils.toJson(tenantId);
+    private String loadTeamName(String userId, BsonValue tenantId) {
+        var fallback = tenantId.isString()
+                ? tenantId.asString().getValue()
+                : tenantId.isObjectId() ? tenantId.asObjectId().getValue().toHexString() : tenantId.toString();
         try {
-            return db.findTeam(tenantId)
-                    .filter(t -> t.containsKey("name") && t.get("name").isString())
-                    .map(t -> t.getString("name").getValue())
+            return accountsService.getMembershipProvider()
+                    .listMemberships(userId)
+                    .stream()
+                    .filter(m -> m.tenantId().equals(tenantId))
+                    .map(m -> m.displayName())
+                    .findFirst()
                     .orElse(fallback);
         } catch (Exception e) {
             return fallback;
