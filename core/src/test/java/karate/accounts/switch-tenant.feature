@@ -7,6 +7,10 @@ Feature: POST /auth/switch-tenant
     * def ownerJwt = ownerSetup.ownerJwt
     * def secondSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-second-team.feature')
     * def secondTenantId = secondSetup.secondTenantId
+    # Accept the invitation (setup-second-team already invited owner-test)
+    * def pendingInviteToken = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: 'owner-test@example.com' }).inviteToken
+    * if (pendingInviteToken) karate.call('classpath:karate/accounts/helpers/accept-invite-clean.feature', { jwt: ownerJwt, token: pendingInviteToken })
+
 
   # ---------------------------------------------------------------------------
   Scenario: OPTIONS returns 200
@@ -105,7 +109,7 @@ Feature: POST /auth/switch-tenant
   # ---------------------------------------------------------------------------
   Scenario: verify DB — invite with existing user adds tenants entry
   # ---------------------------------------------------------------------------
-    # Check owner-test has tenants array with both teams
+    # Check owner-test has orgs array with both teams
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
     When method GET

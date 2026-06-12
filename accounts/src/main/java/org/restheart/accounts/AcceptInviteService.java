@@ -6,8 +6,10 @@ import com.mongodb.client.MongoClient;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ import org.restheart.accounts.util.DbHelper;
     defaultURI = "/auth/accept-invite",
     secure = true,
     enabledByDefault = false)
-public class AcceptInviteService implements JsonService {
+public class AcceptInviteService implements JsonService, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AcceptInviteService.class);
     private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
@@ -40,6 +42,15 @@ public class AcceptInviteService implements JsonService {
 
     @Inject("accountsConfig")
     private AccountsConfigData conf;
+
+    @Inject("acl-registry")
+    private ACLRegistry aclRegistry;
+
+    @Override
+    public void init() {
+        aclRegistry.registerAllow(r ->
+                r.getPath().equals("/auth/accept-invite") && (r.isPost() || r.isOptions()));
+    }
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {

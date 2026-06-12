@@ -51,4 +51,19 @@ Feature: setup second team for multi-tenant tests
     When method POST
     Then status 201
 
+    # 5. Accept the invitation as owner-test (existing user)
+    #    First get the invite token from the user document
+    Given path '/users/owner-test@example.com'
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    * def inviteToken = response.inviteToken
+
+    #    Login as owner-test to get a fresh JWT
+    * def ownerLogin = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerAcceptJwt = ownerLogin.ownerJwt
+
+    #    Accept invitation via helper (clean session, no cookie)
+    * def acceptResult = karate.call('classpath:karate/accounts/helpers/accept-invite-clean.feature', { jwt: ownerAcceptJwt, token: inviteToken })
+
     * karate.log('Second team setup done, tenantId:', secondTenantId, 'jwt present:', secondOwnerJwt != '')

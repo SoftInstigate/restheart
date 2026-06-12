@@ -187,7 +187,8 @@ public class InviteService implements JsonService {
             updates.put("inviteCreatedAt", now);
             updates.put("inviteOrgId",     callerTenant);
             updates.put("inviteRole",      new BsonString(role));
-            db(req).updateUser(invitedEmail, updates);
+            var updateResult = db(req).updateUser(invitedEmail, updates);
+            LOGGER.info("Invite fields stored for existing user <{}>: updateResult={}, inviteOrgId={}", invitedEmail, updateResult, callerTenant);
         }
 
         // 7. Load team name for the email

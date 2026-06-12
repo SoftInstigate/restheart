@@ -402,6 +402,7 @@
 /resendInviteService/enabled: true
 /getTenantsService/enabled: true
 /switchTenantService/enabled: true
+/acceptInviteService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
 
 /ermes/enabled: true
