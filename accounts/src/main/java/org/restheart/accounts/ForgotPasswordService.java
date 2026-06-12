@@ -112,7 +112,7 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(JsonRequest req, String email, String dbName) {
+    private void processResetRequest(JsonRequest req, String email, String dbName) throws java.io.IOException {
         // a. Locate user
         var userOpt = new DbHelper(mclient, dbName).findUser(email);
         if (userOpt.isEmpty()) {
