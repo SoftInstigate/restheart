@@ -335,7 +335,8 @@ public class OAuthCallback implements StringService {
     }
 
     private void redirectError(StringResponse res, String reason) throws Exception {
-        var url = oauthConfig.frontendErrorUrl() + "&reason="
+        var sep = oauthConfig.frontendErrorUrl().contains("?") ? "&" : "?";
+        var url = oauthConfig.frontendErrorUrl() + sep + "reason="
                 + URLEncoder.encode(reason, StandardCharsets.UTF_8);
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
         res.getHeaders().put(Headers.LOCATION, url);
