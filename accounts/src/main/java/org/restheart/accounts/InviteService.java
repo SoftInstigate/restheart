@@ -147,85 +147,64 @@ public class InviteService implements JsonService {
 
         var membershipProvider = accountsService.getMembershipProvider();
 
-        // 5. Check if user already exists
+        // 5. Check if user already exists and is already in this team
         var existing = db(req).findUser(invitedEmail);
-        if (existing.isPresent()) {
-            // Check if already in this team via the SPI
-            if (membershipProvider.isMember(invitedEmail, callerTenant)) {
-                Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
-                return;
-            }
-            // Multi-team: add membership to existing user via SPI
-            membershipProvider.addMember(invitedEmail, callerTenant, role);
-            // Send notification email (best-effort)
-            if (ermes != null && ermes.isEnabled()) {
-                try {
-                    var teamName = loadTeamName(email, callerTenant);
-                    var inviterName = account.getPrincipal() != null
-                            ? account.getPrincipal().getName() : invitedEmail;
-                    // Check X-Skip-Email header for integration tests
-                    if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
-                        LOGGER.debug("Skipping team-added email to <{}> (X-Skip-Email header)", invitedEmail);
-                    } else {
-                        var tmpl = EmailTemplateLoader.loadWithFallback(
-                                null, conf.inviteTemplatePath(), "invite.html");
-                        var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
-                        var vars = java.util.Map.of(
-                                "app-name", conf.appName(),
-                                "first-name", inviterName != null ? inviterName : "",
-                                "email", invitedEmail,
-                                "frontend-url", conf.frontendUrl(),
-                                "invite-url", conf.frontendUrl(),
-                                "inviter-name", inviterName != null ? inviterName : "",
-                                "team-name", teamName != null ? teamName : "",
-                                "role", roleDisplay);
-                        var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                        ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
-                    }
-                    LOGGER.info("Added existing user <{}> to tenant={}", invitedEmail, callerTenant);
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to send team-added email to <{}>: {}", invitedEmail, e.getMessage());
-                }
-            }
-            res.setStatusCode(HttpStatus.SC_CREATED);
+        if (existing.isPresent() && membershipProvider.isMember(invitedEmail, callerTenant)) {
+            Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
             return;
         }
 
-        // 6. Create user with roles=["$unauthenticated"] (tenant fields managed by SPI)
+        // 6. Create invite token
         var inviteToken = TokenUtils.generateToken();
         var now         = new BsonDateTime(System.currentTimeMillis());
-        var hashedPwd   = TokenUtils.hashPassword(TokenUtils.generateToken());
+        var isNewUser   = existing.isEmpty();
 
-        var rolesArr = new BsonArray();
-        rolesArr.add(new BsonString("$unauthenticated"));
+        if (isNewUser) {
+            // New user: create with $unauthenticated role
+            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
+            var rolesArr  = new BsonArray();
+            rolesArr.add(new BsonString("$unauthenticated"));
 
-        var userDoc = new BsonDocument();
-        userDoc.put("_id",             new BsonString(invitedEmail));
-        userDoc.put("password",        new BsonString(hashedPwd));
-        userDoc.put("roles",           rolesArr);
-        userDoc.put("profile",         new BsonDocument());
-        userDoc.put("inviteToken",     new BsonString(inviteToken));
-        userDoc.put("inviteCreatedAt", now);
+            var userDoc = new BsonDocument();
+            userDoc.put("_id",             new BsonString(invitedEmail));
+            userDoc.put("password",        new BsonString(hashedPwd));
+            userDoc.put("roles",           rolesArr);
+            userDoc.put("profile",         new BsonDocument());
+            userDoc.put("inviteToken",     new BsonString(inviteToken));
+            userDoc.put("inviteCreatedAt", now);
 
-        if (!db(req).insertUser(userDoc)) {
-            // Race condition
-            Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
-            return;
+            if (!db(req).insertUser(userDoc)) {
+                Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
+                return;
+            }
+            // New users get membership immediately (they need it to activate)
+            membershipProvider.addMember(invitedEmail, callerTenant, role);
+        } else {
+            // Existing user: store invite token on the user document
+            // Membership will be added when they accept the invitation
+            var updates = new BsonDocument();
+            updates.put("inviteToken",     new BsonString(inviteToken));
+            updates.put("inviteCreatedAt", now);
+            updates.put("inviteOrgId",     callerTenant);
+            updates.put("inviteRole",      new BsonString(role));
+            db(req).updateUser(invitedEmail, updates);
         }
 
-        // 7. Delegate membership management to the provider
-        membershipProvider.addMember(invitedEmail, callerTenant, role);
-
-        // 8. Load team name for the email
+        // 7. Load team name for the email
         var teamName = loadTeamName(email, callerTenant);
 
         // 9. Send invite email
+        //    New users: link to /auth/activate (set password + activate)
+        //    Existing users: link to /invitations/accept (accept with current session)
         if (ermes != null && ermes.isEnabled()) {
             try {
-                var link = conf.frontendUrl().replaceAll("/$", "")
-                        + "/auth/activate"
-                        + "?email=" + URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8)
-                        + "&token=" + URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
+                var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
+                var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
+                var link = isNewUser
+                        ? conf.frontendUrl().replaceAll("/$", "")
+                          + "/auth/activate?email=" + encodedEmail + "&token=" + encodedToken
+                        : conf.frontendUrl().replaceAll("/$", "")
+                          + "/invitations/accept?email=" + encodedEmail + "&token=" + encodedToken;
 
                 var inviterName = account.getPrincipal() != null
                         ? account.getPrincipal().getName()
@@ -251,7 +230,7 @@ public class InviteService implements JsonService {
                     ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
-                LOGGER.info("Invite sent to <{}> by {} (tenant={})", invitedEmail, inviterName, callerTenant);
+                LOGGER.info("Invite sent to <{}> by {} (tenant={}, newUser={})", invitedEmail, inviterName, callerTenant, isNewUser);
             } catch (Exception e) {
                 LOGGER.error("Failed to send invite email to <{}>", invitedEmail, e);
             }
