@@ -31,7 +31,7 @@ import java.util.List;
  * PATCH /auth/activate
  *
  * <p>Activates a pending invitation: the user supplies their email address,
- * the {@code inviteToken} from the link, a new password, and consent flags.
+ * the {@code inviteToken} from the link and a new password.
  * On success the account transitions to {@code status="active"}, the invite
  * token is removed, and a JWT + {@code Set-Cookie} header are returned so
  * the client is immediately logged in.
@@ -44,8 +44,7 @@ import java.util.List;
  * {
  *   "email":    "user@example.com",
  *   "token":    "64-char hex invite token",
- *   "password": "new password",
- *   "consents": { "terms": true, "privacy": true }
+ *   "password": "new password"
  * }
  * }</pre>
  */
@@ -118,21 +117,6 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // consents: { "terms": true, "privacy": true }
-        if (!jo.has("consents") || !jo.get("consents").isJsonObject()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "consents is required");
-            return;
-        }
-        var consents = jo.getAsJsonObject("consents");
-        if (!consents.has("terms") || !consents.get("terms").getAsBoolean()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "consents.terms must be true");
-            return;
-        }
-        if (!consents.has("privacy") || !consents.get("privacy").getAsBoolean()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "consents.privacy must be true");
-            return;
-        }
-
         // 2. Find user by invite token
         var userOpt = db(req).findUserByToken("inviteToken", token);
         if (userOpt.isEmpty()) {
@@ -163,32 +147,10 @@ public class ActivateService implements JsonService {
         //    With the new model, invited users have roles: [] and no "status" field.
         //    We just check that the token is valid — that's sufficient.
 
-        // 6. Record consent versions
-        //    dalla configurazione corrente (conf.termsVersion() / conf.privacyVersion()).
-
         var now = new BsonDateTime(System.currentTimeMillis());
-
-        // 7. Extract caller IP
-        var ip = extractRemoteIp(req);
-
-        // 8. Build update document
-        var termsConsent = new BsonDocument();
-        termsConsent.put("version",   new BsonString(conf.termsVersion()));
-        termsConsent.put("timestamp", now);
-        termsConsent.put("ip",        new BsonString(ip));
-
-        var privacyConsent = new BsonDocument();
-        privacyConsent.put("version",   new BsonString(conf.privacyVersion()));
-        privacyConsent.put("timestamp", now);
-        privacyConsent.put("ip",        new BsonString(ip));
-
-        var consentsDoc = new BsonDocument();
-        consentsDoc.put("terms",   termsConsent);
-        consentsDoc.put("privacy", privacyConsent);
 
         var setDoc = new BsonDocument();
         setDoc.put("password", new BsonString(TokenUtils.hashPassword(password)));
-        setDoc.put("consents", consentsDoc);
 
         // Assign system ACL role (user is now activated)
         var effectiveRole = RequestOverrides.defaultRole(req, conf);
