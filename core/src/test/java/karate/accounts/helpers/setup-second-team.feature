@@ -34,29 +34,21 @@ Feature: setup second team for multi-tenant tests
     And header Authorization = 'Bearer ' + secondOwnerJwt
     And request { "email": "owner-test@example.com", "role": "member" }
     When method POST
-    Then status 201
+    * def inviteStatus = responseStatus
 
-    # 5. Accept the invitation as owner-test
-    #    Read token from auth_invitations (as admin, no cookie conflict)
-    Given path '/auth_invitations'
-    And header Authorization = adminAuth
-    And param filter = '{"email":"owner-test@example.com"}'
-    And param pagesize = 1
-    And param sort = '{"_id":-1}'
-        And param rep = 's'
-When method GET
-    Then status 200
-    * def inviteToken = response[0].token
-
+    # 5. Accept the invitation as owner-test (only if fresh invite created)
     #    Login as owner-test to get JWT
-    * def ownerLogin = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerLogin = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerAcceptJwt = ownerLogin.ownerJwt
 
-    #    Accept — inline, no cookie inheritance
-    Given path '/auth/accept-invite'
-    And header Authorization = 'Bearer ' + ownerAcceptJwt
-    And request { "token": "#(inviteToken)" }
-    When method POST
+    * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTenantId: secondTenantId, ownerJwt: ownerAcceptJwt })
+
+    # Verify owner-test is in the second team (whether just accepted or already a member)
+    Given path '/users/owner-test@example.com'
+    And header Authorization = adminAuth
+    When method GET
     Then status 200
+    * def tenantIds = karate.map(response.tenants, function(x){ return x.id })
+    And match tenantIds contains secondTenantId
 
     * karate.log('Second team setup done, tenantId:', secondTenantId)

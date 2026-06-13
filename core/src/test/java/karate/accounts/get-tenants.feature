@@ -3,9 +3,9 @@ Feature: GET /auth/tenants
   Background:
     * url baseUrl
     * configure followRedirects = false
-    * def ownerSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerSetup = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerJwt = ownerSetup.ownerJwt
-    * def secondSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-second-team.feature')
+    * def secondSetup = karate.call('classpath:karate/accounts/helpers/setup-second-team.feature')
     * def secondTenantId = secondSetup.secondTenantId
     # Accept the invitation (setup-second-team already invited owner-test)
     * def inviteResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: 'owner-test@example.com' })

@@ -8,7 +8,7 @@ Feature: POST /auth/invite
     * url baseUrl
     * configure followRedirects = false
     # Ensure owner-test@example.com exists and is active (idempotent)
-    * def setupResult = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def setupResult = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerJwt = setupResult.ownerJwt
 
   # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ Feature: OAuth activation for invited users
   Background:
     * url baseUrl
     * configure followRedirects = false
-    * def setupResult = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def setupResult = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerJwt = setupResult.ownerJwt
 
   # ---------------------------------------------------------------------------

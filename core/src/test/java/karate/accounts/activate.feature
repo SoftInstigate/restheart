@@ -12,7 +12,7 @@ Feature: PATCH /auth/activate
     * url baseUrl
     * configure followRedirects = false
     # Ensure owner-test@example.com exists and is active (idempotent)
-    * def setupResult = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def setupResult = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerJwt = setupResult.ownerJwt
 
     # Invite a fresh user for this scenario
