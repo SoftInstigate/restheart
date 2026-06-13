@@ -85,10 +85,8 @@ Feature: PATCH /auth/activate
     Then status 401
 
   # ---------------------------------------------------------------------------
-  Scenario: activation without consents field — succeeds when token is valid
+  Scenario: activation without consents field — still returns 200
   # ---------------------------------------------------------------------------
-    # Note: this test uses a fresh invite token (created in Background or a prior scenario).
-    # If the token was already consumed by a previous scenario, this returns 401.
     Given path '/auth/activate'
     And request
       """
@@ -99,7 +97,7 @@ Feature: PATCH /auth/activate
       }
       """
     When method PATCH
-    Then assert responseStatus == 200 || responseStatus == 401
+    Then status 200
 
   # ---------------------------------------------------------------------------
   Scenario: token already used (one-shot) — second activation returns 401
@@ -131,7 +129,7 @@ Feature: PATCH /auth/activate
     Then status 401
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after activation user has status=active and inviteToken removed
+  Scenario: verify DB — after activation user has roles=user and inviteToken removed
   # ---------------------------------------------------------------------------
     Given path '/auth/activate'
     And request
@@ -155,5 +153,54 @@ Feature: PATCH /auth/activate
     # inviteToken and inviteCreatedAt must have been $unset
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
-    # Consent records — no longer stored by restheart-accounts (managed by deployment layer)
+    # Consent records — not stored by restheart-accounts (managed by deployment layer)
     And match response.consents == '#notpresent'
+
+  # ---------------------------------------------------------------------------
+  Scenario: activated user can log in with chosen password
+  # ---------------------------------------------------------------------------
+    Given path '/auth/activate'
+    And request
+      """
+      {
+        "email":    "#(inviteEmail)",
+        "token":    "#(inviteToken)",
+        "password": "Activated1!"
+      }
+      """
+    When method PATCH
+    Then status 200
+
+    * def setCookie = responseHeaders['Set-Cookie'][0]
+    * def jwt = setCookie.split('Bearer_')[1].split(';')[0]
+    Given path '/auth/tenants'
+    And header Authorization = 'Bearer ' + jwt
+    When method GET
+    Then status 200
+    And match response == '#array'
+
+  # ---------------------------------------------------------------------------
+  Scenario: activated user is member of the inviting org
+  # ---------------------------------------------------------------------------
+    Given path '/auth/activate'
+    And request
+      """
+      {
+        "email":    "#(inviteEmail)",
+        "token":    "#(inviteToken)",
+        "password": "Activated1!"
+      }
+      """
+    When method PATCH
+    Then status 200
+
+    * def setCookieList = responseHeaders['Set-Cookie']
+    * def setCookie = setCookieList != null && setCookieList.length > 0 ? setCookieList[0] : ''
+    * def activatedJwt = setCookie.split('Bearer_')[1].split(';')[0]
+
+    Given path '/auth/tenants'
+    And header Authorization = 'Bearer ' + activatedJwt
+    When method GET
+    Then status 200
+    And match response == '#[1]'
+    And match response[0].active == true

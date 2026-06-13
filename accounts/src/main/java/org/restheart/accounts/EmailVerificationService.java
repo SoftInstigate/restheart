@@ -132,7 +132,7 @@ public class EmailVerificationService implements JsonService {
 
         // ── 5a. Remove verification token fields ─────────────────────────────
         db(req).unsetUserFields(storedEmail,
-                List.of("emailVerificationToken", "emailVerificationCreatedAt", "status"));
+                List.of("emailVerificationToken", "emailVerificationCreatedAt"));
 
         // ── 5b. Assign system ACL role (user is now verified) ───────────────
         var effectiveRole = RequestOverrides.defaultRole(req, conf);

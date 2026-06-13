@@ -168,7 +168,6 @@ public class RegisterService implements JsonService {
                 .append("_id",                        new BsonString(email))
                 .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
                 .append("roles",                      rolesArray)
-                .append("status",                     new BsonString("pending_verification"))
                 .append("profile",                    profile)
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);

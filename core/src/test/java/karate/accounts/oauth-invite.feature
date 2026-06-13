@@ -153,7 +153,7 @@ Feature: OAuth activation for invited users
     And match response.consents == '#notpresent'
 
   # ---------------------------------------------------------------------------
-  Scenario: OAuth for a new (non-invited) user — normal registration path, status active
+  Scenario: OAuth for a new (non-invited) user — normal registration path, roles=user after login
   # ---------------------------------------------------------------------------
 
     * def newEmail = 'oauth-new-' + java.util.UUID.randomUUID() + '@example.com'

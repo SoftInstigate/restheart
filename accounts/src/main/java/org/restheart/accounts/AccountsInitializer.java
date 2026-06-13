@@ -100,9 +100,6 @@ public class AccountsInitializer implements Initializer {
                 users.createIndex(Indexes.ascending("emailVerificationToken"),
                         new IndexOptions().sparse(true).name("emailVerificationToken_1"));
 
-                users.createIndex(Indexes.ascending("status"),
-                        new IndexOptions().name("status_1"));
-
                 users.createIndex(Indexes.ascending("tenant"),
                         new IndexOptions().name("tenant_1"));
             }

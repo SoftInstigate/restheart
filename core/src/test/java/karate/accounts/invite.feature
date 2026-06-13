@@ -115,7 +115,7 @@ Feature: POST /auth/invite
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after invite user has status=invited and inviteToken set
+  Scenario: verify DB — after invite user has roles=$unauthenticated and inviteToken set
   # ---------------------------------------------------------------------------
     * def inviteEmail = 'invite-db-' + java.util.UUID.randomUUID() + '@example.com'
 

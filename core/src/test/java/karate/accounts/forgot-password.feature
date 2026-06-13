@@ -53,6 +53,41 @@ Feature: POST /auth/forgot-password
     Then status 202
 
   # ---------------------------------------------------------------------------
+  Scenario: pending_verification user — returns 202 but no token written (anti-enumeration)
+  # ---------------------------------------------------------------------------
+    * def email = 'forgot-pending-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Pending",
+        "lastName":  "User",
+        "teamName":  "Pending Corp",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    # Do NOT verify email — user stays pending_verification
+    Given path '/auth/forgot-password'
+    And request { "email": "#(email)" }
+    When method POST
+    Then status 202
+
+    # Token must NOT be written for unverified users
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.status == '#notpresent'
+    And match response.roles contains '$unauthenticated'
+    And match response.passwordResetToken == '#notpresent'
+
+  # ---------------------------------------------------------------------------
   Scenario: non-existent email — always returns 202 (anti-enumeration)
   # ---------------------------------------------------------------------------
     Given path '/auth/forgot-password'
