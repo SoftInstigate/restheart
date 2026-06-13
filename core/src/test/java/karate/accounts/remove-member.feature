@@ -190,7 +190,7 @@ Feature: DELETE /auth/remove-member
     When method GET
     Then status 200
     And match response.tenants == '#array'
-    And match response.tenants.length >= 1
+    * assert response.tenants.length >= 1
 
     Given path '/auth/remove-member'
     And header Authorization = 'Bearer ' + ownerJwt

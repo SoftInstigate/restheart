@@ -409,6 +409,8 @@
 /getTenantsService/enabled: true
 /switchTenantService/enabled: true
 /acceptInviteService/enabled: true
+/removeMemberService/enabled: true
+/updateMemberRoleService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
 
 /ermes/enabled: true
