@@ -34,6 +34,7 @@ Feature: POST /auth/forgot-password
     # Setup: read verification token from MongoDB
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def verifyToken = response.emailVerificationToken
@@ -90,6 +91,7 @@ Feature: POST /auth/forgot-password
     # Setup: read and use verification token (activate the account)
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def verifyToken = response.emailVerificationToken
@@ -110,6 +112,7 @@ Feature: POST /auth/forgot-password
     # (processResetRequest runs synchronously — token is present by the time 202 is received)
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.passwordResetToken == '#notnull'

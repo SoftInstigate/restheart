@@ -26,6 +26,7 @@ Feature: PATCH /auth/activate
     # Read inviteToken from MongoDB
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def inviteToken = response.inviteToken
@@ -147,6 +148,7 @@ Feature: PATCH /auth/activate
     # Read user document from MongoDB and verify post-activation state
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains 'user'

@@ -8,8 +8,8 @@ Feature: POST /auth/switch-tenant
     * def secondSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-second-team.feature')
     * def secondTenantId = secondSetup.secondTenantId
     # Accept the invitation (setup-second-team already invited owner-test)
-    * def pendingInviteToken = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: 'owner-test@example.com' }).inviteToken
-    * if (pendingInviteToken) karate.call('classpath:karate/accounts/helpers/accept-invite-clean.feature', { jwt: ownerJwt, token: pendingInviteToken })
+    * def inviteResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: 'owner-test@example.com' })
+    * if (inviteResult.inviteToken) karate.call('classpath:karate/accounts/helpers/accept-invite-clean.feature', { jwt: ownerJwt, token: inviteResult.inviteToken })
 
 
   # ---------------------------------------------------------------------------
@@ -112,6 +112,7 @@ Feature: POST /auth/switch-tenant
     # Check owner-test has orgs array with both teams
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.tenants == '#array'

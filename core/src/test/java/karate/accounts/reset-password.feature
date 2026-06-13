@@ -30,6 +30,7 @@ Feature: PATCH /auth/reset-password
     # --- 2. Read emailVerificationToken from MongoDB ---
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def verifyToken = response.emailVerificationToken
@@ -50,6 +51,7 @@ Feature: PATCH /auth/reset-password
     # --- 5. Read passwordResetToken from MongoDB ---
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def resetToken = response.passwordResetToken

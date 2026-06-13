@@ -36,6 +36,7 @@ Feature: setup owner user for invite and activate tests
     # 2. Fetch the emailVerificationToken
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def verifyToken = response.emailVerificationToken

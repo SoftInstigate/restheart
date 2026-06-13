@@ -207,7 +207,21 @@ jwtTokenManager:
   ttl: 15 # in minutes
   srv-uri: /token
   # Note: key, algorithm, issuer, audience configured via jwtConfigProvider
-  # additional JWT claims from accounts properties
+  # Additional JWT claims from request attached-parameters.
+  # Must mirror accountsConfig.account-properties-claims so that all token-issuance
+  # paths (/token, /auth/verify, /auth/activate, /auth/reset-password, /auth/switch-tenant,
+  # OAuth callbacks) produce identical JWTs.
+  #
+  # For restheart-accounts multi-tenant deployments, the tenants claim MUST be listed here
+  # (e.g. "tenants") so that the JWT contains the active tenant ID.
+  # Without this, endpoints like POST /auth/invite and POST /auth/switch-tenant will
+  # fail with 403 because the service cannot resolve the caller's membership role.
+  #
+  # Example for a deployment using "tenants" as the claim name:
+  # account-properties-claims:
+  #   - tenants
+  #
+  # See: https://restheart.org/docs/accounts/configuration
   account-properties-claims:
   # - foo # property name
   # - /nested/property # xpath expr for nested properties
@@ -344,6 +358,10 @@ accountsConfig:
   # Mirrors jwtTokenManager.account-properties-claims: use the same list so that
   # all token-issuance paths produce identical JWTs.
   # authDb is always included automatically (no need to list it here).
+  # Must mirror jwtTokenManager.account-properties-claims so all issuance paths
+  # (/token, /auth/verify, /auth/activate, etc.) produce identical JWTs.
+  # For multi-tenant deployments, include the tenants claim (e.g. "tenants").
+  # authDb is always included automatically — never list it here.
   account-properties-claims:
   # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-tenant deployments
 

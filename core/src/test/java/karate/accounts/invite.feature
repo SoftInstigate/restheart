@@ -57,6 +57,7 @@ Feature: POST /auth/invite
     # 2. Get invite token from MongoDB
     Given path '/users/' + regularEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def inviteToken = response.inviteToken
@@ -126,6 +127,7 @@ Feature: POST /auth/invite
 
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains '$unauthenticated'

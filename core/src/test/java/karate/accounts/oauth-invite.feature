@@ -38,6 +38,7 @@ Feature: OAuth activation for invited users
     # 2. Read inviteToken from MongoDB (admin access)
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def inviteToken = response.inviteToken
@@ -95,6 +96,7 @@ Feature: OAuth activation for invited users
     # 6. Verify DB — user activated, inviteToken removed, consents stored
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains 'user'
@@ -118,6 +120,7 @@ Feature: OAuth activation for invited users
 
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def inviteToken = response.inviteToken
@@ -142,6 +145,7 @@ Feature: OAuth activation for invited users
     # Verify DB — activated but NO consents
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains 'user'
@@ -169,6 +173,7 @@ Feature: OAuth activation for invited users
 
     Given path '/users/' + newEmail
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains 'user'

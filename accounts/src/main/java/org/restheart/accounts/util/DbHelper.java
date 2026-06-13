@@ -6,6 +6,8 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
+import org.bson.BsonDateTime;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 
@@ -23,6 +25,7 @@ public class DbHelper {
 
     private static final String USERS_COLLECTION = "users";
     private static final String TEAMS_COLLECTION = "orgs";
+    private static final String INVITATIONS_COLLECTION = "auth_invitations";
 
     /** Duplicate-key error code returned by MongoDB. */
     private static final int DUPLICATE_KEY_CODE = 11000;
@@ -216,5 +219,71 @@ public class DbHelper {
     private MongoCollection<BsonDocument> teams() {
         return mclient.getDatabase(db)
                       .getCollection(TEAMS_COLLECTION, BsonDocument.class);
+    }
+
+    private MongoCollection<BsonDocument> invitations() {
+        return mclient.getDatabase(db)
+                      .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
+    }
+
+    /**
+     * Creates an invitation document in the auth_invitations collection.
+     */
+    public void createInvitation(String email, String token, BsonValue orgId, String role, long ttlMs) {
+        var now = System.currentTimeMillis();
+        var doc = new BsonDocument()
+                .append("_id", new org.bson.BsonObjectId())
+                .append("email", new BsonString(email))
+                .append("token", new BsonString(token))
+                .append("orgId", orgId)
+                .append("role", new BsonString(role))
+                .append("createdAt", new BsonDateTime(now))
+                .append("expiresAt", new BsonDateTime(now + ttlMs));
+        invitations().insertOne(doc);
+    }
+
+    /**
+     * Finds a valid (non-expired) invitation by token.
+     */
+    public Optional<BsonDocument> findInvitationByToken(String token) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("token", token),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Finds the latest pending invitation for a user in a specific org.
+     */
+    public Optional<BsonDocument> findInvitation(String email, BsonValue orgId) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("email", email),
+                        Filters.eq("orgId", orgId),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .sort(Filters.eq("createdAt", -1))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Deletes an invitation by its document id.
+     */
+    public void deleteInvitation(BsonValue invitationId) {
+        invitations().deleteOne(Filters.eq("_id", invitationId));
+    }
+
+    /**
+     * Deletes all invitations for a user in a specific org (used after acceptance).
+     */
+    public void deleteInvitations(String email, BsonValue orgId) {
+        invitations().deleteMany(
+                Filters.and(
+                        Filters.eq("email", email),
+                        Filters.eq("orgId", orgId)));
     }
 }

@@ -126,6 +126,7 @@ Feature: POST /auth/register
     # Read the user document from MongoDB via the RESTHeart REST API
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.status == 'pending_verification'

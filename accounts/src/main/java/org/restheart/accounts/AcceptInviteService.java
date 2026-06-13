@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.accounts.util.RequestOverrides;
 
 /**
  * POST /auth/accept-invite — Accept an invitation for an existing user.
@@ -32,9 +33,7 @@ import org.restheart.accounts.util.DbHelper;
 public class AcceptInviteService implements JsonService, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AcceptInviteService.class);
-    private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
-
-    @Inject("accountsService")
+        @Inject("accountsService")
     private AccountsService accountsService;
 
     @Inject("mclient")
@@ -77,41 +76,31 @@ public class AcceptInviteService implements JsonService, Initializer {
         }
         var token = jo.get("token").getAsString().trim();
 
-        var db = new DbHelper(mclient, conf.db());
-        var userOpt = db.findUser(email);
-        if (userOpt.isEmpty()) {
-            sendError(res, HttpStatus.SC_NOT_FOUND, "User not found");
-            return;
-        }
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf));
 
-        var user = userOpt.get();
-        if (!user.containsKey("inviteToken")
-                || !user.getString("inviteToken").getValue().equals(token)) {
+        // Find invitation by token in auth_invitations collection
+        var inviteOpt = db.findInvitationByToken(token);
+        if (inviteOpt.isEmpty()) {
             sendError(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
 
-        if (user.containsKey("inviteCreatedAt") && user.get("inviteCreatedAt").isDateTime()) {
-            var createdAt = user.getDateTime("inviteCreatedAt").getValue();
-            if (System.currentTimeMillis() - createdAt > INVITE_TTL_MS) {
-                sendError(res, HttpStatus.SC_UNAUTHORIZED, "Invitation has expired");
-                return;
-            }
-        }
+        var invite = inviteOpt.get();
+        var invitedEmail = invite.getString("email").getValue();
 
-        if (!user.containsKey("inviteOrgId")) {
-            sendError(res, HttpStatus.SC_BAD_REQUEST, "No pending invitation found");
+        // Verify the invitation belongs to the authenticated user
+        if (!invitedEmail.equals(email)) {
+            sendError(res, HttpStatus.SC_FORBIDDEN, "This invitation is not for your account");
             return;
         }
 
-        var orgId = user.get("inviteOrgId");
-        var role = user.containsKey("inviteRole")
-                ? user.getString("inviteRole").getValue()
-                : conf.memberRoleName();
+        var orgId = invite.get("orgId");
+        var role = invite.getString("role").getValue();
 
         accountsService.getMembershipProvider().addMember(email, orgId, role);
 
-        db.unsetUserFields(email, java.util.List.of("inviteToken", "inviteCreatedAt", "inviteOrgId", "inviteRole"));
+        // Delete the invitation after acceptance
+        db.deleteInvitation(invite.getObjectId("_id"));
 
         LOGGER.info("User <{}> accepted invitation to org={} as role={}", email, orgId, role);
 

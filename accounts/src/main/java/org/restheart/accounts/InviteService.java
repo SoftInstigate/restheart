@@ -59,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 public class InviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
+    private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -104,6 +105,10 @@ public class InviteService implements JsonService {
         var email = account.getPrincipal().getName();
 
         // 2. Verify membership role: must be ownership-role or admin
+        // Requires accountsConfig.tenant-claim-name (default: "tenant") and accountsConfig.account-properties-claims
+        // to include the tenants claim in JWT (e.g. - tenants).
+        // Without this, the JWT won't contain the tenants array and
+        // activeMembership() cannot resolve the caller's role.
         var membership = accountsService.getMembershipProvider()
                 .activeMembership(email);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
@@ -180,15 +185,9 @@ public class InviteService implements JsonService {
             // New users get membership immediately (they need it to activate)
             membershipProvider.addMember(invitedEmail, callerTenant, role);
         } else {
-            // Existing user: store invite token on the user document
-            // Membership will be added when they accept the invitation
-            var updates = new BsonDocument();
-            updates.put("inviteToken",     new BsonString(inviteToken));
-            updates.put("inviteCreatedAt", now);
-            updates.put("inviteOrgId",     callerTenant);
-            updates.put("inviteRole",      new BsonString(role));
-            var updateResult = db(req).updateUser(invitedEmail, updates);
-            LOGGER.info("Invite fields stored for existing user <{}>: updateResult={}, inviteOrgId={}", invitedEmail, updateResult, callerTenant);
+            // Existing user: store invitation in auth_invitations collection
+            db(req).createInvitation(invitedEmail, inviteToken, callerTenant, role, INVITE_TTL_MS);
+            LOGGER.info("Invitation created for existing user <{}> to org={}", invitedEmail, callerTenant);
         }
 
         // 7. Load team name for the email
