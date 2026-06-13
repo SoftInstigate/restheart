@@ -208,6 +208,45 @@ public class DefaultMembershipProvider implements MembershipProvider {
         db.setActiveTenant(userId, tenantId);
     }
 
+    // ── removeMember ─────────────────────────────────────────────────────
+
+    /**
+     * Removes the user from the given tenant on both sides:
+     * {@code user.tenants[]} (user document) and {@code team.members[]} (team document).
+     * If the tenant was the user's active tenant, the active tenant field is cleared.
+     */
+    @Override
+    public void removeMember(String userId, BsonValue tenantId) {
+        var userOpt = db.findUser(userId);
+        if (userOpt.isEmpty()) return;
+        var user = userOpt.get();
+
+        db.removeTenantMembership(userId, tenantId);
+        db.removeMemberFromTeam(tenantId, userId);
+
+        // Clear active tenant if it was this one
+        if (user.containsKey("tenant") && tenantId.equals(user.get("tenant"))) {
+            db.unsetUserFields(userId, List.of("tenant"));
+        }
+
+        LOGGER.info("DefaultMembershipProvider: removed user <{}> from tenant {}", userId, tenantId);
+    }
+
+    // ── updateMemberRole ─────────────────────────────────────────────────
+
+    /**
+     * Updates the org-level role for the user in the given tenant on both sides:
+     * {@code user.tenants[].role} and {@code team.members[].role}.
+     */
+    @Override
+    public void updateMemberRole(String userId, BsonValue tenantId, String newRole) {
+        db.updateTenantRole(userId, tenantId, newRole);
+        db.updateMemberRoleInTeam(tenantId, userId, newRole);
+
+        LOGGER.info("DefaultMembershipProvider: updated role of <{}> in tenant {} to '{}'",
+                userId, tenantId, newRole);
+    }
+
     // ── activateViaOAuth ──────────────────────────────────────────────────
 
     /**

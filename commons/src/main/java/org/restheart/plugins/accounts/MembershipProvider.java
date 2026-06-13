@@ -103,6 +103,40 @@ public interface MembershipProvider {
     void setActiveMembership(String userId, BsonValue tenantId);
 
     /**
+     * Removes a user from the given tenant. Called by {@code DELETE /auth/remove-member}.
+     *
+     * <p>Implementations must remove the membership entry from both the user-side
+     * ({@code user.tenants[]}) and the team-side ({@code team.members[]}) stores.
+     * If the tenant being removed is currently the user's active tenant, implementations
+     * should clear or update the active tenant field accordingly.
+     *
+     * <p>This method is a no-op if the user is not a member of the given tenant.
+     *
+     * @param userId   the user's identifier (email address)
+     * @param tenantId the tenant to remove the user from
+     */
+    default void removeMember(String userId, BsonValue tenantId) {
+        throw new UnsupportedOperationException("removeMember not implemented by this provider");
+    }
+
+    /**
+     * Updates the org-level role of a user within the given tenant.
+     * Called by {@code PATCH /auth/member-role}.
+     *
+     * <p>Implementations must update the role on both the user-side
+     * ({@code user.tenants[].role}) and the team-side ({@code team.members[].role}).
+     *
+     * <p>This method is a no-op if the user is not a member of the given tenant.
+     *
+     * @param userId   the user's identifier (email address)
+     * @param tenantId the tenant in which to update the role
+     * @param newRole  the new role to assign (e.g. {@code "admin"} or the configured member role)
+     */
+    default void updateMemberRole(String userId, BsonValue tenantId, String newRole) {
+        throw new UnsupportedOperationException("updateMemberRole not implemented by this provider");
+    }
+
+    /**
      * Called by the OAuth callback when the OAuth-authenticated user has
      * {@code status: "invited"}. Implementations should activate the pending
      * invite, record consents if provided, and return the membership to use

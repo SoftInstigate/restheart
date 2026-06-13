@@ -131,7 +131,6 @@ public class DbHelper {
 
     /**
      * Adds a tenant membership to the user's {@code tenants} array using {@code $addToSet}.
-     * Also updates {@code roles} if this is the user's first/only tenant.
      *
      * @param email      the user's email (_id)
      * @param membership a document {@code { id: "...", role: "..." }}
@@ -143,6 +142,40 @@ public class DbHelper {
             new BsonDocument("$addToSet", new BsonDocument("tenants", membership))
         );
         return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Removes the entry with the given {@code tenantId} from the user's {@code tenants} array.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant to remove
+     * @return {@code true} if a document was matched
+     */
+    public boolean removeTenantMembership(String email, BsonValue tenantId) {
+        var result = users().updateOne(
+            eq("_id", new BsonString(email)),
+            Updates.pull("tenants", new BsonDocument("id", tenantId))
+        );
+        return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Updates the role for the given tenant entry in the user's {@code tenants} array.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant whose role to change
+     * @param newRole  the new role string
+     * @return {@code true} if a matching tenant entry was found and modified
+     */
+    public boolean updateTenantRole(String email, BsonValue tenantId, String newRole) {
+        var result = users().updateOne(
+            Filters.and(
+                eq("_id", new BsonString(email)),
+                Filters.eq("tenants.id", tenantId)
+            ),
+            Updates.set("tenants.$.role", new BsonString(newRole))
+        );
+        return result.getModifiedCount() > 0;
     }
 
     /**
@@ -205,6 +238,40 @@ public class DbHelper {
                 .find(eq("_id", teamId))
                 .first()
         );
+    }
+
+    /**
+     * Removes a member entry from the team's {@code members} array.
+     *
+     * @param tenantId the team's {@code _id}
+     * @param userId   the user to remove
+     * @return {@code true} if the team document was matched
+     */
+    public boolean removeMemberFromTeam(BsonValue tenantId, String userId) {
+        var result = teams().updateOne(
+            eq("_id", tenantId),
+            Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
+        );
+        return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Updates the role for a member in the team's {@code members} array.
+     *
+     * @param tenantId the team's {@code _id}
+     * @param userId   the member's user id
+     * @param newRole  the new role string
+     * @return {@code true} if the member entry was found and modified
+     */
+    public boolean updateMemberRoleInTeam(BsonValue tenantId, String userId, String newRole) {
+        var result = teams().updateOne(
+            Filters.and(
+                eq("_id", tenantId),
+                Filters.eq("members.userId", new BsonString(userId))
+            ),
+            Updates.set("members.$.role", new BsonString(newRole))
+        );
+        return result.getModifiedCount() > 0;
     }
 
     // -------------------------------------------------------------------------
