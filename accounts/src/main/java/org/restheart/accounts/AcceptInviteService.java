@@ -53,6 +53,11 @@ public class AcceptInviteService implements JsonService, Initializer {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
+
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
