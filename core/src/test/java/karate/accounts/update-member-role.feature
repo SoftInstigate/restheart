@@ -13,7 +13,7 @@ Feature: PATCH /auth/member-role
     * def ownerJwt = setupResult.ownerJwt
 
   # ---------------------------------------------------------------------------
-  Scenario: happy path — owner promotes member to admin returns 200
+  Scenario: happy path — owner promotes member to owner returns 200
   # ---------------------------------------------------------------------------
     * def memberEmail = 'umr-promote-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -37,18 +37,18 @@ Feature: PATCH /auth/member-role
 
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(memberEmail)", "role": "admin" }
+    And request { "email": "#(memberEmail)", "role": "owner" }
     When method PATCH
     Then status 200
 
   # ---------------------------------------------------------------------------
-  Scenario: happy path — owner demotes admin back to member returns 200
+  Scenario: happy path — owner demotes owner back to member returns 200
   # ---------------------------------------------------------------------------
     * def memberEmail = 'umr-demote-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(memberEmail)", "role": "admin" }
+    And request { "email": "#(memberEmail)", "role": "owner" }
     When method POST
     Then status 201
 
@@ -74,7 +74,7 @@ Feature: PATCH /auth/member-role
   Scenario: unauthenticated request returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/member-role'
-    And request { "email": "anyone@example.com", "role": "admin" }
+    And request { "email": "anyone@example.com", "role": "owner" }
     When method PATCH
     Then status 401
 
@@ -104,7 +104,7 @@ Feature: PATCH /auth/member-role
 
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + memberJwt
-    And request { "email": "someone@example.com", "role": "admin" }
+    And request { "email": "someone@example.com", "role": "owner" }
     When method PATCH
     Then status 403
 
@@ -131,10 +131,10 @@ Feature: PATCH /auth/member-role
     When method PATCH
     Then status 200
 
-    # "owner" is not a valid role for this endpoint (ownership transfer not allowed)
+    # "superadmin" is not a valid role for this endpoint
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(memberEmail)", "role": "owner" }
+    And request { "email": "#(memberEmail)", "role": "superadmin" }
     When method PATCH
     Then status 400
 
@@ -172,35 +172,35 @@ Feature: PATCH /auth/member-role
   # ---------------------------------------------------------------------------
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "notamember@example.com", "role": "admin" }
+    And request { "email": "notamember@example.com", "role": "owner" }
     When method PATCH
     Then status 404
 
   # ---------------------------------------------------------------------------
-  Scenario: admin caller can update another member's role
+  Scenario: owner caller can update another member's role
   # ---------------------------------------------------------------------------
-    * def adminEmail = 'umr-admin-caller-' + java.util.UUID.randomUUID() + '@example.com'
-    * def memberEmail = 'umr-by-admin-' + java.util.UUID.randomUUID() + '@example.com'
+    * def ownerCallerEmail = 'umr-owner-caller-' + java.util.UUID.randomUUID() + '@example.com'
+    * def memberEmail = 'umr-by-owner-' + java.util.UUID.randomUUID() + '@example.com'
 
-    # Invite and activate admin
+    # Invite and activate owner caller
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(adminEmail)", "role": "admin" }
+    And request { "email": "#(ownerCallerEmail)", "role": "owner" }
     When method POST
     Then status 201
 
-    Given path '/users/' + adminEmail
+    Given path '/users/' + ownerCallerEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    * def adminInviteToken = response.inviteToken
+    * def ownerInviteToken = response.inviteToken
 
     Given path '/auth/activate'
-    And request { "email": "#(adminEmail)", "token": "#(adminInviteToken)", "password": "AdminCaller1!" }
+    And request { "email": "#(ownerCallerEmail)", "token": "#(ownerInviteToken)", "password": "OwnerCaller1!" }
     When method PATCH
     Then status 200
-    * def adminJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
+    * def ownerCallerJwt = responseHeaders['Set-Cookie'][0].split('Bearer_')[1].split(';')[0]
 
     # Invite and activate a regular member
     Given path '/auth/invite'
@@ -221,10 +221,10 @@ Feature: PATCH /auth/member-role
     When method PATCH
     Then status 200
 
-    # Admin promotes member to admin
+    # Owner promotes member to admin
     Given path '/auth/member-role'
-    And header Authorization = 'Bearer ' + adminJwt
-    And request { "email": "#(memberEmail)", "role": "admin" }
+    And header Authorization = 'Bearer ' + ownerCallerJwt
+    And request { "email": "#(memberEmail)", "role": "owner" }
     When method PATCH
     Then status 200
 
@@ -263,7 +263,7 @@ Feature: PATCH /auth/member-role
     # Promote to admin
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(memberEmail)", "role": "admin" }
+    And request { "email": "#(memberEmail)", "role": "owner" }
     When method PATCH
     Then status 200
 
@@ -274,4 +274,4 @@ Feature: PATCH /auth/member-role
     When method GET
     Then status 200
     * def updatedRole = response.tenants[0].role
-    * match updatedRole == 'admin'
+    * match updatedRole == 'owner'

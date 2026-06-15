@@ -23,13 +23,13 @@ Feature: POST /auth/invite
     Then status 201
 
   # ---------------------------------------------------------------------------
-  Scenario: owner invites with role=admin returns 201
+  Scenario: owner invites with role=owner returns 201
   # ---------------------------------------------------------------------------
-    * def inviteEmail = 'invite-admin-' + java.util.UUID.randomUUID() + '@example.com'
+    * def inviteEmail = 'invite-owner-' + java.util.UUID.randomUUID() + '@example.com'
 
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(inviteEmail)", "role": "admin" }
+    And request { "email": "#(inviteEmail)", "role": "owner" }
     When method POST
     Then status 201
 

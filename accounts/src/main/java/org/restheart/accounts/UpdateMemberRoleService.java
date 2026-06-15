@@ -78,13 +78,13 @@ public class UpdateMemberRoleService implements JsonService {
         var account = req.getAuthenticatedAccount();
         var callerEmail = account.getPrincipal().getName();
 
-        // 2. Verify caller has owner or admin role in active tenant
+        // 2. Verify caller has owner role in active tenant
         var membershipProvider = accountsService.getMembershipProvider();
         var membership = membershipProvider.activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = conf.ownershipRole();
-        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
+        if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 
@@ -112,12 +112,11 @@ public class UpdateMemberRoleService implements JsonService {
         var targetEmail = jo.get("email").getAsString().trim().toLowerCase();
         var newRole = jo.get("role").getAsString().trim().toLowerCase();
 
-        // 4. Validate requested role — only memberRoleName or "admin" are accepted
-        // (ownership transfer requires a dedicated flow)
+        // 4. Validate requested role — only memberRoleName or ownershipRole are accepted
         var memberRoleName = conf.memberRoleName();
-        if (!memberRoleName.equals(newRole) && !"admin".equals(newRole)) {
+        if (!memberRoleName.equals(newRole) && !ownershipRole.equals(newRole)) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                "role must be '" + memberRoleName + "' or 'admin'");
+                "role must be '" + memberRoleName + "' or '" + ownershipRole + "'");
             return;
         }
 

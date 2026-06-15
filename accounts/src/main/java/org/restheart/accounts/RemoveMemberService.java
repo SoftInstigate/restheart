@@ -76,13 +76,13 @@ public class RemoveMemberService implements JsonService {
         var account = req.getAuthenticatedAccount();
         var callerEmail = account.getPrincipal().getName();
 
-        // 2. Verify caller has owner or admin role in active tenant
+        // 2. Verify caller has owner role in active tenant
         var membershipProvider = accountsService.getMembershipProvider();
         var membership = membershipProvider.activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = conf.ownershipRole();
-        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
+        if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 

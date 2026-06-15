@@ -117,7 +117,7 @@ Feature: DELETE /auth/remove-member
     # Invite and activate admin
     Given path '/auth/invite'
     And header Authorization = 'Bearer ' + ownerJwt
-    And request { "email": "#(adminEmail)", "role": "admin" }
+    And request { "email": "#(adminEmail)", "role": "owner" }
     When method POST
     Then status 201
 
