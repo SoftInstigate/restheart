@@ -38,7 +38,7 @@ import java.nio.charset.StandardCharsets;
  * re-sends the activation email to a user who has not yet completed the
  * activation flow.
  *
- * <p>Requires authentication. Callable by membership roles: {@code <ownershipRole>} or {@code admin}.
+ * <p>Requires authentication. Callable by membership role: {@code <ownershipRole>} only.
  * The target user must belong to the same tenant as the caller.
  *
  * <p>Expected body: {@code { "email": "invited@example.com" }}
@@ -103,8 +103,8 @@ public class ResendInviteService implements JsonService {
                 .activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = conf.ownershipRole();
-        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
+        if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
         var callerTenant = membership.map(m -> m.tenantId()).orElse(null);

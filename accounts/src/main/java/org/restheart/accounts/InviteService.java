@@ -40,11 +40,11 @@ import java.nio.charset.StandardCharsets;
  * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation email.
  * email.
  *
- * <p>Requires authentication. Callable by membership roles: {@code <ownershipRole>} or {@code admin}.
+ * <p>Requires authentication. Callable by membership role: {@code <ownershipRole>} only.
  *
  * <p>Expected body:
  * <pre>{@code
- * { "email": "...", "role": "<memberRoleName>|admin" }
+ * { "email": "...", "role": "<memberRoleName>|<ownershipRole>" }
  * }</pre>
  * {@code role} is optional and defaults to the configured {@code member-role-name}.
  *
@@ -104,17 +104,13 @@ public class InviteService implements JsonService {
         var account = req.getAuthenticatedAccount();
         var email = account.getPrincipal().getName();
 
-        // 2. Verify membership role: must be ownership-role or admin
-        // Requires accountsConfig.tenant-claim-name (default: "tenant") and accountsConfig.account-properties-claims
-        // to include the tenants claim in JWT (e.g. - tenants).
-        // Without this, the JWT won't contain the tenants array and
-        // activeMembership() cannot resolve the caller's role.
+        // 2. Verify membership role: must be ownership-role
         var membership = accountsService.getMembershipProvider()
                 .activeMembership(email);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = conf.ownershipRole();
-        if (membershipRole == null || (!membershipRole.equals(ownershipRole) && !membershipRole.equals("admin"))) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " or admin role");
+        if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 
@@ -143,9 +139,9 @@ public class InviteService implements JsonService {
         var role = defaultRole;
         if (jo.has("role") && !jo.get("role").isJsonNull()) {
             role = jo.get("role").getAsString().trim().toLowerCase();
-            if (!defaultRole.equals(role) && !"admin".equals(role)) {
+            if (!defaultRole.equals(role) && !ownershipRole.equals(role)) {
                 Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                        "role must be '" + defaultRole + "' or 'admin'");
+                        "role must be '" + defaultRole + "' or '" + ownershipRole + "'");
                 return;
             }
         }

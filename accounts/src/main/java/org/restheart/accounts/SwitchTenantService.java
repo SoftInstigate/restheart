@@ -132,10 +132,21 @@ public class SwitchTenantService implements JsonService {
             return;
         }
 
-        // Issue new JWT with the configured tenant claim name
+        // Read system roles from DB — do NOT use matched.role() (membership role)
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var dbRoles = userDoc
+                .map(u -> u.containsKey("roles") && u.get("roles").isArray()
+                        ? u.getArray("roles").stream()
+                            .filter(BsonValue::isString)
+                            .map(v -> v.asString().getValue())
+                            .collect(java.util.stream.Collectors.toSet())
+                        : Set.<String>of())
+                .orElse(Set.of());
+
+        // Issue new JWT with the system roles from DB, not the membership role
         var token = jwt.issueToken(
                 email,
-                Set.of(matched.role()),
+                dbRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId()),
