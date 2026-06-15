@@ -9,6 +9,7 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -59,6 +60,9 @@ public class SwitchTenantService implements JsonService {
 
     @Inject("accountsService")
     private AccountsService accountsService;
+
+    @Inject("mclient")
+    private com.mongodb.client.MongoClient mclient;
 
     private JwtHelper jwt;
 
