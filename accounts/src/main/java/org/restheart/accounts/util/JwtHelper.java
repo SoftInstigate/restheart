@@ -90,6 +90,7 @@ public class JwtHelper {
         var builder = JWT.create()
                 .withSubject(email)
                 .withIssuer(issuer)
+                .withIssuedAt(Instant.now())
                 .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
                 .withArrayClaim("roles", roles.toArray(new String[0]));
 
@@ -144,6 +145,7 @@ public class JwtHelper {
         var builder = JWT.create()
                 .withSubject(email)
                 .withIssuer(issuer)
+                .withIssuedAt(Instant.now())
                 .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
                 .withArrayClaim("roles", roles.toArray(new String[0]));
 
