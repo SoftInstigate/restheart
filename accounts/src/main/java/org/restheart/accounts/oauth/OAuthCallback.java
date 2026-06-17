@@ -159,16 +159,10 @@ public class OAuthCallback implements StringService {
             boolean isUnverified = userRoles.size() == 1
                     && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
 
-            // 2b. If OAuth was initiated from an invite link, the email must match
             var pendingInviteToken = callbackResult.pendingInviteToken();
-            if (pendingInviteToken != null && !pendingInviteToken.isBlank() && !isUnverified) {
-                // OAuth email doesn't match the invited email — deny
-                LOGGER.warn("OAuth invite mismatch: invited token present but user <{}> is not unverified (OAuth email != invited email)", email);
-                redirectError(res, "The email used for social login does not match the invited email. Please use the same email address that received the invitation.");
-                return;
-            }
+            var hasPendingToken = pendingInviteToken != null && !pendingInviteToken.isBlank();
 
-            // 3. Handle unverified invited users: give MembershipProvider a chance to activate
+            // 3a. New user (invited, $unauthenticated): activate via MembershipProvider
             if (isUnverified) {
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
@@ -182,6 +176,11 @@ public class OAuthCallback implements StringService {
 
                 if (membership.isPresent()) {
                     LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
+                    if (hasPendingToken) {
+                        var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf));
+                        db.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite ->
+                            db.deleteInvitation(invite.getObjectId("_id")));
+                    }
                     var activatedRoles = extractRoles(user);
                     var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
@@ -191,9 +190,38 @@ public class OAuthCallback implements StringService {
                     setAuthCookieAndRedirect(res, req, jwtToken);
                     return;
                 }
-                // activateViaOAuth returned empty — redirect to frontendErrorUrl (spec: deny access)
                 LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
                 redirectError(res, "Account is pending activation");
+                return;
+            }
+
+            // 3b. Existing user accepting an invitation via OAuth (pendingInviteToken present)
+            if (hasPendingToken) {
+                var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf));
+                var inviteOpt = db.findInvitationByEmailAndToken(email, pendingInviteToken);
+                if (inviteOpt.isEmpty()) {
+                    LOGGER.warn("OAuth invite acceptance failed: no valid invitation for <{}> with the supplied token", email);
+                    redirectError(res, "Invalid or expired invitation token");
+                    return;
+                }
+                var invite = inviteOpt.get();
+                var orgId  = invite.get("orgId");
+                var role   = invite.getString("role").getValue();
+
+                accountsService.getMembershipProvider().addMember(email, orgId, role);
+                db.deleteInvitation(invite.getObjectId("_id"));
+
+                LOGGER.info("Existing user <{}> accepted invitation to org={} via {} OAuth", email, orgId, provider);
+
+                var roles = extractRoles(user);
+                var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
+                var tenantId = activeMembership.map(m -> m.tenantId()).orElse(orgId);
+                var jwtToken = jwt.issueToken(email, roles,
+                        RequestOverrides.db(req, conf),
+                        req.attachedParams(),
+                        java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
+                        null);
+                setAuthCookieAndRedirect(res, req, jwtToken);
                 return;
             }
 

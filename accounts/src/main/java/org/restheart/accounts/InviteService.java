@@ -157,34 +157,31 @@ public class InviteService implements JsonService {
 
         // 6. Create invite token
         var inviteToken = TokenUtils.generateToken();
-        var now         = new BsonDateTime(System.currentTimeMillis());
         var isNewUser   = existing.isEmpty();
 
         if (isNewUser) {
-            // New user: create with $unauthenticated role
+            // New user: create with $unauthenticated role (no inviteToken on user doc)
             var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
             var rolesArr  = new BsonArray();
             rolesArr.add(new BsonString("$unauthenticated"));
 
             var userDoc = new BsonDocument();
-            userDoc.put("_id",             new BsonString(invitedEmail));
-            userDoc.put("password",        new BsonString(hashedPwd));
-            userDoc.put("roles",           rolesArr);
-            userDoc.put("profile",         new BsonDocument());
-            userDoc.put("inviteToken",     new BsonString(inviteToken));
-            userDoc.put("inviteCreatedAt", now);
+            userDoc.put("_id",      new BsonString(invitedEmail));
+            userDoc.put("password", new BsonString(hashedPwd));
+            userDoc.put("roles",    rolesArr);
+            userDoc.put("profile",  new BsonDocument());
 
             if (!db(req).insertUser(userDoc)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
                 return;
             }
-            // New users get membership immediately (they need it to activate)
+            // Add membership immediately so user.tenant is set (required for JWT issuance on activate)
             membershipProvider.addMember(invitedEmail, callerTenant, role);
-        } else {
-            // Existing user: store invitation in auth_invitations collection
-            db(req).createInvitation(invitedEmail, inviteToken, callerTenant, role, INVITE_TTL_MS);
-            LOGGER.info("Invitation created for existing user <{}> to org={}", invitedEmail, callerTenant);
         }
+
+        // Always store the invite token in auth_invitations (single source of truth)
+        db(req).createInvitation(invitedEmail, inviteToken, callerTenant, role, INVITE_TTL_MS, isNewUser);
+        LOGGER.info("Invitation created for {} user <{}> to org={}", isNewUser ? "new" : "existing", invitedEmail, callerTenant);
 
         // 7. Load team name for the email
         var teamName = loadTeamName(email, callerTenant);
@@ -196,11 +193,9 @@ public class InviteService implements JsonService {
             try {
                 var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
                 var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
-                var link = isNewUser
-                        ? conf.frontendUrl().replaceAll("/$", "")
-                          + "/auth/activate?email=" + encodedEmail + "&token=" + encodedToken
-                        : conf.frontendUrl().replaceAll("/$", "")
-                          + "/invitations/accept?email=" + encodedEmail + "&token=" + encodedToken;
+                var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
+                var link = conf.frontendUrl().replaceAll("/$", "")
+                        + basePath + "?email=" + encodedEmail + "&token=" + encodedToken;
 
                 var inviterName = account.getPrincipal() != null
                         ? account.getPrincipal().getName()

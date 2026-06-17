@@ -54,13 +54,9 @@ Feature: POST /auth/invite
     When method POST
     Then status 201
 
-    # 2. Get invite token from MongoDB
-    Given path '/users/' + regularEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    # 2. Get invite token from auth_invitations
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: regularEmail })
+    * def inviteToken = tokenResult.result
 
     # 3. Activate the invited user (sets password, makes them active with role 'user')
     Given path '/auth/activate'
@@ -115,7 +111,7 @@ Feature: POST /auth/invite
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after invite user has roles=$unauthenticated and inviteToken set
+  Scenario: verify DB — after invite new user has roles=$unauthenticated and auth_invitations entry
   # ---------------------------------------------------------------------------
     * def inviteEmail = 'invite-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -125,11 +121,24 @@ Feature: POST /auth/invite
     When method POST
     Then status 201
 
+    # User document must have $unauthenticated role but NO inviteToken field
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains '$unauthenticated'
-    And match response.inviteToken == '#notnull'
-    And match response.inviteCreatedAt == '#notnull'
+    And match response.inviteToken == '#notpresent'
+    And match response.inviteCreatedAt == '#notpresent'
+
+    # Invitation token lives in auth_invitations
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"email":"' + inviteEmail + '"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And assert response.length == 1
+    And match response[0].isNewUser == true
+    And match response[0].token == '#notnull'
+    And match response[0].expiresAt == '#notnull'

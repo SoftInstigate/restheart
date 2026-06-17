@@ -2,9 +2,6 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-import org.bson.BsonDateTime;
-import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
@@ -21,8 +18,6 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
-import org.restheart.security.JwtAccount;
-import org.restheart.security.MongoRealmAccount;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -54,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 public class ResendInviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResendInviteService.class);
+    private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -126,50 +122,24 @@ public class ResendInviteService implements JsonService {
         }
         var email = jo.get("email").getAsString().trim().toLowerCase();
 
-        // 4. Find user
-        var userOpt = db(req).findUser(email);
-        if (userOpt.isEmpty()) {
-            Errors.error(res, HttpStatus.SC_NOT_FOUND, "User not found");
+        // 4. Find pending invitation in auth_invitations for this user in the caller's org
+        var inviteOpt = db(req).findInvitation(email, callerTenant);
+        if (inviteOpt.isEmpty()) {
+            Errors.error(res, HttpStatus.SC_NOT_FOUND, "No pending invitation found for this user in your team");
             return;
         }
-        var user = userOpt.get();
+        var invite = inviteOpt.get();
+        var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
 
-        // 5. Verify user is unverified (roles == ["$unauthenticated"])
-        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
-                ? user.getArray("roles") : new org.bson.BsonArray();
-        boolean isUnverified = userRoles.size() == 1
-                && "$unauthenticated".equals(userRoles.get(0).asString().getValue());
-        if (!isUnverified) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                    "Invite can only be resent to unverified users");
-            return;
-        }
-
-        // 6. Verify user belongs to the same tenant
-        var userTenant = accountsService.getMembershipProvider()
-                .activeMembership(email)
-                .map(m -> m.tenantId())
-                .orElse(null);
-        if (userTenant == null || !callerTenant.equals(userTenant)) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "User belongs to a different team");
-            return;
-        }
-
-        // 7. Generate new inviteToken (invalidates the previous one)
+        // 5. Generate new token (invalidates the previous one)
         var newToken = TokenUtils.generateToken();
-        var now      = new BsonDateTime(System.currentTimeMillis());
 
-        var updateDoc = new BsonDocument();
-        updateDoc.put("inviteToken",     new BsonString(newToken));
-        updateDoc.put("inviteCreatedAt", now);
-
-        // 8. Update user
-        if (!db(req).updateUser(email, updateDoc)) {
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Failed to update user");
+        if (!db(req).renewInvitation(invite.getObjectId("_id"), newToken, INVITE_TTL_MS)) {
+            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR, "Failed to renew invitation");
             return;
         }
 
-        // 9. Load team name and resend email
+        // 6. Load team name and resend email
         var teamNameFallback = callerTenant.isString() ? callerTenant.asString().getValue() : BsonUtils.toJson(callerTenant);
         String teamName = teamNameFallback;
         try {
@@ -186,8 +156,9 @@ public class ResendInviteService implements JsonService {
 
         if (ermes != null && ermes.isEnabled()) {
             try {
+                var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
                 var link = conf.frontendUrl().replaceAll("/$", "")
-                        + "/auth/activate"
+                        + basePath
                         + "?email=" + URLEncoder.encode(email, StandardCharsets.UTF_8)
                         + "&token=" + URLEncoder.encode(newToken, StandardCharsets.UTF_8);
 
@@ -237,26 +208,4 @@ public class ResendInviteService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    /**
-     * Extracts the active tenant claim from the authenticated account using the
-     * configured claim name, supporting both {@link MongoRealmAccount} and
-     * {@link JwtAccount} pipelines.
-     */
-    private static String extractTenant(io.undertow.security.idm.Account account, String claimName) {
-        return switch (account) {
-            case MongoRealmAccount mra -> {
-                var props = mra.properties();
-                if (props == null) yield null;
-                var v = props.get(claimName);
-                yield v != null && v.isString() ? v.asString().getValue() : null;
-            }
-            case JwtAccount jwt -> {
-                var props = jwt.propertiesAsMap();
-                if (props == null) yield null;
-                var v = props.get(claimName);
-                yield v instanceof String s ? s : null;
-            }
-            default -> null;
-        };
-    }
 }

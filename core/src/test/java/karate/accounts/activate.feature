@@ -23,13 +23,9 @@ Feature: PATCH /auth/activate
     When method POST
     Then status 201
 
-    # Read inviteToken from MongoDB
-    Given path '/users/' + inviteEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    # Read inviteToken from auth_invitations
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: inviteEmail })
+    * def inviteToken = tokenResult.result
 
   # ---------------------------------------------------------------------------
   Scenario: happy path — valid token and password returns 200 with cookie
@@ -143,18 +139,26 @@ Feature: PATCH /auth/activate
     When method PATCH
     Then status 200
 
-    # Read user document from MongoDB and verify post-activation state
+    # User document must have role=user, no invite fields (they were never set)
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
     And match response.roles contains 'user'
-    # inviteToken and inviteCreatedAt must have been $unset
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
     # Consent records — not stored by restheart-accounts (managed by deployment layer)
     And match response.consents == '#notpresent'
+
+    # auth_invitations entry must be deleted after activation (one-shot token)
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"email":"' + inviteEmail + '"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[0]'
 
   # ---------------------------------------------------------------------------
   Scenario: activated user can log in with chosen password

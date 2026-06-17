@@ -295,8 +295,10 @@ public class DbHelper {
 
     /**
      * Creates an invitation document in the auth_invitations collection.
+     *
+     * @param isNewUser {@code true} if the user was created by this invite (no prior account)
      */
-    public void createInvitation(String email, String token, BsonValue orgId, String role, long ttlMs) {
+    public void createInvitation(String email, String token, BsonValue orgId, String role, long ttlMs, boolean isNewUser) {
         var now = System.currentTimeMillis();
         var doc = new BsonDocument()
                 .append("_id", new org.bson.BsonObjectId())
@@ -304,18 +306,34 @@ public class DbHelper {
                 .append("token", new BsonString(token))
                 .append("orgId", orgId)
                 .append("role", new BsonString(role))
+                .append("isNewUser", new org.bson.BsonBoolean(isNewUser))
                 .append("createdAt", new BsonDateTime(now))
                 .append("expiresAt", new BsonDateTime(now + ttlMs));
         invitations().insertOne(doc);
     }
 
     /**
-     * Finds a valid (non-expired) invitation by token.
+     * Finds a valid (non-expired) invitation by token alone.
      */
     public Optional<BsonDocument> findInvitationByToken(String token) {
         var now = System.currentTimeMillis();
         var doc = invitations().find(
                 Filters.and(
+                        Filters.eq("token", token),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Finds a valid (non-expired) invitation by the (email, token) pair.
+     * Used by {@code GET /auth/invitation} — the pair is known only to the invitee.
+     */
+    public Optional<BsonDocument> findInvitationByEmailAndToken(String email, String token) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("email", email),
                         Filters.eq("token", token),
                         Filters.gt("expiresAt", new BsonDateTime(now))))
                 .first();
@@ -332,9 +350,23 @@ public class DbHelper {
                         Filters.eq("email", email),
                         Filters.eq("orgId", orgId),
                         Filters.gt("expiresAt", new BsonDateTime(now))))
-                .sort(Filters.eq("createdAt", -1))
+                .sort(new BsonDocument("createdAt", new org.bson.BsonInt32(-1)))
                 .first();
         return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Renews the token and expiry of an existing invitation document.
+     */
+    public boolean renewInvitation(BsonValue invitationId, String newToken, long ttlMs) {
+        var now = System.currentTimeMillis();
+        var result = invitations().updateOne(
+                Filters.eq("_id", invitationId),
+                new BsonDocument("$set", new BsonDocument()
+                        .append("token", new BsonString(newToken))
+                        .append("createdAt", new BsonDateTime(now))
+                        .append("expiresAt", new BsonDateTime(now + ttlMs))));
+        return result.getModifiedCount() > 0;
     }
 
     /**

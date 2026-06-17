@@ -35,16 +35,17 @@ Feature: OAuth activation for invited users
     When method POST
     Then status 201
 
-    # 2. Read inviteToken from MongoDB (admin access)
+    # 2. Read inviteToken from auth_invitations (token no longer stored on user doc)
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: inviteEmail })
+    * def inviteToken = tokenResult.result
+    * match inviteToken == '#notnull'
+
+    # Verify: user starts with roles: ["$unauthenticated"]
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    * def inviteToken = response.inviteToken
-    * match inviteToken == '#notnull'
-
-    # Verify: user starts with roles: ["$unauthenticated"]
     And match response.roles contains '$unauthenticated'
 
     # 3. Initiate OAuth — pass pendingInviteToken and consentsAccepted=true
@@ -93,7 +94,7 @@ Feature: OAuth activation for invited users
     * def tenantStr = (typeof tenantClaim == 'object') ? tenantClaim['$oid'] : tenantClaim
     * match tenantStr == '#string'
 
-    # 6. Verify DB — user activated, inviteToken removed, consents stored
+    # 6. Verify DB — user activated, no invite fields on user doc, consents stored
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
     And param rep = 's'
@@ -107,6 +108,15 @@ Feature: OAuth activation for invited users
     And match response.consents.acceptedAt == '#notnull'
     And match response.consents.ip == '#notnull'
 
+    # auth_invitations entry removed after OAuth activation
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"email":"' + inviteEmail + '"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[0]'
+
   # ---------------------------------------------------------------------------
   Scenario: OAuth for invited user without consentsAccepted — still activates, no consents stored
   # ---------------------------------------------------------------------------
@@ -118,12 +128,9 @@ Feature: OAuth activation for invited users
     When method POST
     Then status 201
 
-    Given path '/users/' + inviteEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    # Read inviteToken from auth_invitations
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: inviteEmail })
+    * def inviteToken = tokenResult.result
 
     # Authorize without consentsAccepted
     Given path '/auth/oauth/authorize/test'
@@ -142,7 +149,7 @@ Feature: OAuth activation for invited users
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
-    # Verify DB — activated but NO consents
+    # Verify DB — activated but NO consents, no invite fields on user doc
     Given path '/users/' + inviteEmail
     And header Authorization = adminAuth
     And param rep = 's'
@@ -192,6 +199,74 @@ Feature: OAuth activation for invited users
     * def errorLocation = responseHeaders['Location'][0]
     * match errorLocation contains 'error=oauth_error'
     * match errorLocation contains 'reason='
+
+  # ---------------------------------------------------------------------------
+  Scenario: existing user accepts invitation via OAuth (pendingInviteToken in state)
+  # ---------------------------------------------------------------------------
+
+    # 1. Register + verify a fresh existing user
+    * def existingEmail = 'oauth-existing-' + java.util.UUID.randomUUID() + '@example.com'
+    Given path '/auth/register'
+    And request { "firstName": "Existing", "lastName": "User", "teamName": "My Team", "email": "#(existingEmail)", "password": "Existing1!" }
+    When method POST
+    Then status 201
+
+    Given path '/users/' + existingEmail
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    * def verifyTok = response.emailVerificationToken
+    Given path '/auth/verify'
+    And param email = existingEmail
+    And param token = verifyTok
+    When method GET
+    * match [200, 302] contains responseStatus
+
+    # 2. Owner invites the existing user
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(existingEmail)", "role": "member" }
+    When method POST
+    Then status 201
+
+    # 3. Read invitation token from auth_invitations
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: existingEmail })
+    * def inviteToken = tokenResult.result
+    * match inviteToken == '#notnull'
+
+    # 4. Existing user initiates OAuth with pendingInviteToken
+    Given path '/auth/oauth/authorize/test'
+    And param pendingInviteToken = inviteToken
+    When method GET
+    Then status 307
+    * def state = responseHeaders['Location'][0].split('state=')[1].split('&')[0]
+
+    # 5. OAuth callback — user is NOT $unauthenticated → accepted via auth_invitations
+    Given path '/auth/oauth/callback/test'
+    And param code = 'test-' + existingEmail
+    And param state = state
+    When method GET
+    Then status 307
+    * def callbackLocation = responseHeaders['Location'][0]
+    * match callbackLocation contains 'localhost:4200/app'
+    * def setCookieHeader = responseHeaders['Set-Cookie'][0]
+    * match setCookieHeader contains 'rh_auth=Bearer_'
+
+    # 6. auth_invitations entry must be deleted after acceptance
+    Given path '/auth_invitations'
+    And header Authorization = adminAuth
+    And param filter = '{"email":"' + existingEmail + '"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response == '#[0]'
+
+    # 7. User must be a member of the inviting org
+    * def jwtPart = setCookieHeader.split('rh_auth=Bearer_')[1].split(';')[0]
+    * def parts = jwtPart.split('.')
+    * def payloadJson = new java.lang.String(java.util.Base64.getUrlDecoder().decode(parts[1]))
+    * def payload = JSON.parse(payloadJson)
+    * match payload.sub == existingEmail
 
   # ---------------------------------------------------------------------------
   # NOTE: the case where activateViaOAuth returns Optional.empty() (custom provider

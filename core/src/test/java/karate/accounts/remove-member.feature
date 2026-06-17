@@ -23,12 +23,8 @@ Feature: DELETE /auth/remove-member
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Remove1!" }
@@ -60,12 +56,8 @@ Feature: DELETE /auth/remove-member
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Remove1!" }
@@ -121,12 +113,8 @@ Feature: DELETE /auth/remove-member
     When method POST
     Then status 201
 
-    Given path '/users/' + adminEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def adminInviteToken = response.inviteToken
+    * def adminTokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: adminEmail })
+    * def adminInviteToken = adminTokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(adminEmail)", "token": "#(adminInviteToken)", "password": "AdminPass1!" }
@@ -141,12 +129,8 @@ Feature: DELETE /auth/remove-member
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def memberInviteToken = response.inviteToken
+    * def memberTokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def memberInviteToken = memberTokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(memberInviteToken)", "password": "MemberPass1!" }
@@ -171,12 +155,8 @@ Feature: DELETE /auth/remove-member
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Remove1!" }

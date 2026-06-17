@@ -23,12 +23,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Promote1!" }
@@ -52,12 +48,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Demote1!" }
@@ -89,12 +81,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Forbid1!" }
@@ -119,12 +107,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "BadRole1!" }
@@ -149,12 +133,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "Missing1!" }
@@ -189,12 +169,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + ownerCallerEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def ownerInviteToken = response.inviteToken
+    * def ownerTokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: ownerCallerEmail })
+    * def ownerInviteToken = ownerTokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(ownerCallerEmail)", "token": "#(ownerInviteToken)", "password": "OwnerCaller1!" }
@@ -209,12 +185,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def memberInviteToken = response.inviteToken
+    * def memberTokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def memberInviteToken = memberTokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(memberInviteToken)", "password": "MemberPass1!" }
@@ -239,12 +211,8 @@ Feature: PATCH /auth/member-role
     When method POST
     Then status 201
 
-    Given path '/users/' + memberEmail
-    And header Authorization = adminAuth
-    And param rep = 's'
-    When method GET
-    Then status 200
-    * def inviteToken = response.inviteToken
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: memberEmail })
+    * def inviteToken = tokenResult.result
 
     Given path '/auth/activate'
     And request { "email": "#(memberEmail)", "token": "#(inviteToken)", "password": "DbCheck1!" }

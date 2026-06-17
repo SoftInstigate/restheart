@@ -100,6 +100,10 @@
       priority: 100
 
     - role: $unauthenticated
+      predicate: path[path="/auth/invitation"] and method[value="GET"]
+      priority: 100
+
+    - role: $unauthenticated
       predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
       priority: 0
       mongo:
@@ -409,6 +413,7 @@
 /getTenantsService/enabled: true
 /switchTenantService/enabled: true
 /acceptInviteService/enabled: true
+/invitationInfoService/enabled: true
 /removeMemberService/enabled: true
 /updateMemberRoleService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true

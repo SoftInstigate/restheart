@@ -3,7 +3,6 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
 import org.bson.BsonArray;
-import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * PATCH /auth/activate
@@ -56,9 +54,6 @@ import java.util.List;
 public class ActivateService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActivateService.class);
-
-    /** Invite token TTL = 7 days expressed in hours. */
-    private static final int INVITE_TTL_HOURS = 7 * 24;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -117,37 +112,30 @@ public class ActivateService implements JsonService {
             return;
         }
 
-        // 2. Find user by invite token
-        var userOpt = db(req).findUserByToken("inviteToken", token);
+        var normalizedEmail = email.trim().toLowerCase();
+
+        // 2. Find invitation by (email, token) in auth_invitations
+        var inviteOpt = db(req).findInvitationByEmailAndToken(normalizedEmail, token);
+        if (inviteOpt.isEmpty()) {
+            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
+            return;
+        }
+        var invite = inviteOpt.get();
+
+        // 3. Verify this invitation is for a new user (existing users use /auth/accept-invite)
+        var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
+        if (!isNewUser) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Please log in to accept this invitation");
+            return;
+        }
+
+        // 4. Find the user document
+        var userOpt = db(req).findUser(normalizedEmail);
         if (userOpt.isEmpty()) {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
             return;
         }
         var user = userOpt.get();
-
-        // 3. Verify email matches
-        var storedEmail = user.containsKey("_id") && user.get("_id").isString()
-                ? user.getString("_id").getValue() : null;
-        if (!email.trim().toLowerCase().equals(storedEmail)) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
-            return;
-        }
-
-        // 4. Check expiry (TTL 7 days)
-        if (!user.containsKey("inviteCreatedAt") || !user.get("inviteCreatedAt").isDateTime()) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
-            return;
-        }
-        if (TokenUtils.isExpired(user.getDateTime("inviteCreatedAt"), INVITE_TTL_HOURS)) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid or expired invite token");
-            return;
-        }
-
-        // 5. Verify invited status (by checking inviteToken exists and no roles assigned)
-        //    With the new model, invited users have roles: [] and no "status" field.
-        //    We just check that the token is valid — that's sufficient.
-
-        var now = new BsonDateTime(System.currentTimeMillis());
 
         var setDoc = new BsonDocument();
         setDoc.put("password", new BsonString(TokenUtils.hashPassword(password)));
@@ -158,11 +146,10 @@ public class ActivateService implements JsonService {
         rolesArray.add(new BsonString(effectiveRole));
         setDoc.put("roles", rolesArray);
 
-        var normalizedEmail = email.trim().toLowerCase();
         db(req).updateUser(normalizedEmail, setDoc);
 
-        // 9. Remove inviteToken and inviteCreatedAt (one-shot)
-        db(req).unsetUserFields(normalizedEmail, List.of("inviteToken", "inviteCreatedAt"));
+        // 9. Delete the invitation from auth_invitations (one-shot token)
+        db(req).deleteInvitation(invite.getObjectId("_id"));
 
         // 10. Issue JWT and set cookie (auto-login)
         var userRoles = new HashSet<String>();

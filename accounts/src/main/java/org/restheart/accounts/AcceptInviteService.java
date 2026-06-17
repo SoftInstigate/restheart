@@ -99,6 +99,13 @@ public class AcceptInviteService implements JsonService, Initializer {
             return;
         }
 
+        // Verify this invitation is for an existing user (new users must use /auth/activate)
+        var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
+        if (isNewUser) {
+            sendError(res, HttpStatus.SC_BAD_REQUEST, "Please use the activation link to set your password");
+            return;
+        }
+
         var orgId = invite.get("orgId");
         var role = invite.getString("role").getValue();
 

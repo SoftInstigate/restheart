@@ -292,7 +292,6 @@ public class DefaultMembershipProvider implements MembershipProvider {
             updates.append("consents", buildConsentsDoc(consents));
         }
         db.updateUser(userId, updates);
-        db.unsetUserFields(userId, List.of("inviteToken", "inviteCreatedAt"));
 
         var role        = findRoleInTenants(user, tenantId);
         var displayName = loadTeamName(tenantId);

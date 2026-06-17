@@ -131,3 +131,53 @@ Feature: Invitations — new and existing users
     When method GET
     Then status 200
     And match response == '#[0]'
+
+  # ---------------------------------------------------------------------------
+  Scenario: GET /auth/invitation — returns invitation metadata with valid email+token
+  # ---------------------------------------------------------------------------
+    * def infoEmail = 'invite-info-' + java.util.UUID.randomUUID() + '@example.com'
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(infoEmail)", "role": "member" }
+    When method POST
+    Then status 201
+
+    # Read token from auth_invitations
+    * def tokenResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: infoEmail })
+    * def inviteToken = tokenResult.result
+
+    # Fetch invitation info (public endpoint, no auth required, but email+token pair needed)
+    Given path '/auth/invitation'
+    And param email = infoEmail
+    And param token = inviteToken
+    When method GET
+    Then status 200
+    And match response.email == infoEmail
+    And match response.orgName == '#string'
+    And match response.role == 'member'
+    And match response.isNewUser == true
+    And match response.expiresAt == '#string'
+
+  # ---------------------------------------------------------------------------
+  Scenario: GET /auth/invitation — wrong token returns 404
+  # ---------------------------------------------------------------------------
+    * def infoEmail2 = 'invite-info2-' + java.util.UUID.randomUUID() + '@example.com'
+    Given path '/auth/invite'
+    And header Authorization = 'Bearer ' + ownerJwt
+    And request { "email": "#(infoEmail2)", "role": "member" }
+    When method POST
+    Then status 201
+
+    Given path '/auth/invitation'
+    And param email = infoEmail2
+    And param token = '0000000011111111222222223333333344444444555555556666666677777777'
+    When method GET
+    Then status 404
+
+  # ---------------------------------------------------------------------------
+  Scenario: GET /auth/invitation — missing parameters returns 400
+  # ---------------------------------------------------------------------------
+    Given path '/auth/invitation'
+    And param email = 'nobody@example.com'
+    When method GET
+    Then status 400
