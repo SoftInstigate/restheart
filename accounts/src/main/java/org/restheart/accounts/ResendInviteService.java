@@ -174,6 +174,7 @@ public class ResendInviteService implements JsonService {
                             null, conf.inviteTemplatePath(), "invite.html");
                     var vars = java.util.Map.of(
                             "app-name", conf.appName(),
+                            "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", email,
                             "frontend-url", conf.frontendUrl(),

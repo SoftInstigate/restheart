@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>
-    <span lang="en">{{inviterName}} invited you to join {{teamName}}</span>
-    <span lang="it">{{inviterName}} ti ha invitato a {{teamName}}</span>
+    <span lang="en">{{inviter-name}} invited you to join {{team-name}}</span>
+    <span lang="it">{{inviter-name}} ti ha invitato a {{team-name}}</span>
   </title>
   <style>
     @media only screen and (max-width: 600px) {
@@ -27,7 +27,7 @@
         <!-- Header -->
         <tr>
           <td class="header" style="background:#1e293b;padding:28px 40px;">
-            <span style="font-size:20px;font-weight:700;color:#ffffff;">{{appName}}</span>
+            <span style="font-size:20px;font-weight:700;color:#ffffff;">{{app-name}}</span>
           </td>
         </tr>
 
@@ -40,14 +40,14 @@
             </p>
 
             <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
-              <span lang="en"><strong>{{inviterName}}</strong> has invited you to join <strong>{{teamName}}</strong> on {{appName}}.<br>Click the button below to accept and set your password.</span>
-              <span lang="it"><strong>{{inviterName}}</strong> ti ha invitato a far parte di <strong>{{teamName}}</strong> su {{appName}}.<br>Clicca il pulsante qui sotto per accettare e impostare la tua password.</span>
+              <span lang="en"><strong>{{inviter-name}}</strong> has invited you to join <strong>{{team-name}}</strong> on {{app-name}}.<br>Click the button below to accept and set your password.</span>
+              <span lang="it"><strong>{{inviter-name}}</strong> ti ha invitato a far parte di <strong>{{team-name}}</strong> su {{app-name}}.<br>Clicca il pulsante qui sotto per accettare e impostare la tua password.</span>
             </p>
 
             <table class="btn-wrap" cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
               <tr>
                 <td class="btn-td" style="background:#1e293b;border-radius:6px;">
-                  <a class="btn" href="{{activationLink}}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
+                  <a class="btn" href="{{invite-url}}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
                     <span lang="en">Accept invitation</span>
                     <span lang="it">Accetta l'invito</span>
                   </a>
@@ -59,7 +59,7 @@
               <span lang="en">Or copy and paste this link into your browser:</span>
               <span lang="it">Oppure copia e incolla questo link nel tuo browser:</span>
             </p>
-            <p style="margin:0 0 24px;font-size:12px;color:#374151;word-break:break-all;">{{activationLink}}</p>
+            <p style="margin:0 0 24px;font-size:12px;color:#374151;word-break:break-all;">{{invite-url}}</p>
 
             <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.5;">
               <span lang="en">This invitation expires in 7 days.</span>
@@ -71,7 +71,7 @@
         <!-- Footer -->
         <tr>
           <td class="footer" style="padding:20px 40px;border-top:1px solid #f3f4f6;background:#f9fafb;">
-            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">© {{year}} {{appName}}</p>
+            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">© {{year}} {{app-name}}</p>
           </td>
         </tr>
 

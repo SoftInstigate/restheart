@@ -210,6 +210,7 @@ public class InviteService implements JsonService {
                     var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                     var vars = java.util.Map.of(
                             "app-name", conf.appName(),
+                            "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", invitedEmail,
                             "frontend-url", conf.frontendUrl(),

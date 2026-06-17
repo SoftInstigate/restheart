@@ -161,6 +161,7 @@ public class ForgotPasswordService implements JsonService {
                     null, conf.passwordResetTemplatePath(), "password-reset.html");
             var vars = java.util.Map.of(
                     "app-name", conf.appName(),
+                    "year", String.valueOf(java.time.Year.now().getValue()),
                     "first-name", firstName != null ? firstName : "",
                     "email", email,
                     "frontend-url", conf.frontendUrl(),

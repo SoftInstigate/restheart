@@ -202,6 +202,7 @@ public class RegisterService implements JsonService {
                         null, conf.verificationTemplatePath(), "verification.html");
                 var vars = java.util.Map.of(
                         "app-name", conf.appName(),
+                        "year", String.valueOf(java.time.Year.now().getValue()),
                         "first-name", firstName != null ? firstName : "",
                         "email", email,
                         "frontend-url", conf.frontendUrl(),
