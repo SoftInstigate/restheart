@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.config.AccountsConfigData;
@@ -65,12 +66,15 @@ public class EmailVerificationService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
 
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/verify") && (r.isGet() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/verify"));
     }
@@ -130,29 +134,36 @@ public class EmailVerificationService implements JsonService {
         db(req).unsetUserFields(storedEmail,
                 List.of("emailVerificationToken", "emailVerificationCreatedAt"));
 
-        // ── 5b. Activate account ─────────────────────────────────────────────
-        db(req).updateUser(storedEmail, new BsonDocument("status", new BsonString("active")));
+        // ── 5b. Assign system ACL role (user is now verified) ───────────────
+        var effectiveRole = RequestOverrides.defaultRole(req, conf);
+        var updateDoc = new BsonDocument();
+        var rolesArray = new BsonArray();
+        rolesArray.add(new BsonString(effectiveRole));
+        updateDoc.put("roles", rolesArray);
+        db(req).updateUser(storedEmail, updateDoc);
 
-        // ── 5c. Build roles set from document ────────────────────────────────
+        // ── 5c. Build roles set for JWT ───────────────────────────────────────
         Set<String> roles = new HashSet<>();
-        if (user.containsKey("roles") && user.get("roles").isArray()) {
-            for (var rv : user.getArray("roles")) {
-                roles.add(rv.asString().getValue());
-            }
-        }
-        if (roles.isEmpty()) {
-            roles.add("user");
-        }
+        roles.add(effectiveRole);
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var tenant = user.containsKey("tenant")
-                ? user.getString("tenant").getValue()
-                : "";
+        var tenantBson = accountsService.getMembershipProvider()
+                .activeMembership(storedEmail)
+                .map(m -> m.tenantId())
+                .orElse(null);
+
+        var extraClaims = new java.util.HashMap<String, Object>();
+        if (tenantBson != null) {
+            extraClaims.put(conf.tenantClaimName(), tenantBson);
+        }
 
         var jwtToken = jwt.issueToken(
                 storedEmail,
                 roles,
-                Map.of("tenant", tenant, "status", "active"));
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
+                extraClaims,
+                user);
 
         // ── 5e. Set auth cookie ───────────────────────────────────────────────
         var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));

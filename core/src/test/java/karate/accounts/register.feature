@@ -105,7 +105,7 @@ Feature: POST /auth/register
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after registration user has status pending_verification and tenant set
+  Scenario: verify DB — after registration user has roles=$unauthenticated, tenant and emailVerificationToken set
   # ---------------------------------------------------------------------------
     * def email = 'reg-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -126,8 +126,10 @@ Feature: POST /auth/register
     # Read the user document from MongoDB via the RESTHeart REST API
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
-    And match response.status == 'pending_verification'
+    And match response.status == '#notpresent'
+    And match response.roles contains '$unauthenticated'
     And match response.tenant == '#notnull'
     And match response.emailVerificationToken == '#notnull'

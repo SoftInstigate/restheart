@@ -54,6 +54,57 @@ Feature: GET /auth/verify
     * match cookieHeader contains 'rh_auth=Bearer_'
     * match cookieHeader contains 'HttpOnly'
 
+    # Verify DB: roles updated to user, emailVerificationToken removed, status field gone
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains 'user'
+    And match response.status == '#notpresent'
+    And match response.emailVerificationToken == '#notpresent'
+
+  # ---------------------------------------------------------------------------
+  Scenario: token already used — second call redirects with error=invalid_token
+  # ---------------------------------------------------------------------------
+    * def email = 'verify-reuse-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Reuse",
+        "lastName":  "Test",
+        "teamName":  "Reuse Co",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    * def verificationToken = response.emailVerificationToken
+
+    # First use — must succeed
+    Given path '/auth/verify'
+    And param email = email
+    And param token = verificationToken
+    When method GET
+    Then status 302
+    * assert !responseHeaders['Location'][0].contains('error=')
+
+    # Second use — token already consumed
+    Given path '/auth/verify'
+    And param email = email
+    And param token = verificationToken
+    When method GET
+    Then status 302
+    * match responseHeaders['Location'][0] contains 'error=invalid_token'
+
   # ---------------------------------------------------------------------------
   Scenario: random token — redirects with error=invalid_token
   # ---------------------------------------------------------------------------

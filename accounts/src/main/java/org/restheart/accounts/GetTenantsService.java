@@ -2,6 +2,8 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.restheart.utils.BsonUtils;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.exchange.JsonRequest;
@@ -35,8 +37,9 @@ import org.restheart.utils.HttpStatus;
  */
 @RegisterPlugin(
         name             = "getTenantsService",
-        description      = "GET /auth/tenants — list current user's tenant memberships",
+        description      = "GET /auth/tenants \u2014 list current user's tenant memberships",
         defaultURI       = "/auth/tenants",
+        secure           = true,
         enabledByDefault = false)
 public class GetTenantsService implements JsonService {
 
@@ -68,11 +71,6 @@ public class GetTenantsService implements JsonService {
         if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
-
         var email = account.getPrincipal().getName();
 
         // Delegate to the MembershipProvider
@@ -81,7 +79,7 @@ public class GetTenantsService implements JsonService {
         var result = new JsonArray();
         for (var m : memberships) {
             var obj = new JsonObject();
-            obj.addProperty("id",     m.tenantId());
+            obj.add("id",            JsonParser.parseString(BsonUtils.toJson(m.tenantId())));
             obj.addProperty("name",   m.displayName());
             obj.addProperty("role",   m.role());
             obj.addProperty("active", m.active());

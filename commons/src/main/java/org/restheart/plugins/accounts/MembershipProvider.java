@@ -2,6 +2,7 @@ package org.restheart.plugins.accounts;
 
 import java.util.List;
 import java.util.Optional;
+import org.bson.BsonValue;
 
 /**
  * Service Provider Interface (SPI) for membership management in restheart-accounts.
@@ -55,7 +56,7 @@ public interface MembershipProvider {
      * @param tenantId the tenant identifier
      * @return {@code true} if the user belongs to the given tenant
      */
-    boolean isMember(String userId, String tenantId);
+    boolean isMember(String userId, BsonValue tenantId);
 
     /**
      * Adds a user to a tenant with the specified role (operation must be idempotent).
@@ -68,7 +69,7 @@ public interface MembershipProvider {
      * @param tenantId the tenant identifier
      * @param role     the role to assign (e.g. {@code "admin"} or the configured member role)
      */
-    void addMember(String userId, String tenantId, String role);
+    void addMember(String userId, BsonValue tenantId, String role);
 
     /**
      * Returns the user's currently active membership, or {@link Optional#empty()} if
@@ -99,7 +100,41 @@ public interface MembershipProvider {
      * @param tenantId the tenant to activate
      * @throws IllegalArgumentException if the user does not belong to the tenant
      */
-    void setActiveMembership(String userId, String tenantId);
+    void setActiveMembership(String userId, BsonValue tenantId);
+
+    /**
+     * Removes a user from the given tenant. Called by {@code DELETE /auth/remove-member}.
+     *
+     * <p>Implementations must remove the membership entry from both the user-side
+     * ({@code user.tenants[]}) and the team-side ({@code team.members[]}) stores.
+     * If the tenant being removed is currently the user's active tenant, implementations
+     * should clear or update the active tenant field accordingly.
+     *
+     * <p>This method is a no-op if the user is not a member of the given tenant.
+     *
+     * @param userId   the user's identifier (email address)
+     * @param tenantId the tenant to remove the user from
+     */
+    default void removeMember(String userId, BsonValue tenantId) {
+        throw new UnsupportedOperationException("removeMember not implemented by this provider");
+    }
+
+    /**
+     * Updates the org-level role of a user within the given tenant.
+     * Called by {@code PATCH /auth/member-role}.
+     *
+     * <p>Implementations must update the role on both the user-side
+     * ({@code user.tenants[].role}) and the team-side ({@code team.members[].role}).
+     *
+     * <p>This method is a no-op if the user is not a member of the given tenant.
+     *
+     * @param userId   the user's identifier (email address)
+     * @param tenantId the tenant in which to update the role
+     * @param newRole  the new role to assign (e.g. {@code "admin"} or the configured member role)
+     */
+    default void updateMemberRole(String userId, BsonValue tenantId, String newRole) {
+        throw new UnsupportedOperationException("updateMemberRole not implemented by this provider");
+    }
 
     /**
      * Called by the OAuth callback when the OAuth-authenticated user has
@@ -122,4 +157,5 @@ public interface MembershipProvider {
     default Optional<Membership> activateViaOAuth(String userId, ConsentRecord consents) {
         return Optional.empty();
     }
+
 }

@@ -113,5 +113,6 @@ order_processing_duration_count{service="order-processing"} 42.0
 ## See Also
 
 - [Metrics API Documentation](../../commons/src/main/java/org/restheart/metrics/Metrics.java)
-- [RESTHeart Metrics Documentation](https://restheart.org/docs/metrics)
+- [RESTHeart Metrics Documentation](../../docs/metrics.md) — Full guide covering the metrics UI, Prometheus endpoint, configuration, and custom metrics
+- [Metrics UI Dashboard](http://localhost:8080/metrics-ui) — Real-time browser dashboard (available after starting RESTHeart)
 - [Prometheus Documentation](https://prometheus.io/docs)

@@ -22,6 +22,8 @@
 
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15
+/jwtTokenManager/account-properties-claims:
+  - tenants
 
 /authCookieSetter/enabled: true
 /authCookieSetter/ttl: 15
@@ -95,6 +97,10 @@
 
     - role: owner
       predicate: path-prefix[path="/auth/invite"] or path-prefix[path="/auth/resend-invite"]
+      priority: 100
+
+    - role: $unauthenticated
+      predicate: path[path="/auth/invitation"] and method[value="GET"]
       priority: 100
 
     - role: $unauthenticated
@@ -289,6 +295,8 @@
     where: /users
   - what: 'restheart-test/teams'
     where: /teams
+  - what: 'restheart-test/auth_invitations'
+    where: /auth_invitations
   - what: '*'
     where: /remappedall
   - what: /testdb
@@ -382,6 +390,8 @@
 # restheart-accounts
 /accountsConfig/enabled: true
 /accountsConfig/db: restheart-test
+/accountsConfig/account-properties-claims:
+  - tenants
 /accountsConfig/app-name: TestApp
 /accountsConfig/jwt-ttl: 15
 /accountsConfig/cookie-domain: localhost
@@ -402,6 +412,10 @@
 /resendInviteService/enabled: true
 /getTenantsService/enabled: true
 /switchTenantService/enabled: true
+/acceptInviteService/enabled: true
+/invitationInfoService/enabled: true
+/removeMemberService/enabled: true
+/updateMemberRoleService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
 
 /ermes/enabled: true

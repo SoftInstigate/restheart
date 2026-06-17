@@ -57,6 +57,25 @@ public class ResourcesExtractor {
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
 
     /**
+     * Optional fallback class loader used when the class-based class loader
+     * cannot locate a resource. This is typically set to the plugins class loader
+     * so that resources bundled in plugin JARs can be found during static
+     * resource extraction.
+     */
+    private static ClassLoader fallbackClassLoader;
+
+    /**
+     * Sets a fallback class loader that will be used when the primary
+     * (class-based) class loader cannot find a resource. This allows
+     * resources packaged in plugin JAR files to be discovered at runtime.
+     *
+     * @param classLoader the fallback ClassLoader (typically the plugins class loader)
+     */
+    public static void setFallbackClassLoader(ClassLoader classLoader) {
+        fallbackClassLoader = classLoader;
+    }
+
+    /**
      * Determines if a resource is located within a JAR file.
      * This method checks whether the specified resource path points to a resource
      * that is packaged inside a JAR file rather than existing as a regular file
@@ -69,8 +88,7 @@ public class ResourcesExtractor {
      */
     @SuppressWarnings("rawtypes")
     public static boolean isResourceInJar(Class clazz, String resourcePath) throws URISyntaxException {
-        return getClassLoader(clazz)
-                .getResource(resourcePath)
+        return findResource(clazz, resourcePath)
                 .toURI().toString()
                 .startsWith("jar:");
     }
@@ -116,12 +134,12 @@ public class ResourcesExtractor {
     public static File extract(Class clazz, String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-        if (getClassLoader(clazz).getResource(resourcePath) == null) {
+        if (findResource(clazz, resourcePath) == null) {
             LOG.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
 
-        URI uri = getClassLoader(clazz).getResource(resourcePath).toURI();
+        URI uri = findResource(clazz, resourcePath).toURI();
 
         if (isResourceInJar(clazz, resourcePath)) {
             FileSystem fs = null;
@@ -235,5 +253,24 @@ public class ResourcesExtractor {
     @SuppressWarnings("rawtypes")
     private static ClassLoader getClassLoader(Class clazz) {
         return clazz.getClassLoader();
+    }
+
+    /**
+     * Looks up a resource URL using the class-based class loader first,
+     * then falling back to the {@link #fallbackClassLoader} if set.
+     * This enables finding resources packaged in plugin JARs that are not
+     * visible to the core class loader.
+     *
+     * @param clazz the class whose class loader is tried first
+     * @param resourcePath the path to the resource to look up
+     * @return the resource URL, or {@code null} if not found by any class loader
+     */
+    @SuppressWarnings("rawtypes")
+    private static java.net.URL findResource(Class clazz, String resourcePath) {
+        var url = getClassLoader(clazz).getResource(resourcePath);
+        if (url == null && fallbackClassLoader != null) {
+            url = fallbackClassLoader.getResource(resourcePath);
+        }
+        return url;
     }
 }

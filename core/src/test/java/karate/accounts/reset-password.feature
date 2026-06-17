@@ -30,6 +30,7 @@ Feature: PATCH /auth/reset-password
     # --- 2. Read emailVerificationToken from MongoDB ---
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def verifyToken = response.emailVerificationToken
@@ -50,6 +51,7 @@ Feature: PATCH /auth/reset-password
     # --- 5. Read passwordResetToken from MongoDB ---
     Given path '/users/' + email
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     * def resetToken = response.passwordResetToken
@@ -76,6 +78,15 @@ Feature: PATCH /auth/reset-password
 
     # Response body confirms success
     And match response.message == '#notnull'
+
+    # Verify: the reset response issues a JWT — use it to make an authenticated call
+    * def setCookie = responseHeaders['Set-Cookie'][0]
+    * def jwt = setCookie.split('Bearer_')[1].split(';')[0]
+    Given path '/auth/tenants'
+    And header Authorization = 'Bearer ' + jwt
+    When method GET
+    Then status 200
+    And match response == '#array'
 
   # ---------------------------------------------------------------------------
   Scenario: token not found — returns 401
@@ -150,3 +161,12 @@ Feature: PATCH /auth/reset-password
       """
     When method PATCH
     Then status 401
+
+    # Verify DB: passwordResetToken removed after use
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.passwordResetToken == '#notpresent'
+    And match response.passwordResetCreatedAt == '#notpresent'

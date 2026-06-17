@@ -6,6 +6,7 @@ RESTHeart is a Java backend framework for rapid development of REST, GraphQL, an
 ## Architecture & Module Structure
 
 **Multi-Module Maven Layout:**
+- `core/` - Runtime process, plugin registry, request routing, security enforcement
 - `commons/` - Plugin APIs (Apache 2.0 licensed) for developing extensions
 - `mongoclient/` - MongoDB client wrapper
 - `security/` - Authentication and authorization plugins
@@ -13,7 +14,7 @@ RESTHeart is a Java backend framework for rapid development of REST, GraphQL, an
 - `graphql/` - GraphQL API support
 - `polyglot/` - GraalVM polyglot plugin support (JavaScript, etc.)
 - `metrics/` - Metrics collection and reporting
-- `core/` - Runtime process, plugin registry, request routing, security enforcement
+- `accounts/` - User signup processes
 - `test-plugins/` - Test plugin implementations
 - `examples/` - Diverse plugin examples (Java, Kotlin, JavaScript)
 

@@ -427,11 +427,20 @@ proxies:
 
 # Static Web Resources - serve static files with RESTHeart acting a web server
 # See https://restheart.org/docs/static-resources
+#
+# Built-in Metrics Dashboard - real-time monitoring UI using Chart.js
+# Served from an embedded HTML file inside the restheart-metrics JAR.
+# Access at /metrics-ui after starting RESTHeart.
+# Displays: request rates, latency percentiles (p50/p95/p99),
+# request counts by method+status, and latency distribution charts.
+# Supports auto-refresh (configurable 5s-1m), metric filtering with
+# localStorage persistence, and connects to the /metrics endpoint.
+# See docs/metrics.md for full documentation.
 static-resources:
-#  - what: /path/to/resources
-#    where: /static
-#    welcome-file: index.html
-#    embedded: false
+  - what: static/metrics
+    where: /metrics-ui
+    welcome-file: restheart-metrics.html
+    embedded: true
 
 # Simple ping service
 # Must respond with HTTP 200 OK
@@ -544,14 +553,18 @@ logging:
   # Optional: Interval in minutes for logging excluded requests (default: 10)
   requests-log-exclude-interval: 10
 
-# Metrics see https://restheart.org/docs/metrics
+# Metrics - see https://restheart.org/docs/metrics and docs/metrics.md
+#
+# Exposes HTTP request and (optionally) JVM metrics in Prometheus format at /metrics.
+# The built-in Metrics UI dashboard is available at /metrics-ui (see static-resources above).
+# Custom plugin metrics are also exposed automatically via the Metrics API.
 metrics:
   enabled: true
   uri: /metrics
   missing-registry-status-code: 404 # use 404 or 200
 
 requestsMetricsCollector:
-  enabled: false
+  enabled: true
   include: ["/*"]
   exclude: ["/metrics", "/metrics/*"]
 

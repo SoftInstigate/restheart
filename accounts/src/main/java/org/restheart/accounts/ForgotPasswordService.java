@@ -7,10 +7,12 @@ import java.time.Instant;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonArray;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
@@ -95,7 +97,7 @@ public class ForgotPasswordService implements JsonService {
         // 3. Async logic on the same thread; any exception is swallowed after logging
         var dbName = RequestOverrides.db(req, conf);
         try {
-            processResetRequest(email, dbName);
+            processResetRequest(req, email, dbName);
         } catch (Exception e) {
             LOGGER.warn("forgotPassword: unexpected error during reset processing", e);
         }
@@ -110,7 +112,7 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(String email, String dbName) {
+    private void processResetRequest(JsonRequest req, String email, String dbName) throws java.io.IOException {
         // a. Locate user
         var userOpt = new DbHelper(mclient, dbName).findUser(email);
         if (userOpt.isEmpty()) {
@@ -119,13 +121,15 @@ public class ForgotPasswordService implements JsonService {
         }
 
         var user   = userOpt.get();
-        var status = user.containsKey("status")
-                ? user.getString("status").getValue()
-                : "";
 
-        // b. Only send reset emails for active accounts
-        if (!"active".equals(status)) {
-            LOGGER.debug("forgotPassword: account status is '{}', skipping reset", status);
+        // Only send reset emails for verified accounts
+        // Verified users have roles != ["$unauthenticated"]
+        var userRoles = user.containsKey("roles") && user.get("roles").isArray()
+                ? user.getArray("roles") : new BsonArray();
+        boolean isVerified = !userRoles.isEmpty()
+                && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
+        if (!isVerified) {
+            LOGGER.debug("forgotPassword: account not verified (roles={}), skipping reset", userRoles);
             return;
         }
 
@@ -140,19 +144,31 @@ public class ForgotPasswordService implements JsonService {
         new DbHelper(mclient, dbName).updateUser(email, updates);
 
         // e. Build reset link and send email
-        var firstName  = user.containsKey("firstName")
-                ? user.getString("firstName").getValue()
+        var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
+                && user.getDocument("profile").containsKey("name")
+                ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
         var resetLink    = conf.frontendUrl()
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
-        ermes.sendEmail(
-                email,
-                firstName,
-                EmailTemplates.resetPasswordSubject(conf.appName()),
-                EmailTemplates.resetPasswordBody(firstName, resetLink, conf.appName()));
+        // Check X-Skip-Email header for integration tests
+        if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+            LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
+        } else {
+            var tmpl = EmailTemplateLoader.loadWithFallback(
+                    null, conf.passwordResetTemplatePath(), "password-reset.html");
+            var vars = java.util.Map.of(
+                    "app-name", conf.appName(),
+                    "year", String.valueOf(java.time.Year.now().getValue()),
+                    "first-name", firstName != null ? firstName : "",
+                    "email", email,
+                    "frontend-url", conf.frontendUrl(),
+                    "reset-url", resetLink);
+            var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+            ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+        }
 
         // f. Audit log — no PII at INFO level
         LOGGER.info("forgotPassword: password reset email dispatched");

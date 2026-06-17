@@ -3,10 +3,14 @@ Feature: POST /auth/switch-tenant
   Background:
     * url baseUrl
     * configure followRedirects = false
-    * def ownerSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-owner.feature')
+    * def ownerSetup = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerJwt = ownerSetup.ownerJwt
-    * def secondSetup = karate.callSingle('classpath:karate/accounts/helpers/setup-second-team.feature')
+    * def secondSetup = karate.call('classpath:karate/accounts/helpers/setup-second-team.feature')
     * def secondTenantId = secondSetup.secondTenantId
+    # Accept the invitation (setup-second-team already invited owner-test)
+    * def inviteResult = karate.call('classpath:karate/accounts/helpers/get-invite-token.feature', { email: 'owner-test@example.com' })
+    * if (inviteResult.inviteToken) karate.call('classpath:karate/accounts/helpers/accept-invite-clean.feature', { jwt: ownerJwt, token: inviteResult.inviteToken })
+
 
   # ---------------------------------------------------------------------------
   Scenario: OPTIONS returns 200
@@ -105,9 +109,10 @@ Feature: POST /auth/switch-tenant
   # ---------------------------------------------------------------------------
   Scenario: verify DB — invite with existing user adds tenants entry
   # ---------------------------------------------------------------------------
-    # Check owner-test has tenants array with both teams
+    # Check owner-test has orgs array with both teams
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
+    And param rep = 's'
     When method GET
     Then status 200
     And match response.tenants == '#array'

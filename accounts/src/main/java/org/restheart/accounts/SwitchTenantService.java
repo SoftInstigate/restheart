@@ -1,11 +1,15 @@
 package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
+import org.bson.BsonValue;
+import org.restheart.utils.BsonUtils;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -25,11 +29,11 @@ import java.util.Set;
  * {@link MembershipProvider}, issues a new JWT for the target tenant with
  * the correct role, and sets the auth cookie.
  *
- * <p>Request body:
- * <pre>{@code { "tenantId": "def456" }}</pre>
+ * <p>Request body ({@code tenantId} in MongoDB extended JSON, matching the value from {@code GET /auth/tenants}):
+ * <pre>{@code { "tenantId": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"} }}</pre>
  *
  * <p>Response: 200 with updated cookie. Body:
- * <pre>{@code { "tenant": "def456", "role": "member" }}</pre>
+ * <pre>{@code { "tenant": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"}, "role": "member" }}</pre>
  *
  * <p>Errors:
  * <ul>
@@ -42,8 +46,9 @@ import java.util.Set;
  */
 @RegisterPlugin(
         name             = "switchTenantService",
-        description      = "POST /auth/switch-tenant — switch active tenant and reissue JWT cookie",
+        description      = "POST /auth/switch-tenant \u2014 switch active tenant and reissue JWT cookie",
         defaultURI       = "/auth/switch-tenant",
+        secure           = true,
         enabledByDefault = false)
 public class SwitchTenantService implements JsonService {
 
@@ -56,11 +61,14 @@ public class SwitchTenantService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("mclient")
+    private com.mongodb.client.MongoClient mclient;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-tenant") && (r.isPost() || r.isOptions()));
         }
@@ -78,10 +86,6 @@ public class SwitchTenantService implements JsonService {
         if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
-            return;
-        }
 
         // Parse body
         var body = req.getContent();
@@ -94,9 +98,15 @@ public class SwitchTenantService implements JsonService {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
             return;
         }
-        var targetTenantId = jo.get("tenantId").getAsString().trim();
-        if (targetTenantId.isBlank()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId must not be blank");
+        BsonValue targetTenantId;
+        try {
+            targetTenantId = BsonUtils.parse(jo.get("tenantId").toString());
+        } catch (Exception e) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invalid tenantId format");
+            return;
+        }
+        if (targetTenantId == null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
             return;
         }
 
@@ -104,36 +114,47 @@ public class SwitchTenantService implements JsonService {
         var membership = accountsService.getMembershipProvider();
 
         // Find the target membership via the SPI
-        var memberships    = membership.listMemberships(email);
-        String roleInTenant = null;
+        var memberships = membership.listMemberships(email);
+        org.restheart.plugins.accounts.Membership matched = null;
         for (var m : memberships) {
             if (targetTenantId.equals(m.tenantId())) {
-                roleInTenant = m.role();
+                matched = m;
                 break;
             }
         }
 
-        if (roleInTenant == null) {
+        if (matched == null) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "User does not belong to this tenant");
             return;
         }
 
-        // Verify user is active by checking the user document
-        // (status check is a safety guard; membership confirms the user exists)
-
         // Switch the active membership via the SPI
         try {
-            membership.setActiveMembership(email, targetTenantId);
+            membership.setActiveMembership(email, matched.tenantId());
         } catch (IllegalArgumentException e) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, e.getMessage());
             return;
         }
 
-        // Issue new JWT with the configured tenant claim name
+        // Read system roles from DB — do NOT use matched.role() (membership role)
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var dbRoles = userDoc
+                .map(u -> u.containsKey("roles") && u.get("roles").isArray()
+                        ? u.getArray("roles").stream()
+                            .filter(BsonValue::isString)
+                            .map(v -> v.asString().getValue())
+                            .collect(java.util.stream.Collectors.toSet())
+                        : Set.<String>of())
+                .orElse(Set.of());
+
+        // Issue new JWT with the system roles from DB, not the membership role
         var token = jwt.issueToken(
                 email,
-                Set.of(roleInTenant),
-                java.util.Map.of(conf.tenantClaimName(), targetTenantId, "status", "active"));
+                dbRoles,
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
+                java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId()),
+                null);
 
         // Set cookie
         var domain       = RequestOverrides.cookieDomain(req, conf);
@@ -142,8 +163,8 @@ public class SwitchTenantService implements JsonService {
 
         // Response body
         var responseBody = new JsonObject();
-        responseBody.addProperty("tenant", targetTenantId);
-        responseBody.addProperty("role",   roleInTenant);
+        responseBody.add(conf.tenantClaimName(), JsonParser.parseString(BsonUtils.toJson(matched.tenantId())));
+        responseBody.addProperty("role", matched.role());
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
     }

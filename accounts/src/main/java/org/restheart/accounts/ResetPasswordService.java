@@ -67,12 +67,15 @@ public class ResetPasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("accountsService")
+    private AccountsService accountsService;
+
 
     private JwtHelper  jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/reset-password") && (r.isPatch() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/reset-password"));
     }
@@ -143,12 +146,11 @@ public class ResetPasswordService implements JsonService {
             return;
         }
 
-        // 5. Only active accounts may reset their password
-        var status = user.containsKey("status")
-                ? user.getString("status").getValue()
-                : "";
-        if (!"active".equals(status)) {
-            Errors.error(res, 400, "Account not active");
+        // 5. Only verified accounts may reset their password
+        //    Verified users have roles != ["$unauthenticated"]
+        var roles = extractRoles(user);
+        if (roles.isEmpty() || (roles.size() == 1 && roles.contains("$unauthenticated"))) {
+            Errors.error(res, 400, "Account not verified");
             return;
         }
 
@@ -161,10 +163,19 @@ public class ResetPasswordService implements JsonService {
         db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
-        var tenant    = user.containsKey("tenant") ? user.getString("tenant").getValue() : "";
-        var roles     = extractRoles(user);
+        var tenant = accountsService.getMembershipProvider()
+                .activeMembership(storedEmail)
+                .map(m -> m.tenantId())
+                .orElse(null);
+        var extraClaims = new java.util.HashMap<String, Object>();
+        if (tenant != null) {
+            extraClaims.put(conf.tenantClaimName(), tenant);
+        }
         var jwtToken  = jwt.issueToken(storedEmail, roles,
-                Map.of("tenant", tenant, "status", "active"));
+                RequestOverrides.db(req, conf),
+                req.attachedParams(),
+                extraClaims,
+                user);
 
         res.getHeaders().add(Headers.SET_COOKIE,
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf)));

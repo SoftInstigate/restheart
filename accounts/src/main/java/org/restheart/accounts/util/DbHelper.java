@@ -6,9 +6,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.BsonDocument;
+import org.bson.BsonDateTime;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.types.ObjectId;
+import org.bson.BsonValue;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,8 @@ import static com.mongodb.client.model.Filters.eq;
 public class DbHelper {
 
     private static final String USERS_COLLECTION = "users";
-    private static final String TEAMS_COLLECTION = "teams";
+    private static final String TEAMS_COLLECTION = "orgs";
+    private static final String INVITATIONS_COLLECTION = "auth_invitations";
 
     /** Duplicate-key error code returned by MongoDB. */
     private static final int DUPLICATE_KEY_CODE = 11000;
@@ -129,7 +131,6 @@ public class DbHelper {
 
     /**
      * Adds a tenant membership to the user's {@code tenants} array using {@code $addToSet}.
-     * Also updates {@code roles} if this is the user's first/only tenant.
      *
      * @param email      the user's email (_id)
      * @param membership a document {@code { id: "...", role: "..." }}
@@ -144,14 +145,48 @@ public class DbHelper {
     }
 
     /**
+     * Removes the entry with the given {@code tenantId} from the user's {@code tenants} array.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant to remove
+     * @return {@code true} if a document was matched
+     */
+    public boolean removeTenantMembership(String email, BsonValue tenantId) {
+        var result = users().updateOne(
+            eq("_id", new BsonString(email)),
+            Updates.pull("tenants", new BsonDocument("id", tenantId))
+        );
+        return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Updates the role for the given tenant entry in the user's {@code tenants} array.
+     *
+     * @param email    the user's email (_id)
+     * @param tenantId the tenant whose role to change
+     * @param newRole  the new role string
+     * @return {@code true} if a matching tenant entry was found and modified
+     */
+    public boolean updateTenantRole(String email, BsonValue tenantId, String newRole) {
+        var result = users().updateOne(
+            Filters.and(
+                eq("_id", new BsonString(email)),
+                Filters.eq("tenants.id", tenantId)
+            ),
+            Updates.set("tenants.$.role", new BsonString(newRole))
+        );
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
      * Sets the user's active tenant (the {@code tenant} field) unconditionally.
      *
      * @param email    the user's email (_id)
      * @param tenantId the tenant to make active
      * @return {@code true} if a document was matched
      */
-    public boolean setActiveTenant(String email, String tenantId) {
-        return updateUser(email, new BsonDocument("tenant", new BsonString(tenantId)));
+    public boolean setActiveTenant(String email, BsonValue tenantId) {
+        return updateUser(email, new BsonDocument("tenant", tenantId));
     }
 
     /**
@@ -162,7 +197,7 @@ public class DbHelper {
      * @param tenantId the tenant to set as active
      * @return {@code true} if the field was set (document matched and had no prior tenant)
      */
-    public boolean setActiveTenantIfAbsent(String email, String tenantId) {
+    public boolean setActiveTenantIfAbsent(String email, BsonValue tenantId) {
         var result = users().updateOne(
             Filters.and(
                 eq("_id", new BsonString(email)),
@@ -197,12 +232,46 @@ public class DbHelper {
      * @param teamId the ObjectId hex string
      * @return the team document, or {@link Optional#empty()} if not found
      */
-    public Optional<BsonDocument> findTeam(String teamId) {
+    public Optional<BsonDocument> findTeam(BsonValue teamId) {
         return Optional.ofNullable(
             teams()
-                .find(eq("_id", new BsonObjectId(new ObjectId(teamId))))
+                .find(eq("_id", teamId))
                 .first()
         );
+    }
+
+    /**
+     * Removes a member entry from the team's {@code members} array.
+     *
+     * @param tenantId the team's {@code _id}
+     * @param userId   the user to remove
+     * @return {@code true} if the team document was matched
+     */
+    public boolean removeMemberFromTeam(BsonValue tenantId, String userId) {
+        var result = teams().updateOne(
+            eq("_id", tenantId),
+            Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
+        );
+        return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Updates the role for a member in the team's {@code members} array.
+     *
+     * @param tenantId the team's {@code _id}
+     * @param userId   the member's user id
+     * @param newRole  the new role string
+     * @return {@code true} if the member entry was found and modified
+     */
+    public boolean updateMemberRoleInTeam(BsonValue tenantId, String userId, String newRole) {
+        var result = teams().updateOne(
+            Filters.and(
+                eq("_id", tenantId),
+                Filters.eq("members.userId", new BsonString(userId))
+            ),
+            Updates.set("members.$.role", new BsonString(newRole))
+        );
+        return result.getModifiedCount() > 0;
     }
 
     // -------------------------------------------------------------------------
@@ -217,5 +286,103 @@ public class DbHelper {
     private MongoCollection<BsonDocument> teams() {
         return mclient.getDatabase(db)
                       .getCollection(TEAMS_COLLECTION, BsonDocument.class);
+    }
+
+    private MongoCollection<BsonDocument> invitations() {
+        return mclient.getDatabase(db)
+                      .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
+    }
+
+    /**
+     * Creates an invitation document in the auth_invitations collection.
+     *
+     * @param isNewUser {@code true} if the user was created by this invite (no prior account)
+     */
+    public void createInvitation(String email, String token, BsonValue orgId, String role, long ttlMs, boolean isNewUser) {
+        var now = System.currentTimeMillis();
+        var doc = new BsonDocument()
+                .append("_id", new org.bson.BsonObjectId())
+                .append("email", new BsonString(email))
+                .append("token", new BsonString(token))
+                .append("orgId", orgId)
+                .append("role", new BsonString(role))
+                .append("isNewUser", new org.bson.BsonBoolean(isNewUser))
+                .append("createdAt", new BsonDateTime(now))
+                .append("expiresAt", new BsonDateTime(now + ttlMs));
+        invitations().insertOne(doc);
+    }
+
+    /**
+     * Finds a valid (non-expired) invitation by token alone.
+     */
+    public Optional<BsonDocument> findInvitationByToken(String token) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("token", token),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Finds a valid (non-expired) invitation by the (email, token) pair.
+     * Used by {@code GET /auth/invitation} — the pair is known only to the invitee.
+     */
+    public Optional<BsonDocument> findInvitationByEmailAndToken(String email, String token) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("email", email),
+                        Filters.eq("token", token),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Finds the latest pending invitation for a user in a specific org.
+     */
+    public Optional<BsonDocument> findInvitation(String email, BsonValue orgId) {
+        var now = System.currentTimeMillis();
+        var doc = invitations().find(
+                Filters.and(
+                        Filters.eq("email", email),
+                        Filters.eq("orgId", orgId),
+                        Filters.gt("expiresAt", new BsonDateTime(now))))
+                .sort(new BsonDocument("createdAt", new org.bson.BsonInt32(-1)))
+                .first();
+        return Optional.ofNullable(doc);
+    }
+
+    /**
+     * Renews the token and expiry of an existing invitation document.
+     */
+    public boolean renewInvitation(BsonValue invitationId, String newToken, long ttlMs) {
+        var now = System.currentTimeMillis();
+        var result = invitations().updateOne(
+                Filters.eq("_id", invitationId),
+                new BsonDocument("$set", new BsonDocument()
+                        .append("token", new BsonString(newToken))
+                        .append("createdAt", new BsonDateTime(now))
+                        .append("expiresAt", new BsonDateTime(now + ttlMs))));
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Deletes an invitation by its document id.
+     */
+    public void deleteInvitation(BsonValue invitationId) {
+        invitations().deleteOne(Filters.eq("_id", invitationId));
+    }
+
+    /**
+     * Deletes all invitations for a user in a specific org (used after acceptance).
+     */
+    public void deleteInvitations(String email, BsonValue orgId) {
+        invitations().deleteMany(
+                Filters.and(
+                        Filters.eq("email", email),
+                        Filters.eq("orgId", orgId)));
     }
 }

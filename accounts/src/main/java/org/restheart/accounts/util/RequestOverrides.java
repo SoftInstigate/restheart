@@ -128,6 +128,14 @@ public final class RequestOverrides {
     public static final String OAUTH_GOOGLE_CLIENT_ID     = "override-accounts-oauth-google-client-id";
     public static final String OAUTH_GOOGLE_CLIENT_SECRET = "override-accounts-oauth-google-client-secret";
 
+    // ── Per-tenant role override ──────────────────────────────────────────────
+
+    /** System ACL role assigned after email verification (override for multi-tenant). */
+    public static final String DEFAULT_ROLE = "override-accounts-default-role";
+
+    /** Team role for the user who creates a team (override for multi-tenant). */
+    public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
+
     private RequestOverrides() {}
 
     // ── Accessor methods ──────────────────────────────────────────────────────
@@ -173,6 +181,16 @@ public final class RequestOverrides {
     /** Inline HTML for the invite template, or {@code null}. */
     public static String templateInvite(ServiceRequest<?> req) {
         return str(req, TMPL_INVITE, null);
+    }
+
+    /** Effective system ACL role after verification. */
+    public static String defaultRole(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, DEFAULT_ROLE, conf.defaultRole());
+    }
+
+    /** Effective ownership role for team creators. */
+    public static String ownershipRole(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
     /**

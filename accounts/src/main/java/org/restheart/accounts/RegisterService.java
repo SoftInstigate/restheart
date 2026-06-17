@@ -10,7 +10,8 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 
 import org.restheart.accounts.util.RequestOverrides;
@@ -153,18 +154,20 @@ public class RegisterService implements JsonService {
         var now               = new BsonDateTime(System.currentTimeMillis());
 
         // ── 5. Create and insert user (without tenant — MembershipProvider sets it) ──
+        // New users start with $unauthenticated role — they can only access
+        // public endpoints until email verification assigns the real role.
+        // "owner"/"admin"/"member" are team/membership roles, not system ACL roles.
         var rolesArray = new BsonArray();
-        rolesArray.add(new BsonString("owner")); // creator of the team → owner role
+        rolesArray.add(new BsonString("$unauthenticated"));
 
         var profile = new BsonDocument()
-                .append("firstName", new BsonString(firstName))
-                .append("lastName",  new BsonString(lastName));
+                .append("name",    new BsonString(firstName))
+                .append("surname", new BsonString(lastName));
 
         var userDoc = new BsonDocument()
                 .append("_id",                        new BsonString(email))
                 .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
                 .append("roles",                      rolesArray)
-                .append("status",                     new BsonString("pending_verification"))
                 .append("profile",                    profile)
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
@@ -177,23 +180,36 @@ public class RegisterService implements JsonService {
 
         // ── 6. Delegate team creation + membership linking to the provider ────
         var tenantRef = membership().createInitialTeam(email, teamName);
-        var teamId    = tenantRef.id();
+        var teamId    = tenantRef.id().isString()
+                ? tenantRef.id().asString().getValue()
+                : tenantRef.id().asObjectId().getValue().toHexString();
 
         LOGGER.info("User registered: <{}>, tenant={}", email, teamId);
 
         // ── 7. Send verification email (best-effort) ─────────────────────────
         try {
-            var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-            var verifyLink   = conf.frontendUrl()
-                               + "/auth/verify"
-                               + "?email=" + encodedEmail
-                               + "&token=" + verificationToken;
+            // Check X-Skip-Email header for integration tests
+            if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
+            } else {
+                var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+                var verifyLink   = conf.frontendUrl()
+                                   + "/auth/verify"
+                                   + "?email=" + encodedEmail
+                                   + "&token=" + verificationToken;
 
-            ermes.sendEmail(
-                    email,
-                    firstName,
-                    EmailTemplates.verifyEmailSubject(conf.appName()),
-                    EmailTemplates.verifyEmailBody(firstName, verifyLink, conf.appName()));
+                var tmpl = EmailTemplateLoader.loadWithFallback(
+                        null, conf.verificationTemplatePath(), "verification.html");
+                var vars = java.util.Map.of(
+                        "app-name", conf.appName(),
+                        "year", String.valueOf(java.time.Year.now().getValue()),
+                        "first-name", firstName != null ? firstName : "",
+                        "email", email,
+                        "frontend-url", conf.frontendUrl(),
+                        "verification-url", verifyLink);
+                var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later
             LOGGER.warn("Failed to send verification email to <{}>: {}", email, e.getMessage());

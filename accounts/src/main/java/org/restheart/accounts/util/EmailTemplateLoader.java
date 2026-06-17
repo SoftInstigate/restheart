@@ -148,9 +148,12 @@ public final class EmailTemplateLoader {
 
     private static String loadFromFile(String pathStr, String builtinName) throws IOException {
         var path = Path.of(pathStr);
+        LOGGER.info("Attempting to load email template: path='{}', resolved='{}', exists={}",
+                pathStr, path.toAbsolutePath(), Files.exists(path));
         if (Files.exists(path)) {
-            LOGGER.debug("Loading email template from file: {}", path.toAbsolutePath());
-            return Files.readString(path, StandardCharsets.UTF_8);
+            var content = Files.readString(path, StandardCharsets.UTF_8);
+            LOGGER.info("Loaded custom email template from: {} ({} bytes)", path.toAbsolutePath(), content.length());
+            return content;
         }
         // File path configured but file not found — fall back to built-in and warn
         LOGGER.warn("Email template file not found: {} — falling back to built-in '{}'",

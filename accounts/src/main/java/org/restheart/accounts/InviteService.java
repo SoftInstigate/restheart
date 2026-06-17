@@ -5,12 +5,14 @@ import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailTemplates;
+import org.restheart.accounts.util.EmailRenderer;
+import org.restheart.accounts.util.EmailTemplateLoader;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
@@ -22,6 +24,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,15 +36,15 @@ import java.nio.charset.StandardCharsets;
  * POST /auth/invite
  *
  * <p>Invites a user to the caller's tenant. Creates the user with
- * {@code status="invited"}, a random password placeholder, and an
- * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation
+ * {@code roles: ["$unauthenticated"]}, a random password placeholder, and an
+ * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation email.
  * email.
  *
- * <p>Requires authentication. Callable by roles: {@code owner}, {@code admin}.
+ * <p>Requires authentication. Callable by membership role: {@code <ownershipRole>} only.
  *
  * <p>Expected body:
  * <pre>{@code
- * { "email": "...", "role": "<memberRoleName>|admin" }
+ * { "email": "...", "role": "<memberRoleName>|<ownershipRole>" }
  * }</pre>
  * {@code role} is optional and defaults to the configured {@code member-role-name}.
  *
@@ -49,12 +52,14 @@ import java.nio.charset.StandardCharsets;
  */
 @RegisterPlugin(
         name             = "inviteService",
-        description      = "POST /auth/invite — invites a user to the caller's tenant",
+        description      = "POST /auth/invite \u2014 invites a user to the caller's tenant",
         defaultURI       = "/auth/invite",
+        secure           = true,
         enabledByDefault = false)
 public class InviteService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InviteService.class);
+    private static final long INVITE_TTL_MS = 7L * 24 * 60 * 60 * 1000;
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -74,9 +79,7 @@ public class InviteService implements JsonService {
     @OnInit
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
-            // Allow all requests to reach the service; auth and role enforcement is done in handle()
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/invite") && (r.isPost() || r.isOptions()));
-            aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/invite"));
         }
     }
 
@@ -97,28 +100,28 @@ public class InviteService implements JsonService {
             return;
         }
 
-        // 1. Verifica autenticazione
+        // 1. Get authenticated account (enforced by secure=true)
         var account = req.getAuthenticatedAccount();
-        if (account == null) {
-            Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Authentication required");
+        var email = account.getPrincipal().getName();
+
+        // 2. Verify membership role: must be ownership-role
+        var membership = accountsService.getMembershipProvider()
+                .activeMembership(email);
+        var membershipRole = membership.map(m -> m.role()).orElse(null);
+        var ownershipRole = conf.ownershipRole();
+        if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 
-        // 2. Verifica ruolo: deve essere owner o admin
-        var roles = account.getRoles();
-        if (!roles.contains("owner") && !roles.contains("admin")) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires owner or admin role");
-            return;
-        }
-
-        // 3. Leggi il tenant del chiamante
-        var callerTenant = extractTenant(account, conf.tenantClaimName());
-        if (callerTenant == null || callerTenant.isBlank()) {
+        // 3. Read caller's tenant
+        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
+        if (callerTenant == null || callerTenant.isNull()) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
             return;
         }
 
-        // 4. Valida body
+        // 4. Validate body
         var body = req.getContent();
         if (body == null || !body.isJsonObject()) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Request body must be a JSON object");
@@ -136,95 +139,90 @@ public class InviteService implements JsonService {
         var role = defaultRole;
         if (jo.has("role") && !jo.get("role").isJsonNull()) {
             role = jo.get("role").getAsString().trim().toLowerCase();
-            if (!defaultRole.equals(role) && !"admin".equals(role)) {
+            if (!defaultRole.equals(role) && !ownershipRole.equals(role)) {
                 Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                        "role must be '" + defaultRole + "' or 'admin'");
+                        "role must be '" + defaultRole + "' or '" + ownershipRole + "'");
                 return;
             }
         }
 
-        var membership = accountsService.getMembershipProvider();
+        var membershipProvider = accountsService.getMembershipProvider();
 
-        // 5. Controlla se l'utente esiste già
+        // 5. Check if user already exists and is already in this team
         var existing = db(req).findUser(invitedEmail);
-        if (existing.isPresent()) {
-            // Check if already in this team via the SPI
-            if (membership.isMember(invitedEmail, callerTenant)) {
-                Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
+        if (existing.isPresent() && membershipProvider.isMember(invitedEmail, callerTenant)) {
+            Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
+            return;
+        }
+
+        // 6. Create invite token
+        var inviteToken = TokenUtils.generateToken();
+        var isNewUser   = existing.isEmpty();
+
+        if (isNewUser) {
+            // New user: create with $unauthenticated role (no inviteToken on user doc)
+            var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
+            var rolesArr  = new BsonArray();
+            rolesArr.add(new BsonString("$unauthenticated"));
+
+            var userDoc = new BsonDocument();
+            userDoc.put("_id",      new BsonString(invitedEmail));
+            userDoc.put("password", new BsonString(hashedPwd));
+            userDoc.put("roles",    rolesArr);
+            userDoc.put("profile",  new BsonDocument());
+
+            if (!db(req).insertUser(userDoc)) {
+                Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
                 return;
             }
-            // Multi-team: add membership to existing active user via SPI
-            membership.addMember(invitedEmail, callerTenant, role);
-            // Send notification email (best-effort)
-            if (ermes != null && ermes.isEnabled()) {
-                try {
-                    var teamName = loadTeamName(db(req), callerTenant);
-                    var inviterName = account.getPrincipal() != null
-                            ? account.getPrincipal().getName() : invitedEmail;
-                    ermes.sendEmail(
-                            invitedEmail,
-                            invitedEmail,
-                            EmailTemplates.inviteSubject(teamName, conf.appName()),
-                            EmailTemplates.inviteBody(teamName, inviterName,
-                                    conf.frontendUrl(), conf.appName()));
-                    LOGGER.info("Added existing user <{}> to tenant={}", invitedEmail, callerTenant);
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to send team-added email to <{}>: {}", invitedEmail, e.getMessage());
-                }
-            }
-            res.setStatusCode(HttpStatus.SC_CREATED);
-            return;
+            // Add membership immediately so user.tenant is set (required for JWT issuance on activate)
+            membershipProvider.addMember(invitedEmail, callerTenant, role);
         }
 
-        // 6. Crea utente con status="invited" (tenant fields managed by SPI)
-        var inviteToken = TokenUtils.generateToken();
-        var now         = new BsonDateTime(System.currentTimeMillis());
-        // password casuale hashata — l'utente non può loggarsi finché non attiva l'account
-        var hashedPwd   = TokenUtils.hashPassword(TokenUtils.generateToken());
+        // Always store the invite token in auth_invitations (single source of truth)
+        db(req).createInvitation(invitedEmail, inviteToken, callerTenant, role, INVITE_TTL_MS, isNewUser);
+        LOGGER.info("Invitation created for {} user <{}> to org={}", isNewUser ? "new" : "existing", invitedEmail, callerTenant);
 
-        var rolesArr = new BsonArray();
-        rolesArr.add(new BsonString(role));
+        // 7. Load team name for the email
+        var teamName = loadTeamName(email, callerTenant);
 
-        var userDoc = new BsonDocument();
-        userDoc.put("_id",             new BsonString(invitedEmail));
-        userDoc.put("password",        new BsonString(hashedPwd));
-        userDoc.put("roles",           rolesArr);
-        userDoc.put("status",          new BsonString("invited"));
-        userDoc.put("profile",         new BsonDocument());
-        userDoc.put("inviteToken",     new BsonString(inviteToken));
-        userDoc.put("inviteCreatedAt", now);
-
-        if (!db(req).insertUser(userDoc)) {
-            // Race condition
-            Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
-            return;
-        }
-
-        // 7. Delega la gestione della membership al provider
-        membership.addMember(invitedEmail, callerTenant, role);
-
-        // 8. Carica il nome del team per l'email
-        var teamName = loadTeamName(db(req), callerTenant);
-
-        // 9. Invia email invito
+        // 9. Send invite email
+        //    New users: link to /auth/activate (set password + activate)
+        //    Existing users: link to /invitations/accept (accept with current session)
         if (ermes != null && ermes.isEnabled()) {
             try {
+                var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
+                var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
+                var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
                 var link = conf.frontendUrl().replaceAll("/$", "")
-                        + "/auth/activate"
-                        + "?email=" + URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8)
-                        + "&token=" + URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
+                        + basePath + "?email=" + encodedEmail + "&token=" + encodedToken;
 
                 var inviterName = account.getPrincipal() != null
                         ? account.getPrincipal().getName()
                         : invitedEmail;
 
-                ermes.sendEmail(
-                        invitedEmail,
-                        invitedEmail,
-                        EmailTemplates.inviteSubject(teamName, conf.appName()),
-                        EmailTemplates.inviteBody(teamName, inviterName, link, conf.appName()));
+                // Check X-Skip-Email header for integration tests
+                if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+                    LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
+                } else {
+                    var tmpl = EmailTemplateLoader.loadWithFallback(
+                            null, conf.inviteTemplatePath(), "invite.html");
+                    var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
+                    var vars = java.util.Map.of(
+                            "app-name", conf.appName(),
+                            "year", String.valueOf(java.time.Year.now().getValue()),
+                            "first-name", inviterName != null ? inviterName : "",
+                            "email", invitedEmail,
+                            "frontend-url", conf.frontendUrl(),
+                            "invite-url", link,
+                            "inviter-name", inviterName != null ? inviterName : "",
+                            "team-name", teamName != null ? teamName : "",
+                            "role", roleDisplay);
+                    var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+                    ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                }
 
-                LOGGER.info("Invite sent to <{}> by {} (tenant={})", invitedEmail, inviterName, callerTenant);
+                LOGGER.info("Invite sent to <{}> by {} (tenant={}, newUser={})", invitedEmail, inviterName, callerTenant, isNewUser);
             } catch (Exception e) {
                 LOGGER.error("Failed to send invite email to <{}>", invitedEmail, e);
             }
@@ -232,7 +230,7 @@ public class InviteService implements JsonService {
             LOGGER.warn("Ermes disabled — invite email not sent to <{}>", invitedEmail);
         }
 
-        // 10. Risponde 201
+        // 10. Respond 201
         res.setStatusCode(HttpStatus.SC_CREATED);
     }
 
@@ -244,15 +242,21 @@ public class InviteService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    /** Loads the team display name for the given tenantId, falling back to the raw ID. */
-    private static String loadTeamName(DbHelper db, String tenantId) {
+    /** Loads the team display name for the given tenantId, falling back to its extended JSON form. */
+    private String loadTeamName(String userId, BsonValue tenantId) {
+        var fallback = tenantId.isString()
+                ? tenantId.asString().getValue()
+                : tenantId.isObjectId() ? tenantId.asObjectId().getValue().toHexString() : tenantId.toString();
         try {
-            return db.findTeam(tenantId)
-                    .filter(t -> t.containsKey("name") && t.get("name").isString())
-                    .map(t -> t.getString("name").getValue())
-                    .orElse(tenantId);
+            return accountsService.getMembershipProvider()
+                    .listMemberships(userId)
+                    .stream()
+                    .filter(m -> m.tenantId().equals(tenantId))
+                    .map(m -> m.displayName())
+                    .findFirst()
+                    .orElse(fallback);
         } catch (Exception e) {
-            return tenantId;
+            return fallback;
         }
     }
 
