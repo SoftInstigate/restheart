@@ -155,6 +155,12 @@ public class InviteService implements JsonService {
             return;
         }
 
+        // Check for a pending invitation for the same email+org (covers new users not yet a member)
+        if (db(req).findInvitation(invitedEmail, callerTenant).isPresent()) {
+            Errors.error(res, HttpStatus.SC_CONFLICT, "Invitation already pending for this user");
+            return;
+        }
+
         // 6. Create invite token
         var inviteToken = TokenUtils.generateToken();
         var isNewUser   = existing.isEmpty();
@@ -175,8 +181,6 @@ public class InviteService implements JsonService {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
                 return;
             }
-            // Add membership immediately so user.tenant is set (required for JWT issuance on activate)
-            membershipProvider.addMember(invitedEmail, callerTenant, role);
         }
 
         // Always store the invite token in auth_invitations (single source of truth)

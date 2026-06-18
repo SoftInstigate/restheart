@@ -171,15 +171,27 @@ public class OAuthCallback implements StringService {
                             ip, Instant.now());
                 }
 
+                // If a pending invite token is present, add membership now so activateViaOAuth
+                // finds a tenant (membership is deferred until acceptance since the fix)
+                var inviteDb = hasPendingToken
+                        ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf))
+                        : null;
+                if (inviteDb != null) {
+                    inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite -> {
+                        var orgId = invite.get("orgId");
+                        var role  = invite.getString("role").getValue();
+                        accountsService.getMembershipProvider().addMember(email, orgId, role);
+                    });
+                }
+
                 var membership = accountsService.getMembershipProvider()
                         .activateViaOAuth(email, consents);
 
                 if (membership.isPresent()) {
                     LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
-                    if (hasPendingToken) {
-                        var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf));
-                        db.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite ->
-                            db.deleteInvitation(invite.getObjectId("_id")));
+                    if (inviteDb != null) {
+                        inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite ->
+                            inviteDb.deleteInvitation(invite.getObjectId("_id")));
                     }
                     var activatedRoles = extractRoles(user);
                     var jwtToken = jwt.issueToken(email, activatedRoles,
