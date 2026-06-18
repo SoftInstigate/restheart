@@ -137,7 +137,7 @@ Feature: Invitations — new and existing users
   # ---------------------------------------------------------------------------
     * def infoEmail = 'invite-info-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
-    And header Authorization = 'Bearer ' + ownerJwt
+    And header Authorization = 'Bearer ' + secondOwnerJwt
     And request { "email": "#(infoEmail)", "role": "member" }
     When method POST
     Then status 201
@@ -163,7 +163,7 @@ Feature: Invitations — new and existing users
   # ---------------------------------------------------------------------------
     * def infoEmail2 = 'invite-info2-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/invite'
-    And header Authorization = 'Bearer ' + ownerJwt
+    And header Authorization = 'Bearer ' + secondOwnerJwt
     And request { "email": "#(infoEmail2)", "role": "member" }
     When method POST
     Then status 201
