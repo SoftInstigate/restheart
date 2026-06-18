@@ -210,7 +210,7 @@ public class InviteService implements JsonService {
                     LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
-                            null, conf.inviteTemplatePath(), "invite.html");
+                            RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                     var vars = java.util.Map.of(
                             "app-name", conf.appName(),

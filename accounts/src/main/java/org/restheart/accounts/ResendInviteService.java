@@ -171,7 +171,7 @@ public class ResendInviteService implements JsonService {
                     LOGGER.debug("Skipping re-send invite email to <{}> (X-Skip-Email header)", email);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
-                            null, conf.inviteTemplatePath(), "invite.html");
+                            RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var vars = java.util.Map.of(
                             "app-name", conf.appName(),
                             "year", String.valueOf(java.time.Year.now().getValue()),

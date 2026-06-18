@@ -199,7 +199,7 @@ public class RegisterService implements JsonService {
                                    + "&token=" + verificationToken;
 
                 var tmpl = EmailTemplateLoader.loadWithFallback(
-                        null, conf.verificationTemplatePath(), "verification.html");
+                        RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
                 var vars = java.util.Map.of(
                         "app-name", conf.appName(),
                         "year", String.valueOf(java.time.Year.now().getValue()),

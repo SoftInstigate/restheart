@@ -158,7 +158,7 @@ public class ForgotPasswordService implements JsonService {
             LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
         } else {
             var tmpl = EmailTemplateLoader.loadWithFallback(
-                    null, conf.passwordResetTemplatePath(), "password-reset.html");
+                    RequestOverrides.templatePasswordReset(req), conf.passwordResetTemplatePath(), "password-reset.html");
             var vars = java.util.Map.of(
                     "app-name", conf.appName(),
                     "year", String.valueOf(java.time.Year.now().getValue()),
