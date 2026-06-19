@@ -65,6 +65,7 @@
     </properties>
 
     <modules>
+        <module>mqtt</module>
         <module>test-plugins</module>
         <module>commons</module>
         <module>mongoclient</module>
