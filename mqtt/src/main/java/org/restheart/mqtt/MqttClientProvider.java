@@ -41,6 +41,8 @@ import com.hivemq.client.mqtt.MqttClient;
  * @see Provider
  * @see MqttClient
  * @see MqttClientSingleton
+ * 
+ * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  */
 @RegisterPlugin(
     name = "mqtt-client",
@@ -97,6 +99,14 @@ public class MqttClientProvider implements Provider<MqttClient>{
         final long initialDelayMs = argOrDefault(config, "reconnect/initial-delay-ms", 1000L);
         final long maxDelayMs = argOrDefault(config, "reconnect/max-delay-ms", 30000L);
 
+        // Will message configuration
+        final String willTopic = argOrDefault(config, "will/topic", null);
+        final String willPayload = argOrDefault(config, "will/payload", null);
+        final int willQos = argOrDefault(config, "will/qos", 0);
+        final boolean willRetain = argOrDefault(config, "will/retain", false);
+        final long willDelaySeconds = argOrDefault(config, "will/delay-seconds", 0L);
+        final Long willMessageExpirySeconds = argOrDefault(config, "will/message-expiry-seconds", null);
+
         // Initialize the singleton with configuration
         MqttClientSingleton.init(
             brokerUrl,
@@ -111,7 +121,13 @@ public class MqttClientProvider implements Provider<MqttClient>{
             tlsEnabled,
             reconnectEnabled,
             initialDelayMs,
-            maxDelayMs
+            maxDelayMs,
+            willTopic,
+            willPayload,
+            willQos,
+            willRetain,
+            willDelaySeconds,
+            willMessageExpirySeconds
         );
 
         // Force first connection to MQTT broker

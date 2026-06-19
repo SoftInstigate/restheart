@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -50,6 +51,8 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
  * The singleton instance is initialized via the {@link #init} method and can be retrieved
  * using {@link #getInstance()} or {@link #get()}.
  * </p>
+ * 
+ * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  */
 public class MqttClientSingleton {
 
@@ -81,6 +84,18 @@ public class MqttClientSingleton {
     private static long initialDelayMs;
     /** The maximum delay in milliseconds for reconnection attempts. */
     private static long maxDelayMs;
+    /** The will message topic (optional). */
+    private static String willTopic;
+    /** The will message payload (optional). */
+    private static String willPayload;
+    /** The will message QoS level (0, 1, or 2). */
+    private static int willQos;
+    /** Whether the will message should be retained. */
+    private static boolean willRetain;
+    /** The will delay interval in seconds (MQTT v5 only). */
+    private static long willDelaySeconds;
+    /** The will message expiry interval in seconds (MQTT v5 only, optional). */
+    private static Long willMessageExpirySeconds;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttClientSingleton.class);
 
@@ -92,19 +107,25 @@ public class MqttClientSingleton {
     /**
      * Initializes the MQTT client singleton with the specified configuration parameters.
      *
-     * @param brokerUrl             the broker endpoint URL
-     * @param protocolVersion       the MQTT protocol version (3 or 5)
-     * @param clientId              the unique identifier for the client
-     * @param username              the username for authentication (can be null)
-     * @param password              the password for authentication (can be null)
-     * @param cleanSession          whether to clear session state on connection
-     * @param keepAliveSeconds      the keep-alive interval in seconds
-     * @param sessionExpirySeconds  the session expiry interval in seconds (MQTT v5 only)
-     * @param connectTimeoutSeconds the connection timeout in seconds
-     * @param tlsEnabled            whether TLS/SSL should be enabled
-     * @param reconnectEnabled      whether automatic reconnection should be enabled
-     * @param initialDelayMs        the initial delay in milliseconds for reconnection
-     * @param maxDelayMs            the maximum delay in milliseconds for reconnection
+     * @param brokerUrl                the broker endpoint URL
+     * @param protocolVersion          the MQTT protocol version (3 or 5)
+     * @param clientId                 the unique identifier for the client
+     * @param username                 the username for authentication (can be null)
+     * @param password                 the password for authentication (can be null)
+     * @param cleanSession             whether to clear session state on connection
+     * @param keepAliveSeconds         the keep-alive interval in seconds
+     * @param sessionExpirySeconds     the session expiry interval in seconds (MQTT v5 only)
+     * @param connectTimeoutSeconds    the connection timeout in seconds
+     * @param tlsEnabled               whether TLS/SSL should be enabled
+     * @param reconnectEnabled         whether automatic reconnection should be enabled
+     * @param initialDelayMs           the initial delay in milliseconds for reconnection
+     * @param maxDelayMs               the maximum delay in milliseconds for reconnection
+     * @param willTopic                the will message topic (can be null)
+     * @param willPayload              the will message payload (can be null)
+     * @param willQos                  the will message QoS level (0,1, or 2)
+     * @param willRetain               whether the will message should be retained
+     * @param willDelaySeconds         the will delay interval in seconds (MQTT v5 only)
+     * @param willMessageExpirySeconds the will message expiry interval in seconds (MQTT v5 only)
      */
     public static void init(
             String brokerUrl,
@@ -119,7 +140,13 @@ public class MqttClientSingleton {
             boolean tlsEnabled,
             boolean reconnectEnabled,
             long initialDelayMs,
-            long maxDelayMs) {
+            long maxDelayMs,
+            String willTopic,
+            String willPayload,
+            int willQos,
+            boolean willRetain,
+            long willDelaySeconds,
+            Long willMessageExpirySeconds) {
 
         MqttClientSingleton.brokerUrl = brokerUrl;
         MqttClientSingleton.protocolVersion = protocolVersion;
@@ -134,6 +161,13 @@ public class MqttClientSingleton {
         MqttClientSingleton.initialDelayMs = initialDelayMs;
         MqttClientSingleton.maxDelayMs = maxDelayMs;
         MqttClientSingleton.sessionExpirySeconds = sessionExpirySeconds;
+        MqttClientSingleton.willTopic = willTopic;
+        MqttClientSingleton.willPayload = willPayload;
+        MqttClientSingleton.willQos = willQos;
+        MqttClientSingleton.willRetain = willRetain;
+        MqttClientSingleton.willDelaySeconds = willDelaySeconds;
+        MqttClientSingleton.willMessageExpirySeconds = willMessageExpirySeconds;
+
 
         initialized = true;
     }
@@ -266,6 +300,23 @@ public class MqttClientSingleton {
                 .applySimpleAuth();
         }
 
+        // Configure will message if provided
+        if (willTopic != null && willPayload != null) {
+            var willPublishBuilder = builder.willPublish()
+                .topic(willTopic)
+                .payload(willPayload.getBytes(StandardCharsets.UTF_8))
+                .qos(MqttQos.fromCode(willQos))
+                .retain(willRetain)
+                .delayInterval(willDelaySeconds);
+
+            // Add message expiry if provided
+            if (willMessageExpirySeconds != null) {
+                willPublishBuilder.messageExpiryInterval(willMessageExpirySeconds);
+            }
+
+            willPublishBuilder.applyWillPublish();
+        }
+
         // Configure automatic reconnect
         if (reconnectEnabled) {
             builder.automaticReconnect()
@@ -301,6 +352,16 @@ public class MqttClientSingleton {
                 .username(username)
                 .password(password.getBytes())
                 .applySimpleAuth();
+        }
+
+        // Configure will message if provided
+        if (willTopic != null && willPayload != null) {
+            builder.willPublish()
+                .topic(willTopic)
+                .payload(willPayload.getBytes(StandardCharsets.UTF_8))
+                .qos(MqttQos.fromCode(willQos))
+                .retain(willRetain)
+                .applyWillPublish();
         }
 
         // Configure automatic reconnect
