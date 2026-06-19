@@ -1,0 +1,70 @@
+plugins-args:
+  mqtt-client:
+    enabled: true
+    broker-url: "tcp://localhost:1883"          # or ssl://, ws://, wss://
+    protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
+    client-id: "restheart"                      # auto-suffixed with UUID if blank
+    username: ~
+    password: ~
+    clean-session: false
+    keep-alive-seconds: 60
+    session-expiry-seconds: 0xFFFFFFFF          # MQTT 5 only (max = never expires)
+    connect-timeout-seconds: 10
+    tls: false
+    tls-trust-store: ~                          # path to JKS/PKCS12
+    tls-trust-store-password: ~
+    max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
+    reconnect:
+      enabled: true
+      initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
+      max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
+    subscriptions:
+      - topic: "sensors/#"
+        qos: 1
+      - topic: "traffic/#"
+        qos: 0
+
+  #MQTT SSE Service - Stream MQTT messages as Server-sent Events
+  mqtt-sse:
+    enabled: true
+    default-topic: "sensors/#"
+    default-qos: 1
+    max-connections-per-topic: 100
+    per-connection-queue-capacity: 256          # per-client bounded queue; overflow = drop
+    last-message-cache: true
+    payload-envelope: false                     # true = wrap in {topic, payload, receivedAt, qos}
+    pipeline:                                   # optional per-topic pipeline overrides
+      - topic: "sensors/#"
+        stages:
+          - type: throttle
+            max-events-per-second: 10
+          - type: tumbling-window
+            window-ms: 1000
+            function: avg                       # avg | min | max | count | last
+            field: "$.value"                    # JSONPath to numeric field to aggregate
+
+  # MQTT REST Service - Poll last message per topic
+  mqtt-rest:
+    enabled: true
+
+  # MQTT MongoDB Writer - Persist MQTT messages to MongoDB
+  mqtt-mongo-writer:
+    enabled: false
+    buffer:
+      strategy: "ring-buffer"                   # "ring-buffer" | "blocking-queue"
+      capacity: 10000
+      overflow-action: "drop-oldest"            # "drop-oldest" | "drop-incoming" | "block"
+    drain:
+      batch-size: 200
+      flush-interval-ms: 500
+      max-retries: 3
+      retry-delay-ms: 1000
+    id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
+    id-field: "messageId"                       # field name when id-strategy = "payload-field"
+    mongo-sink:
+      - topic: "sensors/#"
+        database: "iot"
+        collection: "sensor-events"
+      - topic: "traffic/#"
+        database: "iot"
+        collection: "traffic-events"
