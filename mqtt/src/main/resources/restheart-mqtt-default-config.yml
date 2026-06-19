@@ -14,6 +14,13 @@ plugins-args:
     tls-trust-store: ~                          # path to JKS/PKCS12
     tls-trust-store-password: ~
     max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
+    will:
+      topic: ~
+      payload: ~
+      qos: 0
+      retain: false
+      delay-seconds: 0
+      message-expiry-seconds: ~
     reconnect:
       enabled: true
       initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
