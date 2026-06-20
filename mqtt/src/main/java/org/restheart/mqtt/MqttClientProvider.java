@@ -95,17 +95,21 @@ public class MqttClientProvider implements Provider<MqttClient>{
         final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFFL);
 
         // Reconnect configuration
-        final boolean reconnectEnabled = argOrDefault(config, "reconnect/enabled", true);
-        final long initialDelayMs = argOrDefault(config, "reconnect/initial-delay-ms", 1000L);
-        final long maxDelayMs = argOrDefault(config, "reconnect/max-delay-ms", 30000L);
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> reconnectConfig = (Map<String, Object>) config.get("reconnect");
+        final boolean reconnectEnabled = reconnectConfig != null ? argOrDefault(reconnectConfig, "enabled", true) : true;
+        final long initialDelayMs = reconnectConfig != null ? argOrDefault(reconnectConfig, "initial-delay-ms", 1000L) : 1000L;
+        final long maxDelayMs = reconnectConfig != null ? argOrDefault(reconnectConfig, "max-delay-ms", 30000L) : 30000L;
 
         // Will message configuration
-        final String willTopic = argOrDefault(config, "will/topic", null);
-        final String willPayload = argOrDefault(config, "will/payload", null);
-        final int willQos = argOrDefault(config, "will/qos", 0);
-        final boolean willRetain = argOrDefault(config, "will/retain", false);
-        final long willDelaySeconds = argOrDefault(config, "will/delay-seconds", 0L);
-        final Long willMessageExpirySeconds = argOrDefault(config, "will/message-expiry-seconds", null);
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> willConfig = (Map<String, Object>) config.get("will");
+        final String willTopic = willConfig != null ? argOrDefault(willConfig, "topic", null) : null;
+        final String willPayload = willConfig != null ? argOrDefault(willConfig, "payload", null) : null;
+        final int willQos = willConfig != null ? argOrDefault(willConfig, "qos", 0) : 0;
+        final boolean willRetain = willConfig != null ? argOrDefault(willConfig, "retain", false) : false;
+        final long willDelaySeconds = willConfig != null ? argOrDefault(willConfig, "delay-seconds", 0L) : 0L;
+        final Long willMessageExpirySeconds = willConfig != null ? argOrDefault(willConfig, "message-expiry-seconds", null) :null;
 
         // Initialize the singleton with configuration
         MqttClientSingleton.init(

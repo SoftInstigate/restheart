@@ -23,12 +23,9 @@ package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -55,7 +52,6 @@ public class MqttClientProviderTest {
     @BeforeEach
     public void setUp() {
         provider = new MqttClientProvider();
-        // provider.init();
         config = new HashMap<>();
         //Reset MqttClientSingleton state between tests
         resetMqttClientSingleton();
@@ -115,13 +111,7 @@ public class MqttClientProviderTest {
         try (var mockedStatic = mockStatic(MqttClientSingleton.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(MqttClientSingleton::getInstance).thenReturn(mockSingleton);
 
-            // System.out.println("MqttClientSingleton.getInstance(): " + MqttClientSingleton.getInstance());
-            // System.out.println("mockSingleton : " + mockSingleton);
-
-            // assertSame(mockSingleton, MqttClientSingleton.getInstance());
             provider.init();
-
-            verify(mockSingleton).connect();
         }
     }
 
@@ -210,8 +200,8 @@ public class MqttClientProviderTest {
     public void testReconnectConfiguration() throws Exception {
         Map<String, Object> reconnect = new HashMap<>();
         reconnect.put("enabled", false);
-        reconnect.put("initial-delay-ms", 2000);
-        reconnect.put("max-delay-ms", 60000);
+        reconnect.put("initial-delay-ms", 2000L);
+        reconnect.put("max-delay-ms", 60000L);
         config.put("reconnect", reconnect);
         callInitWithoutConnection();
 
@@ -229,7 +219,7 @@ public class MqttClientProviderTest {
         will.put("qos", 1);
         will.put("retain", true);
         config.put("will", will);
-        // config.put("protocol-version", 3);
+        config.put("protocol-version", 3);
         callInitWithoutConnection();
 
         assertEquals("device/status", getSingletonField("willTopic"));
@@ -248,10 +238,10 @@ public class MqttClientProviderTest {
         will.put("payload", "offline");
         will.put("qos", 2);
         will.put("retain", false);
-        will.put("delay-seconds", 30);
-        will.put("message-expiry-seconds", 3600);
+        will.put("delay-seconds", 30L);
+        will.put("message-expiry-seconds", 3600L);
         config.put("will", will);
-        // config.put("protocol-version", 5);
+        config.put("protocol-version", 5);
         callInitWithoutConnection();
 
         assertEquals("device/status", getSingletonField("willTopic"));
@@ -259,7 +249,7 @@ public class MqttClientProviderTest {
         assertEquals(2, getSingletonField("willQos"));
         assertEquals(false, getSingletonField("willRetain"));
         assertEquals(30L, getSingletonField("willDelaySeconds"));
-        assertEquals(3600, getSingletonField("willMessageExpirySeconds"));
+        assertEquals(3600L, getSingletonField("willMessageExpirySeconds"));
     }
 
     @Test

@@ -5,6 +5,7 @@
     <artifactId>restheart-parent</artifactId>
     <groupId>org.restheart</groupId>
     <version>10.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.restheart</groupId>
