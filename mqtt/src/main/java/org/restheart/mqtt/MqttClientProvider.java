@@ -87,12 +87,12 @@ public class MqttClientProvider implements Provider<MqttClient>{
         final String clientId = argOrDefault(config, "client-id", "restheart-" + UUID.randomUUID().toString());
         final String username = argOrDefault(config, "username", null);
         final String password = argOrDefault(config, "password", null);
-        final boolean cleanSession = argOrDefault(config, "clean-session", true);
+        final boolean cleanSession = argOrDefault(config, "clean-session", false);
         final int keepAliveSeconds = argOrDefault(config, "keep-alive-seconds", 60);
         final int connectTimeoutSeconds = argOrDefault(config, "connect-timeout-seconds", 10);
         final boolean tlsEnabled = argOrDefault(config, "tls", false);
 
-        final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFF);
+        final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFFL);
 
         // Reconnect configuration
         final boolean reconnectEnabled = argOrDefault(config, "reconnect/enabled", true);
