@@ -41,7 +41,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 
 /**
- * Thread-safe singleton that manages the lifecycle of a MQTT clien=t  {@link MqttClient}.
+ * Thread-safe singleton that manages the lifecycle of a MQTT client  {@link MqttClient}.
  * <p>
  * This singleton can be configured to use either MQTT v3 or MQTT v5 protocols.
  * It provides features such as automatic reconnection, authentication (username/password),
@@ -107,67 +107,33 @@ public class MqttClientSingleton {
     /**
      * Initializes the MQTT client singleton with the specified configuration parameters.
      *
-     * @param brokerUrl                the broker endpoint URL
-     * @param protocolVersion          the MQTT protocol version (3 or 5)
-     * @param clientId                 the unique identifier for the client
-     * @param username                 the username for authentication (can be null)
-     * @param password                 the password for authentication (can be null)
-     * @param cleanSession             whether to clear session state on connection
-     * @param keepAliveSeconds         the keep-alive interval in seconds
-     * @param sessionExpirySeconds     the session expiry interval in seconds (MQTT v5 only)
-     * @param connectTimeoutSeconds    the connection timeout in seconds
-     * @param tlsEnabled               whether TLS/SSL should be enabled
-     * @param reconnectEnabled         whether automatic reconnection should be enabled
-     * @param initialDelayMs           the initial delay in milliseconds for reconnection
-     * @param maxDelayMs               the maximum delay in milliseconds for reconnection
-     * @param willTopic                the will message topic (can be null)
-     * @param willPayload              the will message payload (can be null)
-     * @param willQos                  the will message QoS level (0,1, or 2)
-     * @param willRetain               whether the will message should be retained
-     * @param willDelaySeconds         the will delay interval in seconds (MQTT v5 only)
-     * @param willMessageExpirySeconds the will message expiry interval in seconds (MQTT v5 only)
+     * @param config the MQTT configuration containing all connection parameters
      */
-    public static void init(
-            String brokerUrl,
-            int protocolVersion,
-            String clientId,
-            String username,
-            String password,
-            boolean cleanSession,
-            int keepAliveSeconds,
-            long sessionExpirySeconds,
-            int connectTimeoutSeconds,
-            boolean tlsEnabled,
-            boolean reconnectEnabled,
-            long initialDelayMs,
-            long maxDelayMs,
-            String willTopic,
-            String willPayload,
-            int willQos,
-            boolean willRetain,
-            long willDelaySeconds,
-            Long willMessageExpirySeconds) {
+    public static void init(MqttConfig clientConfig) {
 
-        MqttClientSingleton.brokerUrl = brokerUrl;
-        MqttClientSingleton.protocolVersion = protocolVersion;
-        MqttClientSingleton.clientId = clientId;
-        MqttClientSingleton.username = username;
-        MqttClientSingleton.password = password;
-        MqttClientSingleton.cleanSession = cleanSession;
-        MqttClientSingleton.keepAliveSeconds = keepAliveSeconds;
-        MqttClientSingleton.connectTimeoutSeconds = connectTimeoutSeconds;
-        MqttClientSingleton.tlsEnabled = tlsEnabled;
-        MqttClientSingleton.reconnectEnabled = reconnectEnabled;
-        MqttClientSingleton.initialDelayMs = initialDelayMs;
-        MqttClientSingleton.maxDelayMs = maxDelayMs;
-        MqttClientSingleton.sessionExpirySeconds = sessionExpirySeconds;
-        MqttClientSingleton.willTopic = willTopic;
-        MqttClientSingleton.willPayload = willPayload;
-        MqttClientSingleton.willQos = willQos;
-        MqttClientSingleton.willRetain = willRetain;
-        MqttClientSingleton.willDelaySeconds = willDelaySeconds;
-        MqttClientSingleton.willMessageExpirySeconds = willMessageExpirySeconds;
+        MqttClientSingleton.brokerUrl = clientConfig.getBrokerUrl();
+        MqttClientSingleton.protocolVersion = clientConfig.getProtocolVersion();
+        MqttClientSingleton.clientId = clientConfig.getClientId();
+        MqttClientSingleton.username = clientConfig.getUsername();
+        MqttClientSingleton.password = clientConfig.getPassword();
+        MqttClientSingleton.cleanSession = clientConfig.isCleanSession();
+        MqttClientSingleton.keepAliveSeconds = clientConfig.getKeepAliveSeconds();
+        MqttClientSingleton.connectTimeoutSeconds = clientConfig.getConnectTimeoutSeconds();
+        MqttClientSingleton.tlsEnabled = clientConfig.isTlsEnabled();
+        MqttClientSingleton.sessionExpirySeconds = clientConfig.getSessionExpirySeconds();
+        
+        MqttConfig.ReconnectConfig reconnectConfig = clientConfig.getReconnectConfig();
+        MqttClientSingleton.reconnectEnabled = reconnectConfig.isEnabled();
+        MqttClientSingleton.initialDelayMs = reconnectConfig.getInitialDelayMs();
+        MqttClientSingleton.maxDelayMs = reconnectConfig.getMaxDelayMs();
 
+        MqttConfig.WillConfig willConfig = clientConfig.getWillConfig();
+        MqttClientSingleton.willTopic = willConfig.getWillTopic();
+        MqttClientSingleton.willPayload = willConfig.getWillPayload();
+        MqttClientSingleton.willQos = willConfig.getWillQos();
+        MqttClientSingleton.willRetain = willConfig.getWillRetain();
+        MqttClientSingleton.willDelaySeconds = willConfig.getWillDelaySeconds();
+        MqttClientSingleton.willMessageExpirySeconds = willConfig.getWillMessageExpirySeconds();
 
         initialized = true;
     }
@@ -268,7 +234,13 @@ public class MqttClientSingleton {
 
             connectFuture.get(connectTimeoutSeconds, TimeUnit.SECONDS);
             
-        } catch (Exception e) {
+        } catch (InterruptedException ie) {
+            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString() 
+                    + "Connection interrupted, The application may be shutting down.", ie);
+                    connected = false;
+                    Thread.currentThread().interrupt();
+        }
+        catch (Exception e) {
             LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString() 
                     + "Check that the broker is running and" 
                     + "the configuration property '/mqtt-client/broker-url'" 

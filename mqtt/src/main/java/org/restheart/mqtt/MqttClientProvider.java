@@ -96,43 +96,46 @@ public class MqttClientProvider implements Provider<MqttClient>{
 
         // Reconnect configuration
         @SuppressWarnings("unchecked")
-        final Map<String, Object> reconnectConfig = (Map<String, Object>) config.get("reconnect");
-        final boolean reconnectEnabled = reconnectConfig != null ? argOrDefault(reconnectConfig, "enabled", true) : true;
-        final long initialDelayMs = reconnectConfig != null ? argOrDefault(reconnectConfig, "initial-delay-ms", 1000L) : 1000L;
-        final long maxDelayMs = reconnectConfig != null ? argOrDefault(reconnectConfig, "max-delay-ms", 30000L) : 30000L;
+        final Map<String, Object> reconnectConfigMap = (Map<String, Object>) config.get("reconnect");
+        final boolean reconnectEnabled = argOrDefault(reconnectConfigMap, "enabled", true);
+        final long initialDelayMs = argOrDefault(reconnectConfigMap, "initial-delay-ms", 1000L);
+        final long maxDelayMs = argOrDefault(reconnectConfigMap, "max-delay-ms", 30000L);
 
         // Will message configuration
         @SuppressWarnings("unchecked")
-        final Map<String, Object> willConfig = (Map<String, Object>) config.get("will");
-        final String willTopic = willConfig != null ? argOrDefault(willConfig, "topic", null) : null;
-        final String willPayload = willConfig != null ? argOrDefault(willConfig, "payload", null) : null;
-        final int willQos = willConfig != null ? argOrDefault(willConfig, "qos", 0) : 0;
-        final boolean willRetain = willConfig != null ? argOrDefault(willConfig, "retain", false) : false;
-        final long willDelaySeconds = willConfig != null ? argOrDefault(willConfig, "delay-seconds", 0L) : 0L;
-        final Long willMessageExpirySeconds = willConfig != null ? argOrDefault(willConfig, "message-expiry-seconds", null) :null;
+        final Map<String, Object> willConfigMap = (Map<String, Object>) config.get("will");
+        final String willTopic = argOrDefault(willConfigMap, "topic", null);
+        final String willPayload = argOrDefault(willConfigMap, "payload", null);
+        final int willQos = argOrDefault(willConfigMap, "qos", 0);
+        final boolean willRetain = argOrDefault(willConfigMap, "retain", false);
+        final long willDelaySeconds = argOrDefault(willConfigMap, "delay-seconds", 0L);
+        final Long willMessageExpirySeconds = argOrDefault(willConfigMap, "message-expiry-seconds", null);
+
+        // Build configuration objects
+        MqttConfig.ReconnectConfig reconnectConfig= new MqttConfig.ReconnectConfig(
+            reconnectEnabled, 
+            initialDelayMs, 
+            maxDelayMs);
+
+        MqttConfig.WillConfig willConfig = new MqttConfig.WillConfig(willTopic, willPayload, willQos, willRetain, willDelaySeconds, willMessageExpirySeconds);
+
+        MqttConfig mqttConfig = new MqttConfig.Builder()
+            .brokerUrl(brokerUrl)
+            .protocolVersion(protocolVersion)
+            .clientId(clientId)
+            .username(username)
+            .password(password)
+            .cleanSession(cleanSession)
+            .keepAliveSeconds(keepAliveSeconds)
+            .sessionExpirySeconds(sessionExpirySeconds)
+            .connectTimeoutSeconds(connectTimeoutSeconds)
+            .tlsEnabled(tlsEnabled)
+            .reconnectConfig(reconnectConfig)
+            .willConfig(willConfig)
+            .build();
 
         // Initialize the singleton with configuration
-        MqttClientSingleton.init(
-            brokerUrl,
-            protocolVersion,
-            clientId,
-            username,
-            password,
-            cleanSession,
-            keepAliveSeconds,
-            sessionExpirySeconds,
-            connectTimeoutSeconds,
-            tlsEnabled,
-            reconnectEnabled,
-            initialDelayMs,
-            maxDelayMs,
-            willTopic,
-            willPayload,
-            willQos,
-            willRetain,
-            willDelaySeconds,
-            willMessageExpirySeconds
-        );
+        MqttClientSingleton.init(mqttConfig);
 
         // Force first connection to MQTT broker
         MqttClientSingleton.getInstance().connect();
