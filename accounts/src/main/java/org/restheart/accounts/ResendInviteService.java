@@ -129,6 +129,11 @@ public class ResendInviteService implements JsonService {
             return;
         }
         var invite = inviteOpt.get();
+
+        // 7. Read the role from the stored invitation
+        var inviteRole = invite.containsKey("role") && invite.get("role").isString()
+                ? invite.getString("role").getValue()
+                : conf.memberRoleName();
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
 
         // 5. Generate new token (invalidates the previous one)
@@ -180,7 +185,8 @@ public class ResendInviteService implements JsonService {
                             "frontend-url", conf.frontendUrl(),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
-                            "team-name", teamName != null ? teamName : "");
+                            "team-name", teamName != null ? teamName : "",
+                            "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
                     ermes.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
                 }
