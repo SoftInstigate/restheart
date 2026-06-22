@@ -274,7 +274,8 @@ public class OAuthCallback implements StringService {
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
                         RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
-        res.getHeaders().put(Headers.LOCATION, oauthConfig.frontendSuccessUrl());
+        var location = flow != null ? oauthConfig.frontendSuccessUrl() + "?flow=" + flow : oauthConfig.frontendSuccessUrl();
+        res.getHeaders().put(Headers.LOCATION, location);
     }
 
     // ── User creation / lookup ────────────────────────────────────────────────
