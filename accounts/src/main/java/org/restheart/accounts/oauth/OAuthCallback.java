@@ -103,6 +103,11 @@ public class OAuthCallback implements StringService {
     }
 
     @Override
+    public String accessControlExposeHeaders(org.restheart.exchange.Request<?> r) {
+        return "X-OAuth-Flow";
+    }
+
+    @Override
     public void handle(StringRequest req, StringResponse res) throws Exception {
         if (req.isOptions()) { handleOptions(req); return; }
 
@@ -151,7 +156,8 @@ public class OAuthCallback implements StringService {
             LOGGER.info("OAuth callback: authenticated {} via {}", email, provider);
 
             // 2. Find or create user (membership delegated to the provider)
-            var user   = findOrCreateUser(req, profile, provider);
+            var focr   = findOrCreateUser(req, profile, provider);
+            var user   = focr.user();
 
             // Check if user is unverified (invited but not yet activated)
             var userRoles = user.containsKey("roles") && user.get("roles").isArray()
@@ -199,7 +205,7 @@ public class OAuthCallback implements StringService {
                             req.attachedParams(),
                             java.util.Map.<String, Object>of(conf.tenantClaimName(), membership.get().tenantId()),
                             null);
-                    setAuthCookieAndRedirect(res, req, jwtToken);
+                    setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
                 }
                 LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
@@ -233,7 +239,7 @@ public class OAuthCallback implements StringService {
                         req.attachedParams(),
                         java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
                         null);
-                setAuthCookieAndRedirect(res, req, jwtToken);
+                setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
             }
 
@@ -246,7 +252,7 @@ public class OAuthCallback implements StringService {
                     req.attachedParams(),
                     java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
                     null);
-            setAuthCookieAndRedirect(res, req, jwtToken);
+            setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
@@ -259,7 +265,10 @@ public class OAuthCallback implements StringService {
 
     // ── Cookie + redirect helper ──────────────────────────────────────────────
 
-    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken) {
+    private void setAuthCookieAndRedirect(StringResponse res, StringRequest req, String jwtToken, String flow) {
+        if (flow != null) {
+            res.getHeaders().add(HttpString.tryFromString("X-OAuth-Flow"), flow);
+        }
         res.getHeaders().add(
                 HttpString.tryFromString("Set-Cookie"),
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
@@ -277,14 +286,16 @@ public class OAuthCallback implements StringService {
      * Team / tenant initialization is delegated to the active {@link AccountsService}
      * MembershipProvider via {@code createInitialTeam}.
      */
-    private BsonDocument findOrCreateUser(StringRequest req, BsonDocument profile, String provider) {
+    private record FindOrCreateResult(BsonDocument user, boolean isNew) {}
+
+    private FindOrCreateResult findOrCreateUser(StringRequest req, BsonDocument profile, String provider) {
         var email = profile.getString("email").getValue();
 
         var existing = db(req).findUser(email);
         if (existing.isPresent()) {
             // Optionally update name / avatar from provider on every login
             maybeUpdateProfile(req, email, profile);
-            return existing.get();
+            return new FindOrCreateResult(existing.get(), false);
         }
 
         // ── New user ──────────────────────────────────────────────────────────
@@ -326,7 +337,7 @@ public class OAuthCallback implements StringService {
         LOGGER.info("New user created via {} OAuth: <{}>", provider, email);
 
         // Return the updated user doc (with tenant fields set by provider)
-        return db(req).findUser(email).orElse(userDoc);
+        return new FindOrCreateResult(db(req).findUser(email).orElse(userDoc), true);
     }
 
     /** Updates name/avatar from the latest OAuth profile if they have changed. */
