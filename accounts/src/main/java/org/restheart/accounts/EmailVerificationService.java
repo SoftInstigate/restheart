@@ -88,7 +88,7 @@ public class EmailVerificationService implements JsonService {
         if (req.isOptions()) { handleOptions(req); return; }
         if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
-        final var loginErrorBase = conf.frontendUrl() + "/auth/login";
+        final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
 
         // ── 1. Read query parameters ─────────────────────────────────────────
         var email = req.getQueryParameterOrDefault("email", null);
@@ -172,7 +172,7 @@ public class EmailVerificationService implements JsonService {
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 
         // ── 5f. Redirect to app ───────────────────────────────────────────────
-        redirect(res, conf.frontendAppUrl());
+        redirect(res, RequestOverrides.frontendAppUrl(req, conf));
     }
 
     // -------------------------------------------------------------------------

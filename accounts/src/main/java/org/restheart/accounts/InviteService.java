@@ -108,7 +108,7 @@ public class InviteService implements JsonService {
         var membership = accountsService.getMembershipProvider()
                 .activeMembership(email);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
@@ -135,7 +135,7 @@ public class InviteService implements JsonService {
         }
         var invitedEmail = jo.get("email").getAsString().trim().toLowerCase();
 
-        var defaultRole = conf.memberRoleName();
+        var defaultRole = RequestOverrides.defaultRole(req, conf);
         var role = defaultRole;
         if (jo.has("role") && !jo.get("role").isJsonNull()) {
             role = jo.get("role").getAsString().trim().toLowerCase();
@@ -198,7 +198,7 @@ public class InviteService implements JsonService {
                 var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
                 var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
                 var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
-                var link = conf.frontendUrl().replaceAll("/$", "")
+                var link = RequestOverrides.frontendUrl(req, conf).replaceAll("/$", "")
                         + basePath + "?email=" + encodedEmail + "&token=" + encodedToken;
 
                 var inviterName = account.getPrincipal() != null
@@ -213,11 +213,11 @@ public class InviteService implements JsonService {
                             RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                     var vars = java.util.Map.of(
-                            "app-name", conf.appName(),
+                            "app-name", RequestOverrides.appName(req, conf),
                             "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", invitedEmail,
-                            "frontend-url", conf.frontendUrl(),
+                            "frontend-url", RequestOverrides.frontendUrl(req, conf),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
                             "team-name", teamName != null ? teamName : "",

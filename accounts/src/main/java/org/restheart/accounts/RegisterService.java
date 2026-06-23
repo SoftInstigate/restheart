@@ -193,7 +193,7 @@ public class RegisterService implements JsonService {
                 LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
             } else {
                 var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-                var verifyLink   = conf.frontendUrl()
+                var verifyLink   = RequestOverrides.frontendUrl(req, conf)
                                    + "/auth/verify"
                                    + "?email=" + encodedEmail
                                    + "&token=" + verificationToken;
@@ -201,11 +201,11 @@ public class RegisterService implements JsonService {
                 var tmpl = EmailTemplateLoader.loadWithFallback(
                         RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
                 var vars = java.util.Map.of(
-                        "app-name", conf.appName(),
+                        "app-name", RequestOverrides.appName(req, conf),
                         "year", String.valueOf(java.time.Year.now().getValue()),
                         "first-name", firstName != null ? firstName : "",
                         "email", email,
-                        "frontend-url", conf.frontendUrl(),
+                        "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
                 var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
                 ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());

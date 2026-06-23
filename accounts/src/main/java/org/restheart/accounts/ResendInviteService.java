@@ -98,7 +98,7 @@ public class ResendInviteService implements JsonService {
         var membership = accountsService.getMembershipProvider()
                 .activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
@@ -133,7 +133,7 @@ public class ResendInviteService implements JsonService {
         // 7. Read the role from the stored invitation
         var inviteRole = invite.containsKey("role") && invite.get("role").isString()
                 ? invite.getString("role").getValue()
-                : conf.memberRoleName();
+                : RequestOverrides.defaultRole(req, conf);
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
 
         // 5. Generate new token (invalidates the previous one)
@@ -162,7 +162,7 @@ public class ResendInviteService implements JsonService {
         if (ermes != null && ermes.isEnabled()) {
             try {
                 var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
-                var link = conf.frontendUrl().replaceAll("/$", "")
+                var link = RequestOverrides.frontendUrl(req, conf).replaceAll("/$", "")
                         + basePath
                         + "?email=" + URLEncoder.encode(email, StandardCharsets.UTF_8)
                         + "&token=" + URLEncoder.encode(newToken, StandardCharsets.UTF_8);
@@ -178,11 +178,11 @@ public class ResendInviteService implements JsonService {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
                             RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var vars = java.util.Map.of(
-                            "app-name", conf.appName(),
+                            "app-name", RequestOverrides.appName(req, conf),
                             "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", email,
-                            "frontend-url", conf.frontendUrl(),
+                            "frontend-url", RequestOverrides.frontendUrl(req, conf),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
                             "team-name", teamName != null ? teamName : "",
