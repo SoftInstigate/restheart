@@ -135,7 +135,7 @@ public class InviteService implements JsonService {
         }
         var invitedEmail = jo.get("email").getAsString().trim().toLowerCase();
 
-        var defaultRole = RequestOverrides.defaultRole(req, conf);
+        var defaultRole = conf.memberRoleName();
         var role = defaultRole;
         if (jo.has("role") && !jo.get("role").isJsonNull()) {
             role = jo.get("role").getAsString().trim().toLowerCase();

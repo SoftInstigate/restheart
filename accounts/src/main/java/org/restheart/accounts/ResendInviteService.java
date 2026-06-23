@@ -133,7 +133,7 @@ public class ResendInviteService implements JsonService {
         // 7. Read the role from the stored invitation
         var inviteRole = invite.containsKey("role") && invite.get("role").isString()
                 ? invite.getString("role").getValue()
-                : RequestOverrides.defaultRole(req, conf);
+                : conf.memberRoleName();
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
 
         // 5. Generate new token (invalidates the previous one)
