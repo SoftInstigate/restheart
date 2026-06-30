@@ -73,7 +73,7 @@ Feature: DELETE /auth/remove-member
     Then status 403
 
   # ---------------------------------------------------------------------------
-  Scenario: target not a member of the tenant — returns 404
+  Scenario: target not a member of the team — returns 404
   # ---------------------------------------------------------------------------
     * def unknownEmail = 'notamember-' + java.util.UUID.randomUUID() + '@example.com'
     Given path '/auth/remove-member'
@@ -145,7 +145,7 @@ Feature: DELETE /auth/remove-member
     Then status 200
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after removal user's tenants array no longer contains the tenant
+  Scenario: verify DB — after removal user.s teams array no longer contains the team
   # ---------------------------------------------------------------------------
     * def memberEmail = 'rm-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -163,14 +163,14 @@ Feature: DELETE /auth/remove-member
     When method PATCH
     Then status 200
 
-    # Read the tenant ID before removal
+    # Read the team ID before removal
     Given path '/users/' + memberEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.tenants == '#array'
-    * assert response.tenants.length >= 1
+    And match response.teams == '#array'
+    * assert response.teams.length >= 1
 
     Given path '/auth/remove-member'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -178,11 +178,11 @@ Feature: DELETE /auth/remove-member
     When method DELETE
     Then status 200
 
-    # Verify tenants array is now empty
+    # Verify teams array is now empty
     Given path '/users/' + memberEmail
     And header Authorization = adminAuth
     And param rep = 's'
     When method GET
     Then status 200
-    And match response.tenants == '#[0]'
-    And match response.tenant == '#notpresent'
+    And match response.teams == '#[0]'
+    And match response.team == '#notpresent'

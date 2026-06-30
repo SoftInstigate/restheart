@@ -95,11 +95,10 @@ public record AccountsConfigData(
     // ── Membership SPI ───────────────────────────────────────────────────────
 
     /**
-     * JWT claim name used to carry the active tenant identifier.
-     * Defaults to {@code "tenant"}. Change to e.g. {@code "org"} if your domain
-     * uses a different terminology.
+     * JWT claim name used to carry the active team identifier.
+     * Defaults to {@code "team"}.
      */
-    String tenantClaimName,
+    String teamClaimName,
 
     /**
      * Role name assigned to non-admin team members.
@@ -112,7 +111,7 @@ public record AccountsConfigData(
      * Whether the membership management endpoints are enabled.
      * When {@code false}, the following endpoints return 404:
      * {@code /auth/invite}, {@code /auth/resend-invite},
-     * {@code /auth/tenants}, {@code /auth/switch-tenant}.
+     * {@code /auth/teams}, {@code /auth/switch-team}.
      * Useful when you expose equivalent endpoints via a custom provider.
      * Defaults to {@code true}.
      */
@@ -120,7 +119,7 @@ public record AccountsConfigData(
 
     /**
      * Team role assigned to the user who creates a new team (e.g. {@code "owner"}).
-     * Stored in {@code user.tenants[].role} and {@code team.members[].role}.
+     * Stored in {@code user.teams[].role} and {@code team.members[].role}.
      * Defaults to {@code "owner"}.
      */
     String ownershipRole,
@@ -137,7 +136,7 @@ public record AccountsConfigData(
      * List of request attached-parameter names that should be propagated as JWT claims.
      * Mirrors {@code jwtTokenManager.account-properties-claims} and is applied
      * by {@link org.restheart.accounts.util.JwtHelper} when issuing tokens from
-     * accounts endpoints (verify, activate, reset-password, switch-tenant, OAuth).
+     * accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
      *
      * <p>Example: {@code [srvNode, customClaim]}.
      *

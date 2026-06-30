@@ -163,13 +163,13 @@ public class ResetPasswordService implements JsonService {
         db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
-        var tenant = accountsService.getMembershipProvider()
+        var team = accountsService.getMembershipProvider(req)
                 .activeMembership(storedEmail)
-                .map(m -> m.tenantId())
+                .map(m -> m.teamId())
                 .orElse(null);
         var extraClaims = new java.util.HashMap<String, Object>();
-        if (tenant != null) {
-            extraClaims.put(conf.tenantClaimName(), tenant);
+        if (team != null) {
+            extraClaims.put(conf.teamClaimName(), team);
         }
         var jwtToken  = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),

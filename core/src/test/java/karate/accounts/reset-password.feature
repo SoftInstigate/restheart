@@ -82,7 +82,7 @@ Feature: PATCH /auth/reset-password
     # Verify: the reset response issues a JWT — use it to make an authenticated call
     * def setCookie = responseHeaders['Set-Cookie'][0]
     * def jwt = setCookie.split('Bearer_')[1].split(';')[0]
-    Given path '/auth/tenants'
+    Given path '/auth/teams'
     And header Authorization = 'Bearer ' + jwt
     When method GET
     Then status 200

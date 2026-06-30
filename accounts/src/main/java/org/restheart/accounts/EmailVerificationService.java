@@ -147,14 +147,14 @@ public class EmailVerificationService implements JsonService {
         roles.add(effectiveRole);
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var tenantBson = accountsService.getMembershipProvider()
+        var teamBson = accountsService.getMembershipProvider(req)
                 .activeMembership(storedEmail)
-                .map(m -> m.tenantId())
+                .map(m -> m.teamId())
                 .orElse(null);
 
         var extraClaims = new java.util.HashMap<String, Object>();
-        if (tenantBson != null) {
-            extraClaims.put(conf.tenantClaimName(), tenantBson);
+        if (teamBson != null) {
+            extraClaims.put(conf.teamClaimName(), teamBson);
         }
 
         var jwtToken = jwt.issueToken(

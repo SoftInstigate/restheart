@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 /**
  * DELETE /auth/remove-member
  *
- * <p>Removes a member from the caller's active tenant. The caller must hold the
- * {@code <ownershipRole>} or {@code admin} role within that tenant.
+ * <p>Removes a member from the caller's active team. The caller must hold the
+ * {@code <ownershipRole>} or {@code admin} role within that team.
  *
  * <p>Owners cannot remove themselves (to prevent leaving an org without an owner).
  *
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name             = "removeMemberService",
-        description      = "DELETE /auth/remove-member — removes a member from the caller's tenant",
+        description      = "DELETE /auth/remove-member — removes a member from the caller's team",
         defaultURI       = "/auth/remove-member",
         secure           = true,
         enabledByDefault = false)
@@ -76,8 +76,8 @@ public class RemoveMemberService implements JsonService {
         var account = req.getAuthenticatedAccount();
         var callerEmail = account.getPrincipal().getName();
 
-        // 2. Verify caller has owner role in active tenant
-        var membershipProvider = accountsService.getMembershipProvider();
+        // 2. Verify caller has owner role in active team
+        var membershipProvider = accountsService.getMembershipProvider(req);
         var membership = membershipProvider.activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = conf.ownershipRole();
@@ -86,9 +86,9 @@ public class RemoveMemberService implements JsonService {
             return;
         }
 
-        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
-        if (callerTenant == null || callerTenant.isNull()) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
+        var callerTeam = membership.map(m -> m.teamId()).orElse(null);
+        if (callerTeam == null || callerTeam.isNull()) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No team associated with your account");
             return;
         }
 
@@ -107,20 +107,20 @@ public class RemoveMemberService implements JsonService {
 
         // 4. Owner cannot remove themselves
         if (callerEmail.equalsIgnoreCase(targetEmail) && membershipRole.equals(ownershipRole)) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Owner cannot remove themselves from the tenant");
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Owner cannot remove themselves from the team");
             return;
         }
 
-        // 5. Target must be a member of the caller's tenant
-        if (!membershipProvider.isMember(targetEmail, callerTenant)) {
-            Errors.error(res, HttpStatus.SC_NOT_FOUND, "User is not a member of this tenant");
+        // 5. Target must be a member of the caller's team
+        if (!membershipProvider.isMember(targetEmail, callerTeam)) {
+            Errors.error(res, HttpStatus.SC_NOT_FOUND, "User is not a member of this team");
             return;
         }
 
         // 6. Remove
-        membershipProvider.removeMember(targetEmail, callerTenant);
+        membershipProvider.removeMember(targetEmail, callerTeam);
 
-        LOGGER.info("Member <{}> removed from tenant {} by <{}>", targetEmail, callerTenant, callerEmail);
+        LOGGER.info("Member <{}> removed from team {} by <{}>", targetEmail, callerTeam, callerEmail);
         res.setStatusCode(HttpStatus.SC_OK);
     }
 }

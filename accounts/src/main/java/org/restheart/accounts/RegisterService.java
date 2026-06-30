@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * POST /auth/register
  *
- * <p>Creates a new user with {@code status="pending_verification"} and a new team/tenant,
+ * <p>Creates a new user with {@code status="pending_verification"} and a new team,
  * then sends an email-verification link (TTL 7 days).
  *
  * <p>Expected request body:
@@ -92,8 +92,8 @@ public class RegisterService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    private MembershipProvider membership() {
-        return accountsService.getMembershipProvider();
+    private MembershipProvider membership(JsonRequest req) {
+        return accountsService.getMembershipProvider(req);
     }
 
     @Override
@@ -179,12 +179,12 @@ public class RegisterService implements JsonService {
         }
 
         // ── 6. Delegate team creation + membership linking to the provider ────
-        var tenantRef = membership().createInitialTeam(email, teamName);
-        var teamId    = tenantRef.id().isString()
-                ? tenantRef.id().asString().getValue()
-                : tenantRef.id().asObjectId().getValue().toHexString();
+        var teamRef = membership(req).createInitialTeam(email, teamName);
+        var teamId    = teamRef.id().isString()
+                ? teamRef.id().asString().getValue()
+                : teamRef.id().asObjectId().getValue().toHexString();
 
-        LOGGER.info("User registered: <{}>, tenant={}", email, teamId);
+        LOGGER.info("User registered: <{}>, team={}", email, teamId);
 
         // ── 7. Send verification email (best-effort) ─────────────────────────
         try {

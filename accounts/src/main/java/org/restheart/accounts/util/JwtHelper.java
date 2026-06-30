@@ -64,11 +64,11 @@ public class JwtHelper {
      *
      * <ul>
      *   <li>{@code authDb} — sempre incluso se non nullo/blank (richiesto da
-     *       {@code JwtAuthDbVerifier} per il routing multi-tenant)</li>
+     *       {@code JwtAuthDbVerifier} per il routing multi-team)</li>
      *   <li>{@code accountProperties} — filtrato da {@code accountPropertiesClaims}:
      *       solo i nomi presenti nella lista sono aggiunti come claim
      *       (es. {@code srvNode} impostato da {@code SrvNodeEnricher})</li>
-     *   <li>{@code extraClaims} — sempre inclusi (es. {@code tenant}, {@code status})</li>
+     *   <li>{@code extraClaims} — sempre inclusi (es. {@code team}, {@code status})</li>
      * </ul>
      *
      * @param email             identità dell'utente ({@code sub})
@@ -76,7 +76,7 @@ public class JwtHelper {
      * @param authDb            database MongoDB di autenticazione ({@code authDb}); può essere {@code null}
      * @param accountProperties tutti gli attached-params della request (vedi {@code Request.attachedParams()});
      *                          filtrati da {@code accountPropertiesClaims}; può essere {@code null}
-     * @param extraClaims       claim aggiuntivi sempre inclusi (es. tenant, status); può essere {@code null}
+     * @param extraClaims       claim aggiuntivi sempre inclusi (es. team, status); può essere {@code null}
      * @return JWT firmato
      */
     public String issueToken(String email,
@@ -119,7 +119,7 @@ public class JwtHelper {
             }
         }
 
-        // Extra claims sempre inclusi (tenant, status, ecc.)
+        // Extra claims sempre inclusi (team, status, ecc.)
         if (extraClaims != null) {
             for (var entry : extraClaims.entrySet()) {
                 // BsonValue viene prima convertito al tipo Java corrispondente

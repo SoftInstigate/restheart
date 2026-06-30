@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
  * activation flow.
  *
  * <p>Requires authentication. Callable by membership role: {@code <ownershipRole>} only.
- * The target user must belong to the same tenant as the caller.
+ * The target user must belong to the same team as the caller.
  *
  * <p>Expected body: {@code { "email": "invited@example.com" }}
  *
@@ -95,7 +95,7 @@ public class ResendInviteService implements JsonService {
         var callerEmail = account.getPrincipal().getName();
 
         // 2. Verify membership role: must be ownership-role or admin
-        var membership = accountsService.getMembershipProvider()
+        var membership = accountsService.getMembershipProvider(req)
                 .activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
         var ownershipRole = RequestOverrides.ownershipRole(req, conf);
@@ -103,9 +103,9 @@ public class ResendInviteService implements JsonService {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
-        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
-        if (callerTenant == null || callerTenant.isNull()) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
+        var callerTeam = membership.map(m -> m.teamId()).orElse(null);
+        if (callerTeam == null || callerTeam.isNull()) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No team associated with your account");
             return;
         }
 
@@ -123,7 +123,7 @@ public class ResendInviteService implements JsonService {
         var email = jo.get("email").getAsString().trim().toLowerCase();
 
         // 4. Find pending invitation in auth_invitations for this user in the caller's org
-        var inviteOpt = db(req).findInvitation(email, callerTenant);
+        var inviteOpt = db(req).findInvitation(email, callerTeam);
         if (inviteOpt.isEmpty()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "No pending invitation found for this user in your team");
             return;
@@ -145,10 +145,10 @@ public class ResendInviteService implements JsonService {
         }
 
         // 6. Load team name and resend email
-        var teamNameFallback = callerTenant.isString() ? callerTenant.asString().getValue() : BsonUtils.toJson(callerTenant);
+        var teamNameFallback = callerTeam.isString() ? callerTeam.asString().getValue() : BsonUtils.toJson(callerTeam);
         String teamName = teamNameFallback;
         try {
-            var teamOpt = db(req).findTeam(callerTenant);
+            var teamOpt = db(req).findTeam(callerTeam);
             if (teamOpt.isPresent()) {
                 var teamDoc = teamOpt.get();
                 if (teamDoc.containsKey("name") && teamDoc.get("name").isString()) {
@@ -156,7 +156,7 @@ public class ResendInviteService implements JsonService {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Could not load team for tenant '{}': {}", teamNameFallback, e.getMessage());
+            LOGGER.warn("Could not load team for team '{}': {}", teamNameFallback, e.getMessage());
         }
 
         if (ermes != null && ermes.isEnabled()) {
@@ -191,8 +191,8 @@ public class ResendInviteService implements JsonService {
                     ermes.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
-                LOGGER.info("Invite email re-sent to <{}> by {} (tenant={})",
-                        email, inviterName, callerTenant);
+                LOGGER.info("Invite email re-sent to <{}> by {} (team={})",
+                        email, inviterName, callerTeam);
             } catch (Exception e) {
                 LOGGER.error("Failed to re-send invite email to <{}>", email, e);
             }

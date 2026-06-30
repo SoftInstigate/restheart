@@ -53,23 +53,23 @@ import org.restheart.exchange.ServiceRequest;
  *   </tr>
  *   <tr>
  *     <td>{@code override-accounts-oauth-google-enabled}</td>
- *     <td>Whether Google OAuth is enabled for this tenant</td>
+ *     <td>Whether Google OAuth is enabled for this team</td>
  *     <td>{@code false} if not set</td>
  *   </tr>
  *   <tr>
  *     <td>{@code override-accounts-oauth-google-client-id}</td>
- *     <td>Google OAuth client ID for this tenant</td>
+ *     <td>Google OAuth client ID for this team</td>
  *     <td>{@code null}</td>
  *   </tr>
  *   <tr>
  *     <td>{@code override-accounts-oauth-google-client-secret}</td>
- *     <td>Google OAuth client secret for this tenant</td>
+ *     <td>Google OAuth client secret for this team</td>
  *     <td>{@code null}</td>
  *   </tr>
  * </table>
  *
- * <h2>Multi-tenant usage (restheart-cloud)</h2>
- * <p>An interceptor such as {@code TenantConfigInterceptor} reads the {@code confs/{srvId}.accounts}
+ * <h2>Multi-team usage (restheart-cloud)</h2>
+ * <p>An interceptor such as {@code TeamConfigInterceptor} reads the {@code confs/{srvId}.accounts}
  * document from MongoDB and attaches these params at {@code REQUEST_BEFORE_EXCHANGE_INIT}.
  * The {@code accounts.*} sub-document structure is:
  * <pre>{@code
@@ -95,7 +95,7 @@ import org.restheart.exchange.ServiceRequest;
  * }
  * }</pre>
  *
- * <h2>Single-tenant usage</h2>
+ * <h2>Single-team usage</h2>
  * <p>When no interceptor attaches override params, all methods return the values from
  * {@link AccountsConfigData}, preserving backward compatibility.
  */
@@ -109,7 +109,7 @@ public final class RequestOverrides {
     /** Cookie domain override (set by AuthDbResolver). */
     public static final String COOKIE_DOMAIN = "override-cookie-domain";
 
-    // ── Accounts-specific overrides (set by TenantConfigInterceptor) ──────────
+    // ── Accounts-specific overrides (set by TeamConfigInterceptor) ──────────
 
     public static final String APP_NAME          = "override-accounts-app-name";
     public static final String FRONTEND_URL      = "override-accounts-frontend-url";
@@ -122,18 +122,18 @@ public final class RequestOverrides {
     /** Inline HTML for the invite template. */
     public static final String TMPL_INVITE         = "override-accounts-tmpl-invite";
 
-    // ── Per-tenant OAuth overrides ─────────────────────────────────────────────
+    // ── Per-team OAuth overrides ─────────────────────────────────────────────
 
     public static final String OAUTH_GOOGLE_ENABLED       = "override-accounts-oauth-google-enabled";
     public static final String OAUTH_GOOGLE_CLIENT_ID     = "override-accounts-oauth-google-client-id";
     public static final String OAUTH_GOOGLE_CLIENT_SECRET = "override-accounts-oauth-google-client-secret";
 
-    // ── Per-tenant role override ──────────────────────────────────────────────
+    // ── Per-team role override ──────────────────────────────────────────────
 
-    /** System ACL role assigned after email verification (override for multi-tenant). */
+    /** System ACL role assigned after email verification (override for multi-team). */
     public static final String DEFAULT_ROLE = "override-accounts-default-role";
 
-    /** Team role for the user who creates a team (override for multi-tenant). */
+    /** Team role for the user who creates a team (override for multi-team). */
     public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
 
     private RequestOverrides() {}
@@ -194,7 +194,7 @@ public final class RequestOverrides {
     }
 
     /**
-     * Per-tenant Google OAuth config, or {@code null} if not overridden.
+     * Per-team Google OAuth config, or {@code null} if not overridden.
      * When non-null, this takes precedence over the static {@link OAuthConfig}.
      */
     public static OAuthConfig.ProviderConfig oauthGoogle(ServiceRequest<?> req) {

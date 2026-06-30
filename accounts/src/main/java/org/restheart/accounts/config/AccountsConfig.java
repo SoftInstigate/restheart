@@ -86,7 +86,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             configVal(templates, "verification",   null),
             configVal(templates, "password-reset", null),
             configVal(templates, "invite",         null),
-            configVal(config, "tenant-claim-name",            "tenant"),
+            configVal(config, "team-claim-name",              "team"),
             configVal(config, "member-role-name",             "member"),
             configVal(config, "membership-endpoints-enabled", true),
             configVal(config, "ownership-role",                 "owner"),

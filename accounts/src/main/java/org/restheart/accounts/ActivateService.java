@@ -149,9 +149,9 @@ public class ActivateService implements JsonService {
         db(req).updateUser(normalizedEmail, setDoc);
 
         // 9. Add org membership now that the user has activated (invitation accepted)
-        var orgId    = invite.get("orgId");
+        var teamId    = invite.get("teamId");
         var orgRole  = invite.getString("role").getValue();
-        accountsService.getMembershipProvider().addMember(normalizedEmail, orgId, orgRole);
+        accountsService.getMembershipProvider(req).addMember(normalizedEmail, teamId, orgRole);
 
         // 10. Delete the invitation from auth_invitations (one-shot token)
         db(req).deleteInvitation(invite.getObjectId("_id"));
@@ -161,7 +161,7 @@ public class ActivateService implements JsonService {
         userRoles.add(effectiveRole);
 
         var extraClaims = new HashMap<String, Object>();
-        extraClaims.put(conf.tenantClaimName(), orgId);
+        extraClaims.put(conf.teamClaimName(), teamId);
 
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),

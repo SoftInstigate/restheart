@@ -34,9 +34,9 @@ import java.util.Map;
  * multi-instance deployments. Each token is one-time-use: it is atomically
  * consumed during {@link #handleCallback} via {@code findOneAndDelete}.
  *
- * <h2>Multi-tenant / per-db persistence</h2>
- * <p>When a per-tenant database override is active (via {@link RequestOverrides#db}),
- * the state token is stored in <em>that tenant's</em> {@code oauth_codes} collection,
+ * <h2>Multi-team / per-db persistence</h2>
+ * <p>When a per-team database override is active (via {@link RequestOverrides#db}),
+ * the state token is stored in <em>that {@code team}'s</em> {@code oauth_codes} collection,
  * not in the default database. The correct database is encoded directly in the state
  * string so that the callback can retrieve the token from the right collection without
  * needing access to the original HTTP request.
@@ -120,7 +120,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     /**
      * Returns the authorization URL for the given provider and stores a CSRF
-     * state token in MongoDB. Checks per-tenant overrides in the request.
+     * state token in MongoDB. Checks per-team overrides in the request.
      *
      * <p>Optional query parameters forwarded into the state document:
      * <ul>
@@ -137,12 +137,12 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
             org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
         var cfg                = resolveProviderConfig(providerName, req);
         var provider           = resolveProvider(providerName);
-        var tenantDb           = RequestOverrides.db(req, accountsConf);
-        var state              = generateState(tenantDb);
+        var teamDb           = RequestOverrides.db(req, accountsConf);
+        var state              = generateState(teamDb);
         var pendingInviteToken = queryParam(req, "pendingInviteToken");
         var consentsAccepted   = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
 
-        storeStateToken(state, providerName, tenantDb, pendingInviteToken, consentsAccepted);
+        storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted);
 
         var url = provider.getAuthorizationUrl(cfg.clientId(), cfg.clientSecret(),
                 config.callbackUrl(providerName), cfg.scope(), state);
@@ -198,7 +198,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     // ── State token persistence ───────────────────────────────────────────────
 
-    private void storeStateToken(String state, String providerName, String tenantDb,
+    private void storeStateToken(String state, String providerName, String teamDb,
                                  String pendingInviteToken, boolean consentsAccepted) {
         var doc = new BsonDocument()
                 .append("code",             new BsonString(state))
@@ -209,37 +209,37 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
             doc.append("pendingInviteToken", new BsonString(pendingInviteToken));
         }
         try {
-            oauthCodes(tenantDb).insertOne(doc);
+            oauthCodes(teamDb).insertOne(doc);
         } catch (Exception e) {
-            LOGGER.error("OAuthService: failed to store state token in {}.oauth_codes", tenantDb, e);
+            LOGGER.error("OAuthService: failed to store state token in {}.oauth_codes", teamDb, e);
             throw new RuntimeException("OAuth state storage failed", e);
         }
     }
 
     /**
-     * Atomically removes the state document from the correct tenant's MongoDB
+     * Atomically removes the state document from the correct {@code team}'s MongoDB
      * collection and returns a {@link StateToken} if the token is valid, or
      * {@code null} otherwise.
      *
-     * <p>The tenant database is decoded from the state string (see class Javadoc).
+     * <p>The team database is decoded from the state string (see class Javadoc).
      * The token is always consumed when found by {@code code}, regardless of
      * provider-name match or TTL, to prevent replay probing.
      */
     private StateToken verifyAndConsumeState(String state, String expectedProvider) {
         if (state == null || state.isBlank()) return null;
 
-        // Decode the tenant db from the state prefix
-        var tenantDb = decodeDbFromState(state);
-        if (tenantDb == null) {
+        // Decode the team db from the state prefix
+        var teamDb = decodeDbFromState(state);
+        if (teamDb == null) {
             LOGGER.warn("OAuthService: state token has invalid format");
             return null;
         }
 
         BsonDocument doc;
         try {
-            doc = oauthCodes(tenantDb).findOneAndDelete(Filters.eq("code", state));
+            doc = oauthCodes(teamDb).findOneAndDelete(Filters.eq("code", state));
         } catch (Exception e) {
-            LOGGER.error("OAuthService: failed to consume state token from {}.oauth_codes", tenantDb, e);
+            LOGGER.error("OAuthService: failed to consume state token from {}.oauth_codes", teamDb, e);
             return null;
         }
 
@@ -282,20 +282,20 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     /**
-     * Resolves provider config, checking per-tenant overrides before falling
+     * Resolves provider config, checking per-team overrides before falling
      * back to static config (currently only Google supports overrides).
      *
      * @param name provider name (case-insensitive), e.g. {@code "google"}
-     * @param req  the incoming request used to read per-tenant overrides; may be {@code null}
+     * @param req  the incoming request used to read per-team overrides; may be {@code null}
      * @return the effective {@link OAuthConfig.ProviderConfig}
      * @throws OAuthException if OAuth is disabled or the provider is not configured
      */
     public OAuthConfig.ProviderConfig resolveProviderConfig(String name,
             org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
         if ("google".equalsIgnoreCase(name) && req != null) {
-            var tenantCfg = org.restheart.accounts.util.RequestOverrides.oauthGoogle(req);
-            if (tenantCfg != null && tenantCfg.isValid()) {
-                return tenantCfg;
+            var teamCfg = org.restheart.accounts.util.RequestOverrides.oauthGoogle(req);
+            if (teamCfg != null && teamCfg.isValid()) {
+                return teamCfg;
             }
         }
         return resolveProviderConfig(name);
@@ -308,21 +308,21 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     /**
-     * Generates a state string encoding the tenant database name and 32 random bytes.
+     * Generates a state string encoding the team database name and 32 random bytes.
      *
      * <p>Format: {@code base64url(dbName) + "." + base64url(32-random-bytes)}
      * <br>The {@code .} separator is safe because it is not part of the base64url alphabet.
      */
-    private String generateState(String tenantDb) {
+    private String generateState(String teamDb) {
         var dbB64  = Base64.getUrlEncoder().withoutPadding()
-                          .encodeToString(tenantDb.getBytes(StandardCharsets.UTF_8));
+                          .encodeToString(teamDb.getBytes(StandardCharsets.UTF_8));
         var rndB64 = Base64.getUrlEncoder().withoutPadding()
                           .encodeToString(randomBytes(32));
         return dbB64 + "." + rndB64;
     }
 
     /**
-     * Decodes the tenant database name from the state string prefix.
+     * Decodes the team database name from the state string prefix.
      * Returns {@code null} if the format is invalid.
      */
     private String decodeDbFromState(String state) {

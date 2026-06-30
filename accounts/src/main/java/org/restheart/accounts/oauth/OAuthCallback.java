@@ -56,7 +56,7 @@ import static java.util.function.Predicate.not;
  *
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
  *
- * <p>New user creation delegates team / tenant initialization to the active
+ * <p>New user creation delegates team initialization to the active
  * {@link org.restheart.plugins.accounts.MembershipProvider} via {@link AccountsService}.
  */
 @RegisterPlugin(
@@ -178,19 +178,19 @@ public class OAuthCallback implements StringService {
                 }
 
                 // If a pending invite token is present, add membership now so activateViaOAuth
-                // finds a tenant (membership is deferred until acceptance since the fix)
+                // finds a team (membership is deferred until acceptance since the fix)
                 var inviteDb = hasPendingToken
                         ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf))
                         : null;
                 if (inviteDb != null) {
                     inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite -> {
-                        var orgId = invite.get("orgId");
+                        var teamId = invite.get("teamId");
                         var role  = invite.getString("role").getValue();
-                        accountsService.getMembershipProvider().addMember(email, orgId, role);
+                        accountsService.getMembershipProvider(req).addMember(email, teamId, role);
                     });
                 }
 
-                var membership = accountsService.getMembershipProvider()
+                var membership = accountsService.getMembershipProvider(req)
                         .activateViaOAuth(email, consents);
 
                 if (membership.isPresent()) {
@@ -203,7 +203,7 @@ public class OAuthCallback implements StringService {
                     var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
                             req.attachedParams(),
-                            java.util.Map.<String, Object>of(conf.tenantClaimName(), membership.get().tenantId()),
+                            java.util.Map.<String, Object>of(conf.teamClaimName(), membership.get().teamId()),
                             null);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
@@ -223,21 +223,21 @@ public class OAuthCallback implements StringService {
                     return;
                 }
                 var invite = inviteOpt.get();
-                var orgId  = invite.get("orgId");
+                var teamId = invite.get("teamId");
                 var role   = invite.getString("role").getValue();
 
-                accountsService.getMembershipProvider().addMember(email, orgId, role);
+                accountsService.getMembershipProvider(req).addMember(email, teamId, role);
                 db.deleteInvitation(invite.getObjectId("_id"));
 
-                LOGGER.info("Existing user <{}> accepted invitation to org={} via {} OAuth", email, orgId, provider);
+                LOGGER.info("Existing user <{}> accepted invitation to team={} via {} OAuth", email, teamId, provider);
 
                 var roles = extractRoles(user);
-                var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
-                var tenantId = activeMembership.map(m -> m.tenantId()).orElse(orgId);
+                var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
+                var activeTeam = activeMembership.map(m -> m.teamId()).orElse(teamId);
                 var jwtToken = jwt.issueToken(email, roles,
                         RequestOverrides.db(req, conf),
                         req.attachedParams(),
-                        java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
+                        java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
                         null);
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
@@ -245,12 +245,12 @@ public class OAuthCallback implements StringService {
 
             // 4. Issue JWT + set cookie for normal / non-activated users
             var roles  = extractRoles(user);
-            var activeMembership = accountsService.getMembershipProvider().activeMembership(email);
-            var tenantId         = activeMembership.map(m -> m.tenantId()).orElse(null);
+            var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
+            var activeTeam         = activeMembership.map(m -> m.teamId()).orElse(null);
             var jwtToken = jwt.issueToken(email, roles,
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
-                    java.util.Map.<String, Object>of(conf.tenantClaimName(), tenantId),
+                    java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
                     null);
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 
@@ -284,7 +284,7 @@ public class OAuthCallback implements StringService {
      * Finds the existing user or creates a new one from the OAuth profile.
      *
      * <p>New users get {@code roles: ["user"]} (provider has already verified the email).
-     * Team / tenant initialization is delegated to the active {@link AccountsService}
+     * Team initialization is delegated to the active {@link AccountsService}
      * MembershipProvider via {@code createInitialTeam}.
      */
     private record FindOrCreateResult(BsonDocument user, boolean isNew) {}
@@ -304,7 +304,7 @@ public class OAuthCallback implements StringService {
         var name = profile.containsKey("name") ? profile.getString("name").getValue()
                                                 : email.split("@")[0];
 
-        // Build user document (tenant/membership fields will be set by the provider)
+        // Build user document (team/membership fields will be set by the provider)
         var roles = new BsonArray();
         roles.add(new BsonString("user"));
 
@@ -333,11 +333,11 @@ public class OAuthCallback implements StringService {
         db(req).insertUser(userDoc);
 
         // Delegate team creation and membership linking to the MembershipProvider
-        accountsService.getMembershipProvider().createInitialTeam(email, name + "'s Team");
+        accountsService.getMembershipProvider(req).createInitialTeam(email, name + "'s Team");
 
         LOGGER.info("New user created via {} OAuth: <{}>", provider, email);
 
-        // Return the updated user doc (with tenant fields set by provider)
+        // Return the updated user doc (with team fields set by provider)
         return new FindOrCreateResult(db(req).findUser(email).orElse(userDoc), true);
     }
 

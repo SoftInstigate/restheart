@@ -100,8 +100,8 @@ public class AccountsInitializer implements Initializer {
                 users.createIndex(Indexes.ascending("emailVerificationToken"),
                         new IndexOptions().sparse(true).name("emailVerificationToken_1"));
 
-                users.createIndex(Indexes.ascending("tenant"),
-                        new IndexOptions().name("tenant_1"));
+                users.createIndex(Indexes.ascending("team"),
+                        new IndexOptions().name("team_1"));
             }
 
             // oauth_codes — TTL: codes expire after 600 seconds

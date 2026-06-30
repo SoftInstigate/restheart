@@ -7,12 +7,12 @@ import org.bson.BsonValue;
 /**
  * Service Provider Interface (SPI) for membership management in restheart-accounts.
  *
- * <p>Implementations control how teams/tenants are created, how users are associated
+ * <p>Implementations control how teams are created, how users are associated
  * with them, and how active memberships are read and switched. The plugin consults
  * this interface for every membership read/write operation.
  *
  * <p>A default implementation ({@code DefaultMembershipProvider}) is provided in the
- * {@code restheart-accounts} module and preserves the built-in {@code tenant}/{@code tenants}
+ * {@code restheart-accounts} module and preserves the built-in {@code team}/{@code teams}
  * schema. Custom implementations can be registered at startup via:
  *
  * <pre>{@code
@@ -37,43 +37,43 @@ public interface MembershipProvider {
      * Creates an initial team for a newly registered user and assigns them the owner role.
      * Called during {@code /auth/register} and the OAuth new-user path.
      *
-     * <p>The provider is responsible for creating the team/tenant storage record and
+     * <p>The provider is responsible for creating the team storage record and
      * linking the user to it (e.g. updating the user document or a separate membership
-     * collection). The returned {@link TenantRef} is used to embed the tenant identifier
+     * collection). The returned {@link TeamRef} is used to embed the team identifier
      * in the JWT.
      *
      * @param userId   the user's identifier (email address)
-     * @param teamName the display name for the new team / tenant
-     * @return a {@link TenantRef} carrying the new tenant's ID and display name
+     * @param teamName the display name for the new team
+     * @return a {@link TeamRef} carrying the new team's ID and display name
      */
-    TenantRef createInitialTeam(String userId, String teamName);
+    TeamRef createInitialTeam(String userId, String teamName);
 
     /**
-     * Returns {@code true} if the user is already a member of the given tenant.
+     * Returns {@code true} if the user is already a member of the given team.
      * Used by {@code /auth/invite} to short-circuit duplicate invitations.
      *
-     * @param userId   the user's identifier
-     * @param tenantId the tenant identifier
-     * @return {@code true} if the user belongs to the given tenant
+     * @param userId the user's identifier
+     * @param teamId the team identifier
+     * @return {@code true} if the user belongs to the given team
      */
-    boolean isMember(String userId, BsonValue tenantId);
+    boolean isMember(String userId, BsonValue teamId);
 
     /**
-     * Adds a user to a tenant with the specified role (operation must be idempotent).
+     * Adds a user to a team with the specified role (operation must be idempotent).
      * Used by {@code /auth/invite} both for new and for existing users.
      *
-     * <p>If the user has no active tenant yet, the implementation should also set
-     * this tenant as the active one.
+     * <p>If the user has no active team yet, the implementation should also set
+     * this team as the active one.
      *
-     * @param userId   the user's identifier
-     * @param tenantId the tenant identifier
-     * @param role     the role to assign (e.g. {@code "admin"} or the configured member role)
+     * @param userId the user's identifier
+     * @param teamId the team identifier
+     * @param role   the role to assign (e.g. {@code "admin"} or the configured member role)
      */
-    void addMember(String userId, BsonValue tenantId, String role);
+    void addMember(String userId, BsonValue teamId, String role);
 
     /**
      * Returns the user's currently active membership, or {@link Optional#empty()} if
-     * the user has no active tenant. Consumed by JWT issuance.
+     * the user has no active team. Consumed by JWT issuance.
      *
      * @param userId the user's identifier
      * @return an {@link Optional} containing the active {@link Membership}, or empty
@@ -81,7 +81,7 @@ public interface MembershipProvider {
     Optional<Membership> activeMembership(String userId);
 
     /**
-     * Returns all memberships for the user. Used by {@code GET /auth/tenants}.
+     * Returns all memberships for the user. Used by {@code GET /auth/teams}.
      *
      * @param userId the user's identifier
      * @return a (possibly empty) list of memberships
@@ -89,50 +89,50 @@ public interface MembershipProvider {
     List<Membership> listMemberships(String userId);
 
     /**
-     * Sets the given tenant as the user's active membership. Used by
-     * {@code POST /auth/switch-tenant}.
+     * Sets the given team as the user's active membership. Used by
+     * {@code POST /auth/switch-team}.
      *
      * <p>Implementations must verify that the user is a member before switching.
-     * Throws {@link IllegalArgumentException} if {@code tenantId} is not found in
+     * Throws {@link IllegalArgumentException} if {@code teamId} is not found in
      * the user's membership list.
      *
-     * @param userId   the user's identifier
-     * @param tenantId the tenant to activate
-     * @throws IllegalArgumentException if the user does not belong to the tenant
+     * @param userId the user's identifier
+     * @param teamId the team to activate
+     * @throws IllegalArgumentException if the user does not belong to the team
      */
-    void setActiveMembership(String userId, BsonValue tenantId);
+    void setActiveMembership(String userId, BsonValue teamId);
 
     /**
-     * Removes a user from the given tenant. Called by {@code DELETE /auth/remove-member}.
+     * Removes a user from the given team. Called by {@code DELETE /auth/remove-member}.
      *
      * <p>Implementations must remove the membership entry from both the user-side
-     * ({@code user.tenants[]}) and the team-side ({@code team.members[]}) stores.
-     * If the tenant being removed is currently the user's active tenant, implementations
-     * should clear or update the active tenant field accordingly.
+     * ({@code user.teams[]}) and the team-side ({@code team.members[]}) stores.
+     * If the team being removed is currently the user's active team, implementations
+     * should clear or update the active team field accordingly.
      *
-     * <p>This method is a no-op if the user is not a member of the given tenant.
+     * <p>This method is a no-op if the user is not a member of the given team.
      *
-     * @param userId   the user's identifier (email address)
-     * @param tenantId the tenant to remove the user from
+     * @param userId the user's identifier (email address)
+     * @param teamId the team to remove the user from
      */
-    default void removeMember(String userId, BsonValue tenantId) {
+    default void removeMember(String userId, BsonValue teamId) {
         throw new UnsupportedOperationException("removeMember not implemented by this provider");
     }
 
     /**
-     * Updates the org-level role of a user within the given tenant.
+     * Updates the org-level role of a user within the given team.
      * Called by {@code PATCH /auth/member-role}.
      *
      * <p>Implementations must update the role on both the user-side
-     * ({@code user.tenants[].role}) and the team-side ({@code team.members[].role}).
+     * ({@code user.teams[].role}) and the team-side ({@code team.members[].role}).
      *
-     * <p>This method is a no-op if the user is not a member of the given tenant.
+     * <p>This method is a no-op if the user is not a member of the given team.
      *
-     * @param userId   the user's identifier (email address)
-     * @param tenantId the tenant in which to update the role
-     * @param newRole  the new role to assign (e.g. {@code "admin"} or the configured member role)
+     * @param userId  the user's identifier (email address)
+     * @param teamId  the team in which to update the role
+     * @param newRole the new role to assign (e.g. {@code "admin"} or the configured member role)
      */
-    default void updateMemberRole(String userId, BsonValue tenantId, String newRole) {
+    default void updateMemberRole(String userId, BsonValue teamId, String newRole) {
         throw new UnsupportedOperationException("updateMemberRole not implemented by this provider");
     }
 

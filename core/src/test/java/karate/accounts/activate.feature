@@ -177,7 +177,7 @@ Feature: PATCH /auth/activate
 
     * def setCookie = responseHeaders['Set-Cookie'][0]
     * def jwt = setCookie.split('Bearer_')[1].split(';')[0]
-    Given path '/auth/tenants'
+    Given path '/auth/teams'
     And header Authorization = 'Bearer ' + jwt
     When method GET
     Then status 200
@@ -202,7 +202,7 @@ Feature: PATCH /auth/activate
     * def setCookie = setCookieList != null && setCookieList.length > 0 ? setCookieList[0] : ''
     * def activatedJwt = setCookie.split('Bearer_')[1].split(';')[0]
 
-    Given path '/auth/tenants'
+    Given path '/auth/teams'
     And header Authorization = 'Bearer ' + activatedJwt
     When method GET
     Then status 200
