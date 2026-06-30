@@ -25,7 +25,7 @@ Feature: accept an existing user invitation — read token, accept, verify clean
     # Verify invitation was deleted
     Given path '/auth_invitations'
     And header Authorization = adminAuth
-    And param filter = '{"email":"owner-test@example.com","orgId":{"$oid":"' + secondTeamId['$oid'] + '"}}'
+    And param filter = '{"email":"owner-test@example.com","teamId":{"$oid":"' + secondTeamId['$oid'] + '"}}'
     And param rep = 's'
     When method GET
     Then status 200
