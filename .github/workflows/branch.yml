@@ -12,6 +12,7 @@ on:
       - "**/Dockerfile*"
       - "**/pom.xml"
       - ".github/workflows/*.yml"
+      - "**/*.feature"
 
 jobs:
   build:
