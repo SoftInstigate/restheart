@@ -153,7 +153,7 @@ Feature: Invitations — new and existing users
     When method GET
     Then status 200
     And match response.email == infoEmail
-    And match response.orgName == '#string'
+    And match response.teamName == '#string'
     And match response.role == 'member'
     And match response.isNewUser == true
     And match response.expiresAt == '#string'
