@@ -231,6 +231,14 @@ jwtTokenManager:
 # - POST /token - Get access token (returns token in response body)
 # - POST /token/cookie - Get access token via cookie (more secure, token not in body)
 # - GET /token - Get current token information
+# - GET /token/redirect - Get access token AND redirect to redirect-url with the
+#   token appended as a URL fragment (#access_token=...). For flows that must end
+#   in a real browser navigation rather than an AJAX/fetch call (e.g. handing a
+#   token to a frontend after an OAuth-provider round trip). The redirect target
+#   is never a request parameter, only this config (or a per-request
+#   override-redirect-url attached param) — accepting a caller-supplied redirect
+#   target would be an open-redirect vector combined with a token leak.
+#   Returns 400 if neither is set.
 # - DELETE /token - Invalidate current token
 # Supports both HTTP Basic Auth and OAuth 2.0 form data:
 #   - grant_type=password with username and password (RFC 6749 §4.3)
@@ -241,6 +249,10 @@ jwtTokenManager:
 # See: https://restheart.org/docs/security/authentication#token-endpoint
 authTokenService:
   uri: /token
+  # Redirect target for GET /token/redirect. null (default) means the endpoint
+  # returns 400 unless a per-request override-redirect-url is attached instead.
+  # Example: https://app.example.com/callback
+  redirect-url: null
 
 # OAuth 2.0 Authorization Server Metadata (RFC 8414)
 # Endpoint: GET /.well-known/oauth-authorization-server

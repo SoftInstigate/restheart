@@ -328,6 +328,7 @@
 /authTokenService:
   enabled: true
   uri: /token
+  redirect-url: "http://localhost:8080/secho"
 
 /oauthAuthorizationServerMetadataService:
   enabled: true
