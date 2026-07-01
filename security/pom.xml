@@ -64,6 +64,11 @@
       <artifactId>karate-junit5</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
     <!-- END Test dependencies -->
   </dependencies>
 

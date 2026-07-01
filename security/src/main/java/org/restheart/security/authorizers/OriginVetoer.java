@@ -115,9 +115,21 @@ public class OriginVetoer implements Authorizer {
             return true;
         }
 
-        // If neither whitelist nor patterns are defined, allow all
-        if ((this.whitelist == null || this.whitelist.isEmpty()) &&
-                (this.whitelistPatterns == null || this.whitelistPatterns.isEmpty())) {
+        // A per-request override replaces the static whitelist entirely for
+        // this request (e.g. multi-tenant deployments resolving a
+        // per-service whitelist via an interceptor). Absent → static config,
+        // as before. Present but empty → deny all (fail closed), distinct
+        // from "no override" (null).
+        final List<String> overrideWhitelist = request.attachedParam("override-origin-whitelist");
+        final var hasOverride = overrideWhitelist != null;
+        final var effectiveWhitelist = hasOverride ? normalize(overrideWhitelist) : this.whitelist;
+
+        // If neither whitelist nor patterns are defined, allow all —
+        // but only when there's no override in play; an override always
+        // means the caller wants requests validated against it.
+        if (!hasOverride
+                && (this.whitelist == null || this.whitelist.isEmpty())
+                && (this.whitelistPatterns == null || this.whitelistPatterns.isEmpty())) {
             return true;
         }
 
@@ -130,15 +142,16 @@ public class OriginVetoer implements Authorizer {
         final var normalizedOrigin = removeTrailingSlashes(origin.toLowerCase()).concat("/");
 
         // Check exact/prefix matches first
-        if (this.whitelist != null && !this.whitelist.isEmpty()) {
-            final boolean exactMatch = this.whitelist.stream().anyMatch(wl -> normalizedOrigin.startsWith(wl));
+        if (effectiveWhitelist != null && !effectiveWhitelist.isEmpty()) {
+            final boolean exactMatch = effectiveWhitelist.stream().anyMatch(wl -> normalizedOrigin.startsWith(wl));
             if (exactMatch) {
                 return true;
             }
         }
 
-        // Check pattern matches
-        if (this.whitelistPatterns != null && !this.whitelistPatterns.isEmpty()) {
+        // Pattern matches are only consulted from static config — an
+        // override, when present, is exact-match only (see class docs).
+        if (!hasOverride && this.whitelistPatterns != null && !this.whitelistPatterns.isEmpty()) {
             final boolean patternMatch = this.whitelistPatterns.stream()
                     .anyMatch(pattern -> matchesPattern(origin, pattern));
             if (patternMatch) {
@@ -148,6 +161,17 @@ public class OriginVetoer implements Authorizer {
 
         LOGGER.warn("request forbidden by originVetoer due to Origin header {} not in whitelist or patterns", origin);
         return false;
+    }
+
+    /** Applies the same normalization used for the static whitelist at init time. */
+    private static List<String> normalize(final List<String> origins) {
+        return origins.stream()
+                .filter(item -> item != null)
+                .map(String::strip)
+                .map(String::toLowerCase)
+                .map(item -> removeTrailingSlashes(item))
+                .map(item -> item.concat("/"))
+                .collect(Collectors.toList());
     }
 
     private boolean matchesPattern(final String origin, final String pattern) {
