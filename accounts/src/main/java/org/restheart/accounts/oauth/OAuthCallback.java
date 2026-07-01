@@ -22,6 +22,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.services.TokenRedirectHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +51,10 @@ import static java.util.function.Predicate.not;
  *   <li>Find or create the user in MongoDB</li>
  *   <li>If user has {@code status:"invited"}, invoke
  *       {@link org.restheart.plugins.accounts.MembershipProvider#activateViaOAuth} to activate</li>
- *   <li>Issue JWT and set the auth cookie ({@code conf.cookieName()})</li>
- *   <li>Redirect to {@code frontendSuccessUrl}</li>
+ *   <li>Issue JWT, set the auth cookie ({@code conf.cookieName()}), and redirect to
+ *       {@code frontendSuccessUrl} with the token also appended as a URL fragment
+ *       ({@code #access_token=...}, via {@link TokenRedirectHelper}) so kit-based
+ *       frontends can pick it up without relying on the cookie</li>
  * </ol>
  *
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
@@ -274,7 +277,10 @@ public class OAuthCallback implements StringService {
                 JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
                         RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
-        var location = flow != null ? oauthConfig.frontendSuccessUrl() + "?flow=" + flow : oauthConfig.frontendSuccessUrl();
+
+        var query = flow != null ? "?flow=" + flow : "";
+        var location = TokenRedirectHelper.appendTokenFragment(
+                oauthConfig.frontendSuccessUrl() + query, jwtToken, "Bearer", null);
         res.getHeaders().put(Headers.LOCATION, location);
     }
 

@@ -75,6 +75,11 @@ Feature: OAuth activation for invited users
     * def callbackLocation = responseHeaders['Location'][0]
     * match callbackLocation contains 'localhost:4200/app'
 
+    # Token must be carried as a URL fragment, never in the query string
+    * match callbackLocation contains '#access_token='
+    * def preHash = callbackLocation.split('#')[0]
+    * match preHash !contains 'access_token='
+
     # Auth cookie must be set
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
@@ -93,6 +98,11 @@ Feature: OAuth activation for invited users
     * def teamClaim = payload.team
     * def teamStr = (typeof teamClaim == 'object') ? teamClaim['$oid'] : teamClaim
     * match teamStr == '#string'
+
+    # 6. The fragment token must be the same JWT as the cookie, with token_type=Bearer
+    * def fragment = callbackLocation.split('#')[1]
+    * match fragment contains 'access_token=' + jwtPart
+    * match fragment contains 'token_type=Bearer'
 
     # 6. Verify DB — user activated, no invite fields on user doc, consents stored
     Given path '/users/' + inviteEmail
@@ -175,6 +185,9 @@ Feature: OAuth activation for invited users
     And param state = state
     When method GET
     Then status 307
+    * def callbackLocation = responseHeaders['Location'][0]
+    * match callbackLocation contains '#access_token='
+    * match callbackLocation.split('#')[0] !contains 'access_token='
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
@@ -249,6 +262,8 @@ Feature: OAuth activation for invited users
     Then status 307
     * def callbackLocation = responseHeaders['Location'][0]
     * match callbackLocation contains 'localhost:4200/app'
+    * match callbackLocation contains '#access_token='
+    * match callbackLocation.split('#')[0] !contains 'access_token='
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
