@@ -1,0 +1,50 @@
+name: Publish Helm Chart
+
+on:
+  push:
+    branches:
+      - "!master"
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  publish-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set VERSION
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Update Chart appVersion
+        run: |
+          sed -i "s/^appVersion:.*/appVersion: \"$VERSION\"/" chart/Chart.yaml
+
+      - name: Package chart
+        run: |
+          helm package chart --version $VERSION --app-version $VERSION
+
+      - name: Push to GHCR
+        run: |
+          helm push restheart-$VERSION.tgz oci://ghcr.io/softinstigate
+
+      - name: Print install instructions
+        run: |
+          echo ""
+          echo "Chart published successfully!"
+          echo ""
+          echo "Install with:"
+          echo "  helm install my-restheart oci://ghcr.io/softinstigate/restheart --version $VERSION"
+          echo ""

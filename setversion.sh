@@ -197,6 +197,14 @@ fi
 echo "Setting Maven version to $VERSION..."
 $MVN_CMD versions:set -DnewVersion="$VERSION" -DprocessAllModules=true -DgenerateBackupPoms=false
 
+# Update Helm chart appVersion (only for release versions, not SNAPSHOT)
+CHART_FILE="chart/Chart.yaml"
+if [ -f "$CHART_FILE" ] && [[ "$VERSION" != *SNAPSHOT ]]; then
+  echo "Updating Helm chart appVersion to $VERSION..."
+  sed -i.bak "s/^appVersion:.*/appVersion: \"$VERSION\"/" "$CHART_FILE"
+  rm -f "${CHART_FILE}.bak"
+fi
+
 # Commit changes
 if [[ "$VERSION" == *SNAPSHOT ]]; then
   echo "This is a SNAPSHOT version. Committing bump..."
