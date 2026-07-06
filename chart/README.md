@@ -13,7 +13,7 @@ A Helm chart for deploying [RESTHeart](https://restheart.org), a Java backend fr
 From GHCR (OCI registry):
 
 ```bash
-helm install my-restheart oci://ghcr.io/softinstigate/restheart --version 9.5.0
+helm install my-restheart oci://ghcr.io/softinstigate/restheart --version 0.3.0
 ```
 
 Or from the chart directory:

@@ -2,7 +2,7 @@ apiVersion: v2
 name: restheart
 description: A Helm chart for RESTHeart, a Java backend framework for REST, GraphQL, and WebSocket APIs with MongoDB.
 type: application
-version: 0.2.0
+version: 0.3.0
 appVersion: "9.5.0"
 
 home: https://restheart.org
