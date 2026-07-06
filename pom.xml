@@ -241,10 +241,41 @@
                 <artifactId>jboss-threads</artifactId>
                 <version>3.9.2</version>
             </dependency>
+            <!-- Pin transitive dependencies for dependency convergence -->
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.49.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>3.6.2.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-constraint</artifactId>
+                <version>2.14.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-cpu</artifactId>
+                <version>2.14.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-function</artifactId>
+                <version>2.14.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
                 <version>20251224</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.21.3</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
