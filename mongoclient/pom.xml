@@ -23,7 +23,14 @@
       <distribution>repo</distribution>
       <comments>Core components license</comments>
     </license>
+    <license>
+      <name>RESTHeart COMMERCIAL LICENSE</name>
+      <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+      <distribution>manual</distribution>
+      <comments>Optional commercial license</comments>
+    </license>
   </licenses>
+
   <dependencies>
     <dependency>
       <groupId>org.restheart</groupId>
