@@ -34,17 +34,19 @@ jobs:
 
       - name: Package chart
         run: |
-          helm package chart --version $VERSION --app-version $VERSION
+          helm package chart
 
       - name: Push to GHCR
         run: |
-          helm push restheart-$VERSION.tgz oci://ghcr.io/softinstigate
+          CHART_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          helm push restheart-$CHART_VERSION.tgz oci://ghcr.io/softinstigate
 
       - name: Print install instructions
         run: |
+          CHART_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
           echo ""
           echo "Chart published successfully!"
           echo ""
           echo "Install with:"
-          echo "  helm install my-restheart oci://ghcr.io/softinstigate/restheart --version $VERSION"
+          echo "  helm install my-restheart oci://ghcr.io/softinstigate/restheart --version $CHART_VERSION"
           echo ""

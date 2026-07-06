@@ -37,7 +37,7 @@ chart/
 From GHCR (OCI registry):
 
 ```bash
-helm install my-restheart oci://ghcr.io/softinstigate/restheart --version 9.5.0
+helm install my-restheart oci://ghcr.io/softinstigate/restheart --version 0.3.0
 ```
 
 Or from the chart directory:
@@ -265,7 +265,7 @@ helm install my-restheart oci://ghcr.io/softinstigate/restheart --version 9.x.x
 | Component | Version |
 |-----------|---------|
 | Chart API | v2 |
-| Chart version | 0.2.0 |
+| Chart version | 0.3.0 |
 | App version | 9.5.0 |
 | Minimum Kubernetes | 1.22+ |
 | Minimum Helm | 3.x |
