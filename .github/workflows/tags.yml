@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["6.0", "7.0", "8.0"]
+        mongodb-version: ["7.0", "8.0", "8.3"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -31,7 +31,7 @@ jobs:
           mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
       - name: Upload build artifacts for Docker jobs
-        if: matrix.mongodb-version == '8.0'
+        if: matrix.mongodb-version == '8.3'
         uses: actions/upload-artifact@v6
         with:
           name: restheart-artifacts
@@ -50,7 +50,7 @@ jobs:
       version: ${{ steps.set_version.outputs.version }}
     strategy:
       matrix:
-        mongodb-version: ["8.0"]
+        mongodb-version: ["8.3"]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["8.0"]
+        mongodb-version: ["8.3"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["8.0"]
+        mongodb-version: ["8.3"]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
