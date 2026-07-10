@@ -694,6 +694,7 @@
                         <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
                             <doclint>none</doclint>
+                            <quiet>true</quiet>
                             <failOnError>false</failOnError>
                         </configuration>
                         <executions>
