@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["6.0", "7.0", "8.0"]
+        mongodb-version: ["7.0", "8.0", "8.3"]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
@@ -34,8 +34,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
-      - name: Upload build artifacts for Docker jobs (only for 8.0)
-        if: matrix.mongodb-version == '8.0'
+      - name: Upload build artifacts for Docker jobs (only for 8.3)
+        if: matrix.mongodb-version == '8.3'
         uses: actions/upload-artifact@v6
         with:
           name: restheart-artifacts
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["8.0"]
+        mongodb-version: ["8.3"]
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK 25
@@ -66,7 +66,7 @@ jobs:
           gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      - name: Deploy to Maven Central (8.0 only)
+      - name: Deploy to Maven Central (8.3 only)
         run: |
           MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" \
           mvn -B deploy -Pdeploy -DskipTests -Dmongodb.version="${{ matrix.mongodb-version }}" -s settings.xml
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["8.0"]
+        mongodb-version: ["8.3"]
     steps:
       - uses: actions/checkout@v6
       - name: Download build artifacts
@@ -102,7 +102,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build and Push multi-arch Docker images (8.0 only)
+      - name: Build and Push multi-arch Docker images (8.3 only)
         uses: docker/build-push-action@v7
         with:
           context: ./core/
