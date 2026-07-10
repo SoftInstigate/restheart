@@ -436,11 +436,13 @@
                       <color>yellow</color>
                     </log>
                     <wait>
-                      <http>
-                        <url>http://localhost:${mongodb.port}</url>
-                        <method>GET</method>
-                        <status>200</status>
-                      </http>
+                      <tcp>
+                        <mode>mapped</mode>
+                        <host>localhost</host>
+                        <ports>
+                          <port>${mongodb.port}</port>
+                        </ports>
+                      </tcp>
                       <time>10000</time>
                       <shutdown>1000</shutdown>
                     </wait>
