@@ -257,6 +257,8 @@ Fully managed service: [cloud.restheart.com](https://cloud.restheart.com)
 
 ## Database Compatibility
 
+**Note**: database compatibility depends solely on the level of compatibility of the mentioned database with the official MongoDB's API.
+
 | Database              | Support Level | Notes                                                                                          |
 | --------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
 | ✅ **MongoDB**         | Full          | All versions 3.6+                                                                              |
