@@ -18,6 +18,7 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.services.TokenRedirectHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +29,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * GET /auth/verify?email=...&token=...
+ * GET /auth/verify?email=...&token=...&delivery=cookie|fragment
  *
- * <p>Validates the email-verification token, activates the account, issues a JWT, sets
- * the {@code rh_auth} cookie, and redirects the browser to the application.
+ * <p>Validates the email-verification token, activates the account, issues a JWT, and
+ * redirects the browser to the application. The {@code delivery} query parameter selects
+ * how the JWT is handed to the frontend:
+ * <ul>
+ *   <li>{@code delivery=cookie} (or omitted, default) — sets the {@code rh_auth} cookie
+ *       and redirects to {@code frontendAppUrl}. For same-origin setups where cookie
+ *       auth works.</li>
+ *   <li>{@code delivery=fragment} — redirects to {@code frontendAppUrl} with the JWT
+ *       appended as a URL fragment ({@code #access_token=...&token_type=Bearer&expires_in=...},
+ *       via {@link TokenRedirectHelper}, same mechanism as {@code GET /token/redirect}
+ *       and the OAuth callback). For cross-origin SPAs using Bearer token auth, where
+ *       browsers block third-party cookies.</li>
+ * </ul>
  *
  * <p>All outcomes are expressed as 302 redirects (the request arrives via a link in an
  * email, so a browser navigation is always in progress):
  * <ul>
- *   <li>Success     → 302 to {@code frontendAppUrl} with {@code rh_auth} cookie set</li>
+ *   <li>Success     → 302 to {@code frontendAppUrl} (cookie set or fragment appended
+ *                     depending on {@code delivery})</li>
  *   <li>Invalid/missing token or email mismatch
  *                   → 302 to {@code frontendUrl}/auth/login?error=invalid_token</li>
  *   <li>Expired token (TTL 7 days)
@@ -91,8 +104,9 @@ public class EmailVerificationService implements JsonService {
         final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
 
         // ── 1. Read query parameters ─────────────────────────────────────────
-        var email = req.getQueryParameterOrDefault("email", null);
-        var token = req.getQueryParameterOrDefault("token", null);
+        var email    = req.getQueryParameterOrDefault("email", null);
+        var token    = req.getQueryParameterOrDefault("token", null);
+        var delivery = req.getQueryParameterOrDefault("delivery", "cookie");
 
         if (email == null || email.isBlank() || token == null || token.isBlank()) {
             redirect(res, loginErrorBase + "?error=invalid_token");
@@ -165,14 +179,22 @@ public class EmailVerificationService implements JsonService {
                 extraClaims,
                 user);
 
-        // ── 5e. Set auth cookie ───────────────────────────────────────────────
-        var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
-        res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
-
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 
-        // ── 5f. Redirect to app ───────────────────────────────────────────────
-        redirect(res, RequestOverrides.frontendAppUrl(req, conf));
+        // ── 5e. Deliver token and redirect to app ────────────────────────────
+        var appUrl = RequestOverrides.frontendAppUrl(req, conf);
+
+        if ("fragment".equals(delivery)) {
+            // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,
+            // same mechanism as GET /token/redirect and the OAuth callback
+            var expiresIn = conf.jwtTtl() > 0 ? conf.jwtTtl() * 60 : null;
+            redirect(res, TokenRedirectHelper.appendTokenFragment(appUrl, jwtToken, "Bearer", expiresIn));
+        } else {
+            // Default: same-origin setups using cookie auth
+            var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
+            res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
+            redirect(res, appUrl);
+        }
     }
 
     // -------------------------------------------------------------------------
