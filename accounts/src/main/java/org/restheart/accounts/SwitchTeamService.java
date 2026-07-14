@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.undertow.util.HttpString;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
 import org.restheart.accounts.config.AccountsConfigData;
@@ -11,6 +10,7 @@ import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -156,15 +156,20 @@ public class SwitchTeamService implements JsonService {
                 java.util.Map.<String, Object>of(conf.teamClaimName(), matched.teamId()),
                 null);
 
-        // Set cookie
-        var domain       = RequestOverrides.cookieDomain(req, conf);
-        var cookieHeader = JwtHelper.setCookieHeader(token, conf.cookieName(), domain, conf.jwtTtl());
-        res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
+        // Deliver the reissued token per the `delivery` query parameter
+        // (cookie by default, body for bearer SPAs).
+        var delivery = TokenDelivery.resolve(
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
 
         // Response body
         var responseBody = new JsonObject();
         responseBody.add(conf.teamClaimName(), JsonParser.parseString(BsonUtils.toJson(matched.teamId())));
         responseBody.addProperty("role", matched.role());
+        if (delivery == TokenDelivery.Mode.BODY) {
+            TokenDelivery.body(res, responseBody, conf, token);
+        } else {
+            TokenDelivery.cookie(res, req, conf, token);
+        }
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
     }

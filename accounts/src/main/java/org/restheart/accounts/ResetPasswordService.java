@@ -12,6 +12,7 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -26,8 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-
-import io.undertow.util.Headers;
 
 /**
  * PATCH /auth/reset-password
@@ -177,12 +176,19 @@ public class ResetPasswordService implements JsonService {
                 extraClaims,
                 user);
 
-        res.getHeaders().add(Headers.SET_COOKIE,
-                JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf)));
+        // 7b. Auto-login: deliver the token per the `delivery` query parameter.
+        // fetch()-based endpoint → cookie (default) or body (bearer).
+        var delivery = TokenDelivery.resolve(
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
 
         // 8. Success response
         var responseBody = new JsonObject();
         responseBody.addProperty("message", "Password updated successfully");
+        if (delivery == TokenDelivery.Mode.BODY) {
+            TokenDelivery.body(res, responseBody, conf, jwtToken);
+        } else {
+            TokenDelivery.cookie(res, req, conf, jwtToken);
+        }
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
 

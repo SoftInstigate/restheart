@@ -1,7 +1,6 @@
 package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
-import io.undertow.util.Headers;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -10,6 +9,7 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -168,12 +168,20 @@ public class ActivateService implements JsonService {
                 req.attachedParams(),
                 extraClaims,
                 user);
-        var cookie   = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
-        req.getExchange().getResponseHeaders().add(Headers.SET_COOKIE, cookie);
 
-        // 11. Respond 200
+        // 11. Auto-login: deliver the token per the `delivery` query parameter.
+        // fetch()-based endpoint → cookie (default) or body (bearer).
+        // Default preserves the previous cookie-only behavior.
+        var delivery = TokenDelivery.resolve(
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+
         var responseBody = new com.google.gson.JsonObject();
         responseBody.addProperty("message", "Account activated");
+        if (delivery == TokenDelivery.Mode.BODY) {
+            TokenDelivery.body(res, responseBody, conf, jwtToken);
+        } else {
+            TokenDelivery.cookie(res, req, conf, jwtToken);
+        }
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
 

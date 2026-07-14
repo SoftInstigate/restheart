@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -10,6 +9,7 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -182,17 +182,17 @@ public class EmailVerificationService implements JsonService {
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 
         // ── 5e. Deliver token and redirect to app ────────────────────────────
+        // Browser-navigation endpoint: only cookie|fragment are meaningful (no JSON body consumer).
         var appUrl = RequestOverrides.frontendAppUrl(req, conf);
+        var mode   = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
 
-        if ("fragment".equals(delivery)) {
+        if (mode == TokenDelivery.Mode.FRAGMENT) {
             // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,
             // same mechanism as GET /token/redirect and the OAuth callback
-            var expiresIn = conf.jwtTtl() > 0 ? conf.jwtTtl() * 60 : null;
-            redirect(res, TokenRedirectHelper.appendTokenFragment(appUrl, jwtToken, "Bearer", expiresIn));
+            redirect(res, TokenDelivery.fragmentUrl(appUrl, conf, jwtToken));
         } else {
             // Default: same-origin setups using cookie auth
-            var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
-            res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
+            TokenDelivery.cookie(res, req, conf, jwtToken);
             redirect(res, appUrl);
         }
     }

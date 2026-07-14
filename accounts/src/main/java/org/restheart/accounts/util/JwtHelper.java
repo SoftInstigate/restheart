@@ -172,29 +172,51 @@ public class JwtHelper {
     }
 
     /**
-     * Costruisce il valore completo dell'header {@code Set-Cookie} con nome configurabile
-     * e {@code Max-Age} coerente con il TTL del JWT.
+     * Costruisce il valore completo dell'header {@code Set-Cookie} nel formato canonico
+     * {@code <name>=Bearer_<jwt>; Domain=…; Path=/; HttpOnly; SameSite=Strict[; Secure][; Max-Age=…]},
+     * compatibile con {@code authCookieHandler} (che si aspetta il prefisso {@code Bearer_}).
+     *
+     * <p>Questo è l'unico costruttore canonico del cookie di autenticazione lato accounts:
+     * tutti i service devono passare da qui (direttamente o via {@code TokenDelivery}) per
+     * garantire coerenza di formato, {@code Secure} e {@code Max-Age}.
      *
      * @param jwt        token JWT
      * @param cookieName nome del cookie (es. {@code "8x5_auth"})
      * @param domain     dominio del cookie (es. {@code ".example.com"})
      * @param ttlMinutes durata del JWT in minuti — usata per impostare {@code Max-Age};
      *                   se ≤ 0 il cookie è una session cookie (nessun Max-Age)
+     * @param secure     se {@code true} aggiunge l'attributo {@code Secure} (obbligatorio su HTTPS)
      */
-    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes) {
-        var base = cookieName + "=Bearer_" + jwt
-                + "; Domain=" + domain
-                + "; Path=/; HttpOnly; SameSite=Strict";
-        return ttlMinutes > 0 ? base + "; Max-Age=" + ((long) ttlMinutes * 60) : base;
+    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes, boolean secure) {
+        var sb = new StringBuilder()
+                .append(cookieName).append("=Bearer_").append(jwt)
+                .append("; Domain=").append(domain)
+                .append("; Path=/; HttpOnly; SameSite=Strict");
+        if (secure) {
+            sb.append("; Secure");
+        }
+        if (ttlMinutes > 0) {
+            sb.append("; Max-Age=").append((long) ttlMinutes * 60);
+        }
+        return sb.toString();
     }
 
     /**
-     * @deprecated Use {@link #setCookieHeader(String, String, String, int)} to set a
-     *             persistent cookie with {@code Max-Age} aligned to the JWT TTL.
+     * @deprecated Use {@link #setCookieHeader(String, String, String, int, boolean)} to control
+     *             the {@code Secure} attribute explicitly. This overload defaults to {@code Secure}.
+     */
+    @Deprecated
+    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes) {
+        return setCookieHeader(jwt, cookieName, domain, ttlMinutes, true);
+    }
+
+    /**
+     * @deprecated Use {@link #setCookieHeader(String, String, String, int, boolean)}: this overload
+     *             produces a session cookie (no {@code Max-Age}) and no {@code Secure} attribute.
      */
     @Deprecated
     public static String setCookieHeader(String jwt, String cookieName, String domain) {
-        return setCookieHeader(jwt, cookieName, domain, 0);
+        return setCookieHeader(jwt, cookieName, domain, 0, true);
     }
 
     /**

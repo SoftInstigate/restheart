@@ -109,6 +109,9 @@ public final class RequestOverrides {
     /** Cookie domain override (set by AuthDbResolver). */
     public static final String COOKIE_DOMAIN = "override-cookie-domain";
 
+    /** Cookie {@code Secure} attribute override (set by AuthDbResolver / TeamConfigInterceptor). */
+    public static final String COOKIE_SECURE = "override-cookie-secure";
+
     // ── Accounts-specific overrides (set by TeamConfigInterceptor) ──────────
 
     public static final String APP_NAME          = "override-accounts-app-name";
@@ -148,6 +151,11 @@ public final class RequestOverrides {
     /** Effective cookie domain. */
     public static String cookieDomain(ServiceRequest<?> req, AccountsConfigData conf) {
         return str(req, COOKIE_DOMAIN, conf.cookieDomain());
+    }
+
+    /** Effective cookie {@code Secure} attribute. */
+    public static boolean cookieSecure(ServiceRequest<?> req, AccountsConfigData conf) {
+        return bool(req, COOKIE_SECURE, conf.cookieSecure());
     }
 
     /** Effective application name (used in email subjects / bodies). */

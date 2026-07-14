@@ -51,6 +51,28 @@ Feature: PATCH /auth/activate
     And match response.message == '#notnull'
 
   # ---------------------------------------------------------------------------
+  Scenario: delivery=body — token returned in the body (bearer), no cookie
+  # ---------------------------------------------------------------------------
+    Given path '/auth/activate'
+    And param delivery = 'body'
+    And request
+      """
+      {
+        "email":    "#(inviteEmail)",
+        "token":    "#(inviteToken)",
+        "password": "Activated1!",
+      }
+      """
+    When method PATCH
+    Then status 200
+
+    # Token delivered in body (and Auth-Token header); no auth cookie is set
+    And match response.access_token == '#string'
+    And match response.token_type == 'Bearer'
+    And match responseHeaders['Auth-Token'][0] == response.access_token
+    And match responseHeaders['Set-Cookie'] == '#[0]'
+
+  # ---------------------------------------------------------------------------
   Scenario: token not found — returns 401
   # ---------------------------------------------------------------------------
     Given path '/auth/activate'

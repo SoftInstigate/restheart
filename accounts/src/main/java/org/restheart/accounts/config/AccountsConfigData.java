@@ -49,6 +49,14 @@ public record AccountsConfigData(
      */
     String cookieName,
 
+    /**
+     * Whether the auth cookie carries the {@code Secure} attribute.
+     * Defaults to {@code true}. Set to {@code false} only for local HTTP development,
+     * where browsers reject {@code Secure} cookies over plain HTTP.
+     * Mirrors {@code authCookieSetter.secure}.
+     */
+    boolean cookieSecure,
+
     /** Base URL of the public frontend, e.g. {@code "https://app.example.com"}. */
     String frontendUrl,
 

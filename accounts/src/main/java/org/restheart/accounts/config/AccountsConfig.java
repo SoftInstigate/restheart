@@ -78,6 +78,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             configVal(config, "jwt-ttl",           15),
             configVal(config, "cookie-domain",     "localhost"),
             configVal(config, "cookie-name",      "rh_auth"),
+            configVal(config, "cookie-secure",    true),
             configVal(config, "frontend-url",      "http://localhost:4200"),
             configVal(config, "frontend-app-url",  "http://localhost:4200/app"),
             configVal(config, "terms-version",     "1.0"),

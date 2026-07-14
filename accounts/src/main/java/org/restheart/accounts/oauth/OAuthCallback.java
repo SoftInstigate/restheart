@@ -12,6 +12,7 @@ import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.StringRequest;
@@ -272,16 +273,30 @@ public class OAuthCallback implements StringService {
         if (flow != null) {
             res.getHeaders().add(HttpString.tryFromString("X-OAuth-Flow"), flow);
         }
-        res.getHeaders().add(
-                HttpString.tryFromString("Set-Cookie"),
-                JwtHelper.setCookieHeader(jwtToken, conf.cookieName(),
-                        RequestOverrides.cookieDomain(req, conf), conf.jwtTtl()));
+
+        // Browser-navigation flow: cookie|fragment are the meaningful modes. When the
+        // `delivery` query parameter is absent, preserve the historical behavior of setting
+        // BOTH the cookie and the URL fragment (resolve default is null = "both").
+        var delivery = TokenDelivery.resolve(deliveryParam(req), null);
+
+        if (delivery != TokenDelivery.Mode.FRAGMENT) {
+            TokenDelivery.cookie(res, req, conf, jwtToken);
+        }
+
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
 
-        var query = flow != null ? "?flow=" + flow : "";
-        var location = TokenRedirectHelper.appendTokenFragment(
-                oauthConfig.frontendSuccessUrl() + query, jwtToken, "Bearer", null);
+        var query   = flow != null ? "?flow=" + flow : "";
+        var baseUrl = oauthConfig.frontendSuccessUrl() + query;
+        var location = delivery == TokenDelivery.Mode.COOKIE
+                ? baseUrl
+                : TokenDelivery.fragmentUrl(baseUrl, conf, jwtToken);
         res.getHeaders().put(Headers.LOCATION, location);
+    }
+
+    /** Reads the optional {@code delivery} query parameter, or {@code null} if absent. */
+    private static String deliveryParam(StringRequest req) {
+        var v = req.getQueryParameters().get("delivery");
+        return (v != null && !v.isEmpty()) ? v.getFirst() : null;
     }
 
     // ── User creation / lookup ────────────────────────────────────────────────
