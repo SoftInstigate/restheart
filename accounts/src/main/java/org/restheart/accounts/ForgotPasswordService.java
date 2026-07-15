@@ -149,7 +149,7 @@ public class ForgotPasswordService implements JsonService {
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var resetLink    = conf.frontendUrl()
+        var resetLink    = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
@@ -158,13 +158,13 @@ public class ForgotPasswordService implements JsonService {
             LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
         } else {
             var tmpl = EmailTemplateLoader.loadWithFallback(
-                    null, conf.passwordResetTemplatePath(), "password-reset.html");
+                    RequestOverrides.templatePasswordReset(req), conf.passwordResetTemplatePath(), "password-reset.html");
             var vars = java.util.Map.of(
-                    "app-name", conf.appName(),
+                    "app-name", RequestOverrides.appName(req, conf),
                     "year", String.valueOf(java.time.Year.now().getValue()),
                     "first-name", firstName != null ? firstName : "",
                     "email", email,
-                    "frontend-url", conf.frontendUrl(),
+                    "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
             ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());

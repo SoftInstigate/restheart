@@ -6,6 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.security.services.AuthCookie;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -64,11 +65,11 @@ public class JwtHelper {
      *
      * <ul>
      *   <li>{@code authDb} — sempre incluso se non nullo/blank (richiesto da
-     *       {@code JwtAuthDbVerifier} per il routing multi-tenant)</li>
+     *       {@code JwtAuthDbVerifier} per il routing multi-team)</li>
      *   <li>{@code accountProperties} — filtrato da {@code accountPropertiesClaims}:
      *       solo i nomi presenti nella lista sono aggiunti come claim
      *       (es. {@code srvNode} impostato da {@code SrvNodeEnricher})</li>
-     *   <li>{@code extraClaims} — sempre inclusi (es. {@code tenant}, {@code status})</li>
+     *   <li>{@code extraClaims} — sempre inclusi (es. {@code team}, {@code status})</li>
      * </ul>
      *
      * @param email             identità dell'utente ({@code sub})
@@ -76,7 +77,7 @@ public class JwtHelper {
      * @param authDb            database MongoDB di autenticazione ({@code authDb}); può essere {@code null}
      * @param accountProperties tutti gli attached-params della request (vedi {@code Request.attachedParams()});
      *                          filtrati da {@code accountPropertiesClaims}; può essere {@code null}
-     * @param extraClaims       claim aggiuntivi sempre inclusi (es. tenant, status); può essere {@code null}
+     * @param extraClaims       claim aggiuntivi sempre inclusi (es. team, status); può essere {@code null}
      * @return JWT firmato
      */
     public String issueToken(String email,
@@ -119,7 +120,7 @@ public class JwtHelper {
             }
         }
 
-        // Extra claims sempre inclusi (tenant, status, ecc.)
+        // Extra claims sempre inclusi (team, status, ecc.)
         if (extraClaims != null) {
             for (var entry : extraClaims.entrySet()) {
                 // BsonValue viene prima convertito al tipo Java corrispondente
@@ -168,33 +169,47 @@ public class JwtHelper {
      * @return valore da assegnare al cookie {@code rh_auth}
      */
     public static String cookieValue(String jwt) {
-        return "Bearer_" + jwt;
+        return AuthCookie.bearerValue(jwt);
     }
 
     /**
-     * Costruisce il valore completo dell'header {@code Set-Cookie} con nome configurabile
-     * e {@code Max-Age} coerente con il TTL del JWT.
+     * Costruisce il valore completo dell'header {@code Set-Cookie} nel formato canonico
+     * {@code <name>=Bearer_<jwt>; Domain=…; Path=/; HttpOnly; SameSite=Strict[; Secure][; Max-Age=…]},
+     * compatibile con {@code authCookieHandler} (che si aspetta il prefisso {@code Bearer_}).
+     *
+     * <p>Questo è l'unico costruttore canonico del cookie di autenticazione lato accounts:
+     * tutti i service devono passare da qui (direttamente o via {@code TokenDelivery}) per
+     * garantire coerenza di formato, {@code Secure} e {@code Max-Age}.
      *
      * @param jwt        token JWT
      * @param cookieName nome del cookie (es. {@code "8x5_auth"})
      * @param domain     dominio del cookie (es. {@code ".example.com"})
      * @param ttlMinutes durata del JWT in minuti — usata per impostare {@code Max-Age};
      *                   se ≤ 0 il cookie è una session cookie (nessun Max-Age)
+     * @param secure     se {@code true} aggiunge l'attributo {@code Secure} (obbligatorio su HTTPS)
      */
-    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes) {
-        var base = cookieName + "=Bearer_" + jwt
-                + "; Domain=" + domain
-                + "; Path=/; HttpOnly; SameSite=Strict";
-        return ttlMinutes > 0 ? base + "; Max-Age=" + ((long) ttlMinutes * 60) : base;
+    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes, boolean secure) {
+        long maxAgeSeconds = ttlMinutes > 0 ? (long) ttlMinutes * 60 : -1;
+        return AuthCookie.header(cookieName, AuthCookie.bearerValue(jwt), domain, "/",
+                secure, true, true, "Strict", maxAgeSeconds);
     }
 
     /**
-     * @deprecated Use {@link #setCookieHeader(String, String, String, int)} to set a
-     *             persistent cookie with {@code Max-Age} aligned to the JWT TTL.
+     * @deprecated Use {@link #setCookieHeader(String, String, String, int, boolean)} to control
+     *             the {@code Secure} attribute explicitly. This overload defaults to {@code Secure}.
+     */
+    @Deprecated
+    public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes) {
+        return setCookieHeader(jwt, cookieName, domain, ttlMinutes, true);
+    }
+
+    /**
+     * @deprecated Use {@link #setCookieHeader(String, String, String, int, boolean)}: this overload
+     *             produces a session cookie (no {@code Max-Age}) and no {@code Secure} attribute.
      */
     @Deprecated
     public static String setCookieHeader(String jwt, String cookieName, String domain) {
-        return setCookieHeader(jwt, cookieName, domain, 0);
+        return setCookieHeader(jwt, cookieName, domain, 0, true);
     }
 
     /**

@@ -24,7 +24,7 @@ import static com.mongodb.client.model.Filters.eq;
 public class DbHelper {
 
     private static final String USERS_COLLECTION = "users";
-    private static final String TEAMS_COLLECTION = "orgs";
+    private static final String TEAMS_COLLECTION = "teams";
     private static final String INVITATIONS_COLLECTION = "auth_invitations";
 
     /** Duplicate-key error code returned by MongoDB. */
@@ -130,83 +130,83 @@ public class DbHelper {
     }
 
     /**
-     * Adds a tenant membership to the user's {@code tenants} array using {@code $addToSet}.
+     * Adds a team membership to the user's {@code teams} array using {@code $addToSet}.
      *
      * @param email      the user's email (_id)
      * @param membership a document {@code { id: "...", role: "..." }}
      * @return {@code true} if a document was matched
      */
-    public boolean addTenantMembership(String email, BsonDocument membership) {
+    public boolean addTeamMembership(String email, BsonDocument membership) {
         var result = users().updateOne(
             eq("_id", new BsonString(email)),
-            new BsonDocument("$addToSet", new BsonDocument("tenants", membership))
+            new BsonDocument("$addToSet", new BsonDocument("teams", membership))
         );
         return result.getMatchedCount() > 0;
     }
 
     /**
-     * Removes the entry with the given {@code tenantId} from the user's {@code tenants} array.
+     * Removes the entry with the given {@code teamId} from the user's {@code teams} array.
      *
-     * @param email    the user's email (_id)
-     * @param tenantId the tenant to remove
+     * @param email  the user's email (_id)
+     * @param teamId the team to remove
      * @return {@code true} if a document was matched
      */
-    public boolean removeTenantMembership(String email, BsonValue tenantId) {
+    public boolean removeTeamMembership(String email, BsonValue teamId) {
         var result = users().updateOne(
             eq("_id", new BsonString(email)),
-            Updates.pull("tenants", new BsonDocument("id", tenantId))
+            Updates.pull("teams", new BsonDocument("id", teamId))
         );
         return result.getMatchedCount() > 0;
     }
 
     /**
-     * Updates the role for the given tenant entry in the user's {@code tenants} array.
+     * Updates the role for the given team entry in the user's {@code teams} array.
      *
-     * @param email    the user's email (_id)
-     * @param tenantId the tenant whose role to change
-     * @param newRole  the new role string
-     * @return {@code true} if a matching tenant entry was found and modified
+     * @param email  the user's email (_id)
+     * @param teamId the team whose role to change
+     * @param newRole the new role string
+     * @return {@code true} if a matching team entry was found and modified
      */
-    public boolean updateTenantRole(String email, BsonValue tenantId, String newRole) {
+    public boolean updateTeamRole(String email, BsonValue teamId, String newRole) {
         var result = users().updateOne(
             Filters.and(
                 eq("_id", new BsonString(email)),
-                Filters.eq("tenants.id", tenantId)
+                Filters.eq("teams.id", teamId)
             ),
-            Updates.set("tenants.$.role", new BsonString(newRole))
+            Updates.set("teams.$.role", new BsonString(newRole))
         );
         return result.getModifiedCount() > 0;
     }
 
     /**
-     * Sets the user's active tenant (the {@code tenant} field) unconditionally.
+     * Sets the user's active team (the {@code team} field) unconditionally.
      *
-     * @param email    the user's email (_id)
-     * @param tenantId the tenant to make active
+     * @param email  the user's email (_id)
+     * @param teamId the team to make active
      * @return {@code true} if a document was matched
      */
-    public boolean setActiveTenant(String email, BsonValue tenantId) {
-        return updateUser(email, new BsonDocument("tenant", tenantId));
+    public boolean setActiveTeam(String email, BsonValue teamId) {
+        return updateUser(email, new BsonDocument("team", teamId));
     }
 
     /**
-     * Sets the user's active tenant only if the {@code tenant} field is absent or null.
-     * Safe to call idempotently after every {@code addTenantMembership} for new users.
+     * Sets the user's active team only if the {@code team} field is absent or null.
+     * Safe to call idempotently after every {@code addTeamMembership} for new users.
      *
-     * @param email    the user's email (_id)
-     * @param tenantId the tenant to set as active
-     * @return {@code true} if the field was set (document matched and had no prior tenant)
+     * @param email  the user's email (_id)
+     * @param teamId the team to set as active
+     * @return {@code true} if the field was set (document matched and had no prior team)
      */
-    public boolean setActiveTenantIfAbsent(String email, BsonValue tenantId) {
+    public boolean setActiveTeamIfAbsent(String email, BsonValue teamId) {
         var result = users().updateOne(
             Filters.and(
                 eq("_id", new BsonString(email)),
                 Filters.or(
-                    Filters.exists("tenant", false),
-                    Filters.eq("tenant", null)
+                    Filters.exists("team", false),
+                    Filters.eq("team", null)
                 )
             ),
-            Updates.set("tenant", tenantId)
+            Updates.set("team", teamId)
         );
         return result.getModifiedCount() > 0;
     }
@@ -227,9 +227,9 @@ public class DbHelper {
     }
 
     /**
-     * Finds a team document by its hex-string {@code _id}.
+     * Finds a team document by its {@code _id}.
      *
-     * @param teamId the ObjectId hex string
+     * @param teamId the team identifier
      * @return the team document, or {@link Optional#empty()} if not found
      */
     public Optional<BsonDocument> findTeam(BsonValue teamId) {
@@ -243,13 +243,13 @@ public class DbHelper {
     /**
      * Removes a member entry from the team's {@code members} array.
      *
-     * @param tenantId the team's {@code _id}
-     * @param userId   the user to remove
+     * @param teamId the team's {@code _id}
+     * @param userId the user to remove
      * @return {@code true} if the team document was matched
      */
-    public boolean removeMemberFromTeam(BsonValue tenantId, String userId) {
+    public boolean removeMemberFromTeam(BsonValue teamId, String userId) {
         var result = teams().updateOne(
-            eq("_id", tenantId),
+            eq("_id", teamId),
             Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
         );
         return result.getMatchedCount() > 0;
@@ -258,15 +258,15 @@ public class DbHelper {
     /**
      * Updates the role for a member in the team's {@code members} array.
      *
-     * @param tenantId the team's {@code _id}
-     * @param userId   the member's user id
-     * @param newRole  the new role string
+     * @param teamId  the team's {@code _id}
+     * @param userId  the member's user id
+     * @param newRole the new role string
      * @return {@code true} if the member entry was found and modified
      */
-    public boolean updateMemberRoleInTeam(BsonValue tenantId, String userId, String newRole) {
+    public boolean updateMemberRoleInTeam(BsonValue teamId, String userId, String newRole) {
         var result = teams().updateOne(
             Filters.and(
-                eq("_id", tenantId),
+                eq("_id", teamId),
                 Filters.eq("members.userId", new BsonString(userId))
             ),
             Updates.set("members.$.role", new BsonString(newRole))
@@ -298,13 +298,13 @@ public class DbHelper {
      *
      * @param isNewUser {@code true} if the user was created by this invite (no prior account)
      */
-    public void createInvitation(String email, String token, BsonValue orgId, String role, long ttlMs, boolean isNewUser) {
+    public void createInvitation(String email, String token, BsonValue teamId, String role, long ttlMs, boolean isNewUser) {
         var now = System.currentTimeMillis();
         var doc = new BsonDocument()
                 .append("_id", new org.bson.BsonObjectId())
                 .append("email", new BsonString(email))
                 .append("token", new BsonString(token))
-                .append("orgId", orgId)
+                .append("teamId", teamId)
                 .append("role", new BsonString(role))
                 .append("isNewUser", new org.bson.BsonBoolean(isNewUser))
                 .append("createdAt", new BsonDateTime(now))
@@ -341,14 +341,14 @@ public class DbHelper {
     }
 
     /**
-     * Finds the latest pending invitation for a user in a specific org.
+     * Finds the latest pending invitation for a user in a specific team.
      */
-    public Optional<BsonDocument> findInvitation(String email, BsonValue orgId) {
+    public Optional<BsonDocument> findInvitation(String email, BsonValue teamId) {
         var now = System.currentTimeMillis();
         var doc = invitations().find(
                 Filters.and(
                         Filters.eq("email", email),
-                        Filters.eq("orgId", orgId),
+                        Filters.eq("teamId", teamId),
                         Filters.gt("expiresAt", new BsonDateTime(now))))
                 .sort(new BsonDocument("createdAt", new org.bson.BsonInt32(-1)))
                 .first();
@@ -377,12 +377,12 @@ public class DbHelper {
     }
 
     /**
-     * Deletes all invitations for a user in a specific org (used after acceptance).
+     * Deletes all invitations for a user in a specific team (used after acceptance).
      */
-    public void deleteInvitations(String email, BsonValue orgId) {
+    public void deleteInvitations(String email, BsonValue teamId) {
         invitations().deleteMany(
                 Filters.and(
                         Filters.eq("email", email),
-                        Filters.eq("orgId", orgId)));
+                        Filters.eq("teamId", teamId)));
     }
 }

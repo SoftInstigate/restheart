@@ -7,7 +7,7 @@ Feature: Invitations — new and existing users
     * def ownerJwt = ownerSetup.ownerJwt
     * def secondSetup = karate.call('classpath:karate/accounts/helpers/setup-second-team.feature')
     * def secondOwnerJwt = secondSetup.secondOwnerJwt
-    * def secondTenantId = secondSetup.secondTenantId
+    * def secondTeamId = secondSetup.secondTeamId
 
   # ---------------------------------------------------------------------------
   Scenario: invite a new user creates $unauthenticated account
@@ -37,15 +37,15 @@ Feature: Invitations — new and existing users
 
     # Only proceed with acceptance if a fresh invite was created (201).
     # If 409, the user is already a member — skip token lookup and acceptance.
-    * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTenantId: secondTenantId, ownerJwt: ownerJwt })
+    * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTeamId: secondTeamId, ownerJwt: ownerJwt })
 
-    # Verify tenant is present for user (whether newly accepted or already a member)
+    # Verify team is present for user (whether newly accepted or already a member)
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    * def tenantIds = response.tenants ? karate.map(response.tenants, function(x){ return x.id }) : []
-    And match tenantIds contains secondTenantId
+    * def teamIds = response.teams ? karate.map(response.teams, function(x){ return x.id }) : []
+    And match teamIds contains secondTeamId
 
   # ---------------------------------------------------------------------------
   Scenario: invalid token returns 401
@@ -153,7 +153,7 @@ Feature: Invitations — new and existing users
     When method GET
     Then status 200
     And match response.email == infoEmail
-    And match response.orgName == '#string'
+    And match response.teamName == '#string'
     And match response.role == 'member'
     And match response.isNewUser == true
     And match response.expiresAt == '#string'

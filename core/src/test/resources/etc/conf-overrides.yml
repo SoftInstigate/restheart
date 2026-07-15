@@ -328,6 +328,7 @@
 /authTokenService:
   enabled: true
   uri: /token
+  redirect-url: "http://localhost:8080/secho"
 
 /oauthAuthorizationServerMetadataService:
   enabled: true
@@ -391,7 +392,7 @@
 /accountsConfig/enabled: true
 /accountsConfig/db: restheart-test
 /accountsConfig/account-properties-claims:
-  - tenants
+  - teams
 /accountsConfig/app-name: TestApp
 /accountsConfig/jwt-ttl: 15
 /accountsConfig/cookie-domain: localhost
@@ -410,13 +411,18 @@
 /activateService/enabled: true
 /inviteService/enabled: true
 /resendInviteService/enabled: true
-/getTenantsService/enabled: true
-/switchTenantService/enabled: true
+/getTeamsService/enabled: true
+/switchTeamService/enabled: true
 /acceptInviteService/enabled: true
 /invitationInfoService/enabled: true
 /removeMemberService/enabled: true
 /updateMemberRoleService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
+
+# Test interceptor: attaches override-users-db when ?_db-override=<db> is present.
+# Used by db-override-membership.feature to verify DefaultMembershipProvider
+# resolves the database per-request. Does not affect other tests.
+/dbOverrideInterceptor/enabled: true
 
 /ermes/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)

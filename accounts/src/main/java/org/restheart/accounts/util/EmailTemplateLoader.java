@@ -76,7 +76,7 @@ public final class EmailTemplateLoader {
      *
      * <p>Resolution order:
      * <ol>
-     *   <li>If {@code inlineHtml} is non-blank → use it directly (MongoDB per-tenant template).</li>
+     *   <li>If {@code inlineHtml} is non-blank → use it directly (MongoDB per-team template).</li>
      *   <li>Otherwise → delegate to {@link #load(String, String)} (file path or built-in).</li>
      * </ol>
      *

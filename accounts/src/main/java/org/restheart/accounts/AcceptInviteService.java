@@ -106,17 +106,17 @@ public class AcceptInviteService implements JsonService, Initializer {
             return;
         }
 
-        var orgId = invite.get("orgId");
+        var teamId = invite.get("teamId");
         var role = invite.getString("role").getValue();
 
-        var membershipProvider = accountsService.getMembershipProvider();
-        membershipProvider.addMember(email, orgId, role);
-        membershipProvider.setActiveMembership(email, orgId);
+        var membershipProvider = accountsService.getMembershipProvider(req);
+        membershipProvider.addMember(email, teamId, role);
+        membershipProvider.setActiveMembership(email, teamId);
 
         // Delete the invitation after acceptance
         db.deleteInvitation(invite.getObjectId("_id"));
 
-        LOGGER.info("User <{}> accepted invitation to org={} as role={}", email, orgId, role);
+        LOGGER.info("User <{}> accepted invitation to team={} as role={}", email, teamId, role);
 
         res.setStatusCode(HttpStatus.SC_OK);
         var result = new JsonObject();

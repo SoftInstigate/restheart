@@ -184,6 +184,7 @@ if [ "$DRY_RUN" = true ]; then
   if [[ "$VERSION" == *SNAPSHOT ]]; then
     echo "  - Commit with message: 'Bump version to $VERSION [skip ci]'"
   else
+    echo "  - Update Helm chart/Chart.yaml: version and appVersion to $VERSION"
     echo "  - Commit with message: 'Release version $VERSION'"
     echo "  - Create git tag: $VERSION"
   fi
@@ -196,6 +197,14 @@ fi
 
 echo "Setting Maven version to $VERSION..."
 $MVN_CMD versions:set -DnewVersion="$VERSION" -DprocessAllModules=true -DgenerateBackupPoms=false
+
+# Update Helm chart version and appVersion (only for release versions, not SNAPSHOT)
+CHART_FILE="chart/Chart.yaml"
+if [ -f "$CHART_FILE" ] && [[ "$VERSION" != *SNAPSHOT ]]; then
+  echo "Updating Helm chart version and appVersion to $VERSION..."
+  sed -i.bak -e "s/^version:.*/version: $VERSION/" -e "s/^appVersion:.*/appVersion: \"$VERSION\"/" "$CHART_FILE"
+  rm -f "${CHART_FILE}.bak"
+fi
 
 # Commit changes
 if [[ "$VERSION" == *SNAPSHOT ]]; then

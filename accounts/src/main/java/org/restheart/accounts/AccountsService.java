@@ -3,6 +3,8 @@ package org.restheart.accounts;
 import com.mongodb.client.MongoClient;
 import org.restheart.accounts.config.AccountsConfigData;
 import org.restheart.accounts.spi.DefaultMembershipProvider;
+import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.MembershipProviderRegistry;
 import org.restheart.plugins.Inject;
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * and exposes it to other plugins via dependency injection.
  *
  * <p>By default the built-in {@link DefaultMembershipProvider} is used, which
- * preserves the {@code tenant}/{@code tenants} schema from restheart-accounts 9.4.
+ * preserves the {@code team}/{@code teams} schema from restheart-accounts 9.4.
  *
  * <p>Custom providers can replace the default at startup:
  * <pre>{@code
@@ -92,6 +94,35 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
      * @return the active {@link MembershipProvider}; never {@code null}
      */
     public MembershipProvider getMembershipProvider() {
+        return membershipProvider;
+    }
+
+    /**
+     * Returns the active {@link MembershipProvider} configured for the current request.
+     *
+     * <p>When the active provider is the built-in {@link DefaultMembershipProvider},
+     * a new instance is created using the per-request database resolved by
+     * {@link RequestOverrides#db(ServiceRequest, AccountsConfigData)} — which reads
+     * the {@code override-users-db} attached parameter (set by {@code AuthDbResolver})
+     * and falls back to the static {@code accountsConfig.db}.
+     * This ensures that on shared deployments where {@code accountsConfig.db} is blank,
+     * the correct per-team MongoDB database is used.
+     *
+     * <p>Custom providers registered via {@link #registerMembershipProvider(MembershipProvider)}
+     * are returned as-is; they are responsible for their own database resolution.
+     *
+     * @param req the current service request
+     * @return the active {@link MembershipProvider} for this request; never {@code null}
+     */
+    public MembershipProvider getMembershipProvider(ServiceRequest<?> req) {
+        if (membershipProvider instanceof DefaultMembershipProvider) {
+            return new DefaultMembershipProvider(
+                mclient,
+                RequestOverrides.db(req, conf),
+                RequestOverrides.ownershipRole(req, conf),
+                RequestOverrides.defaultRole(req, conf)
+            );
+        }
         return membershipProvider;
     }
 

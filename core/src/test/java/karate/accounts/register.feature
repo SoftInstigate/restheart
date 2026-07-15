@@ -105,7 +105,7 @@ Feature: POST /auth/register
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — after registration user has roles=$unauthenticated, tenant and emailVerificationToken set
+  Scenario: verify DB — after registration user has roles=$unauthenticated, team and emailVerificationToken set
   # ---------------------------------------------------------------------------
     * def email = 'reg-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -131,5 +131,5 @@ Feature: POST /auth/register
     Then status 200
     And match response.status == '#notpresent'
     And match response.roles contains '$unauthenticated'
-    And match response.tenant == '#notnull'
+    And match response.team == '#notnull'
     And match response.emailVerificationToken == '#notnull'

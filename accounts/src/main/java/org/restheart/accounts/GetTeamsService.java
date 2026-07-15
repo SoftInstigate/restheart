@@ -13,14 +13,12 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
-import org.restheart.security.JwtAccount;
-import org.restheart.security.MongoRealmAccount;
 import org.restheart.utils.HttpStatus;
 
 /**
- * GET /auth/tenants
+ * GET /auth/teams
  *
- * <p>Returns the list of tenant memberships for the authenticated user via the
+ * <p>Returns the list of team memberships for the authenticated user via the
  * active {@link org.restheart.plugins.accounts.MembershipProvider}.
  *
  * <p>Response body example:
@@ -31,17 +29,17 @@ import org.restheart.utils.HttpStatus;
  * ]
  * }</pre>
  *
- * {@code active} marks the tenant currently encoded in the caller's JWT.
+ * {@code active} marks the team currently encoded in the caller's JWT.
  *
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "getTenantsService",
-        description      = "GET /auth/tenants \u2014 list current user's tenant memberships",
-        defaultURI       = "/auth/tenants",
+        name             = "getTeamsService",
+        description      = "GET /auth/teams \u2014 list current user's team memberships",
+        defaultURI       = "/auth/teams",
         secure           = true,
         enabledByDefault = false)
-public class GetTenantsService implements JsonService {
+public class GetTeamsService implements JsonService {
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -55,7 +53,7 @@ public class GetTenantsService implements JsonService {
     @OnInit
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
-            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/tenants") && (r.isGet() || r.isOptions()));
+            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/teams") && (r.isGet() || r.isOptions()));
         }
     }
 
@@ -74,12 +72,12 @@ public class GetTenantsService implements JsonService {
         var email = account.getPrincipal().getName();
 
         // Delegate to the MembershipProvider
-        var memberships = accountsService.getMembershipProvider().listMemberships(email);
+        var memberships = accountsService.getMembershipProvider(req).listMemberships(email);
 
         var result = new JsonArray();
         for (var m : memberships) {
             var obj = new JsonObject();
-            obj.add("id",            JsonParser.parseString(BsonUtils.toJson(m.tenantId())));
+            obj.add("id",            JsonParser.parseString(BsonUtils.toJson(m.teamId())));
             obj.addProperty("name",   m.displayName());
             obj.addProperty("role",   m.role());
             obj.addProperty("active", m.active());

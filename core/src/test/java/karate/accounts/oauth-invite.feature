@@ -14,7 +14,7 @@ Feature: OAuth activation for invited users
   #   3. Extract CSRF state from Location header
   #   4. Simulate callback  →  GET /auth/oauth/callback/test?code=test-<email>&state=STATE
   #      Returns 302 to frontendSuccessUrl with Set-Cookie containing JWT
-  #   5. JWT must carry status:"active" and a valid tenantId claim
+  #   5. JWT must carry status:"active" and a valid teamId claim
   #   6. MongoDB must show user with status:"active", inviteToken removed, consents stored
 
   Background:
@@ -56,7 +56,7 @@ Feature: OAuth activation for invited users
     Then status 307
 
     # Extract CSRF state from Location header.
-    # New state format: base64url(tenantDb) + "." + base64url(32-random-bytes)
+    # New state format: base64url(teamDb) + "." + base64url(32-random-bytes)
     # The full token (including the ".") is passed verbatim as the state param.
     # Location: http://localhost/test-oauth/authorize?state=<base64.base64>&client_id=test-client
     * def location = responseHeaders['Location'][0]
@@ -75,6 +75,11 @@ Feature: OAuth activation for invited users
     * def callbackLocation = responseHeaders['Location'][0]
     * match callbackLocation contains 'localhost:4200/app'
 
+    # Token must be carried as a URL fragment, never in the query string
+    * match callbackLocation contains '#access_token='
+    * def preHash = callbackLocation.split('#')[0]
+    * match preHash !contains 'access_token='
+
     # Auth cookie must be set
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
@@ -89,10 +94,15 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
-    # tenant claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
-    * def tenantClaim = payload.tenant
-    * def tenantStr = (typeof tenantClaim == 'object') ? tenantClaim['$oid'] : tenantClaim
-    * match tenantStr == '#string'
+    # team claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
+    * def teamClaim = payload.team
+    * def teamStr = (typeof teamClaim == 'object') ? teamClaim['$oid'] : teamClaim
+    * match teamStr == '#string'
+
+    # 6. The fragment token must be the same JWT as the cookie, with token_type=Bearer
+    * def fragment = callbackLocation.split('#')[1]
+    * match fragment contains 'access_token=' + jwtPart
+    * match fragment contains 'token_type=Bearer'
 
     # 6. Verify DB — user activated, no invite fields on user doc, consents stored
     Given path '/users/' + inviteEmail
@@ -175,6 +185,9 @@ Feature: OAuth activation for invited users
     And param state = state
     When method GET
     Then status 307
+    * def callbackLocation = responseHeaders['Location'][0]
+    * match callbackLocation contains '#access_token='
+    * match callbackLocation.split('#')[0] !contains 'access_token='
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
@@ -249,6 +262,8 @@ Feature: OAuth activation for invited users
     Then status 307
     * def callbackLocation = responseHeaders['Location'][0]
     * match callbackLocation contains 'localhost:4200/app'
+    * match callbackLocation contains '#access_token='
+    * match callbackLocation.split('#')[0] !contains 'access_token='
     * def setCookieHeader = responseHeaders['Set-Cookie'][0]
     * match setCookieHeader contains 'rh_auth=Bearer_'
 
