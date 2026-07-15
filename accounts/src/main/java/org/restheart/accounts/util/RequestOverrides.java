@@ -1,6 +1,6 @@
 package org.restheart.accounts.util;
 
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.oauth.OAuthConfig;
 import org.restheart.exchange.ServiceRequest;
 

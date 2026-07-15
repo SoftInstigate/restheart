@@ -6,7 +6,7 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.email.Ermes;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;

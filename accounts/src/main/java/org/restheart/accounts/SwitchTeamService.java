@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;

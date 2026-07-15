@@ -14,7 +14,7 @@ import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 

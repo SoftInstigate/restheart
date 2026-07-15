@@ -7,7 +7,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;

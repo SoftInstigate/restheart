@@ -5,7 +5,7 @@ import io.undertow.util.Headers;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;

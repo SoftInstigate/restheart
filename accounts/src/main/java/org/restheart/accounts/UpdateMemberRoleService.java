@@ -1,6 +1,6 @@
 package org.restheart.accounts;
 
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;

@@ -4,7 +4,7 @@ import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;

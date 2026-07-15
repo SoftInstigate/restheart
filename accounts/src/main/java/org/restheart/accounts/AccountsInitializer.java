@@ -4,7 +4,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import org.bson.Document;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.plugins.InitPoint;

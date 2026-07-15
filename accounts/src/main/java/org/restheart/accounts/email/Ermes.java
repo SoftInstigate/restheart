@@ -8,6 +8,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.accounts.EmailSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ import java.util.Map;
         name             = "ermes",
         description      = "SMTP email wrapper for restheart-accounts (wraps ermes-mail)",
         enabledByDefault = false)
-public class Ermes implements Provider<Ermes> {
+public class Ermes implements Provider<Ermes>, EmailSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ermes.class);
 

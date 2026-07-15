@@ -3,6 +3,7 @@ package org.restheart.accounts.config;
 import java.util.Map;
 
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
