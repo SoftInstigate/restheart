@@ -9,7 +9,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonArray;
 import org.restheart.plugins.accounts.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
@@ -59,8 +59,8 @@ public class ForgotPasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
 
     @OnInit
@@ -167,7 +167,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // f. Audit log — no PII at INFO level

@@ -44,9 +44,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.softinstigate</groupId>
-      <artifactId>ermes-mail</artifactId>
-      <classifier>shaded</classifier>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-emails</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>de.svenkubiak</groupId>

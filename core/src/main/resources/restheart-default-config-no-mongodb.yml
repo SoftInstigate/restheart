@@ -289,6 +289,18 @@ oauthProtectedResourceMetadataService:
 oauthClientRegistrationService:
   enabled: false
 
+
+# ── Emails plugin (SMTP email sender) ────────────────────────────────────────
+# Requires the restheart-emails module on the classpath.
+# See https://restheart.org/docs/plugins/emails
+emails:
+  enabled: false
+  appName: "My App"
+  senderEmail: noreply@example.com
+  smtpHostname: localhost
+  smtpPort: 465
+  smtpUsername: null
+  smtpPassword: null
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   enabled: false

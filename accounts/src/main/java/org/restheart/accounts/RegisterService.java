@@ -7,13 +7,13 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.plugins.accounts.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.BadRequestException;
@@ -76,8 +76,8 @@ public class RegisterService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -208,7 +208,7 @@ public class RegisterService implements JsonService {
                         "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
                 var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+                emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later

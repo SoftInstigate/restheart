@@ -424,13 +424,13 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
-/ermes/enabled: true
+/emails/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
-/ermes/smtpHostname: localhost
-/ermes/smtpPort: 25
-/ermes/smtpUsername: test
-/ermes/smtpPassword: test
-/ermes/senderEmail: noreply@test.example.com
+/emails/smtpHostname: localhost
+/emails/smtpPort: 25
+/emails/smtpUsername: test
+/emails/smtpPassword: test
+/emails/senderEmail: noreply@test.example.com
 
 /oauthConfig/enabled: true
 /oauthConfig/api-base-url: http://localhost:8080

@@ -318,7 +318,7 @@ oauthClientRegistrationService:
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Core configuration provider — enabling this activates the whole plugin.
-# See https://restheart.org/docs/accounts/configuration
+# See https://restheart.org/docs/plugins/emails
 accountsConfig:
   enabled: false
   # MongoDB database where users and teams are stored.
@@ -465,10 +465,10 @@ googleOAuthProvider:
 githubOAuthProvider:
   enabled: false
 
-# ── Ermes SMTP email sender ──────────────────────────────────────────────────
-# Required for registration, invitations, and password-reset flows.
-# See https://restheart.org/docs/accounts/configuration
-ermes:
+# ── Emails plugin (SMTP email sender) ──────────────────────────────────────────────────
+# Requires the restheart-emails module on the classpath.
+# See https://restheart.org/docs/plugins/emails
+emails:
   enabled: false
   appName: "My App"
   senderEmail: noreply@example.com

@@ -74,6 +74,7 @@
         <module>polyglot</module>
         <module>metrics</module>
         <module>accounts</module>
+        <module>emails</module>
         <module>core</module>
     </modules>
 
@@ -217,6 +218,11 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-accounts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-emails</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
