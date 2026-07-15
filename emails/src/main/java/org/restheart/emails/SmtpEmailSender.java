@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * RESTHeart email sender plugin. Wraps the Ermes SMTP library.
@@ -38,6 +39,7 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmtpEmailSender.class);
     private static final String PREFIX = "override-emails-";
     private static final Object LOCK = new Object();
+    private static final long OVERRIDE_ENTRY_SHUTDOWN_TIMEOUT_SECONDS = 5;
     private static SmtpEmailSender initializedInstance;
 
     @Inject("config")
@@ -65,7 +67,7 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
                 this.appName    = cfgOrDefault(conf, "app-name", "App");
                 this.senderEmail = cfgRequired(conf, "sender-email");
                 this.overrideCache = CacheFactory.createLocalLoadingCache(
-                        64, Cache.EXPIRE_POLICY.AFTER_READ, 600_000, this::buildOverrideEntry);
+                        64, Cache.EXPIRE_POLICY.AFTER_READ, 600_000, this::buildOverrideEntry, this::onOverrideEntryRemoved);
                 initializedInstance = this;
                 LOGGER.info("Emails plugin initialized sender={} host={}", senderEmail,
                         cfgOrDefault(conf, "smtp-hostname", "?"));
@@ -180,6 +182,20 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             LOGGER.error("Failed to build overridden SMTP config", e);
             return new OverrideEntry(this.emailSrv, this.senderEmail, this.appName);
         }
+    }
+
+    /**
+     * Shuts down the overridden EmailService's thread pool when its cache entry is
+     * removed (expiration, eviction, or explicit invalidation). Never shuts down the
+     * static {@link #emailSrv}, which {@link #buildOverrideEntry} falls back to when
+     * building an override fails, and which must stay alive for the plugin's lifetime.
+     */
+    private void onOverrideEntryRemoved(Map.Entry<String, Optional<OverrideEntry>> entry) {
+        entry.getValue().ifPresent(overrideEntry -> {
+            if (overrideEntry.emailSrv() != this.emailSrv) {
+                overrideEntry.emailSrv().shutdown(OVERRIDE_ENTRY_SHUTDOWN_TIMEOUT_SECONDS);
+            }
+        });
     }
 
     private static void overrideIfPresent(Map<String, Object> m, String key, String value) {
