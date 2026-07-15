@@ -62,13 +62,13 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             }
             try {
                 this.emailSrv = buildEmailService(conf);
-                this.appName    = cfgOrDefault(conf, "appName", "App");
-                this.senderEmail = cfgRequired(conf, "senderEmail");
+                this.appName    = cfgOrDefault(conf, "app-name", "App");
+                this.senderEmail = cfgRequired(conf, "sender-email");
                 this.overrideCache = CacheFactory.createLocalLoadingCache(
                         64, Cache.EXPIRE_POLICY.AFTER_READ, 600_000, this::buildOverrideEntry);
                 initializedInstance = this;
                 LOGGER.info("Emails plugin initialized sender={} host={}", senderEmail,
-                        cfgOrDefault(conf, "smtpHostname", "?"));
+                        cfgOrDefault(conf, "smtp-hostname", "?"));
             } catch (Exception e) {
                 LOGGER.error("Failed to initialize Emails plugin", e);
                 this.enabled = false;
@@ -157,7 +157,7 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     /**
      * Builds an OverrideEntry from the cache key (pipe-separated signature).
-     * Starts with a full copy of the static YAML config (camelCase keys),
+     * Starts with a full copy of the static YAML config (kebab-case keys),
      * then overrides only the fields specified via attached parameters.
      * Empty parts in the signature are skipped, so static config values are preserved.
      */
@@ -165,16 +165,16 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private OverrideEntry buildOverrideEntry(String signature) {
         var parts = signature.split("\\|", -1);
         var m = new java.util.HashMap<String, Object>(conf != null ? conf : Map.of());
-        overrideIfPresent(m, "senderEmail",  parts[0]);
-        overrideIfPresent(m, "appName",      parts[1]);
-        overrideIfPresent(m, "smtpHostname", parts[2]);
-        overrideIfPresent(m, "smtpPort",     parts[3]);
-        overrideIfPresent(m, "smtpUsername", parts[4]);
-        overrideIfPresent(m, "smtpPassword", parts[5]);
+        overrideIfPresent(m, "sender-email",   parts[0]);
+        overrideIfPresent(m, "app-name",       parts[1]);
+        overrideIfPresent(m, "smtp-hostname",  parts[2]);
+        overrideIfPresent(m, "smtp-port",      parts[3]);
+        overrideIfPresent(m, "smtp-username",  parts[4]);
+        overrideIfPresent(m, "smtp-password",  parts[5]);
         try {
             var srv  = buildEmailService(m);
-            var from = cfgOrDefault(m, "senderEmail", this.senderEmail);
-            var name = cfgOrDefault(m, "appName", this.appName);
+            var from = cfgOrDefault(m, "sender-email", this.senderEmail);
+            var name = cfgOrDefault(m, "app-name", this.appName);
             return new OverrideEntry(srv, from, name);
         } catch (Exception e) {
             LOGGER.error("Failed to build overridden SMTP config", e);
@@ -184,7 +184,7 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     private static void overrideIfPresent(Map<String, Object> m, String key, String value) {
         if (value != null && !value.isEmpty()) {
-            if ("smtpPort".equals(key) || "sslPort".equals(key)) {
+            if ("smtp-port".equals(key) || "ssl-port".equals(key)) {
                 try { m.put(key, Integer.parseInt(value)); }
                 catch (NumberFormatException e) { m.put(key, value); }
             } else {
@@ -196,11 +196,11 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     // --- SMTP config builder ---
 
     private static EmailService buildEmailService(Map<String, Object> cfg) {
-        final String smtpHostname = cfgRequired(cfg, "smtpHostname");
-        final int    smtpPort     = cfgRequired(cfg, "smtpPort");
-        final String smtpUsername = cfgRequired(cfg, "smtpUsername");
-        final String smtpPassword = cfgRequired(cfg, "smtpPassword");
-        final int    sslPort      = cfgOrDefault(cfg, "sslPort", 465);
+        final String smtpHostname = cfgRequired(cfg, "smtp-hostname");
+        final int    smtpPort     = cfgRequired(cfg, "smtp-port");
+        final String smtpUsername = cfgRequired(cfg, "smtp-username");
+        final String smtpPassword = cfgRequired(cfg, "smtp-password");
+        final int    sslPort      = cfgOrDefault(cfg, "ssl-port", 465);
         return new EmailService(
                 SMTPConfig.forSsl(smtpHostname, smtpPort, smtpUsername, smtpPassword, sslPort),
                 4);

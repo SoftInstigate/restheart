@@ -426,11 +426,11 @@
 
 /emails/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
-/emails/smtpHostname: localhost
-/emails/smtpPort: 25
-/emails/smtpUsername: test
-/emails/smtpPassword: test
-/emails/senderEmail: noreply@test.example.com
+/emails/smtp-hostname: localhost
+/emails/smtp-port: 25
+/emails/smtp-username: test
+/emails/smtp-password: test
+/emails/sender-email: noreply@test.example.com
 
 /oauthConfig/enabled: true
 /oauthConfig/api-base-url: http://localhost:8080

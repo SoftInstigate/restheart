@@ -33,6 +33,36 @@ restheart-cloud-server -> @Inject("emails") EmailSender emails  (consumer)
 
 ---
 
+## EmailSender Interface
+
+```java
+public interface EmailSender {
+    // Static YAML config (no overrides)
+    void sendEmail(String to, String recipientName, String subject, String htmlBody);
+
+    // With per-request SMTP overrides via attached params
+    void sendEmail(Request<?> request, String to, String recipientName, String subject, String htmlBody);
+
+    boolean isEnabled();
+}
+```
+
+### Per-request overrides
+
+When `sendEmail(request, ...)` is called, `SmtpEmailSender` reads attached parameters
+from the request. If at least one override is present, an ad-hoc `EmailService` is
+created with the overridden values (missing ones fall back to static YAML config).
+
+Override attached parameters:
+- `override-emails-sender-email`
+- `override-emails-sender-name`
+- `override-emails-smtp-hostname`
+- `override-emails-smtp-port`
+- `override-emails-smtp-username`
+- `override-emails-smtp-password`
+
+---
+
 ## YAML Configuration
 
 ### Before (ermes:)
@@ -67,10 +97,10 @@ Config keys are identical — only the top-level YAML key changes from `ermes` t
 
 ### DONE — restheart/ monorepo
 
-- [x] commons/src/main/java/org/restheart/emails/EmailSender.java — SPI interface
+- [x] commons/src/main/java/org/restheart/emails/EmailSender.java — SPI interface with Request<?> overload
 - [x] commons/src/main/java/org/restheart/plugins/accounts/EmailSender.java — DELETED
 - [x] emails/pom.xml — new Maven module (AGPL + commercial dual license)
-- [x] emails/src/main/java/org/restheart/emails/SmtpEmailSender.java — @RegisterPlugin(name = "emails")
+- [x] emails/src/main/java/org/restheart/emails/SmtpEmailSender.java — @RegisterPlugin(name = "emails") with override support
 - [x] pom.xml — module emails added after accounts
 - [x] accounts/pom.xml — ermes-mail dep removed, restheart-emails dep added (provided scope)
 - [x] accounts/email/Ermes.java — DELETED
@@ -78,12 +108,12 @@ Config keys are identical — only the top-level YAML key changes from `ermes` t
 - [x] accounts/InviteService.java — same + ermes.sendEmail -> emails.sendEmail, duplicate import removed
 - [x] accounts/RegisterService.java — same
 - [x] accounts/ResendInviteService.java — same + log message updated
+- [x] core/restheart-default-config.yml — ermes: -> emails: with updated comments
+- [x] core/restheart-default-config-no-mongodb.yml — emails: section added
 
 ### DONE — Verify restheart/ build
 
 Build and verify passed successfully.
-
-    cd /Users/uji/development/restheart && ./mvnw clean compile -DskipUpdateLicense=true
 
 ### PENDING — restheart-cloud-server/ Java files
 
@@ -99,7 +129,7 @@ All @Inject("ermes") already changed to @Inject("emails"). Remaining field renam
 - [ ] IdleServiceChecker.java — field ermes -> emails (verify)
 - [ ] IdleServiceDeactivator.java — field ermes -> emails (verify)
 - [ ] WebhookHandler.java — field Ermes ermes -> EmailSender emails, NotificationService(ermes, env) -> NotificationService(emails, env) (verify)
-- [ ] TeamConfigInterceptor.java — accounts.containsKey("ermes") -> accounts.containsKey("emails"), override-accounts-ermes-* -> override-accounts-emails-* (done, verify)
+- [ ] TeamConfigInterceptor.java — accounts.containsKey("ermes") -> accounts.containsKey("emails"), override-accounts-ermes-* -> override-emails-* (done, verify)
 
 ### PENDING — restheart-cloud-server/etc/*.yml config files
 
@@ -137,8 +167,13 @@ Also update comments mentioning "Ermes" -> "Emails (email-sender module)".
 
 ### PENDING — restheart-website/ documentation
 
-- [ ] Create docs/plugins/emails.md — plugin docs (config reference, @Inject("emails") usage, version 9.6.0+)
-- [ ] Update _includes/docs-sidebar.html — add link under security section
+- [x] docs/framework/emails.adoc — plugin docs (config reference, @Inject("emails") usage, override params, version 9.6.0+)
+- [x] _includes/docs-sidebar.html — link added under Framework > Emails
+- [x] docs/accounts/configuration.adoc — ermes section -> emails section with link
+- [x] docs/accounts/overview.adoc — ermes -> emails reference
+- [x] docs/accounts/tutorial-registration-setup.adoc — all YAML examples ermes: -> emails:, RHO /ermes/ -> /emails/
+- [x] docs/deployment/default-configuration.adoc — comment and key updated
+- [x] docs/cloud/sophia/administrator-guide.adoc — /ermes -> /emails reference
 
 ### PENDING — Final verification
 

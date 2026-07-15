@@ -470,12 +470,12 @@ githubOAuthProvider:
 # See https://restheart.org/docs/plugins/emails
 emails:
   enabled: false
-  appName: "My App"
-  senderEmail: noreply@example.com
-  smtpHostname: localhost
-  smtpPort: 465
-  smtpUsername: null
-  smtpPassword: null
+  app-name: "My App"
+  sender-email: noreply@example.com
+  smtp-hostname: localhost
+  smtp-port: 465
+  smtp-username: null
+  smtp-password: null
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:
