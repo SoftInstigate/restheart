@@ -6,6 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.security.services.AuthCookie;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -168,7 +169,7 @@ public class JwtHelper {
      * @return valore da assegnare al cookie {@code rh_auth}
      */
     public static String cookieValue(String jwt) {
-        return "Bearer_" + jwt;
+        return AuthCookie.bearerValue(jwt);
     }
 
     /**
@@ -188,17 +189,9 @@ public class JwtHelper {
      * @param secure     se {@code true} aggiunge l'attributo {@code Secure} (obbligatorio su HTTPS)
      */
     public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes, boolean secure) {
-        var sb = new StringBuilder()
-                .append(cookieName).append("=Bearer_").append(jwt)
-                .append("; Domain=").append(domain)
-                .append("; Path=/; HttpOnly; SameSite=Strict");
-        if (secure) {
-            sb.append("; Secure");
-        }
-        if (ttlMinutes > 0) {
-            sb.append("; Max-Age=").append((long) ttlMinutes * 60);
-        }
-        return sb.toString();
+        long maxAgeSeconds = ttlMinutes > 0 ? (long) ttlMinutes * 60 : -1;
+        return AuthCookie.header(cookieName, AuthCookie.bearerValue(jwt), domain, "/",
+                secure, true, true, "Strict", maxAgeSeconds);
     }
 
     /**
