@@ -32,7 +32,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import org.restheart.security.services.AuthCookie;
+import org.restheart.security.AuthCookie;
 import static org.restheart.security.authenticators.AuthCookieHandler.enabled;
 
 import io.undertow.util.Headers;

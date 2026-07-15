@@ -6,7 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.security.services.AuthCookie;
+import org.restheart.security.AuthCookie;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
