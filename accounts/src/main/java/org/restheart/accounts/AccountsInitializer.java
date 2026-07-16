@@ -11,6 +11,7 @@ import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.predicates.BsonRequestWhitelistPredicate;
 import org.slf4j.Logger;
@@ -72,8 +73,10 @@ public class AccountsInitializer implements Initializer {
             if (!(r instanceof MongoRequest mr)) return false;
 
             // Roles configured via `users-unrestricted-roles` (e.g. an admin console
-            // role) bypass this restriction entirely — see AccountsConfigData.
-            var exemptRoles = conf.usersUnrestrictedRoles();
+            // role) bypass this restriction entirely — see AccountsConfigData. Reads
+            // the per-team override first (set by e.g. TeamConfigInterceptor), falling
+            // back to the node-level YAML config.
+            var exemptRoles = RequestOverrides.usersUnrestrictedRoles(mr, conf);
             if (exemptRoles != null && exemptRoles.stream().anyMatch(r::isAccountInRole)) {
                 return false;
             }

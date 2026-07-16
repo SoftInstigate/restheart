@@ -4,6 +4,8 @@ import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.oauth.OAuthConfig;
 import org.restheart.exchange.ServiceRequest;
 
+import java.util.List;
+
 /**
  * Reads per-request override parameters and returns the effective values,
  * falling back to the plugin's static configuration.
@@ -65,6 +67,12 @@ import org.restheart.exchange.ServiceRequest;
  *     <td>{@code override-accounts-oauth-google-client-secret}</td>
  *     <td>Google OAuth client secret for this team</td>
  *     <td>{@code null}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-users-unrestricted-roles}</td>
+ *     <td>Roles exempt from the {@code /users} self-service write restriction
+ *         (see {@code AccountsInitializer})</td>
+ *     <td>{@link AccountsConfigData#usersUnrestrictedRoles()}</td>
  *   </tr>
  * </table>
  *
@@ -139,6 +147,11 @@ public final class RequestOverrides {
     /** Team role for the user who creates a team (override for multi-team). */
     public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
 
+    // ── Users self-service write restriction override ───────────────────────
+
+    /** Roles exempt from the {@code /users} self-service write restriction (override for multi-team). */
+    public static final String USERS_UNRESTRICTED_ROLES = "override-accounts-users-unrestricted-roles";
+
     private RequestOverrides() {}
 
     // ── Accessor methods ──────────────────────────────────────────────────────
@@ -201,6 +214,11 @@ public final class RequestOverrides {
         return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
+    /** Effective roles exempt from the {@code /users} self-service write restriction. */
+    public static List<String> usersUnrestrictedRoles(ServiceRequest<?> req, AccountsConfigData conf) {
+        return list(req, USERS_UNRESTRICTED_ROLES, conf.usersUnrestrictedRoles());
+    }
+
     /**
      * Per-team Google OAuth config, or {@code null} if not overridden.
      * When non-null, this takes precedence over the static {@link OAuthConfig}.
@@ -226,6 +244,15 @@ public final class RequestOverrides {
         var v = req.attachedParam(key);
         if (v instanceof Boolean b) return b;
         if (v instanceof String  s) return Boolean.parseBoolean(s);
+        return defaultValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> list(ServiceRequest<?> req, String key, List<String> defaultValue) {
+        var v = req.attachedParam(key);
+        if (v instanceof List<?> l && !l.isEmpty()) {
+            return (List<String>) l;
+        }
         return defaultValue;
     }
 }
