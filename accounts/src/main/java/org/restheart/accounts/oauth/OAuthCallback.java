@@ -55,7 +55,9 @@ import static java.util.function.Predicate.not;
  *   <li>Issue JWT, set the auth cookie ({@code conf.cookieName()}), and redirect to
  *       {@code frontendSuccessUrl} with the token also appended as a URL fragment
  *       ({@code #access_token=...}, via {@link TokenRedirectHelper}) so kit-based
- *       frontends can pick it up without relying on the cookie</li>
+ *       frontends can pick it up without relying on the cookie. New-user signups also
+ *       get {@code ?flow=signup} in the query string — the same one-shot "welcome banner"
+ *       marker used by email verification</li>
  * </ol>
  *
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
@@ -285,6 +287,8 @@ public class OAuthCallback implements StringService {
 
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
 
+        // `flow=signup` doubles as the one-shot "welcome banner" marker also used by
+        // EmailVerificationService, so both signup paths signal the frontend the same way.
         var query   = flow != null ? "?flow=" + flow : "";
         var baseUrl = oauthConfig.frontendSuccessUrl() + query;
         var location = delivery == TokenDelivery.Mode.COOKIE

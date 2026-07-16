@@ -48,8 +48,9 @@ import java.util.Set;
  * <p>All outcomes are expressed as 302 redirects (the request arrives via a link in an
  * email, so a browser navigation is always in progress):
  * <ul>
- *   <li>Success     → 302 to {@code frontendAppUrl} (cookie set or fragment appended
- *                     depending on {@code delivery})</li>
+ *   <li>Success     → 302 to {@code frontendAppUrl?flow=signup} (cookie set or fragment
+ *                     appended depending on {@code delivery}); {@code flow=signup} is a
+ *                     one-shot marker frontends can use to show a welcome banner</li>
  *   <li>Invalid/missing token or email mismatch
  *                   → 302 to {@code frontendUrl}/auth/login?error=invalid_token</li>
  *   <li>Expired token (TTL 7 days)
@@ -183,7 +184,12 @@ public class EmailVerificationService implements JsonService {
 
         // ── 5e. Deliver token and redirect to app ────────────────────────────
         // Browser-navigation endpoint: only cookie|fragment are meaningful (no JSON body consumer).
-        var appUrl = RequestOverrides.frontendAppUrl(req, conf);
+        // `flow=signup` marks this specific redirect as a fresh signup event, so the frontend
+        // can show a one-time "welcome" banner without guessing via client-side state — the
+        // marker only ever appears on the single redirect that follows a real, server-side
+        // token verification (the token is single-use, unset from the DB in step 5a above).
+        // Same query-param convention as OAuthCallback's `flow=signup`.
+        var appUrl = RequestOverrides.frontendAppUrl(req, conf) + "?flow=signup";
         var mode   = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
 
         if (mode == TokenDelivery.Mode.FRAGMENT) {
