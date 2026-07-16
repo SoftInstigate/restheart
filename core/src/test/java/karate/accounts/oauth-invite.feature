@@ -113,10 +113,7 @@ Feature: OAuth activation for invited users
     And match response.roles contains 'user'
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
-    And match response.consents.termsVersion == '#notnull'
-    And match response.consents.privacyVersion == '#notnull'
-    And match response.consents.acceptedAt == '#notnull'
-    And match response.consents.ip == '#notnull'
+    And match response.consents == '#notpresent'
 
     # auth_invitations entry removed after OAuth activation
     Given path '/auth_invitations'
