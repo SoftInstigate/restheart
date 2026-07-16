@@ -12,6 +12,7 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.predicates.BsonRequestWhitelistPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,20 +52,52 @@ public class AccountsInitializer implements Initializer {
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
+    // Every privileged mutation of a user document (roles, teams, team, password,
+    // sub, *Token fields, ...) is performed by an accounts-plugin service through
+    // DbHelper, i.e. directly via the MongoDB driver — never through the generic
+    // MongoDB REST resource, so it never runs through this veto. That means the
+    // generic REST resource at /users can safely be restricted to self-service
+    // profile edits only, for every deployment of restheart-accounts, regardless
+    // of whatever ACL the consuming application configures.
+    private static final BsonRequestWhitelistPredicate PROFILE_ONLY_WHITELIST =
+            new BsonRequestWhitelistPredicate(new String[]{"profile"});
+
     @Override
     public void init() {
-        // Veto any write to /users that contains the reserved 'sub' field.
-        // 'sub' is the JWT claim used in ACL read filters (@user.sub);
-        // allowing it to be written would let a user forge their own identity.
+        // Generic REST writes to /users are restricted to self-service profile
+        // edits — see PROFILE_ONLY_WHITELIST above for why this is safe to enforce
+        // unconditionally.
         aclRegistry.registerVeto(r -> {
             if (!r.getPath().startsWith("/users")) return false;
-            var m = r.getMethod();
-            if (m != METHOD.POST && m != METHOD.PUT && m != METHOD.PATCH) return false;
             if (!(r instanceof MongoRequest mr)) return false;
-            var content = mr.getContent();
-            if (content == null || !content.isDocument()) return false;
-            if (content.asDocument().containsKey("sub")) {
-                LOGGER.warn("[accounts] vetoed write to /users: 'sub' is a reserved field");
+
+            // Roles configured via `users-unrestricted-roles` (e.g. an admin console
+            // role) bypass this restriction entirely — see AccountsConfigData.
+            var exemptRoles = conf.usersUnrestrictedRoles();
+            if (exemptRoles != null && exemptRoles.stream().anyMatch(r::isAccountInRole)) {
+                return false;
+            }
+
+            var m = r.getMethod();
+
+            // PUT/POST would let a client fully replace or create a user document
+            // via generic REST — bypassing every accounts-plugin flow (register,
+            // verify, invite, reset-password, switch-team, oauth). Only the
+            // dedicated /auth/* endpoints may create/replace user documents.
+            if (m == METHOD.PUT || m == METHOD.POST) {
+                LOGGER.warn("[accounts] vetoed {} to /users: use the accounts plugin's own endpoints "
+                        + "to create or replace user documents", m);
+                return true;
+            }
+
+            if (m != METHOD.PATCH) return false;
+
+            // Covers dot notation (profile.name) and update operators ($set, $push,
+            // ...) alike — see BsonRequestWhitelistPredicate. This also subsumes the
+            // old 'sub' veto: 'sub' is never under 'profile', so it's always rejected.
+            if (!PROFILE_ONLY_WHITELIST.resolve(mr.getExchange())) {
+                LOGGER.warn("[accounts] vetoed PATCH to /users: only 'profile.*' fields "
+                        + "may be self-modified");
                 return true;
             }
             return false;
