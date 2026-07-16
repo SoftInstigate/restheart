@@ -2,18 +2,18 @@ package org.restheart.accounts.spi;
 
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
-import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonDateTime;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.utils.BsonUtils;
 import org.restheart.plugins.accounts.Membership;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.TeamRef;
+import org.restheart.plugins.accounts.ConsentRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,10 +254,12 @@ public class DefaultMembershipProvider implements MembershipProvider {
      * <p>Activates any unverified user ({@code roles: ["$unauthenticated"]}) who
      * already has an active {@code team} set (assigned when the invite was sent).
      * Assigns the configured {@code default-role}, removes the {@code inviteToken}
-     * field, and optionally stores the accepted consents.
+     * field.
+     *
+     * <p>Consent persistence is the responsibility of the deployment layer.
+     * This method ignores the {@code consents} parameter.
      *
      * @param userId   the user's email address
-     * @param consents consent record to persist, or {@code null} if no consent was given
      * @return an {@link Optional} with the activated membership, or empty if the user
      *         is not unverified or has no pending team
      */
@@ -283,13 +285,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
         }
         var teamId = user.get("team");
 
-        // Activate: assign defaultRole and optionally record consents
+        // Activate: assign defaultRole
         var rolesArray = new BsonArray();
         rolesArray.add(new BsonString(defaultRole));
         var updates = new BsonDocument().append("roles", rolesArray);
-        if (consents != null) {
-            updates.append("consents", buildConsentsDoc(consents));
-        }
         db.updateUser(userId, updates);
 
         var role        = findRoleInTeams(user, teamId);
@@ -299,17 +298,6 @@ public class DefaultMembershipProvider implements MembershipProvider {
                 userId, teamId);
 
         return Optional.of(new Membership(teamId, displayName, role, true));
-    }
-
-    private BsonDocument buildConsentsDoc(ConsentRecord consents) {
-        var doc = new BsonDocument()
-                .append("termsVersion",   new BsonString(consents.termsVersion()))
-                .append("privacyVersion", new BsonString(consents.privacyVersion()))
-                .append("acceptedAt",     new BsonDateTime(consents.acceptedAt().toEpochMilli()));
-        if (consents.ip() != null) {
-            doc.append("ip", new BsonString(consents.ip()));
-        }
-        return doc;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
