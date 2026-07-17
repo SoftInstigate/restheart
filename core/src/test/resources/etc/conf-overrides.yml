@@ -400,6 +400,10 @@
 /accountsConfig/frontend-app-url: http://localhost:4200/app
 /accountsConfig/terms-version: "1.0"
 /accountsConfig/privacy-version: "1.0"
+# 'admin' is exempt from accountsInitializer's /users self-service write restriction —
+# used by users-write-restriction.feature to test the bypass path.
+/accountsConfig/users-unrestricted-roles:
+  - admin
 
 /accountsService/enabled: true
 /accountsInitializer/enabled: true
