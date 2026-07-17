@@ -80,6 +80,13 @@ public class AccountsInitializer implements Initializer {
             if (!"users".equals(mr.getCollectionName())) return false;
             if (!RequestOverrides.db(mr, conf).equals(mr.getDBName())) return false;
 
+            // A tenant that never enabled Sign-up Management never opted into
+            // restheart-accounts's opinions on /users — see RequestOverrides.SIGNUP_MGMT_ENABLED.
+            // Must be checked here (during authorization) rather than via a post-auth
+            // interceptor: vetoes are evaluated as part of authorization, which runs
+            // before any REQUEST_AFTER_AUTH interceptor gets a chance to run.
+            if (!RequestOverrides.signupMgmtEnabled(mr, conf)) return false;
+
             // Roles configured via `users-unrestricted-roles` (e.g. an admin console
             // role) bypass this restriction entirely — see AccountsConfigData. Reads
             // the per-team override first (set by e.g. TeamConfigInterceptor), falling

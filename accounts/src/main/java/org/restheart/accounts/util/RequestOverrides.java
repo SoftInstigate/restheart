@@ -152,6 +152,16 @@ public final class RequestOverrides {
     /** Roles exempt from the {@code /users} self-service write restriction (override for multi-team). */
     public static final String USERS_UNRESTRICTED_ROLES = "override-accounts-users-unrestricted-roles";
 
+    /**
+     * Whether Sign-up Management is enabled for this tenant (override for multi-team).
+     * When explicitly {@code false}, the {@code /users} self-service write restriction
+     * is skipped entirely — a tenant that never opted into restheart-accounts never
+     * opted into its opinions on {@code /users}. Must be set before authentication
+     * (e.g. {@code REQUEST_BEFORE_EXCHANGE_INIT}), since the veto is evaluated as part
+     * of authorization, before any {@code REQUEST_AFTER_AUTH} interceptor runs.
+     */
+    public static final String SIGNUP_MGMT_ENABLED = "override-accounts-signup-mgmt-enabled";
+
     private RequestOverrides() {}
 
     // ── Accessor methods ──────────────────────────────────────────────────────
@@ -217,6 +227,15 @@ public final class RequestOverrides {
     /** Effective roles exempt from the {@code /users} self-service write restriction. */
     public static List<String> usersUnrestrictedRoles(ServiceRequest<?> req, AccountsConfigData conf) {
         return list(req, USERS_UNRESTRICTED_ROLES, conf.usersUnrestrictedRoles());
+    }
+
+    /**
+     * Whether Sign-up Management is enabled for this tenant. Defaults to {@code true}
+     * (restriction fully enforced) unless a deployment-layer interceptor explicitly
+     * attaches {@code false}.
+     */
+    public static boolean signupMgmtEnabled(ServiceRequest<?> req, AccountsConfigData conf) {
+        return bool(req, SIGNUP_MGMT_ENABLED, true);
     }
 
     /**
