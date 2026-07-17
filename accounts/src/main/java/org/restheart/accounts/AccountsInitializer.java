@@ -69,8 +69,16 @@ public class AccountsInitializer implements Initializer {
         // edits — see PROFILE_ONLY_WHITELIST above for why this is safe to enforce
         // unconditionally.
         aclRegistry.registerVeto(r -> {
-            if (!r.getPath().startsWith("/users")) return false;
             if (!(r instanceof MongoRequest mr)) return false;
+
+            // Match on the *resolved* db/collection (post mongo-mounts), not the request
+            // path: the users collection can be reachable through more than one URL —
+            // e.g. the conventional /users mount alias AND the raw /{db}/users path if a
+            // wildcard mount also exposes it. A path-prefix check on "/users" would miss
+            // the second one entirely, letting a client bypass this restriction just by
+            // using a different (but equally valid) URL for the same collection.
+            if (!"users".equals(mr.getCollectionName())) return false;
+            if (!RequestOverrides.db(mr, conf).equals(mr.getDBName())) return false;
 
             // Roles configured via `users-unrestricted-roles` (e.g. an admin console
             // role) bypass this restriction entirely — see AccountsConfigData. Reads
