@@ -407,7 +407,7 @@ public class MqttMessageRouter {
         }
 
         String[] topicLevels = topic.split("/");
-        String[] topicFilterLevels = topic.split("/");
+        String[] topicFilterLevels = topicFilter.split("/");
 
         // Multi-level wildcard (#) must be last
         if (topicFilter.endsWith("/#")) {
