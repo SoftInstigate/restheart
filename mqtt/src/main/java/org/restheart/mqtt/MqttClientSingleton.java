@@ -37,6 +37,7 @@ import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
+import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientConnectedContext;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.lifecycle.Mqtt5ClientConnectedContext;
@@ -359,7 +360,7 @@ public class MqttClientSingleton {
                 .addConnectedListener(context -> {
                     // Resubscribe to topic filters if session is not present
                     TypeSwitch.when(context)
-                    .is(Mqtt5ClientConnectedContext.class, q -> {
+                    .is(Mqtt3ClientConnectedContext.class, q -> {
                         if (!q.getConnAck().isSessionPresent()) {
                             LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
                             MqttMessageRouter.getInstance().resubscribeAll();
