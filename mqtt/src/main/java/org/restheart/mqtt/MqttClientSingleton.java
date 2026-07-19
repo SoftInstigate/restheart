@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongoclient-provider
+ * restheart-mqtt
  * %%
  * Copyright (C) 2014 - 2026 SoftInstigate
  * %%
@@ -39,6 +39,8 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
+import com.hivemq.client.mqtt.mqtt5.lifecycle.Mqtt5ClientConnectedContext;
+import com.hivemq.client.util.TypeSwitch;
 
 /**
  * Thread-safe singleton that manages the lifecycle of a MQTT client  {@link MqttClient}.
@@ -294,7 +296,19 @@ public class MqttClientSingleton {
             builder.automaticReconnect()
                 .initialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
                 .maxDelay(maxDelayMs, TimeUnit.MILLISECONDS)
-                .applyAutomaticReconnect();
+                .applyAutomaticReconnect()
+                .addConnectedListener(context -> {
+                    // Resubscribe to topic filters if session is not present
+                    TypeSwitch.when(context)
+                    .is(Mqtt5ClientConnectedContext.class, q -> {
+                        if (!q.getConnAck().isSessionPresent()) {
+                            LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                            MqttMessageRouter.getInstance().resubscribeAll();
+                        } else {
+                            LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                        }
+                    });
+                });
         }
 
         if (tlsEnabled) {
@@ -341,7 +355,19 @@ public class MqttClientSingleton {
             builder.automaticReconnect()
                 .initialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
                 .maxDelay(maxDelayMs, TimeUnit.MILLISECONDS)
-                .applyAutomaticReconnect();
+                .applyAutomaticReconnect()
+                .addConnectedListener(context -> {
+                    // Resubscribe to topic filters if session is not present
+                    TypeSwitch.when(context)
+                    .is(Mqtt5ClientConnectedContext.class, q -> {
+                        if (!q.getConnAck().isSessionPresent()) {
+                            LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                            MqttMessageRouter.getInstance().resubscribeAll();
+                        } else {
+                            LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                        }
+                    });
+                });
         }
 
         // Configure TLS if enabled
