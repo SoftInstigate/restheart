@@ -2,6 +2,7 @@ package org.restheart.accounts;
 
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
+import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -82,7 +83,7 @@ public class UpdateMemberRoleService implements JsonService {
         var membershipProvider = accountsService.getMembershipProvider(req);
         var membership = membershipProvider.activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
