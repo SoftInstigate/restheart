@@ -5,13 +5,17 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDateTime;
+import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -71,6 +75,24 @@ public class DbHelper {
                 .find(Filters.eq(tokenField, token))
                 .first()
         );
+    }
+
+    /**
+     * Batch-fetches user documents by email address (stored as {@code _id}).
+     *
+     * @param emails the emails to look up
+     * @return a map of email to user document, containing only the emails that were found
+     */
+    public Map<String, BsonDocument> findUsers(List<String> emails) {
+        if (emails == null || emails.isEmpty()) {
+            return Map.of();
+        }
+        var result = new HashMap<String, BsonDocument>();
+        var idsFilter = new java.util.ArrayList<BsonString>();
+        emails.forEach(e -> idsFilter.add(new BsonString(e)));
+        users().find(Filters.in("_id", idsFilter))
+               .forEach(u -> result.put(u.getString("_id").getValue(), u));
+        return result;
     }
 
     /**
@@ -238,6 +260,66 @@ public class DbHelper {
                 .find(eq("_id", teamId))
                 .first()
         );
+    }
+
+    /**
+     * Adds a {@code {userId, role, joinedAt}} entry to the team's {@code members}
+     * array, unless an entry for {@code userId} already exists (idempotent —
+     * a plain {@code $addToSet} would not be, since {@code joinedAt} makes every
+     * call produce a distinct subdocument).
+     *
+     * @param teamId the team's {@code _id}
+     * @param userId the member's user id (email address)
+     * @param role   the role to assign (e.g. {@code "owner"} or {@code "member"})
+     * @return {@code true} if the member entry was added
+     */
+    public boolean addMemberToTeam(BsonValue teamId, String userId, String role) {
+        var memberDoc = new BsonDocument()
+            .append("userId",   new BsonString(userId))
+            .append("role",     new BsonString(role))
+            .append("joinedAt", new BsonDateTime(System.currentTimeMillis()));
+        var result = teams().updateOne(
+            Filters.and(
+                eq("_id", teamId),
+                Filters.not(Filters.eq("members.userId", new BsonString(userId)))
+            ),
+            Updates.push("members", memberDoc)
+        );
+        return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Applies a {@code $set} patch to the team identified by {@code teamId}.
+     *
+     * @param teamId  the team's {@code _id}
+     * @param updates a document whose fields will be {@code $set} on the team
+     * @return {@code true} if a document was matched
+     */
+    public boolean updateTeam(BsonValue teamId, BsonDocument updates) {
+        var result = teams().updateOne(
+            eq("_id", teamId),
+            new BsonDocument("$set", updates)
+        );
+        return result.getMatchedCount() > 0;
+    }
+
+    /**
+     * Atomically deletes the team identified by {@code teamId}, but only if its
+     * {@code members} array has at most one entry (i.e. no members other than the
+     * caller). Safe against concurrent invite-acceptance races, since the emptiness
+     * check and the delete happen in a single {@code findOneAndDelete} operation.
+     *
+     * @param teamId the team's {@code _id}
+     * @return {@code true} if the team was deleted; {@code false} if it still has
+     *         other members, or no longer exists
+     */
+    public boolean deleteTeamIfEmpty(BsonValue teamId) {
+        var sizeExpr = List.<BsonValue>of(
+            new BsonDocument("$size", new BsonString("$members")),
+            new BsonInt32(1));
+        var filter = new BsonDocument("_id", teamId)
+            .append("$expr", new BsonDocument("$lte", new BsonArray(sizeExpr)));
+        return teams().findOneAndDelete(filter) != null;
     }
 
     /**

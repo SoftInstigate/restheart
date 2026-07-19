@@ -421,6 +421,10 @@
 /invitationInfoService/enabled: true
 /removeMemberService/enabled: true
 /updateMemberRoleService/enabled: true
+/listTeamMembersService/enabled: true
+/teamService/enabled: true
+/updateProfileService/enabled: true
+/changePasswordService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
 
 # Test interceptor: attaches override-users-db when ?_db-override=<db> is present.
