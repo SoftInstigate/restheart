@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongoclient-provider
+ * restheart-mqtt
  * %%
  * Copyright (C) 2014 - 2026 SoftInstigate
  * %%
