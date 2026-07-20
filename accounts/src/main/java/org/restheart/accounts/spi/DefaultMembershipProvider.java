@@ -197,7 +197,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var role        = findRoleInTeams(user, teamId);
         var displayName = loadTeamName(teamId);
 
-        return Optional.of(new Membership(teamId, displayName, role, true));
+        return Optional.of(new Membership(teamId, displayName, loadTeamDescription(teamId), role, true));
     }
 
     // ── listMemberships ───────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
                         ? e.getString("role").getValue() : "member";
                 if (teamId == null) continue;
                 var displayName = loadTeamName(teamId);
-                result.add(new Membership(teamId, displayName, role, teamId.equals(activeTeam)));
+                result.add(new Membership(teamId, displayName, loadTeamDescription(teamId), role, teamId.equals(activeTeam)));
             }
         }
         return result;
@@ -409,7 +409,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         LOGGER.info("DefaultMembershipProvider: invited user <{}> activated via OAuth (team={})",
                 userId, teamId);
 
-        return Optional.of(new Membership(teamId, displayName, role, true));
+        return Optional.of(new Membership(teamId, displayName, loadTeamDescription(teamId), role, true));
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
@@ -474,6 +474,17 @@ public class DefaultMembershipProvider implements MembershipProvider {
                     .orElse(fallback);
         } catch (Exception e) {
             return fallback;
+        }
+    }
+
+    private String loadTeamDescription(BsonValue teamId) {
+        try {
+            return db.findTeam(teamId)
+                    .filter(t -> t.containsKey("description") && t.get("description").isString())
+                    .map(t -> t.getString("description").getValue())
+                    .orElse(null);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

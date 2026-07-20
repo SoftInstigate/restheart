@@ -130,6 +130,9 @@ public class GetTeamsService implements JsonService {
             obj.addProperty("name",   m.displayName());
             obj.addProperty("role",   m.role());
             obj.addProperty("active", m.active());
+            if (m.description() != null) {
+                obj.addProperty("description", m.description());
+            }
             result.add(obj);
         }
 
