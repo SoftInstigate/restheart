@@ -73,7 +73,8 @@ Feature: POST /auth/teams
     And match response.teams == '#[2]'
     * def newEntry = karate.filter(response.teams, function(x){ return x.id['$oid'] == newTeamId })[0]
     And match newEntry.role == 'owner'
-    And match response.team['$oid'] == newTeamId
+    And match response.team._id['$oid'] == newTeamId
+    And match response.team.role == 'owner'
 
   # ---------------------------------------------------------------------------
   Scenario: verify DB — the team document itself is created correctly

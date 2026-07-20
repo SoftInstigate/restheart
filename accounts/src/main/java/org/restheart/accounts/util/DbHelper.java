@@ -201,25 +201,31 @@ public class DbHelper {
     }
 
     /**
-     * Sets the user's active team (the {@code team} field) unconditionally.
+     * Sets the user's active team unconditionally. The {@code team} field is stored as
+     * a {@code { _id, role }} object so the active team's id <em>and</em> the caller's
+     * role in it travel together into the JWT {@code team} claim (see the {@code team}
+     * claim shape used for ACL {@code @user.team._id} / {@code @user.team.role}).
      *
      * @param email  the user's email (_id)
      * @param teamId the team to make active
+     * @param role   the user's role within that team
      * @return {@code true} if a document was matched
      */
-    public boolean setActiveTeam(String email, BsonValue teamId) {
-        return updateUser(email, new BsonDocument("team", teamId));
+    public boolean setActiveTeam(String email, BsonValue teamId, String role) {
+        return updateUser(email, new BsonDocument("team", activeTeamDoc(teamId, role)));
     }
 
     /**
      * Sets the user's active team only if the {@code team} field is absent or null.
      * Safe to call idempotently after every {@code addTeamMembership} for new users.
+     * Stored as a {@code { _id, role }} object (see {@link #setActiveTeam}).
      *
      * @param email  the user's email (_id)
      * @param teamId the team to set as active
+     * @param role   the user's role within that team
      * @return {@code true} if the field was set (document matched and had no prior team)
      */
-    public boolean setActiveTeamIfAbsent(String email, BsonValue teamId) {
+    public boolean setActiveTeamIfAbsent(String email, BsonValue teamId, String role) {
         var result = users().updateOne(
             Filters.and(
                 eq("_id", new BsonString(email)),
@@ -228,9 +234,39 @@ public class DbHelper {
                     Filters.eq("team", null)
                 )
             ),
-            Updates.set("team", teamId)
+            Updates.set("team", activeTeamDoc(teamId, role))
         );
         return result.getModifiedCount() > 0;
+    }
+
+    /**
+     * Updates the role recorded on the active-team object ({@code team.role}) only when
+     * the given team is currently the user's active team ({@code team._id} matches).
+     * Used to keep the denormalized active-team role in sync when a member's role is
+     * changed while that team is their active one.
+     *
+     * @param email  the user's email (_id)
+     * @param teamId the team whose role changed
+     * @param role   the new role
+     * @return {@code true} if the active-team role was updated (i.e. it was the active team)
+     */
+    public boolean setActiveTeamRoleIfActive(String email, BsonValue teamId, String role) {
+        var result = users().updateOne(
+            Filters.and(
+                eq("_id", new BsonString(email)),
+                Filters.eq("team._id", teamId)
+            ),
+            Updates.set("team.role", new BsonString(role))
+        );
+        return result.getModifiedCount() > 0;
+    }
+
+    private static BsonDocument activeTeamDoc(BsonValue teamId, String role) {
+        var doc = new BsonDocument("_id", teamId);
+        if (role != null) {
+            doc.append("role", new BsonString(role));
+        }
+        return doc;
     }
 
     // -------------------------------------------------------------------------

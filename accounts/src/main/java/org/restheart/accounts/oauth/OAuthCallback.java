@@ -12,6 +12,7 @@ import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.Request;
@@ -209,7 +210,8 @@ public class OAuthCallback implements StringService {
                     var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
                             req.attachedParams(),
-                            java.util.Map.<String, Object>of(conf.teamClaimName(), membership.get().teamId()),
+                            java.util.Map.<String, Object>of(conf.teamClaimName(),
+                                    TeamClaim.of(membership.get().teamId(), membership.get().role())),
                             null);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
@@ -239,11 +241,13 @@ public class OAuthCallback implements StringService {
 
                 var roles = extractRoles(user);
                 var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
-                var activeTeam = activeMembership.map(m -> m.teamId()).orElse(teamId);
+                var teamClaim = activeMembership
+                        .map(m -> TeamClaim.of(m.teamId(), m.role()))
+                        .orElseGet(() -> TeamClaim.of(teamId, role));
                 var jwtToken = jwt.issueToken(email, roles,
                         RequestOverrides.db(req, conf),
                         req.attachedParams(),
-                        java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
+                        java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
                         null);
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
@@ -252,11 +256,13 @@ public class OAuthCallback implements StringService {
             // 4. Issue JWT + set cookie for normal / non-activated users
             var roles  = extractRoles(user);
             var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
-            var activeTeam         = activeMembership.map(m -> m.teamId()).orElse(null);
+            var extraClaims = new java.util.HashMap<String, Object>();
+            activeMembership.ifPresent(m ->
+                    extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
             var jwtToken = jwt.issueToken(email, roles,
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
-                    java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
+                    extraClaims,
                     null);
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 

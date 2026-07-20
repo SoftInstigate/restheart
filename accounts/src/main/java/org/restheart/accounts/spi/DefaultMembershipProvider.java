@@ -124,9 +124,9 @@ public class DefaultMembershipProvider implements MembershipProvider {
                 .append("role", new BsonString(ownershipRole)));
 
         if (forceActive) {
-            db.setActiveTeam(userId, teamIdBson);
+            db.setActiveTeam(userId, teamIdBson, ownershipRole);
         } else {
-            db.setActiveTeamIfAbsent(userId, teamIdBson);
+            db.setActiveTeamIfAbsent(userId, teamIdBson, ownershipRole);
         }
 
         LOGGER.debug("DefaultMembershipProvider: created team '{}' ({}) for user <{}>",
@@ -143,7 +143,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return false;
         var user = userOpt.get();
 
-        if (user.containsKey("team") && teamId.equals(user.get("team"))) {
+        var activeId = activeTeamId(user);
+        if (activeId != null && teamId.equals(activeId)) {
             return true;
         }
         if (user.containsKey("teams") && user.get("teams").isArray()) {
@@ -178,7 +179,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
                 .append("id",   teamId)
                 .append("role", new BsonString(role)));
         db.addMemberToTeam(teamId, userId, role);
-        db.setActiveTeamIfAbsent(userId, teamId);
+        db.setActiveTeamIfAbsent(userId, teamId, role);
     }
 
     // ── activeMembership ──────────────────────────────────────────────────────
@@ -189,10 +190,10 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return Optional.empty();
         var user = userOpt.get();
 
-        if (!user.containsKey("team") || user.get("team").isNull()) {
+        var teamId = activeTeamId(user);
+        if (teamId == null) {
             return Optional.empty();
         }
-        var teamId      = user.get("team");
         var role        = findRoleInTeams(user, teamId);
         var displayName = loadTeamName(teamId);
 
@@ -207,8 +208,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (userOpt.isEmpty()) return List.of();
         var user = userOpt.get();
 
-        var activeTeam = user.containsKey("team") && !user.get("team").isNull()
-                ? user.get("team") : null;
+        var activeTeam = activeTeamId(user);
 
         var result = new ArrayList<Membership>();
         if (user.containsKey("teams") && user.get("teams").isArray()) {
@@ -230,11 +230,13 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
     @Override
     public void setActiveMembership(String userId, BsonValue teamId) {
-        if (!isMember(userId, teamId)) {
+        var userOpt = db.findUser(userId);
+        if (userOpt.isEmpty() || !isMember(userId, teamId)) {
             throw new IllegalArgumentException(
                     "User <" + userId + "> is not a member of team " + teamId);
         }
-        db.setActiveTeam(userId, teamId);
+        var role = findRoleInTeams(userOpt.get(), teamId);
+        db.setActiveTeam(userId, teamId, role);
     }
 
     // ── removeMember ─────────────────────────────────────────────────────
@@ -254,7 +256,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         db.removeMemberFromTeam(teamId, userId);
 
         // Clear active team if it was this one
-        if (user.containsKey("team") && teamId.equals(user.get("team"))) {
+        if (teamId.equals(activeTeamId(user))) {
             db.unsetUserFields(userId, List.of("team"));
         }
 
@@ -271,6 +273,9 @@ public class DefaultMembershipProvider implements MembershipProvider {
     public void updateMemberRole(String userId, BsonValue teamId, String newRole) {
         db.updateTeamRole(userId, teamId, newRole);
         db.updateMemberRoleInTeam(teamId, userId, newRole);
+        // Keep the denormalized active-team role in sync if this is the user's active team,
+        // so their next issued/refreshed JWT carries team.role == newRole.
+        db.setActiveTeamRoleIfActive(userId, teamId, newRole);
 
         LOGGER.info("DefaultMembershipProvider: updated role of <{}> in team {} to '{}'",
                 userId, teamId, newRole);
@@ -346,7 +351,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
 
         db.removeTeamMembership(userId, teamId);
         db.findUser(userId)
-                .filter(u -> u.containsKey("team") && teamId.equals(u.get("team")))
+                .filter(u -> teamId.equals(activeTeamId(u)))
                 .ifPresent(u -> db.unsetUserFields(userId, List.of("team")));
 
         LOGGER.info("DefaultMembershipProvider: deleted team {} (requested by <{}>)", teamId, userId);
@@ -386,11 +391,11 @@ public class DefaultMembershipProvider implements MembershipProvider {
         }
 
         // User must already have an active team (set when the invite was sent)
-        if (!user.containsKey("team") || user.get("team").isNull()) {
+        var teamId = activeTeamId(user);
+        if (teamId == null) {
             LOGGER.warn("DefaultMembershipProvider.activateViaOAuth: invited user <{}> has no team", userId);
             return Optional.empty();
         }
-        var teamId = user.get("team");
 
         // Activate: assign defaultRole
         var rolesArray = new BsonArray();
@@ -408,6 +413,24 @@ public class DefaultMembershipProvider implements MembershipProvider {
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Extracts the active team's id from the user document, tolerating both the
+     * current {@code team: { _id, role }} object shape and the legacy scalar
+     * {@code team: <oid>} shape (pre-9.6.0 data). Returns {@code null} when the
+     * user has no active team.
+     */
+    private static BsonValue activeTeamId(BsonDocument user) {
+        if (!user.containsKey("team") || user.get("team").isNull()) {
+            return null;
+        }
+        var team = user.get("team");
+        if (team.isDocument()) {
+            var d = team.asDocument();
+            return d.containsKey("_id") && !d.get("_id").isNull() ? d.get("_id") : null;
+        }
+        return team; // legacy scalar id
+    }
 
     private String findRoleInTeams(BsonDocument user, BsonValue teamId) {
         if (user.containsKey("teams") && user.get("teams").isArray()) {

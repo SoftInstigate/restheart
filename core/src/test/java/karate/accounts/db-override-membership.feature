@@ -64,7 +64,8 @@ Feature: DefaultMembershipProvider uses override-users-db per-request
     And param rep = 's'
     When method GET
     Then status 200
-    * match response.team == '#present'
+    * match response.team._id == '#present'
+    * match response.team.role == 'owner'
     * match response.teams == '#[1]'
     * match response.teams[0].role == 'owner'
     * def teamOid = response.teams[0].id['$oid']

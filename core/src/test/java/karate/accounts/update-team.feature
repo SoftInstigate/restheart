@@ -83,7 +83,7 @@ Feature: PATCH /auth/team
     And param rep = 's'
     When method GET
     Then status 200
-    * def teamId = response.team['$oid']
+    * def teamId = response.team._id['$oid']
 
     Given path '/teams/' + teamId
     And header Authorization = adminAuth
@@ -112,7 +112,7 @@ Feature: PATCH /auth/team
     And param rep = 's'
     When method GET
     Then status 200
-    * def teamId = response.team['$oid']
+    * def teamId = response.team._id['$oid']
 
     Given path '/teams/' + teamId
     And header Authorization = adminAuth

@@ -12,6 +12,7 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
@@ -162,14 +163,11 @@ public class ResetPasswordService implements JsonService {
         db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
-        var team = accountsService.getMembershipProvider(req)
-                .activeMembership(storedEmail)
-                .map(m -> m.teamId())
-                .orElse(null);
+        var activeMembership = accountsService.getMembershipProvider(req)
+                .activeMembership(storedEmail);
         var extraClaims = new java.util.HashMap<String, Object>();
-        if (team != null) {
-            extraClaims.put(conf.teamClaimName(), team);
-        }
+        activeMembership.ifPresent(m ->
+                extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
         var jwtToken  = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),

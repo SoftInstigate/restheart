@@ -151,8 +151,9 @@ public class AccountsInitializer implements Initializer {
                 users.createIndex(Indexes.ascending("emailVerificationToken"),
                         new IndexOptions().sparse(true).name("emailVerificationToken_1"));
 
-                users.createIndex(Indexes.ascending("team"),
-                        new IndexOptions().name("team_1"));
+                // Active team is stored as a { _id, role } object (9.6.0+); index the id.
+                users.createIndex(Indexes.ascending("team._id"),
+                        new IndexOptions().name("team._id_1"));
             }
 
             // oauth_codes — TTL: codes expire after 600 seconds

@@ -94,10 +94,10 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
-    # team claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
+    # team claim is now a { _id: {"$oid":"..."}, role: "..." } object (9.6.0+) mirroring user.team
     * def teamClaim = payload.team
-    * def teamStr = (typeof teamClaim == 'object') ? teamClaim['$oid'] : teamClaim
-    * match teamStr == '#string'
+    * match teamClaim._id['$oid'] == '#string'
+    * match teamClaim.role == '#string'
 
     # 6. The fragment token must be the same JWT as the cookie, with token_type=Bearer
     * def fragment = callbackLocation.split('#')[1]

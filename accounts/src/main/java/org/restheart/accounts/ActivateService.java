@@ -9,6 +9,7 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
@@ -161,7 +162,7 @@ public class ActivateService implements JsonService {
         userRoles.add(effectiveRole);
 
         var extraClaims = new HashMap<String, Object>();
-        extraClaims.put(conf.teamClaimName(), teamId);
+        extraClaims.put(conf.teamClaimName(), TeamClaim.of(teamId, orgRole));
 
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),
