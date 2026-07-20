@@ -509,11 +509,8 @@ public class DbHelper {
      * Does NOT include the token field (sensitive — one-shot secret).
      */
     public List<BsonDocument> listInvitationsByTeam(BsonValue teamId) {
-        var now = System.currentTimeMillis();
         return invitations()
-                .find(Filters.and(
-                        Filters.eq("teamId", teamId),
-                        Filters.gt("expiresAt", now)))
+                .find(Filters.eq("teamId", teamId))
                 .projection(Filters.eq("token", 0))
                 .into(new java.util.ArrayList<>());
     }

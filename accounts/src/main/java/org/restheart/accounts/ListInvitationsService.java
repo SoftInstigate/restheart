@@ -16,6 +16,8 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GET /auth/invitations
@@ -42,6 +44,8 @@ import org.restheart.utils.HttpStatus;
         secure           = true,
         enabledByDefault = false)
 public class ListInvitationsService implements JsonService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListInvitationsService.class);
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -90,9 +94,12 @@ public class ListInvitationsService implements JsonService {
             return;
         }
 
-        var invitations = db(req).listInvitationsByTeam(active.get().teamId());
+        var teamId = active.get().teamId();
+
+        var invitations = db(req).listInvitationsByTeam(teamId);
 
         var result = new JsonArray();
+        var now = System.currentTimeMillis();
         for (var invite : invitations) {
             var obj = new JsonObject();
             obj.addProperty("email", invite.getString("email").getValue());
@@ -102,7 +109,9 @@ public class ListInvitationsService implements JsonService {
                 obj.addProperty("createdAt", java.time.Instant.ofEpochMilli(invite.getDateTime("createdAt").getValue()).toString());
             }
             if (invite.containsKey("expiresAt")) {
-                obj.addProperty("expiresAt", java.time.Instant.ofEpochMilli(invite.getDateTime("expiresAt").getValue()).toString());
+                var expiresAt = invite.getDateTime("expiresAt").getValue();
+                obj.addProperty("expiresAt", java.time.Instant.ofEpochMilli(expiresAt).toString());
+                obj.addProperty("expired", expiresAt < now);
             }
             result.add(obj);
         }
