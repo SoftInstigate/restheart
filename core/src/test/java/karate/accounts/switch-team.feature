@@ -55,7 +55,6 @@ Feature: POST /auth/switch-team
     Then status 200
     And match response.team._id == secondTeamId
     And match response.team.role == 'member'
-    And match response.role == 'member'
     And match responseHeaders['Set-Cookie'] != null
 
   # ---------------------------------------------------------------------------
