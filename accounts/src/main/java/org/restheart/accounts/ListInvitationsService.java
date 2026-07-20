@@ -16,8 +16,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * GET /auth/invitations
@@ -44,8 +42,6 @@ import org.slf4j.LoggerFactory;
         secure           = true,
         enabledByDefault = false)
 public class ListInvitationsService implements JsonService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ListInvitationsService.class);
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
