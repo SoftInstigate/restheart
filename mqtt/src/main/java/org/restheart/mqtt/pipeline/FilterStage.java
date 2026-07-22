@@ -122,11 +122,9 @@ public class FilterStage implements MqttEventStage {
         }
 
         // Check JSONPath filter
-        if (jsonPath != null) {
-            if (!evaluateJsonPath(message)) {
-                LOGGER.debug("Message dropped: JSONPath condition not met");
-                return Optional.empty();
-            }
+        if (jsonPath != null && !evaluateJsonPath(message)) {
+            LOGGER.debug("Message dropped: JSONPath condition not met");
+            return Optional.empty();
         }
 
         return Optional.of(message);
@@ -190,10 +188,10 @@ public class FilterStage implements MqttEventStage {
         // String comparisons
         String strValue = value.toString();
         if (condition.startsWith("==")) {
-            String expected = condition.substring(2).trim().replaceAll("^['\"]|['\"]$", "");
+            String expected = condition.substring(2).trim().replaceAll("(^['\"])|(['\"]$)", "");
             return strValue.equals(expected);
         } else if (condition.startsWith("!=")) {
-            String expected = condition.substring(2).trim().replaceAll("^['\"]|['\"]$", "");
+            String expected = condition.substring(2).trim().replaceAll("(^['\"])|(['\"]$)", "");
             return !strValue.equals(expected);
         }
 

@@ -66,6 +66,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SlidingWindowAggregator.class);
     private static final Gson GSON = new Gson();
+    private static final String FAILED_TO_EXTRACT_FIELD_LOG = "Failed to extract field '{}' from message: {}";
 
     private final int windowSize;
     private final String function;
@@ -187,7 +188,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
                     count++;
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to extract field '{}' from message: {}", field, e.getMessage());
+                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
             }
         }
 
@@ -207,7 +208,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
                     min = Math.min(min, ((Number) value).doubleValue());
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to extract field '{}' from message: {}", field, e.getMessage());
+                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
             }
         }
 
@@ -227,7 +228,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
                     max = Math.max(max, ((Number) value).doubleValue());
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to extract field '{}' from message: {}", field, e.getMessage());
+                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
             }
         }
 
@@ -247,7 +248,7 @@ public class SlidingWindowAggregator implements MqttEventStage {
                     sum += ((Number) value).doubleValue();
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to extract field '{}' from message: {}", field, e.getMessage());
+                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
             }
         }
 
