@@ -150,7 +150,7 @@ public class OriginVetoer implements Authorizer {
                 return true;
             }
 
-            LOGGER.warn("request forbidden by originVetoer due to missing Origin header");
+            LOGGER.debug("originVetoer: request denied due to missing Origin header");
             return false;
         }
 
@@ -174,7 +174,7 @@ public class OriginVetoer implements Authorizer {
             }
         }
 
-        LOGGER.warn("request forbidden by originVetoer due to Origin header {} not in whitelist or patterns", origin);
+        LOGGER.debug("originVetoer: request denied due to Origin header {} not in whitelist or patterns", origin);
         return false;
     }
 
