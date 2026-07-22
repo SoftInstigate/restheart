@@ -47,11 +47,30 @@ public class OriginVetoerTest {
         return vetoer;
     }
 
+    private OriginVetoer newVetoer(List<String> whitelist, boolean allowMissingOrigin) throws Exception {
+        var vetoer = new OriginVetoer();
+        Map<String, Object> config = new HashMap<>();
+        if (whitelist != null) {
+            config.put("whitelist", whitelist);
+        }
+        config.put("allow-missing-origin", allowMissingOrigin);
+        var configField = OriginVetoer.class.getDeclaredField("config");
+        configField.setAccessible(true);
+        configField.set(vetoer, config);
+        vetoer.init();
+        return vetoer;
+    }
+
     private Request<?> requestWith(String origin, List<String> overrideWhitelist) {
+        return requestWith(origin, overrideWhitelist, null);
+    }
+
+    private Request<?> requestWith(String origin, List<String> overrideWhitelist, Boolean overrideAllowMissing) {
         var req = mock(Request.class);
         when(req.getPath()).thenReturn("/some/path");
         when(req.getHeader("Origin")).thenReturn(origin);
         when(req.attachedParam("override-origin-whitelist")).thenReturn(overrideWhitelist);
+        when(req.attachedParam("override-origin-allow-missing")).thenReturn(overrideAllowMissing);
         return req;
     }
 
@@ -92,5 +111,53 @@ public class OriginVetoerTest {
 
         assertTrue(vetoer.isAllowed(requestWith("https://anything.example.com", null)));
         assertTrue(vetoer.isAllowed(requestWith(null, null)));
+    }
+
+    @Test
+    void allowMissingOrigin_defaultAllows() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"));
+
+        // default (true): missing Origin is allowed
+        assertTrue(vetoer.isAllowed(requestWith(null, null)));
+    }
+
+    @Test
+    void allowMissingOrigin_true_allowsMissingOrigin() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"), true);
+
+        // missing Origin is allowed
+        assertTrue(vetoer.isAllowed(requestWith(null, null)));
+        // non-whitelisted Origin is still denied
+        assertFalse(vetoer.isAllowed(requestWith("https://not-allowed.example.com", null)));
+        // whitelisted Origin is still allowed
+        assertTrue(vetoer.isAllowed(requestWith("https://allowed.example.com", null)));
+    }
+
+    @Test
+    void overrideAllowMissing_true_allowsMissingOrigin() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"));
+
+        // per-request override allows missing Origin even when static config denies it
+        assertTrue(vetoer.isAllowed(requestWith(null, null, true)));
+    }
+
+    @Test
+    void overrideAllowMissing_false_deniesMissingOrigin() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"), true);
+
+        // per-request override denies missing Origin even when static config allows it
+        assertFalse(vetoer.isAllowed(requestWith(null, null, false)));
+    }
+
+    @Test
+    void allowMissingOrigin_withOverrideWhitelist() throws Exception {
+        var vetoer = newVetoer(List.of("https://static.example.com"), true);
+
+        // missing Origin allowed even with override whitelist in play
+        assertTrue(vetoer.isAllowed(requestWith(null, List.of("https://tenant.example.com"))));
+        // whitelisted origin still works
+        assertTrue(vetoer.isAllowed(requestWith("https://tenant.example.com", List.of("https://tenant.example.com"))));
+        // non-whitelisted origin still denied
+        assertFalse(vetoer.isAllowed(requestWith("https://other.example.com", List.of("https://tenant.example.com"))));
     }
 }

@@ -49,6 +49,7 @@ public class OriginVetoer implements Authorizer {
 
     private List<String> whitelist = null;
     private List<String> whitelistPatterns = null;
+    private boolean allowMissingOrigin = false;
     private PathTemplateMatcher<Boolean> ignoreLists = new PathTemplateMatcher<>();
 
     @Inject("config")
@@ -106,6 +107,11 @@ public class OriginVetoer implements Authorizer {
             this.ignoreLists = null;
             LOGGER.info("No ignoreLists defined for originVetoer, all paths are checked");
         }
+
+        this.allowMissingOrigin = argOrDefault(config, "allow-missing-origin", true);
+        if (this.allowMissingOrigin) {
+            LOGGER.info("allow-missing-origin enabled for originVetoer, requests without Origin header are allowed");
+        }
     }
 
     @Override
@@ -135,6 +141,15 @@ public class OriginVetoer implements Authorizer {
 
         final var origin = request.getHeader("Origin");
         if (origin == null) {
+            // per-request override takes precedence over static config
+            final Boolean overrideAllowMissing = request.attachedParam("override-origin-allow-missing");
+            final var effectiveAllowMissing = overrideAllowMissing != null ? overrideAllowMissing : this.allowMissingOrigin;
+
+            if (effectiveAllowMissing) {
+                LOGGER.debug("originVetoer: request allowed despite missing Origin header (allow-missing-origin)");
+                return true;
+            }
+
             LOGGER.warn("request forbidden by originVetoer due to missing Origin header");
             return false;
         }
