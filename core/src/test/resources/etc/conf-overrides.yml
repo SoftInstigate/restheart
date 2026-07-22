@@ -468,3 +468,8 @@
 /oauthInitiator/enabled: true
 /oauthCallback/enabled: true
 /testOAuthProvider/enabled: true
+
+# Test interceptor: attaches override-accounts-oauth-* when ?_oauth-override=1
+# is present. Used by oauth-invite.feature to verify per-team OAuth overrides
+# are honored on both the authorize AND callback legs. Does not affect other tests.
+/oauthOverrideInterceptor/enabled: true

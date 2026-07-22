@@ -1,6 +1,7 @@
 package org.restheart.accounts.oauth;
 
 import io.undertow.util.Headers;
+import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.exchange.ExchangeKeys.METHOD;
@@ -77,7 +78,11 @@ public class OAuthInitiator implements StringService {
         }
         var provider = parts[4].toLowerCase();
 
-        if (!oauthConfig.isProviderEnabled(provider)) {
+        // Uses the request-aware check (not oauthConfig.isProviderEnabled(), which only sees
+        // static config) so a provider configured exclusively via per-team overrides — no
+        // providers.{provider} entry in YAML at all, by design on a multi-tenant node — is
+        // still recognized as available. See OAuthService.isProviderAvailable.
+        if (!oauthService.isProviderAvailable(provider, req)) {
             res.setInError(HttpStatus.SC_BAD_REQUEST, "Provider '" + provider + "' is not enabled");
             return;
         }
@@ -89,7 +94,9 @@ public class OAuthInitiator implements StringService {
             res.getHeaders().put(Headers.LOCATION, result.url());
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth authorize error for {}: {}", provider, e.getMessage());
-            var errorUrl = oauthConfig.frontendErrorUrl() + "&reason="
+            var frontendErrorUrl = RequestOverrides.oauthFrontendErrorUrl(req, oauthConfig);
+            var sep = frontendErrorUrl.contains("?") ? "&" : "?";
+            var errorUrl = frontendErrorUrl + sep + "reason="
                     + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
             res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
             res.getHeaders().put(Headers.LOCATION, errorUrl);

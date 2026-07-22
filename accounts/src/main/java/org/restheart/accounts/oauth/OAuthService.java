@@ -9,6 +9,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -89,7 +90,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static String queryParam(org.restheart.exchange.ServiceRequest<?> req, String name) {
+    private static String queryParam(ServiceRequest<?> req, String name) {
         if (req == null) return null;
         var values = req.getQueryParameters().get(name);
         return (values != null && !values.isEmpty()) ? values.getFirst() : null;
@@ -133,24 +134,24 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @return an {@link AuthResult} with the authorization redirect URL and the CSRF state
      * @throws OAuthException if the provider is not configured or not registered
      */
-    public AuthResult getAuthorizationUrl(String providerName,
-            org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
+    public AuthResult getAuthorizationUrl(String providerName, ServiceRequest<?> req) throws OAuthException {
         var cfg                = resolveProviderConfig(providerName, req);
-        var provider           = resolveProvider(providerName);
-        var teamDb           = RequestOverrides.db(req, accountsConf);
-        var state              = generateState(teamDb);
-        var pendingInviteToken = queryParam(req, "pendingInviteToken");
-        var consentsAccepted   = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
+        var provider            = resolveProvider(providerName);
+        var teamDb              = RequestOverrides.db(req, accountsConf);
+        var apiBaseUrl          = RequestOverrides.oauthApiBaseUrl(req, config);
+        var state               = generateState(teamDb);
+        var pendingInviteToken  = queryParam(req, "pendingInviteToken");
+        var consentsAccepted    = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
 
         storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted);
 
         var url = provider.getAuthorizationUrl(cfg.clientId(), cfg.clientSecret(),
-                config.callbackUrl(providerName), cfg.scope(), state);
+                config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), state);
         return new AuthResult(url, state);
     }
 
     /**
-     * @deprecated Use {@link #getAuthorizationUrl(String, org.restheart.exchange.ServiceRequest)} instead.
+     * @deprecated Use {@link #getAuthorizationUrl(String, ServiceRequest)} instead.
      * @param providerName the OAuth provider name
      * @throws OAuthException if the provider is not configured or not registered
      */
@@ -169,12 +170,14 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @param providerName the OAuth provider name extracted from the callback path
      * @param code         the authorization code received from the OAuth provider
      * @param state        the CSRF state token returned by the provider (must match a stored token)
+     * @param req          the incoming callback request, used to resolve per-team overrides;
+     *                     may be {@code null} for non-HTTP use (falls back to static config)
      * @return a {@link CallbackResult} carrying the user profile and the invite
      *         context that was stored in the state token at authorization time
      * @throws OAuthException if the state token is invalid/expired, the provider is
      *                        not registered, or the profile fetch fails
      */
-    public CallbackResult handleCallback(String providerName, String code, String state)
+    public CallbackResult handleCallback(String providerName, String code, String state, ServiceRequest<?> req)
             throws OAuthException {
 
         var token = verifyAndConsumeState(state, providerName);
@@ -182,12 +185,17 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
             throw new OAuthException("Invalid or expired state token (possible CSRF)");
         }
 
-        var cfg      = resolveProviderConfig(providerName);
-        var provider = resolveProvider(providerName);
+        // Must resolve with the SAME overrides used to build the authorize URL — a
+        // per-team override changes both clientId/clientSecret and, via apiBaseUrl below,
+        // the callbackUrl passed to the provider; the provider validates that the callback
+        // token exchange uses the exact same callbackUrl/credentials as the authorize step.
+        var cfg         = resolveProviderConfig(providerName, req);
+        var provider    = resolveProvider(providerName);
+        var apiBaseUrl  = RequestOverrides.oauthApiBaseUrl(req, config);
 
         try {
             var profile = provider.fetchUserProfile(cfg.clientId(), cfg.clientSecret(),
-                    config.callbackUrl(providerName), cfg.scope(), code);
+                    config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), code);
             return new CallbackResult(profile, token.pendingInviteToken(), token.consentsAccepted());
         } catch (OAuthException e) {
             throw e;
@@ -282,23 +290,40 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     /**
-     * Resolves provider config, checking per-team overrides before falling
-     * back to static config (currently only Google supports overrides).
+     * Resolves provider config, checking per-team overrides before falling back to
+     * static config. Provider-agnostic — works for any provider name, not just Google.
      *
-     * @param name provider name (case-insensitive), e.g. {@code "google"}
+     * @param name provider name (case-insensitive), e.g. {@code "google"}, {@code "github"}
      * @param req  the incoming request used to read per-team overrides; may be {@code null}
      * @return the effective {@link OAuthConfig.ProviderConfig}
      * @throws OAuthException if OAuth is disabled or the provider is not configured
      */
-    public OAuthConfig.ProviderConfig resolveProviderConfig(String name,
-            org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
-        if ("google".equalsIgnoreCase(name) && req != null) {
-            var teamCfg = org.restheart.accounts.util.RequestOverrides.oauthGoogle(req);
+    public OAuthConfig.ProviderConfig resolveProviderConfig(String name, ServiceRequest<?> req)
+            throws OAuthException {
+        if (req != null) {
+            var teamCfg = RequestOverrides.oauthProvider(req, name, config);
             if (teamCfg != null && teamCfg.isValid()) {
                 return teamCfg;
             }
         }
         return resolveProviderConfig(name);
+    }
+
+    /**
+     * Whether {@code name} is usable for this request — either via a per-team override
+     * ({@link RequestOverrides#oauthProvider}) or the static config. Use this instead of
+     * {@link OAuthConfig#isProviderEnabled(String)} whenever a request is available: the
+     * static-only check rejects providers that are configured <em>exclusively</em> via
+     * per-team overrides (e.g. a multi-tenant node with no {@code providers.{name}} YAML
+     * entry at all, by design — see {@code RequestOverrides} class docs).
+     */
+    public boolean isProviderAvailable(String name, ServiceRequest<?> req) {
+        try {
+            resolveProviderConfig(name, req);
+            return true;
+        } catch (OAuthException e) {
+            return false;
+        }
     }
 
     private OAuthProvider resolveProvider(String name) throws OAuthException {

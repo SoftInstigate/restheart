@@ -126,7 +126,7 @@ public class OAuthCallback implements StringService {
         // Extract provider from path
         var parts = req.getPath().split("/");
         if (parts.length < 5) {
-            redirectError(res, "Invalid callback path");
+            redirectError(res, req, "Invalid callback path");
             return;
         }
         var provider = parts[4].toLowerCase();
@@ -135,7 +135,7 @@ public class OAuthCallback implements StringService {
         var errorParam = req.getQueryParameters().get("error");
         if (errorParam != null && !errorParam.isEmpty()) {
             LOGGER.warn("OAuth provider returned error: {}", errorParam.getFirst());
-            redirectError(res, "Provider error: " + errorParam.getFirst());
+            redirectError(res, req, "Provider error: " + errorParam.getFirst());
             return;
         }
 
@@ -143,11 +143,11 @@ public class OAuthCallback implements StringService {
         var stateParam = req.getQueryParameters().get("state");
 
         if (codeParam == null || codeParam.isEmpty()) {
-            redirectError(res, "Missing authorization code");
+            redirectError(res, req, "Missing authorization code");
             return;
         }
         if (stateParam == null || stateParam.isEmpty()) {
-            redirectError(res, "Missing state parameter");
+            redirectError(res, req, "Missing state parameter");
             return;
         }
 
@@ -156,7 +156,7 @@ public class OAuthCallback implements StringService {
 
         try {
             // 1. Exchange code + verify state → user profile + invite context
-            var callbackResult = oauthService.handleCallback(provider, code, state);
+            var callbackResult = oauthService.handleCallback(provider, code, state, req);
             var profile        = callbackResult.profile();
             var email          = profile.getString("email").getValue();
 
@@ -217,7 +217,7 @@ public class OAuthCallback implements StringService {
                     return;
                 }
                 LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
-                redirectError(res, "Account is pending activation");
+                redirectError(res, req, "Account is pending activation");
                 return;
             }
 
@@ -227,7 +227,7 @@ public class OAuthCallback implements StringService {
                 var inviteOpt = db.findInvitationByEmailAndToken(email, pendingInviteToken);
                 if (inviteOpt.isEmpty()) {
                     LOGGER.warn("OAuth invite acceptance failed: no valid invitation for <{}> with the supplied token", email);
-                    redirectError(res, "Invalid or expired invitation token");
+                    redirectError(res, req, "Invalid or expired invitation token");
                     return;
                 }
                 var invite = inviteOpt.get();
@@ -268,10 +268,10 @@ public class OAuthCallback implements StringService {
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
-            redirectError(res, e.getMessage());
+            redirectError(res, req, e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Unexpected error in OAuth callback ({})", provider, e);
-            redirectError(res, "Internal error");
+            redirectError(res, req, "Internal error");
         }
     }
 
@@ -296,7 +296,7 @@ public class OAuthCallback implements StringService {
         // `flow=signup` doubles as the one-shot "welcome banner" marker also used by
         // EmailVerificationService, so both signup paths signal the frontend the same way.
         var query   = flow != null ? "?flow=" + flow : "";
-        var baseUrl = oauthConfig.frontendSuccessUrl() + query;
+        var baseUrl = RequestOverrides.oauthFrontendSuccessUrl(req, oauthConfig) + query;
         var location = delivery == TokenDelivery.Mode.COOKIE
                 ? baseUrl
                 : TokenDelivery.fragmentUrl(baseUrl, conf, jwtToken);
@@ -417,9 +417,10 @@ public class OAuthCallback implements StringService {
         return parts.length > 1 ? parts[1] : "";
     }
 
-    private void redirectError(StringResponse res, String reason) throws Exception {
-        var sep = oauthConfig.frontendErrorUrl().contains("?") ? "&" : "?";
-        var url = oauthConfig.frontendErrorUrl() + sep + "reason="
+    private void redirectError(StringResponse res, StringRequest req, String reason) throws Exception {
+        var frontendErrorUrl = RequestOverrides.oauthFrontendErrorUrl(req, oauthConfig);
+        var sep = frontendErrorUrl.contains("?") ? "&" : "?";
+        var url = frontendErrorUrl + sep + "reason="
                 + URLEncoder.encode(reason, StandardCharsets.UTF_8);
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
         res.getHeaders().put(Headers.LOCATION, url);
