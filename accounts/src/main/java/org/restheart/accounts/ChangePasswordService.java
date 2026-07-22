@@ -35,6 +35,11 @@ import org.slf4j.LoggerFactory;
  * { "currentPassword": "...", "newPassword": "..." }
  * }</pre>
  *
+ * <p>{@code currentPassword} is still required in the request body, but is only verified
+ * against the stored hash when the account actually has one. Accounts with no password yet
+ * (e.g. OAuth-only signups) can set their first password through this same endpoint without
+ * a matching current one to confirm — see the {@code hasPassword} check in {@link #handle}.
+ *
  * <p>Does not invalidate other active sessions/JWTs — out of scope for JWT-based
  * auth unless a token-versioning/blacklist mechanism is added separately.
  */
@@ -108,7 +113,15 @@ public class ChangePasswordService implements JsonService {
         var user = userOpt.get();
         var storedHash = user.containsKey("password") && user.get("password").isString()
                 ? user.getString("password").getValue() : null;
-        if (storedHash == null || !TokenUtils.checkPassword(currentPassword, storedHash)) {
+
+        // Accounts that never had a password set (e.g. OAuth-only signups — restheart-accounts
+        // stores an empty, not null, password field for those) have nothing to confirm here.
+        // Skipping the check is safe: this endpoint is `secure = true` and always acts on the
+        // authenticated principal's own document (`email` above comes from
+        // account.getPrincipal().getName()), never an arbitrary user. Also avoids
+        // TokenUtils.checkPassword() throwing on an empty/malformed BCrypt hash.
+        var hasPassword = storedHash != null && !storedHash.isBlank();
+        if (hasPassword && !TokenUtils.checkPassword(currentPassword, storedHash)) {
             Errors.error(res, HttpStatus.SC_UNAUTHORIZED, "Invalid current password");
             return;
         }
