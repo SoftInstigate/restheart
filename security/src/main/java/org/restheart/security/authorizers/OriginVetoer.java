@@ -116,6 +116,20 @@ public class OriginVetoer implements Authorizer {
 
     @Override
     public boolean isAllowed(final Request<?> request) {
+        // Allow genuine CORS preflight through — the service handles CORS headers.
+        // A preflight is issued by the browser and carries no credentials, so it
+        // can't be a CSRF vector; the actual request (POST, GET, etc.) is checked
+        // instead. Vetoing it would be pointless anyway: browsers fail a preflight
+        // whose status is not 2xx, no matter which CORS headers it carries.
+        // Plain OPTIONS requests (no Origin, no Access-Control-Request-Method) are
+        // not preflights and stay subject to the check.
+        if (request.isOptions()
+                && request.getHeader("Origin") != null
+                && request.getHeader("Access-Control-Request-Method") != null) {
+            LOGGER.debug("originVetoer: CORS preflight accepted without checking the Origin header");
+            return true;
+        }
+
         if (ignoreLists != null && ignoreLists.match(request.getPath()) != null) {
             LOGGER.debug("originVetoer: request is accepted since path is in ignore list");
             return true;

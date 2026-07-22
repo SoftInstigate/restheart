@@ -74,6 +74,16 @@ public class OriginVetoerTest {
         return req;
     }
 
+    /** An OPTIONS request; a genuine CORS preflight also carries Access-Control-Request-Method. */
+    private Request<?> optionsRequestWith(String origin, String accessControlRequestMethod) {
+        var req = mock(Request.class);
+        when(req.getPath()).thenReturn("/some/path");
+        when(req.isOptions()).thenReturn(true);
+        when(req.getHeader("Origin")).thenReturn(origin);
+        when(req.getHeader("Access-Control-Request-Method")).thenReturn(accessControlRequestMethod);
+        return req;
+    }
+
     @Test
     void noOverride_usesStaticWhitelist() throws Exception {
         var vetoer = newVetoer(List.of("https://allowed.example.com"));
@@ -159,5 +169,28 @@ public class OriginVetoerTest {
         assertTrue(vetoer.isAllowed(requestWith("https://tenant.example.com", List.of("https://tenant.example.com"))));
         // non-whitelisted origin still denied
         assertFalse(vetoer.isAllowed(requestWith("https://other.example.com", List.of("https://tenant.example.com"))));
+    }
+
+    @Test
+    void corsPreflight_allowedEvenWithNonWhitelistedOrigin() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"), false);
+
+        // a preflight carries no credentials, so it can't be a CSRF vector: it is
+        // let through so the service can answer with the CORS headers, and the
+        // actual request is vetoed instead
+        assertTrue(vetoer.isAllowed(optionsRequestWith("https://not-allowed.example.com", "POST")));
+    }
+
+    @Test
+    void optionsWithoutPreflightHeaders_isStillChecked() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"), false);
+
+        // OPTIONS without Access-Control-Request-Method is not a preflight
+        assertFalse(vetoer.isAllowed(optionsRequestWith("https://not-allowed.example.com", null)));
+
+        // OPTIONS without Origin is not a preflight either — it never comes from a
+        // browser, so it stays subject to allow-missing-origin
+        assertFalse(vetoer.isAllowed(optionsRequestWith(null, null)));
+        assertFalse(vetoer.isAllowed(optionsRequestWith(null, "POST")));
     }
 }
