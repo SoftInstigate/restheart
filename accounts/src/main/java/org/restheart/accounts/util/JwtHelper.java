@@ -6,7 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.security.services.AuthCookie;
+import org.restheart.security.AuthCookie;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -93,6 +93,7 @@ public class JwtHelper {
                 .withIssuer(issuer)
                 .withIssuedAt(Instant.now())
                 .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
+                .withJWTId(java.util.UUID.randomUUID().toString())
                 .withArrayClaim("roles", roles.toArray(new String[0]));
 
         // authDb è sempre incluso (come in JwtTokenManager) — serve a JwtAuthDbVerifier
@@ -148,6 +149,7 @@ public class JwtHelper {
                 .withIssuer(issuer)
                 .withIssuedAt(Instant.now())
                 .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
+                .withJWTId(java.util.UUID.randomUUID().toString())
                 .withArrayClaim("roles", roles.toArray(new String[0]));
 
         if (extraClaims != null) {

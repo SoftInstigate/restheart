@@ -1,7 +1,7 @@
 package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.spi.DefaultMembershipProvider;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.ServiceRequest;

@@ -2,7 +2,7 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;

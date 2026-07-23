@@ -53,8 +53,8 @@ Feature: POST /auth/switch-team
     And request { "teamId": "#(secondTeamId)" }
     When method POST
     Then status 200
-    And match response.team == secondTeamId
-    And match response.role == 'member'
+    And match response.team._id == secondTeamId
+    And match response.team.role == 'member'
     And match responseHeaders['Set-Cookie'] != null
 
   # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ Feature: POST /auth/switch-team
     And request { "teamId": "#(originalTeamId)" }
     When method POST
     Then status 200
-    And match response.team == originalTeamId
+    And match response.team._id == originalTeamId
 
   # ---------------------------------------------------------------------------
   Scenario: verify DB — invite with existing user adds teams entry

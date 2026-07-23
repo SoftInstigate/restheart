@@ -4,12 +4,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -153,7 +154,8 @@ public class SwitchTeamService implements JsonService {
                 dbRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.<String, Object>of(conf.teamClaimName(), matched.teamId()),
+                java.util.Map.<String, Object>of(conf.teamClaimName(),
+                        TeamClaim.of(matched.teamId(), matched.role())),
                 null);
 
         // Deliver the reissued token per the `delivery` query parameter
@@ -161,10 +163,10 @@ public class SwitchTeamService implements JsonService {
         var delivery = TokenDelivery.resolve(
                 req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
 
-        // Response body
+        // Response body — team mirrors the { _id, role } claim shape
         var responseBody = new JsonObject();
-        responseBody.add(conf.teamClaimName(), JsonParser.parseString(BsonUtils.toJson(matched.teamId())));
-        responseBody.addProperty("role", matched.role());
+        responseBody.add(conf.teamClaimName(),
+                JsonParser.parseString(BsonUtils.toJson(TeamClaim.of(matched.teamId(), matched.role()))));
         if (delivery == TokenDelivery.Mode.BODY) {
             TokenDelivery.body(res, responseBody, conf, token);
         } else {

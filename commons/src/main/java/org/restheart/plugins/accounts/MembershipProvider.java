@@ -158,4 +158,65 @@ public interface MembershipProvider {
         return Optional.empty();
     }
 
+    /**
+     * Returns the members of the given team with display information denormalized
+     * from each member's user document. Called by {@code GET /auth/team/members}.
+     *
+     * @param teamId the team identifier
+     * @return a (possibly empty) list of {@link TeamMember}
+     */
+    default List<TeamMember> listTeamMembers(BsonValue teamId) {
+        throw new UnsupportedOperationException("listTeamMembers not implemented by this provider");
+    }
+
+    /**
+     * Creates an additional team for an already-registered user, assigns them the
+     * owner role, and sets it as their newly active membership. Unlike
+     * {@link #createInitialTeam(String, String)}, this may be called any number of
+     * times for the same user. Called by {@code POST /auth/teams}.
+     *
+     * @param userId   the user's identifier (email address); must already exist
+     * @param teamName the display name for the new team
+     * @return a {@link TeamRef} carrying the new team's ID and display name
+     */
+    default TeamRef createTeam(String userId, String teamName) {
+        throw new UnsupportedOperationException("createTeam not implemented by this provider");
+    }
+
+    /**
+     * Updates a team's own fields (name and/or description). Called by
+     * {@code PATCH /auth/team}.
+     *
+     * <p>Either parameter may be {@code null} to leave that field unchanged
+     * (partial update).
+     *
+     * @param teamId      the team identifier
+     * @param name        the new display name, or {@code null} to leave unchanged
+     * @param description the new description, or {@code null} to leave unchanged
+     */
+    default void updateTeam(BsonValue teamId, String name, String description) {
+        throw new UnsupportedOperationException("updateTeam not implemented by this provider");
+    }
+
+    /**
+     * Deletes a team, but only if it has no other members. Called by
+     * {@code DELETE /auth/team}.
+     *
+     * <p>Implementations must enforce the "no other members" invariant atomically
+     * server-side — a client-side pre-check (list members, see only the caller,
+     * then delete) is a race condition against a concurrent invite acceptance.
+     *
+     * <p>On success, implementations must also clear the caller's own membership
+     * pointer to this team (both {@code user.teams[]} and the active-team field,
+     * if it was active).
+     *
+     * @param userId the caller's identifier (email address); must be a member of {@code teamId}
+     * @param teamId the team to delete
+     * @return {@code true} if the team was deleted; {@code false} if it still has
+     *         other members (or no longer exists)
+     */
+    default boolean deleteTeam(String userId, BsonValue teamId) {
+        throw new UnsupportedOperationException("deleteTeam not implemented by this provider");
+    }
+
 }

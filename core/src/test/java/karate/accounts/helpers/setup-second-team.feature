@@ -22,7 +22,7 @@ Feature: setup second team for multi-team tests
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    * def secondTeamId = response.team
+    * def secondTeamId = response.team._id
     * def verifyToken = response.emailVerificationToken
 
     # 3. Verify email

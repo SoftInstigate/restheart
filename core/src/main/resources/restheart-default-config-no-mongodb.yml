@@ -174,6 +174,10 @@ originVetoer:
   whitelist:
     - https://restheart.org
     - http://localhost
+  # when true, requests with no Origin header (non-browser clients) are allowed;
+  # browser requests are still validated against the whitelist.
+  # Since 9.6 the default changed to true; set to false to restore pre-9.6 behavior.
+  allow-missing-origin: true
   # Optional paths to skip Origin header checks. Supports patterns like /{var}/path/*
   # ignore-paths:
   #   - /{tenant}/bucket.files/{id}/binary
@@ -289,6 +293,18 @@ oauthProtectedResourceMetadataService:
 oauthClientRegistrationService:
   enabled: false
 
+
+# ── Emails plugin (SMTP email sender) ────────────────────────────────────────
+# Requires the restheart-emails module on the classpath.
+# See https://restheart.org/docs/plugins/emails
+emails:
+  enabled: false
+  app-name: "My App"
+  sender-email: noreply@example.com
+  smtp-hostname: localhost
+  smtp-port: 465
+  smtp-username: null
+  smtp-password: null
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   enabled: false

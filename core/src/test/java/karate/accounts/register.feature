@@ -131,5 +131,7 @@ Feature: POST /auth/register
     Then status 200
     And match response.status == '#notpresent'
     And match response.roles contains '$unauthenticated'
-    And match response.team == '#notnull'
+    # active team is a { _id, role } object (9.6.0+)
+    And match response.team._id == '#notnull'
+    And match response.team.role == 'owner'
     And match response.emailVerificationToken == '#notnull'

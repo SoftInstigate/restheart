@@ -49,6 +49,7 @@ public class OriginVetoer implements Authorizer {
 
     private List<String> whitelist = null;
     private List<String> whitelistPatterns = null;
+    private boolean allowMissingOrigin = false;
     private PathTemplateMatcher<Boolean> ignoreLists = new PathTemplateMatcher<>();
 
     @Inject("config")
@@ -106,10 +107,29 @@ public class OriginVetoer implements Authorizer {
             this.ignoreLists = null;
             LOGGER.info("No ignoreLists defined for originVetoer, all paths are checked");
         }
+
+        this.allowMissingOrigin = argOrDefault(config, "allow-missing-origin", true);
+        if (this.allowMissingOrigin) {
+            LOGGER.info("allow-missing-origin enabled for originVetoer, requests without Origin header are allowed");
+        }
     }
 
     @Override
     public boolean isAllowed(final Request<?> request) {
+        // Allow genuine CORS preflight through — the service handles CORS headers.
+        // A preflight is issued by the browser and carries no credentials, so it
+        // can't be a CSRF vector; the actual request (POST, GET, etc.) is checked
+        // instead. Vetoing it would be pointless anyway: browsers fail a preflight
+        // whose status is not 2xx, no matter which CORS headers it carries.
+        // Plain OPTIONS requests (no Origin, no Access-Control-Request-Method) are
+        // not preflights and stay subject to the check.
+        if (request.isOptions()
+                && request.getHeader("Origin") != null
+                && request.getHeader("Access-Control-Request-Method") != null) {
+            LOGGER.debug("originVetoer: CORS preflight accepted without checking the Origin header");
+            return true;
+        }
+
         if (ignoreLists != null && ignoreLists.match(request.getPath()) != null) {
             LOGGER.debug("originVetoer: request is accepted since path is in ignore list");
             return true;
@@ -135,7 +155,16 @@ public class OriginVetoer implements Authorizer {
 
         final var origin = request.getHeader("Origin");
         if (origin == null) {
-            LOGGER.warn("request forbidden by originVetoer due to missing Origin header");
+            // per-request override takes precedence over static config
+            final Boolean overrideAllowMissing = request.attachedParam("override-origin-allow-missing");
+            final var effectiveAllowMissing = overrideAllowMissing != null ? overrideAllowMissing : this.allowMissingOrigin;
+
+            if (effectiveAllowMissing) {
+                LOGGER.debug("originVetoer: request allowed despite missing Origin header (allow-missing-origin)");
+                return true;
+            }
+
+            LOGGER.debug("originVetoer: request denied due to missing Origin header");
             return false;
         }
 
@@ -159,7 +188,7 @@ public class OriginVetoer implements Authorizer {
             }
         }
 
-        LOGGER.warn("request forbidden by originVetoer due to Origin header {} not in whitelist or patterns", origin);
+        LOGGER.debug("originVetoer: request denied due to Origin header {} not in whitelist or patterns", origin);
         return false;
     }
 

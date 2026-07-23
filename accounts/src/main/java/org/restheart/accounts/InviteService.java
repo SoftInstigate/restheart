@@ -2,18 +2,16 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
-import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
-import org.restheart.plugins.accounts.MembershipProvider;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -24,7 +22,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +67,8 @@ public class InviteService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -193,7 +190,7 @@ public class InviteService implements JsonService {
         // 9. Send invite email
         //    New users: link to /auth/activate (set password + activate)
         //    Existing users: link to /invitations/accept (accept with current session)
-        if (ermes != null && ermes.isEnabled()) {
+        if (emails != null && emails.isEnabled()) {
             try {
                 var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
                 var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
@@ -223,7 +220,7 @@ public class InviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite sent to <{}> by {} (team={}, newUser={})", invitedEmail, inviterName, callerTeam, isNewUser);
@@ -231,7 +228,7 @@ public class InviteService implements JsonService {
                 LOGGER.error("Failed to send invite email to <{}>", invitedEmail, e);
             }
         } else {
-            LOGGER.warn("Ermes disabled — invite email not sent to <{}>", invitedEmail);
+            LOGGER.warn("email-sender disabled — invite email not sent to <{}>", invitedEmail);
         }
 
         // 10. Respond 201

@@ -3,13 +3,13 @@ package org.restheart.accounts;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonValue;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -60,8 +60,8 @@ public class ResendInviteService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -159,7 +159,7 @@ public class ResendInviteService implements JsonService {
             LOGGER.warn("Could not load team for team '{}': {}", teamNameFallback, e.getMessage());
         }
 
-        if (ermes != null && ermes.isEnabled()) {
+        if (emails != null && emails.isEnabled()) {
             try {
                 var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
                 var link = RequestOverrides.frontendUrl(req, conf).replaceAll("/$", "")
@@ -188,7 +188,7 @@ public class ResendInviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    ermes.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (team={})",
@@ -197,7 +197,7 @@ public class ResendInviteService implements JsonService {
                 LOGGER.error("Failed to re-send invite email to <{}>", email, e);
             }
         } else {
-            LOGGER.warn("Ermes disabled — invite email not re-sent to <{}>", email);
+            LOGGER.warn("email-sender disabled — invite email not re-sent to <{}>", email);
         }
 
         // 10. Respond 200

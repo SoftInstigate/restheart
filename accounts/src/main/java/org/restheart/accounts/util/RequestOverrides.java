@@ -1,8 +1,10 @@
 package org.restheart.accounts.util;
 
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.oauth.OAuthConfig;
 import org.restheart.exchange.ServiceRequest;
+
+import java.util.List;
 
 /**
  * Reads per-request override parameters and returns the effective values,
@@ -52,19 +54,47 @@ import org.restheart.exchange.ServiceRequest;
  *     <td>{@code null}</td>
  *   </tr>
  *   <tr>
- *     <td>{@code override-accounts-oauth-google-enabled}</td>
- *     <td>Whether Google OAuth is enabled for this team</td>
- *     <td>{@code false} if not set</td>
+ *     <td>{@code override-accounts-oauth-api-base-url}</td>
+ *     <td>Base URL this node is reachable at, used to build the OAuth {@code redirect_uri}</td>
+ *     <td>{@link OAuthConfig#apiBaseUrl()}</td>
  *   </tr>
  *   <tr>
- *     <td>{@code override-accounts-oauth-google-client-id}</td>
- *     <td>Google OAuth client ID for this team</td>
+ *     <td>{@code override-accounts-oauth-frontend-success-url}</td>
+ *     <td>Where the browser lands after a successful OAuth login</td>
+ *     <td>{@link OAuthConfig#frontendSuccessUrl()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-oauth-frontend-error-url}</td>
+ *     <td>Where the browser lands after a failed OAuth login</td>
+ *     <td>{@link OAuthConfig#frontendErrorUrl()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-oauth-{provider}-enabled}</td>
+ *     <td>Whether OAuth via {@code {provider}} (e.g. {@code google}, {@code github}) is enabled
+ *         for this team</td>
+ *     <td>{@code true} if client-id/client-secret overrides are set, otherwise not applicable</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-oauth-{provider}-client-id}</td>
+ *     <td>OAuth client ID for this team, for the given provider</td>
  *     <td>{@code null}</td>
  *   </tr>
  *   <tr>
- *     <td>{@code override-accounts-oauth-google-client-secret}</td>
- *     <td>Google OAuth client secret for this team</td>
+ *     <td>{@code override-accounts-oauth-{provider}-client-secret}</td>
+ *     <td>OAuth client secret for this team, for the given provider</td>
  *     <td>{@code null}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-oauth-{provider}-scope}</td>
+ *     <td>Space-separated OAuth scopes requested for this team, for the given provider</td>
+ *     <td>the provider's static scope (YAML), or its well-known default
+ *         (see {@link OAuthConfig#defaultScope(String)})</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-users-unrestricted-roles}</td>
+ *     <td>Roles exempt from the {@code /users} self-service write restriction
+ *         (see {@code AccountsInitializer})</td>
+ *     <td>{@link AccountsConfigData#usersUnrestrictedRoles()}</td>
  *   </tr>
  * </table>
  *
@@ -94,6 +124,13 @@ import org.restheart.exchange.ServiceRequest;
  *   }
  * }
  * }</pre>
+ * <p>{@code override-accounts-oauth-api-base-url} is deliberately <em>not</em> part of this
+ * document: on a multi-tenant node every team is served on a different hostname, so the
+ * interceptor should derive it from the incoming request (scheme + host) rather than store it —
+ * a stored value could not be correct for more than one team. Likewise
+ * {@code override-accounts-oauth-frontend-success-url} / {@code -error-url} are typically derived
+ * from the team's own {@code frontend-app-url} rather than stored separately, unless the team
+ * needs a distinct post-OAuth destination.
  *
  * <h2>Single-team usage</h2>
  * <p>When no interceptor attaches override params, all methods return the values from
@@ -127,9 +164,12 @@ public final class RequestOverrides {
 
     // ── Per-team OAuth overrides ─────────────────────────────────────────────
 
-    public static final String OAUTH_GOOGLE_ENABLED       = "override-accounts-oauth-google-enabled";
-    public static final String OAUTH_GOOGLE_CLIENT_ID     = "override-accounts-oauth-google-client-id";
-    public static final String OAUTH_GOOGLE_CLIENT_SECRET = "override-accounts-oauth-google-client-secret";
+    /** Base URL this node is reachable at, used to build the OAuth {@code redirect_uri}. */
+    public static final String OAUTH_API_BASE_URL = "override-accounts-oauth-api-base-url";
+    /** Where the browser lands after a successful OAuth login. */
+    public static final String OAUTH_FRONTEND_SUCCESS_URL = "override-accounts-oauth-frontend-success-url";
+    /** Where the browser lands after a failed OAuth login. */
+    public static final String OAUTH_FRONTEND_ERROR_URL = "override-accounts-oauth-frontend-error-url";
 
     // ── Per-team role override ──────────────────────────────────────────────
 
@@ -138,6 +178,21 @@ public final class RequestOverrides {
 
     /** Team role for the user who creates a team (override for multi-team). */
     public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
+
+    // ── Users self-service write restriction override ───────────────────────
+
+    /** Roles exempt from the {@code /users} self-service write restriction (override for multi-team). */
+    public static final String USERS_UNRESTRICTED_ROLES = "override-accounts-users-unrestricted-roles";
+
+    /**
+     * Whether Sign-up Management is enabled for this tenant (override for multi-team).
+     * When explicitly {@code false}, the {@code /users} self-service write restriction
+     * is skipped entirely — a tenant that never opted into restheart-accounts never
+     * opted into its opinions on {@code /users}. Must be set before authentication
+     * (e.g. {@code REQUEST_BEFORE_EXCHANGE_INIT}), since the veto is evaluated as part
+     * of authorization, before any {@code REQUEST_AFTER_AUTH} interceptor runs.
+     */
+    public static final String SIGNUP_MGMT_ENABLED = "override-accounts-signup-mgmt-enabled";
 
     private RequestOverrides() {}
 
@@ -201,18 +256,74 @@ public final class RequestOverrides {
         return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
+    /** Effective roles exempt from the {@code /users} self-service write restriction. */
+    public static List<String> usersUnrestrictedRoles(ServiceRequest<?> req, AccountsConfigData conf) {
+        return list(req, USERS_UNRESTRICTED_ROLES, conf.usersUnrestrictedRoles());
+    }
+
     /**
-     * Per-team Google OAuth config, or {@code null} if not overridden.
-     * When non-null, this takes precedence over the static {@link OAuthConfig}.
+     * Whether Sign-up Management is enabled for this tenant. Defaults to {@code true}
+     * (restriction fully enforced) unless a deployment-layer interceptor explicitly
+     * attaches {@code false}.
      */
-    public static OAuthConfig.ProviderConfig oauthGoogle(ServiceRequest<?> req) {
-        var clientId     = str(req, OAUTH_GOOGLE_CLIENT_ID,     null);
-        var clientSecret = str(req, OAUTH_GOOGLE_CLIENT_SECRET, null);
+    public static boolean signupMgmtEnabled(ServiceRequest<?> req, AccountsConfigData conf) {
+        return bool(req, SIGNUP_MGMT_ENABLED, true);
+    }
+
+    /** Effective OAuth API base URL, used to build the {@code redirect_uri} sent to providers. */
+    public static String oauthApiBaseUrl(ServiceRequest<?> req, OAuthConfig conf) {
+        return str(req, OAUTH_API_BASE_URL, conf.apiBaseUrl());
+    }
+
+    /** Effective post-login redirect URL on OAuth success. */
+    public static String oauthFrontendSuccessUrl(ServiceRequest<?> req, OAuthConfig conf) {
+        return str(req, OAUTH_FRONTEND_SUCCESS_URL, conf.frontendSuccessUrl());
+    }
+
+    /** Effective post-login redirect URL on OAuth failure. */
+    public static String oauthFrontendErrorUrl(ServiceRequest<?> req, OAuthConfig conf) {
+        return str(req, OAUTH_FRONTEND_ERROR_URL, conf.frontendErrorUrl());
+    }
+
+    /**
+     * Per-team OAuth provider config, or {@code null} if not overridden for the given
+     * provider. When non-null, this takes precedence over the static {@link OAuthConfig}
+     * for that provider.
+     *
+     * <p>Provider-agnostic: reads {@code override-accounts-oauth-{provider}-*}, so it works
+     * for any provider name (built-in or custom), not just {@code "google"}. Requires both
+     * {@code client-id} and {@code client-secret} to be set to produce a result — a partial
+     * override (e.g. only {@code enabled}) is treated as "not overridden".
+     *
+     * <p>{@code scope}, when not itself overridden, falls back to the provider's static scope
+     * (from {@code oauthConfig.providers.{provider}.scope} in YAML) or, if the provider has no
+     * static entry at all, to its well-known default ({@link OAuthConfig#defaultScope(String)})
+     * — a generalized override cannot assume every provider wants the same scope.
+     *
+     * @param req          the incoming request
+     * @param providerName provider name (case-insensitive), e.g. {@code "google"}, {@code "github"}
+     * @param staticConfig the static {@link OAuthConfig}, consulted only for the {@code scope} fallback
+     */
+    public static OAuthConfig.ProviderConfig oauthProvider(ServiceRequest<?> req, String providerName,
+            OAuthConfig staticConfig) {
+        var name = providerName.toLowerCase();
+
+        var clientId     = str(req, oauthProviderKey(name, "client-id"),     null);
+        var clientSecret = str(req, oauthProviderKey(name, "client-secret"), null);
         if (clientId == null || clientSecret == null) return null;
 
-        var enabled = bool(req, OAUTH_GOOGLE_ENABLED, true); // if creds are set, assume enabled
-        return new OAuthConfig.ProviderConfig("google", enabled, clientId, clientSecret,
-                "openid email profile");
+        var enabled = bool(req, oauthProviderKey(name, "enabled"), true); // if creds are set, assume enabled
+
+        var staticProviderConf = staticConfig != null ? staticConfig.provider(name) : null;
+        var defaultScope = staticProviderConf != null ? staticProviderConf.scope() : OAuthConfig.defaultScope(name);
+        var scope = str(req, oauthProviderKey(name, "scope"), defaultScope);
+
+        return new OAuthConfig.ProviderConfig(name, enabled, clientId, clientSecret, scope);
+    }
+
+    /** Builds the {@code override-accounts-oauth-{provider}-{suffix}} attribute name. */
+    private static String oauthProviderKey(String providerName, String suffix) {
+        return "override-accounts-oauth-" + providerName + "-" + suffix;
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
@@ -226,6 +337,15 @@ public final class RequestOverrides {
         var v = req.attachedParam(key);
         if (v instanceof Boolean b) return b;
         if (v instanceof String  s) return Boolean.parseBoolean(s);
+        return defaultValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> list(ServiceRequest<?> req, String key, List<String> defaultValue) {
+        var v = req.attachedParam(key);
+        if (v instanceof List<?> l && !l.isEmpty()) {
+            return (List<String>) l;
+        }
         return defaultValue;
     }
 }

@@ -94,10 +94,10 @@ Feature: OAuth activation for invited users
     * def payload = JSON.parse(payloadJson)
     * karate.log('JWT payload:', payload)
     * match payload.sub == inviteEmail
-    # team claim is now a BSON-extended-JSON object {"$oid":"..."} matching the stored ObjectId
+    # team claim is now a { _id: {"$oid":"..."}, role: "..." } object (9.6.0+) mirroring user.team
     * def teamClaim = payload.team
-    * def teamStr = (typeof teamClaim == 'object') ? teamClaim['$oid'] : teamClaim
-    * match teamStr == '#string'
+    * match teamClaim._id['$oid'] == '#string'
+    * match teamClaim.role == '#string'
 
     # 6. The fragment token must be the same JWT as the cookie, with token_type=Bearer
     * def fragment = callbackLocation.split('#')[1]
@@ -113,10 +113,7 @@ Feature: OAuth activation for invited users
     And match response.roles contains 'user'
     And match response.inviteToken == '#notpresent'
     And match response.inviteCreatedAt == '#notpresent'
-    And match response.consents.termsVersion == '#notnull'
-    And match response.consents.privacyVersion == '#notnull'
-    And match response.consents.acceptedAt == '#notnull'
-    And match response.consents.ip == '#notnull'
+    And match response.consents == '#notpresent'
 
     # auth_invitations entry removed after OAuth activation
     Given path '/auth_invitations'
@@ -197,6 +194,89 @@ Feature: OAuth activation for invited users
     When method GET
     Then status 200
     And match response.roles contains 'user'
+
+  # ---------------------------------------------------------------------------
+  Scenario: per-team OAuth overrides are honored on BOTH authorize and callback
+  # ---------------------------------------------------------------------------
+
+    # oauthOverrideInterceptor (test-plugins) attaches override-accounts-oauth-*
+    # when ?_oauth-override=1 is present — simulates a deployment-layer interceptor
+    # like restheart-cloud's TeamConfigInterceptor re-deriving per-tenant overrides
+    # on every request. Sentinel values (overridden-client-id / overridden-scope /
+    # http://localhost:8080/overridden) are distinct from the static test provider
+    # config (test-client / email / http://localhost:8080) — see
+    # OAuthOverrideInterceptor for the exact values.
+
+    * def overrideEmail = 'oauth-override-' + java.util.UUID.randomUUID() + '@example.com'
+
+    # 1. Authorize — TestOAuthProvider echoes client_id/scope into the fake
+    #    authorization URL, so we can see the OVERRIDDEN values were resolved
+    Given path '/auth/oauth/authorize/test'
+    And param _oauth-override = '1'
+    When method GET
+    Then status 307
+    * def location = responseHeaders['Location'][0]
+    * match location contains 'client_id=overridden-client-id'
+    * match location contains 'scope=overridden-scope'
+    * def state = location.split('state=')[1].split('&')[0]
+
+    # 2. Callback — MUST carry the same ?_oauth-override=1 marker: a real
+    #    per-tenant interceptor re-derives overrides from the request (e.g.
+    #    hostname) independently on each leg, not from the OAuth state. This is
+    #    the leg OAuthService.handleCallback previously ignored entirely — see
+    #    restheart#653.
+    Given path '/auth/oauth/callback/test'
+    And param _oauth-override = '1'
+    And param code = 'test-' + overrideEmail
+    And param state = state
+    When method GET
+    Then status 307
+    * def setCookieHeader = responseHeaders['Set-Cookie'][0]
+    * match setCookieHeader contains 'rh_auth=Bearer_'
+
+    # 3. TestOAuthProvider.fetchUserProfile echoes the clientId/callbackUrl it
+    #    actually received into fields persisted on the user document — proves
+    #    the OVERRIDDEN credentials and api-base-url reached the callback's
+    #    token-exchange call, not the static test-client / localhost:8080.
+    Given path '/users/' + overrideEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.socialAuths[0].providerId contains 'overridden-client-id'
+    And match response.profile.avatarUrl == 'http://localhost:8080/overridden/auth/oauth/callback/test'
+
+  # ---------------------------------------------------------------------------
+  Scenario: without the override marker, OAuth still resolves the static provider config
+  # ---------------------------------------------------------------------------
+
+    # Regression pin for the scenario above: proves the sentinel values asserted
+    # there really come from the override, not from a change to the static/default
+    # provider config or to TestOAuthProvider's echoing behavior.
+
+    * def plainEmail = 'oauth-plain-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/oauth/authorize/test'
+    When method GET
+    Then status 307
+    * def location = responseHeaders['Location'][0]
+    * match location contains 'client_id=test-client'
+    * match location contains 'scope=email'
+    * def state = location.split('state=')[1].split('&')[0]
+
+    Given path '/auth/oauth/callback/test'
+    And param code = 'test-' + plainEmail
+    And param state = state
+    When method GET
+    Then status 307
+
+    Given path '/users/' + plainEmail
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.socialAuths[0].providerId contains 'test-client'
+    And match response.profile.avatarUrl == 'http://localhost:8080/auth/oauth/callback/test'
 
   # ---------------------------------------------------------------------------
   Scenario: invalid CSRF state (no "." separator) — callback returns redirect to error URL

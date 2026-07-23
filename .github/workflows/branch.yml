@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         mongodb-version: ["7.0", "8.0", "8.3"]
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK 25

@@ -1,4 +1,4 @@
-package org.restheart.accounts.config;
+package org.restheart.plugins.accounts;
 
 import java.util.List;
 
@@ -7,8 +7,12 @@ import java.util.List;
  * restheart-accounts plugins (signup, email verification, invitations,
  * password reset, OAuth).
  *
- * <p>Produced by {@link AccountsConfig} and injected via
+ * <p>Produced by a provider in {@code restheart-accounts} and injected via
  * {@code @Inject("accountsConfig")}.
+ *
+ * <p>This record lives in {@code restheart-commons} so that downstream
+ * modules can depend only on {@code restheart-commons} at compile time,
+ * without pulling in the {@code restheart-accounts} module.
  */
 public record AccountsConfigData(
 
@@ -143,7 +147,7 @@ public record AccountsConfigData(
     /**
      * List of request attached-parameter names that should be propagated as JWT claims.
      * Mirrors {@code jwtTokenManager.account-properties-claims} and is applied
-     * by {@link org.restheart.accounts.util.JwtHelper} when issuing tokens from
+     * by {@code JwtHelper} when issuing tokens from
      * accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
      *
      * <p>Example: {@code [srvNode, customClaim]}.
@@ -151,6 +155,22 @@ public record AccountsConfigData(
      * <p>{@code null} or empty list → no additional properties are propagated
      * (only {@code authDb} and explicit extra claims are included).
      */
-    List<String> accountPropertiesClaims
+    List<String> accountPropertiesClaims,
+
+    // ── Users self-service write restriction ────────────────────────────────
+
+    /**
+     * Roles exempt from the {@code /users} self-service write restriction that
+     * {@code accountsInitializer} enforces unconditionally (generic REST PATCH to
+     * {@code /users} limited to {@code profile.*}; PUT/POST always blocked).
+     *
+     * <p>Accounts belonging to one of these roles can create, replace, or PATCH
+     * any field of any user document via the generic MongoDB REST resource —
+     * e.g. an admin console role that manages {@code roles}/{@code teams} directly.
+     *
+     * <p>{@code null} or empty list → no role is exempt, the restriction applies
+     * to every caller.
+     */
+    List<String> usersUnrestrictedRoles
 
 ) {}

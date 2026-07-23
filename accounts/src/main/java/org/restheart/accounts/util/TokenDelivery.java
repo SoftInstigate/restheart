@@ -3,7 +3,7 @@ package org.restheart.accounts.util;
 import com.google.gson.JsonObject;
 
 import io.undertow.util.HttpString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.security.services.TokenRedirectHelper;

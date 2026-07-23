@@ -19,19 +19,23 @@
  */
 package org.restheart.cache.impl;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 
 /**
  * A high-performance loading cache implementation based on the Caffeine caching library.
@@ -122,8 +126,60 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
     }
 
     /**
+     * Creates a new CaffeineLoadingCache with the specified configuration, loader function,
+     * and a removal listener.
+     *
+     * <p>This constructor creates a cache similar to {@link #CaffeineLoadingCache(long, EXPIRE_POLICY, long, Function)}
+     * but with an additional removal listener that is notified when entries are removed from the
+     * cache due to eviction, expiration, or explicit removal. This is useful for releasing
+     * resources (e.g. connections, thread pools) held by cached values.</p>
+     *
+     * <p>The removal listener is called asynchronously and should complete quickly to avoid
+     * blocking cache operations. The listener receives entries containing the key and the
+     * optional value that was removed.</p>
+     *
+     * @param size the maximum number of entries the cache can hold
+     * @param expirePolicy the expiration policy determining when entries are automatically removed
+     * @param ttl the time-to-live in milliseconds; if <= 0, time-based expiration is disabled
+     * @param loader the function used to compute values for missing keys; may return null
+     * @param remover the consumer to invoke when entries are removed from the cache
+     * @throws NullPointerException if loader or remover is null
+     */
+    public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader, Consumer<Map.Entry<K, Optional<V>>> remover) {
+        var builder = Caffeine.newBuilder();
+
+        builder.maximumSize(size);
+
+        if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_WRITE) {
+            builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
+        } else if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_READ) {
+            builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
+        }
+
+        wrapped = builder
+            .removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) ->
+                remover.accept(new AbstractMap.SimpleEntry<>(k, v)))
+            .build(new CacheLoader<K, Optional<V>>() {
+            @Override
+            public Optional<V> load(K key) throws Exception {
+                return Optional.ofNullable(loader.apply(key));
+            }
+
+            @Override
+            public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
+                var ret = new HashMap<K, Optional<V>>();
+                keys.forEach(key -> {
+                    ret.put(key, Optional.ofNullable(loader.apply(key)));
+                });
+
+                return ret;
+            }
+        });
+    }
+
+    /**
      * {@inheritDoc}
-     * 
+     *
      * <p>This implementation returns the cached value immediately if present, without triggering
      * the loader. If the key is not present in the cache, {@code null} is returned. To trigger
      * automatic loading, use {@link #getLoading(Object)} instead.</p>

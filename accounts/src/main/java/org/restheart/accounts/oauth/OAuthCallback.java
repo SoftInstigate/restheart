@@ -8,10 +8,11 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.accounts.AccountsService;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.Request;
@@ -55,7 +56,9 @@ import static java.util.function.Predicate.not;
  *   <li>Issue JWT, set the auth cookie ({@code conf.cookieName()}), and redirect to
  *       {@code frontendSuccessUrl} with the token also appended as a URL fragment
  *       ({@code #access_token=...}, via {@link TokenRedirectHelper}) so kit-based
- *       frontends can pick it up without relying on the cookie</li>
+ *       frontends can pick it up without relying on the cookie. New-user signups also
+ *       get {@code ?flow=signup} in the query string — the same one-shot "welcome banner"
+ *       marker used by email verification</li>
  * </ol>
  *
  * <p>On any error the browser is redirected to {@code frontendErrorUrl}.
@@ -123,7 +126,7 @@ public class OAuthCallback implements StringService {
         // Extract provider from path
         var parts = req.getPath().split("/");
         if (parts.length < 5) {
-            redirectError(res, "Invalid callback path");
+            redirectError(res, req, "Invalid callback path");
             return;
         }
         var provider = parts[4].toLowerCase();
@@ -132,7 +135,7 @@ public class OAuthCallback implements StringService {
         var errorParam = req.getQueryParameters().get("error");
         if (errorParam != null && !errorParam.isEmpty()) {
             LOGGER.warn("OAuth provider returned error: {}", errorParam.getFirst());
-            redirectError(res, "Provider error: " + errorParam.getFirst());
+            redirectError(res, req, "Provider error: " + errorParam.getFirst());
             return;
         }
 
@@ -140,11 +143,11 @@ public class OAuthCallback implements StringService {
         var stateParam = req.getQueryParameters().get("state");
 
         if (codeParam == null || codeParam.isEmpty()) {
-            redirectError(res, "Missing authorization code");
+            redirectError(res, req, "Missing authorization code");
             return;
         }
         if (stateParam == null || stateParam.isEmpty()) {
-            redirectError(res, "Missing state parameter");
+            redirectError(res, req, "Missing state parameter");
             return;
         }
 
@@ -153,7 +156,7 @@ public class OAuthCallback implements StringService {
 
         try {
             // 1. Exchange code + verify state → user profile + invite context
-            var callbackResult = oauthService.handleCallback(provider, code, state);
+            var callbackResult = oauthService.handleCallback(provider, code, state, req);
             var profile        = callbackResult.profile();
             var email          = profile.getString("email").getValue();
 
@@ -207,13 +210,14 @@ public class OAuthCallback implements StringService {
                     var jwtToken = jwt.issueToken(email, activatedRoles,
                             RequestOverrides.db(req, conf),
                             req.attachedParams(),
-                            java.util.Map.<String, Object>of(conf.teamClaimName(), membership.get().teamId()),
+                            java.util.Map.<String, Object>of(conf.teamClaimName(),
+                                    TeamClaim.of(membership.get().teamId(), membership.get().role())),
                             null);
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
                 }
                 LOGGER.info("OAuth login denied for invited user <{}>: activateViaOAuth returned empty", email);
-                redirectError(res, "Account is pending activation");
+                redirectError(res, req, "Account is pending activation");
                 return;
             }
 
@@ -223,7 +227,7 @@ public class OAuthCallback implements StringService {
                 var inviteOpt = db.findInvitationByEmailAndToken(email, pendingInviteToken);
                 if (inviteOpt.isEmpty()) {
                     LOGGER.warn("OAuth invite acceptance failed: no valid invitation for <{}> with the supplied token", email);
-                    redirectError(res, "Invalid or expired invitation token");
+                    redirectError(res, req, "Invalid or expired invitation token");
                     return;
                 }
                 var invite = inviteOpt.get();
@@ -237,11 +241,13 @@ public class OAuthCallback implements StringService {
 
                 var roles = extractRoles(user);
                 var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
-                var activeTeam = activeMembership.map(m -> m.teamId()).orElse(teamId);
+                var teamClaim = activeMembership
+                        .map(m -> TeamClaim.of(m.teamId(), m.role()))
+                        .orElseGet(() -> TeamClaim.of(teamId, role));
                 var jwtToken = jwt.issueToken(email, roles,
                         RequestOverrides.db(req, conf),
                         req.attachedParams(),
-                        java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
+                        java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
                         null);
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
@@ -250,20 +256,22 @@ public class OAuthCallback implements StringService {
             // 4. Issue JWT + set cookie for normal / non-activated users
             var roles  = extractRoles(user);
             var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
-            var activeTeam         = activeMembership.map(m -> m.teamId()).orElse(null);
+            var extraClaims = new java.util.HashMap<String, Object>();
+            activeMembership.ifPresent(m ->
+                    extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
             var jwtToken = jwt.issueToken(email, roles,
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
-                    java.util.Map.<String, Object>of(conf.teamClaimName(), activeTeam),
+                    extraClaims,
                     null);
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 
         } catch (OAuthService.OAuthException e) {
             LOGGER.warn("OAuth callback error ({}): {}", provider, e.getMessage());
-            redirectError(res, e.getMessage());
+            redirectError(res, req, e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Unexpected error in OAuth callback ({})", provider, e);
-            redirectError(res, "Internal error");
+            redirectError(res, req, "Internal error");
         }
     }
 
@@ -285,8 +293,10 @@ public class OAuthCallback implements StringService {
 
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
 
+        // `flow=signup` doubles as the one-shot "welcome banner" marker also used by
+        // EmailVerificationService, so both signup paths signal the frontend the same way.
         var query   = flow != null ? "?flow=" + flow : "";
-        var baseUrl = oauthConfig.frontendSuccessUrl() + query;
+        var baseUrl = RequestOverrides.oauthFrontendSuccessUrl(req, oauthConfig) + query;
         var location = delivery == TokenDelivery.Mode.COOKIE
                 ? baseUrl
                 : TokenDelivery.fragmentUrl(baseUrl, conf, jwtToken);
@@ -407,9 +417,10 @@ public class OAuthCallback implements StringService {
         return parts.length > 1 ? parts[1] : "";
     }
 
-    private void redirectError(StringResponse res, String reason) throws Exception {
-        var sep = oauthConfig.frontendErrorUrl().contains("?") ? "&" : "?";
-        var url = oauthConfig.frontendErrorUrl() + sep + "reason="
+    private void redirectError(StringResponse res, StringRequest req, String reason) throws Exception {
+        var frontendErrorUrl = RequestOverrides.oauthFrontendErrorUrl(req, oauthConfig);
+        var sep = frontendErrorUrl.contains("?") ? "&" : "?";
+        var url = frontendErrorUrl + sep + "reason="
                 + URLEncoder.encode(reason, StandardCharsets.UTF_8);
         res.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
         res.getHeaders().put(Headers.LOCATION, url);
