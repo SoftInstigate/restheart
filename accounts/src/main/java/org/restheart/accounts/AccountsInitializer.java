@@ -7,6 +7,7 @@ import org.bson.Document;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -62,6 +64,35 @@ public class AccountsInitializer implements Initializer {
     // of whatever ACL the consuming application configures.
     private static final BsonRequestWhitelistPredicate PROFILE_ONLY_WHITELIST =
             new BsonRequestWhitelistPredicate(new String[]{"profile"});
+
+    /** ACL role carried by a registered-but-not-yet-verified account (see RegisterService). */
+    private static final String UNAUTHENTICATED_ROLE = "$unauthenticated";
+
+    // Accounts services that require a *verified* account. A registered-but-unverified
+    // user has roles == ["$unauthenticated"] yet is a real, authenticatable principal
+    // (Basic auth) that already owns its initial team, so it passes both authentication
+    // and every membership-role check ("owner"). These services must not be reachable
+    // until the email is verified — enforced centrally by the veto in init().
+    //
+    // Matched by plugin *name* (isHandledBy), not URL: the defaultURI of each service can
+    // be overridden by configuration, but its registered name is fixed — so this stays
+    // correct regardless of how a deployment remaps the /auth/* paths.
+    //
+    // MAINTENANCE: any new accounts service that requires a verified account MUST be added
+    // here (the verification gate lives only in this set — there is no per-handler check).
+    private static final Set<String> VERIFIED_ONLY_SERVICES = Set.of(
+            "changePasswordService",
+            "acceptInviteService",
+            "listTeamMembersService",
+            "listInvitationsService",
+            "removeMemberService",
+            "getTeamsService",
+            "inviteService",
+            "teamService",
+            "updateProfileService",
+            "resendInviteService",
+            "updateMemberRoleService",
+            "switchTeamService");
 
     @Override
     public void init() {
@@ -119,6 +150,22 @@ public class AccountsInitializer implements Initializer {
                 return true;
             }
             return false;
+        });
+
+        // Verification gate: a registered-but-unverified account (role $unauthenticated,
+        // authenticated via Basic auth) must not reach the verified-only accounts services.
+        // Those services register their ACL allow-rules on path+method only — never on role —
+        // so without this veto such an account would pass authorization and every
+        // membership-role check (it genuinely is its team's "owner"), letting it act on the
+        // platform before confirming its email. Public flows (register, verify, activate,
+        // forgot/reset-password, invitation lookup, OAuth) are absent from VERIFIED_ONLY_SERVICES
+        // and remain reachable.
+        aclRegistry.registerVeto(r -> {
+            if (!(r instanceof ServiceRequest<?> sr)) return false;
+            if (!sr.isAuthenticated()) return false;                    // anonymous: handled by auth requirements
+            if (!sr.isAccountInRole(UNAUTHENTICATED_ROLE)) return false; // verified account: unrestricted
+            if (sr.getMethod() == METHOD.OPTIONS) return false;         // never block CORS preflight
+            return VERIFIED_ONLY_SERVICES.stream().anyMatch(sr::isHandledBy);
         });
 
         var database = mclient.getDatabase(conf.db());
