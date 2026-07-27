@@ -2,8 +2,6 @@ name: Snapshot Release
 
 on:
   push:
-    branches:
-      - "*" # All branches for snapshot builds
     tags-ignore:
       - "*" # Ignore all tags
     paths:
