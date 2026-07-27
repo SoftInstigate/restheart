@@ -99,6 +99,21 @@
       predicate: path-prefix[path="/auth/invite"] or path-prefix[path="/auth/resend-invite"]
       priority: 100
 
+    # 9.6.0: proves ACL gating by the active team role carried in user.team.role.
+    # System role is `user` for every verified accounts user; the predicate refines
+    # it to only those whose ACTIVE team role is `owner` (via @user.team.role).
+    # Exercised by team-role-acl.feature.
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/team-partitioned"]
+        and method[value="POST"]
+        and equals[@user.team.role, "owner"]
+      priority: 100
+      mongo:
+        allowWriteMode: true
+        mergeRequest: >
+          {"team": "@user.team._id"}
+
     - role: $unauthenticated
       predicate: path[path="/auth/invitation"] and method[value="GET"]
       priority: 100
@@ -328,6 +343,7 @@
 /authTokenService:
   enabled: true
   uri: /token
+  redirect-url: "http://localhost:8080/secho"
 
 /oauthAuthorizationServerMetadataService:
   enabled: true
@@ -391,7 +407,7 @@
 /accountsConfig/enabled: true
 /accountsConfig/db: restheart-test
 /accountsConfig/account-properties-claims:
-  - tenants
+  - teams
 /accountsConfig/app-name: TestApp
 /accountsConfig/jwt-ttl: 15
 /accountsConfig/cookie-domain: localhost
@@ -399,6 +415,10 @@
 /accountsConfig/frontend-app-url: http://localhost:4200/app
 /accountsConfig/terms-version: "1.0"
 /accountsConfig/privacy-version: "1.0"
+# 'admin' is exempt from accountsInitializer's /users self-service write restriction —
+# used by users-write-restriction.feature to test the bypass path.
+/accountsConfig/users-unrestricted-roles:
+  - admin
 
 /accountsService/enabled: true
 /accountsInitializer/enabled: true
@@ -410,21 +430,30 @@
 /activateService/enabled: true
 /inviteService/enabled: true
 /resendInviteService/enabled: true
-/getTenantsService/enabled: true
-/switchTenantService/enabled: true
+/getTeamsService/enabled: true
+/switchTeamService/enabled: true
 /acceptInviteService/enabled: true
 /invitationInfoService/enabled: true
 /removeMemberService/enabled: true
 /updateMemberRoleService/enabled: true
+/listTeamMembersService/enabled: true
+/teamService/enabled: true
+/updateProfileService/enabled: true
+/changePasswordService/enabled: true
 /tokenFailedAuthInterceptor/enabled: true
 
-/ermes/enabled: true
+# Test interceptor: attaches override-users-db when ?_db-override=<db> is present.
+# Used by db-override-membership.feature to verify DefaultMembershipProvider
+# resolves the database per-request. Does not affect other tests.
+/dbOverrideInterceptor/enabled: true
+
+/emails/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
-/ermes/smtpHostname: localhost
-/ermes/smtpPort: 25
-/ermes/smtpUsername: test
-/ermes/smtpPassword: test
-/ermes/senderEmail: noreply@test.example.com
+/emails/smtp-hostname: localhost
+/emails/smtp-port: 25
+/emails/smtp-username: test
+/emails/smtp-password: test
+/emails/sender-email: noreply@test.example.com
 
 /oauthConfig/enabled: true
 /oauthConfig/api-base-url: http://localhost:8080
@@ -439,3 +468,8 @@
 /oauthInitiator/enabled: true
 /oauthCallback/enabled: true
 /testOAuthProvider/enabled: true
+
+# Test interceptor: attaches override-accounts-oauth-* when ?_oauth-override=1
+# is present. Used by oauth-invite.feature to verify per-team OAuth overrides
+# are honored on both the authorize AND callback legs. Does not affect other tests.
+/oauthOverrideInterceptor/enabled: true

@@ -6,14 +6,14 @@ import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.BadRequestException;
@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * POST /auth/register
  *
- * <p>Creates a new user with {@code status="pending_verification"} and a new team/tenant,
+ * <p>Creates a new user with {@code status="pending_verification"} and a new team,
  * then sends an email-verification link (TTL 7 days).
  *
  * <p>Expected request body:
@@ -76,8 +76,8 @@ public class RegisterService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -92,8 +92,8 @@ public class RegisterService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    private MembershipProvider membership() {
-        return accountsService.getMembershipProvider();
+    private MembershipProvider membership(JsonRequest req) {
+        return accountsService.getMembershipProvider(req);
     }
 
     @Override
@@ -179,12 +179,12 @@ public class RegisterService implements JsonService {
         }
 
         // ── 6. Delegate team creation + membership linking to the provider ────
-        var tenantRef = membership().createInitialTeam(email, teamName);
-        var teamId    = tenantRef.id().isString()
-                ? tenantRef.id().asString().getValue()
-                : tenantRef.id().asObjectId().getValue().toHexString();
+        var teamRef = membership(req).createInitialTeam(email, teamName);
+        var teamId    = teamRef.id().isString()
+                ? teamRef.id().asString().getValue()
+                : teamRef.id().asObjectId().getValue().toHexString();
 
-        LOGGER.info("User registered: <{}>, tenant={}", email, teamId);
+        LOGGER.info("User registered: <{}>, team={}", email, teamId);
 
         // ── 7. Send verification email (best-effort) ─────────────────────────
         try {
@@ -193,22 +193,22 @@ public class RegisterService implements JsonService {
                 LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
             } else {
                 var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-                var verifyLink   = conf.frontendUrl()
+                var verifyLink   = RequestOverrides.frontendUrl(req, conf)
                                    + "/auth/verify"
                                    + "?email=" + encodedEmail
                                    + "&token=" + verificationToken;
 
                 var tmpl = EmailTemplateLoader.loadWithFallback(
-                        null, conf.verificationTemplatePath(), "verification.html");
+                        RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
                 var vars = java.util.Map.of(
-                        "app-name", conf.appName(),
+                        "app-name", RequestOverrides.appName(req, conf),
                         "year", String.valueOf(java.time.Year.now().getValue()),
                         "first-name", firstName != null ? firstName : "",
                         "email", email,
-                        "frontend-url", conf.frontendUrl(),
+                        "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
                 var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+                emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later

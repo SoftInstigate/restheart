@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,9 +90,9 @@ footer{padding:.7rem 1.5rem;border-top:1px solid var(--border);color:var(--muted
 <header>
   <div class="logo">REST<em>Heart</em> metrics</div>
   <div class="hctrl">
-    <div class="status-pill"><div class="dot loading" id="dot"></div><span id="status-text">in attesa</span></div>
-    <button id="btn-filter" style="display:none" onclick="toggleFilter()">⚙ filtri</button>
-    <label class="chk"><input type="checkbox" id="autoref" checked> auto</label>
+    <div class="status-pill"><div class="dot loading" id="dot"></div><span id="status-text">waiting</span></div>
+    <button id="btn-filter" style="display:none" onclick="toggleFilter()">⚙ filters</button>
+    <label class="chk"><input type="checkbox" id="autoref" checked> auto-refresh</label>
     <select id="interval">
       <option value="5000">5s</option><option value="10000">10s</option>
       <option value="15000">15s</option><option value="30000" selected>30s</option>
@@ -105,41 +105,41 @@ footer{padding:.7rem 1.5rem;border-top:1px solid var(--border);color:var(--muted
 <div class="cfgbar">
   <span class="lbl">server</span>
   <input type="text" id="cfg-host" value="" placeholder="http://host:8080">
-  <span class="lbl">utente</span>
+  <span class="lbl">user</span>
   <input type="text" id="cfg-user" value="admin">
   <span class="lbl">password</span>
   <input type="password" id="cfg-pass" value="">
-  <button onclick="togglePass()" id="btn-pass" title="mostra/nascondi password">👁</button>
-  <button onclick="connect()">→ connetti</button>
+  <button onclick="togglePass()" id="btn-pass" title="show/hide password">👁</button>
+  <button onclick="connect()">→ connect</button>
   <span class="cfg-ep" id="cfg-ep"></span>
 </div>
 
 <main>
   <div class="err-banner" id="err-banner"></div>
-  <div class="note" id="note-storage">Le preferenze vengono salvate localmente per questo host e ripristinate automaticamente alla prossima connessione.</div>
+  <div class="note" id="note-storage">Preferences are saved locally for this host and restored automatically on the next connection.</div>
 
   <div class="filter-panel" id="filter-panel">
-    <div class="filter-lbl">metriche disponibili · clicca per escludere / ri-aggiungere</div>
+    <div class="filter-lbl">available metrics · click to exclude / re-add</div>
     <div class="filter-grid" id="filter-grid"></div>
   </div>
 
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-lbl">totale richieste</div><div class="kpi-val" id="k-total">--</div><div class="kpi-sub">dall'avvio</div></div>
+    <div class="kpi"><div class="kpi-lbl">total requests</div><div class="kpi-val" id="k-total">--</div><div class="kpi-sub">since startup</div></div>
     <div class="kpi"><div class="kpi-lbl">rate · 1 min</div><div class="kpi-val ca" id="k-rate1m">--</div><div class="kpi-sub">req/sec</div></div>
     <div class="kpi"><div class="kpi-lbl">rate · 5 min</div><div class="kpi-val ca" id="k-rate5m">--</div><div class="kpi-sub">req/sec</div></div>
-    <div class="kpi"><div class="kpi-lbl">latenza p50</div><div class="kpi-val cg" id="k-p50">--</div><div class="kpi-sub" id="k-p50-sub">ms</div></div>
-    <div class="kpi"><div class="kpi-lbl">latenza p95</div><div class="kpi-val cam" id="k-p95">--</div><div class="kpi-sub" id="k-p95-sub">ms</div></div>
-    <div class="kpi"><div class="kpi-lbl">latenza p99</div><div class="kpi-val" id="k-p99">--</div><div class="kpi-sub" id="k-p99-sub">ms</div></div>
+    <div class="kpi"><div class="kpi-lbl">latency p50</div><div class="kpi-val cg" id="k-p50">--</div><div class="kpi-sub" id="k-p50-sub">ms</div></div>
+    <div class="kpi"><div class="kpi-lbl">latency p95</div><div class="kpi-val cam" id="k-p95">--</div><div class="kpi-sub" id="k-p95-sub">ms</div></div>
+    <div class="kpi"><div class="kpi-lbl">latency p99</div><div class="kpi-val" id="k-p99">--</div><div class="kpi-sub" id="k-p99-sub">ms</div></div>
   </div>
 
   <div class="charts-top">
     <div class="panel">
-      <div class="ptitle">request rate nel tempo (req/sec · 1 min)</div>
+      <div class="ptitle">request rate over time (req/sec · 1 min)</div>
       <div class="legend" id="rate-legend"></div>
       <div style="position:relative;height:200px;"><canvas id="rateChart"></canvas></div>
     </div>
     <div class="panel">
-      <div class="ptitle">conteggio per metrica</div>
+      <div class="ptitle">count by metric</div>
       <div style="position:relative;" id="count-wrap"><canvas id="countChart"></canvas></div>
     </div>
   </div>
@@ -175,7 +175,7 @@ function lsKey(host){ return 'rh_ex_' + host.replace(/[^a-z0-9]/gi,'_'); }
 function savePrefs(){ try{ localStorage.setItem(lsKey(BASE), JSON.stringify([...excluded])); }catch(e){} }
 function loadPrefs(){ try{ const r = localStorage.getItem(lsKey(BASE)); excluded = r ? new Set(JSON.parse(r)) : new Set(); }catch(e){ excluded = new Set(); } }
 
-// ── parser (identico all'originale che funzionava) ───────
+// ── parser (same as the original working version) ───────
 function parsePrometheus(text) {
   const result = [];
   for (const line of text.split('\n')) {
@@ -201,7 +201,7 @@ function find(data, metric, match) {
   return 0;
 }
 
-// ── discover metriche ────────────────────────────────────
+// ── discover metrics ─────────────────────────────────────
 function discoverMetrics(data) {
   const seen = new Map();
   for (const e of data) {
@@ -212,7 +212,7 @@ function discoverMetrics(data) {
     const key = m + '_' + s;
     if (!seen.has(key)) seen.set(key, { key, method: m, status: s, count: e.value });
   }
-  // ordina per conteggio decrescente: le metriche con più traffico vengono prima
+  // sort by descending count: metrics with higher traffic come first
   return [...seen.values()].sort((a,b) => b.count - a.count);
 }
 
@@ -306,16 +306,16 @@ function updateCharts(data) {
     r1  += find(data, 'http_requests_rate',   { request_method:m.method, response_status_code:m.status, period:'1 minute' });
     r5  += find(data, 'http_requests_rate',   { request_method:m.method, response_status_code:m.status, period:'5 minutes' });
   });
-  document.getElementById('k-total').textContent  = Math.round(tot).toLocaleString('it-IT');
+  document.getElementById('k-total').textContent  = Math.round(tot).toLocaleString('en-US');
   document.getElementById('k-rate1m').textContent = r1.toFixed(2);
   document.getElementById('k-rate5m').textContent = r5.toFixed(2);
 
-  // latency panels: solo metriche con almeno un quantile > 0
+  // latency panels: only metrics with at least one quantile > 0
   const withLat = active.filter(m => {
     return QUANT_KEYS.some(q => find(data, 'http_requests_duration', { request_method:m.method, response_status_code:m.status, quantile:q }) > 0);
   });
 
-  // ridimensiona la griglia latenze in base al numero di metriche con dati
+  // resize the latency grid based on the number of metrics with data
   const latGrid = document.getElementById('lat-grid');
   const latCount = withLat.length;
   if (latCount === 0) {
@@ -325,7 +325,7 @@ function updateCharts(data) {
     latGrid.style.gridTemplateColumns = latCount === 1 ? '1fr' : latCount === 2 ? '1fr 1fr' : latCount === 3 ? '1fr 1fr 1fr' : 'repeat(auto-fit, minmax(260px,1fr))';
   }
 
-  // aggiorna o crea i canvas latenze dinamicamente
+  // update or create latency canvases dynamically
   latGrid.innerHTML = '';
   latCharts = [];
   withLat.forEach((m, i) => {
@@ -367,7 +367,7 @@ async function fetchMetrics() {
   const dot = document.getElementById('dot');
   const st  = document.getElementById('status-text');
   const err = document.getElementById('err-banner');
-  dot.className = 'dot loading'; st.textContent = 'aggiornamento...';
+  dot.className = 'dot loading'; st.textContent = 'updating...';
 
   try {
     const hdrs = { Authorization: AUTH, 'No-Auth-Challenge': 'true' };
@@ -388,9 +388,9 @@ async function fetchMetrics() {
       })
     );
     const data = parsePrometheus(texts.join('\n'));
-    dot.className = 'dot'; st.textContent = 'connesso'; err.style.display = 'none';
+    dot.className = 'dot'; st.textContent = 'connected'; err.style.display = 'none';
 
-    // aggiorna lista metriche
+    // update metrics list
     const discovered = discoverMetrics(data);
     const existing = new Set(allMetrics.map(m => m.key));
     let changed = false;
@@ -401,8 +401,8 @@ async function fetchMetrics() {
       document.getElementById('btn-filter').style.display = '';
     }
 
-    // aggiorna history rate
-    const now = new Date().toLocaleTimeString('it-IT');
+    // update rate history
+    const now = new Date().toLocaleTimeString('en-US');
     histLabels.push(now);
     if (histLabels.length > MAX_PTS) histLabels.shift();
     allMetrics.forEach(m => {
@@ -412,12 +412,12 @@ async function fetchMetrics() {
     });
 
     updateCharts(data);
-    document.getElementById('last-update').textContent = 'aggiornato ' + now;
+    document.getElementById('last-update').textContent = 'updated ' + now;
 
   } catch(e) {
-    dot.className = 'dot err'; st.textContent = 'errore';
+    dot.className = 'dot err'; st.textContent = 'error';
     err.style.display = 'block';
-    err.textContent = '⚠ impossibile raggiungere il server. Verifica che la VPN sia attiva e che le credenziali siano corrette. (' + e.message + ')';
+    err.textContent = '⚠ unable to reach the server. Check the server URL and credentials, then try again. (' + e.message + ')';
   }
 }
 
@@ -463,7 +463,7 @@ function togglePass() {
   f.type = f.type === 'password' ? 'text' : 'password';
 }
 
-// ripristina credenziali salvate, altrimenti usa origin corrente come default
+// restore saved credentials, otherwise use current origin as default
 try {
   const saved = localStorage.getItem('rh_conn');
   if (saved) {

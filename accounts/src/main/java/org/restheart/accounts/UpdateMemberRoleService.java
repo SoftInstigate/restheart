@@ -1,7 +1,8 @@
 package org.restheart.accounts;
 
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
+import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 /**
  * PATCH /auth/member-role
  *
- * <p>Updates the org-level role of a member within the caller's active tenant.
+ * <p>Updates the org-level role of a member within the caller's active team.
  * The caller must hold the {@code <ownershipRole>} or {@code admin} role.
  *
  * <p>Accepted roles for the target are the configured {@code member-role-name} or
@@ -78,19 +79,19 @@ public class UpdateMemberRoleService implements JsonService {
         var account = req.getAuthenticatedAccount();
         var callerEmail = account.getPrincipal().getName();
 
-        // 2. Verify caller has owner role in active tenant
-        var membershipProvider = accountsService.getMembershipProvider();
+        // 2. Verify caller has owner role in active team
+        var membershipProvider = accountsService.getMembershipProvider(req);
         var membership = membershipProvider.activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 
-        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
-        if (callerTenant == null || callerTenant.isNull()) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
+        var callerTeam = membership.map(m -> m.teamId()).orElse(null);
+        if (callerTeam == null || callerTeam.isNull()) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No team associated with your account");
             return;
         }
 
@@ -120,17 +121,17 @@ public class UpdateMemberRoleService implements JsonService {
             return;
         }
 
-        // 5. Target must be a member of the caller's tenant
-        if (!membershipProvider.isMember(targetEmail, callerTenant)) {
-            Errors.error(res, HttpStatus.SC_NOT_FOUND, "User is not a member of this tenant");
+        // 5. Target must be a member of the caller's team
+        if (!membershipProvider.isMember(targetEmail, callerTeam)) {
+            Errors.error(res, HttpStatus.SC_NOT_FOUND, "User is not a member of this team");
             return;
         }
 
         // 6. Update role
-        membershipProvider.updateMemberRole(targetEmail, callerTenant, newRole);
+        membershipProvider.updateMemberRole(targetEmail, callerTeam, newRole);
 
-        LOGGER.info("Role of <{}> in tenant {} updated to '{}' by <{}>",
-            targetEmail, callerTenant, newRole, callerEmail);
+        LOGGER.info("Role of <{}> in team {} updated to '{}' by <{}>",
+            targetEmail, callerTeam, newRole, callerEmail);
         res.setStatusCode(HttpStatus.SC_OK);
     }
 }

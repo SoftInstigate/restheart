@@ -1,15 +1,16 @@
 package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
-import io.undertow.util.Headers;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
+import org.restheart.plugins.accounts.TeamClaim;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -149,9 +150,9 @@ public class ActivateService implements JsonService {
         db(req).updateUser(normalizedEmail, setDoc);
 
         // 9. Add org membership now that the user has activated (invitation accepted)
-        var orgId    = invite.get("orgId");
+        var teamId    = invite.get("teamId");
         var orgRole  = invite.getString("role").getValue();
-        accountsService.getMembershipProvider().addMember(normalizedEmail, orgId, orgRole);
+        accountsService.getMembershipProvider(req).addMember(normalizedEmail, teamId, orgRole);
 
         // 10. Delete the invitation from auth_invitations (one-shot token)
         db(req).deleteInvitation(invite.getObjectId("_id"));
@@ -161,19 +162,27 @@ public class ActivateService implements JsonService {
         userRoles.add(effectiveRole);
 
         var extraClaims = new HashMap<String, Object>();
-        extraClaims.put(conf.tenantClaimName(), orgId);
+        extraClaims.put(conf.teamClaimName(), TeamClaim.of(teamId, orgRole));
 
         var jwtToken = jwt.issueToken(normalizedEmail, userRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,
                 user);
-        var cookie   = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
-        req.getExchange().getResponseHeaders().add(Headers.SET_COOKIE, cookie);
 
-        // 11. Respond 200
+        // 11. Auto-login: deliver the token per the `delivery` query parameter.
+        // fetch()-based endpoint → cookie (default) or body (bearer).
+        // Default preserves the previous cookie-only behavior.
+        var delivery = TokenDelivery.resolve(
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
+
         var responseBody = new com.google.gson.JsonObject();
         responseBody.addProperty("message", "Account activated");
+        if (delivery == TokenDelivery.Mode.BODY) {
+            TokenDelivery.body(res, responseBody, conf, jwtToken);
+        } else {
+            TokenDelivery.cookie(res, req, conf, jwtToken);
+        }
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
 

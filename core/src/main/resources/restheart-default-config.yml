@@ -115,10 +115,10 @@ mongoRealmAuthenticator:
   cache-ttl: 60_000 # in milliseconds
   cache-expire-policy: AFTER_WRITE
   # List of request parameter names to copy into account properties after successful authentication.
-  # Useful for copying metadata attached by interceptors (e.g., tenantId, organizationId).
+  # Useful for copying metadata attached by interceptors (e.g., teamId, organizationId).
   # When omitted or empty, no parameters are copied (default behavior).
   # attached-props:
-  #   - tenantId
+  #   - teamId
   #   - organizationId
 
 # Cookie Authentication
@@ -177,6 +177,10 @@ originVetoer:
   whitelist:
     - https://restheart.org
     - http://localhost
+  # when true, requests with no Origin header (non-browser clients) are allowed;
+  # browser requests are still validated against the whitelist.
+  # Since 9.6 the default changed to true; set to false to restore pre-9.6 behavior.
+  allow-missing-origin: true
   # Optional paths to skip Origin header checks. Supports patterns like /{var}/path/*
   # ignore-paths:
   #   - /{tenant}/bucket.files/{id}/binary
@@ -209,17 +213,17 @@ jwtTokenManager:
   # Note: key, algorithm, issuer, audience configured via jwtConfigProvider
   # Additional JWT claims from request attached-parameters.
   # Must mirror accountsConfig.account-properties-claims so that all token-issuance
-  # paths (/token, /auth/verify, /auth/activate, /auth/reset-password, /auth/switch-tenant,
+  # paths (/token, /auth/verify, /auth/activate, /auth/reset-password, /auth/switch-team,
   # OAuth callbacks) produce identical JWTs.
   #
-  # For restheart-accounts multi-tenant deployments, the tenants claim MUST be listed here
-  # (e.g. "tenants") so that the JWT contains the active tenant ID.
-  # Without this, endpoints like POST /auth/invite and POST /auth/switch-tenant will
+  # For restheart-accounts multi-team deployments, the teams claim MUST be listed here
+  # (e.g. "teams") so that the JWT contains the active team ID.
+  # Without this, endpoints like POST /auth/invite and POST /auth/switch-team will
   # fail with 403 because the service cannot resolve the caller's membership role.
   #
-  # Example for a deployment using "tenants" as the claim name:
+  # Example for a deployment using "teams" as the claim name:
   # account-properties-claims:
-  #   - tenants
+  #   - teams
   #
   # See: https://restheart.org/docs/accounts/configuration
   account-properties-claims:
@@ -231,6 +235,14 @@ jwtTokenManager:
 # - POST /token - Get access token (returns token in response body)
 # - POST /token/cookie - Get access token via cookie (more secure, token not in body)
 # - GET /token - Get current token information
+# - GET /token/redirect - Get access token AND redirect to redirect-url with the
+#   token appended as a URL fragment (#access_token=...). For flows that must end
+#   in a real browser navigation rather than an AJAX/fetch call (e.g. handing a
+#   token to a frontend after an OAuth-provider round trip). The redirect target
+#   is never a request parameter, only this config (or a per-request
+#   override-redirect-url attached param) — accepting a caller-supplied redirect
+#   target would be an open-redirect vector combined with a token leak.
+#   Returns 400 if neither is set.
 # - DELETE /token - Invalidate current token
 # Supports both HTTP Basic Auth and OAuth 2.0 form data:
 #   - grant_type=password with username and password (RFC 6749 §4.3)
@@ -241,6 +253,10 @@ jwtTokenManager:
 # See: https://restheart.org/docs/security/authentication#token-endpoint
 authTokenService:
   uri: /token
+  # Redirect target for GET /token/redirect. null (default) means the endpoint
+  # returns 400 unless a per-request override-redirect-url is attached instead.
+  # Example: https://app.example.com/callback
+  redirect-url: null
 
 # OAuth 2.0 Authorization Server Metadata (RFC 8414)
 # Endpoint: GET /.well-known/oauth-authorization-server
@@ -306,7 +322,7 @@ oauthClientRegistrationService:
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Core configuration provider — enabling this activates the whole plugin.
-# See https://restheart.org/docs/accounts/configuration
+# See https://restheart.org/docs/plugins/emails
 accountsConfig:
   enabled: false
   # MongoDB database where users and teams are stored.
@@ -331,39 +347,39 @@ accountsConfig:
   # ── Membership SPI (9.4.1+) ─────────────────────────────────────────────
   # See https://restheart.org/docs/accounts/membership-providers
 
-  # JWT claim name for the active tenant identifier.
-  # Default: "tenant". Change to e.g. "org" if your domain uses organisations.
-  tenant-claim-name: tenant
+  # JWT claim name for the active team identifier.
+  # Default: "team".
+  team-claim-name: team
 
   # Role name for regular (non-admin) team members.
   # Default: "member". Set to "user" if existing ACL rules already use that label.
   member-role-name: member
 
   # System ACL role assigned to users after email verification or OAuth login.
-  # Default: "user". Override per-tenant via override-accounts-default-role.
+  # Default: "user". Override per-team via override-accounts-default-role.
   default-role: user
 
   # Team role assigned to the user who creates a new team.
-  # Stored in user.tenants[].role and team.members[].role.
-  # Default: "owner". Override per-tenant via override-accounts-ownership-role.
+  # Stored in user.teams[].role and team.members[].role.
+  # Default: "owner". Override per-team via override-accounts-ownership-role.
   ownership-role: owner
 
   # Set to false to disable /auth/invite, /auth/resend-invite,
-  # /auth/tenants and /auth/switch-tenant.
+  # /auth/teams and /auth/switch-team.
   # Useful when a custom MembershipProvider exposes its own equivalent endpoints.
   membership-endpoints-enabled: true
 
   # Additional JWT claims propagated from request attached-parameters to tokens
-  # issued by accounts endpoints (verify, activate, reset-password, switch-tenant, OAuth).
+  # issued by accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
   # Mirrors jwtTokenManager.account-properties-claims: use the same list so that
   # all token-issuance paths produce identical JWTs.
   # authDb is always included automatically (no need to list it here).
   # Must mirror jwtTokenManager.account-properties-claims so all issuance paths
   # (/token, /auth/verify, /auth/activate, etc.) produce identical JWTs.
-  # For multi-tenant deployments, include the tenants claim (e.g. "tenants").
+  # For multi-team deployments, include the teams claim (e.g. "teams").
   # authDb is always included automatically — never list it here.
   account-properties-claims:
-  # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-tenant deployments
+  # - srvNode  # example: attached-param set by SrvNodeEnricher in multi-team deployments
 
 # Dependency-injection service holding the active MembershipProvider.
 accountsService:
@@ -401,12 +417,12 @@ inviteService:
 resendInviteService:
   enabled: false
 
-# GET  /auth/tenants — lists the authenticated user's team memberships
-getTenantsService:
+# GET  /auth/teams — lists the authenticated user's team memberships
+getTeamsService:
   enabled: false
 
-# POST /auth/switch-tenant — switches the active team and reissues the JWT cookie
-switchTenantService:
+# POST /auth/switch-team — switches the active team and reissues the JWT cookie
+switchTeamService:
   enabled: false
 
 # Interceptor: clears the auth cookie when token authentication fails
@@ -453,17 +469,17 @@ googleOAuthProvider:
 githubOAuthProvider:
   enabled: false
 
-# ── Ermes SMTP email sender ──────────────────────────────────────────────────
-# Required for registration, invitations, and password-reset flows.
-# See https://restheart.org/docs/accounts/configuration
-ermes:
+# ── Emails plugin (SMTP email sender) ──────────────────────────────────────────────────
+# Requires the restheart-emails module on the classpath.
+# See https://restheart.org/docs/plugins/emails
+emails:
   enabled: false
-  appName: "My App"
-  senderEmail: noreply@example.com
-  smtpHostname: localhost
-  smtpPort: 465
-  smtpUsername: null
-  smtpPassword: null
+  app-name: "My App"
+  sender-email: noreply@example.com
+  smtp-hostname: localhost
+  smtp-port: 465
+  smtp-username: null
+  smtp-password: null
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:

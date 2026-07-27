@@ -2,18 +2,16 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
-import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
-import org.restheart.plugins.accounts.MembershipProvider;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -24,7 +22,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * POST /auth/invite
  *
- * <p>Invites a user to the caller's tenant. Creates the user with
+ * <p>Invites a user to the caller's team. Creates the user with
  * {@code roles: ["$unauthenticated"]}, a random password placeholder, and an
  * {@code inviteToken} (256-bit hex, TTL 7 days), then sends the activation email.
  * email.
@@ -52,7 +49,7 @@ import java.nio.charset.StandardCharsets;
  */
 @RegisterPlugin(
         name             = "inviteService",
-        description      = "POST /auth/invite \u2014 invites a user to the caller's tenant",
+        description      = "POST /auth/invite \u2014 invites a user to the caller's team",
         defaultURI       = "/auth/invite",
         secure           = true,
         enabledByDefault = false)
@@ -70,8 +67,8 @@ public class InviteService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -105,19 +102,19 @@ public class InviteService implements JsonService {
         var email = account.getPrincipal().getName();
 
         // 2. Verify membership role: must be ownership-role
-        var membership = accountsService.getMembershipProvider()
+        var membership = accountsService.getMembershipProvider(req)
                 .activeMembership(email);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
 
-        // 3. Read caller's tenant
-        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
-        if (callerTenant == null || callerTenant.isNull()) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
+        // 3. Read caller's team
+        var callerTeam = membership.map(m -> m.teamId()).orElse(null);
+        if (callerTeam == null || callerTeam.isNull()) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No team associated with your account");
             return;
         }
 
@@ -146,17 +143,17 @@ public class InviteService implements JsonService {
             }
         }
 
-        var membershipProvider = accountsService.getMembershipProvider();
+        var membershipProvider = accountsService.getMembershipProvider(req);
 
         // 5. Check if user already exists and is already in this team
         var existing = db(req).findUser(invitedEmail);
-        if (existing.isPresent() && membershipProvider.isMember(invitedEmail, callerTenant)) {
+        if (existing.isPresent() && membershipProvider.isMember(invitedEmail, callerTeam)) {
             Errors.error(res, HttpStatus.SC_CONFLICT, "User already in this team");
             return;
         }
 
         // Check for a pending invitation for the same email+org (covers new users not yet a member)
-        if (db(req).findInvitation(invitedEmail, callerTenant).isPresent()) {
+        if (db(req).findInvitation(invitedEmail, callerTeam).isPresent()) {
             Errors.error(res, HttpStatus.SC_CONFLICT, "Invitation already pending for this user");
             return;
         }
@@ -184,21 +181,21 @@ public class InviteService implements JsonService {
         }
 
         // Always store the invite token in auth_invitations (single source of truth)
-        db(req).createInvitation(invitedEmail, inviteToken, callerTenant, role, INVITE_TTL_MS, isNewUser);
-        LOGGER.info("Invitation created for {} user <{}> to org={}", isNewUser ? "new" : "existing", invitedEmail, callerTenant);
+        db(req).createInvitation(invitedEmail, inviteToken, callerTeam, role, INVITE_TTL_MS, isNewUser);
+        LOGGER.info("Invitation created for {} user <{}> to team={}", isNewUser ? "new" : "existing", invitedEmail, callerTeam);
 
         // 7. Load team name for the email
-        var teamName = loadTeamName(email, callerTenant);
+        var teamName = loadTeamName(req, email, callerTeam);
 
         // 9. Send invite email
         //    New users: link to /auth/activate (set password + activate)
         //    Existing users: link to /invitations/accept (accept with current session)
-        if (ermes != null && ermes.isEnabled()) {
+        if (emails != null && emails.isEnabled()) {
             try {
                 var encodedEmail = URLEncoder.encode(invitedEmail, StandardCharsets.UTF_8);
                 var encodedToken = URLEncoder.encode(inviteToken, StandardCharsets.UTF_8);
                 var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
-                var link = conf.frontendUrl().replaceAll("/$", "")
+                var link = RequestOverrides.frontendUrl(req, conf).replaceAll("/$", "")
                         + basePath + "?email=" + encodedEmail + "&token=" + encodedToken;
 
                 var inviterName = account.getPrincipal() != null
@@ -210,28 +207,28 @@ public class InviteService implements JsonService {
                     LOGGER.debug("Skipping invite email to <{}> (X-Skip-Email header)", invitedEmail);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
-                            null, conf.inviteTemplatePath(), "invite.html");
+                            RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var roleDisplay = role.substring(0, 1).toUpperCase() + role.substring(1);
                     var vars = java.util.Map.of(
-                            "app-name", conf.appName(),
+                            "app-name", RequestOverrides.appName(req, conf),
                             "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", invitedEmail,
-                            "frontend-url", conf.frontendUrl(),
+                            "frontend-url", RequestOverrides.frontendUrl(req, conf),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    ermes.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
-                LOGGER.info("Invite sent to <{}> by {} (tenant={}, newUser={})", invitedEmail, inviterName, callerTenant, isNewUser);
+                LOGGER.info("Invite sent to <{}> by {} (team={}, newUser={})", invitedEmail, inviterName, callerTeam, isNewUser);
             } catch (Exception e) {
                 LOGGER.error("Failed to send invite email to <{}>", invitedEmail, e);
             }
         } else {
-            LOGGER.warn("Ermes disabled — invite email not sent to <{}>", invitedEmail);
+            LOGGER.warn("email-sender disabled — invite email not sent to <{}>", invitedEmail);
         }
 
         // 10. Respond 201
@@ -246,16 +243,16 @@ public class InviteService implements JsonService {
         return new DbHelper(mclient, RequestOverrides.db(req, conf));
     }
 
-    /** Loads the team display name for the given tenantId, falling back to its extended JSON form. */
-    private String loadTeamName(String userId, BsonValue tenantId) {
-        var fallback = tenantId.isString()
-                ? tenantId.asString().getValue()
-                : tenantId.isObjectId() ? tenantId.asObjectId().getValue().toHexString() : tenantId.toString();
+    /** Loads the team display name for the given teamId, falling back to its extended JSON form. */
+    private String loadTeamName(JsonRequest req, String userId, BsonValue teamId) {
+        var fallback = teamId.isString()
+                ? teamId.asString().getValue()
+                : teamId.isObjectId() ? teamId.asObjectId().getValue().toHexString() : teamId.toString();
         try {
-            return accountsService.getMembershipProvider()
+            return accountsService.getMembershipProvider(req)
                     .listMemberships(userId)
                     .stream()
-                    .filter(m -> m.tenantId().equals(tenantId))
+                    .filter(m -> m.teamId().equals(teamId))
                     .map(m -> m.displayName())
                     .findFirst()
                     .orElse(fallback);
@@ -265,11 +262,11 @@ public class InviteService implements JsonService {
     }
 
     /**
-     * Extracts the active tenant claim from the authenticated account using the
+     * Extracts the active team claim from the authenticated account using the
      * configured claim name, supporting both {@link MongoRealmAccount} and
      * {@link JwtAccount} pipelines.
      */
-    private static String extractTenant(io.undertow.security.idm.Account account, String claimName) {
+    private static String extractTeam(io.undertow.security.idm.Account account, String claimName) {
         return switch (account) {
             case MongoRealmAccount mra -> {
                 var props = mra.properties();

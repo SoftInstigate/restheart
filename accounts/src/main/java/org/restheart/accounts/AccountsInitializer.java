@@ -4,18 +4,22 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import org.bson.Document;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.predicates.BsonRequestWhitelistPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,23 +55,117 @@ public class AccountsInitializer implements Initializer {
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
+    // Every privileged mutation of a user document (roles, teams, team, password,
+    // sub, *Token fields, ...) is performed by an accounts-plugin service through
+    // DbHelper, i.e. directly via the MongoDB driver — never through the generic
+    // MongoDB REST resource, so it never runs through this veto. That means the
+    // generic REST resource at /users can safely be restricted to self-service
+    // profile edits only, for every deployment of restheart-accounts, regardless
+    // of whatever ACL the consuming application configures.
+    private static final BsonRequestWhitelistPredicate PROFILE_ONLY_WHITELIST =
+            new BsonRequestWhitelistPredicate(new String[]{"profile"});
+
+    /** ACL role carried by a registered-but-not-yet-verified account (see RegisterService). */
+    private static final String UNAUTHENTICATED_ROLE = "$unauthenticated";
+
+    // Accounts services that require a *verified* account. A registered-but-unverified
+    // user has roles == ["$unauthenticated"] yet is a real, authenticatable principal
+    // (Basic auth) that already owns its initial team, so it passes both authentication
+    // and every membership-role check ("owner"). These services must not be reachable
+    // until the email is verified — enforced centrally by the veto in init().
+    //
+    // Matched by plugin *name* (isHandledBy), not URL: the defaultURI of each service can
+    // be overridden by configuration, but its registered name is fixed — so this stays
+    // correct regardless of how a deployment remaps the /auth/* paths.
+    //
+    // MAINTENANCE: any new accounts service that requires a verified account MUST be added
+    // here (the verification gate lives only in this set — there is no per-handler check).
+    private static final Set<String> VERIFIED_ONLY_SERVICES = Set.of(
+            "changePasswordService",
+            "acceptInviteService",
+            "listTeamMembersService",
+            "listInvitationsService",
+            "removeMemberService",
+            "getTeamsService",
+            "inviteService",
+            "teamService",
+            "updateProfileService",
+            "resendInviteService",
+            "updateMemberRoleService",
+            "switchTeamService");
+
     @Override
     public void init() {
-        // Veto any write to /users that contains the reserved 'sub' field.
-        // 'sub' is the JWT claim used in ACL read filters (@user.sub);
-        // allowing it to be written would let a user forge their own identity.
+        // Generic REST writes to /users are restricted to self-service profile
+        // edits — see PROFILE_ONLY_WHITELIST above for why this is safe to enforce
+        // unconditionally.
         aclRegistry.registerVeto(r -> {
-            if (!r.getPath().startsWith("/users")) return false;
-            var m = r.getMethod();
-            if (m != METHOD.POST && m != METHOD.PUT && m != METHOD.PATCH) return false;
             if (!(r instanceof MongoRequest mr)) return false;
-            var content = mr.getContent();
-            if (content == null || !content.isDocument()) return false;
-            if (content.asDocument().containsKey("sub")) {
-                LOGGER.warn("[accounts] vetoed write to /users: 'sub' is a reserved field");
+
+            // Match on the *resolved* db/collection (post mongo-mounts), not the request
+            // path: the users collection can be reachable through more than one URL —
+            // e.g. the conventional /users mount alias AND the raw /{db}/users path if a
+            // wildcard mount also exposes it. A path-prefix check on "/users" would miss
+            // the second one entirely, letting a client bypass this restriction just by
+            // using a different (but equally valid) URL for the same collection.
+            if (!"users".equals(mr.getCollectionName())) return false;
+            if (!RequestOverrides.db(mr, conf).equals(mr.getDBName())) return false;
+
+            // A tenant that never enabled Sign-up Management never opted into
+            // restheart-accounts's opinions on /users — see RequestOverrides.SIGNUP_MGMT_ENABLED.
+            // Must be checked here (during authorization) rather than via a post-auth
+            // interceptor: vetoes are evaluated as part of authorization, which runs
+            // before any REQUEST_AFTER_AUTH interceptor gets a chance to run.
+            if (!RequestOverrides.signupMgmtEnabled(mr, conf)) return false;
+
+            // Roles configured via `users-unrestricted-roles` (e.g. an admin console
+            // role) bypass this restriction entirely — see AccountsConfigData. Reads
+            // the per-team override first (set by e.g. TeamConfigInterceptor), falling
+            // back to the node-level YAML config.
+            var exemptRoles = RequestOverrides.usersUnrestrictedRoles(mr, conf);
+            if (exemptRoles != null && exemptRoles.stream().anyMatch(r::isAccountInRole)) {
+                return false;
+            }
+
+            var m = r.getMethod();
+
+            // PUT/POST would let a client fully replace or create a user document
+            // via generic REST — bypassing every accounts-plugin flow (register,
+            // verify, invite, reset-password, switch-team, oauth). Only the
+            // dedicated /auth/* endpoints may create/replace user documents.
+            if (m == METHOD.PUT || m == METHOD.POST) {
+                LOGGER.warn("[accounts] vetoed {} to /users: use the accounts plugin's own endpoints "
+                        + "to create or replace user documents", m);
+                return true;
+            }
+
+            if (m != METHOD.PATCH) return false;
+
+            // Covers dot notation (profile.name) and update operators ($set, $push,
+            // ...) alike — see BsonRequestWhitelistPredicate. This also subsumes the
+            // old 'sub' veto: 'sub' is never under 'profile', so it's always rejected.
+            if (!PROFILE_ONLY_WHITELIST.resolve(mr.getExchange())) {
+                LOGGER.warn("[accounts] vetoed PATCH to /users: only 'profile.*' fields "
+                        + "may be self-modified");
                 return true;
             }
             return false;
+        });
+
+        // Verification gate: a registered-but-unverified account (role $unauthenticated,
+        // authenticated via Basic auth) must not reach the verified-only accounts services.
+        // Those services register their ACL allow-rules on path+method only — never on role —
+        // so without this veto such an account would pass authorization and every
+        // membership-role check (it genuinely is its team's "owner"), letting it act on the
+        // platform before confirming its email. Public flows (register, verify, activate,
+        // forgot/reset-password, invitation lookup, OAuth) are absent from VERIFIED_ONLY_SERVICES
+        // and remain reachable.
+        aclRegistry.registerVeto(r -> {
+            if (!(r instanceof ServiceRequest<?> sr)) return false;
+            if (!sr.isAuthenticated()) return false;                    // anonymous: handled by auth requirements
+            if (!sr.isAccountInRole(UNAUTHENTICATED_ROLE)) return false; // verified account: unrestricted
+            if (sr.getMethod() == METHOD.OPTIONS) return false;         // never block CORS preflight
+            return VERIFIED_ONLY_SERVICES.stream().anyMatch(sr::isHandledBy);
         });
 
         var database = mclient.getDatabase(conf.db());
@@ -100,8 +198,9 @@ public class AccountsInitializer implements Initializer {
                 users.createIndex(Indexes.ascending("emailVerificationToken"),
                         new IndexOptions().sparse(true).name("emailVerificationToken_1"));
 
-                users.createIndex(Indexes.ascending("tenant"),
-                        new IndexOptions().name("tenant_1"));
+                // Active team is stored as a { _id, role } object (9.6.0+); index the id.
+                users.createIndex(Indexes.ascending("team._id"),
+                        new IndexOptions().name("team._id_1"));
             }
 
             // oauth_codes — TTL: codes expire after 600 seconds

@@ -511,6 +511,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
             _fauthorizers.add(_fauthorizer);
 
+            // VETOERs still apply: "secure = false" means "no authentication required",
+            // not "exempt from every deny rule" (e.g. originVetoer)
+            _authorizers.stream()
+                .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                .forEach(_fauthorizers::add);
+
             securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
         }
 
@@ -578,6 +584,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 new FullAuthorizer(false),
                 null
             ));
+
+            // VETOERs still apply: "secure = false" means "no authentication required",
+            // not "exempt from every deny rule" (e.g. originVetoer)
+            _authorizers.stream()
+                .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                .forEach(_fauthorizers::add);
+
             securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
         }
 

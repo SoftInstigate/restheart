@@ -38,6 +38,7 @@ public class TokenInjector extends PipelinedHandler {
     
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
+    private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
     
     private final TokenManager tokenManager;
     private final boolean injectOnAllEndpoints;
@@ -147,8 +148,9 @@ public class TokenInjector extends PipelinedHandler {
             return true;
         }
 
-        // Primary: /token and /token/cookie endpoints
-        if (TOKEN_ENDPOINT.equals(requestPath) || TOKEN_COOKIE_ENDPOINT.equals(requestPath)) {
+        // Primary: /token, /token/cookie and /token/redirect endpoints
+        if (TOKEN_ENDPOINT.equals(requestPath) || TOKEN_COOKIE_ENDPOINT.equals(requestPath)
+                || TOKEN_REDIRECT_ENDPOINT.equals(requestPath)) {
             return true;
         }
 

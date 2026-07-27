@@ -65,6 +65,70 @@ Feature: GET /auth/verify
     And match response.emailVerificationToken == '#notpresent'
 
   # ---------------------------------------------------------------------------
+  Scenario: delivery=fragment — valid token activates account and delivers JWT as URL fragment
+  # ---------------------------------------------------------------------------
+    * def email = 'verify-fragment-' + java.util.UUID.randomUUID() + '@example.com'
+
+    # 1. Register the user
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Frida",
+        "lastName":  "Fragment",
+        "teamName":  "Fragment Co",
+        "email":     "#(email)",
+        "password":  "Password123!"
+      }
+      """
+    When method POST
+    Then status 201
+
+    # 2. Read emailVerificationToken from MongoDB via admin
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    * def verificationToken = response.emailVerificationToken
+
+    # 3. Verify email with delivery=fragment
+    Given path '/auth/verify'
+    And param email = email
+    And param token = verificationToken
+    And param delivery = 'fragment'
+    When method GET
+    Then status 302
+
+    # Location must carry the JWT as a URL fragment and must NOT contain an error
+    * def location = responseHeaders['Location'][0]
+    * match location == '#notnull'
+    * assert !location.contains('error=')
+    * match location contains '#access_token='
+    * match location contains 'token_type=Bearer'
+
+    # No auth cookie must be set — fragment delivery replaces cookie delivery
+    * def setCookie = responseHeaders['Set-Cookie']
+    * assert setCookie == null || setCookie.length == 0 || !setCookie[0].contains('rh_auth=')
+
+    # The fragment token must be a valid Bearer token: use it to call an authenticated endpoint
+    * def fragment = location.substring(location.indexOf('#access_token=') + '#access_token='.length())
+    * def rawToken = fragment.contains('&') ? fragment.substring(0, fragment.indexOf('&')) : fragment
+    * def accessToken = java.net.URLDecoder.decode(rawToken, 'UTF-8')
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + accessToken
+    When method GET
+    Then status 200
+
+    # Verify DB: roles updated to user, emailVerificationToken removed
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And match response.roles contains 'user'
+    And match response.emailVerificationToken == '#notpresent'
+
+  # ---------------------------------------------------------------------------
   Scenario: token already used — second call redirects with error=invalid_token
   # ---------------------------------------------------------------------------
     * def email = 'verify-reuse-' + java.util.UUID.randomUUID() + '@example.com'

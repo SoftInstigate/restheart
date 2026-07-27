@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} -- %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- SmtpEmailSenderTest deliberately exercises the disabled-plugin and init-failure
+         code paths, which log at WARN/ERROR. Silencing them keeps a passing run from
+         looking like a failure in the console output. -->
+    <logger name="org.restheart.emails.SmtpEmailSender" level="off" />
+
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+</configuration>

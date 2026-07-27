@@ -146,9 +146,32 @@ public class OAuthConfig implements Provider<OAuthConfig> {
         return p != null && p.isValid();
     }
 
-    /** Returns the absolute callback URL for the given provider name. */
+    /**
+     * Returns the absolute callback URL for the given provider name, using the static
+     * {@code api-base-url}.
+     *
+     * @deprecated Use {@link #callbackUrl(String, String)} with the effective (possibly
+     * per-team overridden) base URL from {@code RequestOverrides.oauthApiBaseUrl(req, this)} —
+     * a single static value cannot be correct on a multi-tenant node.
+     */
+    @Deprecated
     public String callbackUrl(String providerName) {
+        return callbackUrl(providerName, apiBaseUrl);
+    }
+
+    /** Returns the absolute callback URL for the given provider name and base URL. */
+    public String callbackUrl(String providerName, String apiBaseUrl) {
         return apiBaseUrl + "/auth/oauth/callback/" + providerName.toLowerCase();
+    }
+
+    /**
+     * Well-known default OAuth scope for a built-in provider name (e.g. {@code "google"},
+     * {@code "github"}), or {@code ""} if the name is not one of them. Used as the last-resort
+     * scope fallback when neither a per-team override nor a static {@code providers.{name}}
+     * YAML entry supplies one.
+     */
+    public static String defaultScope(String providerName) {
+        return DEFAULT_SCOPES.getOrDefault(providerName == null ? "" : providerName.toLowerCase(), "");
     }
 
     // ── Nested record ─────────────────────────────────────────────────────────
@@ -181,7 +204,7 @@ public class OAuthConfig implements Provider<OAuthConfig> {
 
     @SuppressWarnings("unchecked")
     private ProviderConfig parseProviderConfig(String name, Map<String, Object> map) {
-        var defaultScope = DEFAULT_SCOPES.getOrDefault(name, "");
+        var defaultScope = defaultScope(name);
         return new ProviderConfig(
                 name,
                 configVal(map, "enabled",       false),
