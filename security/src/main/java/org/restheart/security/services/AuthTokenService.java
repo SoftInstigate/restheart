@@ -68,6 +68,7 @@ public class AuthTokenService implements ByteArrayService {
 
 	private static final String TOKEN_ENDPOINT = "/token";
 	private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
+	private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
 	private static final String ISO8601_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
 	@Inject("registry")
@@ -114,6 +115,7 @@ public class AuthTokenService implements ByteArrayService {
 		var path = request.getPath();
 
 		var isCookieEndpoint = TOKEN_COOKIE_ENDPOINT.equals(path);
+		var isRedirectEndpoint = TOKEN_REDIRECT_ENDPOINT.equals(path);
 
 		switch (request.getMethod()) {
 			case OPTIONS -> handleOptions(request);
@@ -121,14 +123,25 @@ public class AuthTokenService implements ByteArrayService {
 				if (isCookieEndpoint) {
 					// GET not supported on /token/cookie
 					response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+				} else if (isRedirectEndpoint) {
+					handleRedirect(request, response);
 				} else {
 					handleGet(request, response);
 				}
 			}
-			case POST -> handlePost(request, response, isCookieEndpoint);
+			case POST -> {
+				if (isRedirectEndpoint) {
+					// POST not supported on /token/redirect (GET only, since it's meant
+					// to be followed by a real browser navigation, not an XHR/fetch)
+					response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+				} else {
+					handlePost(request, response, isCookieEndpoint);
+				}
+			}
 			case DELETE -> {
-				if (isCookieEndpoint) {
+				if (isCookieEndpoint || isRedirectEndpoint) {
 					// DELETE not supported on /token/cookie (use AuthCookieRemover instead)
+					// or /token/redirect
 					response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
 				} else {
 					handleDelete(request, response);
@@ -421,6 +434,88 @@ public class AuthTokenService implements ByteArrayService {
 		response.setContentTypeAsJson();
 		response.setContent(resp.toString());
 		response.setStatusCode(HttpStatus.SC_OK);
+	}
+
+	/**
+	 * Handle GET /token/redirect - same as GET /token (token in the response
+	 * body, for callers that don't follow the redirect), plus a redirect to
+	 * a configured URL with the token appended as a URL fragment
+	 * ({@code #access_token=...}), for flows that end in a real browser
+	 * navigation rather than an AJAX/fetch call (e.g. an OAuth callback).
+	 *
+	 * <p>The redirect target is never a request parameter — only plugin
+	 * configuration ({@code redirect-url}) or a per-request attached param
+	 * ({@code override-redirect-url}, for multi-tenant deployments resolving
+	 * a per-service frontend URL) — accepting a caller-supplied redirect
+	 * target here would be an open-redirect vector combined with a token
+	 * leak. If neither is set, the request fails with {@code 400}.
+	 */
+	/**
+	 * Resolves the redirect target for {@code /token/redirect}: the
+	 * per-request {@code override-redirect-url} attached param takes
+	 * precedence over the static {@code redirect-url} plugin config;
+	 * {@code null} if neither is set (caller should respond {@code 400}).
+	 * Package-private for unit testing.
+	 */
+	String resolveRedirectUrl(ByteArrayRequest request) {
+		String override = request.attachedParam("override-redirect-url");
+		if (override != null && !override.isBlank()) {
+			return override;
+		}
+		var configured = config.get("redirect-url");
+		return configured instanceof String s && !s.isBlank() ? s : null;
+	}
+
+	private void handleRedirect(ByteArrayRequest request, ByteArrayResponse response) {
+		if (!request.isAuthenticated()) {
+			if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
+					&& !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
+				response.getHeaders().put(HttpString.tryFromString("WWW-Authenticate"), "Basic realm=\"RESTHeart\"");
+			}
+			response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+			return;
+		}
+
+		var redirectUrl = resolveRedirectUrl(request);
+
+		if (redirectUrl == null) {
+			sendTokenError(response, HttpStatus.SC_BAD_REQUEST, "invalid_request",
+					"no redirect-url configured for /token/redirect");
+			return;
+		}
+
+		var account = request.getAuthenticatedAccount();
+		var authTokenHeader = response.getHeader(AUTH_TOKEN_HEADER);
+		var authTokenValidHeader = response.getHeader(AUTH_TOKEN_VALID_HEADER);
+
+		if (authTokenHeader == null) {
+			LOGGER.error("Auth-Token header not found for GET /token/redirect request");
+			response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+			return;
+		}
+
+		var tokenType = getTokenType();
+		var expiresIn = calculateExpiresIn(authTokenValidHeader);
+
+		var resp = new JsonObject();
+		resp.add("access_token", new JsonPrimitive(authTokenHeader));
+		resp.add("token_type", new JsonPrimitive(tokenType));
+		if (expiresIn != null) {
+			resp.add("expires_in", new JsonPrimitive(expiresIn));
+		}
+		resp.add("username", new JsonPrimitive(account.getPrincipal().getName()));
+		resp.add("roles", rolesAsJsonArray(account));
+
+		response.getHeaders().put(HttpString.tryFromString("Cache-Control"), "no-store");
+		response.getHeaders().put(HttpString.tryFromString("Pragma"), "no-cache");
+		response.setContentTypeAsJson();
+		response.setContent(resp.toString());
+
+		var location = TokenRedirectHelper.appendTokenFragment(redirectUrl, authTokenHeader, tokenType, expiresIn);
+		response.getHeaders().put(HttpString.tryFromString("Location"), location);
+		response.setStatusCode(HttpStatus.SC_TEMPORARY_REDIRECT);
+
+		LOGGER.debug("Token issued via redirect for user '{}'", account.getPrincipal().getName());
 	}
 
 	/**

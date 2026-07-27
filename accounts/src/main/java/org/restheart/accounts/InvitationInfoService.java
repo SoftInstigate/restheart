@@ -2,7 +2,7 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  * {
  *   "email":     "bob@example.com",
- *   "orgName":   "Acme Corp",
+ *   "teamName":   "Acme Corp",
  *   "role":      "member",
  *   "isNewUser": true,
  *   "expiresAt": "2026-06-24T10:00:00Z"
@@ -98,30 +98,30 @@ public class InvitationInfoService implements JsonService {
         }
 
         var invite   = inviteOpt.get();
-        var orgId    = invite.get("orgId");
+        var teamId    = invite.get("teamId");
         var role     = invite.getString("role").getValue();
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
         var expiresAt = invite.containsKey("expiresAt") ? invite.getDateTime("expiresAt").getValue() : 0L;
 
-        // Resolve org display name
-        var orgName = orgId.isString() ? orgId.asString().getValue()
-                : orgId.isObjectId() ? orgId.asObjectId().getValue().toHexString()
-                : orgId.toString();
+        // Resolve team display name
+        var teamName = teamId.isString() ? teamId.asString().getValue()
+                : teamId.isObjectId() ? teamId.asObjectId().getValue().toHexString()
+                : teamId.toString();
         try {
-            var teamOpt = db.findTeam(orgId);
+            var teamOpt = db.findTeam(teamId);
             if (teamOpt.isPresent()) {
                 var teamDoc = teamOpt.get();
                 if (teamDoc.containsKey("name") && teamDoc.get("name").isString()) {
-                    orgName = teamDoc.getString("name").getValue();
+                    teamName = teamDoc.getString("name").getValue();
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Could not resolve org name for orgId={}: {}", orgId, e.getMessage());
+            LOGGER.warn("Could not resolve team name for teamId={}: {}", teamId, e.getMessage());
         }
 
         var body = new JsonObject();
         body.addProperty("email",     email);
-        body.addProperty("orgName",   orgName);
+        body.addProperty("teamName",   teamName);
         body.addProperty("role",      role);
         body.addProperty("isNewUser", isNewUser);
         body.addProperty("expiresAt", java.time.Instant.ofEpochMilli(expiresAt).toString());

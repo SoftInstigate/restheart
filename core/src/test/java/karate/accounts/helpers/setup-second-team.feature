@@ -1,4 +1,4 @@
-Feature: setup second team for multi-tenant tests
+Feature: setup second team for multi-team tests
 
   @helper
   Scenario: create second team and invite owner-test into it
@@ -22,7 +22,7 @@ Feature: setup second team for multi-tenant tests
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    * def secondTenantId = response.tenant
+    * def secondTeamId = response.team._id
     * def verifyToken = response.emailVerificationToken
 
     # 3. Verify email
@@ -41,14 +41,14 @@ Feature: setup second team for multi-tenant tests
     * def ownerLogin = karate.call('classpath:karate/accounts/helpers/setup-owner.feature')
     * def ownerAcceptJwt = ownerLogin.ownerJwt
 
-    * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTenantId: secondTenantId, ownerJwt: ownerAcceptJwt })
+    * if (inviteStatus == 201) karate.call('classpath:karate/accounts/helpers/accept-invite-existing.feature', { secondOwnerJwt: secondOwnerJwt, secondTeamId: secondTeamId, ownerJwt: ownerAcceptJwt })
 
     # Verify owner-test is in the second team (whether just accepted or already a member)
     Given path '/users/owner-test@example.com'
     And header Authorization = adminAuth
     When method GET
     Then status 200
-    * def tenantIds = karate.map(response.tenants, function(x){ return x.id })
-    And match tenantIds contains secondTenantId
+    * def teamIds = karate.map(response.teams, function(x){ return x.id })
+    And match teamIds contains secondTeamId
 
-    * karate.log('Second team setup done, tenantId:', secondTenantId)
+    * karate.log('Second team setup done, teamId:', secondTeamId)

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>9.4.3-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.restheart</groupId>
@@ -23,6 +23,12 @@
       <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
       <distribution>repo</distribution>
       <comments>Core components license</comments>
+    </license>
+    <license>
+      <name>RESTHeart COMMERCIAL LICENSE</name>
+      <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+      <distribution>manual</distribution>
+      <comments>Optional commercial license</comments>
     </license>
   </licenses>
 
@@ -62,6 +68,11 @@
     <dependency>
       <groupId>com.intuit.karate</groupId>
       <artifactId>karate-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->

@@ -1,7 +1,6 @@
 package org.restheart.test.plugins.oauth;
 
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
@@ -66,17 +65,26 @@ public class TestOAuthProvider implements OAuthProvider, Initializer {
     /**
      * Returns a local fake authorization URL. The CSRF {@code state} is embedded
      * as a query parameter so tests can extract it from the {@code Location} header.
+     * {@code client_id} and {@code scope} are also echoed back so Karate tests can
+     * assert on exactly which credentials/scope {@code OAuthService} resolved for
+     * this request — the static test provider config vs. a per-team override.
      *
-     * <p>Example: {@code http://localhost/test-oauth/authorize?state=XXXX&client_id=test-client}
+     * <p>Example: {@code http://localhost/test-oauth/authorize?state=XXXX&client_id=test-client&scope=email}
      */
     @Override
     public String getAuthorizationUrl(String clientId, String clientSecret,
                                       String callbackUrl, String scope, String state) {
-        return "http://localhost/test-oauth/authorize?state=" + state + "&client_id=" + clientId;
+        return "http://localhost/test-oauth/authorize?state=" + state
+                + "&client_id=" + clientId + "&scope=" + scope;
     }
 
     /**
-     * Returns a hardcoded profile derived from the authorization code.
+     * Returns a hardcoded profile derived from the authorization code, with
+     * {@code clientId} and {@code callbackUrl} echoed into fields the callback
+     * persists on the user document ({@code providerId}, {@code avatarUrl}) — this
+     * is the only leg (the callback / token-exchange leg) where a test can otherwise
+     * not observe which credentials {@code OAuthService} actually resolved, since
+     * this mock doesn't validate them the way a real provider would.
      *
      * <p>The code must start with {@value CODE_PREFIX} followed by the user email.
      * Example: {@code "test-alice@example.com"} → profile with {@code email: alice@example.com}.
@@ -92,11 +100,12 @@ public class TestOAuthProvider implements OAuthProvider, Initializer {
                     + "' — expected '" + CODE_PREFIX + "<email>'");
         }
         var email = code.substring(CODE_PREFIX.length());
-        LOGGER.debug("TestOAuthProvider: returning profile for <{}>", email);
+        LOGGER.debug("TestOAuthProvider: returning profile for <{}> (clientId={}, callbackUrl={})",
+                email, clientId, callbackUrl);
         return new BsonDocument()
                 .append("email",      new BsonString(email))
                 .append("name",       new BsonString("Test User"))
-                .append("providerId", new BsonString("test-" + Math.abs(email.hashCode())))
-                .append("avatarUrl",  BsonNull.VALUE);
+                .append("providerId", new BsonString("test-" + clientId + "-" + Math.abs(email.hashCode())))
+                .append("avatarUrl",  new BsonString(callbackUrl));
     }
 }

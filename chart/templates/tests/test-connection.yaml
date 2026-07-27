@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "restheart.fullname" . }}-test-connection"
+  labels:
+    {{- include "restheart.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: curl
+      image: curlimages/curl:8.5.0
+      command:
+        - sh
+        - -c
+        - |
+          echo "Testing RESTHeart /ping endpoint..."
+          response=$(curl -sf http://{{ include "restheart.fullname" . }}:{{ .Values.service.port }}/ping)
+          echo "Response: $response"
+          echo "$response" | grep -qi "restheart"
+          echo "Test passed!"

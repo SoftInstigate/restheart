@@ -99,6 +99,34 @@ public class CacheFactory {
     }
 
     /**
+     * Creates a local loading cache with automatic value computation and a custom removal listener.
+     *
+     * <p>This method creates a cache similar to {@link #createLocalLoadingCache(long, Cache.EXPIRE_POLICY, long, Function)}
+     * but with an additional removal listener that is invoked whenever an entry is removed from
+     * the cache, either due to expiration, eviction, or explicit removal.</p>
+     *
+     * <p>The removal listener is useful for cleaning up resources (e.g. connections, thread pools)
+     * held by cached values. It is called asynchronously and should not perform blocking operations
+     * or throw exceptions. The entry provided to the listener includes the key and the optional
+     * value that was removed.</p>
+     *
+     * @param <K>          the type of the cache keys
+     * @param <V>          the type of the cached values
+     * @param size         the maximum number of entries the cache may contain
+     * @param expirePolicy specifies how and when each entry should be automatically
+     *                     removed from the cache (NEVER, AFTER_WRITE, or AFTER_READ)
+     * @param ttl          Time To Live in milliseconds; if <= 0, entries won't expire based on time
+     * @param loader       the function used to compute values for missing keys; may return null
+     * @param remover      the consumer to invoke each time a value is automatically removed
+     *                     from the cache; receives entries with keys and optional values
+     * @return a new {@link LoadingCache} instance with the specified configuration and removal listener
+     * @throws NullPointerException if loader or remover is null
+     */
+    public static <K, V> LoadingCache<K, V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader, Consumer<Map.Entry<K, Optional<V>>> remover) {
+        return new CaffeineLoadingCache<>(size, expirePolicy, ttl, loader, remover);
+    }
+
+    /**
      * Creates a simple HashMap-based loading cache without size limits or expiration.
      * 
      * <p>This method creates a basic cache implementation backed by a {@link HashMap}.

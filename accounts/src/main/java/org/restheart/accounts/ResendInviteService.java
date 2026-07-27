@@ -3,13 +3,13 @@ package org.restheart.accounts;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonValue;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
+import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
-import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
  * activation flow.
  *
  * <p>Requires authentication. Callable by membership role: {@code <ownershipRole>} only.
- * The target user must belong to the same tenant as the caller.
+ * The target user must belong to the same team as the caller.
  *
  * <p>Expected body: {@code { "email": "invited@example.com" }}
  *
@@ -60,8 +60,8 @@ public class ResendInviteService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
     @Inject("accountsService")
     private AccountsService accountsService;
@@ -95,17 +95,17 @@ public class ResendInviteService implements JsonService {
         var callerEmail = account.getPrincipal().getName();
 
         // 2. Verify membership role: must be ownership-role or admin
-        var membership = accountsService.getMembershipProvider()
+        var membership = accountsService.getMembershipProvider(req)
                 .activeMembership(callerEmail);
         var membershipRole = membership.map(m -> m.role()).orElse(null);
-        var ownershipRole = conf.ownershipRole();
+        var ownershipRole = RequestOverrides.ownershipRole(req, conf);
         if (membershipRole == null || !membershipRole.equals(ownershipRole)) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, "Requires " + ownershipRole + " role");
             return;
         }
-        var callerTenant = membership.map(m -> m.tenantId()).orElse(null);
-        if (callerTenant == null || callerTenant.isNull()) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No tenant associated with your account");
+        var callerTeam = membership.map(m -> m.teamId()).orElse(null);
+        if (callerTeam == null || callerTeam.isNull()) {
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "No team associated with your account");
             return;
         }
 
@@ -123,12 +123,17 @@ public class ResendInviteService implements JsonService {
         var email = jo.get("email").getAsString().trim().toLowerCase();
 
         // 4. Find pending invitation in auth_invitations for this user in the caller's org
-        var inviteOpt = db(req).findInvitation(email, callerTenant);
+        var inviteOpt = db(req).findInvitation(email, callerTeam);
         if (inviteOpt.isEmpty()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "No pending invitation found for this user in your team");
             return;
         }
         var invite = inviteOpt.get();
+
+        // 7. Read the role from the stored invitation
+        var inviteRole = invite.containsKey("role") && invite.get("role").isString()
+                ? invite.getString("role").getValue()
+                : conf.memberRoleName();
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
 
         // 5. Generate new token (invalidates the previous one)
@@ -140,10 +145,10 @@ public class ResendInviteService implements JsonService {
         }
 
         // 6. Load team name and resend email
-        var teamNameFallback = callerTenant.isString() ? callerTenant.asString().getValue() : BsonUtils.toJson(callerTenant);
+        var teamNameFallback = callerTeam.isString() ? callerTeam.asString().getValue() : BsonUtils.toJson(callerTeam);
         String teamName = teamNameFallback;
         try {
-            var teamOpt = db(req).findTeam(callerTenant);
+            var teamOpt = db(req).findTeam(callerTeam);
             if (teamOpt.isPresent()) {
                 var teamDoc = teamOpt.get();
                 if (teamDoc.containsKey("name") && teamDoc.get("name").isString()) {
@@ -151,13 +156,13 @@ public class ResendInviteService implements JsonService {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Could not load team for tenant '{}': {}", teamNameFallback, e.getMessage());
+            LOGGER.warn("Could not load team for team '{}': {}", teamNameFallback, e.getMessage());
         }
 
-        if (ermes != null && ermes.isEnabled()) {
+        if (emails != null && emails.isEnabled()) {
             try {
                 var basePath = isNewUser ? "/auth/activate" : "/invitations/accept";
-                var link = conf.frontendUrl().replaceAll("/$", "")
+                var link = RequestOverrides.frontendUrl(req, conf).replaceAll("/$", "")
                         + basePath
                         + "?email=" + URLEncoder.encode(email, StandardCharsets.UTF_8)
                         + "&token=" + URLEncoder.encode(newToken, StandardCharsets.UTF_8);
@@ -171,27 +176,28 @@ public class ResendInviteService implements JsonService {
                     LOGGER.debug("Skipping re-send invite email to <{}> (X-Skip-Email header)", email);
                 } else {
                     var tmpl = EmailTemplateLoader.loadWithFallback(
-                            null, conf.inviteTemplatePath(), "invite.html");
+                            RequestOverrides.templateInvite(req), conf.inviteTemplatePath(), "invite.html");
                     var vars = java.util.Map.of(
-                            "app-name", conf.appName(),
+                            "app-name", RequestOverrides.appName(req, conf),
                             "year", String.valueOf(java.time.Year.now().getValue()),
                             "first-name", inviterName != null ? inviterName : "",
                             "email", email,
-                            "frontend-url", conf.frontendUrl(),
+                            "frontend-url", RequestOverrides.frontendUrl(req, conf),
                             "invite-url", link,
                             "inviter-name", inviterName != null ? inviterName : "",
-                            "team-name", teamName != null ? teamName : "");
+                            "team-name", teamName != null ? teamName : "",
+                            "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    ermes.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
-                LOGGER.info("Invite email re-sent to <{}> by {} (tenant={})",
-                        email, inviterName, callerTenant);
+                LOGGER.info("Invite email re-sent to <{}> by {} (team={})",
+                        email, inviterName, callerTeam);
             } catch (Exception e) {
                 LOGGER.error("Failed to re-send invite email to <{}>", email, e);
             }
         } else {
-            LOGGER.warn("Ermes disabled — invite email not re-sent to <{}>", email);
+            LOGGER.warn("email-sender disabled — invite email not re-sent to <{}>", email);
         }
 
         // 10. Respond 200

@@ -37,6 +37,7 @@ ENTRYPOINT [ "java", \
     "-XX:InitialRAMPercentage=25.0", \
     "-XX:+DisableExplicitGC", \
     "-XX:+ExitOnOutOfMemoryError", \
+    "-XX:+UseCompactObjectHeaders", \
     "-jar", \
     "restheart.jar" ]
 

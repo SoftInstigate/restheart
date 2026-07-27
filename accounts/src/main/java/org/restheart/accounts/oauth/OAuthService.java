@@ -7,8 +7,9 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -34,9 +35,9 @@ import java.util.Map;
  * multi-instance deployments. Each token is one-time-use: it is atomically
  * consumed during {@link #handleCallback} via {@code findOneAndDelete}.
  *
- * <h2>Multi-tenant / per-db persistence</h2>
- * <p>When a per-tenant database override is active (via {@link RequestOverrides#db}),
- * the state token is stored in <em>that tenant's</em> {@code oauth_codes} collection,
+ * <h2>Multi-team / per-db persistence</h2>
+ * <p>When a per-team database override is active (via {@link RequestOverrides#db}),
+ * the state token is stored in <em>that {@code team}'s</em> {@code oauth_codes} collection,
  * not in the default database. The correct database is encoded directly in the state
  * string so that the callback can retrieve the token from the right collection without
  * needing access to the original HTTP request.
@@ -89,7 +90,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static String queryParam(org.restheart.exchange.ServiceRequest<?> req, String name) {
+    private static String queryParam(ServiceRequest<?> req, String name) {
         if (req == null) return null;
         var values = req.getQueryParameters().get(name);
         return (values != null && !values.isEmpty()) ? values.getFirst() : null;
@@ -120,7 +121,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     /**
      * Returns the authorization URL for the given provider and stores a CSRF
-     * state token in MongoDB. Checks per-tenant overrides in the request.
+     * state token in MongoDB. Checks per-team overrides in the request.
      *
      * <p>Optional query parameters forwarded into the state document:
      * <ul>
@@ -133,24 +134,24 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @return an {@link AuthResult} with the authorization redirect URL and the CSRF state
      * @throws OAuthException if the provider is not configured or not registered
      */
-    public AuthResult getAuthorizationUrl(String providerName,
-            org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
+    public AuthResult getAuthorizationUrl(String providerName, ServiceRequest<?> req) throws OAuthException {
         var cfg                = resolveProviderConfig(providerName, req);
-        var provider           = resolveProvider(providerName);
-        var tenantDb           = RequestOverrides.db(req, accountsConf);
-        var state              = generateState(tenantDb);
-        var pendingInviteToken = queryParam(req, "pendingInviteToken");
-        var consentsAccepted   = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
+        var provider            = resolveProvider(providerName);
+        var teamDb              = RequestOverrides.db(req, accountsConf);
+        var apiBaseUrl          = RequestOverrides.oauthApiBaseUrl(req, config);
+        var state               = generateState(teamDb);
+        var pendingInviteToken  = queryParam(req, "pendingInviteToken");
+        var consentsAccepted    = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
 
-        storeStateToken(state, providerName, tenantDb, pendingInviteToken, consentsAccepted);
+        storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted);
 
         var url = provider.getAuthorizationUrl(cfg.clientId(), cfg.clientSecret(),
-                config.callbackUrl(providerName), cfg.scope(), state);
+                config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), state);
         return new AuthResult(url, state);
     }
 
     /**
-     * @deprecated Use {@link #getAuthorizationUrl(String, org.restheart.exchange.ServiceRequest)} instead.
+     * @deprecated Use {@link #getAuthorizationUrl(String, ServiceRequest)} instead.
      * @param providerName the OAuth provider name
      * @throws OAuthException if the provider is not configured or not registered
      */
@@ -169,12 +170,14 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @param providerName the OAuth provider name extracted from the callback path
      * @param code         the authorization code received from the OAuth provider
      * @param state        the CSRF state token returned by the provider (must match a stored token)
+     * @param req          the incoming callback request, used to resolve per-team overrides;
+     *                     may be {@code null} for non-HTTP use (falls back to static config)
      * @return a {@link CallbackResult} carrying the user profile and the invite
      *         context that was stored in the state token at authorization time
      * @throws OAuthException if the state token is invalid/expired, the provider is
      *                        not registered, or the profile fetch fails
      */
-    public CallbackResult handleCallback(String providerName, String code, String state)
+    public CallbackResult handleCallback(String providerName, String code, String state, ServiceRequest<?> req)
             throws OAuthException {
 
         var token = verifyAndConsumeState(state, providerName);
@@ -182,12 +185,17 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
             throw new OAuthException("Invalid or expired state token (possible CSRF)");
         }
 
-        var cfg      = resolveProviderConfig(providerName);
-        var provider = resolveProvider(providerName);
+        // Must resolve with the SAME overrides used to build the authorize URL — a
+        // per-team override changes both clientId/clientSecret and, via apiBaseUrl below,
+        // the callbackUrl passed to the provider; the provider validates that the callback
+        // token exchange uses the exact same callbackUrl/credentials as the authorize step.
+        var cfg         = resolveProviderConfig(providerName, req);
+        var provider    = resolveProvider(providerName);
+        var apiBaseUrl  = RequestOverrides.oauthApiBaseUrl(req, config);
 
         try {
             var profile = provider.fetchUserProfile(cfg.clientId(), cfg.clientSecret(),
-                    config.callbackUrl(providerName), cfg.scope(), code);
+                    config.callbackUrl(providerName, apiBaseUrl), cfg.scope(), code);
             return new CallbackResult(profile, token.pendingInviteToken(), token.consentsAccepted());
         } catch (OAuthException e) {
             throw e;
@@ -198,7 +206,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     // ── State token persistence ───────────────────────────────────────────────
 
-    private void storeStateToken(String state, String providerName, String tenantDb,
+    private void storeStateToken(String state, String providerName, String teamDb,
                                  String pendingInviteToken, boolean consentsAccepted) {
         var doc = new BsonDocument()
                 .append("code",             new BsonString(state))
@@ -209,37 +217,37 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
             doc.append("pendingInviteToken", new BsonString(pendingInviteToken));
         }
         try {
-            oauthCodes(tenantDb).insertOne(doc);
+            oauthCodes(teamDb).insertOne(doc);
         } catch (Exception e) {
-            LOGGER.error("OAuthService: failed to store state token in {}.oauth_codes", tenantDb, e);
+            LOGGER.error("OAuthService: failed to store state token in {}.oauth_codes", teamDb, e);
             throw new RuntimeException("OAuth state storage failed", e);
         }
     }
 
     /**
-     * Atomically removes the state document from the correct tenant's MongoDB
+     * Atomically removes the state document from the correct {@code team}'s MongoDB
      * collection and returns a {@link StateToken} if the token is valid, or
      * {@code null} otherwise.
      *
-     * <p>The tenant database is decoded from the state string (see class Javadoc).
+     * <p>The team database is decoded from the state string (see class Javadoc).
      * The token is always consumed when found by {@code code}, regardless of
      * provider-name match or TTL, to prevent replay probing.
      */
     private StateToken verifyAndConsumeState(String state, String expectedProvider) {
         if (state == null || state.isBlank()) return null;
 
-        // Decode the tenant db from the state prefix
-        var tenantDb = decodeDbFromState(state);
-        if (tenantDb == null) {
+        // Decode the team db from the state prefix
+        var teamDb = decodeDbFromState(state);
+        if (teamDb == null) {
             LOGGER.warn("OAuthService: state token has invalid format");
             return null;
         }
 
         BsonDocument doc;
         try {
-            doc = oauthCodes(tenantDb).findOneAndDelete(Filters.eq("code", state));
+            doc = oauthCodes(teamDb).findOneAndDelete(Filters.eq("code", state));
         } catch (Exception e) {
-            LOGGER.error("OAuthService: failed to consume state token from {}.oauth_codes", tenantDb, e);
+            LOGGER.error("OAuthService: failed to consume state token from {}.oauth_codes", teamDb, e);
             return null;
         }
 
@@ -282,23 +290,40 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     /**
-     * Resolves provider config, checking per-tenant overrides before falling
-     * back to static config (currently only Google supports overrides).
+     * Resolves provider config, checking per-team overrides before falling back to
+     * static config. Provider-agnostic — works for any provider name, not just Google.
      *
-     * @param name provider name (case-insensitive), e.g. {@code "google"}
-     * @param req  the incoming request used to read per-tenant overrides; may be {@code null}
+     * @param name provider name (case-insensitive), e.g. {@code "google"}, {@code "github"}
+     * @param req  the incoming request used to read per-team overrides; may be {@code null}
      * @return the effective {@link OAuthConfig.ProviderConfig}
      * @throws OAuthException if OAuth is disabled or the provider is not configured
      */
-    public OAuthConfig.ProviderConfig resolveProviderConfig(String name,
-            org.restheart.exchange.ServiceRequest<?> req) throws OAuthException {
-        if ("google".equalsIgnoreCase(name) && req != null) {
-            var tenantCfg = org.restheart.accounts.util.RequestOverrides.oauthGoogle(req);
-            if (tenantCfg != null && tenantCfg.isValid()) {
-                return tenantCfg;
+    public OAuthConfig.ProviderConfig resolveProviderConfig(String name, ServiceRequest<?> req)
+            throws OAuthException {
+        if (req != null) {
+            var teamCfg = RequestOverrides.oauthProvider(req, name, config);
+            if (teamCfg != null && teamCfg.isValid()) {
+                return teamCfg;
             }
         }
         return resolveProviderConfig(name);
+    }
+
+    /**
+     * Whether {@code name} is usable for this request — either via a per-team override
+     * ({@link RequestOverrides#oauthProvider}) or the static config. Use this instead of
+     * {@link OAuthConfig#isProviderEnabled(String)} whenever a request is available: the
+     * static-only check rejects providers that are configured <em>exclusively</em> via
+     * per-team overrides (e.g. a multi-tenant node with no {@code providers.{name}} YAML
+     * entry at all, by design — see {@code RequestOverrides} class docs).
+     */
+    public boolean isProviderAvailable(String name, ServiceRequest<?> req) {
+        try {
+            resolveProviderConfig(name, req);
+            return true;
+        } catch (OAuthException e) {
+            return false;
+        }
     }
 
     private OAuthProvider resolveProvider(String name) throws OAuthException {
@@ -308,21 +333,21 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     /**
-     * Generates a state string encoding the tenant database name and 32 random bytes.
+     * Generates a state string encoding the team database name and 32 random bytes.
      *
      * <p>Format: {@code base64url(dbName) + "." + base64url(32-random-bytes)}
      * <br>The {@code .} separator is safe because it is not part of the base64url alphabet.
      */
-    private String generateState(String tenantDb) {
+    private String generateState(String teamDb) {
         var dbB64  = Base64.getUrlEncoder().withoutPadding()
-                          .encodeToString(tenantDb.getBytes(StandardCharsets.UTF_8));
+                          .encodeToString(teamDb.getBytes(StandardCharsets.UTF_8));
         var rndB64 = Base64.getUrlEncoder().withoutPadding()
                           .encodeToString(randomBytes(32));
         return dbB64 + "." + rndB64;
     }
 
     /**
-     * Decodes the tenant database name from the state string prefix.
+     * Decodes the team database name from the state string prefix.
      * Returns {@code null} if the format is invalid.
      */
     private String decodeDbFromState(String state) {

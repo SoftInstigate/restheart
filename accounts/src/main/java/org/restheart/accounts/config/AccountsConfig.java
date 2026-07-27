@@ -3,6 +3,7 @@ package org.restheart.accounts.config;
 import java.util.Map;
 
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
  *     verification:   etc/email-templates/verification.html   # null = built-in
  *     password-reset: etc/email-templates/password-reset.html
  *     invite:         etc/email-templates/invite.html
+ *   users-unrestricted-roles: [admin]   # bypass the /users self-service write restriction
  * }</pre>
  */
 @RegisterPlugin(
@@ -78,6 +80,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             configVal(config, "jwt-ttl",           15),
             configVal(config, "cookie-domain",     "localhost"),
             configVal(config, "cookie-name",      "rh_auth"),
+            configVal(config, "cookie-secure",    true),
             configVal(config, "frontend-url",      "http://localhost:4200"),
             configVal(config, "frontend-app-url",  "http://localhost:4200/app"),
             configVal(config, "terms-version",     "1.0"),
@@ -86,12 +89,13 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
             configVal(templates, "verification",   null),
             configVal(templates, "password-reset", null),
             configVal(templates, "invite",         null),
-            configVal(config, "tenant-claim-name",            "tenant"),
+            configVal(config, "team-claim-name",              "team"),
             configVal(config, "member-role-name",             "member"),
             configVal(config, "membership-endpoints-enabled", true),
             configVal(config, "ownership-role",                 "owner"),
             configVal(config, "default-role",                   "user"),
-            configVal(config, "account-properties-claims",      null)
+            configVal(config, "account-properties-claims",      null),
+            configVal(config, "users-unrestricted-roles",       null)
         );
     }
 

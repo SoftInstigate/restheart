@@ -148,7 +148,7 @@ Feature: PATCH /auth/member-role
     Then status 400
 
   # ---------------------------------------------------------------------------
-  Scenario: target not a member of the tenant — returns 404
+  Scenario: target not a member of the team — returns 404
   # ---------------------------------------------------------------------------
     Given path '/auth/member-role'
     And header Authorization = 'Bearer ' + ownerJwt
@@ -201,7 +201,7 @@ Feature: PATCH /auth/member-role
     Then status 200
 
   # ---------------------------------------------------------------------------
-  Scenario: verify DB — role updated in user.tenants[] after PATCH
+  Scenario: verify DB — role updated in user.teams[] after PATCH
   # ---------------------------------------------------------------------------
     * def memberEmail = 'umr-db-' + java.util.UUID.randomUUID() + '@example.com'
 
@@ -225,7 +225,7 @@ Feature: PATCH /auth/member-role
     And param rep = 's'
     When method GET
     Then status 200
-    * def initialRole = response.tenants[0].role
+    * def initialRole = response.teams[0].role
     * match initialRole == 'member'
 
     # Promote to admin
@@ -241,5 +241,5 @@ Feature: PATCH /auth/member-role
     And param rep = 's'
     When method GET
     Then status 200
-    * def updatedRole = response.tenants[0].role
+    * def updatedRole = response.teams[0].role
     * match updatedRole == 'owner'

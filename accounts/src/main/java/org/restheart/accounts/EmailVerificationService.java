@@ -2,14 +2,15 @@ package org.restheart.accounts;
 
 import com.mongodb.client.MongoClient;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.plugins.accounts.TeamClaim;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -18,6 +19,7 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.services.TokenRedirectHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +30,28 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * GET /auth/verify?email=...&token=...
+ * GET /auth/verify?email=...&token=...&delivery=cookie|fragment
  *
- * <p>Validates the email-verification token, activates the account, issues a JWT, sets
- * the {@code rh_auth} cookie, and redirects the browser to the application.
+ * <p>Validates the email-verification token, activates the account, issues a JWT, and
+ * redirects the browser to the application. The {@code delivery} query parameter selects
+ * how the JWT is handed to the frontend:
+ * <ul>
+ *   <li>{@code delivery=cookie} (or omitted, default) — sets the {@code rh_auth} cookie
+ *       and redirects to {@code frontendAppUrl}. For same-origin setups where cookie
+ *       auth works.</li>
+ *   <li>{@code delivery=fragment} — redirects to {@code frontendAppUrl} with the JWT
+ *       appended as a URL fragment ({@code #access_token=...&token_type=Bearer&expires_in=...},
+ *       via {@link TokenRedirectHelper}, same mechanism as {@code GET /token/redirect}
+ *       and the OAuth callback). For cross-origin SPAs using Bearer token auth, where
+ *       browsers block third-party cookies.</li>
+ * </ul>
  *
  * <p>All outcomes are expressed as 302 redirects (the request arrives via a link in an
  * email, so a browser navigation is always in progress):
  * <ul>
- *   <li>Success     → 302 to {@code frontendAppUrl} with {@code rh_auth} cookie set</li>
+ *   <li>Success     → 302 to {@code frontendAppUrl?flow=signup} (cookie set or fragment
+ *                     appended depending on {@code delivery}); {@code flow=signup} is a
+ *                     one-shot marker frontends can use to show a welcome banner</li>
  *   <li>Invalid/missing token or email mismatch
  *                   → 302 to {@code frontendUrl}/auth/login?error=invalid_token</li>
  *   <li>Expired token (TTL 7 days)
@@ -88,11 +103,12 @@ public class EmailVerificationService implements JsonService {
         if (req.isOptions()) { handleOptions(req); return; }
         if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
 
-        final var loginErrorBase = conf.frontendUrl() + "/auth/login";
+        final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
 
         // ── 1. Read query parameters ─────────────────────────────────────────
-        var email = req.getQueryParameterOrDefault("email", null);
-        var token = req.getQueryParameterOrDefault("token", null);
+        var email    = req.getQueryParameterOrDefault("email", null);
+        var token    = req.getQueryParameterOrDefault("token", null);
+        var delivery = req.getQueryParameterOrDefault("delivery", "cookie");
 
         if (email == null || email.isBlank() || token == null || token.isBlank()) {
             redirect(res, loginErrorBase + "?error=invalid_token");
@@ -147,15 +163,12 @@ public class EmailVerificationService implements JsonService {
         roles.add(effectiveRole);
 
         // ── 5d. Issue JWT ─────────────────────────────────────────────────────
-        var tenantBson = accountsService.getMembershipProvider()
-                .activeMembership(storedEmail)
-                .map(m -> m.tenantId())
-                .orElse(null);
+        var activeMembership = accountsService.getMembershipProvider(req)
+                .activeMembership(storedEmail);
 
         var extraClaims = new java.util.HashMap<String, Object>();
-        if (tenantBson != null) {
-            extraClaims.put(conf.tenantClaimName(), tenantBson);
-        }
+        activeMembership.ifPresent(m ->
+                extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
 
         var jwtToken = jwt.issueToken(
                 storedEmail,
@@ -165,14 +178,27 @@ public class EmailVerificationService implements JsonService {
                 extraClaims,
                 user);
 
-        // ── 5e. Set auth cookie ───────────────────────────────────────────────
-        var cookieHeader = JwtHelper.setCookieHeader(jwtToken, conf.cookieName(), RequestOverrides.cookieDomain(req, conf));
-        res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
-
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 
-        // ── 5f. Redirect to app ───────────────────────────────────────────────
-        redirect(res, conf.frontendAppUrl());
+        // ── 5e. Deliver token and redirect to app ────────────────────────────
+        // Browser-navigation endpoint: only cookie|fragment are meaningful (no JSON body consumer).
+        // `flow=signup` marks this specific redirect as a fresh signup event, so the frontend
+        // can show a one-time "welcome" banner without guessing via client-side state — the
+        // marker only ever appears on the single redirect that follows a real, server-side
+        // token verification (the token is single-use, unset from the DB in step 5a above).
+        // Same query-param convention as OAuthCallback's `flow=signup`.
+        var appUrl = RequestOverrides.frontendAppUrl(req, conf) + "?flow=signup";
+        var mode   = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
+
+        if (mode == TokenDelivery.Mode.FRAGMENT) {
+            // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,
+            // same mechanism as GET /token/redirect and the OAuth callback
+            redirect(res, TokenDelivery.fragmentUrl(appUrl, conf, jwtToken));
+        } else {
+            // Default: same-origin setups using cookie auth
+            TokenDelivery.cookie(res, req, conf, jwtToken);
+            redirect(res, appUrl);
+        }
     }
 
     // -------------------------------------------------------------------------

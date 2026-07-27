@@ -21,10 +21,7 @@
 
 package org.restheart.security.authenticators;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Map;
 
 import org.restheart.exchange.ServiceRequest;
@@ -35,9 +32,10 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
+import org.restheart.security.AuthCookie;
 import static org.restheart.security.authenticators.AuthCookieHandler.enabled;
 
-import io.undertow.server.handlers.CookieImpl;
+import io.undertow.util.Headers;
 
 
 /**
@@ -98,21 +96,16 @@ public class AuthCookieSetter implements WildcardInterceptor {
         // use JWT authentication (i.e. Bearer_...) - underscore instead of space for RFC 6265 compliance
         // otherwise rely on tokenBasicAuthMechanism (i.e. Basic_...)
         var authToken = jwtAuthWithJwtAuthMechanism
-            ? "Bearer_".concat(authTokenHeader)
-            : "Basic_".concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
+            ? AuthCookie.bearerValue(authTokenHeader)
+            : AuthCookie.BASIC_PREFIX.concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
 
-        var expiry = LocalDateTime.now()
-            .plusSeconds(this.secondsUntilExpiration)
-            .toInstant(ZoneOffset.UTC);
+        // Emit the auth cookie through the shared canonical builder so that the
+        // format (Bearer_/Basic_ value, attributes) stays identical to the cookie
+        // issued by restheart-accounts and expected by authCookieHandler.
+        var setCookie = AuthCookie.header(this.name, authToken, domain(req), this.path,
+            this.secure, this.httpOnly, this.sameSite, this.sameSiteMode, this.secondsUntilExpiration);
 
-        res.getExchange().setResponseCookie(new CookieImpl(this.name, authToken)
-            .setSecure(this.secure)
-            .setHttpOnly(this.httpOnly)
-            .setDomain(domain(req))
-            .setPath(this.path)
-            .setSameSite(this.sameSite)
-            .setSameSiteMode(this.sameSiteMode)
-            .setExpires(Date.from(expiry)));
+        res.getHeaders().add(Headers.SET_COOKIE, setCookie);
     }
 
 	private String domain(ServiceRequest<?> req) {

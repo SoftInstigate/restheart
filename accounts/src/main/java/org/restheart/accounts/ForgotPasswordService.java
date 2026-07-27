@@ -8,8 +8,8 @@ import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonArray;
-import org.restheart.accounts.config.AccountsConfigData;
-import org.restheart.accounts.email.Ermes;
+import org.restheart.plugins.accounts.AccountsConfigData;
+import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
@@ -33,11 +33,19 @@ import com.mongodb.client.MongoClient;
  * POST /auth/forgot-password
  *
  * <p>Generates a one-shot {@code passwordResetToken} (256-bit, TTL 1 hour) stored on the
- * user document and sends a password-reset email.
+ * user document and sends a password-reset email — for accounts that have completed email
+ * verification.
+ *
+ * <p>For an account that has <strong>not</strong> completed email verification yet (still
+ * {@code $unauthenticated}), there is no password to reset: instead this re-sends the
+ * verification email (new {@code emailVerificationToken}, invalidating the previous one).
+ * This is the account owner's only self-service way to recover from a lost or expired
+ * activation email — without it, such an account would be stuck forever, since registration
+ * rejects the email as already taken.
  *
  * <p><strong>Anti-enumeration</strong>: always responds {@code 202 Accepted} regardless of
- * whether the requested email exists or not. All internal outcomes are logged at DEBUG level
- * so that sensitive details never leak via logs in production.
+ * whether the requested email exists, is verified, or anything else. All internal outcomes
+ * are logged at DEBUG level so that sensitive details never leak via logs in production.
  *
  * <p>Expected body: {@code { "email": "user@example.com" }}
  */
@@ -59,8 +67,8 @@ public class ForgotPasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
-    @Inject("ermes")
-    private Ermes ermes;
+    @Inject("emails")
+    private EmailSender emails;
 
 
     @OnInit
@@ -108,7 +116,8 @@ public class ForgotPasswordService implements JsonService {
     // -------------------------------------------------------------------------
 
     /**
-     * Performs the actual password-reset flow.
+     * Dispatches to the password-reset or the verification-resend flow depending on
+     * whether the account has completed email verification.
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
@@ -120,36 +129,43 @@ public class ForgotPasswordService implements JsonService {
             return;
         }
 
-        var user   = userOpt.get();
+        var user = userOpt.get();
 
-        // Only send reset emails for verified accounts
         // Verified users have roles != ["$unauthenticated"]
         var userRoles = user.containsKey("roles") && user.get("roles").isArray()
                 ? user.getArray("roles") : new BsonArray();
         boolean isVerified = !userRoles.isEmpty()
                 && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
-        if (!isVerified) {
-            LOGGER.debug("forgotPassword: account not verified (roles={}), skipping reset", userRoles);
-            return;
-        }
 
-        // c. Generate one-shot reset token and record its creation time
+        if (isVerified) {
+            sendPasswordReset(req, email, dbName, user);
+        } else {
+            resendVerificationEmail(req, email, dbName, user);
+        }
+    }
+
+    /**
+     * Account has a password to reset: generate a one-shot {@code passwordResetToken}
+     * and email the reset link.
+     */
+    private void sendPasswordReset(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+        // a. Generate one-shot reset token and record its creation time
         var token = TokenUtils.generateToken();
         var now   = new BsonDateTime(Instant.now().toEpochMilli());
 
-        // d. Persist token on the user document
+        // b. Persist token on the user document
         var updates = new BsonDocument();
         updates.put("passwordResetToken",   new BsonString(token));
         updates.put("passwordResetCreatedAt", now);
         new DbHelper(mclient, dbName).updateUser(email, updates);
 
-        // e. Build reset link and send email
+        // c. Build reset link and send email
         var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
                 && user.getDocument("profile").containsKey("name")
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var resetLink    = conf.frontendUrl()
+        var resetLink    = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
@@ -158,19 +174,67 @@ public class ForgotPasswordService implements JsonService {
             LOGGER.debug("Skipping password reset email to <{}> (X-Skip-Email header)", email);
         } else {
             var tmpl = EmailTemplateLoader.loadWithFallback(
-                    null, conf.passwordResetTemplatePath(), "password-reset.html");
+                    RequestOverrides.templatePasswordReset(req), conf.passwordResetTemplatePath(), "password-reset.html");
             var vars = java.util.Map.of(
-                    "app-name", conf.appName(),
+                    "app-name", RequestOverrides.appName(req, conf),
                     "year", String.valueOf(java.time.Year.now().getValue()),
                     "first-name", firstName != null ? firstName : "",
                     "email", email,
-                    "frontend-url", conf.frontendUrl(),
+                    "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            ermes.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
-        // f. Audit log — no PII at INFO level
+        // d. Audit log — no PII at INFO level
         LOGGER.info("forgotPassword: password reset email dispatched");
+    }
+
+    /**
+     * Account never completed email verification: there is no password to reset yet.
+     * Regenerate {@code emailVerificationToken} (invalidating the previous one, e.g. an
+     * expired or lost original) and re-send the activation email — mirrors the email
+     * sent by {@link RegisterService} at signup time.
+     */
+    private void resendVerificationEmail(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+        // a. Generate new verification token and record its creation time
+        var token = TokenUtils.generateToken();
+        var now   = new BsonDateTime(Instant.now().toEpochMilli());
+
+        // b. Persist token on the user document
+        var updates = new BsonDocument();
+        updates.put("emailVerificationToken",     new BsonString(token));
+        updates.put("emailVerificationCreatedAt", now);
+        new DbHelper(mclient, dbName).updateUser(email, updates);
+
+        // c. Build verification link and send email
+        var firstName = user.containsKey("profile") && user.get("profile").isDocument()
+                && user.getDocument("profile").containsKey("name")
+                ? user.getDocument("profile").getString("name").getValue()
+                : email;
+        var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+        var verifyLink    = RequestOverrides.frontendUrl(req, conf)
+                + "/auth/verify?email=" + encodedEmail
+                + "&token=" + token;
+
+        // Check X-Skip-Email header for integration tests
+        if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
+            LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
+        } else {
+            var tmpl = EmailTemplateLoader.loadWithFallback(
+                    RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
+            var vars = java.util.Map.of(
+                    "app-name", RequestOverrides.appName(req, conf),
+                    "year", String.valueOf(java.time.Year.now().getValue()),
+                    "first-name", firstName != null ? firstName : "",
+                    "email", email,
+                    "frontend-url", RequestOverrides.frontendUrl(req, conf),
+                    "verification-url", verifyLink);
+            var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
+            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+        }
+
+        // d. Audit log — no PII at INFO level
+        LOGGER.info("forgotPassword: account not verified — verification email re-dispatched");
     }
 }

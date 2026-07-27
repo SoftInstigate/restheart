@@ -2,15 +2,16 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.undertow.util.HttpString;
 import org.bson.BsonValue;
 import org.restheart.utils.BsonUtils;
-import org.restheart.accounts.config.AccountsConfigData;
+import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.JwtHelper;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.plugins.accounts.TeamClaim;
+import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -23,34 +24,34 @@ import org.restheart.utils.HttpStatus;
 import java.util.Set;
 
 /**
- * POST /auth/switch-tenant
+ * POST /auth/switch-team
  *
- * <p>Switches the caller's active tenant. Verifies membership via the active
- * {@link MembershipProvider}, issues a new JWT for the target tenant with
+ * <p>Switches the caller's active team. Verifies membership via the active
+ * {@link MembershipProvider}, issues a new JWT for the target team with
  * the correct role, and sets the auth cookie.
  *
- * <p>Request body ({@code tenantId} in MongoDB extended JSON, matching the value from {@code GET /auth/tenants}):
- * <pre>{@code { "tenantId": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"} }}</pre>
+ * <p>Request body ({@code teamId} in MongoDB extended JSON, matching the value from {@code GET /auth/teams}):
+ * <pre>{@code { "teamId": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"} }}</pre>
  *
  * <p>Response: 200 with updated cookie. Body:
- * <pre>{@code { "tenant": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"}, "role": "member" }}</pre>
+ * <pre>{@code { "team": {"$oid": "64a1b2c3d4e5f6a7b8c9d0e2"}, "role": "member" }}</pre>
  *
  * <p>Errors:
  * <ul>
  *   <li>400 — missing or invalid body</li>
  *   <li>401 — not authenticated</li>
- *   <li>403 — user does not belong to the requested tenant</li>
+ *   <li>403 — user does not belong to the requested team</li>
  * </ul>
  *
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "switchTenantService",
-        description      = "POST /auth/switch-tenant \u2014 switch active tenant and reissue JWT cookie",
-        defaultURI       = "/auth/switch-tenant",
+        name             = "switchTeamService",
+        description      = "POST /auth/switch-team \u2014 switch active team and reissue JWT cookie",
+        defaultURI       = "/auth/switch-team",
         secure           = true,
         enabledByDefault = false)
-public class SwitchTenantService implements JsonService {
+public class SwitchTeamService implements JsonService {
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -70,7 +71,7 @@ public class SwitchTenantService implements JsonService {
     public void onInit() {
         this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
         if (conf.membershipEndpointsEnabled()) {
-            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-tenant") && (r.isPost() || r.isOptions()));
+            aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-team") && (r.isPost() || r.isOptions()));
         }
     }
 
@@ -94,43 +95,43 @@ public class SwitchTenantService implements JsonService {
             return;
         }
         var jo = body.getAsJsonObject();
-        if (!jo.has("tenantId") || jo.get("tenantId").isJsonNull()) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
+        if (!jo.has("teamId") || jo.get("teamId").isJsonNull()) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "teamId is required");
             return;
         }
-        BsonValue targetTenantId;
+        BsonValue targetTeamId;
         try {
-            targetTenantId = BsonUtils.parse(jo.get("tenantId").toString());
+            targetTeamId = BsonUtils.parse(jo.get("teamId").toString());
         } catch (Exception e) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invalid tenantId format");
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Invalid teamId format");
             return;
         }
-        if (targetTenantId == null) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "tenantId is required");
+        if (targetTeamId == null) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST, "teamId is required");
             return;
         }
 
         var email      = account.getPrincipal().getName();
-        var membership = accountsService.getMembershipProvider();
+        var membership = accountsService.getMembershipProvider(req);
 
         // Find the target membership via the SPI
         var memberships = membership.listMemberships(email);
         org.restheart.plugins.accounts.Membership matched = null;
         for (var m : memberships) {
-            if (targetTenantId.equals(m.tenantId())) {
+            if (targetTeamId.equals(m.teamId())) {
                 matched = m;
                 break;
             }
         }
 
         if (matched == null) {
-            Errors.error(res, HttpStatus.SC_FORBIDDEN, "User does not belong to this tenant");
+            Errors.error(res, HttpStatus.SC_FORBIDDEN, "User does not belong to this team");
             return;
         }
 
         // Switch the active membership via the SPI
         try {
-            membership.setActiveMembership(email, matched.tenantId());
+            membership.setActiveMembership(email, matched.teamId());
         } catch (IllegalArgumentException e) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, e.getMessage());
             return;
@@ -153,18 +154,24 @@ public class SwitchTenantService implements JsonService {
                 dbRoles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
-                java.util.Map.<String, Object>of(conf.tenantClaimName(), matched.tenantId()),
+                java.util.Map.<String, Object>of(conf.teamClaimName(),
+                        TeamClaim.of(matched.teamId(), matched.role())),
                 null);
 
-        // Set cookie
-        var domain       = RequestOverrides.cookieDomain(req, conf);
-        var cookieHeader = JwtHelper.setCookieHeader(token, conf.cookieName(), domain, conf.jwtTtl());
-        res.getHeaders().add(HttpString.tryFromString("Set-Cookie"), cookieHeader);
+        // Deliver the reissued token per the `delivery` query parameter
+        // (cookie by default, body for bearer SPAs).
+        var delivery = TokenDelivery.resolve(
+                req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);
 
-        // Response body
+        // Response body — team mirrors the { _id, role } claim shape
         var responseBody = new JsonObject();
-        responseBody.add(conf.tenantClaimName(), JsonParser.parseString(BsonUtils.toJson(matched.tenantId())));
-        responseBody.addProperty("role", matched.role());
+        responseBody.add(conf.teamClaimName(),
+                JsonParser.parseString(BsonUtils.toJson(TeamClaim.of(matched.teamId(), matched.role()))));
+        if (delivery == TokenDelivery.Mode.BODY) {
+            TokenDelivery.body(res, responseBody, conf, token);
+        } else {
+            TokenDelivery.cookie(res, req, conf, token);
+        }
         res.setContent(responseBody);
         res.setStatusCode(HttpStatus.SC_OK);
     }

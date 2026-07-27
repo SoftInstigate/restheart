@@ -82,8 +82,38 @@ Feature: PATCH /auth/reset-password
     # Verify: the reset response issues a JWT — use it to make an authenticated call
     * def setCookie = responseHeaders['Set-Cookie'][0]
     * def jwt = setCookie.split('Bearer_')[1].split(';')[0]
-    Given path '/auth/tenants'
+    Given path '/auth/teams'
     And header Authorization = 'Bearer ' + jwt
+    When method GET
+    Then status 200
+    And match response == '#array'
+
+  # ---------------------------------------------------------------------------
+  Scenario: delivery=body — token returned in the body (bearer), no cookie
+  # ---------------------------------------------------------------------------
+    Given path '/auth/reset-password'
+    And param delivery = 'body'
+    And request
+      """
+      {
+        "email":    "#(email)",
+        "token":    "#(resetToken)",
+        "password": "NewPassword1!"
+      }
+      """
+    When method PATCH
+    Then status 200
+
+    # Token delivered in body (and Auth-Token header); no auth cookie is set
+    And match response.access_token == '#string'
+    And match response.token_type == 'Bearer'
+    And match responseHeaders['Auth-Token'][0] == response.access_token
+    And match responseHeaders['Set-Cookie'] == '#[0]'
+    * def bodyJwt = response.access_token
+
+    # The body token is a valid JWT — use it to make an authenticated call
+    Given path '/auth/teams'
+    And header Authorization = 'Bearer ' + bodyJwt
     When method GET
     Then status 200
     And match response == '#array'

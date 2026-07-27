@@ -1,4 +1,4 @@
-package org.restheart.accounts.config;
+package org.restheart.plugins.accounts;
 
 import java.util.List;
 
@@ -7,8 +7,12 @@ import java.util.List;
  * restheart-accounts plugins (signup, email verification, invitations,
  * password reset, OAuth).
  *
- * <p>Produced by {@link AccountsConfig} and injected via
+ * <p>Produced by a provider in {@code restheart-accounts} and injected via
  * {@code @Inject("accountsConfig")}.
+ *
+ * <p>This record lives in {@code restheart-commons} so that downstream
+ * modules can depend only on {@code restheart-commons} at compile time,
+ * without pulling in the {@code restheart-accounts} module.
  */
 public record AccountsConfigData(
 
@@ -48,6 +52,14 @@ public record AccountsConfigData(
      * Defaults to {@code "rh_auth"} (RESTHeart's built-in default).
      */
     String cookieName,
+
+    /**
+     * Whether the auth cookie carries the {@code Secure} attribute.
+     * Defaults to {@code true}. Set to {@code false} only for local HTTP development,
+     * where browsers reject {@code Secure} cookies over plain HTTP.
+     * Mirrors {@code authCookieSetter.secure}.
+     */
+    boolean cookieSecure,
 
     /** Base URL of the public frontend, e.g. {@code "https://app.example.com"}. */
     String frontendUrl,
@@ -95,11 +107,10 @@ public record AccountsConfigData(
     // ── Membership SPI ───────────────────────────────────────────────────────
 
     /**
-     * JWT claim name used to carry the active tenant identifier.
-     * Defaults to {@code "tenant"}. Change to e.g. {@code "org"} if your domain
-     * uses a different terminology.
+     * JWT claim name used to carry the active team identifier.
+     * Defaults to {@code "team"}.
      */
-    String tenantClaimName,
+    String teamClaimName,
 
     /**
      * Role name assigned to non-admin team members.
@@ -112,7 +123,7 @@ public record AccountsConfigData(
      * Whether the membership management endpoints are enabled.
      * When {@code false}, the following endpoints return 404:
      * {@code /auth/invite}, {@code /auth/resend-invite},
-     * {@code /auth/tenants}, {@code /auth/switch-tenant}.
+     * {@code /auth/teams}, {@code /auth/switch-team}.
      * Useful when you expose equivalent endpoints via a custom provider.
      * Defaults to {@code true}.
      */
@@ -120,7 +131,7 @@ public record AccountsConfigData(
 
     /**
      * Team role assigned to the user who creates a new team (e.g. {@code "owner"}).
-     * Stored in {@code user.tenants[].role} and {@code team.members[].role}.
+     * Stored in {@code user.teams[].role} and {@code team.members[].role}.
      * Defaults to {@code "owner"}.
      */
     String ownershipRole,
@@ -136,14 +147,30 @@ public record AccountsConfigData(
     /**
      * List of request attached-parameter names that should be propagated as JWT claims.
      * Mirrors {@code jwtTokenManager.account-properties-claims} and is applied
-     * by {@link org.restheart.accounts.util.JwtHelper} when issuing tokens from
-     * accounts endpoints (verify, activate, reset-password, switch-tenant, OAuth).
+     * by {@code JwtHelper} when issuing tokens from
+     * accounts endpoints (verify, activate, reset-password, switch-team, OAuth).
      *
      * <p>Example: {@code [srvNode, customClaim]}.
      *
      * <p>{@code null} or empty list → no additional properties are propagated
      * (only {@code authDb} and explicit extra claims are included).
      */
-    List<String> accountPropertiesClaims
+    List<String> accountPropertiesClaims,
+
+    // ── Users self-service write restriction ────────────────────────────────
+
+    /**
+     * Roles exempt from the {@code /users} self-service write restriction that
+     * {@code accountsInitializer} enforces unconditionally (generic REST PATCH to
+     * {@code /users} limited to {@code profile.*}; PUT/POST always blocked).
+     *
+     * <p>Accounts belonging to one of these roles can create, replace, or PATCH
+     * any field of any user document via the generic MongoDB REST resource —
+     * e.g. an admin console role that manages {@code roles}/{@code teams} directly.
+     *
+     * <p>{@code null} or empty list → no role is exempt, the restriction applies
+     * to every caller.
+     */
+    List<String> usersUnrestrictedRoles
 
 ) {}
