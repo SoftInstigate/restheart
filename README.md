@@ -35,7 +35,6 @@ No route was written for `/messages`. It is a MongoDB collection, and the query 
 - [**SSE**](https://restheart.org/docs/sse/): Server-Sent Events for dashboards, IoT feeds, and event streams
 - [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules defined as data, not code
 - [**Plugin framework**](https://restheart.org/docs/framework/overview): custom services, interceptors, and initializers in Java, Kotlin, JavaScript, or TypeScript, for the logic a declarative API cannot cover
-- **Sophia AI assistant**: an MCP server exposing RESTHeart's own API and plugin documentation to AI coding assistants such as Claude Code, Cursor, or VS Code, and a browser chat for querying the docs directly
 - **Metrics and monitoring**: a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
 - **IoT / MQTT**: ingest device telemetry directly into MongoDB *(coming soon)*
 
@@ -43,7 +42,7 @@ Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Und
 
 ### Running it
 
-Fully managed, no installation required:
+Fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
 
 [![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
 
