@@ -35,7 +35,7 @@ No route was written for `/messages`. It is a MongoDB collection, and the query 
 - [**SSE**](https://restheart.org/docs/sse/): Server-Sent Events for dashboards, IoT feeds, and event streams
 - [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules defined as data, not code
 - [**Plugin framework**](https://restheart.org/docs/framework/overview): custom services, interceptors, and initializers in Java, Kotlin, JavaScript, or TypeScript, for the logic a declarative API cannot cover
-- **Metrics and monitoring**: a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
+- [**Metrics and monitoring**](https://restheart.org/docs/deployment/monitoring): a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
 - **IoT / MQTT**: ingest device telemetry directly into MongoDB *(coming soon)*
 
 Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Undertow, and virtual threads.
