@@ -11,34 +11,50 @@
 
 ---
 
-## The Open Source Backend for MongoDB
+## What RESTHeart is
 
-Instant REST, GraphQL, and WebSocket APIs. No backend code.
+Every application built on MongoDB ends up with the same backend layer: routes that map to collections, permission checks on each endpoint, pagination and filtering logic, a way to push updates to clients in real time. That layer is largely mechanical, and writing it by hand for each project is where a lot of backend code goes.
 
-Built-in authentication and authorization. Declarative, zero boilerplate.
-
-Need custom logic? Extend it in Java, Kotlin, JavaScript, or TypeScript.
-
-Plus [Sophia](https://restheart.org/docs/cloud/sophia/mcp), the AI assistant: chat with the docs, or vibe code via MCP.
-
-[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
-
-Fully managed, no installation required. Or run it yourself, free and open source, see below.
+RESTHeart generates that layer directly from the database. Point it at a MongoDB instance and it exposes the data through REST, GraphQL, WebSocket, and SSE APIs, with authentication, authorization, and real-time change streams already in place. Permissions and behavior are configured declaratively; custom logic is added only for the parts a data API cannot express, through plugins written in Java, Kotlin, JavaScript, or TypeScript.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
-**Core capabilities:**
+### Example
 
-- [**REST API**](https://restheart.org/docs/mongodb-rest/): Full CRUD, aggregations, filtering, sorting, pagination
-- [**GraphQL**](https://restheart.org/docs/graphql/): Schema-driven mapping to MongoDB queries
-- [**WebSocket**](https://restheart.org/docs/websocket/): Real-time change streams and data sync
-- **SSE**: Server-Sent Events for live dashboards, IoT feeds, and event streams
-- [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules
-- [**Plugin framework**](https://restheart.org/docs/framework/overview): Extend with Java, Kotlin, JavaScript, or TypeScript for custom business logic
-- **Sophia AI assistant**: Chat with the docs in your browser, or connect Claude, Claude Code, Cursor, or VS Code to the MCP server to vibe code and configure your backend
-- **Metrics & Monitoring**: Built-in Prometheus-compatible metrics endpoint with a real-time browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
-- **IoT / MQTT**: Connect devices and ingest telemetry directly into MongoDB *(coming soon)*
+```bash
+curl "https://demo.restheart.org/messages?filter={\"from\":\"Bob\"}&pagesize=1"
+```
 
-Available as a Docker image and GraalVM native binary. Built on Java 25, Undertow, and virtual threads.
+No route was written for `/messages`. It is a MongoDB collection, and the query parameters (`filter`, `pagesize`, sorting) map directly to MongoDB's query language.
+
+### Core capabilities
+
+- [**REST API**](https://restheart.org/docs/mongodb-rest/): full CRUD, aggregations, filtering, sorting, pagination, generated from the database schema
+- [**GraphQL**](https://restheart.org/docs/graphql/): schema-driven mapping to MongoDB queries
+- [**WebSocket**](https://restheart.org/docs/websocket/): change streams exposed as real-time data sync
+- [**SSE**](https://restheart.org/docs/sse/): Server-Sent Events for dashboards, IoT feeds, and event streams
+- [**Authentication and Authorization**](https://restheart.org/docs/security/overview): JWT, OAuth2, LDAP, MongoDB-based users, ACL rules defined as data, not code
+- [**Plugin framework**](https://restheart.org/docs/framework/overview): custom services, interceptors, and initializers in Java, Kotlin, JavaScript, or TypeScript, for the logic a declarative API cannot cover
+- [**Metrics and monitoring**](https://restheart.org/docs/deployment/monitoring): a Prometheus-compatible endpoint plus a browser dashboard at `/metrics-ui`, tracking request rates, latency percentiles, and HTTP status distribution
+- **IoT / MQTT**: ingest device telemetry directly into MongoDB *(coming soon)*
+
+Distributed as a Docker image and a GraalVM native binary. Built on Java 25, Undertow, and virtual threads.
+
+### Running it
+
+Fully managed, no installation required, and including [Sophia](https://restheart.org/docs/cloud/sophia/mcp), an MCP server and browser assistant that exposes RESTHeart's docs and plugin API to AI coding assistants such as Claude Code, Cursor, or VS Code:
+
+[![Try RESTHeart Cloud for free](https://restheart.org/images/restheart-cloud-button.svg)](https://cloud.restheart.com/signup)
+
+Or self-hosted, since the core is free and open source:
+
+```bash
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml \
+  --output docker-compose.yml && docker compose up --attach restheart
+
+curl http://localhost:8080/ping
+```
+
+Full documentation: https://restheart.org/docs/
 
 ---
