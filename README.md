@@ -58,3 +58,11 @@ curl http://localhost:8080/ping
 Full documentation: https://restheart.org/docs/
 
 ---
+
+## License
+
+RESTHeart core is licensed under the GNU AGPL v3.
+
+`restheart-commons`, the Maven artifact plugins depend on to reach the Approved Interfaces, is licensed under the Apache License 2.0. Plugins that depend only on `restheart-commons`, without linking against RESTHeart's AGPL-licensed core, can be distributed under any license, including proprietary ones. See [PLUGIN_EXCEPTION.md](PLUGIN_EXCEPTION.md) for the exact terms of this permission.
+
+---
