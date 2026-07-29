@@ -22,22 +22,18 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
-import org.json.JSONObject;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
-import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
-import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.MongoURLUtils;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
@@ -90,6 +86,13 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(JsonSchemaBeforeWriteChecker.class);
+
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    protected JsonSchemas jsonSchemas() {
+        return jsonSchemas;
+    }
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -150,83 +153,40 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             return;
         }
 
-        Schema theschema;
-
-        try {
-            theschema = JsonSchemaCacheSingleton
-                    .getInstance()
-                    .get(schemaStoreDb, schemaId);
-        } catch (JsonSchemaNotFoundException ex) {
-            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "wrong 'jsonSchema': schema "
-                    + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + BsonUtils.getIdAsString(schemaId, false)
-                    + " not found");
-            return;
+        for (var doc : documentsToCheck(request, response)) {
+            try {
+                jsonSchemas().validate(doc, schemaStoreDb, schemaId);
+            } catch (org.restheart.plugins.schema.JsonSchemaNotFoundException ex) {
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        "wrong 'jsonSchema': schema "
+                        + schemaStoreDb + "/" + _SCHEMAS + "/"
+                        + BsonUtils.getIdAsString(schemaId, false)
+                        + " not found");
+                return;
+            } catch (org.restheart.plugins.schema.SchemaValidationException sve) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST,
+                        "Request content violates schema "
+                        + BsonUtils.getIdAsString(schemaId, true)
+                        + ": "
+                        + String.join(", ", sve.getViolations()));
+            }
         }
-
-        if (Objects.isNull(theschema)) {
-            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "wrong 'jsonSchema': schema "
-                    + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + BsonUtils.getIdAsString(schemaId, false)
-                    + " not found");
-            return;
-        }
-
-        documentsToCheck(request, response)
-                .stream()
-                .forEachOrdered(doc -> {
-
-                    try {
-                        theschema.validate(doc);
-                    } catch (ValidationException ve) {
-                        var errors = new ArrayList<String>();
-
-                        errors.add(ve.getMessage().replaceAll("#: ", ""));
-
-                        ve.getCausingExceptions().stream()
-                                .map(ValidationException::getMessage)
-                                .forEach(errors::add);
-
-                        var errMsgBuilder = new StringBuilder();
-
-                        errors.stream()
-                                .map(e -> e.replaceAll("#: ", ""))
-                                .forEachOrdered(e -> errMsgBuilder.append(e).append(", "));
-
-                        var errMsg = errMsgBuilder.toString();
-
-                        if (errMsg.length() > 2
-                                && ", ".equals(errMsg.substring(errMsg.length() - 2, errMsg.length()))) {
-                            errMsg = errMsg.substring(0, errMsg.length() - 2);
-
-                        }
-
-                        response.setInError(HttpStatus.SC_BAD_REQUEST,
-                                "Request content violates schema "
-                                + BsonUtils.getIdAsString(schemaId, true)
-                                + ": "
-                                + errMsg);
-                    }
-                });
     }
 
-    List<JSONObject> documentsToCheck(MongoRequest request, MongoResponse response) {
-        var ret = new ArrayList<JSONObject>();
+    List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
+        var ret = new ArrayList<BsonDocument>();
 
         var content = request.getContent() == null
                 ? new BsonDocument()
                 : request.getContent();
 
         if (content.isDocument()) {
-            ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
+            ret.add(content.asDocument());
         } else if (content.isArray()) {
             content.asArray()
                     .stream()
                     .filter(doc -> doc.isDocument())
-                    .map(doc -> BsonUtils.toJson(doc, request.getJsonMode()))
-                    .map(doc -> new JSONObject(doc))
+                    .map(doc -> doc.asDocument())
                     .forEachOrdered(ret::add);
         }
 

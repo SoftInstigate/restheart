@@ -401,6 +401,7 @@
   enabled: true
 
 /logging/log-level: DEBUG
+/logging/no-colors: true
 /core/name: integration-test
 
 # restheart-accounts
