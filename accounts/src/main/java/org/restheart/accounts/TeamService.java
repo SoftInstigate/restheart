@@ -42,10 +42,10 @@ import org.slf4j.LoggerFactory;
  * <p>These endpoints can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "teamService",
-        description      = "PATCH/DELETE /auth/team — edit or delete the caller's active team",
-        defaultURI       = "/auth/team",
-        secure           = true,
+        name = "teamService",
+        description = "PATCH/DELETE /auth/team — edit or delete the caller's active team",
+        defaultURI = "/auth/team",
+        secure = true,
         enabledByDefault = false)
 public class TeamService implements JsonService {
 
@@ -70,15 +70,24 @@ public class TeamService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (req.isPatch())  { handleUpdate(req, res); return; }
-        if (req.isDelete()) { handleDelete(req, res); return; }
+        if (req.isPatch()) {
+            handleUpdate(req, res);
+            return;
+        }
+        if (req.isDelete()) {
+            handleDelete(req, res);
+            return;
+        }
 
         res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
     }

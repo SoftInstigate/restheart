@@ -41,10 +41,10 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "updateProfileService",
-        description      = "PATCH /auth/profile — self-service profile update",
-        defaultURI       = "/auth/profile",
-        secure           = true,
+        name = "updateProfileService",
+        description = "PATCH /auth/profile — self-service profile update",
+        defaultURI = "/auth/profile",
+        secure = true,
         enabledByDefault = false)
 public class UpdateProfileService implements JsonService {
 
@@ -73,9 +73,15 @@ public class UpdateProfileService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
-        if (!req.isPatch()) { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isPatch()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
         var email = account.getPrincipal().getName();

@@ -67,18 +67,18 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
         var pi = pluginsRegistry.getPipelineInfo(path);
 
         var srv = pluginsRegistry.getServices().stream()
-            .filter(s -> s.getName().equals(pi.getName()))
-            .findAny();
+                .filter(s -> s.getName().equals(pi.getName()))
+                .findAny();
 
         if (srv.isPresent()) {
             var serviceName = srv.get().getName();
             var serviceClass = srv.get().getInstance().getClass().getSimpleName();
-            
+
             RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("SERVICE EXCHANGE INIT: {} ({})", serviceName, serviceClass);
             try {
                 var requestInitStartTime = System.currentTimeMillis();
-                
+
                 // execute the service request initializer or a custom one
                 var customRequestInitializer = UninitializedRequest.of(exchange).customRequestInitializer();
 
@@ -91,11 +91,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     // custom request initializer
                     customRequestInitializer.accept(exchange);
                 }
-                
+
                 var requestInitDuration = System.currentTimeMillis() - requestInitStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", requestInitDuration);
-                
+
                 var responseInitStartTime = System.currentTimeMillis();
 
                 // execute the service respnse initializer or a custom one
@@ -110,11 +110,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     // custom response initializer
                     customResponseInitializer.accept(exchange);
                 }
-                
+
                 var responseInitDuration = System.currentTimeMillis() - responseInitStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", responseInitDuration);
-                
+
                 var totalInitDuration = System.currentTimeMillis() - initStartTime;
                 RequestPhaseContext.setPhase(Phase.PHASE_END);
                 LOGGER.debug("SERVICE EXCHANGE INIT COMPLETED in {}ms", totalInitDuration);
@@ -128,9 +128,9 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, bre.contentType());
                 exchange.getResponseSender().send(
-                    bre.isJsonMessage()
-                    ? bre.getMessage()
-                    : BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
+                        bre.isJsonMessage()
+                                ? bre.getMessage()
+                                : BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
                 return;
             } catch (Throwable t) {
                 var initDuration = System.currentTimeMillis() - initStartTime;

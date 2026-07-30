@@ -85,7 +85,7 @@ public class ChangeStreamWorkerSseTest {
         worker.sseSessions().remove(conn);
 
         assertTrue(worker.websocketSessions().isEmpty() && worker.sseSessions().isEmpty(),
-            "Worker should see both sets empty after last SSE session removed");
+                "Worker should see both sets empty after last SSE session removed");
     }
 
     @Test
@@ -122,12 +122,12 @@ public class ChangeStreamWorkerSseTest {
 
         assertFalse(worker.sseSessions().isEmpty());
         assertTrue(worker.websocketSessions().isEmpty(),
-            "Adding an SSE session must not affect the WebSocket session set");
+                "Adding an SSE session must not affect the WebSocket session set");
     }
 
     @Test
     void sseSessions_isNotSameObjectAsWebSocketSessions() {
         assertNotSame(worker.sseSessions(), worker.websocketSessions(),
-            "sseSessions and websocketSessions must be independent set instances");
+                "sseSessions and websocketSessions must be independent set instances");
     }
 }

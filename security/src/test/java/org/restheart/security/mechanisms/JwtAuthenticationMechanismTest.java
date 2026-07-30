@@ -22,7 +22,6 @@
 package org.restheart.security.mechanisms;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,14 +35,14 @@ public class JwtAuthenticationMechanismTest {
     @Test
     void testJwtConfigProviderAcceptsStrongKey() throws ConfigurationException {
         var provider = new JwtConfigProvider();
-        
+
         // Inject config with strong key (32+ characters)
         Map<String, Object> config = new HashMap<>();
         config.put("key", "C0mpl3x@JWT!Key$With@UpperAndLowercase123456");
         config.put("algorithm", "HS256");
         config.put("issuer", "test");
         config.put("audience", null);
-        
+
         // Use reflection to set the config field
         try {
             var configField = JwtConfigProvider.class.getDeclaredField("config");
@@ -52,10 +51,10 @@ public class JwtAuthenticationMechanismTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        
+
         // Should not throw exception
         provider.init();
-        
+
         // Should provide valid config - access internal jwtConfig field directly
         try {
             var jwtConfigField = JwtConfigProvider.class.getDeclaredField("jwtConfig");
@@ -67,18 +66,18 @@ public class JwtAuthenticationMechanismTest {
             throw new RuntimeException(e);
         }
     }
-    
+
     @Test
     void testJwtConfigProviderGeneratesRandomKey() throws ConfigurationException {
         var provider = new JwtConfigProvider();
-        
+
         // Inject config with null key (should auto-generate)
         Map<String, Object> config = new HashMap<>();
         config.put("key", null);
         config.put("algorithm", "HS256");
         config.put("issuer", "test");
         config.put("audience", null);
-        
+
         // Use reflection to set the config field
         try {
             var configField = JwtConfigProvider.class.getDeclaredField("config");
@@ -87,10 +86,10 @@ public class JwtAuthenticationMechanismTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        
+
         // Should not throw exception and generate key
         provider.init();
-        
+
         // Should provide valid config with generated key - access internal jwtConfig field directly
         try {
             var jwtConfigField = JwtConfigProvider.class.getDeclaredField("jwtConfig");
@@ -104,7 +103,7 @@ public class JwtAuthenticationMechanismTest {
             throw new RuntimeException(e);
         }
     }
-    
+
     private static void assertTrue(boolean condition, String message) {
         if (!condition) {
             throw new AssertionError(message);

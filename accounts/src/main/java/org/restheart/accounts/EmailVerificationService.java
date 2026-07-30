@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -63,9 +62,9 @@ import java.util.Set;
  * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
-        name             = "emailVerificationService",
-        description      = "GET /auth/verify — validates email verification token and activates user",
-        defaultURI       = "/auth/verify",
+        name = "emailVerificationService",
+        description = "GET /auth/verify — validates email verification token and activates user",
+        defaultURI = "/auth/verify",
         enabledByDefault = false)
 public class EmailVerificationService implements JsonService {
 
@@ -105,14 +104,20 @@ public class EmailVerificationService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
-        if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
+        if (!req.isGet()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
 
         // ── 1. Read query parameters ─────────────────────────────────────────
-        var email    = req.getQueryParameterOrDefault("email", null);
-        var token    = req.getQueryParameterOrDefault("token", null);
+        var email = req.getQueryParameterOrDefault("email", null);
+        var token = req.getQueryParameterOrDefault("token", null);
         var delivery = req.getQueryParameterOrDefault("delivery", "cookie");
 
         if (email == null || email.isBlank() || token == null || token.isBlank()) {
@@ -199,7 +204,7 @@ public class EmailVerificationService implements JsonService {
         // token verification (the token is single-use, unset from the DB in step 5a above).
         // Same query-param convention as OAuthCallback's `flow=signup`.
         var appUrl = RequestOverrides.frontendAppUrl(req, conf) + "?flow=signup";
-        var mode   = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
+        var mode = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
 
         if (mode == TokenDelivery.Mode.FRAGMENT) {
             // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,

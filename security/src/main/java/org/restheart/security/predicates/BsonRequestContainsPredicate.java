@@ -59,11 +59,11 @@ public class BsonRequestContainsPredicate implements Predicate {
         var _request = Request.of(exchange);
 
         if (_request == null || !(_request instanceof BsonRequest)) {
-            LOGGER.warn("bson-request-contains predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
+            LOGGER.warn("bson-request-contains predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request : _request.getClass().getSimpleName());
             return false;
         }
 
-        return BsonUtils.containsKeys(((BsonRequest)_request).getContent(), this.keys, true);
+        return BsonUtils.containsKeys(((BsonRequest) _request).getContent(), this.keys, true);
     }
 
     public static class Builder implements PredicateBuilder {

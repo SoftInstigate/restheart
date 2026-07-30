@@ -103,25 +103,25 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var now = new BsonDateTime(System.currentTimeMillis());
 
         var ownerMember = new BsonDocument()
-                .append("userId",   new BsonString(userId))
-                .append("role",     new BsonString(ownershipRole))
+                .append("userId", new BsonString(userId))
+                .append("role", new BsonString(ownershipRole))
                 .append("joinedAt", now);
 
         var membersList = new BsonArray();
         membersList.add(ownerMember);
 
         var teamDoc = new BsonDocument()
-                .append("name",      new BsonString(teamName))
+                .append("name", new BsonString(teamName))
                 .append("createdBy", new BsonString(userId))
                 .append("createdAt", now)
-                .append("members",   membersList);
+                .append("members", membersList);
 
-        var teamId     = db.insertTeam(teamDoc);
+        var teamId = db.insertTeam(teamDoc);
         var teamIdBson = new BsonObjectId(new ObjectId(teamId));
 
         // Link user → team
         db.addTeamMembership(userId, new BsonDocument()
-                .append("id",   teamIdBson)
+                .append("id", teamIdBson)
                 .append("role", new BsonString(ownershipRole)));
 
         if (forceActive) {
@@ -177,7 +177,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
     @Override
     public void addMember(String userId, BsonValue teamId, String role) {
         db.addTeamMembership(userId, new BsonDocument()
-                .append("id",   teamId)
+                .append("id", teamId)
                 .append("role", new BsonString(role)));
         db.addMemberToTeam(teamId, userId, role);
         db.setActiveTeamIfAbsent(userId, teamId, role);
@@ -195,7 +195,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (teamId == null) {
             return Optional.empty();
         }
-        var role        = findRoleInTeams(user, teamId);
+        var role = findRoleInTeams(user, teamId);
         var displayName = loadTeamName(teamId);
 
         return Optional.of(new Membership(teamId, displayName, loadTeamDescription(teamId), role, true));
@@ -215,9 +215,9 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (user.containsKey("teams") && user.get("teams").isArray()) {
             for (var entry : user.getArray("teams")) {
                 if (!entry.isDocument()) continue;
-                var e      = entry.asDocument();
+                var e = entry.asDocument();
                 var teamId = e.containsKey("id") && !e.get("id").isNull() ? e.get("id") : null;
-                var role   = e.containsKey("role") && e.get("role").isString()
+                var role = e.containsKey("role") && e.get("role").isString()
                         ? e.getString("role").getValue() : "member";
                 if (teamId == null) continue;
                 var displayName = loadTeamName(teamId);
@@ -404,7 +404,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         var updates = new BsonDocument().append("roles", rolesArray);
         db.updateUser(userId, updates);
 
-        var role        = findRoleInTeams(user, teamId);
+        var role = findRoleInTeams(user, teamId);
         var displayName = loadTeamName(teamId);
 
         LOGGER.info("DefaultMembershipProvider: invited user <{}> activated via OAuth (team={})",
@@ -455,7 +455,7 @@ public class DefaultMembershipProvider implements MembershipProvider {
         if (!user.containsKey("profile") || !user.get("profile").isDocument()) return email;
 
         var profile = user.getDocument("profile");
-        var name    = profile.containsKey("name") && profile.get("name").isString()
+        var name = profile.containsKey("name") && profile.get("name").isString()
                 ? profile.getString("name").getValue() : null;
         var surname = profile.containsKey("surname") && profile.get("surname").isString()
                 ? profile.getString("surname").getValue() : null;

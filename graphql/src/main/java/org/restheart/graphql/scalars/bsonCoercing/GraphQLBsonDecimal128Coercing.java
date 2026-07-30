@@ -43,13 +43,13 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, Decimal128> {
     @Override
     public Decimal128 serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
         }
 
         var possibleDecimal = convertImpl(input);
-        if (possibleDecimal == null){
-            throw new CoercingSerializeException("Expected type 'Decimal128' but was '" + typeName(input) +"'.");
+        if (possibleDecimal == null) {
+            throw new CoercingSerializeException("Expected type 'Decimal128' but was '" + typeName(input) + "'.");
         } else {
             return possibleDecimal;
         }
@@ -58,8 +58,8 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
     @Override
     public BsonDecimal128 parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         var possibleDecimal = convertImpl(input);
-        if (possibleDecimal == null){
-            throw new CoercingParseValueException("Expected type 'Decimal128' but was '" + typeName(input) +"'.");
+        if (possibleDecimal == null) {
+            throw new CoercingParseValueException("Expected type 'Decimal128' but was '" + typeName(input) + "'.");
         } else {
             return new BsonDecimal128(possibleDecimal);
         }
@@ -67,7 +67,7 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
 
     @Override
     public BsonDecimal128 parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        if (input instanceof StringValue || input instanceof IntValue || input instanceof FloatValue){
+        if (input instanceof StringValue || input instanceof IntValue || input instanceof FloatValue) {
             var value = switch (input) {
                 case IntValue intValue -> intValue.getValue().toString();
                 case FloatValue floatValue -> floatValue.getValue().toString();
@@ -81,21 +81,21 @@ public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, D
 
             var dec = Decimal128.parse(value);
 
-            if(dec.isNaN()){
+            if (dec.isNaN()) {
                 throw new CoercingParseLiteralException("Expected value to be a number but it was '" + dec.toString() + "'");
             } else {
                 return new BsonDecimal128(dec);
             }
         } else {
-            throw  new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(input) + "'.");
+            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(input) + "'.");
         }
     }
 
-    private Decimal128 convertImpl(Object obj){
-        if (isANumber(obj)){
+    private Decimal128 convertImpl(Object obj) {
+        if (isANumber(obj)) {
             var value = Decimal128.parse(obj.toString());
             return value.isNaN() ? value : null;
-        } else if (obj instanceof BsonValue bsonValue){
+        } else if (obj instanceof BsonValue bsonValue) {
             return bsonValue.isDecimal128() ? bsonValue.asDecimal128().getValue() : null;
         } else {
             return null;

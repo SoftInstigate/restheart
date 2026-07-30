@@ -107,7 +107,7 @@ public class ChangeStreamWorker implements Runnable {
      *                            null means broadcast to all sessions
      */
     public ChangeStreamWorker(ChangeStreamWorkerKey key, List<BsonDocument> resolvedStages,
-            String dbName, String collName, BsonDocument resumeToken, NotifyWhenEvaluator notifyWhenEvaluator) {
+                              String dbName, String collName, BsonDocument resumeToken, NotifyWhenEvaluator notifyWhenEvaluator) {
         super();
         this.key = key;
         this.resolvedStages = resolvedStages;
@@ -143,7 +143,7 @@ public class ChangeStreamWorker implements Runnable {
 
         try {
             changeStreamEventsLoop();
-        } catch(Exception t) {
+        } catch (Exception t) {
             if (t instanceof NoMoreSessionsException) {
                 LOGGER.debug("Closing Change Stream Worker {} since it has no active sessions", key);
             } else {
@@ -165,9 +165,9 @@ public class ChangeStreamWorker implements Runnable {
     private void changeStreamEventsLoop() {
         try {
             _changeStreamEventsLoop();
-        } catch(MongoInterruptedException mie) {
+        } catch (MongoInterruptedException mie) {
             close();
-        } catch(MongoException mqe) {
+        } catch (MongoException mqe) {
             LOGGER.error("MongoDB error on ChangeStreamWorker {}, restarting a new worker", key, mqe);
 
             try {
@@ -190,8 +190,8 @@ public class ChangeStreamWorker implements Runnable {
                 LambdaUtils.throwsSneakyException(new NoMoreSessionsException());
             }
 
-            final var doc    = getDocument(changeEvent);
-            final var msg    = BsonUtils.toJson(doc, key.getJsonMode());
+            final var doc = getDocument(changeEvent);
+            final var msg = BsonUtils.toJson(doc, key.getJsonMode());
             final var eventId = changeEvent.getResumeToken() != null
                     ? changeEvent.getResumeToken().toJson()
                     : null;
@@ -269,33 +269,34 @@ public class ChangeStreamWorker implements Runnable {
 
     void closeAllWebSocketSessions() {
         new HashSet<>(websocketSessions)
-            .forEach(wsk -> {
-                try {
-                    wsk.close();
-                    websocketSessions.remove(wsk);
-                } catch(IOException ioe) {
-                    LOGGER.warn("Error closing WebSocket session {}", wsk, ioe);
-                }
-            });
+                .forEach(wsk -> {
+                    try {
+                        wsk.close();
+                        websocketSessions.remove(wsk);
+                    } catch (IOException ioe) {
+                        LOGGER.warn("Error closing WebSocket session {}", wsk, ioe);
+                    }
+                });
     }
 
     void closeAllSseSessions() {
         new HashSet<>(sseSessions)
-            .forEach(conn -> {
-                conn.shutdown();
-                sseSessions.remove(conn);
-            });
+                .forEach(conn -> {
+                    conn.shutdown();
+                    sseSessions.remove(conn);
+                });
     }
 
-    private static class NoMoreSessionsException extends Exception {}
+    private static class NoMoreSessionsException extends Exception {
+    }
 
     private ChangeStreamIterable<Document> startChangeStream() {
         try {
             var cs = RHMongoClients.mclient()
-                .getDatabase(dbName)
-                .getCollection(collName)
-                .watch(resolvedStages)
-                .fullDocument(FullDocument.UPDATE_LOOKUP);
+                    .getDatabase(dbName)
+                    .getCollection(collName)
+                    .watch(resolvedStages)
+                    .fullDocument(FullDocument.UPDATE_LOOKUP);
 
             if (resumeToken != null) {
                 cs = cs.startAfter(resumeToken);
@@ -303,7 +304,7 @@ public class ChangeStreamWorker implements Runnable {
             }
 
             return cs;
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             LOGGER.warn("Error trying to start the stream: {}", e.getMessage(), e);
             throw e;
         }
@@ -319,7 +320,7 @@ public class ChangeStreamWorker implements Runnable {
         if (notification.getFullDocument() != null) {
             try {
                 doc.put("fullDocument", BsonUtils.documentToBson((Document) notification.getFullDocument()));
-            } catch(ClassCastException cce) {
+            } catch (ClassCastException cce) {
                 LOGGER.warn("change event fullDocument is not json {}", notification.getFullDocument());
                 doc.put("fullDocument", BsonNull.VALUE);
             }

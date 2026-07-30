@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-import org.bson.BsonValue;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
@@ -41,10 +40,10 @@ import java.nio.charset.StandardCharsets;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "resendInviteService",
-        description      = "POST /auth/resend-invite \u2014 re-sends the activation email",
-        defaultURI       = "/auth/resend-invite",
-        secure           = true,
+        name = "resendInviteService",
+        description = "POST /auth/resend-invite \u2014 re-sends the activation email",
+        defaultURI = "/auth/resend-invite",
+        secure = true,
         enabledByDefault = false)
 public class ResendInviteService implements JsonService {
 

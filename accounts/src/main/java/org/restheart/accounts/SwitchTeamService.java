@@ -47,10 +47,10 @@ import java.util.Set;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "switchTeamService",
-        description      = "POST /auth/switch-team \u2014 switch active team and reissue JWT cookie",
-        defaultURI       = "/auth/switch-team",
-        secure           = true,
+        name = "switchTeamService",
+        description = "POST /auth/switch-team \u2014 switch active team and reissue JWT cookie",
+        defaultURI = "/auth/switch-team",
+        secure = true,
         enabledByDefault = false)
 public class SwitchTeamService implements JsonService {
 
@@ -78,14 +78,20 @@ public class SwitchTeamService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isPost()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
 
@@ -112,7 +118,7 @@ public class SwitchTeamService implements JsonService {
             return;
         }
 
-        var email      = account.getPrincipal().getName();
+        var email = account.getPrincipal().getName();
         var membership = accountsService.getMembershipProvider(req);
 
         // Find the target membership via the SPI
@@ -146,9 +152,9 @@ public class SwitchTeamService implements JsonService {
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()
-                            .filter(BsonValue::isString)
-                            .map(v -> v.asString().getValue())
-                            .collect(java.util.stream.Collectors.toSet())
+                        .filter(BsonValue::isString)
+                        .map(v -> v.asString().getValue())
+                        .collect(java.util.stream.Collectors.toSet())
                         : Set.<String>of())
                 .orElse(Set.of());
 

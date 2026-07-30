@@ -62,8 +62,8 @@ import java.util.Map;
  * @see OAuthService
  */
 @RegisterPlugin(
-        name             = "oauthConfig",
-        description      = "OAuth 2.0 configuration provider for restheart-accounts",
+        name = "oauthConfig",
+        description = "OAuth 2.0 configuration provider for restheart-accounts",
         enabledByDefault = false)
 public class OAuthConfig implements Provider<OAuthConfig> {
 
@@ -78,9 +78,9 @@ public class OAuthConfig implements Provider<OAuthConfig> {
     private Map<String, Object> config;
 
     private boolean enabled;
-    private String  apiBaseUrl;
-    private String  frontendSuccessUrl;
-    private String  frontendErrorUrl;
+    private String apiBaseUrl;
+    private String frontendSuccessUrl;
+    private String frontendErrorUrl;
 
     /** All configured providers, keyed by lower-case provider name. */
     private Map<String, ProviderConfig> providers = new HashMap<>();
@@ -93,10 +93,10 @@ public class OAuthConfig implements Provider<OAuthConfig> {
             return;
         }
 
-        enabled            = configVal(config, "enabled",              false);
-        apiBaseUrl         = configVal(config, "api-base-url",         "http://localhost:8080");
+        enabled = configVal(config, "enabled", false);
+        apiBaseUrl = configVal(config, "api-base-url", "http://localhost:8080");
         frontendSuccessUrl = configVal(config, "frontend-success-url", "http://localhost:4200/app");
-        frontendErrorUrl   = configVal(config, "frontend-error-url",   "http://localhost:4200/login?error=oauth_error");
+        frontendErrorUrl = configVal(config, "frontend-error-url", "http://localhost:4200/login?error=oauth_error");
 
         // Parse the generic providers map
         var providersMap = config.get("providers") instanceof Map<?, ?> m
@@ -117,14 +117,27 @@ public class OAuthConfig implements Provider<OAuthConfig> {
     }
 
     @Override
-    public OAuthConfig get(PluginRecord<?> caller) { return this; }
+    public OAuthConfig get(PluginRecord<?> caller) {
+        return this;
+    }
 
     // ── Getters ───────────────────────────────────────────────────────────────
 
-    public boolean isEnabled()          { return enabled; }
-    public String  apiBaseUrl()         { return apiBaseUrl; }
-    public String  frontendSuccessUrl() { return frontendSuccessUrl; }
-    public String  frontendErrorUrl()   { return frontendErrorUrl; }
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public String apiBaseUrl() {
+        return apiBaseUrl;
+    }
+
+    public String frontendSuccessUrl() {
+        return frontendSuccessUrl;
+    }
+
+    public String frontendErrorUrl() {
+        return frontendErrorUrl;
+    }
 
     /** Returns all configured providers (unmodifiable view). */
     public Map<String, ProviderConfig> providers() {
@@ -186,16 +199,16 @@ public class OAuthConfig implements Provider<OAuthConfig> {
      * @param scope        space-separated OAuth scopes
      */
     public record ProviderConfig(
-            String  name,
+            String name,
             boolean enabled,
-            String  clientId,
-            String  clientSecret,
-            String  scope) {
+            String clientId,
+            String clientSecret,
+            String scope) {
 
         /** Returns {@code true} when all required fields are present and enabled. */
         public boolean isValid() {
             return enabled
-                    && clientId     != null && !clientId.isBlank()
+                    && clientId != null && !clientId.isBlank()
                     && clientSecret != null && !clientSecret.isBlank();
         }
     }
@@ -207,15 +220,19 @@ public class OAuthConfig implements Provider<OAuthConfig> {
         var defaultScope = defaultScope(name);
         return new ProviderConfig(
                 name,
-                configVal(map, "enabled",       false),
-                configVal(map, "client-id",     null),
+                configVal(map, "enabled", false),
+                configVal(map, "client-id", null),
                 configVal(map, "client-secret", null),
-                configVal(map, "scope",         defaultScope));
+                configVal(map, "scope", defaultScope));
     }
 
     @SuppressWarnings("unchecked")
     private static <T> T configVal(Map<?, ?> map, String key, T def) {
         if (map == null || !map.containsKey(key) || map.get(key) == null) return def;
-        try { return (T) map.get(key); } catch (ClassCastException e) { return def; }
+        try {
+            return (T) map.get(key);
+        } catch (ClassCastException e) {
+            return def;
+        }
     }
 }

@@ -59,11 +59,11 @@ import com.mongodb.client.MongoClient;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "database-probe",
-    description = "lightweight DB connectivity probe",
-    secure = false,
-    defaultURI = "/health/db",
-    blocking = true)
+        name = "database-probe",
+        description = "lightweight DB connectivity probe",
+        secure = false,
+        defaultURI = "/health/db",
+        blocking = true)
 public class DatabaseProbeService implements JsonService {
 
     // JSON response fields
@@ -171,8 +171,8 @@ public class DatabaseProbeService implements JsonService {
 
     private String getErrorDescription(final ExecutionException ee) {
         return ee.getCause() != null
-            ? ee.getCause().getMessage()
-            : ee.getMessage();
+                ? ee.getCause().getMessage()
+                : ee.getMessage();
     }
 
     private long pingDuration(final long start) {
@@ -180,7 +180,7 @@ public class DatabaseProbeService implements JsonService {
     }
 
     private void setResponseContent(final JsonResponse response, final ProbeStatus status, final String description,
-            final long pingMs) {
+                                    final long pingMs) {
         final JsonObject out = new JsonObject();
         out.addProperty(STATUS, status.toString());
         if (description != null) {

@@ -48,10 +48,10 @@ import java.nio.charset.StandardCharsets;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "inviteService",
-        description      = "POST /auth/invite \u2014 invites a user to the caller's team",
-        defaultURI       = "/auth/invite",
-        secure           = true,
+        name = "inviteService",
+        description = "POST /auth/invite \u2014 invites a user to the caller's team",
+        defaultURI = "/auth/invite",
+        secure = true,
         enabledByDefault = false)
 public class InviteService implements JsonService {
 
@@ -160,19 +160,19 @@ public class InviteService implements JsonService {
 
         // 6. Create invite token
         var inviteToken = TokenUtils.generateToken();
-        var isNewUser   = existing.isEmpty();
+        var isNewUser = existing.isEmpty();
 
         if (isNewUser) {
             // New user: create with $unauthenticated role (no inviteToken on user doc)
             var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
-            var rolesArr  = new BsonArray();
+            var rolesArr = new BsonArray();
             rolesArr.add(new BsonString("$unauthenticated"));
 
             var userDoc = new BsonDocument();
-            userDoc.put("_id",      new BsonString(invitedEmail));
+            userDoc.put("_id", new BsonString(invitedEmail));
             userDoc.put("password", new BsonString(hashedPwd));
-            userDoc.put("roles",    rolesArr);
-            userDoc.put("profile",  new BsonDocument());
+            userDoc.put("roles", rolesArr);
+            userDoc.put("profile", new BsonDocument());
 
             if (!db(req).insertUser(userDoc)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");

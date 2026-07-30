@@ -136,9 +136,9 @@ public class JwtTokenManager implements TokenManager {
         this.audience = jwtConfig.audience();
 
         jwtCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
-          Cache.EXPIRE_POLICY.AFTER_WRITE,
-          ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
-          account -> newToken(account.wrapped()));
+                Cache.EXPIRE_POLICY.AFTER_WRITE,
+                ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
+                account -> newToken(account.wrapped()));
 
         try {
             this.verifier = jwtConfig.hasAudience()
@@ -157,7 +157,7 @@ public class JwtTokenManager implements TokenManager {
         if (name == null || key == null) {
             throw new IllegalArgumentException("algorithm and key are required.");
         }
-        
+
         return switch (name) {
             case "HMAC256", "HS256" -> Algorithm.HMAC256(key.getBytes(StandardCharsets.UTF_8));
             case "HMAC384", "HS384" -> Algorithm.HMAC384(key.getBytes(StandardCharsets.UTF_8));
@@ -182,7 +182,7 @@ public class JwtTokenManager implements TokenManager {
 
         if (id == null || !(credential instanceof PasswordCredential)) {
             LOGGER.debug("Invalid parameters for JWT verification - id: {}, credential type: {}",
-                id, credential != null ? credential.getClass().getSimpleName() : "null");
+                    id, credential != null ? credential.getClass().getSimpleName() : "null");
             return null;
         }
 
@@ -194,7 +194,7 @@ public class JwtTokenManager implements TokenManager {
         final var tokenString = String.valueOf(rawToken);
         if (tokenString.split("\\.").length != 3) {
             LOGGER.debug("Credential for user '{}' is not a JWT token (expected 3 parts, got {})",
-                id, tokenString.split("\\.").length);
+                    id, tokenString.split("\\.").length);
             return null;
         }
 
@@ -214,12 +214,12 @@ public class JwtTokenManager implements TokenManager {
 
             var totalDuration = System.currentTimeMillis() - verificationStartTime;
             LOGGER.debug("JWT token verification successful (cached) for user '{}' with roles: {} - Total: {}ms",
-                id, roles, totalDuration);
+                    id, roles, totalDuration);
 
             return new JwtAccount(id, roles, jwtPayload);
         } else {
             LOGGER.debug("JWT token not in cache for user '{}' - Performing verification - Cache lookup: {}ms",
-                id, cacheCheckDuration);
+                    id, cacheCheckDuration);
             // if the token is not in the cache, verify it
             try {
                 var jwtVerifyStartTime = System.currentTimeMillis();
@@ -239,19 +239,19 @@ public class JwtTokenManager implements TokenManager {
 
                     var totalDuration = System.currentTimeMillis() - verificationStartTime;
                     LOGGER.debug("JWT token verification successful for user '{}' with roles: {} - JWT verify: {}ms, Cache update: {}ms, Total: {}ms",
-                        id, roles, jwtVerifyDuration, cacheUpdateDuration, totalDuration);
+                            id, roles, jwtVerifyDuration, cacheUpdateDuration, totalDuration);
 
                     return new JwtAccount(id, roles, jwtPayload);
                 } else {
                     var totalDuration = System.currentTimeMillis() - verificationStartTime;
                     LOGGER.warn("Invalid JWT token from user '{}' - Subject mismatch: expected '{}', got '{}' - Verification: {}ms, Total: {}ms",
-                        id, id, decoded.getSubject(), jwtVerifyDuration, totalDuration);
+                            id, id, decoded.getSubject(), jwtVerifyDuration, totalDuration);
                     return null;
                 }
             } catch (final Exception e) {
                 var totalDuration = System.currentTimeMillis() - verificationStartTime;
                 LOGGER.warn("JWT token verification failed for user '{}' after {}ms: {}",
-                    id, totalDuration, e.getMessage());
+                        id, totalDuration, e.getMessage());
                 return null;
             }
         }
@@ -291,12 +291,12 @@ public class JwtTokenManager implements TokenManager {
             var cacheDuration = System.currentTimeMillis() - cacheStartTime;
 
             final var newTokenAccount = new PwdCredentialAccount(
-              account.getPrincipal().getName(),
-              token.raw(),
-              Sets.newTreeSet(account.getRoles()));
+                    account.getPrincipal().getName(),
+                    token.raw(),
+                    Sets.newTreeSet(account.getRoles()));
 
             var totalDuration = System.currentTimeMillis() - tokenStartTime;
-            LOGGER.debug("JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms",  userName, cacheDuration, totalDuration);
+            LOGGER.debug("JWT token generated for user '{}' - Cache lookup: {}ms, Total: {}ms", userName, cacheDuration, totalDuration);
 
             return newTokenAccount.getCredentials();
         } catch (Exception ex) {
@@ -312,17 +312,17 @@ public class JwtTokenManager implements TokenManager {
 
     private Token newToken(final Account account, final Date expires) {
         final var creator = audience != null
-          ? JWT.create().withIssuer(issuer).withAudience(audience)
-          : JWT.create().withIssuer(issuer);
+                ? JWT.create().withIssuer(issuer).withAudience(audience)
+                : JWT.create().withIssuer(issuer);
 
         final var _builder = creator
-          .withSubject(account.getPrincipal().getName())
-          .withExpiresAt(expires)
-          .withIssuer(issuer)
-          .withJWTId(UUID.randomUUID().toString())
-          .withArrayClaim(ROLES, account.getRoles().toArray(new String[account.getRoles().size()]));
+                .withSubject(account.getPrincipal().getName())
+                .withExpiresAt(expires)
+                .withIssuer(issuer)
+                .withJWTId(UUID.randomUUID().toString())
+                .withArrayClaim(ROLES, account.getRoles().toArray(new String[account.getRoles().size()]));
 
-        final Builder[] builder = { _builder };
+        final Builder[] builder = {_builder};
         final Map<String, ? super Object> properties;
 
         if (account instanceof final WithProperties<?> awp) {
@@ -346,7 +346,7 @@ public class JwtTokenManager implements TokenManager {
                 properties);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Builder withClaim(final Builder b, final String k, final Object v) {
         if (k == null || v == null) {
             return b;
@@ -392,7 +392,7 @@ public class JwtTokenManager implements TokenManager {
     }
 
     private String[] keysFromPath(final String path) {
-        final var ret = path.contains("/") ? path.split("/") : new String[] { path };
+        final var ret = path.contains("/") ? path.split("/") : new String[]{path};
         // remove empty elements
         return Arrays.stream(ret).filter(k -> k != null && !k.isBlank()).toArray(String[]::new);
     }
@@ -421,7 +421,7 @@ public class JwtTokenManager implements TokenManager {
      * @param val
      */
     private void addClaim(final Map<String, Object> map, final String[] keys, final Object val) {
-        for (var idx = 0; idx < keys.length; idx++) {
+        for (var idx = 0;idx < keys.length;idx++) {
             if (idx == keys.length - 1) {
                 map.put(keys[idx], val);
             } else {
@@ -492,8 +492,8 @@ public class JwtTokenManager implements TokenManager {
             var requestPath = exchange.getRequestPath();
             var isTokenEndpoint = "/token".equals(requestPath) || "/token/cookie".equals(requestPath);
             var shouldRenew = (isTokenEndpoint && exchange.getQueryParameters().containsKey("renew"))
-                           || exchange.getQueryParameters().containsKey("renew-auth-token");
-            
+                    || exchange.getQueryParameters().containsKey("renew-auth-token");
+
             if (shouldRenew) {
                 final var newToken = newToken(account);
 
@@ -548,9 +548,9 @@ record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Objec
             return false;
 
         return Arrays.equals(raw, token.raw) &&
-          Objects.equals(expires, token.expires) &&
-          Arrays.equals(roles, token.roles) &&
-          Objects.equals(properties, token.properties);
+                Objects.equals(expires, token.expires) &&
+                Arrays.equals(roles, token.roles) &&
+                Objects.equals(properties, token.properties);
     }
 
     @Override
@@ -573,49 +573,49 @@ record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Objec
 }
 
 record ComparableAccount(Account wrapped) {
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof ComparableAccount that))
-			return false;
-		if (wrapped.getPrincipal() == null
-			|| wrapped.getPrincipal().getName() == null
-			|| that.wrapped.getPrincipal() == null
-			|| that.wrapped.getPrincipal().getName() == null) {
-			return false;
-		}
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof ComparableAccount that))
+            return false;
+        if (wrapped.getPrincipal() == null
+                || wrapped.getPrincipal().getName() == null
+                || that.wrapped.getPrincipal() == null
+                || that.wrapped.getPrincipal().getName() == null) {
+            return false;
+        }
 
-		// Compare username
-		if (!Objects.equals(wrapped.getPrincipal().getName(), that.wrapped.getPrincipal().getName())) {
-			return false;
-		}
+        // Compare username
+        if (!Objects.equals(wrapped.getPrincipal().getName(), that.wrapped.getPrincipal().getName())) {
+            return false;
+        }
 
-		// Compare authDb if present in account properties
-		String thisAuthDb = getAuthDb(this.wrapped);
-		String thatAuthDb = getAuthDb(that.wrapped);
-		return Objects.equals(thisAuthDb, thatAuthDb);
-	}
+        // Compare authDb if present in account properties
+        String thisAuthDb = getAuthDb(this.wrapped);
+        String thatAuthDb = getAuthDb(that.wrapped);
+        return Objects.equals(thisAuthDb, thatAuthDb);
+    }
 
-	@Override
-	public int hashCode() {
-		String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
-		String authDb = getAuthDb(wrapped);
-		return Objects.hash(username, authDb);
-	}
+    @Override
+    public int hashCode() {
+        String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
+        String authDb = getAuthDb(wrapped);
+        return Objects.hash(username, authDb);
+    }
 
-	private String getAuthDb(Account account) {
-		if (account instanceof WithProperties<?> wp) {
-			var props = wp.propertiesAsMap();
-			if (props != null && props.containsKey("authDb")) {
-				Object authDbObj = props.get("authDb");
-				if (authDbObj instanceof String) {
-					return (String) authDbObj;
-				} else if (authDbObj instanceof BsonString) {
-					return ((BsonString) authDbObj).getValue();
-				}
-			}
-		}
-		return null;
-	}
+    private String getAuthDb(Account account) {
+        if (account instanceof WithProperties<?> wp) {
+            var props = wp.propertiesAsMap();
+            if (props != null && props.containsKey("authDb")) {
+                Object authDbObj = props.get("authDb");
+                if (authDbObj instanceof String) {
+                    return (String) authDbObj;
+                } else if (authDbObj instanceof BsonString) {
+                    return ((BsonString) authDbObj).getValue();
+                }
+            }
+        }
+        return null;
+    }
 }

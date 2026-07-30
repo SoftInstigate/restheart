@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
  * detects the file content type using Tika
  */
 @RegisterPlugin(name = "fileMediaTypeDetector",
-    description = "add metadata.contentType property to write requests involving files using Tika.detect()",
-    priority = Integer.MIN_VALUE,
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
+        description = "add metadata.contentType property to write requests involving files using Tika.detect()",
+        priority = Integer.MIN_VALUE,
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class FileMediaTypeDetector implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(FileMediaTypeDetector.class);
 

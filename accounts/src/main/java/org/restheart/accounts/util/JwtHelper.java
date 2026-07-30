@@ -225,14 +225,20 @@ public class JwtHelper {
     private static JWTCreator.Builder withClaim(JWTCreator.Builder b, String k, Object v) {
         if (k == null || v == null) return b;
         return switch (v) {
-            case String s    -> b.withClaim(k, s);
+            case String s -> b.withClaim(k, s);
             case Boolean boo -> b.withClaim(k, boo);
-            case Integer i   -> b.withClaim(k, i);
-            case Long l      -> b.withClaim(k, l);
-            case Double d    -> b.withClaim(k, d);
-            case Map m       -> { try { yield b.withClaim(k, (Map<String, ?>) m); } catch (ClassCastException e) { yield b; } }
-            case List l      -> b.withClaim(k, (List<?>) l);
-            default          -> b.withClaim(k, v.toString());
+            case Integer i -> b.withClaim(k, i);
+            case Long l -> b.withClaim(k, l);
+            case Double d -> b.withClaim(k, d);
+            case Map m -> {
+                try {
+                    yield b.withClaim(k, (Map<String, ?>) m);
+                } catch (ClassCastException e) {
+                    yield b;
+                }
+            }
+            case List l -> b.withClaim(k, (List<?>) l);
+            default -> b.withClaim(k, v.toString());
         };
     }
 

@@ -67,6 +67,7 @@ public class ConduitInjector extends PipelinedHandler {
     private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
 
     private final List<Interceptor<?, ?>> inteceptors = new ArrayList<>();
+
     /**
      *
      */

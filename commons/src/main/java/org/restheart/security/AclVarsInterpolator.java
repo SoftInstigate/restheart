@@ -22,7 +22,6 @@ package org.restheart.security;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -359,10 +358,10 @@ public class AclVarsInterpolator {
         } else if (value.equals("@request.body")) {
             final BsonValue content;
             try {
-              content = request.getContent();
+                content = request.getContent();
             } catch (Throwable t) {
-              LOGGER.debug("Error getting request content", t);
-              return BsonNull.VALUE;
+                LOGGER.debug("Error getting request content", t);
+                return BsonNull.VALUE;
             }
 
             if (content == null) {
@@ -372,10 +371,10 @@ public class AclVarsInterpolator {
         } else if (value.startsWith("@request.body.") && value.length() > 13) {
             final BsonValue content;
             try {
-              content = request.getContent();
+                content = request.getContent();
             } catch (Throwable t) {
-              LOGGER.debug("Error getting request content", t);
-              return BsonNull.VALUE;
+                LOGGER.debug("Error getting request content", t);
+                return BsonNull.VALUE;
             }
 
             if (content == null) {
@@ -443,21 +442,21 @@ public class AclVarsInterpolator {
             try {
                 var bitsStr = value.substring(5, value.length() - 1);
                 var bits = Integer.parseInt(bitsStr);
-                
+
                 if (bits <= 0 || bits > 4096) {
                     LOGGER.warn("@rnd() bit length must be between 1 and 4096, got: {}", bits);
                     return BsonNull.VALUE;
                 }
-                
+
                 var bytes = new byte[(bits + 7) / 8]; // Convert bits to bytes
                 new SecureRandom().nextBytes(bytes);
                 var hex = new BigInteger(1, bytes).toString(16);
-                
+
                 // Pad with leading zeros if necessary
                 while (hex.length() < bytes.length * 2) {
                     hex = "0" + hex;
                 }
-                
+
                 return new BsonString(hex);
             } catch (NumberFormatException e) {
                 LOGGER.warn("Invalid @rnd() syntax: {}", value);
@@ -466,10 +465,10 @@ public class AclVarsInterpolator {
         } else if (value.startsWith("@qparams['") && value.endsWith("']")) {
             var paramName = value.substring(10, value.length() - 2);
             var exchange = request.getExchange();
-            
+
             if (exchange != null) {
                 var queryParams = exchange.getQueryParameters();
-                
+
                 if (queryParams != null && queryParams.containsKey(paramName)) {
                     var values = queryParams.get(paramName);
                     if (values != null && !values.isEmpty()) {
@@ -478,15 +477,15 @@ public class AclVarsInterpolator {
                     }
                 }
             }
-            
+
             return BsonNull.VALUE;
         } else if (value.startsWith("@qparams[\"") && value.endsWith("\"]")) {
             var paramName = value.substring(10, value.length() - 2);
             var exchange = request.getExchange();
-            
+
             if (exchange != null) {
                 var queryParams = exchange.getQueryParameters();
-                
+
                 if (queryParams != null && queryParams.containsKey(paramName)) {
                     var values = queryParams.get(paramName);
                     if (values != null && !values.isEmpty()) {
@@ -495,7 +494,7 @@ public class AclVarsInterpolator {
                     }
                 }
             }
-            
+
             return BsonNull.VALUE;
         } else {
             return new BsonString(value);
@@ -527,12 +526,12 @@ public class AclVarsInterpolator {
             }
 
             // Interpolate @request.body variables
-			BsonDocument requestBody = null;
-			try {
-				requestBody = getRequestBodyDocument(request);
-			} catch(BadRequestException bre) {
-				// nothing to do
-			}
+            BsonDocument requestBody = null;
+            try {
+                requestBody = getRequestBodyDocument(request);
+            } catch (BadRequestException bre) {
+                // nothing to do
+            }
 
             if (requestBody != null && !requestBody.isEmpty()) {
                 interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@request.body.", requestBody);
@@ -569,46 +568,46 @@ public class AclVarsInterpolator {
      * @return A BsonDocument containing the request body, or null if no body is available or not supported
      */
     private static BsonDocument getRequestBodyDocument(Request<?> request) throws BadRequestException {
-  		return switch (request) {
-  			case null -> null;
-  			case BsonRequest bsonRequest -> {
-  			  final BsonValue content;
-          try {
-            content = bsonRequest.getContent();
-          } catch (Throwable t) {
-            LOGGER.debug("Error getting request content", t);
-            yield null;
-          }
-  				if (content == null) {
-  					yield null;
-  				}
-  				if (content instanceof BsonDocument doc) {
-  					yield doc;
-  				} else {
-  					LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
-  					yield null;
-  				}
-  			}
-  			case JsonRequest jsonRequest -> {
-          final JsonElement content;
-          try {
-            content = jsonRequest.getContent();
-          } catch (Throwable t) {
-            LOGGER.debug("Error getting request content", t);
-            yield null;
-          }
-  				if (content == null) {
-  					yield null;
-  				}
-  				if (content.isJsonObject()) {
-  					yield jsonObjectToBsonDocument(content.getAsJsonObject());
-  				} else {
-  					LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", content.getClass().getSimpleName());
-  					yield null;
-  				}
-  			}
-  			default -> null;
-  		};
+        return switch (request) {
+            case null -> null;
+            case BsonRequest bsonRequest -> {
+                final BsonValue content;
+                try {
+                    content = bsonRequest.getContent();
+                } catch (Throwable t) {
+                    LOGGER.debug("Error getting request content", t);
+                    yield null;
+                }
+                if (content == null) {
+                    yield null;
+                }
+                if (content instanceof BsonDocument doc) {
+                    yield doc;
+                } else {
+                    LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
+                    yield null;
+                }
+            }
+            case JsonRequest jsonRequest -> {
+                final JsonElement content;
+                try {
+                    content = jsonRequest.getContent();
+                } catch (Throwable t) {
+                    LOGGER.debug("Error getting request content", t);
+                    yield null;
+                }
+                if (content == null) {
+                    yield null;
+                }
+                if (content.isJsonObject()) {
+                    yield jsonObjectToBsonDocument(content.getAsJsonObject());
+                } else {
+                    LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", content.getClass().getSimpleName());
+                    yield null;
+                }
+            }
+            default -> null;
+        };
     }
 
     /**
@@ -775,7 +774,7 @@ public class AclVarsInterpolator {
 
         var flatten = BsonUtils.flatten(variableValues, true);
 
-        String[] ret = { predicate };
+        String[] ret = {predicate};
 
         // Sort keys by length in descending order to replace longer paths first
         // This prevents @user._id from becoming 'user'._id when @user is replaced first
@@ -879,7 +878,7 @@ public class AclVarsInterpolator {
         var inSingleQuotes = false;
         var currentString = new StringBuilder();
 
-        for (int i = 0; i < predicate.length(); i++) {
+        for (int i = 0;i < predicate.length();i++) {
             char c = predicate.charAt(i);
             char prevChar = i > 0 ? predicate.charAt(i - 1) : '\0';
 
@@ -890,8 +889,8 @@ public class AclVarsInterpolator {
                 if (inDoubleQuotes) {
                     // End of double-quoted string - convert to single quotes with placeholders
                     var escaped = currentString.toString()
-                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
-                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                            .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                            .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
                     result.append('\'').append(escaped).append('\'');
                     currentString.setLength(0);
                     inDoubleQuotes = false;
@@ -903,8 +902,8 @@ public class AclVarsInterpolator {
                 if (inSingleQuotes) {
                     // End of single-quoted string - replace internal quotes with placeholders
                     var escaped = currentString.toString()
-                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
-                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                            .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                            .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
                     result.append('\'').append(escaped).append('\'');
                     currentString.setLength(0);
                     inSingleQuotes = false;
@@ -1091,18 +1090,18 @@ public class AclVarsInterpolator {
 
         // the name of the db
         properties.put("db", request.getDBName() == null
-            ? BsonNull.VALUE
-            : new BsonString(request.getDBName()));
+                ? BsonNull.VALUE
+                : new BsonString(request.getDBName()));
 
         // the name of the collection
         properties.put("collection", request.getDBName() == null
-            ? BsonNull.VALUE
-            : new BsonString(request.getCollectionName()));
+                ? BsonNull.VALUE
+                : new BsonString(request.getCollectionName()));
 
         // the _id of the document
         properties.put("_id", request.getDocumentId() == null
-            ? BsonNull.VALUE
-            : request.getDocumentId());
+                ? BsonNull.VALUE
+                : request.getDocumentId());
 
         // the TYPE of the resource:
         // - INVALID, ROOT, ROOT_SIZE, DB, DB_SIZE, DB_META, CHANGE_STREAM, COLLECTION,
@@ -1115,8 +1114,8 @@ public class AclVarsInterpolator {
         var _userName = ExchangeAttributes.remoteUser().readAttribute(exchange);
 
         var userName = _userName != null
-            ? new BsonString(_userName)
-            : BsonNull.VALUE;
+                ? new BsonString(_userName)
+                : BsonNull.VALUE;
 
         // remote user
         properties.put("userName", userName);

@@ -40,10 +40,10 @@ import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatcher;
 
 @RegisterPlugin(
-    name = "originVetoer",
-    description = "protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted",
-    enabledByDefault = false,
-    authorizerType = TYPE.VETOER)
+        name = "originVetoer",
+        description = "protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted",
+        enabledByDefault = false,
+        authorizerType = TYPE.VETOER)
 public class OriginVetoer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(OriginVetoer.class);
 

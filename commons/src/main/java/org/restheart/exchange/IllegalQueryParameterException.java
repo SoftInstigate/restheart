@@ -46,9 +46,9 @@ package org.restheart.exchange;
  */
 public class IllegalQueryParameterException extends Exception {
 
-	private static final long serialVersionUID = 3012988294234123826L;
+    private static final long serialVersionUID = 3012988294234123826L;
 
-	/**
+    /**
      * Constructs a new IllegalQueryParameterException with the specified detail message.
      * <p>
      * The detail message should clearly describe which query parameter is invalid

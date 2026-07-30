@@ -23,11 +23,11 @@ import org.restheart.plugins.WildcardInterceptor;
  * </pre>
  */
 @RegisterPlugin(
-    name = "dbOverrideInterceptor",
-    description = "Attaches override-users-db per-request when ?_db-override=<db> is present",
-    interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
-    priority = 20,
-    enabledByDefault = false)
+        name = "dbOverrideInterceptor",
+        description = "Attaches override-users-db per-request when ?_db-override=<db> is present",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
+        priority = 20,
+        enabledByDefault = false)
 public class DbOverrideInterceptor implements WildcardInterceptor {
 
     private static final String QPARAM = "_db-override";

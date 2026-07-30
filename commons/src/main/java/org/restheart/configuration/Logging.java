@@ -120,37 +120,37 @@ import ch.qos.logback.classic.Level;
  * @since 1.0
  */
 public record Logging(Level logLevel,
-    boolean logToFile,
-    String logFilePath,
-    boolean logToConsole,
-    boolean ansiConsole,
-    boolean noColors,
-    List<String> packages,
-    boolean fullStacktrace,
-    int requestsLogMode,
-    List<String> tracingHeaders,
-    List<String> requestsLogExcludePatterns,
-    long requestsLogExcludeInterval) {
+                      boolean logToFile,
+                      String logFilePath,
+                      boolean logToConsole,
+                      boolean ansiConsole,
+                      boolean noColors,
+                      List<String> packages,
+                      boolean fullStacktrace,
+                      int requestsLogMode,
+                      List<String> tracingHeaders,
+                      List<String> requestsLogExcludePatterns,
+                      long requestsLogExcludeInterval) {
     /**
      * Configuration key for the logging section.
      */
     public static final String LOGGING_KEY = "logging";
-    
+
     /**
      * Configuration key for the log level.
      */
     public static final String LOG_LEVEL_KEY = "log-level";
-    
+
     /**
      * Configuration key for enabling file logging.
      */
     public static final String ENABLE_LOG_FILE_KEY = "log-to-file";
-    
+
     /**
      * Configuration key for the log file path.
      */
     public static final String LOG_FILE_PATH_KEY = "log-file-path";
-    
+
     /**
      * Configuration key for enabling console logging.
      */
@@ -165,22 +165,22 @@ public record Logging(Level logLevel,
      * Configuration key for ANSI colored console output.
      */
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
-    
+
     /**
      * Configuration key for request logging mode (0-3).
      */
     public static final String REQUESTS_LOG_MODE = "requests-log-mode";
-    
+
     /**
      * Configuration key for tracing headers list.
      */
     public static final String TRACING_HEADERS_KEY = "tracing-headers";
-    
+
     /**
      * Configuration key for packages to include in logging.
      */
     public static final String PACKAGES_KEY = "packages";
-    
+
     /**
      * Configuration key for full stack trace printing.
      */
@@ -214,7 +214,7 @@ public record Logging(Level logLevel,
      *   <li>full-stacktrace: false</li>
      * </ul>
      */
-    private final static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true,true, false, DEFAULT_PACKAGES, false, 1, new ArrayList<>(), new ArrayList<>(), 10l);
+    private final static Logging DEFAULT_LOGGING = new Logging(Level.INFO, false, null, true, true, false, DEFAULT_PACKAGES, false, 1, new ArrayList<>(), new ArrayList<>(), 10l);
 
     /**
      * Creates a Logging configuration from a configuration map.
@@ -227,22 +227,22 @@ public record Logging(Level logLevel,
      */
     public Logging(Map<String, Object> conf, boolean silent) {
         this(
-            _level(conf, DEFAULT_LOGGING.logLevel(), silent),
-            getOrDefault(conf, ENABLE_LOG_FILE_KEY, DEFAULT_LOGGING.logToFile(), silent),
-            getOrDefault(conf, LOG_FILE_PATH_KEY, DEFAULT_LOGGING.logFilePath(), silent),
-            getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, DEFAULT_LOGGING.logToConsole(), silent),
-            getOrDefault(conf, ANSI_CONSOLE_KEY, DEFAULT_LOGGING.ansiConsole(), silent),
-            getOrDefault(conf, NO_COLORS, DEFAULT_LOGGING.noColors(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, PACKAGES_KEY, DEFAULT_LOGGING.packages(), true),
-            getOrDefault(conf, PRINT_FULL_STACKTRACE, DEFAULT_LOGGING.fullStacktrace(), true),
-            getOrDefault(conf, REQUESTS_LOG_MODE, DEFAULT_LOGGING.requestsLogMode(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true),
-            // following is optional, so get it always in silent mode
-            convertToLong(getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL, DEFAULT_LOGGING.requestsLogExcludeInterval(), true)));
+                _level(conf, DEFAULT_LOGGING.logLevel(), silent),
+                getOrDefault(conf, ENABLE_LOG_FILE_KEY, DEFAULT_LOGGING.logToFile(), silent),
+                getOrDefault(conf, LOG_FILE_PATH_KEY, DEFAULT_LOGGING.logFilePath(), silent),
+                getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, DEFAULT_LOGGING.logToConsole(), silent),
+                getOrDefault(conf, ANSI_CONSOLE_KEY, DEFAULT_LOGGING.ansiConsole(), silent),
+                getOrDefault(conf, NO_COLORS, DEFAULT_LOGGING.noColors(), silent),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, PACKAGES_KEY, DEFAULT_LOGGING.packages(), true),
+                getOrDefault(conf, PRINT_FULL_STACKTRACE, DEFAULT_LOGGING.fullStacktrace(), true),
+                getOrDefault(conf, REQUESTS_LOG_MODE, DEFAULT_LOGGING.requestsLogMode(), silent),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, TRACING_HEADERS_KEY, DEFAULT_LOGGING.tracingHeaders(), true),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, REQUESTS_LOG_EXCLUDE_PATTERNS, DEFAULT_LOGGING.requestsLogExcludePatterns(), true),
+                // following is optional, so get it always in silent mode
+                convertToLong(getOrDefault(conf, REQUESTS_LOG_EXCLUDE_INTERVAL, DEFAULT_LOGGING.requestsLogExcludeInterval(), true)));
     }
 
     /**
@@ -302,11 +302,11 @@ public record Logging(Level logLevel,
      * @return the value as Long
      */
     private static long convertToLong(Object value) {
-	  return switch (value) {
-		case Long longValue -> longValue;
-		case Integer intValue -> intValue.longValue();
-		case Number numberValue -> numberValue.longValue();
-		default -> throw new ClassCastException("Cannot convert " + value.getClass().getSimpleName() + " to Long");
-	  };
+        return switch (value) {
+            case Long longValue -> longValue;
+            case Integer intValue -> intValue.longValue();
+            case Number numberValue -> numberValue.longValue();
+            default -> throw new ClassCastException("Cannot convert " + value.getClass().getSimpleName() + " to Long");
+        };
     }
 }

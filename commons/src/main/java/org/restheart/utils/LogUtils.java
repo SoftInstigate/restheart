@@ -39,13 +39,13 @@ public class LogUtils {
      */
     public static enum Level {
         /** Trace level logging */
-        TRACE, 
+        TRACE,
         /** Debug level logging */
-        DEBUG, 
+        DEBUG,
         /** Info level logging */
-        INFO, 
+        INFO,
         /** Warning level logging */
-        WARN, 
+        WARN,
         /** Error level logging */
         ERROR
     }
@@ -136,7 +136,7 @@ public class LogUtils {
         var first = true;
         for (var row : rows) {
             msg.a(sr())
-                    .fg(first ? firstRowColor: rowsColor)
+                    .fg(first ? firstRowColor : rowsColor)
                     .a(pad(row, 66))
                     .a(er())
                     .reset();
@@ -146,7 +146,7 @@ public class LogUtils {
 
         msg.a(footer());
 
-        LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
+        LogUtils.log(LOGGER, level, msg.toString(), (Object[]) null);
     }
 
     /**
@@ -175,7 +175,7 @@ public class LogUtils {
     private static Ansi header() {
         return ansi().a("\n").fg(GREEN).a(
                 "*-------------------------------------------------------------------*\n"
-                + "|                                                                   |\n")
+                        + "|                                                                   |\n")
                 .reset();
     }
 
@@ -187,7 +187,7 @@ public class LogUtils {
     private static Ansi footer() {
         return ansi().fg(GREEN).a(
                 "|                                                                   |\n"
-                + "*-------------------------------------------------------------------*\n")
+                        + "*-------------------------------------------------------------------*\n")
                 .reset();
 
     }

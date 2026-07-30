@@ -58,11 +58,11 @@ public class BsonRequestBlacklistPredicate implements Predicate {
         var _request = Request.of(exchange);
 
         if (_request == null || !(_request instanceof BsonRequest)) {
-            LOGGER.warn("bson-request-blacklist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
+            LOGGER.warn("bson-request-blacklist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request : _request.getClass().getSimpleName());
             return false;
         }
 
-        return !BsonUtils.containsKeys(((BsonRequest)_request).getContent(), this.blacklist, false);
+        return !BsonUtils.containsKeys(((BsonRequest) _request).getContent(), this.blacklist, false);
     }
 
 

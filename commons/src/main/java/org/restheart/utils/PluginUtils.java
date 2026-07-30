@@ -320,7 +320,7 @@ public class PluginUtils {
      * @param service the service to check
      * @return true if the service is blocking, false if non-blocking
      */
-    public static boolean blocking(Service<?,?> service) {
+    public static boolean blocking(Service<?, ?> service) {
         if (service == null) {
             return true;
         }

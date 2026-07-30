@@ -37,8 +37,8 @@ import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.LambdaUtils;
 
-@RegisterPlugin(name="gql-app-definition-cache", description="provides access to the GQL App Definition cache")
-public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefinitionRef,GraphQLApp>> {
+@RegisterPlugin(name = "gql-app-definition-cache", description = "provides access to the GQL App Definition cache")
+public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefinitionRef, GraphQLApp>> {
     private static final long MAX_CACHE_SIZE = 100_000;
     private static boolean enabled = true;
 
@@ -52,7 +52,8 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefin
     public void onInit() {
         Map<String, Object> graphqlArgs = config.getOrDefault("graphql", null);
         if (graphqlArgs != null) {
-            enabled = isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);;
+            enabled = isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);
+            ;
         } else {
             enabled = false;
         }
@@ -64,16 +65,16 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefin
     }
 
     private static final LoadingCache<AppDefinitionRef, GraphQLApp> CACHE = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.NEVER, 0,
-		appRef -> {
-            try {
-                return AppDefinitionLoader.load(appRef);
-            } catch (GraphQLAppDefNotFoundException e) {
-                return null;
-            } catch (GraphQLIllegalAppDefinitionException e) {
-                LambdaUtils.throwsSneakyException(e);
-                return null;
-            }
-        });
+            appRef -> {
+                try {
+                    return AppDefinitionLoader.load(appRef);
+                } catch (GraphQLAppDefNotFoundException e) {
+                    return null;
+                } catch (GraphQLIllegalAppDefinitionException e) {
+                    LambdaUtils.throwsSneakyException(e);
+                    return null;
+                }
+            });
 
     public static LoadingCache<AppDefinitionRef, GraphQLApp> getCache() {
         return CACHE;
@@ -83,7 +84,7 @@ public class AppDefinitionLoadingCache implements Provider<LoadingCache<AppDefin
         if (enabled) {
             var _app = CACHE.get(appRef);
 
-            if (_app != null && _app.isPresent()){
+            if (_app != null && _app.isPresent()) {
                 return _app.get();
             } else {
                 // Remove key if null was cached (previous request missed it, but it may exist now)

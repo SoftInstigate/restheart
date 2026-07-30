@@ -81,7 +81,7 @@ public class PluginsClassloader extends URLClassLoader {
         } else {
             try {
                 SINGLETON = new PluginsClassloader(jars);
-            } catch(IOException ioe) {
+            } catch (IOException ioe) {
                 throw new RuntimeException("error initializing", ioe);
             }
         }
@@ -103,17 +103,17 @@ public class PluginsClassloader extends URLClassLoader {
             throw new IllegalStateException("already initialized");
         } else {
             var urls = paths.stream().map(p -> {
-                    try {
-                        return p.toUri().toURL();
-                    } catch(MalformedURLException murle) {
-                        LambdaUtils.throwsSneakyException(murle);
-                        return null;
-                    }
-                }).toArray(URL[]::new);
+                try {
+                    return p.toUri().toURL();
+                } catch (MalformedURLException murle) {
+                    LambdaUtils.throwsSneakyException(murle);
+                    return null;
+                }
+            }).toArray(URL[]::new);
 
             try {
                 SINGLETON = new PluginsClassloader(urls);
-            } catch(IOException ioe) {
+            } catch (IOException ioe) {
                 throw new RuntimeException("error initializing", ioe);
             }
         }

@@ -32,10 +32,10 @@ import org.restheart.utils.HttpStatus;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "listTeamMembersService",
-        description      = "GET /auth/team/members — list the caller's active team's members",
-        defaultURI       = "/auth/team/members",
-        secure           = true,
+        name = "listTeamMembersService",
+        description = "GET /auth/team/members — list the caller's active team's members",
+        defaultURI = "/auth/team/members",
+        secure = true,
         enabledByDefault = false)
 public class ListTeamMembersService implements JsonService {
 
@@ -57,14 +57,20 @@ public class ListTeamMembersService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (!req.isGet()) { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isGet()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
         var email = account.getPrincipal().getName();

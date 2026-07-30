@@ -52,8 +52,8 @@ import kong.unirest.Unirest;
  */
 public class ChangeStreamNotifyWhenIT extends AbstactIT {
 
-    private static final String BASE      = "http://localhost:8080";
-    private static final String TEST_DB   = BASE + "/test-cs-notify-when";
+    private static final String BASE = "http://localhost:8080";
+    private static final String TEST_DB = BASE + "/test-cs-notify-when";
     private static final String TEST_COLL = TEST_DB + "/coll";
     // stream with notify_when: fullDocument.tenantId must equal ?tid param
     private static final String STREAM_URI = TEST_COLL + "/_streams/by-tenant";
@@ -68,26 +68,26 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
     @BeforeEach
     void setup() throws Exception {
         Unirest.put(TEST_DB)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{}")
+                .asEmpty();
 
         var resp = Unirest.put(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("""
-                   {
-                     "streams": [{
-                       "uri": "by-tenant",
-                       "stages": [],
-                       "notify_when": {
-                         "fullDocument::tenantId": { "$var": "tid" }
-                       }
-                     }]
-                   }
-                   """)
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("""
+                        {
+                          "streams": [{
+                            "uri": "by-tenant",
+                            "stages": [],
+                            "notify_when": {
+                              "fullDocument::tenantId": { "$var": "tid" }
+                            }
+                          }]
+                        }
+                        """)
+                .asEmpty();
 
         assertTrue(resp.getStatus() == 200 || resp.getStatus() == 201,
                 "Collection setup failed: " + resp.getStatus());
@@ -142,7 +142,8 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                 while ((line = br.readLine()) != null) {
                     if (!line.isBlank()) linesA.add(line);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
         var readerB = CompletableFuture.runAsync(() -> {
             try (var br = new BufferedReader(new InputStreamReader(isB))) {
@@ -150,7 +151,8 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                 while ((line = br.readLine()) != null) {
                     if (!line.isBlank()) linesB.add(line);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
 
         // Short settle: connections are already open; we only wait for the
@@ -159,19 +161,19 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
 
         // Insert a document for tenant-A
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"tenantId\": \"tenant-A\", \"msg\": \"for-A\"}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-A\", \"msg\": \"for-A\"}")
+                .asEmpty();
 
         Thread.sleep(1_500);
 
         // Insert a document for tenant-B
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"tenantId\": \"tenant-B\", \"msg\": \"for-B\"}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-B\", \"msg\": \"for-B\"}")
+                .asEmpty();
 
         Thread.sleep(1_500);
 
@@ -215,7 +217,7 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
 
         // Open connection synchronously so the session is registered before any insert
         var resp = CLIENT.send(reqAll, BodyHandlers.ofInputStream());
-        var is   = resp.body();
+        var is = resp.body();
 
         var lines = Collections.synchronizedList(new ArrayList<String>());
 
@@ -225,24 +227,25 @@ public class ChangeStreamNotifyWhenIT extends AbstactIT {
                 while ((line = br.readLine()) != null) {
                     if (!line.isBlank()) lines.add(line);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
 
         Thread.sleep(500); // let the ChangeStreamWorker enter its forEach loop
 
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"tenantId\": \"tenant-X\", \"msg\": \"broadcast\"}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-X\", \"msg\": \"broadcast\"}")
+                .asEmpty();
 
         Thread.sleep(1_500);
 
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"tenantId\": \"tenant-Y\", \"msg\": \"broadcast\"}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"tenantId\": \"tenant-Y\", \"msg\": \"broadcast\"}")
+                .asEmpty();
 
         Thread.sleep(1_500);
 

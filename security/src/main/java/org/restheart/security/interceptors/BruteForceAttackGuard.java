@@ -80,7 +80,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="bruteForceAttackGuard",
+@RegisterPlugin(name = "bruteForceAttackGuard",
         description = "defends from brute force attacks by blocking requests when failed authentication attempts exceed threshold",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         enabledByDefault = false)
@@ -115,14 +115,14 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
                 LOGGER.info("Failed auth requests will be counted on remote ip");
                 collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             LOGGER.info("Failed auth requests will be counted on remote ip");
             collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
         }
 
         try {
             this.maxFailedAttempts = arg(config, "max-failed-attempts");
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             this.maxFailedAttempts = 5;
         }
 
@@ -135,14 +135,14 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         // Check if failed attempts from this source exceed the threshold
         var histogram = authHisto(request);
         var failedAttempts = histogram.getSnapshot().getMax();
-        
+
         if (failedAttempts >= this.maxFailedAttempts) {
             logWarning(request.getExchange(), failedAttempts);
-            
+
             // Set the request as in error to stop further processing
             response.setInError(
-                org.restheart.utils.HttpStatus.SC_TOO_MANY_REQUESTS,
-                "Too many failed authentication attempts. Please try again later."
+                    org.restheart.utils.HttpStatus.SC_TOO_MANY_REQUESTS,
+                    "Too many failed authentication attempts. Please try again later."
             );
         }
     }
@@ -155,17 +155,17 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     private void logWarning(HttpServerExchange exchange, double mean) {
         var xff = ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR)).readAttribute(exchange);
         LogUtils.boxedWarn(LOGGER,
-            "A brute force attack might be in progress...",
-            "",
-            "Got too many of failed auth attempts in last 10 seconds from:",
-            "",
-            "remote ip: " + ExchangeAttributes.remoteIp().readAttribute(exchange),
-            "X-Forwarded-For header: " + xff,
-            "X-Forwarded-For tracked value: " + xffValue(xff, xForwardedForValueFromLast),
-            "",
-            "transport protocol: " + ExchangeAttributes.transportProtocol().readAttribute(exchange),
-            "request method: " + ExchangeAttributes.requestMethod().readAttribute(exchange),
-            "request url: " + ExchangeAttributes.requestURL().readAttribute(exchange));
+                "A brute force attack might be in progress...",
+                "",
+                "Got too many of failed auth attempts in last 10 seconds from:",
+                "",
+                "remote ip: " + ExchangeAttributes.remoteIp().readAttribute(exchange),
+                "X-Forwarded-For header: " + xff,
+                "X-Forwarded-For tracked value: " + xffValue(xff, xForwardedForValueFromLast),
+                "",
+                "transport protocol: " + ExchangeAttributes.transportProtocol().readAttribute(exchange),
+                "request method: " + ExchangeAttributes.requestMethod().readAttribute(exchange),
+                "request url: " + ExchangeAttributes.requestURL().readAttribute(exchange));
     }
 
     private Histogram authHisto(ServiceRequest<?> request) {

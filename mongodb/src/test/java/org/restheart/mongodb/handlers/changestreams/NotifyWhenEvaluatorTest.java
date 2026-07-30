@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.Map;
 
 import org.bson.BsonArray;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -37,7 +36,7 @@ class NotifyWhenEvaluatorTest {
     @Test
     void fromMultipleEntriesThrows() {
         var nw = BsonDocument.parse(
-            "{ \"fullDocument::a\": { \"$var\": \"x\" }, \"fullDocument::b\": { \"$var\": \"y\" } }");
+                "{ \"fullDocument::a\": { \"$var\": \"x\" }, \"fullDocument::b\": { \"$var\": \"y\" } }");
         assertThrows(IllegalArgumentException.class, () -> NotifyWhenEvaluator.from(nw));
     }
 
@@ -61,11 +60,11 @@ class NotifyWhenEvaluatorTest {
     class ScalarEquality {
 
         private final NotifyWhenEvaluator ev = NotifyWhenEvaluator.from(
-            BsonDocument.parse("{ \"fullDocument::tenantId\": { \"$var\": \"tid\" } }"));
+                BsonDocument.parse("{ \"fullDocument::tenantId\": { \"$var\": \"tid\" } }"));
 
         private BsonDocument event(String tenantId) {
             return new BsonDocument("fullDocument",
-                new BsonDocument("tenantId", new BsonString(tenantId)));
+                    new BsonDocument("tenantId", new BsonString(tenantId)));
         }
 
         @Test
@@ -110,13 +109,13 @@ class NotifyWhenEvaluatorTest {
     class ArrayMembership {
 
         private final NotifyWhenEvaluator ev = NotifyWhenEvaluator.from(
-            BsonDocument.parse("{ \"fullDocument::recipients\": { \"$var\": \"userId\" } }"));
+                BsonDocument.parse("{ \"fullDocument::recipients\": { \"$var\": \"userId\" } }"));
 
         private BsonDocument event(String... recipients) {
             var arr = new BsonArray();
             for (var r : recipients) arr.add(new BsonString(r));
             return new BsonDocument("fullDocument",
-                new BsonDocument("recipients", arr));
+                    new BsonDocument("recipients", arr));
         }
 
         @Test
@@ -147,9 +146,9 @@ class NotifyWhenEvaluatorTest {
     @Test
     void nestedPathIsResolved() {
         var ev = NotifyWhenEvaluator.from(
-            BsonDocument.parse("{ \"fullDocument::org.id\": { \"$var\": \"oid\" } }"));
+                BsonDocument.parse("{ \"fullDocument::org.id\": { \"$var\": \"oid\" } }"));
         var e = new BsonDocument("fullDocument",
-            new BsonDocument("org", new BsonDocument("id", new BsonString("org-42"))));
+                new BsonDocument("org", new BsonDocument("id", new BsonString("org-42"))));
         assertTrue(ev.matches(e, Map.of("oid", "org-42")));
         assertFalse(ev.matches(e, Map.of("oid", "org-99")));
     }
@@ -161,9 +160,9 @@ class NotifyWhenEvaluatorTest {
     @Test
     void nonStringScalarFieldReturnsNoMatch() {
         var ev = NotifyWhenEvaluator.from(
-            BsonDocument.parse("{ \"fullDocument::count\": { \"$var\": \"n\" } }"));
+                BsonDocument.parse("{ \"fullDocument::count\": { \"$var\": \"n\" } }"));
         var e = new BsonDocument("fullDocument",
-            new BsonDocument("count", new BsonInt32(5)));
+                new BsonDocument("count", new BsonInt32(5)));
         // non-string, non-array field → no match regardless of bound var
         assertFalse(ev.matches(e, Map.of("n", "5")));
     }

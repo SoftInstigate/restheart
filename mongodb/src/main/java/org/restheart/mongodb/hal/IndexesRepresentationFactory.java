@@ -57,7 +57,7 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
      * @throws IllegalQueryParameterException
      */
     @Override
-     public Resource getRepresentation(
+    public Resource getRepresentation(
             HttpServerExchange exchange,
             BsonArray embeddedData,
             long size)
@@ -89,7 +89,7 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
                     .filter(props -> props.isDocument())
                     .map(props -> props.asDocument())
                     .filter((props) -> props.keySet().stream()
-                    .anyMatch((k) -> k.equals("id") || k.equals("_id")))
+                            .anyMatch((k) -> k.equals("id") || k.equals("_id")))
                     .count();
 
             rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
@@ -151,9 +151,9 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
                         rep.addWarning("index with _id "
                                 + _id
                                 + (_id == null
-                                        ? " "
-                                        : " of type "
-                                        + _id.getBsonType().name())
+                                ? " "
+                                : " of type "
+                                + _id.getBsonType().name())
                                 + "filtered out. Indexes can only "
                                 + "have ids of type String");
 

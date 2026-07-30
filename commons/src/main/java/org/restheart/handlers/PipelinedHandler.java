@@ -208,10 +208,10 @@ public abstract class PipelinedHandler implements HttpHandler {
 
         // remove null entries in handlers array
         handlers = Arrays.stream(handlers)
-            .filter(Objects::nonNull)
-            .toArray(PipelinedHandler[]::new);
+                .filter(Objects::nonNull)
+                .toArray(PipelinedHandler[]::new);
 
-        for (var idx = 0; idx < handlers.length - 1; idx++) {
+        for (var idx = 0;idx < handlers.length - 1;idx++) {
             handlers[idx].setNext(handlers[idx + 1]);
         }
 

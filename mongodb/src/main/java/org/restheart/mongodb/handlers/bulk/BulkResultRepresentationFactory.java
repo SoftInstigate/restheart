@@ -88,14 +88,14 @@ public class BulkResultRepresentationFactory {
 
                 // add links to new, upserted documents
                 if (wr.getUpserts() != null) {
-                        wr.getUpserts().stream().forEach(update -> links.add(new BsonString(
-                                RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
+                    wr.getUpserts().stream().forEach(update -> links.add(new BsonString(
+                            RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
                 }
 
                 // add links to new, inserted documents
                 if (wr.getInserts() != null) {
-                        wr.getInserts().stream().forEach(update -> links.add(new BsonString(
-                                        RepresentationUtils.getReferenceLink(requestPath,update.getId()))));
+                    wr.getInserts().stream().forEach(update -> links.add(new BsonString(
+                            RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
                 }
 
                 rep.put("links", links);
@@ -122,14 +122,14 @@ public class BulkResultRepresentationFactory {
 
                 // add links to new, upserted documents
                 if (wr.getUpserts() != null) {
-                        wr.getUpserts().stream().forEach(update -> links.add(new BsonString(
-                                RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
+                    wr.getUpserts().stream().forEach(update -> links.add(new BsonString(
+                            RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
                 }
 
                 // add links to new, inserted documents
                 if (wr.getInserts() != null) {
-                        wr.getInserts().stream().forEach(update -> links.add(new BsonString(
-                                        RepresentationUtils.getReferenceLink(requestPath,update.getId()))));
+                    wr.getInserts().stream().forEach(update -> links.add(new BsonString(
+                            RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
                 }
 
                 rep.put("links", links);
@@ -175,8 +175,8 @@ public class BulkResultRepresentationFactory {
                         new BsonString(
                                 ResponseHelper.getMessageFromErrorCode(
                                         error.getCode())
-                                + ": "
-                                + error.getMessage()));
+                                        + ": "
+                                        + error.getMessage()));
             } else {
                 errorDoc.put("index",
                         new BsonInt32(error.getIndex()));

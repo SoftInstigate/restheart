@@ -23,7 +23,6 @@ package org.restheart.polyglot;
 import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
@@ -59,12 +58,12 @@ public abstract class JSPlugin {
      * @param opts
      */
     public JSPlugin(String name,
-        String description,
-        Source handleSource,
-        String modulesReplacements,
-        Configuration configuration,
-        Optional<MongoClient> mclient,
-        Map<String, String> opts) {
+                    String description,
+                    Source handleSource,
+                    String modulesReplacements,
+                    Configuration configuration,
+                    Optional<MongoClient> mclient,
+                    Map<String, String> opts) {
         this.name = name;
         this.description = description;
         this.handleSource = handleSource;

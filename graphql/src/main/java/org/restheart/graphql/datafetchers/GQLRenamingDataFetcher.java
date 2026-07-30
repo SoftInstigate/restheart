@@ -57,7 +57,7 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
         var splitPath = path.split(Pattern.quote("."));
         var current = bsonValue;
 
-        for (int i = 0; i < splitPath.length; i++) {
+        for (int i = 0;i < splitPath.length;i++) {
             if (current.isDocument() && current.asDocument().containsKey(splitPath[i])) {
                 current = current.asDocument().get(splitPath[i]);
             } else if (current.isArray()) {
@@ -76,7 +76,7 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
                     return null;
                 }
 
-            } else{
+            } else {
                 return null;
             }
         }

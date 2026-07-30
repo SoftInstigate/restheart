@@ -99,13 +99,13 @@ public class ETagPolicyInjector extends PipelinedHandler {
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
 
-            LOGGER.trace("collection etag policy (from coll properties) {}",_policy);
+            LOGGER.trace("collection etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null
-                    ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
-                    : null;
+                        ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                        : null;
                 LOGGER.trace("collection etag policy (from db properties) {}", _policy);
             }
 
@@ -164,8 +164,8 @@ public class ETagPolicyInjector extends PipelinedHandler {
             if (_policy == null) {
                 // check the db metadata
                 _policy = dbProps != null
-                    ? dbProps.get(ETAG_POLICY_METADATA_KEY)
-                    : null;
+                        ? dbProps.get(ETAG_POLICY_METADATA_KEY)
+                        : null;
 
                 LOGGER.trace("coll etag policy (from db properties) {}", _policy);
             }

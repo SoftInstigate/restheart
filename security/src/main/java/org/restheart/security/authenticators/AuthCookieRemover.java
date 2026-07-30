@@ -40,9 +40,9 @@ import io.undertow.server.handlers.CookieImpl;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "authCookieRemover",
-    description = "unsets the auth cookie",
-    secure = false,
-    defaultURI = "/logout")
+        description = "unsets the auth cookie",
+        secure = false,
+        defaultURI = "/logout")
 public class AuthCookieRemover implements BsonService {
     @Inject("rh-config")
     private Configuration rhConfig;
@@ -70,7 +70,7 @@ public class AuthCookieRemover implements BsonService {
             this.sameSiteMode = argOrDefault(authCookieSetterConf, "same-site-mode", "strict");
         } else {
             this.name = "rh_auth";
-            this.domain ="localhost";
+            this.domain = "localhost";
             this.path = "/";
             this.httpOnly = true;
             this.sameSite = true;
@@ -80,7 +80,7 @@ public class AuthCookieRemover implements BsonService {
 
     @Override
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
-        switch(req.getMethod()) {
+        switch (req.getMethod()) {
             case POST -> unsetAuthTokenCookie(res);
             case OPTIONS -> handleOptions(req);
             default -> res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -89,11 +89,11 @@ public class AuthCookieRemover implements BsonService {
 
     private void unsetAuthTokenCookie(BsonResponse res) {
         res.getExchange().setResponseCookie(new CookieImpl(this.name, null)
-            .setSecure(this.secure)
-            .setHttpOnly(this.httpOnly)
-            .setDomain(this.domain)
-            .setPath(this.path)
-            .setSameSite(this.sameSite)
-            .setSameSiteMode(this.sameSiteMode));
+                .setSecure(this.secure)
+                .setHttpOnly(this.httpOnly)
+                .setDomain(this.domain)
+                .setPath(this.path)
+                .setSameSite(this.sameSite)
+                .setSameSiteMode(this.sameSiteMode));
     }
 }

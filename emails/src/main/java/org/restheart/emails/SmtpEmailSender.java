@@ -31,8 +31,8 @@ import java.util.Optional;
  * @since 9.6.0
  */
 @RegisterPlugin(
-        name             = "emails",
-        description      = "SMTP email sender (wraps ermes-mail)",
+        name = "emails",
+        description = "SMTP email sender (wraps ermes-mail)",
         enabledByDefault = false)
 public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
@@ -46,9 +46,9 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private Map<String, Object> conf;
 
     private EmailService emailSrv;
-    private String       senderEmail;
-    private String       appName;
-    private boolean      enabled = false;
+    private String senderEmail;
+    private String appName;
+    private boolean enabled = false;
 
     /** Cache for overridden EmailService instances, keyed by override signature. */
     private LoadingCache<String, OverrideEntry> overrideCache;
@@ -64,7 +64,7 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             }
             try {
                 this.emailSrv = buildEmailService(conf);
-                this.appName    = cfgOrDefault(conf, "app-name", "App");
+                this.appName = cfgOrDefault(conf, "app-name", "App");
                 this.senderEmail = cfgRequired(conf, "sender-email");
                 this.overrideCache = CacheFactory.createLocalLoadingCache(
                         64, Cache.EXPIRE_POLICY.AFTER_READ, 600_000, this::buildOverrideEntry, this::onOverrideEntryRemoved);
@@ -100,11 +100,11 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             var entry = overrideCache
                     .getLoading(signature)
                     .orElse(new OverrideEntry(this.emailSrv, this.senderEmail, this.appName));
-            srv  = entry.emailSrv;
+            srv = entry.emailSrv;
             from = entry.senderEmail;
             name = entry.appName;
         } else {
-            srv  = this.emailSrv;
+            srv = this.emailSrv;
             from = this.senderEmail;
             name = this.appName;
         }
@@ -132,15 +132,16 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     // --- Override support ---
 
-    private record OverrideEntry(EmailService emailSrv, String senderEmail, String appName) {}
+    private record OverrideEntry(EmailService emailSrv, String senderEmail, String appName) {
+    }
 
     private static boolean hasOverride(Request<?> req) {
         return req.attachedParam(PREFIX + "sender-email") != null
-            || req.attachedParam(PREFIX + "sender-name") != null
-            || req.attachedParam(PREFIX + "smtp-hostname") != null
-            || req.attachedParam(PREFIX + "smtp-port") != null
-            || req.attachedParam(PREFIX + "smtp-username") != null
-            || req.attachedParam(PREFIX + "smtp-password") != null;
+                || req.attachedParam(PREFIX + "sender-name") != null
+                || req.attachedParam(PREFIX + "smtp-hostname") != null
+                || req.attachedParam(PREFIX + "smtp-port") != null
+                || req.attachedParam(PREFIX + "smtp-username") != null
+                || req.attachedParam(PREFIX + "smtp-password") != null;
     }
 
     private static String buildSignature(Request<?> req) {
@@ -167,14 +168,14 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private OverrideEntry buildOverrideEntry(String signature) {
         var parts = signature.split("\\|", -1);
         var m = new java.util.HashMap<String, Object>(conf != null ? conf : Map.of());
-        overrideIfPresent(m, "sender-email",   parts[0]);
-        overrideIfPresent(m, "app-name",       parts[1]);
-        overrideIfPresent(m, "smtp-hostname",  parts[2]);
-        overrideIfPresent(m, "smtp-port",      parts[3]);
-        overrideIfPresent(m, "smtp-username",  parts[4]);
-        overrideIfPresent(m, "smtp-password",  parts[5]);
+        overrideIfPresent(m, "sender-email", parts[0]);
+        overrideIfPresent(m, "app-name", parts[1]);
+        overrideIfPresent(m, "smtp-hostname", parts[2]);
+        overrideIfPresent(m, "smtp-port", parts[3]);
+        overrideIfPresent(m, "smtp-username", parts[4]);
+        overrideIfPresent(m, "smtp-password", parts[5]);
         try {
-            var srv  = buildEmailService(m);
+            var srv = buildEmailService(m);
             var from = cfgOrDefault(m, "sender-email", this.senderEmail);
             var name = cfgOrDefault(m, "app-name", this.appName);
             return new OverrideEntry(srv, from, name);
@@ -201,8 +202,12 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private static void overrideIfPresent(Map<String, Object> m, String key, String value) {
         if (value != null && !value.isEmpty()) {
             if ("smtp-port".equals(key) || "ssl-port".equals(key)) {
-                try { m.put(key, Integer.parseInt(value)); }
-                catch (NumberFormatException e) { m.put(key, value); }
+                try {
+                    m.put(key, Integer.parseInt(value));
+                }
+                catch (NumberFormatException e) {
+                    m.put(key, value);
+                }
             } else {
                 m.put(key, value);
             }
@@ -213,10 +218,10 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     private static EmailService buildEmailService(Map<String, Object> cfg) {
         final String smtpHostname = cfgRequired(cfg, "smtp-hostname");
-        final int    smtpPort     = cfgRequired(cfg, "smtp-port");
+        final int smtpPort = cfgRequired(cfg, "smtp-port");
         final String smtpUsername = cfgRequired(cfg, "smtp-username");
         final String smtpPassword = cfgRequired(cfg, "smtp-password");
-        final int    sslPort      = cfgOrDefault(cfg, "ssl-port", 465);
+        final int sslPort = cfgOrDefault(cfg, "ssl-port", 465);
         return new EmailService(
                 SMTPConfig.forSsl(smtpHostname, smtpPort, smtpUsername, smtpPassword, sslPort),
                 4);

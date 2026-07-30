@@ -55,7 +55,8 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
     private ArrayList<WildcardInterceptor> requiredWildCardInterceptors = new ArrayList<>();
 
-    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();;
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
+    ;
 
     /**
      *
@@ -70,17 +71,17 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
     public BeforeExchangeInitInterceptorsExecutor(PipelinedHandler next) {
         super(next);
         this.wildCardInterceptors = pluginsRegistry.getInterceptors().stream()
-            .filter(pr -> pr.isEnabled())
-            .map(pr -> pr.getInstance())
-            .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
-            .filter(i -> i instanceof WildcardInterceptor)
-            .map(i -> (WildcardInterceptor) i)
-            .collect(Collectors.toCollection(ArrayList::new));
+                .filter(pr -> pr.isEnabled())
+                .map(pr -> pr.getInstance())
+                .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
+                .filter(i -> i instanceof WildcardInterceptor)
+                .map(i -> (WildcardInterceptor) i)
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        this.requiredWildCardInterceptors =this.wildCardInterceptors.stream()
-            .filter(i -> PluginUtils.requiredinterceptor(i))
-            .map(i -> (WildcardInterceptor) i)
-            .collect(Collectors.toCollection(ArrayList::new));
+        this.requiredWildCardInterceptors = this.wildCardInterceptors.stream()
+                .filter(i -> PluginUtils.requiredinterceptor(i))
+                .map(i -> (WildcardInterceptor) i)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
@@ -92,7 +93,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var requestPath = exchange.getRequestPath();
         var requestMethod = exchange.getRequestMethod().toString();
-        
+
         if (this.wildCardInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("BEFORE_EXCHANGE_INIT INTERCEPTORS");
@@ -116,7 +117,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             // if the request is handled by a service set to not execute interceptors
             // at this interceptPoint, apply only required interceptors
             var vip = PluginUtils.dontIntercept(handlingPlugin);
-            if (Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals) || Arrays.stream(vip).anyMatch(ANY::equals) ) {
+            if (Arrays.stream(vip).anyMatch(REQUEST_BEFORE_EXCHANGE_INIT::equals) || Arrays.stream(vip).anyMatch(ANY::equals)) {
                 interceptors = this.requiredWildCardInterceptors;
             }
         }
@@ -127,7 +128,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         LOGGER.debug("Found {} wildcard interceptors", interceptors.size());
 
         var executionStartTime = System.currentTimeMillis();
-        
+
         var applicableInterceptors = interceptors.stream().filter(ri -> {
             try {
                 return ri.resolve(request, response);
@@ -137,7 +138,8 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
                 Exchange.setInError(exchange);
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
                 return false;
-            }}).collect(Collectors.toList());
+            }
+        }).collect(Collectors.toList());
 
         if (applicableInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.INFO);
@@ -153,13 +155,13 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             var interceptorStartTime = System.currentTimeMillis();
             var interceptorName = PluginUtils.name(ri);
             var isRequired = PluginUtils.requiredinterceptor(ri) ? " (required)" : "";
-            
+
             RequestPhaseContext.setPhase(Phase.ITEM);
             LOGGER.debug("{} (priority: {}){}", interceptorName, PluginUtils.priority(ri), isRequired);
-            
+
             try {
                 ri.handle(request, response);
-                
+
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", interceptorDuration);
@@ -172,7 +174,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
             }
         });
-            
+
         var totalDuration = System.currentTimeMillis() - executionStartTime;
         RequestPhaseContext.setPhase(Phase.PHASE_END);
         LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in {}ms", totalDuration);

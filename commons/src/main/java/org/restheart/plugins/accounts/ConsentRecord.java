@@ -18,4 +18,5 @@ import java.time.Instant;
  * @param acceptedAt     the instant the consent was recorded
  */
 public record ConsentRecord(String termsVersion, String privacyVersion,
-                             String ip, Instant acceptedAt) {}
+                            String ip, Instant acceptedAt) {
+}

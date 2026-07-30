@@ -97,15 +97,15 @@ public class AddRequestProperties implements MongoInterceptor {
                 && !request.isDelete()
                 && request.getCollectionProps() != null
                 && request.getCollectionProps()
-                        .containsKey("addRequestProperties")
+                .containsKey("addRequestProperties")
                 && (request.getCollectionProps()
-                        .get("addRequestProperties").isArray()
+                .get("addRequestProperties").isArray()
                 || request.getCollectionProps()
-                        .get("addRequestProperties").isDocument());
+                .get("addRequestProperties").isDocument());
     }
 
     private void addProps(BsonDocument doc, BsonValue propNames,
-            MongoRequest request, MongoResponse response) {
+                          MongoRequest request, MongoResponse response) {
         BsonDocument injected = new BsonDocument();
 
         if (propNames.isDocument()) {
@@ -185,11 +185,11 @@ public class AddRequestProperties implements MongoInterceptor {
         // user roles
         if (Objects.nonNull(exchange.getSecurityContext())
                 && Objects.nonNull(
-                        exchange.getSecurityContext()
-                                .getAuthenticatedAccount())
+                exchange.getSecurityContext()
+                        .getAuthenticatedAccount())
                 && Objects.nonNull(exchange
-                        .getSecurityContext()
-                        .getAuthenticatedAccount().getRoles())) {
+                .getSecurityContext()
+                .getAuthenticatedAccount().getRoles())) {
             Set<String> roles = exchange
                     .getSecurityContext()
                     .getAuthenticatedAccount().getRoles();

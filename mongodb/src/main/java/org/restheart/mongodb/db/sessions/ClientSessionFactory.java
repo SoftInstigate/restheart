@@ -112,18 +112,18 @@ public class ClientSessionFactory {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-            .builder()
-            .causallyConsistent(options.isCausallyConsistent())
-            .build();
+                .builder()
+                .causallyConsistent(options.isCausallyConsistent())
+                .build();
 
         return createClientSession(sid, cso);
     }
 
     ClientSessionImpl createClientSession(final UUID sid, final ClientSessionOptions options) {
         var mergedOptions = ClientSessionOptions
-            .builder(options)
-            .causallyConsistent(true)
-            .build();
+                .builder(options)
+                .causallyConsistent(true)
+                .build();
 
         return new ClientSessionImpl(new SimpleServerSessionPool(SessionsUtils.getCluster(), sid), mClient, mergedOptions);
     }

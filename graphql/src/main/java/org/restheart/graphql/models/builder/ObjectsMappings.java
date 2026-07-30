@@ -71,9 +71,9 @@ class ObjectsMappings extends Mappings {
         var ret = new HashMap<String, TypeMapping>();
 
         var _wrongObjectMapping = doc.keySet().stream()
-            .filter(key -> isObject(key, typeDefinitionRegistry))
-            .filter(key -> !doc.get(key).isDocument())
-            .findFirst();
+                .filter(key -> isObject(key, typeDefinitionRegistry))
+                .filter(key -> !doc.get(key).isDocument())
+                .findFirst();
 
         if (_wrongObjectMapping.isPresent()) {
             var wrongObjectMapping = _wrongObjectMapping.get();
@@ -81,9 +81,9 @@ class ObjectsMappings extends Mappings {
         }
 
         doc.keySet().stream()
-            .filter(key -> isObject(key, typeDefinitionRegistry))
-            .filter(key -> doc.get(key).isDocument())
-            .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, typeDefinitionRegistry, doc.getDocument(type), appDefDb, restrictMappingDb))));
+                .filter(key -> isObject(key, typeDefinitionRegistry))
+                .filter(key -> doc.get(key).isDocument())
+                .forEach(type -> ret.put(type, new ObjectMapping(type, objectFieldMappings(type, typeDefinitionRegistry, doc.getDocument(type), appDefDb, restrictMappingDb))));
 
         return ret;
     }
@@ -117,9 +117,9 @@ class ObjectsMappings extends Mappings {
                         // Validate that mapping db matches app definition db if restriction is enabled
                         if (restrictMappingDb && !fieldMappingDoc.getString("db").getValue().equals(appDefDb)) {
                             LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException(
-                                "The mapping for " + type + "." + field + " uses db '" + fieldMappingDoc.getString("db").getValue() + 
-                                "' but the GraphQL app definition is stored in db '" + appDefDb + "'. " +
-                                "When 'restrict-mapping-db' is enabled, all mappings must use the same database as the app definition."));
+                                    "The mapping for " + type + "." + field + " uses db '" + fieldMappingDoc.getString("db").getValue() +
+                                            "' but the GraphQL app definition is stored in db '" + appDefDb + "'. " +
+                                            "When 'restrict-mapping-db' is enabled, all mappings must use the same database as the app definition."));
                         }
                     } else {
                         throwIllegalDefinitionException(field, type, "db");
@@ -128,7 +128,7 @@ class ObjectsMappings extends Mappings {
                     if (fieldMappingDoc.containsKey("collection")) {
                         if (!fieldMappingDoc.get("collection").isString()) {
                             throwIllegalDefinitionException(field, type, "db", "string", fieldMappingDoc.get("collection"));
-                            LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field +  " should be a string but is a " +  fieldMappingDoc.get("collection")));
+                            LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("The mapping for " + type + "." + field + " should be a string but is a " + fieldMappingDoc.get("collection")));
                         }
                     } else {
                         throwIllegalDefinitionException(field, type, "collection");
@@ -141,13 +141,13 @@ class ObjectsMappings extends Mappings {
                             var aggregationBuilder = new AggregationMapping.Builder();
 
                             aggregationBuilder
-                                .fieldName(field)
-                                .db(fieldMappingDoc.get("db").asString()) // DB!!!
-                                .collection(fieldMappingDoc.get("collection").asString())
-                                .stages(fieldMappingDoc.get("stages").asArray())
-                                .allowDiskUse(hasKeyOfType(fieldMappingDoc, "allowDiskUse", BsonValue::isBoolean)
-                                    ? fieldMappingDoc.get("allowDiskUse").asBoolean()
-                                    : BsonBoolean.FALSE);
+                                    .fieldName(field)
+                                    .db(fieldMappingDoc.get("db").asString()) // DB!!!
+                                    .collection(fieldMappingDoc.get("collection").asString())
+                                    .stages(fieldMappingDoc.get("stages").asArray())
+                                    .allowDiskUse(hasKeyOfType(fieldMappingDoc, "allowDiskUse", BsonValue::isBoolean)
+                                            ? fieldMappingDoc.get("allowDiskUse").asBoolean()
+                                            : BsonBoolean.FALSE);
 
                             // Check if dataloader settings are present
                             if (fieldMappingDoc.containsKey("dataLoader")) {
@@ -184,7 +184,7 @@ class ObjectsMappings extends Mappings {
 
                         queryMappingBuilder.fieldName(field);
 
-						// DB !!!
+                        // DB !!!
                         queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
                         queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
 
@@ -284,15 +284,15 @@ class ObjectsMappings extends Mappings {
         var typeMappings = new HashMap<String, FieldMapping>();
 
         typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> !type.equals("Query") && type.equals(e.getKey()))
-                    .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
-                    .map(e -> (ObjectTypeDefinition) e.getValue())
-                    .map(e -> e.getFieldDefinitions()) // get fields
-                    .flatMap(List::stream)
-                    .map(fd -> fd.getName())
-                    .filter(f -> !typeDoc.containsKey(f)) // field is not mapped
-                    .peek(f -> LOGGER.trace("adding default field mapping for {}.{}", type, f))
-                    .forEach(f -> typeMappings.put(f, new FieldRenaming(f, f))); // add default mapping
+                .filter(e -> !type.equals("Query") && type.equals(e.getKey()))
+                .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
+                .map(e -> (ObjectTypeDefinition) e.getValue())
+                .map(e -> e.getFieldDefinitions()) // get fields
+                .flatMap(List::stream)
+                .map(fd -> fd.getName())
+                .filter(f -> !typeDoc.containsKey(f)) // field is not mapped
+                .peek(f -> LOGGER.trace("adding default field mapping for {}.{}", type, f))
+                .forEach(f -> typeMappings.put(f, new FieldRenaming(f, f))); // add default mapping
 
         return typeMappings;
     }

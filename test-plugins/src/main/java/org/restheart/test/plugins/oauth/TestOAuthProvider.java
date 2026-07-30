@@ -38,15 +38,15 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "testOAuthProvider",
-        description      = "Mock OAuth provider for integration tests",
+        name = "testOAuthProvider",
+        description = "Mock OAuth provider for integration tests",
         enabledByDefault = false)
 public class TestOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestOAuthProvider.class);
     private static final String PROVIDER_NAME = "test";
     /** Code prefix used by Karate tests: {@code "test-" + email}. */
-    public  static final String CODE_PREFIX   = "test-";
+    public static final String CODE_PREFIX = "test-";
 
     @Inject("oauthService")
     private OAuthProviderRegistry oauthService;
@@ -60,7 +60,9 @@ public class TestOAuthProvider implements OAuthProvider, Initializer {
     }
 
     @Override
-    public String getProviderName() { return PROVIDER_NAME; }
+    public String getProviderName() {
+        return PROVIDER_NAME;
+    }
 
     /**
      * Returns a local fake authorization URL. The CSRF {@code state} is embedded
@@ -103,9 +105,9 @@ public class TestOAuthProvider implements OAuthProvider, Initializer {
         LOGGER.debug("TestOAuthProvider: returning profile for <{}> (clientId={}, callbackUrl={})",
                 email, clientId, callbackUrl);
         return new BsonDocument()
-                .append("email",      new BsonString(email))
-                .append("name",       new BsonString("Test User"))
+                .append("email", new BsonString(email))
+                .append("name", new BsonString("Test User"))
                 .append("providerId", new BsonString("test-" + clientId + "-" + Math.abs(email.hashCode())))
-                .append("avatarUrl",  new BsonString(callbackUrl));
+                .append("avatarUrl", new BsonString(callbackUrl));
     }
 }

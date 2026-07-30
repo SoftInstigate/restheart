@@ -69,9 +69,9 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
 
         try {
             gridFs.deleteChunksCollection(
-                request.rsOps(),
-                request.getDBName(),
-                request.getCollectionName());
+                    request.rsOps(),
+                    request.getDBName(),
+                    request.getCollectionName());
         } catch (Throwable t) {
             response.addWarning("error removing the bucket file chunks: " + t.getMessage());
         }

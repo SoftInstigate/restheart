@@ -145,10 +145,10 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterMany() {
-        BsonValue[] ids = new BsonValue[] {
+        BsonValue[] ids = new BsonValue[]{
                 new BsonInt32(1),
                 new BsonDouble(20.0d),
-                new BsonString("id") };
+                new BsonString("id")};
 
         var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
@@ -166,7 +166,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyIdsWithSpaces() {
-        BsonValue[] ids = new BsonValue[] {
+        BsonValue[] ids = new BsonValue[]{
                 new BsonString("Three Imaginary Boys"),
                 new BsonString("Seventeen Seconds")
         };
@@ -186,10 +186,10 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyString() {
-        BsonValue[] ids = new BsonValue[] {
+        BsonValue[] ids = new BsonValue[]{
                 new BsonInt32(1),
                 new BsonDouble(20.0d),
-                new BsonString("id") };
+                new BsonString("id")};
 
         var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";

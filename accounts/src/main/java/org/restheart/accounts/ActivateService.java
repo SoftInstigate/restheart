@@ -50,9 +50,9 @@ import java.util.HashSet;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "activateService",
-        description      = "PATCH /auth/activate — activates an invitation and sets password",
-        defaultURI       = "/auth/activate",
+        name = "activateService",
+        description = "PATCH /auth/activate — activates an invitation and sets password",
+        defaultURI = "/auth/activate",
         enabledByDefault = false)
 public class ActivateService implements JsonService {
 
@@ -101,8 +101,8 @@ public class ActivateService implements JsonService {
         }
         var jo = body.getAsJsonObject();
 
-        var email    = stringField(jo, "email");
-        var token    = stringField(jo, "token");
+        var email = stringField(jo, "email");
+        var token = stringField(jo, "token");
         var password = stringField(jo, "password");
 
         if (email == null || email.isBlank()) {
@@ -160,8 +160,8 @@ public class ActivateService implements JsonService {
         }
 
         // 9. Add org membership now that the user has activated (invitation accepted)
-        var teamId    = invite.get("teamId");
-        var orgRole  = invite.getString("role").getValue();
+        var teamId = invite.get("teamId");
+        var orgRole = invite.getString("role").getValue();
         accountsService.getMembershipProvider(req).addMember(normalizedEmail, teamId, orgRole);
 
         // 10. Delete the invitation from auth_invitations (one-shot token)

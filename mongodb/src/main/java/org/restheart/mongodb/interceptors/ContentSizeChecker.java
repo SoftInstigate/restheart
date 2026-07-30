@@ -67,17 +67,17 @@ public class ContentSizeChecker implements MongoInterceptor {
                 .asDocument()
                 .containsKey("min")
                 && request.getCollectionProps()
-                        .get("checkContentSize")
-                        .asDocument()
-                        .get("min")
-                        .isInt32()
-                        ? request.getCollectionProps()
-                                .get("checkContentSize")
-                                .asDocument()
-                                .get("min")
-                                .asInt32()
-                                .intValue()
-                        : null;
+                .get("checkContentSize")
+                .asDocument()
+                .get("min")
+                .isInt32()
+                ? request.getCollectionProps()
+                .get("checkContentSize")
+                .asDocument()
+                .get("min")
+                .asInt32()
+                .intValue()
+                : null;
 
         var check = (min == null
                 ? checkSize(request.getExchange(), -1, max)
@@ -123,18 +123,18 @@ public class ContentSizeChecker implements MongoInterceptor {
         return request.isWriteDocument()
                 && request.getCollectionProps() != null
                 && request.getCollectionProps()
-                        .containsKey("checkContentSize")
+                .containsKey("checkContentSize")
                 && request.getCollectionProps()
-                        .get("checkContentSize")
-                        .isDocument()
+                .get("checkContentSize")
+                .isDocument()
                 && request.getCollectionProps()
-                        .get("checkContentSize")
-                        .asDocument()
-                        .containsKey("max")
+                .get("checkContentSize")
+                .asDocument()
+                .containsKey("max")
                 && request.getCollectionProps()
-                        .get("checkContentSize")
-                        .asDocument()
-                        .get("max")
-                        .isInt32();
+                .get("checkContentSize")
+                .asDocument()
+                .get("max")
+                .isInt32();
     }
 }

@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         // execute after any other request interceptor
-        priority=Integer.MAX_VALUE)
+        priority = Integer.MAX_VALUE)
 public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     /**
@@ -115,7 +115,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             } else {
                 response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
                         "'jsonSchema' checker does not support bulk PATCH requests. "
-                        + "Set 'skipNotSupported:true' to allow them.");
+                                + "Set 'skipNotSupported:true' to allow them.");
                 return;
             }
         }
@@ -128,7 +128,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         if (schemaId == null) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': missing property "
-                    + SCHEMA_ID_PROPERTY);
+                            + SCHEMA_ID_PROPERTY);
             return;
         }
 
@@ -140,9 +140,9 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } else {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': "
-                    + "property "
-                    + SCHEMA_STORE_DB_PROPERTY
-                    + " must be a string");
+                            + "property "
+                            + SCHEMA_STORE_DB_PROPERTY
+                            + " must be a string");
             return;
         }
 
@@ -151,7 +151,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } catch (UnsupportedDocumentIdException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': "
-                    + "schema 'id' is not valid", ex);
+                            + "schema 'id' is not valid", ex);
             return;
         }
 
@@ -160,15 +160,15 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } catch (JsonSchemaNotFoundException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
-                    + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + BsonUtils.getIdAsString(schemaId, false)
-                    + " not found");
+                            + schemaStoreDb + "/" + _SCHEMAS + "/"
+                            + BsonUtils.getIdAsString(schemaId, false)
+                            + " not found");
         } catch (SchemaValidationException sve) {
             response.setInError(HttpStatus.SC_BAD_REQUEST,
                     "Request content violates schema "
-                    + BsonUtils.getIdAsString(schemaId, true)
-                    + ": "
-                    + String.join(", ", sve.getViolations()));
+                            + BsonUtils.getIdAsString(schemaId, true)
+                            + ": "
+                            + String.join(", ", sve.getViolations()));
         }
     }
 

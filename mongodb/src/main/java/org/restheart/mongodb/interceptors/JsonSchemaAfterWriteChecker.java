@@ -79,20 +79,20 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
-            && request.getCollectionProps() != null
-            && (request.isPatch() && !request.isBulkDocuments())
-            && request.isWriteDocument()
-            && request.getCollectionProps() != null
-            && request.getCollectionProps().containsKey("jsonSchema")
-            && request.getCollectionProps().get("jsonSchema").isDocument()
-            && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
+                && request.getCollectionProps() != null
+                && (request.isPatch() && !request.isBulkDocuments())
+                && request.isWriteDocument()
+                && request.getCollectionProps() != null
+                && request.getCollectionProps().containsKey("jsonSchema")
+                && request.getCollectionProps().get("jsonSchema").isDocument()
+                && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
     }
 
     @Override
     List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
         var content = response.getDbOperationResult().getNewData() == null
-            ? new BsonDocument()
-            : response.getDbOperationResult().getNewData();
+                ? new BsonDocument()
+                : response.getDbOperationResult().getNewData();
 
         return List.of(content);
     }

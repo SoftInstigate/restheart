@@ -84,9 +84,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findUser(String email) {
         return Optional.ofNullable(
-            users()
-                .find(eq("_id", new BsonString(email)))
-                .first()
+                users()
+                        .find(eq("_id", new BsonString(email)))
+                        .first()
         );
     }
 
@@ -101,9 +101,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findUserByToken(String tokenField, String token) {
         return Optional.ofNullable(
-            users()
-                .find(Filters.eq(tokenField, token))
-                .first()
+                users()
+                        .find(Filters.eq(tokenField, token))
+                        .first()
         );
     }
 
@@ -121,7 +121,7 @@ public class DbHelper {
         var idsFilter = new java.util.ArrayList<BsonString>();
         emails.forEach(e -> idsFilter.add(new BsonString(e)));
         users().find(Filters.in("_id", idsFilter))
-               .forEach(u -> result.put(u.getString("_id").getValue(), u));
+                .forEach(u -> result.put(u.getString("_id").getValue(), u));
         return result;
     }
 
@@ -168,8 +168,8 @@ public class DbHelper {
         var schemaMeta = resolveSchemaMeta();
         if (schemaMeta == null) {
             var result = users().updateOne(
-                eq("_id", new BsonString(email)),
-                new BsonDocument("$set", updates)
+                    eq("_id", new BsonString(email)),
+                    new BsonDocument("$set", updates)
             );
             return result.getMatchedCount() > 0;
         }
@@ -182,12 +182,12 @@ public class DbHelper {
         validateOrThrow(applyUpdates(stored, updates), schemaMeta);
 
         var result = users().updateOne(
-            touchedFieldsFilter(email, stored, updates.keySet()),
-            new BsonDocument("$set", updates)
+                touchedFieldsFilter(email, stored, updates.keySet()),
+                new BsonDocument("$set", updates)
         );
         if (result.getMatchedCount() == 0) {
             throw new BadRequestException(
-                "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
+                    "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
         }
         return true;
     }
@@ -217,8 +217,8 @@ public class DbHelper {
         var schemaMeta = resolveSchemaMeta();
         if (schemaMeta == null) {
             var result = users().updateOne(
-                eq("_id", new BsonString(email)),
-                new BsonDocument("$unset", unsetDoc)
+                    eq("_id", new BsonString(email)),
+                    new BsonDocument("$unset", unsetDoc)
             );
             return result.getMatchedCount() > 0;
         }
@@ -235,12 +235,12 @@ public class DbHelper {
         validateOrThrow(candidate, schemaMeta);
 
         var result = users().updateOne(
-            touchedFieldsFilter(email, stored, fields),
-            new BsonDocument("$unset", unsetDoc)
+                touchedFieldsFilter(email, stored, fields),
+                new BsonDocument("$unset", unsetDoc)
         );
         if (result.getMatchedCount() == 0) {
             throw new BadRequestException(
-                "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
+                    "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
         }
         return true;
     }
@@ -254,8 +254,8 @@ public class DbHelper {
      */
     public boolean addTeamMembership(String email, BsonDocument membership) {
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            new BsonDocument("$addToSet", new BsonDocument("teams", membership))
+                eq("_id", new BsonString(email)),
+                new BsonDocument("$addToSet", new BsonDocument("teams", membership))
         );
         return result.getMatchedCount() > 0;
     }
@@ -269,8 +269,8 @@ public class DbHelper {
      */
     public boolean removeTeamMembership(String email, BsonValue teamId) {
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            Updates.pull("teams", new BsonDocument("id", teamId))
+                eq("_id", new BsonString(email)),
+                Updates.pull("teams", new BsonDocument("id", teamId))
         );
         return result.getMatchedCount() > 0;
     }
@@ -285,11 +285,11 @@ public class DbHelper {
      */
     public boolean updateTeamRole(String email, BsonValue teamId, String newRole) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.eq("teams.id", teamId)
-            ),
-            Updates.set("teams.$.role", new BsonString(newRole))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.eq("teams.id", teamId)
+                ),
+                Updates.set("teams.$.role", new BsonString(newRole))
         );
         return result.getModifiedCount() > 0;
     }
@@ -321,14 +321,14 @@ public class DbHelper {
      */
     public boolean setActiveTeamIfAbsent(String email, BsonValue teamId, String role) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.or(
-                    Filters.exists("team", false),
-                    Filters.eq("team", null)
-                )
-            ),
-            Updates.set("team", activeTeamDoc(teamId, role))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.or(
+                                Filters.exists("team", false),
+                                Filters.eq("team", null)
+                        )
+                ),
+                Updates.set("team", activeTeamDoc(teamId, role))
         );
         return result.getModifiedCount() > 0;
     }
@@ -346,11 +346,11 @@ public class DbHelper {
      */
     public boolean setActiveTeamRoleIfActive(String email, BsonValue teamId, String role) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.eq("team._id", teamId)
-            ),
-            Updates.set("team.role", new BsonString(role))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.eq("team._id", teamId)
+                ),
+                Updates.set("team.role", new BsonString(role))
         );
         return result.getModifiedCount() > 0;
     }
@@ -386,9 +386,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findTeam(BsonValue teamId) {
         return Optional.ofNullable(
-            teams()
-                .find(eq("_id", teamId))
-                .first()
+                teams()
+                        .find(eq("_id", teamId))
+                        .first()
         );
     }
 
@@ -405,15 +405,15 @@ public class DbHelper {
      */
     public boolean addMemberToTeam(BsonValue teamId, String userId, String role) {
         var memberDoc = new BsonDocument()
-            .append("userId",   new BsonString(userId))
-            .append("role",     new BsonString(role))
-            .append("joinedAt", new BsonDateTime(System.currentTimeMillis()));
+                .append("userId", new BsonString(userId))
+                .append("role", new BsonString(role))
+                .append("joinedAt", new BsonDateTime(System.currentTimeMillis()));
         var result = teams().updateOne(
-            Filters.and(
-                eq("_id", teamId),
-                Filters.not(Filters.eq("members.userId", new BsonString(userId)))
-            ),
-            Updates.push("members", memberDoc)
+                Filters.and(
+                        eq("_id", teamId),
+                        Filters.not(Filters.eq("members.userId", new BsonString(userId)))
+                ),
+                Updates.push("members", memberDoc)
         );
         return result.getModifiedCount() > 0;
     }
@@ -427,8 +427,8 @@ public class DbHelper {
      */
     public boolean updateTeam(BsonValue teamId, BsonDocument updates) {
         var result = teams().updateOne(
-            eq("_id", teamId),
-            new BsonDocument("$set", updates)
+                eq("_id", teamId),
+                new BsonDocument("$set", updates)
         );
         return result.getMatchedCount() > 0;
     }
@@ -445,10 +445,10 @@ public class DbHelper {
      */
     public boolean deleteTeamIfEmpty(BsonValue teamId) {
         var sizeExpr = List.<BsonValue>of(
-            new BsonDocument("$size", new BsonString("$members")),
-            new BsonInt32(1));
+                new BsonDocument("$size", new BsonString("$members")),
+                new BsonInt32(1));
         var filter = new BsonDocument("_id", teamId)
-            .append("$expr", new BsonDocument("$lte", new BsonArray(sizeExpr)));
+                .append("$expr", new BsonDocument("$lte", new BsonArray(sizeExpr)));
         return teams().findOneAndDelete(filter) != null;
     }
 
@@ -461,8 +461,8 @@ public class DbHelper {
      */
     public boolean removeMemberFromTeam(BsonValue teamId, String userId) {
         var result = teams().updateOne(
-            eq("_id", teamId),
-            Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
+                eq("_id", teamId),
+                Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
         );
         return result.getMatchedCount() > 0;
     }
@@ -477,11 +477,11 @@ public class DbHelper {
      */
     public boolean updateMemberRoleInTeam(BsonValue teamId, String userId, String newRole) {
         var result = teams().updateOne(
-            Filters.and(
-                eq("_id", teamId),
-                Filters.eq("members.userId", new BsonString(userId))
-            ),
-            Updates.set("members.$.role", new BsonString(newRole))
+                Filters.and(
+                        eq("_id", teamId),
+                        Filters.eq("members.userId", new BsonString(userId))
+                ),
+                Updates.set("members.$.role", new BsonString(newRole))
         );
         return result.getModifiedCount() > 0;
     }
@@ -492,17 +492,17 @@ public class DbHelper {
 
     private MongoCollection<BsonDocument> users() {
         return mclient.getDatabase(db)
-                      .getCollection(usersCollection, BsonDocument.class);
+                .getCollection(usersCollection, BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> teams() {
         return mclient.getDatabase(db)
-                      .getCollection(TEAMS_COLLECTION, BsonDocument.class);
+                .getCollection(TEAMS_COLLECTION, BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> invitations() {
         return mclient.getDatabase(db)
-                      .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
+                .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
     }
 
     /**
@@ -524,10 +524,10 @@ public class DbHelper {
     private static void setDotted(BsonDocument doc, String path, BsonValue value) {
         var parts = path.split("\\.");
         BsonDocument current = doc;
-        for (int i = 0; i < parts.length - 1; i++) {
+        for (int i = 0;i < parts.length - 1;i++) {
             var next = current.containsKey(parts[i]) && current.get(parts[i]).isDocument()
-                ? current.getDocument(parts[i])
-                : new BsonDocument();
+                    ? current.getDocument(parts[i])
+                    : new BsonDocument();
             current.put(parts[i], next);
             current = next;
         }
@@ -540,7 +540,7 @@ public class DbHelper {
     private static void removeField(BsonDocument doc, String path) {
         var parts = path.split("\\.");
         BsonDocument current = doc;
-        for (int i = 0; i < parts.length - 1; i++) {
+        for (int i = 0;i < parts.length - 1;i++) {
             if (!current.containsKey(parts[i]) || !current.get(parts[i]).isDocument()) {
                 return;
             }
@@ -638,7 +638,7 @@ public class DbHelper {
         if (schemaId == null) {
             throw new BadRequestException(
                     "Invalid 'jsonSchema' metadata on the users collection: '"
-                    + SCHEMA_ID_PROPERTY + "' is missing",
+                            + SCHEMA_ID_PROPERTY + "' is missing",
                     HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
 
@@ -650,7 +650,7 @@ public class DbHelper {
         } else {
             throw new BadRequestException(
                     "Invalid 'jsonSchema' metadata on the users collection: '"
-                    + SCHEMA_STORE_DB_PROPERTY + "' is not a string",
+                            + SCHEMA_STORE_DB_PROPERTY + "' is not a string",
                     HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
 
@@ -664,7 +664,7 @@ public class DbHelper {
                     db, META_COLLNAME + "." + usersCollection, schemaStoreDb, schemaId);
             throw new BadRequestException(
                     "Cannot validate the user document: the JSON Schema declared by the "
-                    + "users collection was not found in the schema store",
+                            + "users collection was not found in the schema store",
                     HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
     }

@@ -26,15 +26,15 @@ import org.restheart.accounts.util.RequestOverrides;
  * <p>Requires authentication ({@code secure = true}).
  */
 @RegisterPlugin(
-    name = "acceptInviteService",
-    description = "POST /auth/accept-invite — accept an invitation for existing users",
-    defaultURI = "/auth/accept-invite",
-    secure = true,
-    enabledByDefault = false)
+        name = "acceptInviteService",
+        description = "POST /auth/accept-invite — accept an invitation for existing users",
+        defaultURI = "/auth/accept-invite",
+        secure = true,
+        enabledByDefault = false)
 public class AcceptInviteService implements JsonService, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AcceptInviteService.class);
-        @Inject("accountsService")
+    @Inject("accountsService")
     private AccountsService accountsService;
 
     @Inject("mclient")

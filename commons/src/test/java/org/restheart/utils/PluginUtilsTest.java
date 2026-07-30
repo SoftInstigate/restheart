@@ -51,7 +51,7 @@ public class PluginUtilsTest {
     public void testDontIntercept() {
         var plugin = new TestPlugin();
 
-        InterceptPoint[] expected = { InterceptPoint.REQUEST_AFTER_AUTH, InterceptPoint.RESPONSE };
+        InterceptPoint[] expected = {InterceptPoint.REQUEST_AFTER_AUTH, InterceptPoint.RESPONSE};
 
         assertArrayEquals(expected,
                 PluginUtils.dontIntercept(plugin));
@@ -119,7 +119,7 @@ public class PluginUtilsTest {
 
     @RegisterPlugin(name = "testPlugin", description = "test description", defaultURI = "/test", dontIntercept = {
             InterceptPoint.REQUEST_AFTER_AUTH,
-            InterceptPoint.RESPONSE }, priority = 100, enabledByDefault = false, interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH, initPoint = InitPoint.BEFORE_STARTUP, requiresContent = true)
+            InterceptPoint.RESPONSE}, priority = 100, enabledByDefault = false, interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH, initPoint = InitPoint.BEFORE_STARTUP, requiresContent = true)
     private static class TestPlugin implements JsonService, JsonInterceptor, Initializer {
         @Override
         public void handle(JsonRequest r, JsonResponse s) throws Exception {

@@ -34,24 +34,24 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 
 @RegisterPlugin(name = "mongoPermissionAllowMgmtRequests",
-    description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission",
-    initPoint = InitPoint.BEFORE_STARTUP,
-    enabledByDefault = true)
-public class AllowMgmtRequests extends BaseAllowInitializer implements Initializer  {
+        description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission",
+        initPoint = InitPoint.BEFORE_STARTUP,
+        enabledByDefault = true)
+public class AllowMgmtRequests extends BaseAllowInitializer implements Initializer {
     @Inject("registry")
     private PluginsRegistry registry;
 
     @Override
     public void init() {
         this.registry.getPermissionTransformers()
-            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
+                .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
 
     // apply the transformation if the permission does not allow mgmt requests
     private Predicate<BaseAclPermission> resolve = p -> {
         try {
-            return ! MongoPermissions.from(p.getRaw()).isAllowManagementRequests();
-        } catch(IllegalArgumentException e) {
+            return !MongoPermissions.from(p.getRaw()).isAllowManagementRequests();
+        } catch (IllegalArgumentException e) {
             return false;
         }
     };
@@ -64,20 +64,20 @@ public class AllowMgmtRequests extends BaseAllowInitializer implements Initializ
         var mongoRequest = (MongoRequest) _request;
 
         return !(
-            (mongoRequest.isDb() && !mongoRequest.isGet()) || // create/delete dbs
-            (mongoRequest.isCollection() && (!mongoRequest.isGet() && !mongoRequest.isPost())) || // create/update/delete collections
-            (mongoRequest.isIndex()) || // indexes
-            (mongoRequest.isCollectionIndexes()) || // indexes
+                (mongoRequest.isDb() && !mongoRequest.isGet()) || // create/delete dbs
+                        (mongoRequest.isCollection() && (!mongoRequest.isGet() && !mongoRequest.isPost())) || // create/update/delete collections
+                        (mongoRequest.isIndex()) || // indexes
+                        (mongoRequest.isCollectionIndexes()) || // indexes
 
-            (mongoRequest.isFilesBucket() && !mongoRequest.isGet() && !mongoRequest.isPost()) || // create/update/delete file buckets
+                        (mongoRequest.isFilesBucket() && !mongoRequest.isGet() && !mongoRequest.isPost()) || // create/update/delete file buckets
 
-            (mongoRequest.isSchema()) || // schema store
-            (mongoRequest.isSchemaStore()) || // schema store
-            (mongoRequest.isSchemaStoreSize()) || // schema store size
+                        (mongoRequest.isSchema()) || // schema store
+                        (mongoRequest.isSchemaStore()) || // schema store
+                        (mongoRequest.isSchemaStoreSize()) || // schema store size
 
-            (mongoRequest.isDbMeta()) || // db metadata
-            (mongoRequest.isCollectionMeta()) || // collection metadata
-            (mongoRequest.isFilesBucketMeta()) || // file bucket metadata
-            (mongoRequest.isSchemaStoreMeta()));
+                        (mongoRequest.isDbMeta()) || // db metadata
+                        (mongoRequest.isCollectionMeta()) || // collection metadata
+                        (mongoRequest.isFilesBucketMeta()) || // file bucket metadata
+                        (mongoRequest.isSchemaStoreMeta()));
     };
 }

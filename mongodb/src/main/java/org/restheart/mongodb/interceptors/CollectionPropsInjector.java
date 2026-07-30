@@ -96,7 +96,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
                 } else {
                     collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
                 }
-            } catch(MongoException mce) {
+            } catch (MongoException mce) {
                 int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
                 if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {

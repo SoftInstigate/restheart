@@ -39,9 +39,9 @@ import java.util.concurrent.TimeUnit;
  * {@code BruteForceAttackGuard} at {@code REQUEST_BEFORE_AUTH} stays accurate.</p>
  */
 @RegisterPlugin(
-        name             = "tokenFailedAuthInterceptor",
-        description      = "Counts token-validation failures into the AUTH metric registry for bruteForceAttackGuard",
-        interceptPoint   = InterceptPoint.RESPONSE,
+        name = "tokenFailedAuthInterceptor",
+        description = "Counts token-validation failures into the AUTH metric registry for bruteForceAttackGuard",
+        interceptPoint = InterceptPoint.RESPONSE,
         enabledByDefault = false)
 public class TokenFailedAuthInterceptor implements WildcardInterceptor {
 

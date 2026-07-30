@@ -141,7 +141,7 @@ public final class RequestOverrides {
     // ── Core DB / cookie ──────────────────────────────────────────────────────
 
     /** MongoDB database override (set by AuthDbResolver). */
-    public static final String USERS_DB      = "override-users-db";
+    public static final String USERS_DB = "override-users-db";
 
     /** Cookie domain override (set by AuthDbResolver). */
     public static final String COOKIE_DOMAIN = "override-cookie-domain";
@@ -151,16 +151,16 @@ public final class RequestOverrides {
 
     // ── Accounts-specific overrides (set by TeamConfigInterceptor) ──────────
 
-    public static final String APP_NAME          = "override-accounts-app-name";
-    public static final String FRONTEND_URL      = "override-accounts-frontend-url";
-    public static final String FRONTEND_APP_URL  = "override-accounts-frontend-app-url";
+    public static final String APP_NAME = "override-accounts-app-name";
+    public static final String FRONTEND_URL = "override-accounts-frontend-url";
+    public static final String FRONTEND_APP_URL = "override-accounts-frontend-app-url";
 
     /** Inline HTML for the email-verification template (from confs/{srvId}.accounts.templates.verification). */
-    public static final String TMPL_VERIFICATION  = "override-accounts-tmpl-verification";
+    public static final String TMPL_VERIFICATION = "override-accounts-tmpl-verification";
     /** Inline HTML for the password-reset template. */
     public static final String TMPL_PASSWORD_RESET = "override-accounts-tmpl-password-reset";
     /** Inline HTML for the invite template. */
-    public static final String TMPL_INVITE         = "override-accounts-tmpl-invite";
+    public static final String TMPL_INVITE = "override-accounts-tmpl-invite";
 
     // ── Per-team OAuth overrides ─────────────────────────────────────────────
 
@@ -194,7 +194,8 @@ public final class RequestOverrides {
      */
     public static final String SIGNUP_MGMT_ENABLED = "override-accounts-signup-mgmt-enabled";
 
-    private RequestOverrides() {}
+    private RequestOverrides() {
+    }
 
     // ── Accessor methods ──────────────────────────────────────────────────────
 
@@ -318,10 +319,10 @@ public final class RequestOverrides {
      * @param staticConfig the static {@link OAuthConfig}, consulted only for the {@code scope} fallback
      */
     public static OAuthConfig.ProviderConfig oauthProvider(ServiceRequest<?> req, String providerName,
-            OAuthConfig staticConfig) {
+                                                           OAuthConfig staticConfig) {
         var name = providerName.toLowerCase();
 
-        var clientId     = str(req, oauthProviderKey(name, "client-id"),     null);
+        var clientId = str(req, oauthProviderKey(name, "client-id"), null);
         var clientSecret = str(req, oauthProviderKey(name, "client-secret"), null);
         if (clientId == null || clientSecret == null) return null;
 
@@ -349,7 +350,7 @@ public final class RequestOverrides {
     private static boolean bool(ServiceRequest<?> req, String key, boolean defaultValue) {
         var v = req.attachedParam(key);
         if (v instanceof Boolean b) return b;
-        if (v instanceof String  s) return Boolean.parseBoolean(s);
+        if (v instanceof String s) return Boolean.parseBoolean(s);
         return defaultValue;
     }
 

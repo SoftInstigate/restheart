@@ -78,9 +78,9 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "polyglotDeployer",
-    description = "handles GraalVM polyglot plugins",
-    enabledByDefault = true)
+        name = "polyglotDeployer",
+        description = "handles GraalVM polyglot plugins",
+        enabledByDefault = true)
 public class PolyglotDeployer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
@@ -172,12 +172,12 @@ public class PolyglotDeployer implements Initializer {
                         deploy(services, nodeServices, interceptors);
                         return;
                     }
-                    
+
                     // Ignore other directory events (ENTRY_MODIFY, ENTRY_DELETE on directories)
                     if (Files.isDirectory(path)) {
                         return;
                     }
-                    
+
                     // Handle .mjs file events
                     if (path.toString().endsWith(".mjs")) {
                         switch (kind.name()) {
@@ -453,8 +453,8 @@ public class PolyglotDeployer implements Initializer {
                 DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
                 LOGGER.info(ansi().fg(GREEN).a(
-                        "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
-                        .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
+                                "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                                .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
                         srv.matchPolicy());
             } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
                 LOGGER.error("Error deploying node service {}", pluginPath, ex);

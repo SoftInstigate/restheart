@@ -34,8 +34,8 @@ import org.restheart.plugins.schema.JsonSchemas;
  * depend only on commons.
  */
 @RegisterPlugin(
-    name = "json-schemas",
-    description = "provides access to the JSON Schema store")
+        name = "json-schemas",
+        description = "provides access to the JSON Schema store")
 public class JsonSchemasProvider implements Provider<JsonSchemas> {
 
     // the plugin registry instantiates this provider once and owns its lifecycle

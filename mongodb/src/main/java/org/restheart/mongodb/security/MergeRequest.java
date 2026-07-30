@@ -32,10 +32,10 @@ import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.MongoPermissions;
 
 @RegisterPlugin(name = "mongoPermissionMergeRequest",
-    description = "Override properties's values in write requests according to the mongo.mergeRequest ACL permission",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    enabledByDefault = true,
-    priority = 11)
+        description = "Override properties's values in write requests according to the mongo.mergeRequest ACL permission",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        enabledByDefault = true,
+        priority = 11)
 public class MergeRequest implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {

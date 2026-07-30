@@ -58,18 +58,18 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         var interpolatedAggregation = aggregation.interpolateArgs(env);
 
         // If user does not pass any stage return an empty array
-        if(interpolatedAggregation.isEmpty()) {
+        if (interpolatedAggregation.isEmpty()) {
             return new BsonArray();
         }
 
         var _db = aggregation.getDb().getValue();
         var _collection = aggregation.getCollection().getValue();
-        
+
         // Security validation: check GraphQL aggregation pipeline for blacklisted stages and operators
         if (securityChecker != null && securityChecker.isEnabled()) {
             var stagesArray = new BsonArray();
             interpolatedAggregation.forEach(stage -> stagesArray.add(stage));
-            
+
             try {
                 securityChecker.validatePipelineOrThrow(stagesArray, _db);
             } catch (SecurityException se) {
@@ -79,17 +79,17 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
         }
 
         LOGGER.debug("Executing aggregation for field {}: {}.{}.aggregate {}, context vars {}", env.getField().getName(), _db, _collection,
-            "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
-            BsonUtils.toJson(env.getLocalContext()));
+                "[ ".concat(interpolatedAggregation.stream().map(s -> BsonUtils.toJson(s)).collect(Collectors.joining(",")).concat(" ]")),
+                BsonUtils.toJson(env.getLocalContext()));
 
         try {
             res = mongoClient
-                .getDatabase(_db)
-                .getCollection(_collection)
-                .withDocumentClass(BsonDocument.class)
-                .aggregate(interpolatedAggregation)
-                .allowDiskUse(aggregation.getAllowDiskUse().getValue())
-                .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
+                    .getDatabase(_db)
+                    .getCollection(_collection)
+                    .withDocumentClass(BsonDocument.class)
+                    .aggregate(interpolatedAggregation)
+                    .allowDiskUse(aggregation.getAllowDiskUse().getValue())
+                    .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
 
             if (isList(env.getFieldDefinition().getType())) {
                 var aggregationResult = new BsonArray();
@@ -98,7 +98,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             } else {
                 return res.first();
             }
-        } catch(MongoExecutionTimeoutException toe) {
+        } catch (MongoExecutionTimeoutException toe) {
             throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTimeTotal(env) + "ms exceeded");
         }
     }

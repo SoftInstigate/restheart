@@ -31,15 +31,15 @@ import io.github.classgraph.ClassGraph;
  */
 public class GenerateGraalvmReflectConfig {
     private static final String entry = """
-    { "name": "%s",
-      "allPublicFields": true,
-      "allPublicConstructors": true,
-      "allDeclaredConstructors": true,
-      "allPublicMethods": true,
-      "allDeclaredFields": true,
-      "allPublicClasses": true,
-      "allDeclaredClasses": true
-    },""";
+            { "name": "%s",
+              "allPublicFields": true,
+              "allPublicConstructors": true,
+              "allDeclaredConstructors": true,
+              "allPublicMethods": true,
+              "allDeclaredFields": true,
+              "allPublicClasses": true,
+              "allDeclaredClasses": true
+            },""";
 
     public static void main(String[] args) {
         // JsonParser
@@ -54,38 +54,38 @@ public class GenerateGraalvmReflectConfig {
         System.out.println(entry("org.restheart.polyglot.JSInterceptorFactory"));
 
         try (var scanResult = new ClassGraph()
-            // HttpClient
-            .acceptPackages("java.net.http", "jdk.internal.net.http")
-            .rejectClasses("jdk.internal.net.http.common.SSLFlowDelegate", "jdk.internal.net.http.common.SSLFlowDelegate$Monitor")
-            // commons classes in package org.restheart.mongodb.db
-            .acceptPackages("org.restheart.exchange")
-            .acceptClasses( "org.restheart.mongodb.db.OperationResult", "org.restheart.mongodb.db.BulkOperationResult")
-            // security classes, such as BaseAccount
-            .acceptClasses( "org.restheart.security.BaseAccount",
-                            "org.restheart.security.BaseAclPermission",
-                            "org.restheart.security.BasePrincipal",
-                            "org.restheart.security.FileRealmAccount",
-                            "org.restheart.security.JwtAccount",
-                            "org.restheart.security.MongoPermissions",
-                            "org.restheart.security.MongoRealmAccount",
-                            "org.restheart.security.PwdCredentialAccount")
-            // BsonUtils
-            .acceptClasses("org.restheart.utils.BsonUtils")
-            .acceptClasses("org.restheart.utils.BsonUtils$ArrayBuilder")
-            .acceptClasses("org.restheart.utils.BsonUtils$DocumentBuilder")
-            // Bson classes, such as BsonDocument
-            .acceptPackages("org.bson")
-            .rejectPackages("org.bson.codecs", "org.bson.json", "org.bson.io", "org.bson.assertions", "org.bson.conversions", "org.bson.diagnostics", "org.bson.internal", "org.bson.types", "org.bson.util")
-            // Mongo classes
-            .acceptPackages("com.mongodb.client", "com.mongodb.internal", "com.mongodb.client.internal")
-            .acceptClasses("com.mongodb.MongoClient", "com.mongodb.client.internal.MongoCollectionImpl", "com.mongodb.client.model.Filters")
-            // LOGGER
-            .acceptClasses("org.slf4j.Logger", "ch.qos.logback.classic.Logger", "org.apache.commons.logging.LogFactory")
-            // Gson
-            .acceptPackages("com.google.gson")
-            .rejectPackages("com.google.gson.internal", "com.google.gson.stream", "com.google.gson.annotations")
-            .enableSystemJarsAndModules()
-            .scan()) {
+                     // HttpClient
+                     .acceptPackages("java.net.http", "jdk.internal.net.http")
+                     .rejectClasses("jdk.internal.net.http.common.SSLFlowDelegate", "jdk.internal.net.http.common.SSLFlowDelegate$Monitor")
+                     // commons classes in package org.restheart.mongodb.db
+                     .acceptPackages("org.restheart.exchange")
+                     .acceptClasses("org.restheart.mongodb.db.OperationResult", "org.restheart.mongodb.db.BulkOperationResult")
+                     // security classes, such as BaseAccount
+                     .acceptClasses("org.restheart.security.BaseAccount",
+                             "org.restheart.security.BaseAclPermission",
+                             "org.restheart.security.BasePrincipal",
+                             "org.restheart.security.FileRealmAccount",
+                             "org.restheart.security.JwtAccount",
+                             "org.restheart.security.MongoPermissions",
+                             "org.restheart.security.MongoRealmAccount",
+                             "org.restheart.security.PwdCredentialAccount")
+                     // BsonUtils
+                     .acceptClasses("org.restheart.utils.BsonUtils")
+                     .acceptClasses("org.restheart.utils.BsonUtils$ArrayBuilder")
+                     .acceptClasses("org.restheart.utils.BsonUtils$DocumentBuilder")
+                     // Bson classes, such as BsonDocument
+                     .acceptPackages("org.bson")
+                     .rejectPackages("org.bson.codecs", "org.bson.json", "org.bson.io", "org.bson.assertions", "org.bson.conversions", "org.bson.diagnostics", "org.bson.internal", "org.bson.types", "org.bson.util")
+                     // Mongo classes
+                     .acceptPackages("com.mongodb.client", "com.mongodb.internal", "com.mongodb.client.internal")
+                     .acceptClasses("com.mongodb.MongoClient", "com.mongodb.client.internal.MongoCollectionImpl", "com.mongodb.client.model.Filters")
+                     // LOGGER
+                     .acceptClasses("org.slf4j.Logger", "ch.qos.logback.classic.Logger", "org.apache.commons.logging.LogFactory")
+                     // Gson
+                     .acceptPackages("com.google.gson")
+                     .rejectPackages("com.google.gson.internal", "com.google.gson.stream", "com.google.gson.annotations")
+                     .enableSystemJarsAndModules()
+                     .scan()) {
             for (var classInfo : scanResult.getAllClasses()) {
                 if ("org.bson".equals(classInfo.getPackageName()) && classInfo.getSuperclasses().stream().noneMatch(ci -> "org.bson.BsonValue".equals(ci.getName()))) {
                     continue;

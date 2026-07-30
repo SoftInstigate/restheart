@@ -51,9 +51,9 @@ import com.mongodb.client.MongoClient;
  * <p>Expected body: {@code { "email": "user@example.com" }}
  */
 @RegisterPlugin(
-        name             = "forgotPasswordService",
-        description      = "POST /auth/forgot-password — initiates password reset (always 202)",
-        defaultURI       = "/auth/forgot-password",
+        name = "forgotPasswordService",
+        description = "POST /auth/forgot-password — initiates password reset (always 202)",
+        defaultURI = "/auth/forgot-password",
         enabledByDefault = false)
 public class ForgotPasswordService implements JsonService {
 
@@ -83,7 +83,10 @@ public class ForgotPasswordService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -96,7 +99,7 @@ public class ForgotPasswordService implements JsonService {
             Errors.error(res, 400, "Invalid request body");
             return;
         }
-        var obj   = body.getAsJsonObject();
+        var obj = body.getAsJsonObject();
         var email = obj.has("email") ? obj.get("email").getAsString() : null;
         if (email == null || email.isBlank()) {
             Errors.error(res, 400, "email is required");
@@ -156,21 +159,21 @@ public class ForgotPasswordService implements JsonService {
     private void sendPasswordReset(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate one-shot reset token and record its creation time
         var token = TokenUtils.generateToken();
-        var now   = new BsonDateTime(Instant.now().toEpochMilli());
+        var now = new BsonDateTime(Instant.now().toEpochMilli());
 
         // b. Persist token on the user document
         var updates = new BsonDocument();
-        updates.put("passwordResetToken",   new BsonString(token));
+        updates.put("passwordResetToken", new BsonString(token));
         updates.put("passwordResetCreatedAt", now);
         new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
         // c. Build reset link and send email
-        var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
+        var firstName = user.containsKey("profile") && user.get("profile").isDocument()
                 && user.getDocument("profile").containsKey("name")
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var resetLink    = RequestOverrides.frontendUrl(req, conf)
+        var resetLink = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
@@ -204,11 +207,11 @@ public class ForgotPasswordService implements JsonService {
     private void resendVerificationEmail(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate new verification token and record its creation time
         var token = TokenUtils.generateToken();
-        var now   = new BsonDateTime(Instant.now().toEpochMilli());
+        var now = new BsonDateTime(Instant.now().toEpochMilli());
 
         // b. Persist token on the user document
         var updates = new BsonDocument();
-        updates.put("emailVerificationToken",     new BsonString(token));
+        updates.put("emailVerificationToken", new BsonString(token));
         updates.put("emailVerificationCreatedAt", now);
         new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
@@ -218,7 +221,7 @@ public class ForgotPasswordService implements JsonService {
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var verifyLink    = RequestOverrides.frontendUrl(req, conf)
+        var verifyLink = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/verify?email=" + encodedEmail
                 + "&token=" + token;
 

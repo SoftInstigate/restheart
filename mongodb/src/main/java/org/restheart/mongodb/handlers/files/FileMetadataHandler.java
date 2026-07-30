@@ -144,17 +144,17 @@ public class FileMetadataHandler extends PipelinedHandler {
 
 
         var result = gridFs.updateFileMetadata(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getMethod(),
-            Optional.of(id),
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getMethod(),
+                Optional.of(id),
+                Optional.ofNullable(request.getFiltersDocument()),
+                Optional.ofNullable(request.getShardKey()),
+                content,
+                request.getETag(),
+                request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {
             next(exchange);

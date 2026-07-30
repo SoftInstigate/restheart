@@ -35,7 +35,7 @@ import java.lang.ref.Cleaner;
 public class CleanerUtils {
     /** Singleton instance of CleanerUtils. */
     private static CleanerUtils instance = null;
-    
+
     /** The Cleaner instance that uses virtual threads for cleanup operations. */
     private final Cleaner cleaner;
 

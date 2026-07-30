@@ -83,7 +83,7 @@ public class ContextQueue {
         this.OPTS = OPTS;
 
         // Pre-populate pool
-        for (var c = 0; c < POOL_SIZE; c++) {
+        for (var c = 0;c < POOL_SIZE;c++) {
             pool.offer(newContext());
         }
     }
@@ -221,14 +221,14 @@ public class ContextQueue {
         }
 
         var ctx = Context.newBuilder().engine(engine)
-            .allowAllAccess(true)
-            .allowHostAccess(HostAccess.ALL)
-            .allowHostClassLookup(className -> true)
-            .allowIO(IOAccess.ALL)
-            .allowExperimentalOptions(true)
-            .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
-            .options(OPTS)
-            .build();
+                .allowAllAccess(true)
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup(className -> true)
+                .allowIO(IOAccess.ALL)
+                .allowExperimentalOptions(true)
+                .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
+                .options(OPTS)
+                .build();
 
         addBindings(ctx, name, conf, logger, mclient);
 
@@ -236,10 +236,10 @@ public class ContextQueue {
     }
 
     private static void addBindings(Context ctx,
-        String pluginName,
-        Configuration conf,
-        Logger logger,
-        Optional<MongoClient> mclient) {
+                                    String pluginName,
+                                    Configuration conf,
+                                    Logger logger,
+                                    Optional<MongoClient> mclient) {
         ctx.getBindings("js").putMember("LOGGER", logger);
 
         if (mclient.isPresent()) {
@@ -247,8 +247,8 @@ public class ContextQueue {
         }
 
         var args = conf != null
-            ? conf.getOrDefault(pluginName, new HashMap<>())
-            : new HashMap<String, Object>();
+                ? conf.getOrDefault(pluginName, new HashMap<>())
+                : new HashMap<String, Object>();
 
         ctx.getBindings("js").putMember("pluginArgs", args);
     }

@@ -39,8 +39,6 @@ import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.polyglot.NodeQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -51,29 +49,29 @@ public class NodeService extends JSService implements StringService {
     private int codeHash = 0;
 
     private static final String ERROR_HINT = """
-    hint: the last statement in the script something like:
-    ({
-        options: {
-            name: "hello"
-            description: "a fancy description"
-            uri: "/hello"
-            secured: false
-            matchPolicy: "PREFIX"
-        }
-
-        handle: (request, response) => {
-            LOGGER.debug('request {}', request.getContent());
-            const rc = JSON.parse(request.getContent() || '{}');
-
-            let body = {
-                msg: `Hello ${rc.name || 'Cruel World'}`
-            }
-
-            response.setContent(JSON.stringify(body));
-            response.setContentTypeAsJson();
-        }
-    })
-    """;
+            hint: the last statement in the script something like:
+            ({
+                options: {
+                    name: "hello"
+                    description: "a fancy description"
+                    uri: "/hello"
+                    secured: false
+                    matchPolicy: "PREFIX"
+                }
+            
+                handle: (request, response) => {
+                    LOGGER.debug('request {}', request.getContent());
+                    const rc = JSON.parse(request.getContent() || '{}');
+            
+                    let body = {
+                        msg: `Hello ${rc.name || 'Cruel World'}`
+                    }
+            
+                    response.setContent(JSON.stringify(body));
+                    response.setContentTypeAsJson();
+                }
+            })
+            """;
 
     public static Future<NodeService> get(Path scriptPath, Optional<MongoClient> mclient, Configuration conf) throws IOException {
         var executor = Executors.newSingleThreadExecutor();
@@ -89,7 +87,7 @@ public class NodeService extends JSService implements StringService {
     private static JSServiceArgs args(Path scriptPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
         // check plugin definition
         var out = new LinkedBlockingDeque<String>();
-        Object[] message = { "parse", Files.readString(scriptPath), out };
+        Object[] message = {"parse", Files.readString(scriptPath), out};
         NodeQueue.instance().queue().offer(message);
 
         try {
@@ -209,14 +207,14 @@ public class NodeService extends JSService implements StringService {
     @Override
     public void handle(StringRequest request, StringResponse response) {
         var out = new LinkedBlockingDeque<Object>();
-        Object[] message = { "handle",
-            this.codeHash, this.source,
-            request, response,
-            out,
-            LOGGER,                  // pass LOGGER to node runtime
-            mclient(),               // pass mclient to node runtime
-            configuration() == null  // pass pluginArgs to node runtime
-                ? Maps.newHashMap() : configuration().getOrDefault(name(), Maps.newHashMap())
+        Object[] message = {"handle",
+                this.codeHash, this.source,
+                request, response,
+                out,
+                LOGGER,                  // pass LOGGER to node runtime
+                mclient(),               // pass mclient to node runtime
+                configuration() == null  // pass pluginArgs to node runtime
+                        ? Maps.newHashMap() : configuration().getOrDefault(name(), Maps.newHashMap())
         };
 
         try {

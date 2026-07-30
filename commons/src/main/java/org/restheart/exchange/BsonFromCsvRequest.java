@@ -208,7 +208,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
 
                     int unnamedProps = 0;
 
-                    for (int idx = 0; idx < vals.size(); idx++) {
+                    for (int idx = 0;idx < vals.size();idx++) {
                         if (idx == params.idIdx) {
                             var _v = vals.get(params.idIdx);
 
@@ -284,13 +284,13 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
     private static class CsvRequestParams {
         /** Query parameter name for specifying the ID column index. */
         private static final String ID_IDX_QPARAM_NAME = "id";
-        
+
         /** Query parameter name for specifying the CSV separator character. */
         private static final String SEPARATOR_QPARAM_NAME = "sep";
 
         /** The 0-based index of the column to use as the MongoDB _id field, or -1 if none. */
         public final int idIdx;
-        
+
         /** The character used to separate CSV fields (defaults to comma). */
         public final String sep;
 

@@ -37,7 +37,7 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonBooleanCoercing implements Coercing<Boolean, Boolean> {
     @Override
     public Boolean serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
         } else if (input instanceof BsonBoolean bsonBoolean) {
             return bsonBoolean.getValue();

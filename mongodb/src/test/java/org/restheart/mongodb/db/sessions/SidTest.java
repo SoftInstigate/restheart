@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 public class SidTest {
     @Test
     public void testSessionOptionCase1() {
-        for (int cont = 0; cont < 10; cont++) {
+        for (int cont = 0;cont < 10;cont++) {
             var so = new SessionOptions(false);
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);
@@ -42,7 +42,7 @@ public class SidTest {
 
     @Test
     public void testSessionOptionCase2() {
-        for (int cont = 0; cont < 10; cont++) {
+        for (int cont = 0;cont < 10;cont++) {
             var so = new SessionOptions(true);
             var sid = Sid.randomUUID(so);
             var so2 = Sid.getSessionOptions(sid);

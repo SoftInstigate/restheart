@@ -46,17 +46,17 @@ import io.undertow.util.Headers;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "formDataToBasicAuthInterceptor",
-    description = "Converts OAuth 2.0 form data to Basic Auth header for /token endpoints",
-    interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
-    enabledByDefault = true
+        name = "formDataToBasicAuthInterceptor",
+        description = "Converts OAuth 2.0 form data to Basic Auth header for /token endpoints",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
+        enabledByDefault = true
 )
 public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FormDataToBasicAuthInterceptor.class);
 
     /** Set on the exchange when credentials for {@code POST /authorize} came from the form body. */
     public static final AttachmentKey<Boolean> FORM_CREDENTIALS_FOR_AUTHORIZE =
-        AttachmentKey.create(Boolean.class);
+            AttachmentKey.create(Boolean.class);
 
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
@@ -81,8 +81,8 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
 
         // Only process /token, /token/cookie, or /authorize endpoints with form data
         if ((!TOKEN_ENDPOINT.equals(path) && !TOKEN_COOKIE_ENDPOINT.equals(path) && !AUTHORIZE_ENDPOINT.equals(path)) ||
-            contentType == null ||
-            !contentType.startsWith(FORM_CONTENT_TYPE)) {
+                contentType == null ||
+                !contentType.startsWith(FORM_CONTENT_TYPE)) {
             return;
         }
 
@@ -112,7 +112,7 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     var password = getFormValue(formData, "password");
                     if (username != null && !username.isEmpty() && password != null && !password.isEmpty()) {
                         var encoded = Base64.getEncoder()
-                            .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
+                                .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
                         e.getRequestHeaders().put(Headers.AUTHORIZATION, "Basic " + encoded);
                         LOGGER.debug("Converted form credentials to Basic Auth for /authorize, user '{}'", username);
                     } else {
@@ -130,7 +130,7 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     // Validate grant_type
                     if (grantType == null || (!GRANT_TYPE_PASSWORD.equals(grantType) && !GRANT_TYPE_CLIENT_CREDENTIALS.equals(grantType) && !GRANT_TYPE_AUTHORIZATION_CODE.equals(grantType))) {
                         LOGGER.debug("Invalid or missing grant_type for {}, expected 'password', 'client_credentials', or 'authorization_code', got '{}'",
-                            path, grantType);
+                                path, grantType);
                         throw new IllegalArgumentException("Invalid grant_type. Must be 'password', 'client_credentials', or 'authorization_code'");
                     }
 
@@ -178,14 +178,14 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
                     // Convert to Basic Auth format
                     var credentials = username + ":" + password;
                     var encodedCredentials = Base64.getEncoder()
-                        .encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+                            .encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
                     var authHeader = "Basic " + encodedCredentials;
 
                     // Inject Authorization header
                     e.getRequestHeaders().put(Headers.AUTHORIZATION, authHeader);
 
                     LOGGER.debug("Converted OAuth 2.0 form data (grant_type={}) to Basic Auth for user '{}' on {}",
-                        grantType, username, path);
+                            grantType, username, path);
                 } else {
                     LOGGER.debug("Auth header already present, form data parsed but not used for authentication on {}", path);
                 }
@@ -225,9 +225,9 @@ public class FormDataToBasicAuthInterceptor implements WildcardInterceptor {
 
         // Only resolve for /token, /token/cookie, or /authorize endpoints with form data and no auth header
         return uninitReq.isPost() &&
-               (TOKEN_ENDPOINT.equals(path) || TOKEN_COOKIE_ENDPOINT.equals(path) || AUTHORIZE_ENDPOINT.equals(path)) &&
-               contentType != null &&
-               contentType.startsWith(FORM_CONTENT_TYPE) &&
-               !hasAuthHeader;
+                (TOKEN_ENDPOINT.equals(path) || TOKEN_COOKIE_ENDPOINT.equals(path) || AUTHORIZE_ENDPOINT.equals(path)) &&
+                contentType != null &&
+                contentType.startsWith(FORM_CONTENT_TYPE) &&
+                !hasAuthHeader;
     }
 }

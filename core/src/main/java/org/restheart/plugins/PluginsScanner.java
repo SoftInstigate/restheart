@@ -177,13 +177,13 @@ public class PluginsScanner {
         final var cg = new ClassGraph();
 
         final var classGraph = cg
-            .disableDirScanning() // added for GraalVM
-            .disableNestedJarScanning() // added for GraalVM
-            .disableRuntimeInvisibleAnnotations() // added for GraalVM
-            .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
-            .ignoreParentClassLoaders()
-            .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
-            .initializeLoadedClasses();
+                .disableDirScanning() // added for GraalVM
+                .disableNestedJarScanning() // added for GraalVM
+                .disableRuntimeInvisibleAnnotations() // added for GraalVM
+                .overrideClassLoaders(PluginsClassloader.getInstance()) // added for GraalVM. Mandatory, otherwise build fails
+                .ignoreParentClassLoaders()
+                .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility()
+                .initializeLoadedClasses();
 
         System.out.println("[PluginsScanner] Scanning plugins at build time with following classpath: " + cg.getClasspathURIs().stream().map(URI::getPath).collect(Collectors.joining(File.pathSeparator)));
 
@@ -330,8 +330,8 @@ public class PluginsScanner {
     }
 
     /**
-    *
-    */
+     *
+     */
     private static List<PluginDescriptor> collectProviders(final ScanResult scanResult) {
         final var ret = new ArrayList<PluginDescriptor>();
         final var providers = scanResult.getClassesImplementing(PROVIDER_CLASS_NAME);
@@ -373,8 +373,8 @@ public class PluginsScanner {
             return true;
         } else {
             final var isEnabledByDefault = (boolean) pluginClassInfo.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME)
-                .getParameterValues().stream()
-                .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
+                    .getParameterValues().stream()
+                    .filter(p -> "enabledByDefault".equals(p.getName())).map(p -> p.getValue()).findAny().get();
 
             final Map<String, Object> confArgs = Bootstrapper.getConfiguration().getOrDefault(name, null);
             return PluginRecord.isEnabled(isEnabledByDefault, confArgs);
@@ -491,17 +491,17 @@ public class PluginsScanner {
                     .toArray(String[]::new);
 
             this.classGraph = new ClassGraph()
-                .disableModuleScanning()
-                .disableNestedJarScanning()
-                .disableRuntimeInvisibleAnnotations()
-                .addClassLoader(PluginsClassloader.getInstance())
-                .addClassLoader(ClassLoader.getSystemClassLoader())
-                .rejectJars(libJars) // avoids scanning lib jars
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .enableFieldInfo()
-                .ignoreFieldVisibility()
-                .initializeLoadedClasses();
+                    .disableModuleScanning()
+                    .disableNestedJarScanning()
+                    .disableRuntimeInvisibleAnnotations()
+                    .addClassLoader(PluginsClassloader.getInstance())
+                    .addClassLoader(ClassLoader.getSystemClassLoader())
+                    .rejectJars(libJars) // avoids scanning lib jars
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .enableFieldInfo()
+                    .ignoreFieldVisibility()
+                    .initializeLoadedClasses();
         }
 
         private long starScanTime = 0;
@@ -696,11 +696,11 @@ interface InjectionDescriptor {
 }
 
 record MethodInjectionDescriptor(String method, Class<?> clazz,
-        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams,
-        int methodHash) implements InjectionDescriptor {
+                                 ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams,
+                                 int methodHash) implements InjectionDescriptor {
 }
 
 record FieldInjectionDescriptor(String field, Class<?> clazz,
-        ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash)
+                                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash)
         implements InjectionDescriptor {
 }
