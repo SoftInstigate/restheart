@@ -31,7 +31,7 @@ import org.restheart.logging.RequestPhaseContext.Phase;
  *
  * Usage in logback.xml:
  * <conversionRule conversionWord="prefix" class="org.restheart.utils.LogPrefixConverter" />
-  <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}</pattern>
+   <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}</pattern>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
