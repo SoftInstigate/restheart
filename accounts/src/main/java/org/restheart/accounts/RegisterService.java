@@ -1,14 +1,11 @@
 package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
-import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.Filters;
 import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
@@ -20,8 +17,6 @@ import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.BadRequestException;
-import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -29,11 +24,8 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.schema.JsonSchemas;
-import org.restheart.plugins.schema.SchemaValidationException;
 import org.restheart.security.ACLRegistry;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,11 +116,6 @@ public class RegisterService implements JsonService {
 
     private static final String JSON_SCHEMAS_PROVIDER = "json-schemas";
 
-    /** keys of the 'jsonSchema' collection metadata; mirror restheart-mongodb's checker */
-    private static final String JSON_SCHEMA_PROPERTY = "jsonSchema";
-    private static final String SCHEMA_ID_PROPERTY = "schemaId";
-    private static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
-
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
@@ -174,7 +161,7 @@ public class RegisterService implements JsonService {
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     private MembershipProvider membership(JsonRequest req) {
@@ -257,14 +244,14 @@ public class RegisterService implements JsonService {
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
 
-        // ── 6. Validate user document against collection JSON Schema (if configured) ──
-        if (!validate(req, res, userDoc)) {
-            return;
-        }
-
-        if (!db(req).insertUser(userDoc)) {
-            // Concurrent registration or race between findUser and insertUser
-            Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+        try {
+            if (!db(req).insertUser(userDoc)) {
+                // Concurrent registration or race between findUser and insertUser
+                Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+                return;
+            }
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
             return;
         }
 
@@ -309,97 +296,6 @@ public class RegisterService implements JsonService {
 
         // ── 9. Respond 201 ───────────────────────────────────────────────────
         res.setStatusCode(HttpStatus.SC_CREATED);
-    }
-
-    /**
-     * Validates {@code userDoc} against the JSON Schema declared by the users collection.
-     *
-     * <p>Validation is opt-in — a collection without the {@code jsonSchema} metadata is not
-     * validated. Once the metadata is there, though, it is honoured or the request fails:
-     * an unresolvable schema is an error, never a reason to insert an unvalidated user.
-     *
-     * @return {@code true} if the document may be inserted; {@code false} if {@code res}
-     *         has been set in error
-     */
-    private boolean validate(JsonRequest req, JsonResponse res, BsonDocument userDoc) {
-        var effectiveDb = RequestOverrides.db(req, conf);
-        var effectiveColl = RequestOverrides.usersCollection(req, conf);
-        var collProps = META_COLLNAME + "." + effectiveColl;
-
-        BsonDocument propsDoc;
-
-        try {
-            propsDoc = mclient.getDatabase(effectiveDb)
-                    .getCollection(META_COLLNAME, BsonDocument.class)
-                    .find(Filters.eq("_id", collProps))
-                    .first();
-        } catch (MongoException me) {
-            LOGGER.error("Cannot read {}/{} to check for a jsonSchema", effectiveDb, collProps, me);
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Cannot check the users collection for a JSON Schema");
-            return false;
-        }
-
-        // mirrors JsonSchemaBeforeWriteChecker.resolve(): a 'jsonSchema' property that
-        // isn't a document — including a PATCH-ed { "jsonSchema": null } — means
-        // validation is not configured, not that the configuration is broken
-        if (propsDoc == null
-                || !propsDoc.containsKey(JSON_SCHEMA_PROPERTY)
-                || !propsDoc.get(JSON_SCHEMA_PROPERTY).isDocument()) {
-            return true;
-        }
-
-        var meta = propsDoc.getDocument(JSON_SCHEMA_PROPERTY);
-        var schemaId = meta.get(SCHEMA_ID_PROPERTY);
-
-        if (schemaId == null) {
-            LOGGER.error("Invalid 'jsonSchema' metadata on {}/{}: '{}' is missing",
-                    effectiveDb, collProps, SCHEMA_ID_PROPERTY);
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Invalid 'jsonSchema' metadata on the users collection: '"
-                    + SCHEMA_ID_PROPERTY + "' is missing");
-            return false;
-        }
-
-        String schemaStoreDb;
-
-        if (!meta.containsKey(SCHEMA_STORE_DB_PROPERTY)) {
-            schemaStoreDb = effectiveDb;
-        } else if (meta.get(SCHEMA_STORE_DB_PROPERTY).isString()) {
-            schemaStoreDb = meta.getString(SCHEMA_STORE_DB_PROPERTY).getValue();
-        } else {
-            LOGGER.error("Invalid 'jsonSchema' metadata on {}/{}: '{}' is not a string",
-                    effectiveDb, collProps, SCHEMA_STORE_DB_PROPERTY);
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Invalid 'jsonSchema' metadata on the users collection: '"
-                    + SCHEMA_STORE_DB_PROPERTY + "' is not a string");
-            return false;
-        }
-
-        if (jsonSchemas == null) {
-            LOGGER.error("{}/{} declares a jsonSchema but the '{}' provider is not available: "
-                    + "is restheart-mongodb deployed?", effectiveDb, collProps, JSON_SCHEMAS_PROVIDER);
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Cannot validate the user document: the JSON Schema store is not available");
-            return false;
-        }
-
-        try {
-            jsonSchemas.validate(userDoc, schemaStoreDb, schemaId);
-            return true;
-        } catch (SchemaValidationException sve) {
-            Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                    "User document violates schema: " + String.join(", ", sve.getViolations()));
-            return false;
-        } catch (JsonSchemaNotFoundException ex) {
-            LOGGER.error("{}/{} declares schema {}/{}/{}, which is not in the schema store",
-                    effectiveDb, collProps, schemaStoreDb, _SCHEMAS,
-                    BsonUtils.getIdAsString(schemaId, false));
-            Errors.error(res, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Cannot validate the user document: the JSON Schema declared by the "
-                    + "users collection was not found in the schema store");
-            return false;
-        }
     }
 
     // -------------------------------------------------------------------------

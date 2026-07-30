@@ -15,12 +15,14 @@ import org.restheart.accounts.util.JwtHelper;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -69,6 +71,9 @@ public class ResetPasswordService implements JsonService {
 
     @Inject("accountsService")
     private AccountsService accountsService;
+
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
 
 
     private JwtHelper  jwt;
@@ -157,10 +162,15 @@ public class ResetPasswordService implements JsonService {
         // 6a. Persist the new hashed password
         var hashed  = TokenUtils.hashPassword(password);
         var updates = new BsonDocument("password", new BsonString(hashed));
-        db(req).updateUser(storedEmail, updates);
+        try {
+            db(req).updateUser(storedEmail, updates);
 
-        // 6b. One-shot: remove the token fields immediately
-        db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
+            // 6b. One-shot: remove the token fields immediately
+            db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
         var activeMembership = accountsService.getMembershipProvider(req)
@@ -198,7 +208,7 @@ public class ResetPasswordService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     /** Extracts the {@code roles} array from a user document as a {@link Set}. */

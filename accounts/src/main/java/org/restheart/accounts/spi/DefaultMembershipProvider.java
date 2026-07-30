@@ -15,6 +15,7 @@ import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.plugins.accounts.TeamMember;
 import org.restheart.plugins.accounts.TeamRef;
 import org.restheart.plugins.accounts.ConsentRecord;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +59,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
     private final String ownershipRole;
     private final String defaultRole;
 
-    public DefaultMembershipProvider(MongoClient mclient, String database, String usersCollection, String ownershipRole, String defaultRole) {
-        this.db = new DbHelper(mclient, database, usersCollection);
+    public DefaultMembershipProvider(MongoClient mclient, String database, String usersCollection, String ownershipRole, String defaultRole, JsonSchemas jsonSchemas) {
+        this.db = new DbHelper(mclient, database, usersCollection, jsonSchemas);
         this.ownershipRole = ownershipRole != null ? ownershipRole : "owner";
         this.defaultRole = defaultRole != null ? defaultRole : "user";
     }

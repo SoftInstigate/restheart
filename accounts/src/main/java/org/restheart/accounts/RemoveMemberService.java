@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -119,7 +120,12 @@ public class RemoveMemberService implements JsonService {
         }
 
         // 6. Remove
-        membershipProvider.removeMember(targetEmail, callerTeam);
+        try {
+            membershipProvider.removeMember(targetEmail, callerTeam);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         LOGGER.info("Member <{}> removed from team {} by <{}>", targetEmail, callerTeam, callerEmail);
         res.setStatusCode(HttpStatus.SC_OK);

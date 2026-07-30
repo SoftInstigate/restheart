@@ -12,12 +12,14 @@ import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.services.TokenRedirectHelper;
 import org.restheart.utils.HttpStatus;
@@ -84,6 +86,9 @@ public class EmailVerificationService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
 
     private JwtHelper jwt;
 
@@ -95,7 +100,7 @@ public class EmailVerificationService implements JsonService {
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     @Override
@@ -147,16 +152,22 @@ public class EmailVerificationService implements JsonService {
         }
 
         // ── 5a. Remove verification token fields ─────────────────────────────
-        db(req).unsetUserFields(storedEmail,
-                List.of("emailVerificationToken", "emailVerificationCreatedAt"));
-
         // ── 5b. Assign system ACL role (user is now verified) ───────────────
         var effectiveRole = RequestOverrides.defaultRole(req, conf);
         var updateDoc = new BsonDocument();
         var rolesArray = new BsonArray();
         rolesArray.add(new BsonString(effectiveRole));
         updateDoc.put("roles", rolesArray);
-        db(req).updateUser(storedEmail, updateDoc);
+        try {
+            db(req).unsetUserFields(storedEmail,
+                    List.of("emailVerificationToken", "emailVerificationCreatedAt"));
+            db(req).updateUser(storedEmail, updateDoc);
+        } catch (BadRequestException e) {
+            LOGGER.error("Email verification: user document violates the collection's JSON Schema for <{}>: {}",
+                    storedEmail, e.getMessage());
+            redirect(res, loginErrorBase + "?error=invalid_token");
+            return;
+        }
 
         // ── 5c. Build roles set for JWT ───────────────────────────────────────
         Set<String> roles = new HashSet<>();

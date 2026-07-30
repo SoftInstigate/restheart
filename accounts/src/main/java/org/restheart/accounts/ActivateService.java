@@ -12,12 +12,14 @@ import org.restheart.accounts.util.JwtHelper;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -67,6 +69,9 @@ public class ActivateService implements JsonService {
 
     @Inject("accountsService")
     private AccountsService accountsService;
+
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
 
     private JwtHelper jwt;
 
@@ -147,7 +152,12 @@ public class ActivateService implements JsonService {
         rolesArray.add(new BsonString(effectiveRole));
         setDoc.put("roles", rolesArray);
 
-        db(req).updateUser(normalizedEmail, setDoc);
+        try {
+            db(req).updateUser(normalizedEmail, setDoc);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         // 9. Add org membership now that the user has activated (invitation accepted)
         var teamId    = invite.get("teamId");
@@ -194,7 +204,7 @@ public class ActivateService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     /**

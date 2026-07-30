@@ -13,6 +13,7 @@ import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.EmailRenderer;
 import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
@@ -70,6 +71,9 @@ public class ForgotPasswordService implements JsonService {
     @Inject("emails")
     private EmailSender emails;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
 
     @OnInit
     public void onInit() {
@@ -124,7 +128,7 @@ public class ForgotPasswordService implements JsonService {
      */
     private void processResetRequest(JsonRequest req, String email, String dbName, String usersColl) throws java.io.IOException {
         // a. Locate user
-        var userOpt = new DbHelper(mclient, dbName, usersColl).findUser(email);
+        var userOpt = new DbHelper(mclient, dbName, usersColl, jsonSchemas).findUser(email);
         if (userOpt.isEmpty()) {
             LOGGER.debug("forgotPassword: no account found for the requested email address");
             return;
@@ -158,7 +162,7 @@ public class ForgotPasswordService implements JsonService {
         var updates = new BsonDocument();
         updates.put("passwordResetToken",   new BsonString(token));
         updates.put("passwordResetCreatedAt", now);
-        new DbHelper(mclient, dbName, usersColl).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
         // c. Build reset link and send email
         var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
@@ -206,7 +210,7 @@ public class ForgotPasswordService implements JsonService {
         var updates = new BsonDocument();
         updates.put("emailVerificationToken",     new BsonString(token));
         updates.put("emailVerificationCreatedAt", now);
-        new DbHelper(mclient, dbName, usersColl).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
         // c. Build verification link and send email
         var firstName = user.containsKey("profile") && user.get("profile").isDocument()
