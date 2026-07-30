@@ -2,10 +2,12 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.Filters;
 import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
@@ -23,6 +25,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -82,6 +85,9 @@ public class RegisterService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
     @OnInit
     public void onInit() {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/register") && (r.isPost() || r.isOptions()));
@@ -89,7 +95,7 @@ public class RegisterService implements JsonService {
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
     }
 
     private MembershipProvider membership(JsonRequest req) {
@@ -171,6 +177,34 @@ public class RegisterService implements JsonService {
                 .append("profile",                    profile)
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
+
+        // ── 5. Validate user document against collection JSON Schema (if configured) ──
+        var effectiveDb = RequestOverrides.db(req, conf);
+        var effectiveColl = RequestOverrides.usersCollection(req, conf);
+
+        try {
+            var propsColl = mclient.getDatabase(effectiveDb)
+                    .getCollection("_properties", BsonDocument.class);
+            var propsDoc = propsColl.find(Filters.eq("_id", "_properties." + effectiveColl)).first();
+
+            if (propsDoc != null && propsDoc.containsKey("jsonSchema")) {
+                var jsonSchemaMeta = propsDoc.getDocument("jsonSchema");
+                var schemaId = jsonSchemaMeta.get("schemaId");
+                var schemaStoreDb = jsonSchemaMeta.containsKey("schemaStoreDb")
+                        ? jsonSchemaMeta.getString("schemaStoreDb").getValue()
+                        : effectiveDb;
+
+                if (schemaId != null) {
+                    jsonSchemas.validate(userDoc, schemaStoreDb, schemaId);
+                }
+            }
+        } catch (org.restheart.plugins.schema.SchemaValidationException sve) {
+            Errors.error(res, HttpStatus.SC_BAD_REQUEST,
+                    "User document violates schema: " + String.join(", ", sve.getViolations()));
+            return;
+        } catch (Exception e) {
+            LOGGER.warn("Schema validation skipped due to error: {}", e.getMessage());
+        }
 
         if (!db(req).insertUser(userDoc)) {
             // Concurrent registration or race between findUser and insertUser

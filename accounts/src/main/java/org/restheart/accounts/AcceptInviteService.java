@@ -81,7 +81,7 @@ public class AcceptInviteService implements JsonService, Initializer {
         }
         var token = jo.get("token").getAsString().trim();
 
-        var db = new DbHelper(mclient, RequestOverrides.db(req, conf));
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
 
         // Find invitation by token in auth_invitations collection
         var inviteOpt = db.findInvitationByToken(token);

@@ -27,7 +27,7 @@ import static com.mongodb.client.model.Filters.eq;
  */
 public class DbHelper {
 
-    private static final String USERS_COLLECTION = "users";
+    private static final String DEFAULT_USERS_COLLECTION = "users";
     private static final String TEAMS_COLLECTION = "teams";
     private static final String INVITATIONS_COLLECTION = "auth_invitations";
 
@@ -36,10 +36,16 @@ public class DbHelper {
 
     private final MongoClient mclient;
     private final String db;
+    private final String usersCollection;
 
     public DbHelper(MongoClient mclient, String db) {
+        this(mclient, db, DEFAULT_USERS_COLLECTION);
+    }
+
+    public DbHelper(MongoClient mclient, String db, String usersCollection) {
         this.mclient = mclient;
         this.db = db;
+        this.usersCollection = usersCollection != null ? usersCollection : DEFAULT_USERS_COLLECTION;
     }
 
     // -------------------------------------------------------------------------
@@ -398,7 +404,7 @@ public class DbHelper {
 
     private MongoCollection<BsonDocument> users() {
         return mclient.getDatabase(db)
-                      .getCollection(USERS_COLLECTION, BsonDocument.class);
+                      .getCollection(usersCollection, BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> teams() {

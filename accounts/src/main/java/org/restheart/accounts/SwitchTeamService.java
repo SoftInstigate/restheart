@@ -138,7 +138,7 @@ public class SwitchTeamService implements JsonService {
         }
 
         // Read system roles from DB — do NOT use matched.role() (membership role)
-        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf)).findUser(email);
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()

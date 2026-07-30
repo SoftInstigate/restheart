@@ -21,6 +21,9 @@ public record AccountsConfigData(
     /** MongoDB database name, e.g. {@code "8x5"}. */
     String db,
 
+    /** MongoDB users collection name, e.g. {@code "users"}. */
+    String usersCollection,
+
     /** Application display name used in email subjects and bodies. */
     String appName,
 

@@ -104,8 +104,9 @@ public class ForgotPasswordService implements JsonService {
 
         // 3. Async logic on the same thread; any exception is swallowed after logging
         var dbName = RequestOverrides.db(req, conf);
+        var usersColl = RequestOverrides.usersCollection(req, conf);
         try {
-            processResetRequest(req, email, dbName);
+            processResetRequest(req, email, dbName, usersColl);
         } catch (Exception e) {
             LOGGER.warn("forgotPassword: unexpected error during reset processing", e);
         }
@@ -121,9 +122,9 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(JsonRequest req, String email, String dbName) throws java.io.IOException {
+    private void processResetRequest(JsonRequest req, String email, String dbName, String usersColl) throws java.io.IOException {
         // a. Locate user
-        var userOpt = new DbHelper(mclient, dbName).findUser(email);
+        var userOpt = new DbHelper(mclient, dbName, usersColl).findUser(email);
         if (userOpt.isEmpty()) {
             LOGGER.debug("forgotPassword: no account found for the requested email address");
             return;
@@ -138,9 +139,9 @@ public class ForgotPasswordService implements JsonService {
                 && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
 
         if (isVerified) {
-            sendPasswordReset(req, email, dbName, user);
+            sendPasswordReset(req, email, dbName, usersColl, user);
         } else {
-            resendVerificationEmail(req, email, dbName, user);
+            resendVerificationEmail(req, email, dbName, usersColl, user);
         }
     }
 
@@ -148,7 +149,7 @@ public class ForgotPasswordService implements JsonService {
      * Account has a password to reset: generate a one-shot {@code passwordResetToken}
      * and email the reset link.
      */
-    private void sendPasswordReset(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+    private void sendPasswordReset(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate one-shot reset token and record its creation time
         var token = TokenUtils.generateToken();
         var now   = new BsonDateTime(Instant.now().toEpochMilli());
@@ -157,7 +158,7 @@ public class ForgotPasswordService implements JsonService {
         var updates = new BsonDocument();
         updates.put("passwordResetToken",   new BsonString(token));
         updates.put("passwordResetCreatedAt", now);
-        new DbHelper(mclient, dbName).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl).updateUser(email, updates);
 
         // c. Build reset link and send email
         var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
@@ -196,7 +197,7 @@ public class ForgotPasswordService implements JsonService {
      * expired or lost original) and re-send the activation email — mirrors the email
      * sent by {@link RegisterService} at signup time.
      */
-    private void resendVerificationEmail(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+    private void resendVerificationEmail(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate new verification token and record its creation time
         var token = TokenUtils.generateToken();
         var now   = new BsonDateTime(Instant.now().toEpochMilli());
@@ -205,7 +206,7 @@ public class ForgotPasswordService implements JsonService {
         var updates = new BsonDocument();
         updates.put("emailVerificationToken",     new BsonString(token));
         updates.put("emailVerificationCreatedAt", now);
-        new DbHelper(mclient, dbName).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl).updateUser(email, updates);
 
         // c. Build verification link and send email
         var firstName = user.containsKey("profile") && user.get("profile").isDocument()

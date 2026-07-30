@@ -67,7 +67,7 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
     public void onInit() {
         // Install the default provider; custom providers can replace it later via
         // registerMembershipProvider() during their Initializer.init() call.
-        this.membershipProvider = new DefaultMembershipProvider(mclient, conf.db(), conf.ownershipRole(), conf.defaultRole());
+        this.membershipProvider = new DefaultMembershipProvider(mclient, conf.db(), conf.usersCollection(), conf.ownershipRole(), conf.defaultRole());
         LOGGER.info("AccountsService initialized with DefaultMembershipProvider");
     }
 
@@ -119,6 +119,7 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
             return new DefaultMembershipProvider(
                 mclient,
                 RequestOverrides.db(req, conf),
+                RequestOverrides.usersCollection(req, conf),
                 RequestOverrides.ownershipRole(req, conf),
                 RequestOverrides.defaultRole(req, conf)
             );

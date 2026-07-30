@@ -170,7 +170,7 @@ public class GetTeamsService implements JsonService {
 
         // Read system roles from DB — the new team's role is always the ownership role,
         // but system ACL roles are independent of it (see SwitchTeamService).
-        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf)).findUser(email);
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()

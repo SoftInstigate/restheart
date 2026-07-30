@@ -74,6 +74,7 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
 
         data = new AccountsConfigData(
             configVal(config, "db",                "restheart"),
+            configVal(config, "users-collection",  "users"),
             configVal(config, "app-name",          "App"),
             jwtConfig.key(),
             jwtConfig.issuer(),

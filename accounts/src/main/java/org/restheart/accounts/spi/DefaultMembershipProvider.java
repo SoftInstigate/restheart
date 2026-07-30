@@ -58,8 +58,8 @@ public class DefaultMembershipProvider implements MembershipProvider {
     private final String ownershipRole;
     private final String defaultRole;
 
-    public DefaultMembershipProvider(MongoClient mclient, String database, String ownershipRole, String defaultRole) {
-        this.db = new DbHelper(mclient, database);
+    public DefaultMembershipProvider(MongoClient mclient, String database, String usersCollection, String ownershipRole, String defaultRole) {
+        this.db = new DbHelper(mclient, database, usersCollection);
         this.ownershipRole = ownershipRole != null ? ownershipRole : "owner";
         this.defaultRole = defaultRole != null ? defaultRole : "user";
     }

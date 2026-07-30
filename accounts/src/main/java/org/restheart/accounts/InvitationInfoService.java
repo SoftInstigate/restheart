@@ -89,7 +89,7 @@ public class InvitationInfoService implements JsonService {
         var email = emailParam.getFirst().trim().toLowerCase();
         var token = tokenParam.getFirst().trim();
 
-        var db = new DbHelper(mclient, RequestOverrides.db(req, conf));
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
         var inviteOpt = db.findInvitationByEmailAndToken(email, token);
 
         if (inviteOpt.isEmpty()) {

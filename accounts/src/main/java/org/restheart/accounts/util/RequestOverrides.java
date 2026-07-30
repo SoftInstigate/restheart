@@ -143,6 +143,9 @@ public final class RequestOverrides {
     /** MongoDB database override (set by AuthDbResolver). */
     public static final String USERS_DB      = "override-users-db";
 
+    /** MongoDB users collection name override. */
+    public static final String USERS_COLLECTION = "override-accounts-users-collection";
+
     /** Cookie domain override (set by AuthDbResolver). */
     public static final String COOKIE_DOMAIN = "override-cookie-domain";
 
@@ -201,6 +204,11 @@ public final class RequestOverrides {
     /** Effective MongoDB database name. */
     public static String db(ServiceRequest<?> req, AccountsConfigData conf) {
         return str(req, USERS_DB, conf.db());
+    }
+
+    /** Effective MongoDB users collection name. */
+    public static String usersCollection(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, USERS_COLLECTION, conf.usersCollection());
     }
 
     /** Effective cookie domain. */

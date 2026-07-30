@@ -393,7 +393,7 @@ public class OAuthCallback implements StringService {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private DbHelper db(StringRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
     }
 
     private Set<String> extractRoles(BsonDocument user) {
