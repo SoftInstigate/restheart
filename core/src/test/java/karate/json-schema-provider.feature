@@ -1,6 +1,9 @@
-# Tests that the json-schemas Provider is registered and functional.
-# Validates schema validation works via the MongoService pipeline after
-# migrating from JsonSchemaCacheSingleton.getInstance() to the Provider pattern (#656).
+# Tests that the json-schemas Provider is registered and functional (#656).
+#
+# Covers the MongoService pipeline after migrating the two checkers from
+# JsonSchemaCacheSingleton.getInstance() to the Provider pattern. Consumption of the
+# Provider from OUTSIDE the pipeline is covered by accounts/register-schema-validation.feature,
+# where restheart-accounts validates with a raw MongoClient.
 
 @schema
 Feature: JSON Schema Provider (#656)
@@ -80,3 +83,42 @@ Feature: JSON Schema Provider (#656)
     And request { "age": "old" }
     When method PATCH
     Then status 400
+
+    # Bulk POST: the schema is resolved once for the whole array, and one invalid
+    # document rejects the request
+    * header Authorization = authHeader
+    Given path '/test-json-schema-provider/coll'
+    And request [ { "name": "Dave", "age": 40 }, { "name": "Erin", "age": 41 } ]
+    When method POST
+    Then status 200
+
+    * header Authorization = authHeader
+    Given path '/test-json-schema-provider/coll'
+    And request [ { "name": "Frank", "age": 50 }, { "age": 51 } ]
+    When method POST
+    Then status 400
+
+    # A declared but missing schema is an error, not a reason to skip validation
+    * header Authorization = authHeader
+    Given path '/test-json-schema-provider/coll'
+    And request { "jsonSchema": { "schemaId": "no-such-schema-anywhere" } }
+    When method PATCH
+    Then assert responseStatus == 200
+
+    * header Authorization = authHeader
+    Given path '/test-json-schema-provider/coll'
+    And request { "name": "Grace", "age": 60 }
+    When method POST
+    Then status 500
+
+    # Cleanup: dropping the db takes its collections with it
+    * header Authorization = authHeader
+    Given path '/test-json-schema-provider'
+    When method GET
+    Then status 200
+    * def etag = responseHeaders['ETag'][0]
+
+    * headers { Authorization: '#(authHeader)', 'If-Match': '#(etag)' }
+    Given path '/test-json-schema-provider'
+    When method DELETE
+    Then assert responseStatus == 204 || responseStatus == 200

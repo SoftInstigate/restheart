@@ -33,7 +33,9 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.schema.JsonSchemas;
+import org.restheart.plugins.schema.SchemaValidationException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
@@ -153,23 +155,20 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             return;
         }
 
-        for (var doc : documentsToCheck(request, response)) {
-            try {
-                jsonSchemas().validate(doc, schemaStoreDb, schemaId);
-            } catch (org.restheart.plugins.schema.JsonSchemaNotFoundException ex) {
-                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                        "wrong 'jsonSchema': schema "
-                        + schemaStoreDb + "/" + _SCHEMAS + "/"
-                        + BsonUtils.getIdAsString(schemaId, false)
-                        + " not found");
-                return;
-            } catch (org.restheart.plugins.schema.SchemaValidationException sve) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST,
-                        "Request content violates schema "
-                        + BsonUtils.getIdAsString(schemaId, true)
-                        + ": "
-                        + String.join(", ", sve.getViolations()));
-            }
+        try {
+            jsonSchemas().validate(documentsToCheck(request, response), schemaStoreDb, schemaId);
+        } catch (JsonSchemaNotFoundException ex) {
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': schema "
+                    + schemaStoreDb + "/" + _SCHEMAS + "/"
+                    + BsonUtils.getIdAsString(schemaId, false)
+                    + " not found");
+        } catch (SchemaValidationException sve) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST,
+                    "Request content violates schema "
+                    + BsonUtils.getIdAsString(schemaId, true)
+                    + ": "
+                    + String.join(", ", sve.getViolations()));
         }
     }
 

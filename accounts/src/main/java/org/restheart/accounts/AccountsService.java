@@ -104,9 +104,9 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
      * a new instance is created using the per-request database resolved by
      * {@link RequestOverrides#db(ServiceRequest, AccountsConfigData)} — which reads
      * the {@code override-users-db} attached parameter (set by {@code AuthDbResolver})
-     * and falls back to the static {@code accountsConfig.db}.
-     * This ensures that on shared deployments where {@code accountsConfig.db} is blank,
-     * the correct per-team MongoDB database is used.
+     * and falls back to {@code mongoRealmAuthenticator/users-db}. {@code MongoRealmAuthenticator}
+     * honours the same attached parameter, so authentication follows the same database.
+     * This ensures that on shared deployments the correct per-team MongoDB database is used.
      *
      * <p>Custom providers registered via {@link #registerMembershipProvider(MembershipProvider)}
      * are returned as-is; they are responsible for their own database resolution.

@@ -94,6 +94,6 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
             ? new BsonDocument()
             : response.getDbOperationResult().getNewData();
 
-        return java.util.List.of(content);
+        return List.of(content);
     }
 }

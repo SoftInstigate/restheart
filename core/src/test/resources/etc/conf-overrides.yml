@@ -406,7 +406,8 @@
 
 # restheart-accounts
 /accountsConfig/enabled: true
-/accountsConfig/db: restheart-test
+# db and users-collection are sourced from mongoRealmAuthenticator
+# (see /mongoRealmAuthenticator/users-db above)
 /accountsConfig/account-properties-claims:
   - teams
 /accountsConfig/app-name: TestApp

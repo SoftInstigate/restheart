@@ -36,7 +36,7 @@ import org.restheart.utils.BsonUtils;
  * Implementation of {@link JsonSchemas} that delegates to
  * {@link JsonSchemaCacheSingleton} for caching and loading schemas.
  * <p>
- * Everit types never cross this class boundary — the public API exposes only
+ * Everit types never cross this class boundary — the API exposes only
  * {@link String} (raw JSON) and {@link SchemaValidationException}.
  */
 public class JsonSchemasImpl implements JsonSchemas {
@@ -49,25 +49,36 @@ public class JsonSchemasImpl implements JsonSchemas {
     @Override
     public void validate(BsonDocument doc, String schemaStoreDb, BsonValue schemaId)
             throws SchemaValidationException, JsonSchemaNotFoundException {
-        validate(new JSONObject(BsonUtils.toJson(doc)), schemaStoreDb, schemaId);
+        validate(schema(schemaStoreDb, schemaId), doc);
     }
 
-    /**
-     * Internal overload that accepts a pre-parsed {@link JSONObject}.
-     * Used by {@code JsonSchemaBeforeWriteChecker} to avoid double conversion.
-     */
-    public void validate(JSONObject json, String schemaStoreDb, BsonValue schemaId)
+    @Override
+    public void validate(List<BsonDocument> docs, String schemaStoreDb, BsonValue schemaId)
             throws SchemaValidationException, JsonSchemaNotFoundException {
-        org.everit.json.schema.Schema schema;
+        // resolve the schema once: with schema-cache-enabled=false this saves
+        // one mongo read plus one SchemaLoader.load() per document
+        var schema = schema(schemaStoreDb, schemaId);
 
+        for (var doc : docs) {
+            validate(schema, doc);
+        }
+    }
+
+    private org.everit.json.schema.Schema schema(String schemaStoreDb, BsonValue schemaId)
+            throws JsonSchemaNotFoundException {
         try {
-            schema = cache().get(schemaStoreDb, schemaId);
+            return cache().get(schemaStoreDb, schemaId);
         } catch (org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException ex) {
             throw new JsonSchemaNotFoundException(ex.getMessage(), ex);
         }
+    }
 
+    private void validate(org.everit.json.schema.Schema schema, BsonDocument doc)
+            throws SchemaValidationException {
+        // the document is always rendered with the default json mode: validation
+        // must not depend on the jsonMode of the request that triggered it
         try {
-            schema.validate(json);
+            schema.validate(new JSONObject(BsonUtils.toJson(doc)));
         } catch (ValidationException ve) {
             var errors = new ArrayList<String>();
 

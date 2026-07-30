@@ -35,21 +35,14 @@ import org.restheart.plugins.schema.JsonSchemas;
  */
 @RegisterPlugin(
     name = "json-schemas",
-    description = "provides access to the JSON Schema store",
-    priority = 10)
+    description = "provides access to the JSON Schema store")
 public class JsonSchemasProvider implements Provider<JsonSchemas> {
 
-    private static final JsonSchemasImpl INSTANCE = new JsonSchemasImpl();
+    // the plugin registry instantiates this provider once and owns its lifecycle
+    private final JsonSchemasImpl jsonSchemas = new JsonSchemasImpl();
 
     @Override
     public JsonSchemas get(PluginRecord<?> caller) {
-        return INSTANCE;
-    }
-
-    /**
-     * Static accessor for internal mongodb-module consumers.
-     */
-    public static JsonSchemasImpl getInstance() {
-        return INSTANCE;
+        return jsonSchemas;
     }
 }
