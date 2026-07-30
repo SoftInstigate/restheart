@@ -12,6 +12,7 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -135,10 +136,13 @@ public class SwitchTeamService implements JsonService {
         } catch (IllegalArgumentException e) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, e.getMessage());
             return;
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
         }
 
         // Read system roles from DB — do NOT use matched.role() (membership role)
-        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf)).findUser(email);
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()

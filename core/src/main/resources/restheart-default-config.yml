@@ -325,9 +325,12 @@ oauthClientRegistrationService:
 # See https://restheart.org/docs/plugins/emails
 accountsConfig:
   enabled: false
-  # MongoDB database where users and teams are stored.
-  # Must match mongoRealmAuthenticator.users-db.
-  db: restheart
+  # The MongoDB database and collection holding users, teams, invitations and
+  # oauth_codes are sourced from mongoRealmAuthenticator (users-db and
+  # users-collection), so that accounts writes users where the authenticator
+  # reads them.
+  # If the users collection carries the 'jsonSchema' metadata, the user document
+  # is validated against that schema on POST /auth/register.
   app-name: "My App"
   # JWT access token TTL in minutes. Key and issuer are sourced from jwtConfigProvider.
   jwt-ttl: 15

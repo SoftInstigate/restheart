@@ -9,12 +9,14 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -63,13 +65,16 @@ public class ChangePasswordService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
     @OnInit
     public void onInit() {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/change-password") && (r.isPatch() || r.isOptions()));
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     @Override
@@ -127,7 +132,12 @@ public class ChangePasswordService implements JsonService {
         }
 
         var hashed = TokenUtils.hashPassword(newPassword);
-        db(req).updateUser(email, new BsonDocument("password", new BsonString(hashed)));
+        try {
+            db(req).updateUser(email, new BsonDocument("password", new BsonString(hashed)));
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         LOGGER.info("Password changed for <{}>", email);
 

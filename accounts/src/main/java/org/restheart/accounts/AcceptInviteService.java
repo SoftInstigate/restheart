@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -81,7 +82,7 @@ public class AcceptInviteService implements JsonService, Initializer {
         }
         var token = jo.get("token").getAsString().trim();
 
-        var db = new DbHelper(mclient, RequestOverrides.db(req, conf));
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
 
         // Find invitation by token in auth_invitations collection
         var inviteOpt = db.findInvitationByToken(token);
@@ -110,8 +111,13 @@ public class AcceptInviteService implements JsonService, Initializer {
         var role = invite.getString("role").getValue();
 
         var membershipProvider = accountsService.getMembershipProvider(req);
-        membershipProvider.addMember(email, teamId, role);
-        membershipProvider.setActiveMembership(email, teamId);
+        try {
+            membershipProvider.addMember(email, teamId, role);
+            membershipProvider.setActiveMembership(email, teamId);
+        } catch (BadRequestException e) {
+            sendError(res, e.getStatusCode(), e.getMessage());
+            return;
+        }
 
         // Delete the invitation after acceptance
         db.deleteInvitation(invite.getObjectId("_id"));

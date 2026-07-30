@@ -20,16 +20,15 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.json.JSONObject;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.RHMongoClients;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.BsonUtils;
+import org.restheart.plugins.schema.JsonSchemas;
 
 /**
  *
@@ -53,6 +52,15 @@ import org.restheart.utils.BsonUtils;
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.RESPONSE)
 public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
+
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    @Override
+    protected JsonSchemas jsonSchemas() {
+        return jsonSchemas;
+    }
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         super.handle(request, response);
@@ -80,22 +88,12 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
             && (response.getDbOperationResult() != null && response.getDbOperationResult().getHttpCode() < 300);
     }
 
-    String documentToCheck(MongoRequest request, MongoResponse response) {
-        return response.getDbOperationResult().getNewData() == null
-            ? "{}"
-            : BsonUtils.toJson(response.getDbOperationResult().getNewData(), request.getJsonMode());
-    }
-
     @Override
-    List<JSONObject> documentsToCheck(MongoRequest request, MongoResponse response) {
-        var ret = new ArrayList<JSONObject>();
-
+    List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
         var content = response.getDbOperationResult().getNewData() == null
             ? new BsonDocument()
             : response.getDbOperationResult().getNewData();
 
-        ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
-
-        return ret;
+        return List.of(content);
     }
 }

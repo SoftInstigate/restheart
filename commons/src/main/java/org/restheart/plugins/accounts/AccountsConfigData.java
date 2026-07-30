@@ -21,6 +21,9 @@ public record AccountsConfigData(
     /** MongoDB database name, e.g. {@code "8x5"}. */
     String db,
 
+    /** MongoDB users collection name, e.g. {@code "users"}. */
+    String usersCollection,
+
     /** Application display name used in email subjects and bodies. */
     String appName,
 
@@ -173,4 +176,59 @@ public record AccountsConfigData(
      */
     List<String> usersUnrestrictedRoles
 
-) {}
+) {
+    /** default users collection name, used when none is configured */
+    public static final String DEFAULT_USERS_COLLECTION = "users";
+
+    /**
+     * Compatibility constructor for callers written before {@code usersCollection}
+     * was added; defaults it to {@value #DEFAULT_USERS_COLLECTION}.
+     *
+     * @deprecated use the canonical constructor and pass {@code usersCollection}
+     *             explicitly. Kept so that plugins built against 9.4.x keep
+     *             compiling; it will be removed in the next major version.
+     */
+    @Deprecated(since = "9.4.2", forRemoval = true)
+    public AccountsConfigData(
+            String db,
+            String appName,
+            String jwtKey,
+            String jwtIssuer,
+            int jwtTtl,
+            String cookieDomain,
+            String cookieName,
+            boolean cookieSecure,
+            String frontendUrl,
+            String frontendAppUrl,
+            String termsVersion,
+            String privacyVersion,
+            String defaultLocale,
+            String verificationTemplatePath,
+            String passwordResetTemplatePath,
+            String inviteTemplatePath,
+            String teamClaimName,
+            String memberRoleName,
+            boolean membershipEndpointsEnabled,
+            String ownershipRole,
+            String defaultRole,
+            List<String> accountPropertiesClaims,
+            List<String> usersUnrestrictedRoles) {
+        this(db, DEFAULT_USERS_COLLECTION, appName, jwtKey, jwtIssuer, jwtTtl,
+                cookieDomain, cookieName, cookieSecure, frontendUrl, frontendAppUrl,
+                termsVersion, privacyVersion, defaultLocale, verificationTemplatePath,
+                passwordResetTemplatePath, inviteTemplatePath, teamClaimName,
+                memberRoleName, membershipEndpointsEnabled, ownershipRole, defaultRole,
+                accountPropertiesClaims, usersUnrestrictedRoles);
+    }
+
+    /**
+     * @return the configured users collection name, never null — falls back to
+     *         {@value #DEFAULT_USERS_COLLECTION}
+     */
+    @Override
+    public String usersCollection() {
+        return usersCollection == null || usersCollection.isBlank()
+                ? DEFAULT_USERS_COLLECTION
+                : usersCollection;
+    }
+}

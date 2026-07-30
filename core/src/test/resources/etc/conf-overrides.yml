@@ -401,11 +401,13 @@
   enabled: true
 
 /logging/log-level: DEBUG
+/logging/no-colors: true
 /core/name: integration-test
 
 # restheart-accounts
 /accountsConfig/enabled: true
-/accountsConfig/db: restheart-test
+# db and users-collection are sourced from mongoRealmAuthenticator
+# (see /mongoRealmAuthenticator/users-db above)
 /accountsConfig/account-properties-claims:
   - teams
 /accountsConfig/app-name: TestApp

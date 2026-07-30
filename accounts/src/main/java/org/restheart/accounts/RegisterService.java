@@ -22,7 +22,9 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -52,9 +54,54 @@ import java.nio.charset.StandardCharsets;
  * <ul>
  *   <li>201 — user created, verification email sent (email errors are logged but do not
  *       block the signup response)</li>
- *   <li>400 — missing or invalid body / fields</li>
+ *   <li>400 — missing or invalid body / fields, or the user document violates the
+ *       collection's JSON Schema</li>
  *   <li>409 — email address already registered</li>
+ *   <li>500 — a JSON Schema is configured on the users collection but cannot be
+ *       applied (see below)</li>
  * </ul>
+ *
+ * <h2>JSON Schema validation</h2>
+ *
+ * <p>If the users collection carries the {@code jsonSchema} metadata, the user
+ * <em>document</em> is validated against that schema before being inserted. Validation is
+ * opt-in: no metadata means no validation.
+ *
+ * <p>The schema speaks the vocabulary of the stored document, not of the request body.
+ * The two are mapped as follows:
+ *
+ * <table>
+ *   <caption>request body to user document mapping</caption>
+ *   <tr><th>request body</th><th>user document</th></tr>
+ *   <tr><td>{@code firstName}</td><td>{@code profile.name}</td></tr>
+ *   <tr><td>{@code lastName}</td><td>{@code profile.surname}</td></tr>
+ *   <tr><td>{@code email}</td><td>{@code _id}</td></tr>
+ *   <tr><td>{@code password}</td><td>{@code password} (hashed)</td></tr>
+ *   <tr><td>{@code teamName}</td><td>not stored on the user document — a team document
+ *       is created by {@code createInitialTeam}</td></tr>
+ * </table>
+ *
+ * <p>So a schema requiring {@code name} produces {@code #/profile/name: required key
+ * [name] not found} for a body that omits {@code firstName}. Violation messages are
+ * returned as-is, in the schema's vocabulary.
+ *
+ * <p>Fields of the request body that are not in the table are dropped before the document
+ * is built, so the schema never sees them and cannot reject them — with or without
+ * {@code additionalProperties: false}.
+ *
+ * <p><strong>The document is validated as it is inserted, which is not its final shape.</strong>
+ * {@code createInitialTeam} runs after the insert and adds {@code teams} and {@code team}
+ * to the user document. A schema with {@code required: ["team"]} therefore always fails,
+ * and one with {@code additionalProperties: false} passes here but does not describe the
+ * document as it is stored a moment later. Schemas meant for the registration path should
+ * declare {@code teams} and {@code team} as optional.
+ *
+ * <p>A {@code jsonSchema} property that is not a document — including a value explicitly
+ * set to {@code null}, e.g. by {@code PATCH} with {@code {"jsonSchema": null}} — means
+ * validation is not configured, matching the MongoService pipeline's own checker. Once it
+ * is a document, though, validation fails closed: a {@code schemaId} that cannot be
+ * resolved from the schema store, or {@code restheart-mongodb} not being deployed, rejects
+ * the request with 500 and creates no user, rather than silently skipping validation.
  *
  * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
@@ -66,6 +113,8 @@ import java.nio.charset.StandardCharsets;
 public class RegisterService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterService.class);
+
+    private static final String JSON_SCHEMAS_PROVIDER = "json-schemas";
 
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
@@ -82,14 +131,37 @@ public class RegisterService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    // resolved through the registry rather than with @Inject("json-schemas") on purpose:
+    // that provider lives in restheart-mongodb, and a hard injection would disable the
+    // whole registration endpoint wherever that module is not deployed. Null here only
+    // matters when the users collection actually carries a jsonSchema — see validate().
+    private JsonSchemas jsonSchemas;
+
     @OnInit
     public void onInit() {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/register") && (r.isPost() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/register"));
+
+        this.jsonSchemas = registry.getProviders().stream()
+                .filter(pd -> JSON_SCHEMAS_PROVIDER.equals(pd.getName()))
+                .filter(pd -> pd.isEnabled())
+                .map(pd -> pd.getInstance())
+                .filter(p -> JsonSchemas.class.getName().equals(p.rawType().getName()))
+                .map(p -> (JsonSchemas) p.get(null))
+                .findFirst()
+                .orElse(null);
+
+        if (this.jsonSchemas == null) {
+            LOGGER.info("Provider '{}' not available: a jsonSchema on the users collection "
+                    + "cannot be applied and registration would fail with 500", JSON_SCHEMAS_PROVIDER);
+        }
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     private MembershipProvider membership(JsonRequest req) {
@@ -172,13 +244,20 @@ public class RegisterService implements JsonService {
                 .append("emailVerificationToken",     new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
 
-        if (!db(req).insertUser(userDoc)) {
-            // Concurrent registration or race between findUser and insertUser
-            Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+        try {
+            if (!db(req).insertUser(userDoc)) {
+                // Concurrent registration or race between findUser and insertUser
+                Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+                return;
+            }
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
             return;
         }
 
-        // ── 6. Delegate team creation + membership linking to the provider ────
+        // ── 7. Delegate team creation + membership linking to the provider ────
+        // note: this adds 'teams' and 'team' to the user document, after it has
+        // been validated against the collection's JSON Schema
         var teamRef = membership(req).createInitialTeam(email, teamName);
         var teamId    = teamRef.id().isString()
                 ? teamRef.id().asString().getValue()
@@ -186,7 +265,7 @@ public class RegisterService implements JsonService {
 
         LOGGER.info("User registered: <{}>, team={}", email, teamId);
 
-        // ── 7. Send verification email (best-effort) ─────────────────────────
+        // ── 8. Send verification email (best-effort) ─────────────────────────
         try {
             // Check X-Skip-Email header for integration tests
             if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
@@ -215,7 +294,7 @@ public class RegisterService implements JsonService {
             LOGGER.warn("Failed to send verification email to <{}>: {}", email, e.getMessage());
         }
 
-        // ── 8. Respond 201 ───────────────────────────────────────────────────
+        // ── 9. Respond 201 ───────────────────────────────────────────────────
         res.setStatusCode(HttpStatus.SC_CREATED);
     }
 

@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -159,7 +160,13 @@ public class TeamService implements JsonService {
             return;
         }
 
-        var deleted = membershipProvider.deleteTeam(callerEmail, callerTeam);
+        boolean deleted;
+        try {
+            deleted = membershipProvider.deleteTeam(callerEmail, callerTeam);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
         if (!deleted) {
             if (!membershipProvider.isMember(callerEmail, callerTeam)) {
                 // Already deleted by a concurrent/duplicate request — since "no other members"

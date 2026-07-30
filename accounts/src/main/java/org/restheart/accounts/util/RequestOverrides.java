@@ -203,6 +203,19 @@ public final class RequestOverrides {
         return str(req, USERS_DB, conf.db());
     }
 
+    /**
+     * Effective MongoDB users collection name.
+     *
+     * <p>There is deliberately no per-request override: {@code MongoRealmAuthenticator}
+     * honours {@code override-users-db} but has no equivalent for the collection — it
+     * always authenticates against its configured {@code users-collection}. An accounts-side
+     * override would move where users are written without moving where they are read,
+     * so registrations would succeed and the subsequent logins would fail.
+     */
+    public static String usersCollection(ServiceRequest<?> req, AccountsConfigData conf) {
+        return conf.usersCollection();
+    }
+
     /** Effective cookie domain. */
     public static String cookieDomain(ServiceRequest<?> req, AccountsConfigData conf) {
         return str(req, COOKIE_DOMAIN, conf.cookieDomain());

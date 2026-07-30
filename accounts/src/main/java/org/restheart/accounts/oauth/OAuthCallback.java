@@ -22,6 +22,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.services.TokenRedirectHelper;
@@ -92,6 +93,9 @@ public class OAuthCallback implements StringService {
 
     @Inject("accountsService")
     private AccountsService accountsService;
+
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
 
     private JwtHelper jwt;
 
@@ -187,7 +191,7 @@ public class OAuthCallback implements StringService {
                 // If a pending invite token is present, add membership now so activateViaOAuth
                 // finds a team (membership is deferred until acceptance since the fix)
                 var inviteDb = hasPendingToken
-                        ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf))
+                        ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas)
                         : null;
                 if (inviteDb != null) {
                     inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite -> {
@@ -223,7 +227,7 @@ public class OAuthCallback implements StringService {
 
             // 3b. Existing user accepting an invitation via OAuth (pendingInviteToken present)
             if (hasPendingToken) {
-                var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf));
+                var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
                 var inviteOpt = db.findInvitationByEmailAndToken(email, pendingInviteToken);
                 if (inviteOpt.isEmpty()) {
                     LOGGER.warn("OAuth invite acceptance failed: no valid invitation for <{}> with the supplied token", email);
@@ -393,7 +397,7 @@ public class OAuthCallback implements StringService {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private DbHelper db(StringRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     private Set<String> extractRoles(BsonDocument user) {

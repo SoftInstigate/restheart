@@ -12,6 +12,7 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,13 +62,16 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
     private volatile MembershipProvider membershipProvider;
 
     @OnInit
     public void onInit() {
         // Install the default provider; custom providers can replace it later via
         // registerMembershipProvider() during their Initializer.init() call.
-        this.membershipProvider = new DefaultMembershipProvider(mclient, conf.db(), conf.ownershipRole(), conf.defaultRole());
+        this.membershipProvider = new DefaultMembershipProvider(mclient, conf.db(), conf.usersCollection(), conf.ownershipRole(), conf.defaultRole(), jsonSchemas);
         LOGGER.info("AccountsService initialized with DefaultMembershipProvider");
     }
 
@@ -104,9 +108,9 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
      * a new instance is created using the per-request database resolved by
      * {@link RequestOverrides#db(ServiceRequest, AccountsConfigData)} — which reads
      * the {@code override-users-db} attached parameter (set by {@code AuthDbResolver})
-     * and falls back to the static {@code accountsConfig.db}.
-     * This ensures that on shared deployments where {@code accountsConfig.db} is blank,
-     * the correct per-team MongoDB database is used.
+     * and falls back to {@code mongoRealmAuthenticator/users-db}. {@code MongoRealmAuthenticator}
+     * honours the same attached parameter, so authentication follows the same database.
+     * This ensures that on shared deployments the correct per-team MongoDB database is used.
      *
      * <p>Custom providers registered via {@link #registerMembershipProvider(MembershipProvider)}
      * are returned as-is; they are responsible for their own database resolution.
@@ -119,8 +123,10 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
             return new DefaultMembershipProvider(
                 mclient,
                 RequestOverrides.db(req, conf),
+                RequestOverrides.usersCollection(req, conf),
                 RequestOverrides.ownershipRole(req, conf),
-                RequestOverrides.defaultRole(req, conf)
+                RequestOverrides.defaultRole(req, conf),
+                jsonSchemas
             );
         }
         return membershipProvider;
