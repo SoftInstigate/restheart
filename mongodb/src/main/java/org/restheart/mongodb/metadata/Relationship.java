@@ -101,9 +101,9 @@ public class Relationship {
         if (!_rels.isArray()) {
             throw new InvalidMetadataException(
                     "element '"
-                    + RELATIONSHIPS_ELEMENT_NAME
-                    + "' is not an array list."
-                    + _rels);
+                            + RELATIONSHIPS_ELEMENT_NAME
+                            + "' is not an array list."
+                            + _rels);
         }
 
         BsonArray rels = _rels.asArray();
@@ -112,9 +112,9 @@ public class Relationship {
             if (!_rel.isDocument()) {
                 throw new InvalidMetadataException(
                         "element '"
-                        + RELATIONSHIPS_ELEMENT_NAME
-                        + "' is not valid."
-                        + _rel);
+                                + RELATIONSHIPS_ELEMENT_NAME
+                                + "' is not valid."
+                                + _rel);
             }
 
             BsonDocument rel = _rel.asDocument();
@@ -136,43 +136,43 @@ public class Relationship {
         if (_rel == null || !_rel.isString()) {
             throw new InvalidMetadataException(
                     (_rel == null ? "missing " : "invalid ")
-                    + REL_ELEMENT_NAME
-                    + " element.");
+                            + REL_ELEMENT_NAME
+                            + " element.");
         }
 
         if (_type == null || !_type.isString()) {
             throw new InvalidMetadataException(
                     (_type == null ? "missing " : "invalid ")
-                    + TYPE_ELEMENT_NAME
-                    + " element.");
+                            + TYPE_ELEMENT_NAME
+                            + " element.");
         }
 
         if (_role == null || !_role.isString()) {
             throw new InvalidMetadataException(
                     (_role == null ? "missing " : "invalid ")
-                    + ROLE_ELEMENT_NAME
-                    + " element.");
+                            + ROLE_ELEMENT_NAME
+                            + " element.");
         }
 
         if (_targetDb != null && !_targetDb.isString()) {
             throw new InvalidMetadataException(
                     "invalid "
-                    + TARGET_DB_ELEMENT_NAME
-                    + " field.");
+                            + TARGET_DB_ELEMENT_NAME
+                            + " field.");
         }
 
         if (_targetCollection == null || !_targetCollection.isString()) {
             throw new InvalidMetadataException(
                     (_targetCollection == null ? "missing " : "invalid ")
-                    + TARGET_COLLECTION_ELEMENT_NAME
-                    + " element.");
+                            + TARGET_COLLECTION_ELEMENT_NAME
+                            + " element.");
         }
 
         if (_referenceField == null || !_referenceField.isString()) {
             throw new InvalidMetadataException(
                     (_referenceField == null ? "missing " : "invalid ")
-                    + REF_ELEMENT_NAME
-                    + " element.");
+                            + REF_ELEMENT_NAME
+                            + " element.");
         }
 
         String rel = _rel.asString().getValue();
@@ -250,9 +250,9 @@ public class Relationship {
         } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException(
                     "invalid type value: "
-                    + type
-                    + ". valid values are "
-                    + Arrays.toString(TYPE.values()),
+                            + type
+                            + ". valid values are "
+                            + Arrays.toString(TYPE.values()),
                     iae);
         }
 
@@ -261,9 +261,9 @@ public class Relationship {
         } catch (IllegalArgumentException iae) {
             throw new InvalidMetadataException(
                     "invalid role value "
-                    + role
-                    + ". valid values are "
-                    + Arrays.toString(ROLE.values()),
+                            + role
+                            + ". valid values are "
+                            + Arrays.toString(ROLE.values()),
                     iae);
         }
 
@@ -312,17 +312,17 @@ public class Relationship {
                 if (!_referenceValue.isArray()) {
                     throw new IllegalArgumentException(
                             "in resource "
-                            + dbName
-                            + "/"
-                            + collName
-                            + "/"
-                            + data.get("_id")
-                            + " the "
-                            + type.name()
-                            + " relationship ref-field "
-                            + this.referenceField
-                            + " should be an array, but it is "
-                            + _referenceValue);
+                                    + dbName
+                                    + "/"
+                                    + collName
+                                    + "/"
+                                    + data.get("_id")
+                                    + " the "
+                                    + type.name()
+                                    + " relationship ref-field "
+                                    + this.referenceField
+                                    + " should be an array, but it is "
+                                    + _referenceValue);
                 }
 
                 List<BsonValue> bsonVals = _referenceValue.asArray().getValues();

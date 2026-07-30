@@ -91,21 +91,21 @@ public class Version {
         final Set<Map.Entry<Object, Object>> manifestEntries = findManifestInfo();
 
         return manifestEntries == null
-            ? Instant.now()
-            : manifestEntries
-                    .stream()
-                    .filter(e -> e.getKey().toString().equals("Build-Time"))
-                    .map(e -> (String) e.getValue())
-                    .filter(d -> d != null)
-                    .map(d -> {
-                        try {
-                            return Instant.parse(d);
-                        } catch (Exception e) {
-                            return Instant.now();
-                        }
-                    })
-                    .findFirst()
-                    .orElse(Instant.now());
+                ? Instant.now()
+                : manifestEntries
+                .stream()
+                .filter(e -> e.getKey().toString().equals("Build-Time"))
+                .map(e -> (String) e.getValue())
+                .filter(d -> d != null)
+                .map(d -> {
+                    try {
+                        return Instant.parse(d);
+                    } catch (Exception e) {
+                        return Instant.now();
+                    }
+                })
+                .findFirst()
+                .orElse(Instant.now());
     }
 
     private static Set<Map.Entry<Object, Object>> findManifestInfo() {

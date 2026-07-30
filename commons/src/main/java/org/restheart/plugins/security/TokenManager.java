@@ -105,15 +105,16 @@ import io.undertow.util.HttpString;
 public interface TokenManager extends Authenticator {
     /** HTTP header name for transmitting authentication tokens to clients */
     public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-    
+
     /** HTTP header name for communicating token expiration time to clients */
     public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
-    
+
     /** HTTP header name for indicating where clients should send tokens for validation */
     public static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
-    
+
     /** HTTP header name for exposing token-related headers in CORS scenarios */
     public static final HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
+
     /**
      * Retrieves or generates a valid authentication token for the specified user account.
      * <p>

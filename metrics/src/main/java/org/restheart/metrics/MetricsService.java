@@ -43,7 +43,7 @@ import io.prometheus.client.exporter.common.TextFormat;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true, defaultURI="/metrics")
+@RegisterPlugin(name = "metrics", description = "returns requests metrics", secure = true, defaultURI = "/metrics")
 public class MetricsService implements StringService {
     /**
      *

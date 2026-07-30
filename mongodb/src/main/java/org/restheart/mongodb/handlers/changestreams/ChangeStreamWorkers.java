@@ -54,7 +54,7 @@ public class ChangeStreamWorkers {
     }
 
     public boolean remove(ChangeStreamWorkerKey key) {
-         return CHANGE_STREAM_WORKERS.remove(key) == null;
+        return CHANGE_STREAM_WORKERS.remove(key) == null;
     }
 
     public Set<ChangeStreamWorker> getWorkersOnDb(String db) {
@@ -62,8 +62,8 @@ public class ChangeStreamWorkers {
             return new HashSet<>();
         } else {
             return CHANGE_STREAM_WORKERS.values().stream()
-                .filter(csw -> db.equals(csw.getDbName()))
-                .collect(Collectors.toSet());
+                    .filter(csw -> db.equals(csw.getDbName()))
+                    .collect(Collectors.toSet());
         }
     }
 
@@ -72,8 +72,8 @@ public class ChangeStreamWorkers {
             return new HashSet<>();
         } else {
             return CHANGE_STREAM_WORKERS.values().stream()
-                .filter(csw -> db.equals(csw.getDbName()) && coll.equals(csw.getCollName()))
-                .collect(Collectors.toSet());
+                    .filter(csw -> db.equals(csw.getDbName()) && coll.equals(csw.getCollName()))
+                    .collect(Collectors.toSet());
         }
     }
 

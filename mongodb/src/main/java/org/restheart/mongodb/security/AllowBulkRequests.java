@@ -36,9 +36,9 @@ import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.MongoPermissions;
 
 @RegisterPlugin(name = "mongoPermissionAllowBulkRequests",
-    description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
-    initPoint = InitPoint.BEFORE_STARTUP,
-    enabledByDefault = true)
+        description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
+        initPoint = InitPoint.BEFORE_STARTUP,
+        enabledByDefault = true)
 public class AllowBulkRequests extends BaseAllowInitializer implements Initializer {
     @Inject("registry")
     private PluginsRegistry registry;
@@ -46,7 +46,7 @@ public class AllowBulkRequests extends BaseAllowInitializer implements Initializ
     @Override
     public void init() {
         this.registry.getPermissionTransformers()
-            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
+                .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
 
     // apply the transformation if the permission does not allow bulks requests
@@ -54,7 +54,7 @@ public class AllowBulkRequests extends BaseAllowInitializer implements Initializ
         try {
             var mp = MongoPermissions.from(p);
             return !(mp.isAllowBulkDelete() && mp.isAllowBulkPatch());
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return false;
         }
     };
@@ -68,6 +68,6 @@ public class AllowBulkRequests extends BaseAllowInitializer implements Initializ
         var mp = MongoPermissions.from(p);
 
         return !((!mp.isAllowBulkDelete() && mr.isBulkDocuments() && mr.isDelete())
-              || (!mp.isAllowBulkPatch()  && mr.isBulkDocuments() && mr.isPatch()));
+                || (!mp.isAllowBulkPatch() && mr.isBulkDocuments() && mr.isPatch()));
     };
 }

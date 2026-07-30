@@ -180,7 +180,7 @@ public class GraphQLApp {
                 bsonScalars.forEach(((s, graphQLScalarType) -> RWBuilder.scalar(graphQLScalarType)));
 
                 // Unions
-                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e ->{
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof UnionTypeDefinition).forEach(e -> {
                     var unionMapping = this.unionMappings.get(e.getKey());
 
                     RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver((TypeResolutionEnvironment env) -> {
@@ -190,8 +190,8 @@ public class GraphQLApp {
                         if (obj instanceof BsonValue value) {
                             final var ex = ExchangeWithBsonValue.exchange(value);
                             match = unionMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(ex))
-                                .findFirst();
+                                    .filter(p -> p.getValue().resolve(ex))
+                                    .findFirst();
                         } else {
                             // predicates can only resolve on BsonValues
                             LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
@@ -208,7 +208,7 @@ public class GraphQLApp {
                 });
 
                 // Interfaces
-                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e ->{
+                typeRegistry.types().entrySet().stream().filter(e -> e.getValue() instanceof InterfaceTypeDefinition).forEach(e -> {
                     var interfaceMapping = this.interfacesMappings.get(e.getKey());
 
                     RWBuilder.type(TypeRuntimeWiring.newTypeWiring(e.getKey()).typeResolver((TypeResolutionEnvironment env) -> {
@@ -218,8 +218,8 @@ public class GraphQLApp {
                         if (obj instanceof BsonValue value) {
                             final var ex = ExchangeWithBsonValue.exchange(value);
                             match = interfaceMapping.entrySet().stream()
-                                .filter(p -> p.getValue().resolve(ex))
-                                .findFirst();
+                                    .filter(p -> p.getValue().resolve(ex))
+                                    .findFirst();
                         } else {
                             // predicates can resolve on BsonValues
                             LOGGER.debug("no $typeResolver predicate can work for type {}", obj);
@@ -237,7 +237,7 @@ public class GraphQLApp {
 
                 // Enums
                 this.enumsMappings.entrySet().forEach(em -> RWBuilder.type(TypeRuntimeWiring.newTypeWiring(em.getKey())
-                    .enumValues(new MapEnumValuesProvider(em.getValue()))));
+                        .enumValues(new MapEnumValuesProvider(em.getValue()))));
 
                 // Objects
                 this.objectsMappings.forEach(((type, typeMapping) -> RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
@@ -251,8 +251,8 @@ public class GraphQLApp {
                 return new GraphQLApp(this.descriptor, this.schema, this.objectsMappings, execSchema, this.etag);
             } catch (SchemaProblem schemaProblem) {
                 var errorMSg = schemaProblem.getMessage() != null
-                    ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
-                    : "Invalid GraphQL schema";
+                        ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
+                        : "Invalid GraphQL schema";
 
                 throw new IllegalArgumentException(errorMSg, schemaProblem);
             }

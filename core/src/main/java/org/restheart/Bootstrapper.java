@@ -172,14 +172,14 @@ public final class Bootstrapper {
 
             if (cmd.isVersionHelpRequested()) {
                 final var version = Version.getInstance().getVersionNumber()
-                    .orElse("unknown (not packaged)");
+                        .orElse("unknown (not packaged)");
 
                 System.out.println(RESTHEART
-                    .concat(" Version ")
-                    .concat(version)
-                    .concat(" Build-Time ")
-                    .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.of("UTC"))
-                        .format(Version.getInstance().getBuildTime())));
+                        .concat(" Version ")
+                        .concat(version)
+                        .concat(" Build-Time ")
+                        .concat(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.of("UTC"))
+                                .format(Version.getInstance().getBuildTime())));
 
                 System.exit(0);
             }
@@ -190,8 +190,8 @@ public final class Bootstrapper {
             standaloneConfiguration = parameters.standalone;
 
             final var confFilePath = (parameters.configPath == null)
-                ? System.getenv("RESTHEART_CONF_FILE")
-                : parameters.configPath;
+                    ? System.getenv("RESTHEART_CONF_FILE")
+                    : parameters.configPath;
             CONFIGURATION_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
 
             FileUtils.getFileAbsolutePath(parameters.configPath);
@@ -199,8 +199,8 @@ public final class Bootstrapper {
             IS_FORKED = parameters.isForked;
 
             final var confOverridesFilePath = parameters.rho == null
-                ? System.getenv("RHO_FILE")
-                : parameters.rho;
+                    ? System.getenv("RHO_FILE")
+                    : parameters.rho;
 
             CONF_OVERRIDES_FILE_PATH = FileUtils.getFileAbsolutePath(confOverridesFilePath);
         } catch (final Exception ex) {
@@ -328,8 +328,8 @@ public final class Bootstrapper {
         // if -t, just print the configuration to stderr and exit
         if (printConfigurationTemplate) {
             final var confFilePath = standaloneConfiguration
-                ? "/restheart-default-config-no-mongodb.yml"
-                : "/restheart-default-config.yml";
+                    ? "/restheart-default-config-no-mongodb.yml"
+                    : "/restheart-default-config.yml";
 
             try (var confFileStream = Configuration.class.getResourceAsStream(confFilePath)) {
                 final var content = new BufferedReader(new InputStreamReader(confFileStream, StandardCharsets.UTF_8)).lines()
@@ -367,8 +367,8 @@ public final class Bootstrapper {
             // with wrong version of restheart-commons
 
             final var version = Version.getInstance().getVersionNumber()
-                .map(v -> "v" + v)
-                .orElse("of correct version");
+                    .map(v -> "v" + v)
+                    .orElse("of correct version");
 
             logErrorAndExit(
                     "Linkage error instantiating plugins. Check that all plugins were compiled against restheart-commons "
@@ -422,8 +422,8 @@ public final class Bootstrapper {
                 // this might occur executing plugin code compiled
                 // with wrong version of restheart-commons
                 final var version = Version.getInstance().getVersionNumber()
-                    .map(v -> "v" + v)
-                    .orElse("of correct version");
+                        .map(v -> "v" + v)
+                        .orElse("of correct version");
 
                 LOGGER.error(
                         "Linkage error executing BEFORE_STARTUP initializer {} ({}) after {}ms. Check that it was compiled against restheart-commons {}",
@@ -497,8 +497,8 @@ public final class Bootstrapper {
                     // this might occur executing plugin code compiled
                     // with wrong version of restheart-commons
                     final var version = Version.getInstance().getVersionNumber()
-                        .map(v -> "v" + v)
-                        .orElse("of correct version");
+                            .map(v -> "v" + v)
+                            .orElse("of correct version");
 
                     BootstrapLogger.errorSubItem(LOGGER,
                             "✗ LINKAGE ERROR after {}ms: Check that it was compiled against restheart-commons {}",
@@ -609,13 +609,13 @@ public final class Bootstrapper {
         final var authorizers = PluginsRegistryImpl.getInstance().getAuthorizers();
 
         final var allowers = authorizers == null
-            ? null
-            : authorizers.stream()
-                    .filter(PluginRecord::isEnabled)
-                    .filter(a -> a.getInstance() != null)
-                    .map(PluginRecord::getInstance)
-                    .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                    .toList();
+                ? null
+                : authorizers.stream()
+                .filter(PluginRecord::isEnabled)
+                .filter(a -> a.getInstance() != null)
+                .map(PluginRecord::getInstance)
+                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                .toList();
 
         if (allowers == null || allowers.isEmpty()) {
             LOGGER.warn(ansi().fg(RED).bold().a(
@@ -682,15 +682,15 @@ public final class Bootstrapper {
         // use value in configuration, or auto detect values if io-threads <= 0
         final var autoConfigIoThreads = configuration.coreModule().ioThreads() <= 0;
         final var ioThreads = autoConfigIoThreads
-            ? Runtime.getRuntime().availableProcessors()
-            : configuration.coreModule().ioThreads();
+                ? Runtime.getRuntime().availableProcessors()
+                : configuration.coreModule().ioThreads();
 
         // virtual threads carriers
         // use value in configuration, or auto detect values if virtual-threads-carriers <= 0
         final var autoConfigWorkersSchedulerParallelism = configuration.coreModule().workersSchedulerParallelism() <= 0;
         final var workersSchedulerParallelism = autoConfigWorkersSchedulerParallelism
-            ? Math.round(Runtime.getRuntime().availableProcessors() * 1.5)
-            : configuration.coreModule().workersSchedulerParallelism();
+                ? Math.round(Runtime.getRuntime().availableProcessors() * 1.5)
+                : configuration.coreModule().workersSchedulerParallelism();
 
         // apply workersSchedulerParallelism and workersSchedulerMaxPoolSize
         System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(workersSchedulerParallelism));
@@ -700,12 +700,12 @@ public final class Bootstrapper {
         BootstrapLogger.standalone(LOGGER,
                 "Available processors: {}, IO threads{}: {}, worker scheduler parallelism{}: {}, worker scheduler max pool size: {}",
                 Runtime.getRuntime().availableProcessors(), autoConfigIoThreads
-                    ? " (auto detected)"
-                    : "",
+                        ? " (auto detected)"
+                        : "",
                 ioThreads,
                 autoConfigWorkersSchedulerParallelism
-                    ? " (auto detected)"
-                    : "",
+                        ? " (auto detected)"
+                        : "",
                 workersSchedulerParallelism,
                 configuration.coreModule().workersSchedulerMaxPoolSize());
 
@@ -794,7 +794,7 @@ public final class Bootstrapper {
      * @return a GracefulShutdownHandler
      */
     private static GracefulShutdownHandler getPipeline(final Set<PluginRecord<AuthMechanism>> authMechanisms,
-            final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
+                                                       final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         PluginsRegistryImpl
                 .getInstance()
                 .getRootPathHandler()
@@ -973,7 +973,7 @@ public final class Bootstrapper {
      * @param tokenManager
      */
     private static void plugProxies(final Configuration conf, final Set<PluginRecord<AuthMechanism>> authMechanisms,
-            final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
+                                    final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         final var proxies = conf.getProxies();
 
         if (proxies == null || proxies.isEmpty()) {
@@ -1040,7 +1040,7 @@ public final class Bootstrapper {
                     new QueryStringRebuilder(),
                     new ConduitInjector(),
                     PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(proxyHandler))); // Must be after
-                                                                                                   // ConduitInjector
+            // ConduitInjector
 
             PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy,
                     new PipelineInfo(PROXY, proxy.location(), proxy.name()));
@@ -1148,8 +1148,8 @@ public final class Bootstrapper {
             return 10; // default priority
         final var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
         return annotation != null
-            ? annotation.priority()
-            : 10; // default priority
+                ? annotation.priority()
+                : 10; // default priority
     }
 
     /**
@@ -1193,51 +1193,51 @@ public final class Bootstrapper {
     }
 
     @Command(
-        name = "java -jar restheart.jar")
+            name = "java -jar restheart.jar")
     private static class Args {
         @Parameters(
-            index = "0",
-            arity = "0..1",
-            paramLabel = "CONF_FILE",
-            description = "Main configuration file")
+                index = "0",
+                arity = "0..1",
+                paramLabel = "CONF_FILE",
+                description = "Main configuration file")
         private String configPath = null;
 
         @Option(
-            names = "--fork",
-            description = "Fork the process in background")
+                names = "--fork",
+                description = "Fork the process in background")
         private boolean isForked = false;
 
         @Option(
-            names = { "-o", "--rho" },
-            paramLabel = "RHO_FILE",
-            description = "Configuration overrides file")
+                names = {"-o", "--rho"},
+                paramLabel = "RHO_FILE",
+                description = "Configuration overrides file")
         private String rho = null;
 
         @Option(
-            names = { "-h", "--help" },
-            usageHelp = true,
-            description = "This help message")
+                names = {"-h", "--help"},
+                usageHelp = true,
+                description = "This help message")
         private boolean help = false;
 
         @Option(
-            names = { "-c", "--printConfiguration" },
-            description = "Print the effective configuration to the standard error and exit")
+                names = {"-c", "--printConfiguration"},
+                description = "Print the effective configuration to the standard error and exit")
         private boolean printConfiguration = false;
 
         @Option(
-            names = { "-t", "--printConfigurationTemplate" },
-            description = "Print the configuration template to the standard error and exit")
+                names = {"-t", "--printConfigurationTemplate"},
+                description = "Print the configuration template to the standard error and exit")
         private boolean printConfigurationTemplate = false;
 
         @Option(
-            names = { "-v", "--version" },
-            versionHelp = true,
-            description = "Print product version to the output stream and exit")
+                names = {"-v", "--version"},
+                versionHelp = true,
+                description = "Print product version to the output stream and exit")
         boolean versionRequested;
 
         @Option(
-            names = { "-s", "--standalone" },
-            description = "Use an alternate configuration that disables all plugins depending from MongoDB")
+                names = {"-s", "--standalone"},
+                description = "Use an alternate configuration that disables all plugins depending from MongoDB")
         boolean standalone;
     }
 }

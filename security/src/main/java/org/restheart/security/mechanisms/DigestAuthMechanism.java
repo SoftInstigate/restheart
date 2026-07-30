@@ -106,10 +106,10 @@ public class DigestAuthMechanism implements AuthMechanism {
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+                                         SecurityContext securityContext) {
         if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY)
                 || exchange.getQueryParameters()
-                        .containsKey(SILENT_QUERY_PARAM_KEY)) {
+                .containsKey(SILENT_QUERY_PARAM_KEY)) {
             return new ChallengeResult(true, UNAUTHORIZED);
         } else {
             return _sendChallenge(exchange, securityContext);
@@ -161,12 +161,12 @@ public class DigestAuthMechanism implements AuthMechanism {
     }
 
     public DigestAuthMechanism(final List<DigestAlgorithm> supportedAlgorithms, final List<DigestQop> supportedQops,
-            final String realmName, final String domain, final NonceManager nonceManager, final String mechanismName) {
+                               final String realmName, final String domain, final NonceManager nonceManager, final String mechanismName) {
         this(supportedAlgorithms, supportedQops, realmName, domain, nonceManager, mechanismName, null);
     }
 
     public DigestAuthMechanism(final List<DigestAlgorithm> supportedAlgorithms, final List<DigestQop> supportedQops,
-            final String realmName, final String domain, final NonceManager nonceManager, final String mechanismName, final IdentityManager identityManager) {
+                               final String realmName, final String domain, final NonceManager nonceManager, final String mechanismName, final IdentityManager identityManager) {
         this.supportedAlgorithms = supportedAlgorithms;
         this.supportedQops = supportedQops;
         this.realmName = realmName;
@@ -203,7 +203,7 @@ public class DigestAuthMechanism implements AuthMechanism {
 
     @Override
     public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+                                                       final SecurityContext securityContext) {
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
             for (String current : authHeaders) {

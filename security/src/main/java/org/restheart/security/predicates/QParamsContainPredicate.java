@@ -49,7 +49,7 @@ public class QParamsContainPredicate implements Predicate {
         var qparamsInExchange = exchange.getQueryParameters();
 
         return (qparamsInExchange == null && qparams.size() == 0)
-            || (qparamsInExchange != null &&
+                || (qparamsInExchange != null &&
                 this.qparams.stream().allMatch(qparamsInExchange.keySet()::contains));
     }
 

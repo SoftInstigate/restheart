@@ -34,7 +34,8 @@ public final class EmailTemplateLoader {
     /** Simple in-memory cache: resolved path/resource name → content. */
     private static final ConcurrentHashMap<String, String> CACHE = new ConcurrentHashMap<>();
 
-    private EmailTemplateLoader() {}
+    private EmailTemplateLoader() {
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Public API
@@ -87,7 +88,7 @@ public final class EmailTemplateLoader {
      * @throws java.io.IOException if the file/classpath resource cannot be read
      */
     public static String loadWithFallback(String inlineHtml, String pathOrResource,
-                                           String builtinName) throws java.io.IOException {
+                                          String builtinName) throws java.io.IOException {
         if (inlineHtml != null && !inlineHtml.isBlank()) {
             return loadInline(inlineHtml);
         }
@@ -104,8 +105,8 @@ public final class EmailTemplateLoader {
      * @throws IOException if the template cannot be loaded from any source
      */
     public static String load(String pathOrResource,
-                               String builtinName,
-                               boolean forceReload) throws IOException {
+                              String builtinName,
+                              boolean forceReload) throws IOException {
         var cacheKey = (pathOrResource != null && !pathOrResource.isBlank())
                 ? pathOrResource
                 : "classpath:" + builtinName;
@@ -164,8 +165,8 @@ public final class EmailTemplateLoader {
     private static String loadFromClasspath(String name) throws IOException {
         var resourceName = CLASSPATH_PREFIX + name;
         try (InputStream is = EmailTemplateLoader.class
-                .getClassLoader()
-                .getResourceAsStream(resourceName)) {
+                     .getClassLoader()
+                     .getResourceAsStream(resourceName)) {
             if (is == null) {
                 throw new IOException("Built-in email template not found on classpath: " + resourceName);
             }

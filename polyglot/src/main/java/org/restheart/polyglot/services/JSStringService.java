@@ -45,30 +45,30 @@ import com.mongodb.client.MongoClient;
 public class JSStringService extends JSService implements StringService {
 
     private static final String HANDLE_HINT = """
-    the plugin module must export the function 'handle', example:
-    export function handle(request, response) {
-        LOGGER.debug('request {}', request.getContent());
-        const rc = JSON.parse(request.getContent() || '{}');
-
-        let body = {
-            msg: `Hello ${rc.name || 'Cruel World'}`
-        }
-
-        response.setContent(JSON.stringify(body));
-        response.setContentTypeAsJson();
-    }
-    """;
+            the plugin module must export the function 'handle', example:
+            export function handle(request, response) {
+                LOGGER.debug('request {}', request.getContent());
+                const rc = JSON.parse(request.getContent() || '{}');
+            
+                let body = {
+                    msg: `Hello ${rc.name || 'Cruel World'}`
+                }
+            
+                response.setContent(JSON.stringify(body));
+                response.setContentTypeAsJson();
+            }
+            """;
 
     private static final String PACKAGE_HINT = """
-    the plugin module must export the object 'options', example:
-    export const options = {
-        name: "hello"
-        description: "a fancy description"
-        uri: "/hello"
-        secured: false
-        matchPolicy: "PREFIX"
-    }
-    """;
+            the plugin module must export the object 'options', example:
+            export const options = {
+                name: "hello"
+                description: "a fancy description"
+                uri: "/hello"
+                secured: false
+                matchPolicy: "PREFIX"
+            }
+            """;
 
     public JSStringService(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException, InterruptedException {
         super(args(pluginPath, mclient, config));
@@ -136,8 +136,8 @@ public class JSStringService extends JSService implements StringService {
 
                 options.getMember("modulesReplacements").getMemberKeys().stream()
                         .forEach(k -> sb.append(k).append(":")
-                        .append(options.getMember("modulesReplacements").getMember(k))
-                        .append(","));
+                                .append(options.getMember("modulesReplacements").getMember(k))
+                                .append(","));
 
                 modulesReplacements = sb.toString();
             }

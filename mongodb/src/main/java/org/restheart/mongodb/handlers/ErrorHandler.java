@@ -96,19 +96,19 @@ public class ErrorHandler implements HttpHandler {
                 LOGGER.debug("Error handling the request", mce);
                 response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
             }
-        } catch(BSONException be) {
+        } catch (BSONException be) {
             LOGGER.debug("Request failed due to invalid BSON", be);
             response.setInError(400, "Invalid BSON: " + be.getMessage());
-        } catch(BadRequestException be) {
+        } catch (BadRequestException be) {
             response.setInError(be.getStatusCode(), be.getMessage());
         } catch (Exception t) {
-			if (t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
-				LOGGER.error("Remote peer closed connection before all data could be read");
-				response.setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
-			} else {
-				LOGGER.error("Error handling the request", t);
-				response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
-			}
+            if (t.getMessage() != null && t.getMessage().contains("UT000128")) { // Remote peer closed connection before all data could be read
+                LOGGER.error("Remote peer closed connection before all data could be read");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, ""); // setting status just for logging, the client won't receive the response.
+            } else {
+                LOGGER.error("Error handling the request", t);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
+            }
         }
     }
 }

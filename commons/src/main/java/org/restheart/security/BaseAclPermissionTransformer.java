@@ -82,7 +82,7 @@ public class BaseAclPermissionTransformer {
      * Predicate that determines which permissions should be transformed.
      */
     Predicate<BaseAclPermission> resolve;
-    
+
     /**
      * The additional predicate to compose with matching permissions.
      */

@@ -60,19 +60,19 @@ public class ProxyExchangeBuffersCloser extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         exchange.addExchangeCompleteListener(
-            (completeExchange, nextListener) -> {
-                if (ByteArrayProxyRequest.of(exchange).isContentAvailable()) {
-                    ByteArrayProxyRequest.of(exchange).close();
-                    LOGGER.debug("release request content buffer");
-                }
+                (completeExchange, nextListener) -> {
+                    if (ByteArrayProxyRequest.of(exchange).isContentAvailable()) {
+                        ByteArrayProxyRequest.of(exchange).close();
+                        LOGGER.debug("release request content buffer");
+                    }
 
-                if (ByteArrayProxyResponse.of(exchange).isContentAvailable()) {
-                    ByteArrayProxyResponse.of(exchange).close();
-                    LOGGER.debug("release response content buffer");
-                }
+                    if (ByteArrayProxyResponse.of(exchange).isContentAvailable()) {
+                        ByteArrayProxyResponse.of(exchange).close();
+                        LOGGER.debug("release response content buffer");
+                    }
 
-                nextListener.proceed();
-            });
+                    nextListener.proceed();
+                });
 
         next(exchange);
     }

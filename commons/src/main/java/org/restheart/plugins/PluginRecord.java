@@ -118,12 +118,12 @@ public class PluginRecord<T extends Plugin> {
      * @param confArgs the configuration arguments map from the RESTHeart configuration
      */
     public PluginRecord(String name,
-            String description,
-            final boolean secure,
-            boolean enabledByDefault,
-            String className,
-            T instance,
-            Map<String, Object> confArgs) {
+                        String description,
+                        final boolean secure,
+                        boolean enabledByDefault,
+                        String className,
+                        T instance,
+                        Map<String, Object> confArgs) {
         this.name = name;
         this.description = description;
         this.secure = secure;

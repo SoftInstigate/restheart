@@ -134,41 +134,41 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
 
                     if (params.update && !params.upsert) {
                         documents.stream()
-                            .map(doc -> doc.asDocument())
-                            // add props specified via keys and values qparams
-                            .map(doc -> addProps(params, doc))
-                            .forEach(doc -> {
-                                var updateQuery = new BsonDocument("_id", doc.remove("_id"));
+                                .map(doc -> doc.asDocument())
+                                // add props specified via keys and values qparams
+                                .map(doc -> addProps(params, doc))
+                                .forEach(doc -> {
+                                    var updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
-                                // for upate import, take _filter property into account
-                                // for instance, a filter allows to use $ positional array operator
-                                var _filter = doc.remove(FILTER_PROPERTY);
+                                    // for upate import, take _filter property into account
+                                    // for instance, a filter allows to use $ positional array operator
+                                    var _filter = doc.remove(FILTER_PROPERTY);
 
-                                if (_filter != null && _filter.isDocument()) {
-                                    updateQuery.putAll(_filter.asDocument());
-                                }
-                                if (params.upsert) {
-                                    mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
-                                } else {
-                                    mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_NO_UPSERT_OPS);
-                                }
-                            });
+                                    if (_filter != null && _filter.isDocument()) {
+                                        updateQuery.putAll(_filter.asDocument());
+                                    }
+                                    if (params.upsert) {
+                                        mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
+                                    } else {
+                                        mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_NO_UPSERT_OPS);
+                                    }
+                                });
                     } else if (params.update && params.upsert) {
                         documents.stream()
-                            .map(doc -> doc.asDocument())
-                            // add props specified via keys and values qparams
-                            .map(doc -> addProps(params, doc))
-                            .forEach(doc -> {
-                                var updateQuery = new BsonDocument("_id", doc.remove("_id"));
+                                .map(doc -> doc.asDocument())
+                                // add props specified via keys and values qparams
+                                .map(doc -> addProps(params, doc))
+                                .forEach(doc -> {
+                                    var updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
-                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
-                            });
+                                    mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
+                                });
                     } else {
                         var docList = documents.stream()
-                            .map(doc -> doc.asDocument())
-                            // add props specified via keys and values qparams
-                            .map(doc -> addProps(params, doc))
-                            .collect(Collectors.toList());
+                                .map(doc -> doc.asDocument())
+                                // add props specified via keys and values qparams
+                                .map(doc -> addProps(params, doc))
+                                .collect(Collectors.toList());
 
                         mcoll.insertMany(docList);
                     }

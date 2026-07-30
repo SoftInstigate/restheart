@@ -38,23 +38,27 @@ public class SseServiceSecurityTest {
 
     @RegisterPlugin(name = "secureSseRecord", description = "secured", defaultURI = "/sse/s", secure = true)
     static class SecureSseService implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     @RegisterPlugin(name = "openSseRecord", description = "open", defaultURI = "/sse/o", secure = false)
     static class OpenSseService implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     private static PluginRecord<SseService> record(SseService svc, boolean secure) {
         return new PluginRecord<>(
-            svc.getClass().getAnnotation(RegisterPlugin.class).name(),
-            svc.getClass().getAnnotation(RegisterPlugin.class).description(),
-            secure,
-            true,
-            svc.getClass().getName(),
-            svc,
-            null
+                svc.getClass().getAnnotation(RegisterPlugin.class).name(),
+                svc.getClass().getAnnotation(RegisterPlugin.class).description(),
+                secure,
+                true,
+                svc.getClass().getName(),
+                svc,
+                null
         );
     }
 
@@ -74,8 +78,8 @@ public class SseServiceSecurityTest {
     public void confArgsOverrideAnnotationSecureFlag() {
         // config can override the annotation; simulate via PluginRecord.isSecure(boolean, Map)
         assertTrue(PluginRecord.isSecure(false, java.util.Map.of("secured", true)),
-            "config 'secured:true' must override annotation secure=false");
+                "config 'secured:true' must override annotation secure=false");
         assertFalse(PluginRecord.isSecure(true, java.util.Map.of("secured", false)),
-            "config 'secured:false' must override annotation secure=true");
+                "config 'secured:false' must override annotation secure=true");
     }
 }

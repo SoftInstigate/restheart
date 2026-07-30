@@ -50,8 +50,8 @@ class AggregationResultRepresentationFactory
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
-            BsonArray embeddedData,
-            long size)
+                                      BsonArray embeddedData,
+                                      long size)
             throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
 
@@ -76,7 +76,7 @@ class AggregationResultRepresentationFactory
     }
 
     private void addEmbeddedData(BsonArray embeddedData,
-            final Resource rep)
+                                 final Resource rep)
             throws IllegalQueryParameterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -90,13 +90,13 @@ class AggregationResultRepresentationFactory
     }
 
     private void addLinkTemplates(final Resource rep,
-            final String requestPath) {
+                                  final String requestPath) {
         rep.addLink(new Link("rh:collection",
                 MongoURLUtils.getParentPath(MongoURLUtils.getParentPath(requestPath))));
     }
 
     private void embeddedDocuments(BsonArray embeddedData,
-            Resource rep) throws IllegalQueryParameterException {
+                                   Resource rep) throws IllegalQueryParameterException {
         embeddedData.stream()
                 .filter(d -> d != null)
                 .filter(d -> d.isDocument())

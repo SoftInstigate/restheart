@@ -89,14 +89,14 @@ public class MetadataCachesSingleton {
             this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> dbs.getDatabaseProperties(Optional.empty(), Optional.empty(), key));
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
-                key -> {
-                    var dbNameAndCollectionName = key.split(SEPARATOR);
-                    return this.dbs.getCollectionProperties(
-                        Optional.empty(), // no client session
-                        Optional.empty(), // no client session
-                        dbNameAndCollectionName[0],
-                        dbNameAndCollectionName[1]);
-                });
+                    key -> {
+                        var dbNameAndCollectionName = key.split(SEPARATOR);
+                        return this.dbs.getCollectionProperties(
+                                Optional.empty(), // no client session
+                                Optional.empty(), // no client session
+                                dbNameAndCollectionName[0],
+                                dbNameAndCollectionName[1]);
+                    });
         }
     }
 

@@ -66,84 +66,84 @@ import static org.restheart.configuration.Utils.getOrDefault;
  * @since 1.0
  */
 public record CoreModule(String name,
-        String pluginsDirectory,
-        List<String> pluginsPackages,
-        boolean pluginsScanningVerbose,
-        String baseUrl,
-        int ioThreads,
-        int workersSchedulerParallelism,
-        int workersSchedulerMaxPoolSize,
-        boolean buffersPooling,
-        int bufferSize,
-        boolean directBuffers,
-        boolean forceGzipEncoding,
-        boolean allowUnescapedCharsInUrl) {
+                         String pluginsDirectory,
+                         List<String> pluginsPackages,
+                         boolean pluginsScanningVerbose,
+                         String baseUrl,
+                         int ioThreads,
+                         int workersSchedulerParallelism,
+                         int workersSchedulerMaxPoolSize,
+                         boolean buffersPooling,
+                         int bufferSize,
+                         boolean directBuffers,
+                         boolean forceGzipEncoding,
+                         boolean allowUnescapedCharsInUrl) {
 
     /**
      * Configuration key for the core section in the configuration file.
      */
     public static final String CORE_KEY = "core";
-    
+
     /**
      * Configuration key for the instance name.
      */
     public static final String INSTANCE_NAME_KEY = "name";
-    
+
     /**
      * Configuration key for the plugins directory path.
      */
     public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
-    
+
     /**
      * Configuration key for the list of packages to scan for plugins.
      */
     public static final String PLUGINS_PACKAGES_KEY = "plugins-packages";
-    
+
     /**
      * Configuration key for enabling verbose plugin scanning output.
      */
     public static final String PLUGINS_SCANNING_VERBOSE_KEY = "plugins-scanning-verbose";
-    
+
     /**
      * Configuration key for the base URL of this instance.
      */
     public static final String BASE_URL_KEY = "base-url";
-    
+
     /**
      * Configuration key for the number of I/O threads.
      */
     public static final String IO_THREADS_KEY = "io-threads";
-    
+
     /**
      * Configuration key for workers scheduler parallelism level.
      */
-    public static final String WORKERS_SCHEDULER_PARALLELISM_KEY ="workers-scheduler-parallelism";
-    
+    public static final String WORKERS_SCHEDULER_PARALLELISM_KEY = "workers-scheduler-parallelism";
+
     /**
      * Configuration key for workers scheduler maximum pool size.
      */
     public static final String WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY = "workers-scheduler-max-pool-size";
-    
+
     /**
      * Configuration key for enabling buffer pooling.
      */
     public static final String BUFFERS_POOLING_KEY = "buffers-pooling";
-    
+
     /**
      * Configuration key for the I/O buffer size in bytes.
      */
     public static final String BUFFER_SIZE_KEY = "buffer-size";
-    
+
     /**
      * Configuration key for enabling direct (off-heap) buffers.
      */
     public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
-    
+
     /**
      * Configuration key for forcing GZIP encoding on responses.
      */
     public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
-    
+
     /**
      * Configuration key for allowing unescaped characters in URLs.
      */
@@ -179,21 +179,21 @@ public record CoreModule(String name,
      */
     public CoreModule(Map<String, Object> conf, boolean silent) {
         this(getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_CORE_MODULE.name(), silent),
-            getOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, DEFAULT_CORE_MODULE.pluginsDirectory(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, PLUGINS_PACKAGES_KEY, DEFAULT_CORE_MODULE.pluginsPackages(), true),
-            getOrDefault(conf, PLUGINS_SCANNING_VERBOSE_KEY, false, true),
-            getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
-            getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
-            getOrDefault(conf, WORKERS_SCHEDULER_PARALLELISM_KEY, DEFAULT_CORE_MODULE.workersSchedulerParallelism(), silent),
-            getOrDefault(conf, WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY, DEFAULT_CORE_MODULE.workersSchedulerMaxPoolSize(), silent),
-            getOrDefault(conf, BUFFERS_POOLING_KEY, DEFAULT_CORE_MODULE.buffersPooling(), silent),
-            getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
-            getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
-            // following is optional, so get it always in silent mode
-            getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
+                getOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, DEFAULT_CORE_MODULE.pluginsDirectory(), silent),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, PLUGINS_PACKAGES_KEY, DEFAULT_CORE_MODULE.pluginsPackages(), true),
+                getOrDefault(conf, PLUGINS_SCANNING_VERBOSE_KEY, false, true),
+                getOrDefault(conf, BASE_URL_KEY, DEFAULT_CORE_MODULE.baseUrl(), true),
+                getOrDefault(conf, IO_THREADS_KEY, DEFAULT_CORE_MODULE.ioThreads(), silent),
+                getOrDefault(conf, WORKERS_SCHEDULER_PARALLELISM_KEY, DEFAULT_CORE_MODULE.workersSchedulerParallelism(), silent),
+                getOrDefault(conf, WORKERS_SCHEDULER_MAX_POOL_SIZE_KEY, DEFAULT_CORE_MODULE.workersSchedulerMaxPoolSize(), silent),
+                getOrDefault(conf, BUFFERS_POOLING_KEY, DEFAULT_CORE_MODULE.buffersPooling(), silent),
+                getOrDefault(conf, BUFFER_SIZE_KEY, DEFAULT_CORE_MODULE.bufferSize(), silent),
+                getOrDefault(conf, DIRECT_BUFFERS_KEY, DEFAULT_CORE_MODULE.directBuffers(), silent),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, DEFAULT_CORE_MODULE.forceGzipEncoding(), true),
+                // following is optional, so get it always in silent mode
+                getOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_ULR_KEY, DEFAULT_CORE_MODULE.allowUnescapedCharsInUrl(), true));
     }
 
     /**

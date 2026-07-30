@@ -126,7 +126,7 @@ class MongoMountResolverImplTest {
             assertFalse(rootContext.canDeleteDatabase(), "Cannot delete the mounted database");
             assertFalse(rootContext.canDeleteCollection(), "No collection to delete");
             assertEquals("/restheart", rootContext.mongoResourcePath(),
-                "mongoResourcePath should be /database for database mount at root");
+                    "mongoResourcePath should be /database for database mount at root");
 
             // Path "/orders" now properly matches mount at "/" after fix
             ResolvedContext ordersContext = resolver.resolve("/orders");
@@ -138,7 +138,7 @@ class MongoMountResolverImplTest {
             assertFalse(ordersContext.canDeleteDatabase(), "Cannot delete mounted database");
             assertTrue(ordersContext.canDeleteCollection(), "Can delete this collection");
             assertEquals("/restheart/orders", ordersContext.mongoResourcePath(),
-                "mongoResourcePath should be /database/collection");
+                    "mongoResourcePath should be /database/collection");
         }
 
         @Test
@@ -155,7 +155,7 @@ class MongoMountResolverImplTest {
             assertEquals("testdb", collContext.database());
             assertEquals("docs", collContext.collection());
             assertEquals("/testdb/docs", collContext.mongoResourcePath(),
-                "mongoResourcePath should include database name");
+                    "mongoResourcePath should include database name");
 
             // Document level: /docs/special-doc
             ResolvedContext docContext = resolver.resolve("/docs/special-doc");
@@ -163,7 +163,7 @@ class MongoMountResolverImplTest {
             assertEquals("testdb", docContext.database());
             assertEquals("docs", docContext.collection());
             assertEquals("/testdb/docs/special-doc", docContext.mongoResourcePath(),
-                "mongoResourcePath should include database/collection/documentId");
+                    "mongoResourcePath should include database/collection/documentId");
         }
     }
 
@@ -188,7 +188,7 @@ class MongoMountResolverImplTest {
             assertFalse(context.canDeleteDatabase(), CANNOT_DELETE_DATABASE_FROM_COLLECTION_VIEW);
             assertTrue(context.canDeleteCollection(), "Can delete collections");
             assertEquals("/mydb/orders", context.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database/collection, not /api/orders");
+                    "mongoResourcePath should be canonical /database/collection, not /api/orders");
         }
 
         @Test
@@ -205,7 +205,7 @@ class MongoMountResolverImplTest {
             assertEquals("mydb", docContext.database());
             assertEquals(ORDERS, docContext.collection());
             assertEquals("/mydb/orders/order123", docContext.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database/collection/documentId");
+                    "mongoResourcePath should be canonical /database/collection/documentId");
         }
 
         @Test
@@ -225,7 +225,7 @@ class MongoMountResolverImplTest {
             assertFalse(context.canDeleteDatabase(), "Cannot delete mounted database");
             assertFalse(context.canDeleteCollection());
             assertEquals("/mydb", context.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database, not mount URI");
+                    "mongoResourcePath should be canonical /database, not mount URI");
         }
     }
 
@@ -250,7 +250,7 @@ class MongoMountResolverImplTest {
             assertFalse(context.canDeleteDatabase(), "Cannot delete database");
             assertFalse(context.canDeleteCollection(), "Cannot delete directly mounted collection");
             assertEquals("/mydb/mycollection", context.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database/collection");
+                    "mongoResourcePath should be canonical /database/collection");
         }
     }
 
@@ -439,12 +439,12 @@ class MongoMountResolverImplTest {
             ResolvedContext v1 = resolver.resolve("/api/v1/orders");
             assertEquals("api_v1", v1.database());
             assertEquals("/api_v1/orders", v1.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database/collection");
+                    "mongoResourcePath should be canonical /database/collection");
 
             ResolvedContext v2 = resolver.resolve("/api/v2/orders");
             assertEquals("api_v2", v2.database());
             assertEquals("/api_v2/orders", v2.mongoResourcePath(),
-                "mongoResourcePath should be canonical /database/collection");
+                    "mongoResourcePath should be canonical /database/collection");
         }
 
         @Test

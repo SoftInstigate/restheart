@@ -75,10 +75,10 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
         var requestPath = exchange.getRequestPath();
         var requestMethod = exchange.getRequestMethod().toString();
         var authenticateStartTime = System.currentTimeMillis();
-        
+
         RequestPhaseContext.setPhase(Phase.ITEM);
         LOGGER.debug("AUTH: {} ({})", mechanismName, mechanismClass);
-            
+
         try {
             var outcome = wrapped.authenticate(exchange, securityContext);
             var authenticateDuration = System.currentTimeMillis() - authenticateStartTime;
@@ -91,8 +91,8 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
                     return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                 case AUTHENTICATED:
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
-                    LOGGER.debug("✓ AUTHENTICATED as '{}' ({}ms)", 
-                        account.getPrincipal().getName(), authenticateDuration);
+                    LOGGER.debug("✓ AUTHENTICATED as '{}' ({}ms)",
+                            account.getPrincipal().getName(), authenticateDuration);
                     return outcome;
                 case NOT_ATTEMPTED:
                     RequestPhaseContext.setPhase(Phase.SUBITEM);
@@ -104,8 +104,8 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
         } catch (Exception ex) {
             var authenticateDuration = System.currentTimeMillis() - authenticateStartTime;
             RequestPhaseContext.setPhase(Phase.SUBITEM);
-            LOGGER.error("Error in authentication mechanism {} ({}) for {} {} after {}ms", 
-                mechanismName, mechanismClass, requestMethod, requestPath, authenticateDuration, ex);
+            LOGGER.error("Error in authentication mechanism {} ({}) for {} {} after {}ms",
+                    mechanismName, mechanismClass, requestMethod, requestPath, authenticateDuration, ex);
             throw ex;
         }
     }
@@ -123,8 +123,8 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
             return wrapped.sendChallenge(exchange, securityContext);
         } catch (Exception ex) {
             var challengeDuration = System.currentTimeMillis() - challengeStartTime;
-            LOGGER.error("Error sending challenge for mechanism {} ({}) for {} {} after {}ms", 
-                mechanismName, mechanismClass, requestMethod, requestPath, challengeDuration, ex);
+            LOGGER.error("Error sending challenge for mechanism {} ({}) for {} {} after {}ms",
+                    mechanismName, mechanismClass, requestMethod, requestPath, challengeDuration, ex);
             throw ex;
         }
     }

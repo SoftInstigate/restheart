@@ -332,10 +332,10 @@ public class MongoResponse extends BsonResponse {
      * @return a BsonDocument containing the formatted error response
      */
     private BsonDocument getErrorContent(int code,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) {
+                                         String httpStatusText,
+                                         String message,
+                                         Throwable t,
+                                         boolean includeStackTrace) {
         var rep = new BsonDocument();
 
         rep.put("http status code", new BsonInt32(code));
@@ -353,7 +353,7 @@ public class MongoResponse extends BsonResponse {
                     rep.put("exception message", new BsonString("invalid json"));
                 } else if (t instanceof MongoCommandException mce) {
                     var errorDoc = document().put("code", mce.getResponse().get("code"))
-                        .put("codeName", mce.getResponse().get("codeName"));
+                            .put("codeName", mce.getResponse().get("codeName"));
 
                     var errmsg = mce.getResponse().get("errmsg");
 
@@ -362,7 +362,7 @@ public class MongoResponse extends BsonResponse {
                     // let truncate errmsg at 100chars
                     if (errmsg != null && errmsg.isString()) {
                         var _errmsg = errmsg.asString().getValue();
-                        _errmsg = _errmsg.length() <= 100 ? _errmsg: _errmsg.substring(0, 100) + "...";
+                        _errmsg = _errmsg.length() <= 100 ? _errmsg : _errmsg.substring(0, 100) + "...";
                         errorDoc.put("errmsg", _errmsg);
                     }
 
@@ -490,27 +490,27 @@ public class MongoResponse extends BsonResponse {
         if (oldData != null) {
             // document was updated, restore old one
             restoreDocument(
-                request.getClientSession(),
-                coll,
-                oldData.get("_id"),
-                request.getShardKey(),
-                oldData,
-                newEtag,
-                "_etag");
+                    request.getClientSession(),
+                    coll,
+                    oldData.get("_id"),
+                    request.getShardKey(),
+                    oldData,
+                    newEtag,
+                    "_etag");
 
             // add to response old etag
             if (oldData.get("$set") != null
-                && oldData.get("$set").isDocument()
-                && oldData.get("$set")
-                        .asDocument()
-                        .get("_etag") != null) {
+                    && oldData.get("$set").isDocument()
+                    && oldData.get("$set")
+                    .asDocument()
+                    .get("_etag") != null) {
                 response.getHeaders().put(Headers.ETAG,
-                    oldData.get("$set")
-                            .asDocument()
-                            .get("_etag")
-                            .asObjectId()
-                            .getValue()
-                            .toString());
+                        oldData.get("$set")
+                                .asDocument()
+                                .get("_etag")
+                                .asObjectId()
+                                .getValue()
+                                .toString());
             } else {
                 response.getHeaders().remove(Headers.ETAG);
             }
@@ -545,13 +545,13 @@ public class MongoResponse extends BsonResponse {
      * @return true if the document was successfully restored, false otherwise
      */
     private static boolean restoreDocument(
-        final ClientSession cs,
-        final MongoCollection<BsonDocument> coll,
-        final Object documentId,
-        final BsonDocument shardKeys,
-        final BsonDocument data,
-        final Object etag,
-        final String etagLocation) {
+            final ClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final Object etag,
+            final String etagLocation) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
@@ -569,8 +569,8 @@ public class MongoResponse extends BsonResponse {
         }
 
         var result = cs == null
-            ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
-            : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
+                ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
+                : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
 
         return result.getModifiedCount() == 1;
     }

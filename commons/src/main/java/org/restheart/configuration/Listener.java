@@ -64,22 +64,22 @@ public record Listener(boolean enabled, String host, int port) {
      * Configuration key for the HTTP listener section.
      */
     public static final String HTTP_LISTENER_KEY = "http-listener";
-    
+
     /**
      * Configuration key for the AJP listener section.
      */
     public static final String AJP_LISTENER_KEY = "ajp-listener";
-    
+
     /**
      * Configuration key for enabling/disabling the listener.
      */
     public static final String ENABLED_KEY = "enabled";
-    
+
     /**
      * Configuration key for the host/IP binding.
      */
     public static final String HOST_KEY = "host";
-    
+
     /**
      * Configuration key for the port number.
      */
@@ -100,7 +100,7 @@ public record Listener(boolean enabled, String host, int port) {
      */
     public Listener(Map<String, Object> conf, String listenerKey, Listener defaultValue, boolean silent) {
         this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent));
+                findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
+                findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent));
     }
 }

@@ -85,7 +85,7 @@ public class SessionsUtils {
 
             getOperationExecutor.setAccessible(true);
             return (OperationExecutor) getOperationExecutor.invoke(mclient);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new RuntimeException("could not instantiate OperationExecutor", t);
         }
     }

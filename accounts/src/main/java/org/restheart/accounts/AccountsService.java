@@ -47,10 +47,10 @@ import org.slf4j.LoggerFactory;
  * and access the active provider via {@link #getMembershipProvider()}.
  */
 @RegisterPlugin(
-    name             = "accountsService",
-    description      = "Manages the active MembershipProvider for restheart-accounts",
-    enabledByDefault = false,
-    priority         = 25   // after accountsConfig (priority 20) so conf is ready at @OnInit
+        name = "accountsService",
+        description = "Manages the active MembershipProvider for restheart-accounts",
+        enabledByDefault = false,
+        priority = 25   // after accountsConfig (priority 20) so conf is ready at @OnInit
 )
 public class AccountsService implements Provider<AccountsService>, MembershipProviderRegistry {
 
@@ -121,12 +121,12 @@ public class AccountsService implements Provider<AccountsService>, MembershipPro
     public MembershipProvider getMembershipProvider(ServiceRequest<?> req) {
         if (membershipProvider instanceof DefaultMembershipProvider) {
             return new DefaultMembershipProvider(
-                mclient,
-                RequestOverrides.db(req, conf),
-                RequestOverrides.usersCollection(req, conf),
-                RequestOverrides.ownershipRole(req, conf),
-                RequestOverrides.defaultRole(req, conf),
-                jsonSchemas
+                    mclient,
+                    RequestOverrides.db(req, conf),
+                    RequestOverrides.usersCollection(req, conf),
+                    RequestOverrides.ownershipRole(req, conf),
+                    RequestOverrides.defaultRole(req, conf),
+                    jsonSchemas
             );
         }
         return membershipProvider;

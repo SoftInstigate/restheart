@@ -54,10 +54,10 @@ public class DirectoryWatcher implements Runnable {
 
     /** The watch service used to monitor file system events. */
     private final WatchService watchService;
-    
+
     /** Mapping of watch keys to their corresponding directory paths. */
     private final Map<WatchKey, Path> keys;
-    
+
     /** Callback function executed when file system events occur. */
     private final BiConsumer<Path, Kind<Path>> onEvent;
 

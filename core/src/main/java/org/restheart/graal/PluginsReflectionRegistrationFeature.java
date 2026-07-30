@@ -29,7 +29,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
@@ -53,9 +52,9 @@ public class PluginsReflectionRegistrationFeature implements Feature {
         }
 
         PluginsScanner.allPluginsClassNames().stream()
-            .map(this::clazz)
-            .filter(Objects::nonNull)
-            .forEach(this::registerAll);
+                .map(this::clazz)
+                .filter(Objects::nonNull)
+                .forEach(this::registerAll);
     }
 
     private Class<?> clazz(String clazzName) {

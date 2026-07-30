@@ -41,9 +41,9 @@ import com.mongodb.MongoException;
 /**
  *
  * Injects the db properties into the MongoRequest
-
- It is also responsible of sending NOT_FOUND in case of requests involving not
- existing dbs (that are not PUT)
+ 
+  It is also responsible of sending NOT_FOUND in case of requests involving not
+  existing dbs (that are not PUT)
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -87,7 +87,7 @@ public class DbPropsInjector implements MongoInterceptor {
                 } else {
                     dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
                 }
-            } catch(MongoException mce) {
+            } catch (MongoException mce) {
                 int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
                 if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
@@ -107,9 +107,9 @@ public class DbPropsInjector implements MongoInterceptor {
 
             // if dbProps is null, the db does not exist
             if (dbProps == null
-                && !(request.isDb()
-                && request.isPut())
-                && !request.isRoot()) {
+                    && !(request.isDb()
+                    && request.isPut())
+                    && !request.isRoot()) {
                 response.setInError(HttpStatus.SC_NOT_FOUND, "Db '" + dbName + "' does not exist");
                 return;
             }
@@ -126,13 +126,13 @@ public class DbPropsInjector implements MongoInterceptor {
     @SuppressWarnings("deprecation")
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return this.dbs != null
-            && request.isHandledBy("mongo")
-            && !(request.isInError()
-            || request.isSessions()
-            || request.isSession()
-            || request.isTxn()
-            || request.isTxns()
-            || request.isRoot()
-            || request.isRootSize());
+                && request.isHandledBy("mongo")
+                && !(request.isInError()
+                || request.isSessions()
+                || request.isSession()
+                || request.isTxn()
+                || request.isTxns()
+                || request.isRoot()
+                || request.isRootSize());
     }
 }

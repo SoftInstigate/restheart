@@ -75,7 +75,7 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * Also used between individual labels in the serialized string.
      */
     public static final String SEPARATOR = ".";
-    
+
     /**
      * Regular expression for splitting on the separator character.
      * Since '.' is a special character in regex, it needs to be escaped.
@@ -131,18 +131,18 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * @see MetricLabel#from(String)
      */
     public static MetricNameAndLabels from(String raw) {
-		var idx = raw.indexOf(".");
+        var idx = raw.indexOf(".");
 
-		if (idx < 0) {
-			throw new IllegalArgumentException(" Wrong raw format, it does not contain the . separator.");
-		}
+        if (idx < 0) {
+            throw new IllegalArgumentException(" Wrong raw format, it does not contain the . separator.");
+        }
 
         var name = raw.substring(0, idx);
 
         var labels = Arrays.stream(raw.split(SEPARATOR_REGEX))
-            .skip(1)
-            .map(MetricLabel::from)
-            .collect(Collectors.toList());
+                .skip(1)
+                .map(MetricLabel::from)
+                .collect(Collectors.toList());
 
         return new MetricNameAndLabels(name, labels);
     }
@@ -171,7 +171,7 @@ public record MetricNameAndLabels(String name, List<MetricLabel> labels) {
      * @return the string representation in format "name.label1=value1.label2=value2..."
      */
     public String toString() {
-		return name + SEPARATOR + labels.stream().map(MetricLabel::toString).collect(Collectors.joining(SEPARATOR));
+        return name + SEPARATOR + labels.stream().map(MetricLabel::toString).collect(Collectors.joining(SEPARATOR));
     }
 
     /**

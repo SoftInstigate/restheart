@@ -114,7 +114,7 @@ abstract class AbstractRepresentationFactory {
                 || exchange.getQueryString().isEmpty()
                 ? ""
                 : "?" + MongoURLUtils.decodeQueryString(
-                        exchange.getQueryString());
+                exchange.getQueryString());
 
         Resource rep;
 

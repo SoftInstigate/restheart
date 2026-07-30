@@ -23,7 +23,6 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
@@ -53,19 +52,19 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
      * @param config
      */
     public JSInterceptor(String name,
-        String pluginClass,
-        String description,
-        InterceptPoint interceptPoint,
-        String modulesReplacements,
-        Source handleSource,
-        Source resolveSource,
-        Optional<MongoClient> mclient,
-        Configuration config,
-        Map<String, String> contextOptions) {
-            super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
-            this.pluginClass = pluginClass;
-            this.interceptPoint = interceptPoint;
-            this.resolveSource = resolveSource;
+                         String pluginClass,
+                         String description,
+                         InterceptPoint interceptPoint,
+                         String modulesReplacements,
+                         Source handleSource,
+                         Source resolveSource,
+                         Optional<MongoClient> mclient,
+                         Configuration config,
+                         Map<String, String> contextOptions) {
+        super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
+        this.pluginClass = pluginClass;
+        this.interceptPoint = interceptPoint;
+        this.resolveSource = resolveSource;
     }
 
     public InterceptPoint getInterceptPoint() {
@@ -91,7 +90,7 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
             return contextQueue.executeWithContext(ctx -> {
                 var resolveFunction = org.restheart.polyglot.ContextQueue.cacheResolveFunction(ctx, this.resolveSource);
                 Value ret = resolveFunction.execute(request);
-                
+
                 if (ret != null && ret.isBoolean()) {
                     return ret.asBoolean();
                 } else {
@@ -100,7 +99,7 @@ public class JSInterceptor<R extends Request<?>, S extends Response<?>> extends 
                     return false;
                 }
             });
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOGGER.error("error on interceptor {} resolve()", name(), e);
             request.setInError(true);
             return false;

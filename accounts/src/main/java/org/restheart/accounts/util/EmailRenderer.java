@@ -72,7 +72,8 @@ public final class EmailRenderer {
             "<body[^>]*>([\\s\\S]*?)</body>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    private EmailRenderer() {}
+    private EmailRenderer() {
+    }
 
     /**
      * Result of rendering a template.
@@ -81,7 +82,8 @@ public final class EmailRenderer {
      * @param htmlBody the HTML body (from the {@code <body>} element, or the full
      *                 template if no {@code <body>} tag is present)
      */
-    public record RenderedEmail(String subject, String htmlBody) {}
+    public record RenderedEmail(String subject, String htmlBody) {
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Public API
@@ -128,7 +130,7 @@ public final class EmailRenderer {
     static String filterLang(String html, String lang) {
         return LANG_SPAN.matcher(html).replaceAll(mr -> {
             var spanLang = mr.group(1).toLowerCase();
-            var content  = mr.group(2);
+            var content = mr.group(2);
             // Escape $ and \ in content to prevent replaceAll misinterpretation
             return spanLang.equalsIgnoreCase(lang)
                     ? content.replace("\\", "\\\\").replace("$", "\\$")
@@ -163,8 +165,8 @@ public final class EmailRenderer {
     private static String chooseLang(String template, String requestedLang) {
         if (requestedLang == null || requestedLang.isBlank()) return "en";
         var lc = requestedLang.toLowerCase();
-        if (hasLang(template, lc))    return lc;
-        if (hasLang(template, "en"))  return "en";
+        if (hasLang(template, lc)) return lc;
+        if (hasLang(template, "en")) return "en";
         return lc; // template has no lang spans — lang-neutral content
     }
 

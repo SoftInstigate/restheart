@@ -198,7 +198,7 @@ public interface Provider<T> extends ConfigurablePlugin {
      */
     default Type type() {
         return new TypeToken<T>(getClass()) {
-			private static final long serialVersionUID = 1363463867743712234L;
+            private static final long serialVersionUID = 1363463867743712234L;
         }.getType();
     }
 
@@ -224,7 +224,7 @@ public interface Provider<T> extends ConfigurablePlugin {
      */
     default Class<? super T> rawType() {
         return new TypeToken<T>(getClass()) {
-			private static final long serialVersionUID = 1363463867743712234L;
+            private static final long serialVersionUID = 1363463867743712234L;
         }.getRawType();
     }
 }

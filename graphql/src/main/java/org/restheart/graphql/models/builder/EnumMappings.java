@@ -40,9 +40,9 @@ class EnumMappings extends Mappings {
         var ret = new HashMap<String, Map<String, Object>>();
 
         var wrongEnumMapping = doc.keySet().stream()
-            .filter(key -> isEnum(key, typeDefinitionRegistry))
-            .filter(key -> !doc.get(key).isDocument())
-            .findFirst();
+                .filter(key -> isEnum(key, typeDefinitionRegistry))
+                .filter(key -> !doc.get(key).isDocument())
+                .findFirst();
 
         if (wrongEnumMapping.isPresent()) {
             var wrongEnum = wrongEnumMapping.get();
@@ -52,15 +52,15 @@ class EnumMappings extends Mappings {
         // enums
         // enums with mappings => use given mappings
         doc.keySet().stream()
-            .filter(key -> doc.get(key).isDocument())
-            .filter(key -> isEnum(key, typeDefinitionRegistry))
-            .forEach(enumKey -> ret.put(enumKey, enumValuesMappings(enumKey, (EnumTypeDefinition) typeDefinitionRegistry.types().get(enumKey), doc.getDocument(enumKey))));
+                .filter(key -> doc.get(key).isDocument())
+                .filter(key -> isEnum(key, typeDefinitionRegistry))
+                .forEach(enumKey -> ret.put(enumKey, enumValuesMappings(enumKey, (EnumTypeDefinition) typeDefinitionRegistry.types().get(enumKey), doc.getDocument(enumKey))));
 
         // enums with no mappings => use default mappings
         typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof EnumTypeDefinition)
-            .filter(e -> !doc.containsKey(e.getKey())) // mapping doc does not contain a document for the enum
-            .forEach(e -> ret.put(e.getKey(), enumValuesMappings(e.getKey(), (EnumTypeDefinition) e.getValue(), new BsonDocument())));
+                .filter(e -> e.getValue() instanceof EnumTypeDefinition)
+                .filter(e -> !doc.containsKey(e.getKey())) // mapping doc does not contain a document for the enum
+                .forEach(e -> ret.put(e.getKey(), enumValuesMappings(e.getKey(), (EnumTypeDefinition) e.getValue(), new BsonDocument())));
         // end - enums
 
         return ret;

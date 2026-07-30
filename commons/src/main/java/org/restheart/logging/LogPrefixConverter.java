@@ -21,7 +21,6 @@
 package org.restheart.logging;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import org.restheart.logging.RequestPhaseContext.Phase;
@@ -32,7 +31,7 @@ import org.restheart.logging.RequestPhaseContext.Phase;
  *
  * Usage in logback.xml:
  * <conversionRule conversionWord="prefix" class="org.restheart.utils.LogPrefixConverter" />
- <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}</pattern>
+  <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%-45logger{45} %prefix%msg%n%throwable{short}</pattern>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -98,8 +97,8 @@ public class LogPrefixConverter extends ClassicConverter {
      */
     private boolean shouldUseStandalonePrefix(ILoggingEvent event, Phase phase) {
         // Only applies to phases that are part of a group
-        if (phase != Phase.ITEM && phase != Phase.ITEM_LAST && 
-            phase != Phase.SUBITEM && phase != Phase.INFO) {
+        if (phase != Phase.ITEM && phase != Phase.ITEM_LAST &&
+                phase != Phase.SUBITEM && phase != Phase.INFO) {
             return false;
         }
 

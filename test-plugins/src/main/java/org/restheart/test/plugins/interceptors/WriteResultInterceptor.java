@@ -47,12 +47,12 @@ public class WriteResultInterceptor implements MongoInterceptor {
         }
 
         resp.append("oldData", response.getDbOperationResult().getOldData() == null
-            ? new BsonNull()
-            : response.getDbOperationResult().getOldData());
+                ? new BsonNull()
+                : response.getDbOperationResult().getOldData());
 
         resp.append("newData", response.getDbOperationResult().getNewData() == null
-            ? new BsonNull()
-            : response.getDbOperationResult().getNewData());
+                ? new BsonNull()
+                : response.getDbOperationResult().getNewData());
     }
 
     @Override

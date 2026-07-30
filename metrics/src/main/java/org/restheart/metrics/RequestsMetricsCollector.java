@@ -29,7 +29,6 @@ import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.metrics.MetricsService.METRICS_REGISTRIES_PREFIX;
@@ -64,34 +63,34 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
         List<String> _exclude = argOrDefault(config, "exclude", new ArrayList<>());
 
         _include.stream().map(path -> {
-                try {
-                    var ret =  PathTemplate.create(path);
-                    LOGGER.debug("Add include path {}", ret.getTemplateString());
-                    return ret;
-                } catch(Throwable t) {
-                    LOGGER.warn("Wrong include path {}", path , t);
-                    return null;
-                }
-            })
-            .filter(pathTemplate -> pathTemplate != null)
-            .forEach(pathTemplate ->{
-                final var ptm = new PathTemplateMatcher<Boolean>();
-                ptm.add(pathTemplate, true);
-                this.include.add(ptm);
-            });
+            try {
+                var ret = PathTemplate.create(path);
+                LOGGER.debug("Add include path {}", ret.getTemplateString());
+                return ret;
+            } catch (Throwable t) {
+                LOGGER.warn("Wrong include path {}", path, t);
+                return null;
+            }
+        })
+                .filter(pathTemplate -> pathTemplate != null)
+                .forEach(pathTemplate -> {
+                    final var ptm = new PathTemplateMatcher<Boolean>();
+                    ptm.add(pathTemplate, true);
+                    this.include.add(ptm);
+                });
 
         _exclude.stream().map(path -> {
-                try {
-                    var ret =  PathTemplate.create(path);
-                    LOGGER.debug("Add exclude path {}", ret.getTemplateString());
-                    return ret;
-                } catch(Throwable t) {
-                    LOGGER.warn("Wrong exclude path {}", path , t);
-                    return null;
-                }
-            })
-            .filter(pathTemplate -> pathTemplate != null)
-            .forEach(pathTemplate -> this.exclude.add(pathTemplate, true));
+            try {
+                var ret = PathTemplate.create(path);
+                LOGGER.debug("Add exclude path {}", ret.getTemplateString());
+                return ret;
+            } catch (Throwable t) {
+                LOGGER.warn("Wrong exclude path {}", path, t);
+                return null;
+            }
+        })
+                .filter(pathTemplate -> pathTemplate != null)
+                .forEach(pathTemplate -> this.exclude.add(pathTemplate, true));
     }
 
     @Override
@@ -106,9 +105,9 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
             // uri /foo/bar
 
             final var matchedTemplates = this.include.stream()
-                .map(ptm -> ptm.match(uri))
-                .filter(pmr -> pmr != null)
-                .collect(Collectors.toList());
+                    .map(ptm -> ptm.match(uri))
+                    .filter(pmr -> pmr != null)
+                    .collect(Collectors.toList());
 
             LOGGER.debug("Matched path templates {}", matchedTemplates.stream().map(t -> t.getMatchedTemplate()).collect(Collectors.toList()));
 
@@ -117,7 +116,7 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
                     matchedTemplates.forEach(mt -> addMetrics(mt, startTime, request, response));
                     nextListener.proceed();
                 });
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 LOGGER.warn("Error adding metric collector to request {} {}", request.getMethod(), request.getPath(), t);
             }
         }
@@ -131,14 +130,14 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
         if (matchInclude) {
             var matchExclude = this.exclude.match(uri);
 
-             if (matchExclude != null && matchExclude.getValue()) {
+            if (matchExclude != null && matchExclude.getValue()) {
                 LOGGER.debug("Matched exclude path {}", matchExclude.getMatchedTemplate());
                 LOGGER.debug("Return false since matched exclude path {}", matchExclude.getMatchedTemplate());
                 return false;
-             }
+            }
 
-             LOGGER.debug("Return true since matched include paths");
-             return true;
+            LOGGER.debug("Return true since matched include paths");
+            return true;
         }
 
         LOGGER.debug("Return false since did't match any include path");
@@ -156,10 +155,10 @@ public class RequestsMetricsCollector implements WildcardInterceptor {
         var matchedTemplate = new MetricLabel("path_template", pathTemplate.getMatchedTemplate());
 
         var matchParams = pathTemplate.getParameters().entrySet().stream()
-            .filter(p -> !p.getKey().equals("*"))
-            .sorted()
-            .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
-            .collect(Collectors.toList());
+                .filter(p -> !p.getKey().equals("*"))
+                .sorted()
+                .map(param -> new MetricLabel("path_template_param_".concat(param.getKey()), param.getValue()))
+                .collect(Collectors.toList());
 
         var t1wp = new ArrayList<MetricLabel>();
         t1wp.addAll(MetricLabel.collect(method, matchedTemplate, status));

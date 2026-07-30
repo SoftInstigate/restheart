@@ -79,7 +79,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private final AggregationPipelineSecurityChecker securityChecker;
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
-    public static final AttachmentKey<JsonMode>     JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
+    public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
     /** Bound query-parameter variables for {@code notify_when} filtering, keyed by variable name. */
     public static final AttachmentKey<Map<String, String>> BOUND_VARS_EXCHANGE_KEY = AttachmentKey.create(Map.class);
 
@@ -164,7 +164,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
             } else {
                 response.setInError(HttpStatus.SC_BAD_REQUEST,
-                    "Change Stream requires WebSocket or SSE — send either 'Upgrade: websocket' or 'Accept: text/event-stream'");
+                        "Change Stream requires WebSocket or SSE — send either 'Upgrade: websocket' or 'Accept: text/event-stream'");
                 next(exchange);
             }
         } catch (QueryNotFoundException ex) {
@@ -182,7 +182,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 LOGGER.warn(error);
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
-        } catch(SecurityException se) {
+        } catch (SecurityException se) {
             var error = "Cannot open change stream: " + se.getMessage();
             LOGGER.warn(error, se);
             response.setInError(HttpStatus.SC_FORBIDDEN, error);
@@ -197,8 +197,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         var uhVals = exchange.getRequestHeaders().get(UPGRADE_HEADER_KEY);
 
         return chVals != null && uhVals != null &&
-            Arrays.stream(chVals.toArray()).anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
-            Arrays.stream(uhVals.toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
+                Arrays.stream(chVals.toArray()).anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
+                Arrays.stream(uhVals.toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
     private boolean isSseRequest(HttpServerExchange exchange) {
@@ -296,7 +296,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private static Map<String, String> extractBoundVars(HttpServerExchange exchange, NotifyWhenEvaluator evaluator) {
         if (evaluator == null) return Map.of();
         var varName = evaluator.getVarName();
-        var params  = exchange.getQueryParameters().get(varName);
+        var params = exchange.getQueryParameters().get(varName);
         if (params == null || params.isEmpty()) return Map.of();
         return Map.of(varName, params.getFirst());
     }
@@ -310,7 +310,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
      * created and started.
      */
     private synchronized void initChangeStreamWorker(HttpServerExchange exchange,
-            BsonDocument resumeToken, NotifyWhenEvaluator evaluator)
+                                                     BsonDocument resumeToken, NotifyWhenEvaluator evaluator)
             throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
         var csKey = new ChangeStreamWorkerKey(exchange);
         var request = MongoRequest.of(exchange);
@@ -320,11 +320,11 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         if (existingWorker$.isEmpty()) {
             var changeStreamWorker = new ChangeStreamWorker(csKey,
-                resolvedStages,
-                request.getDBName(),
-                request.getCollectionName(),
-                resumeToken,
-                evaluator);
+                    resolvedStages,
+                    request.getDBName(),
+                    request.getCollectionName(),
+                    resumeToken,
+                    evaluator);
 
             ChangeStreamWorkers.getInstance().put(changeStreamWorker);
             ThreadsUtils.virtualThreadsExecutor().execute(changeStreamWorker);

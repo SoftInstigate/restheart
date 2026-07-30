@@ -52,9 +52,9 @@ public class TxnsUtils {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-            .builder()
-            .causallyConsistent(options.isCausallyConsistent())
-            .build();
+                .builder()
+                .causallyConsistent(options.isCausallyConsistent())
+                .build();
 
         var cs = TxnClientSessionFactory.getInstance().createClientSession(sid, rsOps, cso);
 
@@ -97,10 +97,10 @@ public class TxnsUtils {
     public static void propagateSession(ClientSessionImpl cs) throws MongoQueryException {
         LOGGER.trace("*********** round trip to server to propagate session");
         MCLIENT.getDatabase("foo").getCollection("bar")
-            .find(cs)
-            .limit(1)
-            .projection(eq("_id", 1))
-            .first();
+                .find(cs)
+                .limit(1)
+                .projection(eq("_id", 1))
+                .first();
     }
 
     private static final String TXT_NUM_ERROR_MSG_PREFIX_STARTED = "because a newer transaction ";
@@ -173,6 +173,7 @@ public class TxnsUtils {
 
     private static final String TXN = "txnNumber";
     private static final String ON_SESSION = " on session ";
+
     /**
      * errorMsg can be the transaction number or:
      * - from MongoDB 8:   1 on session <uuid> - <hash> - - using txnRetryCounter 0
@@ -198,7 +199,7 @@ public class TxnsUtils {
             var t = errorMsg.substring(errorMsg.lastIndexOf(TXN) + TXN.length()).strip();
 
             if (t.indexOf(":") >= 0) {
-                t = t.substring(t.indexOf(":")+1);
+                t = t.substring(t.indexOf(":") + 1);
             }
 
             var closingBracket = t.indexOf("}");

@@ -339,71 +339,71 @@ public class BsonUtils {
 
         public ArrayBuilder add(final BsonValue... values) {
             Arrays.stream(values).map(value -> value == null
-                ? BsonNull.VALUE
-                : value).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : value).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final String... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonString(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonString(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Integer... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonInt32(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonInt32(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Long... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonInt64(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonInt64(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Float... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonDouble(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonDouble(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Decimal128... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonDecimal128(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonDecimal128(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Boolean... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonBoolean(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonBoolean(v)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Instant... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonDateTime(v.getEpochSecond() * 1000)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonDateTime(v.getEpochSecond() * 1000)).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final Date... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonDateTime(v.getTime())).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonDateTime(v.getTime())).forEach(array::add);
             return this;
         }
 
         public ArrayBuilder add(final ObjectId... values) {
             Arrays.stream(values).map(v -> v == null
-                ? BsonNull.VALUE
-                : new BsonObjectId(v)).forEach(array::add);
+                    ? BsonNull.VALUE
+                    : new BsonObjectId(v)).forEach(array::add);
             return this;
         }
 
@@ -435,8 +435,8 @@ public class BsonUtils {
                 }
 
                 return current.asDocument().containsKey(key)
-                    ? current.asDocument().get(key)
-                    : null;
+                        ? current.asDocument().get(key)
+                        : null;
             };
         }
 
@@ -449,8 +449,8 @@ public class BsonUtils {
                 final var array = current.asArray();
 
                 return index >= 0 && index < array.size()
-                    ? array.get(index)
-                    : null;
+                        ? array.get(index)
+                        : null;
             };
         }
 
@@ -528,8 +528,8 @@ public class BsonUtils {
             return transformArrayElements(json);
         } else if (json.isString()) {
             return json.asString().getValue().startsWith(ESCAPED_DOLLAR)
-                ? new BsonString(json.asString().getValue().substring(1))
-                : json;
+                    ? new BsonString(json.asString().getValue().substring(1))
+                    : json;
         } else {
             return json;
         }
@@ -569,7 +569,7 @@ public class BsonUtils {
      * with the corresponding keys
      */
     public static BsonValue escapeKeys(final BsonValue json, final boolean escapeDots,
-            final boolean dontEscapeDotsInRootKeys) {
+                                       final boolean dontEscapeDotsInRootKeys) {
         if (json == null) {
             return null;
         }
@@ -577,12 +577,12 @@ public class BsonUtils {
         if (json.isDocument()) {
             final var ret = new BsonDocument();
 
-            final boolean[] root = { true };
+            final boolean[] root = {true};
 
             json.asDocument().keySet().stream().forEach(k -> {
                 var newKey = k.startsWith(DOLLAR)
-                    ? "_" + k
-                    : k;
+                        ? "_" + k
+                        : k;
 
                 if (escapeDots && !(dontEscapeDotsInRootKeys && root[0])) {
                     newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
@@ -601,8 +601,8 @@ public class BsonUtils {
             return processArrayElements(json, escapeDots, dontEscapeDotsInRootKeys);
         } else if (json.isString()) {
             return json.asString().getValue().startsWith(DOLLAR)
-                ? new BsonString("_" + json.asString().getValue())
-                : json;
+                    ? new BsonString("_" + json.asString().getValue())
+                    : json;
         } else {
             return json;
         }
@@ -827,15 +827,15 @@ public class BsonUtils {
         }
 
         final var settings = mode != null
-            ? JsonWriterSettings.builder()
-                    .outputMode(mode)
-                    .indent(false)
-                    .build()
-            : JsonWriterSettings.builder()
-                    .indent(false)
-                    .dateTimeConverter(
-                            (final Long t, final StrictJsonWriter writer) -> writer.writeRaw("{\"$date\": " + t + " }"))
-                    .build();
+                ? JsonWriterSettings.builder()
+                .outputMode(mode)
+                .indent(false)
+                .build()
+                : JsonWriterSettings.builder()
+                .indent(false)
+                .dateTimeConverter(
+                        (final Long t, final StrictJsonWriter writer) -> writer.writeRaw("{\"$date\": " + t + " }"))
+                .build();
 
         if (bson.isDocument()) {
             return bson.asDocument().toJson(settings);
@@ -871,8 +871,8 @@ public class BsonUtils {
             return null;
         } else if (id.isString()) {
             return quote
-                ? "'" + id.asString().getValue() + "'"
-                : id.asString().getValue();
+                    ? "'" + id.asString().getValue() + "'"
+                    : id.asString().getValue();
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toString();
         } else {
@@ -922,7 +922,7 @@ public class BsonUtils {
      * @return true if json contains update operators
      */
     public static boolean containsUpdateOperators(final BsonValue json,
-            final boolean ignoreCurrentDate) {
+                                                  final boolean ignoreCurrentDate) {
         if (json == null) {
             return false;
         } else if (json.isDocument()) {
@@ -997,8 +997,8 @@ public class BsonUtils {
                 return false;
             } else {
                 return all
-                    ? array.stream().allMatch(doc -> containsKeys(doc, keys, all))
-                    : array.stream().anyMatch(doc -> containsKeys(doc, keys, all));
+                        ? array.stream().allMatch(doc -> containsKeys(doc, keys, all))
+                        : array.stream().anyMatch(doc -> containsKeys(doc, keys, all));
             }
         } else if (docOrArray.isDocument()) {
             return _containsKeys(docOrArray.asDocument(), keys, all);
@@ -1026,8 +1026,8 @@ public class BsonUtils {
      */
     public static BsonValue documentToBson(final Document document) {
         return document == null
-            ? BsonNull.VALUE
-            : document.toBsonDocument(BsonDocument.class, REGISTRY);
+                ? BsonNull.VALUE
+                : document.toBsonDocument(BsonDocument.class, REGISTRY);
     }
 
     /**
@@ -1079,8 +1079,8 @@ public class BsonUtils {
                 .findFirst();
 
         return f.isPresent()
-            ? f.get()
-            : Character.MIN_VALUE;
+                ? f.get()
+                : Character.MIN_VALUE;
     }
 
     private static BsonValue transformArrayElements(final BsonValue json) {
@@ -1107,8 +1107,8 @@ public class BsonUtils {
 
         json.asDocument().keySet().stream().forEach(k -> {
             var newKey = k.startsWith(ESCAPED_DOLLAR)
-                ? k.substring(1)
-                : k;
+                    ? k.substring(1)
+                    : k;
             newKey = newKey.replaceAll(ESCAPED_DOT, ".");
 
             final var value = json.asDocument().get(k);
@@ -1131,7 +1131,7 @@ public class BsonUtils {
     }
 
     private static void storeBsonValue(final boolean escapeDots, final BsonDocument ret, final String newKey,
-            final BsonValue value) {
+                                       final BsonValue value) {
         if (value.isDocument()) {
             ret.put(newKey, escapeKeys(value, escapeDots, false));
         } else if (value.isArray()) {
@@ -1144,7 +1144,7 @@ public class BsonUtils {
     }
 
     private static BsonValue processArrayElements(final BsonValue json, final boolean escapeDots,
-            final boolean dontEscapeDotsInRootKeys) {
+                                                  final boolean dontEscapeDotsInRootKeys) {
         final var ret = array();
 
         json.asArray().stream().forEach(value -> {
@@ -1270,7 +1270,7 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> _getPropsFromPath(final BsonValue json, final String[] pathTokens,
-            final int totalTokensLength) throws IllegalArgumentException {
+                                                               final int totalTokensLength) throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
         }
@@ -1315,8 +1315,8 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> retrieveNestedDocumentProperties(final BsonValue json,
-            final String[] pathTokens,
-            final int totalTokensLength) {
+                                                                              final String[] pathTokens,
+                                                                              final int totalTokensLength) {
         if (json.isDocument()) {
             // this might be the case of PATCHING an element array using the dot notation
             // e.g. object.array.2
@@ -1336,13 +1336,13 @@ public class BsonUtils {
     private static boolean checkAllKeysAreNumeric(final BsonValue json) {
         return json.asDocument().keySet()
                 .stream().allMatch(k -> {
-                    try {
-                        Integer.valueOf(k);
-                        return true;
-                    } catch (final NumberFormatException nfe) {
-                        return false;
-                    }
-                });
+            try {
+                Integer.valueOf(k);
+                return true;
+            } catch (final NumberFormatException nfe) {
+                return false;
+            }
+        });
     }
 
     private static List<Optional<BsonValue>> createOptionalListFromJson(final BsonValue json) {
@@ -1369,8 +1369,8 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> retrievePropertyFromDocument(final BsonValue json,
-            final String[] pathTokens,
-            final int totalTokensLength, final String pathToken) {
+                                                                          final String[] pathTokens,
+                                                                          final int totalTokensLength, final String pathToken) {
         if (json.isArray()) {
             throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token "
                     + pathToken + "; it should be '[*]'");
@@ -1387,12 +1387,12 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> retrievePropertiesFromArray(final BsonValue json,
-            final String[] pathTokens, final int totalTokensLength) {
+                                                                         final String[] pathTokens, final int totalTokensLength) {
         List<Optional<BsonValue>> nested;
         final var ret = new ArrayList<Optional<BsonValue>>();
 
         if (!json.asArray().isEmpty()) {
-            for (var index = 0; index < json.asArray().size(); index++) {
+            for (var index = 0;index < json.asArray().size();index++) {
                 nested = _getPropsFromPath(json.asArray().get(index), subpath(pathTokens), totalTokensLength);
 
                 // only add null if subpath(pathTokens) was the last token
@@ -1408,7 +1408,7 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> retrieveNestedProperties(final BsonValue json, final String[] pathTokens,
-            final int totalTokensLength) {
+                                                                      final int totalTokensLength) {
         List<Optional<BsonValue>> nested;
         final var ret = new ArrayList<Optional<BsonValue>>();
 
@@ -1427,8 +1427,8 @@ public class BsonUtils {
     }
 
     private static List<Optional<BsonValue>> retrievePropertiesFromDocument(final BsonValue json,
-            final String[] pathTokens, final int totalTokensLength,
-            final String pathToken) {
+                                                                            final String[] pathTokens, final int totalTokensLength,
+                                                                            final String pathToken) {
         if (!(json.isDocument())) {
             throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken
                     + "; it should be an object but found " + json.toString());
@@ -1443,8 +1443,8 @@ public class BsonUtils {
     }
 
     private static boolean comparePathTokens(boolean ret, final String[] leftPathTokens,
-            final String[] rightPathTokens) {
-        outerloop: for (int cont = 0; cont < leftPathTokens.length; cont++) {
+                                             final String[] rightPathTokens) {
+        outerloop: for (int cont = 0;cont < leftPathTokens.length;cont++) {
             final var lt = leftPathTokens[cont];
             final var rt = rightPathTokens[cont];
 
@@ -1478,7 +1478,7 @@ public class BsonUtils {
 
         var ret = new StringBuilder();
 
-        for (int cont = 1; cont < pathTokens.length; cont++) {
+        for (int cont = 1;cont < pathTokens.length;cont++) {
             ret = ret.append(pathTokens[cont]);
 
             if (cont < pathTokens.length - 1) {
@@ -1498,7 +1498,7 @@ public class BsonUtils {
     }
 
     private static boolean _containsUpdateOperators(final BsonDocument json,
-            final boolean ignoreCurrentDate) {
+                                                    final boolean ignoreCurrentDate) {
         if (json == null) {
             return false;
         }
@@ -1509,10 +1509,10 @@ public class BsonUtils {
     }
 
     private static void flatten(final String prefix, final String key, final BsonDocument data,
-            final BsonDocument set) {
+                                final BsonDocument set) {
         final var newPrefix = prefix == null
-            ? key
-            : prefix + "." + key;
+                ? key
+                : prefix + "." + key;
         final var value = data.get(key);
 
         if (value.isDocument()) {
@@ -1527,8 +1527,8 @@ public class BsonUtils {
         final var ufdoc = BsonUtils.unflatten(doc).asDocument();
 
         return all
-            ? keys.stream().allMatch(key -> _containsKeys(ufdoc, key, all))
-            : keys.stream().anyMatch(key -> _containsKeys(ufdoc, key, all));
+                ? keys.stream().allMatch(key -> _containsKeys(ufdoc, key, all))
+                : keys.stream().anyMatch(key -> _containsKeys(ufdoc, key, all));
     }
 
     private static boolean _containsKeys(final BsonDocument doc, final String key, final boolean all) {

@@ -76,13 +76,13 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
 
     /** Content type for raw GraphQL queries. */
     private static final String GRAPHQL_CONTENT_TYPE = "application/graphql";
-    
+
     /** JSON field name for the GraphQL query string. */
     private static final String QUERY_FIELD = "query";
-    
+
     /** JSON field name for the operation name. */
     private static final String OPERATION_NAME_FIELD = "operationName";
-    
+
     /** JSON field name for query variables. */
     private static final String VARIABLES_FIELD = "variables";
 
@@ -225,10 +225,10 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     public String getQuery() {
         var _content = this.getContent();
         if (_content != null
-            && _content.isJsonObject()
-            && _content.getAsJsonObject().has(QUERY_FIELD)
-            && _content.getAsJsonObject().get(QUERY_FIELD).isJsonPrimitive()
-            && _content.getAsJsonObject().getAsJsonPrimitive(QUERY_FIELD).isString()) {
+                && _content.isJsonObject()
+                && _content.getAsJsonObject().has(QUERY_FIELD)
+                && _content.getAsJsonObject().get(QUERY_FIELD).isJsonPrimitive()
+                && _content.getAsJsonObject().getAsJsonPrimitive(QUERY_FIELD).isString()) {
             return _content.getAsJsonObject().getAsJsonPrimitive(QUERY_FIELD).getAsString();
         } else {
             return null;
@@ -248,10 +248,10 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     public String getOperationName() {
         var _content = this.getContent();
         if (_content != null
-            && _content.isJsonObject()
-            && _content.getAsJsonObject().has(OPERATION_NAME_FIELD)
-            && _content.getAsJsonObject().get(OPERATION_NAME_FIELD).isJsonPrimitive()
-            && _content.getAsJsonObject().getAsJsonPrimitive(OPERATION_NAME_FIELD).isString()) {
+                && _content.isJsonObject()
+                && _content.getAsJsonObject().has(OPERATION_NAME_FIELD)
+                && _content.getAsJsonObject().get(OPERATION_NAME_FIELD).isJsonPrimitive()
+                && _content.getAsJsonObject().getAsJsonPrimitive(OPERATION_NAME_FIELD).isString()) {
             return _content.getAsJsonObject().getAsJsonPrimitive(OPERATION_NAME_FIELD).getAsString();
         } else {
             return null;
@@ -281,9 +281,9 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     public JsonObject getVariables() {
         var _content = this.getContent();
         if (_content != null
-            && _content.isJsonObject()
-            && _content.getAsJsonObject().has(VARIABLES_FIELD)
-            && _content.getAsJsonObject().get(VARIABLES_FIELD).isJsonObject()) {
+                && _content.isJsonObject()
+                && _content.getAsJsonObject().has(VARIABLES_FIELD)
+                && _content.getAsJsonObject().get(VARIABLES_FIELD).isJsonObject()) {
             return _content.getAsJsonObject().getAsJsonObject(VARIABLES_FIELD);
         } else {
             return null;
@@ -301,7 +301,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
      * @return the GraphQL application URI
      */
     public String getGraphQLAppURI() {
-       return this.appUri;
+        return this.appUri;
     }
 
     /**
@@ -317,9 +317,9 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
         var _content = this.getContent();
 
         return _content != null
-            &&  _content.isJsonObject()
-            && _content.getAsJsonObject().has(VARIABLES_FIELD)
-            && _content.getAsJsonObject().get(VARIABLES_FIELD).isJsonObject();
+                && _content.isJsonObject()
+                && _content.getAsJsonObject().has(VARIABLES_FIELD)
+                && _content.getAsJsonObject().get(VARIABLES_FIELD).isJsonObject();
     }
 
     /**
@@ -332,7 +332,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
      * @param exchange the HTTP server exchange to check
      * @return true if the content type is GraphQL, false otherwise
      */
-    private static boolean isContentTypeGraphQL(HttpServerExchange exchange){
+    private static boolean isContentTypeGraphQL(HttpServerExchange exchange) {
         var contentType = getContentType(exchange);
         return GRAPHQL_CONTENT_TYPE.equals(contentType) || (contentType != null && contentType.startsWith(GRAPHQL_CONTENT_TYPE));
     }

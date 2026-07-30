@@ -83,7 +83,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings({"rawtypes","unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         Request<?> request;
         Response<?> response;
@@ -118,19 +118,20 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         }
 
         var resolvedInterceptors = interceptors.stream()
-            .filter(ri -> ri instanceof Interceptor)
-            .map(ri -> (Interceptor) ri)
-            .filter(ri -> {
-            try {
-                return ri.resolve(request, response);
-            } catch (Exception ex) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
+                .filter(ri -> ri instanceof Interceptor)
+                .map(ri -> (Interceptor) ri)
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(request, response);
+                    } catch (Exception ex) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
 
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
-                return false;
-            }})
-            .toList();
+                        Exchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
+                        return false;
+                    }
+                })
+                .toList();
 
         RequestPhaseContext.setPhase(Phase.INFO);
         LOGGER.debug("Found {} interceptors", resolvedInterceptors.size());
@@ -138,7 +139,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         var executionStartTime = System.currentTimeMillis();
         var totalInterceptors = resolvedInterceptors.size();
 
-        for (int i = 0; i < totalInterceptors; i++) {
+        for (int i = 0;i < totalInterceptors;i++) {
             var ri = resolvedInterceptors.get(i);
             var isLast = (i == totalInterceptors - 1);
             var interceptorStartTime = System.currentTimeMillis();

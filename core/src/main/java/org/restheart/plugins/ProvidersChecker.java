@@ -78,10 +78,12 @@ public class ProvidersChecker {
      */
     private static List<PluginDescriptor> enabledProviders(Logger LOGGER, List<PluginDescriptor> providers) {
         return providers.stream()
-            .filter(p -> p != null)
-            .peek(p ->  { if (!enabled(p)) LOGGER.info("Provider {} disabled", p.name()); })
-            .filter(p -> enabled(p))
-            .collect(Collectors.toList());
+                .filter(p -> p != null)
+                .peek(p -> {
+                    if (!enabled(p)) LOGGER.info("Provider {} disabled", p.name());
+                })
+                .filter(p -> enabled(p))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -112,29 +114,29 @@ public class ProvidersChecker {
         var toRemove = new ArrayList<PluginDescriptor>();
         providersGraph.nodes().forEach(thisProvider -> {
             thisProvider.injections().stream()
-                .filter(i -> i instanceof FieldInjectionDescriptor a)
-                .map(i -> (FieldInjectionDescriptor) i)
-                .forEach(i -> {
-                    var otherProviderName = (String )i.annotationParams().get(0).getValue();
-                    var otherProvider = providerDescriptorFromName(otherProviderName);
+                    .filter(i -> i instanceof FieldInjectionDescriptor a)
+                    .map(i -> (FieldInjectionDescriptor) i)
+                    .forEach(i -> {
+                        var otherProviderName = (String) i.annotationParams().get(0).getValue();
+                        var otherProvider = providerDescriptorFromName(otherProviderName);
 
-                    if (otherProvider == null) {
-                        LOGGER.error("Provider {} disabled: no provider found for @Inject(\"{}\")", thisProvider.name(), otherProviderName);
-                        toRemove.add(thisProvider);
-                    } else if (!enabled(otherProvider)) {
-                        LOGGER.error("Provider {} disabled: the provider for @Inject(\"{}\") is disabled", thisProvider.name(), otherProvider.name());
-                        toRemove.add(thisProvider);
-                    } else {
-                        // check provided class vs annotated class
-                        var providedType = PluginsFactory.providersTypes().get(otherProviderName);
-                        var fieldType = i.clazz();
-
-                        if (!fieldType.isAssignableFrom(providedType)) {
-                            LOGGER.error("Plugin {} disabled: the type of the provider for @Inject(\"{}\") is {} but the type of the annotated field {} is {}", thisProvider.name(), otherProviderName, providedType, i.field(), fieldType);
+                        if (otherProvider == null) {
+                            LOGGER.error("Provider {} disabled: no provider found for @Inject(\"{}\")", thisProvider.name(), otherProviderName);
                             toRemove.add(thisProvider);
+                        } else if (!enabled(otherProvider)) {
+                            LOGGER.error("Provider {} disabled: the provider for @Inject(\"{}\") is disabled", thisProvider.name(), otherProvider.name());
+                            toRemove.add(thisProvider);
+                        } else {
+                            // check provided class vs annotated class
+                            var providedType = PluginsFactory.providersTypes().get(otherProviderName);
+                            var fieldType = i.clazz();
+
+                            if (!fieldType.isAssignableFrom(providedType)) {
+                                LOGGER.error("Plugin {} disabled: the type of the provider for @Inject(\"{}\") is {} but the type of the annotated field {} is {}", thisProvider.name(), otherProviderName, providedType, i.field(), fieldType);
+                                toRemove.add(thisProvider);
+                            }
                         }
-                }
-            });
+                    });
         });
 
         toRemove.stream().forEach(providersGraph::removeNode);
@@ -197,18 +199,18 @@ public class ProvidersChecker {
 
         // add edges — only for enabled providers to avoid implicitly adding
         // disabled providers as graph nodes (which would trigger false ERROR logs)
-        for (var thisProvider: enabled) {
+        for (var thisProvider : enabled) {
             thisProvider.injections().stream()
-                .filter(i -> i instanceof FieldInjectionDescriptor a)
-                .map(i -> (FieldInjectionDescriptor) i)
-                .forEach(i -> {
-                    var otherProviderName = (String) i.annotationParams().get(0).getValue();
-                    var otherProvider = providerDescriptorFromName(otherProviderName);
+                    .filter(i -> i instanceof FieldInjectionDescriptor a)
+                    .map(i -> (FieldInjectionDescriptor) i)
+                    .forEach(i -> {
+                        var otherProviderName = (String) i.annotationParams().get(0).getValue();
+                        var otherProvider = providerDescriptorFromName(otherProviderName);
 
-                    if (otherProvider != null) {
-                        providersGraph.putEdge(thisProvider, otherProvider);
-                    }
-                });
+                        if (otherProvider != null) {
+                            providersGraph.putEdge(thisProvider, otherProvider);
+                        }
+                    });
         }
 
         // remove nodes that have disabled dependencies
@@ -218,13 +220,14 @@ public class ProvidersChecker {
         // remove nodes with circular dependencies
         removeIfCircularDependency(LOGGER, providersGraph);
         int newCount = providersGraph.edges().size();
-        while(newCount < count) {
+        while (newCount < count) {
             count = providersGraph.edges().size();
             removeIfWrongDependency(LOGGER, providersGraph);
             // remove nodes that have circular dependencies
             removeIfCircularDependency(LOGGER, providersGraph);
             newCount = providersGraph.edges().size();
-        };
+        }
+        ;
 
         return providersGraph.nodes();
     }
@@ -274,9 +277,9 @@ public class ProvidersChecker {
         var injections = new ArrayList<FieldInjectionDescriptor>();
 
         plugin.injections().stream()
-            .filter(i -> i instanceof FieldInjectionDescriptor fid)
-            .map(i -> (FieldInjectionDescriptor) i)
-            .forEach(injections::add);
+                .filter(i -> i instanceof FieldInjectionDescriptor fid)
+                .map(i -> (FieldInjectionDescriptor) i)
+                .forEach(injections::add);
 
         for (var injection : injections) {
             var providerName = injection.annotationParams().get(0).getValue();
@@ -286,7 +289,7 @@ public class ProvidersChecker {
             if (_provider.isEmpty()) {
                 LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.name(), providerName);
                 ret = false;
-            } else if(_provider.get().clazz().equals(plugin.clazz())) {
+            } else if (_provider.get().clazz().equals(plugin.clazz())) {
                 LOGGER.error("Provider {} disabled: it depends on itself via @Inject(\"{}\")", plugin.name(), providerName);
             } else {
                 var provider = _provider.get();

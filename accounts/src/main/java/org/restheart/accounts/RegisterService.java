@@ -106,9 +106,9 @@ import java.nio.charset.StandardCharsets;
  * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
-        name             = "registerService",
-        description      = "POST /auth/register — public user signup with email verification",
-        defaultURI       = "/auth/register",
+        name = "registerService",
+        description = "POST /auth/register — public user signup with email verification",
+        defaultURI = "/auth/register",
         enabledByDefault = false)
 public class RegisterService implements JsonService {
 
@@ -170,8 +170,14 @@ public class RegisterService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
-        if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
+        if (!req.isPost()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         // ── 1. Parse body ────────────────────────────────────────────────────
         JsonObject body;
@@ -189,10 +195,10 @@ public class RegisterService implements JsonService {
 
         // ── 2. Validate required fields ──────────────────────────────────────
         var firstName = extractString(body, "firstName");
-        var lastName  = extractString(body, "lastName");
-        var teamName  = extractString(body, "teamName");
-        var email     = extractString(body, "email");
-        var password  = extractString(body, "password");
+        var lastName = extractString(body, "lastName");
+        var teamName = extractString(body, "teamName");
+        var email = extractString(body, "email");
+        var password = extractString(body, "password");
 
         if (firstName == null) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Missing required field: firstName");
@@ -223,7 +229,7 @@ public class RegisterService implements JsonService {
 
         // ── 4. Generate email verification token ─────────────────────────────
         var verificationToken = TokenUtils.generateToken();
-        var now               = new BsonDateTime(System.currentTimeMillis());
+        var now = new BsonDateTime(System.currentTimeMillis());
 
         // ── 5. Create and insert user (without tenant — MembershipProvider sets it) ──
         // New users start with $unauthenticated role — they can only access
@@ -233,15 +239,15 @@ public class RegisterService implements JsonService {
         rolesArray.add(new BsonString("$unauthenticated"));
 
         var profile = new BsonDocument()
-                .append("name",    new BsonString(firstName))
+                .append("name", new BsonString(firstName))
                 .append("surname", new BsonString(lastName));
 
         var userDoc = new BsonDocument()
-                .append("_id",                        new BsonString(email))
-                .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
-                .append("roles",                      rolesArray)
-                .append("profile",                    profile)
-                .append("emailVerificationToken",     new BsonString(verificationToken))
+                .append("_id", new BsonString(email))
+                .append("password", new BsonString(TokenUtils.hashPassword(password)))
+                .append("roles", rolesArray)
+                .append("profile", profile)
+                .append("emailVerificationToken", new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
 
         try {
@@ -259,7 +265,7 @@ public class RegisterService implements JsonService {
         // note: this adds 'teams' and 'team' to the user document, after it has
         // been validated against the collection's JSON Schema
         var teamRef = membership(req).createInitialTeam(email, teamName);
-        var teamId    = teamRef.id().isString()
+        var teamId = teamRef.id().isString()
                 ? teamRef.id().asString().getValue()
                 : teamRef.id().asObjectId().getValue().toHexString();
 
@@ -272,10 +278,10 @@ public class RegisterService implements JsonService {
                 LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
             } else {
                 var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-                var verifyLink   = RequestOverrides.frontendUrl(req, conf)
-                                   + "/auth/verify"
-                                   + "?email=" + encodedEmail
-                                   + "&token=" + verificationToken;
+                var verifyLink = RequestOverrides.frontendUrl(req, conf)
+                        + "/auth/verify"
+                        + "?email=" + encodedEmail
+                        + "&token=" + verificationToken;
 
                 var tmpl = EmailTemplateLoader.loadWithFallback(
                         RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");

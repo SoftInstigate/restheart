@@ -75,14 +75,14 @@ import static org.restheart.configuration.Utils.asListOfMaps;
  * @since 1.0
  */
 public record ProxiedResource(String name,
-    String location,
-    List<String> proxyPass,
-    boolean rewriteHostHeader,
-    int connectionPerThread,
-    int maxQueueSize,
-    int softMaxConnectionsPerThread,
-    int connectionsTTL,
-    int problemServerRetry) {
+                              String location,
+                              List<String> proxyPass,
+                              boolean rewriteHostHeader,
+                              int connectionPerThread,
+                              int maxQueueSize,
+                              int softMaxConnectionsPerThread,
+                              int connectionsTTL,
+                              int problemServerRetry) {
 
     /**
      * Configuration key for the proxies list in the main configuration.
@@ -93,12 +93,12 @@ public record ProxiedResource(String name,
      * Configuration key for the proxy name.
      */
     public static final String PROXY_NAME = "name";
-    
+
     /**
      * Configuration key for the location pattern to proxy.
      */
     public static final String PROXY_LOCATION_KEY = "location";
-    
+
     /**
      * Configuration key for the backend URLs to proxy to.
      */
@@ -108,27 +108,27 @@ public record ProxiedResource(String name,
      * Configuration key for rewriting the Host header.
      */
     public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
-    
+
     /**
      * Configuration key for connections per thread limit.
      */
     public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
-    
+
     /**
      * Configuration key for maximum queue size.
      */
     public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
-    
+
     /**
      * Configuration key for soft maximum connections per thread.
      */
     public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
-    
+
     /**
      * Configuration key for connection time-to-live.
      */
     public static final String PROXY_TTL = "connections-ttl";
-    
+
     /**
      * Configuration key for problem server retry delay.
      */
@@ -146,15 +146,15 @@ public record ProxiedResource(String name,
      */
     public ProxiedResource(Map<String, Object> conf, boolean silent) {
         this(getOrDefault(conf, PROXY_NAME, null, silent),
-            getOrDefault(conf, PROXY_LOCATION_KEY, null, silent),
-            _proxyPass(conf, silent),
-            // following are optional parameter, so get them always in silent mode
-            getOrDefault(conf, PROXY_REWRITE_HOST_HEADER, true, true),
-            getOrDefault(conf, PROXY_CONNECTIONS_PER_THREAD, 10, true),
-            getOrDefault(conf, PROXY_MAX_QUEUE_SIZE, 0, true),
-            getOrDefault(conf, PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true),
-            getOrDefault(conf, PROXY_TTL, -1, true),
-            getOrDefault(conf, PROXY_PROBLEM_SERVER_RETRY, 10, true));
+                getOrDefault(conf, PROXY_LOCATION_KEY, null, silent),
+                _proxyPass(conf, silent),
+                // following are optional parameter, so get them always in silent mode
+                getOrDefault(conf, PROXY_REWRITE_HOST_HEADER, true, true),
+                getOrDefault(conf, PROXY_CONNECTIONS_PER_THREAD, 10, true),
+                getOrDefault(conf, PROXY_MAX_QUEUE_SIZE, 0, true),
+                getOrDefault(conf, PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true),
+                getOrDefault(conf, PROXY_TTL, -1, true),
+                getOrDefault(conf, PROXY_PROBLEM_SERVER_RETRY, 10, true));
     }
 
     /**

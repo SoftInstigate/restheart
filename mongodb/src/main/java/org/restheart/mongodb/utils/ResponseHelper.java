@@ -144,7 +144,7 @@ public class ResponseHelper {
             // Cannot start transaction X on session Y because a newer transaction Z has already started
             // transaction number X does not match any in-progress transactions
             // Transaction X has been committed.
-            case 225,251,256 -> HttpStatus.SC_BAD_REQUEST;
+            case 225, 251, 256 -> HttpStatus.SC_BAD_REQUEST;
             // error 11000 is duplicate key error
             // happens when the _id and a filter are specified,
             // the document exists but does not match the filter
@@ -156,7 +156,7 @@ public class ResponseHelper {
             // 51091 Regular expression is invalid: unmatched parentheses
             // 51108 Invalid flag in regex options
             // 16410 FieldPath field names may not start with '$'
-            case 56, 40353, 40352, 51091, 51108, 40323, 16410  -> HttpStatus.SC_BAD_REQUEST;
+            case 56, 40353, 40352, 51091, 51108, 40323, 16410 -> HttpStatus.SC_BAD_REQUEST;
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> HttpStatus.SC_BAD_REQUEST;
             // 15974 Illegal key in $sort specification
@@ -200,7 +200,7 @@ public class ResponseHelper {
                 var e = msg.indexOf("' on server");
 
                 if (b >= 0 && e >= 0) {
-                    yield "Invalid query parameter: " + msg.substring(b+3, e).strip();
+                    yield "Invalid query parameter: " + msg.substring(b + 3, e).strip();
                 } else {
                     yield msg;
                 }
@@ -249,7 +249,7 @@ public class ResponseHelper {
             case 31138 -> "Invalid $meta sort";
             case 40323 -> "A pipeline stage specification object must contain exactly one field.";
             case 15998 -> "FieldPath field names may not be empty strings";
-            case 241 ->  "Failed to parse number in $convert";
+            case 241 -> "Failed to parse number in $convert";
             case 15975 -> "Wrong sort parameter, key ordering must be 1 (for ascending) or -1 (for descending)";
             default -> "Error handling the request, see log for more information";
         };

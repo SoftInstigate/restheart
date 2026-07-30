@@ -37,9 +37,9 @@ import java.util.concurrent.TimeUnit;
  * <p>Indexes are idempotent: MongoDB no-ops when an equivalent index already exists.
  */
 @RegisterPlugin(
-        name             = "accountsInitializer",
-        description      = "Ensures collections and indexes required by restheart-accounts",
-        initPoint        = InitPoint.AFTER_STARTUP,
+        name = "accountsInitializer",
+        description = "Ensures collections and indexes required by restheart-accounts",
+        initPoint = InitPoint.AFTER_STARTUP,
         enabledByDefault = false)
 public class AccountsInitializer implements Initializer {
 

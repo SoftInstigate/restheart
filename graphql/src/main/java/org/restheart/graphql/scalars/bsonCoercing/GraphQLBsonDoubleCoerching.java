@@ -37,9 +37,9 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonDoubleCoerching implements Coercing<Double, Double> {
     @Override
     public Double serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if(input instanceof BsonDouble bsonString) {
+        } else if (input instanceof BsonDouble bsonString) {
             return bsonString.getValue();
         } else if (input instanceof Double value) {
             return value;

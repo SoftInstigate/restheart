@@ -177,7 +177,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         response.getHeaders().put(Headers.CONTENT_DISPOSITION, String.format("inline; filename=\"%s\"", extractFilename(file)));
 
-        response.getHeaders().put(Headers.CONTENT_TRANSFER_ENCODING,CONTENT_TRANSFER_ENCODING_BINARY);
+        response.getHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 

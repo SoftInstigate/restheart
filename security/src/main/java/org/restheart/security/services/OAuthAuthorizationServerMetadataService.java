@@ -44,11 +44,11 @@ import org.restheart.utils.HttpStatus;
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc8414">RFC 8414</a>
  */
 @RegisterPlugin(
-    name = "oauthAuthorizationServerMetadataService",
-    description = "OAuth 2.0 Authorization Server Metadata endpoint (RFC 8414)",
-    secure = false,
-    enabledByDefault = true,
-    defaultURI = "/.well-known/oauth-authorization-server"
+        name = "oauthAuthorizationServerMetadataService",
+        description = "OAuth 2.0 Authorization Server Metadata endpoint (RFC 8414)",
+        secure = false,
+        enabledByDefault = true,
+        defaultURI = "/.well-known/oauth-authorization-server"
 )
 public class OAuthAuthorizationServerMetadataService implements JsonService {
 
@@ -81,21 +81,21 @@ public class OAuthAuthorizationServerMetadataService implements JsonService {
                 var base = resolveBaseUrl(request);
 
                 var metadata = object()
-                    .put("issuer", base)
-                    .put("authorization_endpoint", base + authorizeEndpointUri)
-                    .put("token_endpoint", base + tokenEndpointUri)
-                    .put("response_types_supported", array()
-                        .add("code"))
-                    .put("grant_types_supported", array()
-                        .add("authorization_code")
-                        .add("password")
-                        .add("client_credentials"))
-                    .put("code_challenge_methods_supported", array()
-                        .add("S256"))
-                    .put("token_endpoint_auth_methods_supported", array()
-                        .add("none")
-                        .add("client_secret_basic")
-                        .add("client_secret_post"));
+                        .put("issuer", base)
+                        .put("authorization_endpoint", base + authorizeEndpointUri)
+                        .put("token_endpoint", base + tokenEndpointUri)
+                        .put("response_types_supported", array()
+                                .add("code"))
+                        .put("grant_types_supported", array()
+                                .add("authorization_code")
+                                .add("password")
+                                .add("client_credentials"))
+                        .put("code_challenge_methods_supported", array()
+                                .add("S256"))
+                        .put("token_endpoint_auth_methods_supported", array()
+                                .add("none")
+                                .add("client_secret_basic")
+                                .add("client_secret_post"));
 
                 if (registrationEndpointUri != null && !registrationEndpointUri.isBlank()) {
                     metadata.put("registration_endpoint", base + registrationEndpointUri);

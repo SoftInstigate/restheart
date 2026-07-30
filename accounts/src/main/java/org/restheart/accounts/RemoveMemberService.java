@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "removeMemberService",
-        description      = "DELETE /auth/remove-member — removes a member from the caller's team",
-        defaultURI       = "/auth/remove-member",
-        secure           = true,
+        name = "removeMemberService",
+        description = "DELETE /auth/remove-member — removes a member from the caller's team",
+        defaultURI = "/auth/remove-member",
+        secure = true,
         enabledByDefault = false)
 public class RemoveMemberService implements JsonService {
 
@@ -53,7 +53,7 @@ public class RemoveMemberService implements JsonService {
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r ->
-                r.getPath().equals("/auth/remove-member") && (r.isDelete() || r.isOptions()));
+                    r.getPath().equals("/auth/remove-member") && (r.isDelete() || r.isOptions()));
         }
     }
 

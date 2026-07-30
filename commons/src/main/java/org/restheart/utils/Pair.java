@@ -32,7 +32,7 @@ import java.util.AbstractMap;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Pair<K, V> extends AbstractMap.SimpleEntry<K,V> {
+public class Pair<K, V> extends AbstractMap.SimpleEntry<K, V> {
 
     /**
      * Creates a new Pair with the specified key and value.
@@ -45,6 +45,6 @@ public class Pair<K, V> extends AbstractMap.SimpleEntry<K,V> {
     }
 
     public static <K, V> Pair<K, V> of(K key, V value) {
-      return new Pair<>(key, value);
+        return new Pair<>(key, value);
     }
 }

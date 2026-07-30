@@ -48,7 +48,7 @@ public class FieldExists implements PredicateOverJxPathCtx {
 
     @Override
     public boolean resolve(JXPathContext ctx) {
-            return this.fields.stream().allMatch(f -> BsonUtils.get(ctx, f).isPresent());
+        return this.fields.stream().allMatch(f -> BsonUtils.get(ctx, f).isPresent());
     }
 
     public static class Builder implements PredicateBuilder {

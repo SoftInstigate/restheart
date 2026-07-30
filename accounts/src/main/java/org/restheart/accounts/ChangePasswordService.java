@@ -46,10 +46,10 @@ import org.slf4j.LoggerFactory;
  * auth unless a token-versioning/blacklist mechanism is added separately.
  */
 @RegisterPlugin(
-        name             = "changePasswordService",
-        description      = "PATCH /auth/change-password — in-session password change for authenticated users",
-        defaultURI       = "/auth/change-password",
-        secure           = true,
+        name = "changePasswordService",
+        description = "PATCH /auth/change-password — in-session password change for authenticated users",
+        defaultURI = "/auth/change-password",
+        secure = true,
         enabledByDefault = false)
 public class ChangePasswordService implements JsonService {
 
@@ -79,9 +79,15 @@ public class ChangePasswordService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
-        if (!req.isPatch()) { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isPatch()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
         var email = account.getPrincipal().getName();

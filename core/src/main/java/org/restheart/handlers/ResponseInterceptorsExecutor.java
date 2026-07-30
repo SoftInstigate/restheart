@@ -104,16 +104,16 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         next(exchange);
     }
 
-    @SuppressWarnings({"rawtypes","unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void executeResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         Exchange.setResponseInterceptorsExecuted(exchange);
-        
+
         var requestPath = exchange.getRequestPath();
         var requestMethod = exchange.getRequestMethod().toString();
         var statusCode = response.getStatusCode();
 
-        List<Interceptor<?,?>> inteceptors;
+        List<Interceptor<?, ?>> inteceptors;
 
         if (handlingService != null) {
             inteceptors = this.pluginsRegistry.getServiceInterceptors(handlingService, InterceptPoint.RESPONSE);
@@ -122,19 +122,19 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         }
 
         var applicableInterceptors = inteceptors.stream()
-            .filter(ri -> ri instanceof Interceptor)
-            .map(ri -> (Interceptor) ri)
-            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-            .filter(ri -> {
-                try {
-                    return ri.resolve(request, response);
-                } catch (Exception ex) {
-                    LOGGER.warn("Error resolving response interceptor {} for {} {}", 
-                        ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
-                    return false;
-                }
-            })
-            .collect(java.util.stream.Collectors.toList());
+                .filter(ri -> ri instanceof Interceptor)
+                .map(ri -> (Interceptor) ri)
+                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(request, response);
+                    } catch (Exception ex) {
+                        LOGGER.warn("Error resolving response interceptor {} for {} {}",
+                                ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
+                        return false;
+                    }
+                })
+                .collect(java.util.stream.Collectors.toList());
 
         if (applicableInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
@@ -153,17 +153,17 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         LOGGER.debug("Found {} applicable interceptors", applicableInterceptors.size());
 
         var executionStartTime = System.currentTimeMillis();
-        
+
         applicableInterceptors.forEach(ri -> {
             var interceptorStartTime = System.currentTimeMillis();
             var interceptorName = PluginUtils.name(ri);
-            
+
             RequestPhaseContext.setPhase(Phase.ITEM);
             LOGGER.debug("{} (priority: {})", interceptorName, PluginUtils.priority(ri));
 
             try {
                 ri.handle(request, response);
-                
+
                 var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
                 LOGGER.debug("✓ {}ms", interceptorDuration);
@@ -176,14 +176,14 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
             }
         });
-            
+
         var totalDuration = System.currentTimeMillis() - executionStartTime;
         RequestPhaseContext.setPhase(Phase.PHASE_END);
         LOGGER.debug("RESPONSE COMPLETED in {}ms", totalDuration);
         RequestPhaseContext.reset();
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         var requestPath = exchange.getRequestPath();
@@ -199,19 +199,19 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         }
 
         var applicableAsyncInterceptors = inteceptors.stream()
-            .filter(ri -> ri instanceof Interceptor)
-            .map(ri -> (Interceptor) ri)
-            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-            .filter(ri -> {
-                try {
-                    return ri.resolve(request, response);
-                } catch (Exception ex) {
-                    LOGGER.warn("Error resolving async interceptor {} for {} {}", 
-                        ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
-                    return false;
-                }
-            })
-            .collect(java.util.stream.Collectors.toList());
+                .filter(ri -> ri instanceof Interceptor)
+                .map(ri -> (Interceptor) ri)
+                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(request, response);
+                    } catch (Exception ex) {
+                        LOGGER.warn("Error resolving async interceptor {} for {} {}",
+                                ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
+                        return false;
+                    }
+                })
+                .collect(java.util.stream.Collectors.toList());
 
         if (!applicableAsyncInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
@@ -225,26 +225,26 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         applicableAsyncInterceptors.forEach(ri -> {
             // Retrieve MDC context from the exchange attachment (set by TracingInstrumentationHandler)
             var mdcContext = response.getMDCContext();
-            
+
             ThreadsUtils.virtualThreadsExecutor().execute(() -> {
                 // Restore MDC context in the virtual thread
                 if (mdcContext != null) {
                     MDC.setContextMap(mdcContext);
                 }
-                
+
                 try {
                     // Use ScopedValue to propagate exchange to the async virtual thread
                     RequestPhaseContext.callWithCurrentExchange(() -> {
                         var interceptorStartTime = System.currentTimeMillis();
                         var interceptorName = PluginUtils.name(ri);
-                        
+
                         RequestPhaseContext.setPhase(Phase.ITEM);
-                        LOGGER.debug("ASYNC {} (priority: {}, thread: {})", 
-                            interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
+                        LOGGER.debug("ASYNC {} (priority: {}, thread: {})",
+                                interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
 
                         try {
                             ri.handle(request, response);
-                            
+
                             var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                             RequestPhaseContext.setPhase(Phase.SUBITEM);
                             LOGGER.debug("✓ {}ms (async)", interceptorDuration);
@@ -264,7 +264,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                 }
             });
         });
-        
+
         if (!applicableAsyncInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("RESPONSE_ASYNC dispatched to {} virtual threads", applicableAsyncInterceptors.size());

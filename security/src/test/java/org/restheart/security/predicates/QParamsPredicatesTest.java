@@ -114,7 +114,7 @@ public class QParamsPredicatesTest {
         } else {
             queryString = "?".concat(qparams[0]).concat("=foo");
 
-            for (var idx = 1; idx < qparams.length; idx++) {
+            for (var idx = 1;idx < qparams.length;idx++) {
                 queryString = queryString.concat("&").concat(qparams[idx]).concat("=foo");
             }
         }

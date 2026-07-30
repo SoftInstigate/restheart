@@ -132,12 +132,12 @@ public interface MongoServiceConfigurationKeys {
     /**
      * the default value for the where mongo-mount property.
      */
-    public static final String  DEFAULT_MONGO_MOUNT_WHERE = "/";
+    public static final String DEFAULT_MONGO_MOUNT_WHERE = "/";
 
     /**
      * the default value for the waht mongo-mount property.
      */
-    public static final String  DEFAULT_MONGO_MOUNT_WHAT = "/restheart";
+    public static final String DEFAULT_MONGO_MOUNT_WHAT = "/restheart";
 
 
     /**

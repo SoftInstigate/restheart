@@ -203,94 +203,94 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private static void createURIs() throws URISyntaxException {
-        rootUri = buildURI("/", new NameValuePair[] {
+        rootUri = buildURI("/", new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        rootUriRemapped = buildURI(REMAPPEDALL, new NameValuePair[] {
+        rootUriRemapped = buildURI(REMAPPEDALL, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        dbUri = buildURI("/" + dbName, new NameValuePair[] {
+        dbUri = buildURI("/" + dbName, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         dbUriPaging = buildURI("/" + dbName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("pagesize", "1"),
                         new BasicNameValuePair("hal", "f")
                 });
 
-        dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName, new NameValuePair[] {
+        dbUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        dbUriRemappedDb = buildURI(REMAPPEDDB, new NameValuePair[] {
+        dbUriRemappedDb = buildURI(REMAPPEDDB, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         dbTmpUri = buildURI("/" + dbTmpName);
 
-        dbTmpUri2 = buildURI("/" + dbTmpName2, new NameValuePair[] {
+        dbTmpUri2 = buildURI("/" + dbTmpName2, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        dbTmpUri3 = buildURI("/" + dbTmpName3, new NameValuePair[] {
+        dbTmpUri3 = buildURI("/" + dbTmpName3, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        collection1Uri = buildURI("/" + dbName + "/" + collection1Name, new NameValuePair[] {
+        collection1Uri = buildURI("/" + dbName + "/" + collection1Name, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
         collection1UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection1Name,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
-        collection1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name, new NameValuePair[] {
+        collection1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        collection1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1, new NameValuePair[] {
+        collection1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        collection2Uri = buildURI("/" + dbName + "/" + collection2Name, new NameValuePair[] {
+        collection2Uri = buildURI("/" + dbName + "/" + collection2Name, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         collection2UriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + collection2Name,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
-        collection2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name, new NameValuePair[] {
+        collection2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        collection2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2, new NameValuePair[] {
+        collection2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[] {
+        collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f"),
                 new BasicNameValuePair("wm", "upsert"),
         });
 
-        collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[] {
+        collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        collectionTmpUserUri3 = buildURI("/" + dbTmpName3 + "/" + collectionTmpUserName2, new NameValuePair[] {
+        collectionTmpUserUri3 = buildURI("/" + dbTmpName3 + "/" + collectionTmpUserName2, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        docsCollectionUri = buildURI("/" + dbName + "/" + docsCollectionName, new NameValuePair[] {
+        docsCollectionUri = buildURI("/" + dbName + "/" + docsCollectionName, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         docsCollectionUriPaging = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("pagesize", "2"),
                         new BasicNameValuePair("hal", "f")
                 });
 
         docsCollectionUriCountAndPaging = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("count", null),
                         new BasicNameValuePair("page", "2"),
                         new BasicNameValuePair("pagesize", "2"),
@@ -298,89 +298,89 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 });
 
         docsCollectionUriSort = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("sort_by", "surname"),
                         new BasicNameValuePair("hal", "f")
                 });
 
         docsCollectionUriFilter = buildURI("/" + dbName + "/" + docsCollectionName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("filter", "{'name':{'$regex':'.*k$'}}"),
                         new BasicNameValuePair("sort_by", "name"),
                         new BasicNameValuePair("count", null),
                         new BasicNameValuePair("hal", "f")
                 });
 
-        indexesUri = buildURI("/" + dbName + "/" + docsCollectionName + _INDEXES, new NameValuePair[] {
+        indexesUri = buildURI("/" + dbName + "/" + docsCollectionName + _INDEXES, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         indexesUriRemappedAll = buildURI(REMAPPEDALL + "/" + dbName + "/" + docsCollectionName + _INDEXES,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
-        indexesUriRemappedDb = buildURI(REMAPPEDDB + "/" + docsCollectionName + _INDEXES, new NameValuePair[] {
+        indexesUriRemappedDb = buildURI(REMAPPEDDB + "/" + docsCollectionName + _INDEXES, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
-        indexesTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES, new NameValuePair[] {
+        indexesTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         indexTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + _INDEXES + "/new-index",
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
         documentTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f"),
                         new BasicNameValuePair("wm", "upsert")
                 });
 
-        document1Uri = buildURI("/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[] {
+        document1Uri = buildURI("/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         document1UriRemappedAll = buildURI(
                 REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document1Id,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
         document1UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection1Name + "/" + document1Id,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
-        document1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1 + "/" + document1Id, new NameValuePair[] {
+        document1UriRemappedCollection = buildURI(REMAPPEDREFCOLL1 + "/" + document1Id, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        document1UriRemappedDocument = buildURI(REMAPPEDDOC1, new NameValuePair[] {
+        document1UriRemappedDocument = buildURI(REMAPPEDDOC1, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        document2Uri = buildURI("/" + dbName + "/" + collection2Name + "/" + document2Id, new NameValuePair[] {
+        document2Uri = buildURI("/" + dbName + "/" + collection2Name + "/" + document2Id, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
         document2UriRemappedAll = buildURI(
                 REMAPPEDALL + "/" + dbName + "/" + collection1Name + "/" + document2Id,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
         document2UriRemappedDb = buildURI(REMAPPEDDB + "/" + collection2Name + "/" + document2Id,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("hal", "f")
                 });
 
-        document2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2 + "/" + document2Id, new NameValuePair[] {
+        document2UriRemappedCollection = buildURI(REMAPPEDREFCOLL2 + "/" + document2Id, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 
-        document2UriRemappedDocument = buildURI(REMAPPEDDOC2, new NameValuePair[] {
+        document2UriRemappedDocument = buildURI(REMAPPEDDOC2, new NameValuePair[]{
                 new BasicNameValuePair("hal", "f")
         });
 

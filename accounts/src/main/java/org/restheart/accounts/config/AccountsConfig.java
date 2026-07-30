@@ -46,10 +46,10 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-    name             = "accountsConfig",
-    description      = "Provides AccountsConfigData loaded from the plugin YAML block",
-    enabledByDefault = false,
-    priority         = 20  // must be > jwtConfigProvider priority (10) so jwtConfig is ready at @OnInit
+        name = "accountsConfig",
+        description = "Provides AccountsConfigData loaded from the plugin YAML block",
+        enabledByDefault = false,
+        priority = 20  // must be > jwtConfigProvider priority (10) so jwtConfig is ready at @OnInit
 )
 public class AccountsConfig implements Provider<AccountsConfigData> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccountsConfig.class);
@@ -84,30 +84,30 @@ public class AccountsConfig implements Provider<AccountsConfigData> {
                 : Map.of();
 
         data = new AccountsConfigData(
-            usersDb(),
-            usersCollection(),
-            configVal(config, "app-name",          "App"),
-            jwtConfig.key(),
-            jwtConfig.issuer(),
-            configVal(config, "jwt-ttl",           15),
-            configVal(config, "cookie-domain",     "localhost"),
-            configVal(config, "cookie-name",      "rh_auth"),
-            configVal(config, "cookie-secure",    true),
-            configVal(config, "frontend-url",      "http://localhost:4200"),
-            configVal(config, "frontend-app-url",  "http://localhost:4200/app"),
-            configVal(config, "terms-version",     "1.0"),
-            configVal(config, "privacy-version",   "1.0"),
-            configVal(config, "default-locale",    "en"),
-            configVal(templates, "verification",   null),
-            configVal(templates, "password-reset", null),
-            configVal(templates, "invite",         null),
-            configVal(config, "team-claim-name",              "team"),
-            configVal(config, "member-role-name",             "member"),
-            configVal(config, "membership-endpoints-enabled", true),
-            configVal(config, "ownership-role",                 "owner"),
-            configVal(config, "default-role",                   "user"),
-            configVal(config, "account-properties-claims",      null),
-            configVal(config, "users-unrestricted-roles",       null)
+                usersDb(),
+                usersCollection(),
+                configVal(config, "app-name", "App"),
+                jwtConfig.key(),
+                jwtConfig.issuer(),
+                configVal(config, "jwt-ttl", 15),
+                configVal(config, "cookie-domain", "localhost"),
+                configVal(config, "cookie-name", "rh_auth"),
+                configVal(config, "cookie-secure", true),
+                configVal(config, "frontend-url", "http://localhost:4200"),
+                configVal(config, "frontend-app-url", "http://localhost:4200/app"),
+                configVal(config, "terms-version", "1.0"),
+                configVal(config, "privacy-version", "1.0"),
+                configVal(config, "default-locale", "en"),
+                configVal(templates, "verification", null),
+                configVal(templates, "password-reset", null),
+                configVal(templates, "invite", null),
+                configVal(config, "team-claim-name", "team"),
+                configVal(config, "member-role-name", "member"),
+                configVal(config, "membership-endpoints-enabled", true),
+                configVal(config, "ownership-role", "owner"),
+                configVal(config, "default-role", "user"),
+                configVal(config, "account-properties-claims", null),
+                configVal(config, "users-unrestricted-roles", null)
         );
     }
 

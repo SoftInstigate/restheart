@@ -35,13 +35,13 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public record JSServiceArgs(String name,
-    String description,
-    String uri,
-    boolean secured,
-    String modulesReplacements,
-    MATCH_POLICY matchPolicy,
-    Source handleSource,
-    Configuration configuration,
-    Optional<MongoClient> mclient,
-    Map<String, String> contextOptions) {
+                            String description,
+                            String uri,
+                            boolean secured,
+                            String modulesReplacements,
+                            MATCH_POLICY matchPolicy,
+                            Source handleSource,
+                            Configuration configuration,
+                            Optional<MongoClient> mclient,
+                            Map<String, String> contextOptions) {
 }

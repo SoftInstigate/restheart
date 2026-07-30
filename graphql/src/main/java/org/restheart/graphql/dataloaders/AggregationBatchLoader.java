@@ -62,7 +62,7 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
     public static void setMongoClient(MongoClient mClient) {
         mongoClient = mClient;
     }
-    
+
     public static void setSecurityChecker(AggregationPipelineSecurityChecker checker) {
         securityChecker = checker;
     }
@@ -108,7 +108,7 @@ public class AggregationBatchLoader implements BatchLoader<BsonValue, BsonValue>
             });
 
             return CompletableFuture.completedFuture(res);
-        } catch(MongoExecutionTimeoutException toe) {
+        } catch (MongoExecutionTimeoutException toe) {
             throw new GraphQLQueryTimeoutException("Maximum query time limit of " + this.queryTimeLimit + "ms exceeded");
         }
 

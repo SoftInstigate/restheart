@@ -66,17 +66,17 @@ public class AggregationMapping extends FieldMapping implements Batchable {
     @Override
     public GraphQLDataFetcher getDataFetcher() {
         return this.dataLoaderSettings.getBatching()
-            ? new GQLBatchAggregationDataFetcher(this)
-            : new GQLAggregationDataFetcher(this);
+                ? new GQLBatchAggregationDataFetcher(this)
+                : new GQLAggregationDataFetcher(this);
     }
 
     @Override
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var optionsBuilder = DataLoaderOptions.newOptions()
-                .setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()))
-                .setBatchingEnabled(this.dataLoaderSettings.getBatching())
-                .setCachingEnabled(this.dataLoaderSettings.getCaching());
+                    .setCacheKeyFunction(bsonVal -> String.valueOf(bsonVal.hashCode()))
+                    .setBatchingEnabled(this.dataLoaderSettings.getBatching())
+                    .setCachingEnabled(this.dataLoaderSettings.getCaching());
 
             if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
                 optionsBuilder.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
@@ -108,7 +108,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
             var argInterpolated = StagesInterpolator.interpolate(VAR_OPERATOR.$arg, STAGE_OPERATOR.$ifarg, stages, values);
             var argAndFkInterpolated = new ArrayList<BsonDocument>();
 
-            for (var s: argInterpolated) {
+            for (var s : argInterpolated) {
                 var is = interpolateFkOperator(s, env);
 
                 if (is.isDocument()) {
@@ -119,7 +119,7 @@ public class AggregationMapping extends FieldMapping implements Batchable {
             }
 
             return argAndFkInterpolated;
-        } catch(InvalidMetadataException ime) {
+        } catch (InvalidMetadataException ime) {
             throw new GraphQLIllegalAppDefinitionException("invalid app definition", ime);
         }
     }

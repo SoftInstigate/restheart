@@ -55,12 +55,12 @@ public class HttpStatus {
      * Reason phrases lookup table.
      */
     private static final String[][] REASON_PHRASES = new String[][]{
-        new String[0],
-        new String[3],
-        new String[8],
-        new String[8],
-        new String[30],
-        new String[8]
+            new String[0],
+            new String[3],
+            new String[8],
+            new String[8],
+            new String[30],
+            new String[8]
     };
 
     // -------------------------------------------------------------- Constants

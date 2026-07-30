@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MapReduceIterable;
 
 import io.undertow.server.HttpServerExchange;
 
@@ -99,15 +98,15 @@ public class GetAggregationHandler extends PipelinedHandler {
 
         var queryUri = request.getAggregationOperation();
 
-		List<AbstractAggregationOperation> aggregations;
+        List<AbstractAggregationOperation> aggregations;
 
-		try {
-		  aggregations = AbstractAggregationOperation.getFromJson(request.getCollectionProps());
-		} catch(InvalidMetadataException ime) {
-		  response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown query type", ime);
-		  next(exchange);
-		  return;
-		}
+        try {
+            aggregations = AbstractAggregationOperation.getFromJson(request.getCollectionProps());
+        } catch (InvalidMetadataException ime) {
+            response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown query type", ime);
+            next(exchange);
+            return;
+        }
 
         var _query = aggregations.stream().filter(q -> q.getUri().equals(queryUri)).findFirst();
 
@@ -126,77 +125,77 @@ public class GetAggregationHandler extends PipelinedHandler {
             return;
         } else {
             var avars = request.getAggregationVars() == null
-                ? new BsonDocument()
-                : request.getAggregationVars();
+                    ? new BsonDocument()
+                    : request.getAggregationVars();
 
             // add the default variables to the avars document
             StagesInterpolator.injectAvars(request, avars);
 
-		  if (Objects.requireNonNull(query.getType()) == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
-			AggregateIterable<BsonDocument> agrOutput;
-			var pipeline = (AggregationPipeline) query;
-			try {
-			  var clientSession = request.getClientSession();
+            if (Objects.requireNonNull(query.getType()) == AbstractAggregationOperation.TYPE.AGGREGATION_PIPELINE) {
+                AggregateIterable<BsonDocument> agrOutput;
+                var pipeline = (AggregationPipeline) query;
+                try {
+                    var clientSession = request.getClientSession();
 
-			  var stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
+                    var stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
 
-			  // Security validation: check aggregation pipeline for blacklisted stages and operators
-			  try {
-				var stagesArray = new BsonArray();
-				stages.forEach(stagesArray::add);
-				securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
-			  } catch (SecurityException se) {
-				response.setInError(HttpStatus.SC_FORBIDDEN, "aggregation pipeline security violation: " + se.getMessage());
-				LOGGER.warn("Aggregation pipeline blocked for security violation: {}", se.getMessage());
-				next(exchange);
-				return;
-			  }
+                    // Security validation: check aggregation pipeline for blacklisted stages and operators
+                    try {
+                        var stagesArray = new BsonArray();
+                        stages.forEach(stagesArray::add);
+                        securityChecker.validatePipelineOrThrow(stagesArray, request.getDBName());
+                    } catch (SecurityException se) {
+                        response.setInError(HttpStatus.SC_FORBIDDEN, "aggregation pipeline security violation: " + se.getMessage());
+                        LOGGER.warn("Aggregation pipeline blocked for security violation: {}", se.getMessage());
+                        next(exchange);
+                        return;
+                    }
 
-			  if (clientSession == null) {
-				agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
-					.aggregate(stages)
-					.maxTime(MongoServiceConfiguration.get().getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
-					.allowDiskUse(pipeline.getAllowDiskUse().getValue());
-			  } else {
-				agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
-					.aggregate(clientSession, stages)
-					.maxTime(MongoServiceConfiguration.get().getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
-					.allowDiskUse(pipeline.getAllowDiskUse().getValue());
-			  }
+                    if (clientSession == null) {
+                        agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
+                                .aggregate(stages)
+                                .maxTime(MongoServiceConfiguration.get().getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
+                                .allowDiskUse(pipeline.getAllowDiskUse().getValue());
+                    } else {
+                        agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
+                                .aggregate(clientSession, stages)
+                                .maxTime(MongoServiceConfiguration.get().getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
+                                .allowDiskUse(pipeline.getAllowDiskUse().getValue());
+                    }
 
-			  // when the last stage of the aggregation is $merge or $out
-			  // execute the aggregation with AggregateIterable.toCollection()
-			  // otherwise the entire view will be retuned, this can be the whole
-			  // collection in the worst case
-			  var isMergeOrOutSuffixed = stages.get(stages.size() - 1).keySet().stream().filter(k -> "$merge".equals(k) || "_$merge".equals(k) || "$out".equals(k) || "_$out".equals(k)).findAny().isPresent();
+                    // when the last stage of the aggregation is $merge or $out
+                    // execute the aggregation with AggregateIterable.toCollection()
+                    // otherwise the entire view will be retuned, this can be the whole
+                    // collection in the worst case
+                    var isMergeOrOutSuffixed = stages.get(stages.size() - 1).keySet().stream().filter(k -> "$merge".equals(k) || "_$merge".equals(k) || "$out".equals(k) || "_$out".equals(k)).findAny().isPresent();
 
-			  if (isMergeOrOutSuffixed) {
-				agrOutput.toCollection();
-			  } else {
-				agrOutput.into(_data);
-			  }
-			} catch (MongoCommandException mce) {
-			  response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "error executing aggregation", mce);
-			  LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, mongoCommandExceptionError(mce));
-			  next(exchange);
-			  return;
-			} catch (InvalidMetadataException ex) {
-			  response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
-			  LOGGER.error("invalid aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
-			  next(exchange);
-			  return;
-			} catch (QueryVariableNotBoundException qvnbe) {
-			  response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute aggregation", qvnbe);
-			  LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
-			  next(exchange);
-			  return;
-			}
-		  } else {
-			response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown pipeline type");
-			LOGGER.error("error executing pipeline: unknown type {} for /{}/{}/_aggrs/{}", query.getType(), request.getDBName(), request.getCollectionName(), queryUri);
-			next(exchange);
-			return;
-		  }
+                    if (isMergeOrOutSuffixed) {
+                        agrOutput.toCollection();
+                    } else {
+                        agrOutput.into(_data);
+                    }
+                } catch (MongoCommandException mce) {
+                    response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "error executing aggregation", mce);
+                    LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}: {}", request.getDBName(), request.getCollectionName(), queryUri, mongoCommandExceptionError(mce));
+                    next(exchange);
+                    return;
+                } catch (InvalidMetadataException ex) {
+                    response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "invalid aggregation", ex);
+                    LOGGER.error("invalid aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, ex);
+                    next(exchange);
+                    return;
+                } catch (QueryVariableNotBoundException qvnbe) {
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "cannot execute aggregation", qvnbe);
+                    LOGGER.error("error executing aggregation /{}/{}/_aggrs/{}", request.getDBName(), request.getCollectionName(), queryUri, qvnbe);
+                    next(exchange);
+                    return;
+                }
+            } else {
+                response.setInError(HttpStatus.SC_UNPROCESSABLE_ENTITY, "unknown pipeline type");
+                LOGGER.error("error executing pipeline: unknown type {} for /{}/{}/_aggrs/{}", query.getType(), request.getDBName(), request.getCollectionName(), queryUri);
+                next(exchange);
+                return;
+            }
         }
 
         if (exchange.isComplete()) {
@@ -230,7 +229,7 @@ public class GetAggregationHandler extends PipelinedHandler {
         var errorMessage = mongoErrorResponse.getString("errmsg", new BsonString("")).getValue();
 
         if (!errorMessage.isEmpty()) {
-            errorMessage = errorMessage.length() <= 100 ? errorMessage: errorMessage.substring(0, 100) + "...";
+            errorMessage = errorMessage.length() <= 100 ? errorMessage : errorMessage.substring(0, 100) + "...";
         }
 
         if (errorCodeName.isEmpty()) {

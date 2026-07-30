@@ -65,10 +65,10 @@ import java.util.stream.Collectors;
  * <p>These endpoints can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "getTeamsService",
-        description      = "GET /auth/teams — list current user's team memberships; POST — create an additional team",
-        defaultURI       = "/auth/teams",
-        secure           = true,
+        name = "getTeamsService",
+        description = "GET /auth/teams — list current user's team memberships; POST — create an additional team",
+        defaultURI = "/auth/teams",
+        secure = true,
         enabledByDefault = false)
 public class GetTeamsService implements JsonService {
 
@@ -99,15 +99,24 @@ public class GetTeamsService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (req.isGet()) { handleList(req, res); return; }
-        if (req.isPost()) { handleCreate(req, res); return; }
+        if (req.isGet()) {
+            handleList(req, res);
+            return;
+        }
+        if (req.isPost()) {
+            handleCreate(req, res);
+            return;
+        }
 
         res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
     }
@@ -126,9 +135,9 @@ public class GetTeamsService implements JsonService {
         var result = new JsonArray();
         for (var m : memberships) {
             var obj = new JsonObject();
-            obj.add("id",            JsonParser.parseString(BsonUtils.toJson(m.teamId())));
-            obj.addProperty("name",   m.displayName());
-            obj.addProperty("role",   m.role());
+            obj.add("id", JsonParser.parseString(BsonUtils.toJson(m.teamId())));
+            obj.addProperty("name", m.displayName());
+            obj.addProperty("role", m.role());
             obj.addProperty("active", m.active());
             if (m.description() != null) {
                 obj.addProperty("description", m.description());
@@ -174,9 +183,9 @@ public class GetTeamsService implements JsonService {
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()
-                            .filter(BsonValue::isString)
-                            .map(v -> v.asString().getValue())
-                            .collect(Collectors.toSet())
+                        .filter(BsonValue::isString)
+                        .map(v -> v.asString().getValue())
+                        .collect(Collectors.toSet())
                         : Set.<String>of())
                 .orElse(Set.of());
 

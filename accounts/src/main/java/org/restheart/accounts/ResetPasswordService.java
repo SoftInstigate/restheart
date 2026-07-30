@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonDocument;
@@ -51,9 +50,9 @@ import com.mongodb.client.MongoClient;
  * and email-mismatch conditions to prevent oracle attacks.
  */
 @RegisterPlugin(
-        name             = "resetPasswordService",
-        description      = "PATCH /auth/reset-password — validates token and sets new password",
-        defaultURI       = "/auth/reset-password",
+        name = "resetPasswordService",
+        description = "PATCH /auth/reset-password — validates token and sets new password",
+        defaultURI = "/auth/reset-password",
         enabledByDefault = false)
 public class ResetPasswordService implements JsonService {
 
@@ -76,7 +75,7 @@ public class ResetPasswordService implements JsonService {
     private JsonSchemas jsonSchemas;
 
 
-    private JwtHelper  jwt;
+    private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
@@ -87,7 +86,10 @@ public class ResetPasswordService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isPatch()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -100,9 +102,9 @@ public class ResetPasswordService implements JsonService {
             Errors.error(res, 400, "Invalid request body");
             return;
         }
-        var obj      = body.getAsJsonObject();
-        var email    = obj.has("email")    ? obj.get("email").getAsString()    : null;
-        var token    = obj.has("token")    ? obj.get("token").getAsString()    : null;
+        var obj = body.getAsJsonObject();
+        var email = obj.has("email") ? obj.get("email").getAsString() : null;
+        var token = obj.has("token") ? obj.get("token").getAsString() : null;
         var password = obj.has("password") ? obj.get("password").getAsString() : null;
 
         if (email == null || email.isBlank()) {
@@ -160,7 +162,7 @@ public class ResetPasswordService implements JsonService {
         }
 
         // 6a. Persist the new hashed password
-        var hashed  = TokenUtils.hashPassword(password);
+        var hashed = TokenUtils.hashPassword(password);
         var updates = new BsonDocument("password", new BsonString(hashed));
         try {
             db(req).updateUser(storedEmail, updates);
@@ -178,7 +180,7 @@ public class ResetPasswordService implements JsonService {
         var extraClaims = new java.util.HashMap<String, Object>();
         activeMembership.ifPresent(m ->
                 extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
-        var jwtToken  = jwt.issueToken(storedEmail, roles,
+        var jwtToken = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,

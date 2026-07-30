@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.mongodb.db;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -65,7 +66,8 @@ public class GridFs {
 
     private static final String FILENAME = "filename";
 
-    private final Collections collections = Collections.get();;
+    private final Collections collections = Collections.get();
+    ;
     private final Databases dbs = Databases.get();
 
     private GridFs() {
@@ -89,12 +91,12 @@ public class GridFs {
      * @throws DuplicateKeyException
      */
     public OperationResult createFile(
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String bucketName,
-        final BsonDocument metadata,
-        final InputStream fileInputStream)
-        throws IOException, DuplicateKeyException {
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String bucketName,
+            final BsonDocument metadata,
+            final InputStream fileInputStream)
+            throws IOException, DuplicateKeyException {
         final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
 
@@ -139,14 +141,14 @@ public class GridFs {
      * @throws java.io.IOException
      */
     public OperationResult upsertFile(
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String bucketName,
-        final BsonDocument metadata,
-        final InputStream fileInputStream,
-        final BsonDocument filter,
-        final String requestEtag,
-        final boolean checkEtag) throws IOException {
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String bucketName,
+            final BsonDocument metadata,
+            final InputStream fileInputStream,
+            final BsonDocument filter,
+            final String requestEtag,
+            final boolean checkEtag) throws IOException {
 
         final BsonValue id;
         final OperationResult deletionResult;
@@ -159,7 +161,7 @@ public class GridFs {
         }
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
-        final boolean deleteOperationWasSuccessful = deletionResult == null ? true: deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
+        final boolean deleteOperationWasSuccessful = deletionResult == null ? true : deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
         final boolean fileDidntExist = deletionResult == null ? true : deletionResult.getHttpCode() == SC_NOT_FOUND;
         final boolean fileExisted = !fileDidntExist;
 
@@ -213,13 +215,13 @@ public class GridFs {
      * @return the OperationResult
      */
     public OperationResult deleteFile(
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String bucketName,
-        final BsonValue fileId,
-        final BsonDocument filter,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String bucketName,
+            final BsonValue fileId,
+            final BsonDocument filter,
+            final String requestEtag,
+            final boolean checkEtag) {
         final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
 
@@ -279,10 +281,10 @@ public class GridFs {
      * @return the number of files deleted
      */
     public long bulkDeleteFiles(
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String bucketName,
-        final BsonDocument filter) {
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String bucketName,
+            final BsonDocument filter) {
         final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
         var gridFSBucket = GridFSBuckets.create(db, bucket);
@@ -333,17 +335,17 @@ public class GridFs {
      * @return
      */
     public OperationResult updateFileMetadata(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final METHOD method,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument newContent,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final METHOD method,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument newContent,
+            final String requestEtag,
+            final boolean checkEtag) {
         var mcoll = collections.collection(rsOps, dbName, collName);
 
         // genereate new _etag
@@ -366,18 +368,18 @@ public class GridFs {
 
         var oldDocument = updateResult.getOldData();
 
-        switch(method) {
+        switch (method) {
             case PUT -> {
                 if (oldDocument != null && checkEtag) { // update
                     // check the old etag (in case restore the old document)
                     return optimisticCheckEtag(
-                        cs,
-                        mcoll,
-                        shardKeys,
-                        oldDocument,
-                        newEtag,
-                        requestEtag,
-                        HttpStatus.SC_OK);
+                            cs,
+                            mcoll,
+                            shardKeys,
+                            oldDocument,
+                            newEtag,
+                            requestEtag,
+                            HttpStatus.SC_OK);
                 } else if (oldDocument != null) {  // update
                     var query = eq("_id", documentId.get());
                     var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
@@ -390,24 +392,24 @@ public class GridFs {
             case PATCH -> {
                 if (oldDocument == null) { // Attempted an insert of a new doc.
                     return new OperationResult(updateResult.getHttpCode() > 0
-                        ? updateResult.getHttpCode()
-                        : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                            ? updateResult.getHttpCode()
+                            : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
                 } else if (checkEtag) {
                     // check the old etag (in case restore the old document version)
                     return optimisticCheckEtag(
-                        cs,
-                        mcoll,
-                        shardKeys,
-                        oldDocument,
-                        newEtag,
-                        requestEtag,
-                        HttpStatus.SC_OK);
+                            cs,
+                            mcoll,
+                            shardKeys,
+                            oldDocument,
+                            newEtag,
+                            requestEtag,
+                            HttpStatus.SC_OK);
                 } else {
                     var query = eq("_id", documentId.get());
 
                     var newDocument = cs.isPresent()
-                        ? mcoll.find(cs.get(), query).first()
-                        : mcoll.find(query).first();
+                            ? mcoll.find(cs.get(), query).first()
+                            : mcoll.find(query).first();
 
                     return new OperationResult(updateResult.getHttpCode() > 0
                             ? updateResult.getHttpCode()
@@ -424,25 +426,25 @@ public class GridFs {
     }
 
     private OperationResult optimisticCheckEtag(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument oldDocument,
-        final Object newEtag,
-        final String requestEtag,
-        final int httpStatusIfOk) {
+            final Optional<ClientSession> cs,
+            final MongoCollection<BsonDocument> coll,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument oldDocument,
+            final Object newEtag,
+            final String requestEtag,
+            final int httpStatusIfOk) {
         var oldEtag = oldDocument.get("metadata", new BsonDocument()).asDocument().get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
             // oops, we need to restore old document
             DbUtils.restoreDocument(
-                cs,
-                coll,
-                oldDocument.get("_id"),
-                shardKeys,
-                oldDocument,
-                newEtag,
-                "metadata._etag");
+                    cs,
+                    coll,
+                    oldDocument.get("_id"),
+                    shardKeys,
+                    oldDocument,
+                    newEtag,
+                    "metadata._etag");
 
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
@@ -460,20 +462,20 @@ public class GridFs {
         if (Objects.equals(_requestEtag, oldEtag)) {
             var query = eq("_id", oldDocument.get("_id"));
             var newDocument = cs.isPresent()
-                ? coll.find(cs.get(), query).first()
-                : coll.find(query).first();
+                    ? coll.find(cs.get(), query).first()
+                    : coll.find(query).first();
 
             return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oops, we need to restore old document
             DbUtils.restoreDocument(
-                cs,
-                coll,
-                oldDocument.get("_id"),
-                shardKeys,
-                oldDocument,
-                newEtag,
-                "metadata._etag");
+                    cs,
+                    coll,
+                    oldDocument.get("_id"),
+                    shardKeys,
+                    oldDocument,
+                    newEtag,
+                    "metadata._etag");
 
             return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }

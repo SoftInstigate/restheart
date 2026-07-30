@@ -201,10 +201,10 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
      */
     @Override
     protected JsonElement getErrorContent(int code,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) throws IOException {
+                                          String httpStatusText,
+                                          String message,
+                                          Throwable t,
+                                          boolean includeStackTrace) throws IOException {
         var resp = new JsonObject();
         resp.add("http status code", new JsonPrimitive(code));
         resp.add("http status description", new JsonPrimitive(httpStatusText));

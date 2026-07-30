@@ -230,7 +230,7 @@ public class MongoRequestTest {
         PathTemplateMatcher<MongoMount> templateMongoMounts = new PathTemplateMatcher<>();
         String whatUri = "/restheart/{tenant}_{coll}";
         String whereUri = "/{tenant}/{coll}";
-        var mongoMount = new MongoMount(whatUri,whereUri);
+        var mongoMount = new MongoMount(whatUri, whereUri);
         templateMongoMounts.add(mongoMount.uri, mongoMount);
 
         var tmm = templateMongoMounts.match(requestPath);
@@ -258,7 +258,7 @@ public class MongoRequestTest {
         PathTemplateMatcher<MongoMount> templateMongoMounts = new PathTemplateMatcher<>();
         String whatUri = "/restheart/{tenant}_{coll}/{*}";
         String whereUri = "/{tenant}/{coll}/{*}";
-        var mongoMount = new MongoMount(whatUri,whereUri);
+        var mongoMount = new MongoMount(whatUri, whereUri);
         templateMongoMounts.add(mongoMount.uri, mongoMount);
 
         var tmm = templateMongoMounts.match(requestPath);
