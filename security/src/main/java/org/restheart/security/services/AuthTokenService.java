@@ -167,7 +167,7 @@ public class AuthTokenService implements ByteArrayService {
             if (!isCookieEndpoint) {
                 var bodyParams = parseFormBody(request);
                 if ("authorization_code".equals(bodyParams.get("grant_type"))) {
-                    handleAuthorizationCodeGrant(bodyParams, response);
+                    handleAuthorizationCodeGrant(request, bodyParams, response);
                     return;
                 }
             }
@@ -238,7 +238,7 @@ public class AuthTokenService implements ByteArrayService {
      * <p>After signature/expiry verification, PKCE S256 is checked:
      * {@code BASE64URL(SHA-256(code_verifier)) == code_challenge}.
      */
-    private void handleAuthorizationCodeGrant(Map<String, String> bodyParams, ByteArrayResponse response) {
+    private void handleAuthorizationCodeGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response) {
         var code = bodyParams.get("code");
         var codeVerifier = bodyParams.get("code_verifier");
 
@@ -288,7 +288,9 @@ public class AuthTokenService implements ByteArrayService {
             return;
         }
 
-        var credential = tokenManagerRecord.getInstance().get(account);
+        // pass the request so the token manager can resolve per-request state, e.g. the
+        // per-tenant account-properties-claims list
+        var credential = tokenManagerRecord.getInstance().get(account, request);
 
         if (credential == null) {
             LOGGER.error("Token manager returned null credential for user '{}'", username);

@@ -126,10 +126,22 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
             throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
         }
 
-        this.jwtConfig = new JwtConfig(key, algorithm, issuer, audience.isEmpty() ? null : audience.toArray(String[]::new));
+        // Account properties copied into issued tokens. Shared here so that every issuer —
+        // jwtTokenManager on /token, restheart-accounts at login — puts the same claims in the
+        // token: they are the same JWT, issued at different moments.
+        var accountPropertiesClaims = accountPropertiesClaims(config);
+
+        this.jwtConfig = new JwtConfig(key, algorithm, issuer,
+                audience.isEmpty() ? null : audience.toArray(String[]::new),
+                accountPropertiesClaims);
 
         BootstrapLogger.info(LOGGER, "Algorithm: {}, Issuer: {}, Audience: {}",
                 algorithm, issuer, audience.isEmpty() ? "null" : String.join(", ", audience));
+
+        if (accountPropertiesClaims != null) {
+            BootstrapLogger.info(LOGGER, "Account properties claims: {}",
+                    String.join(", ", accountPropertiesClaims));
+        }
 
         BootstrapLogger.endPhase(LOGGER, "JWT CONFIGURATION COMPLETED");
     }
@@ -138,6 +150,27 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     public JwtConfig get(PluginRecord<?> caller) {
         LOGGER.debug("Providing JWT config to: {}", caller.getName());
         return this.jwtConfig;
+    }
+
+    /**
+     * Reads {@code account-properties-claims}, accepting a single String or a List of Strings.
+     *
+     * @return the configured names, or {@code null} when not set here — issuers then fall back to
+     *         their own deprecated per-plugin setting
+     */
+    private List<String> accountPropertiesClaims(Map<String, Object> config) throws ConfigurationException {
+        var configured = argOrDefault(config, "account-properties-claims", null);
+
+        return switch (configured) {
+            case null -> null;
+            case String s -> List.of(s);
+            case List<?> l -> l.stream()
+                    .filter(String.class::isInstance)
+                    .map(e -> (String) e)
+                    .toList();
+            default -> throw new ConfigurationException(
+                    "Wrong account-properties-claims, must be a String or an Array of Strings");
+        };
     }
 
     /**
@@ -153,9 +186,15 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     }
 
     /**
-     * JWT configuration record containing all shared JWT settings
+     * JWT configuration record containing all shared JWT settings.
+     *
+     * @param accountPropertiesClaims account properties copied into issued tokens. Shared for the
+     *        same reason {@code key} and {@code issuer} are: a JWT issued by this deployment is one
+     *        thing regardless of which component issues it. {@code null} means "not set here",
+     *        in which case issuers fall back to their own deprecated setting.
      */
-    public record JwtConfig(String key, String algorithm, String issuer, String[] audience) {
+    public record JwtConfig(String key, String algorithm, String issuer, String[] audience,
+                            List<String> accountPropertiesClaims) {
         public boolean hasAudience() {
             return audience != null && audience.length > 0;
         }

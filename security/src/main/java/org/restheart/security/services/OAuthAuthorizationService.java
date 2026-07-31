@@ -281,9 +281,11 @@ public class OAuthAuthorizationService implements ByteArrayService {
                 .withClaim(CLAIM_CLIENT_ID, clientId);
 
         // Propagate account-properties-claims via JwtTokenManager so the logic stays in one place.
+        // The request carries the effective claim list on a multi-tenant deployment: the access
+        // token is later built from this code's payload, so a claim dropped here is lost for good.
         var tokenMgr = registry.getTokenManager();
         if (tokenMgr != null && tokenMgr.getInstance() instanceof JwtTokenManager jtm) {
-            codeBuilder = jtm.withAccountPropertiesClaims(codeBuilder, account);
+            codeBuilder = jtm.withAccountPropertiesClaims(codeBuilder, account, request);
         }
 
         var code = codeBuilder.sign(signingAlgo);

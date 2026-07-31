@@ -21,6 +21,7 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
@@ -105,7 +106,9 @@ public class TokenInjector extends PipelinedHandler {
 
             try {
                 var tokenGenStartTime = System.currentTimeMillis();
-                var token = tokenManager.get(authenticatedAccount);
+                // pass the request: a token manager may resolve per-request state (e.g. the
+                // per-tenant account-properties-claims list) that get(Account) cannot see
+                var token = tokenManager.get(authenticatedAccount, Request.of(exchange));
                 var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
 
                 RequestPhaseContext.setPhase(Phase.INFO);

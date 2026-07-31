@@ -54,9 +54,11 @@ import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.BaseAccount;
+import org.restheart.security.authenticators.MongoRealmAuthenticator;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.security.WithProperties;
@@ -98,9 +100,13 @@ public class JwtTokenManager implements TokenManager {
     private String[] audience;
     private boolean enabled = false;
     private List<String> accountPropertiesClaims;
+    private volatile JwtIssuer issuerImpl;
 
     @Inject("config")
     Map<String, Object> config;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
 
     @Inject("jwtConfigProvider")
     private JwtConfigProvider.JwtConfig jwtConfig;
@@ -135,10 +141,25 @@ public class JwtTokenManager implements TokenManager {
         this.issuer = jwtConfig.issuer();
         this.audience = jwtConfig.audience();
 
+        // The claim policy is shared with every other JWT issuer via jwtConfigProvider — see
+        // JwtIssuer. The legacy per-plugin setting still wins when set, to not break existing
+        // deployments, but it is deprecated exactly like jwt-key was.
+        var legacyClaims = this.<List<String>>argOrDefaultNullable("account-properties-claims");
+
+        if (legacyClaims != null) {
+            LOGGER.warn("jwtTokenManager/account-properties-claims is deprecated: configure "
+                    + "account-properties-claims in jwtConfigProvider instead, so that every JWT "
+                    + "issuer applies the same claims. Support for this setting will be removed.");
+        }
+
+        this.accountPropertiesClaims = legacyClaims != null
+                ? legacyClaims
+                : jwtConfig.accountPropertiesClaims();
+
         jwtCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
                 Cache.EXPIRE_POLICY.AFTER_WRITE,
                 ttl * 1000 * 60 - 500, // -500 makes sure that cache entry expires always before token
-                account -> newToken(account.wrapped()));
+                key -> newToken(key.wrapped(), key.claims()));
 
         try {
             this.verifier = jwtConfig.hasAudience()
@@ -150,7 +171,58 @@ public class JwtTokenManager implements TokenManager {
             throw new ConfigurationException("error setting the verifier", e);
         }
 
-        this.accountPropertiesClaims = argOrDefault(config, "account-properties-claims", null);
+    }
+
+    /** Reads an optional config value without the "using default" log noise. */
+    @SuppressWarnings("unchecked")
+    private <T> T argOrDefaultNullable(String key) {
+        return (T) argOrDefault(config, key, null);
+    }
+
+    /**
+     * The shared JWT issuance policy. Built lazily: resolving the password property name needs
+     * {@code mongoRealmAuthenticator}, which may not be initialized when this plugin's
+     * {@code @OnInit} runs.
+     */
+    JwtIssuer issuer() {
+        var local = this.issuerImpl;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.issuerImpl;
+                if (local == null) {
+                    local = new JwtIssuer(algo, issuer, audience, accountPropertiesClaims, passwordProperty());
+                    this.issuerImpl = local;
+                }
+            }
+        }
+
+        return local;
+    }
+
+    /**
+     * The password property name from {@code mongoRealmAuthenticator/prop-password}, so that the
+     * denylist covers it even when the deployment renames it.
+     */
+    private String passwordProperty() {
+        if (registry == null) {
+            return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
+        }
+
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+            if (pr != null && pr.isEnabled()
+                    && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+                if (prop != null && !prop.isBlank()) {
+                    return prop;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
+        }
+
+        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
     }
 
     private Algorithm getAlgorithm(final String name, final String key) {
@@ -233,8 +305,16 @@ public class JwtTokenManager implements TokenManager {
                     final var jwtPayload = new String(Base64.getUrlDecoder().decode(decoded.getPayload()),
                             StandardCharsets.UTF_8);
 
+                    // Cache the token exactly as presented, so the fast path above can recognise
+                    // it next time. Re-minting one here from `ca.wrapped()` — a bare BaseAccount
+                    // with no roles and no properties — used to store a degraded impostor under
+                    // this user's key, which get() would then hand back as their token.
                     var cacheUpdateStartTime = System.currentTimeMillis();
-                    this.jwtCache.put(ca, newToken(ca.wrapped(), decoded.getExpiresAt()));
+                    this.jwtCache.put(ca, new Token(
+                            rawToken,
+                            decoded.getExpiresAt(),
+                            roles.toArray(new String[roles.size()]),
+                            null));
                     var cacheUpdateDuration = System.currentTimeMillis() - cacheUpdateStartTime;
 
                     var totalDuration = System.currentTimeMillis() - verificationStartTime;
@@ -264,6 +344,11 @@ public class JwtTokenManager implements TokenManager {
 
     @Override
     public PasswordCredential get(final Account account) {
+        return get(account, null);
+    }
+
+    @Override
+    public PasswordCredential get(final Account account, final Request<?> request) {
         var tokenStartTime = System.currentTimeMillis();
 
         if (!enabled) {
@@ -287,7 +372,10 @@ public class JwtTokenManager implements TokenManager {
 
         try {
             var cacheStartTime = System.currentTimeMillis();
-            final var token = this.jwtCache.getLoading(new ComparableAccount(account)).get();
+            // The effective claim list is part of the cache key: on a multi-tenant node the same
+            // principal can be served with different lists, producing different tokens.
+            final var claims = JwtIssuer.claimsOverride(request);
+            final var token = this.jwtCache.getLoading(new ComparableAccount(account, claims)).get();
             var cacheDuration = System.currentTimeMillis() - cacheStartTime;
 
             final var newTokenAccount = new PwdCredentialAccount(
@@ -306,38 +394,26 @@ public class JwtTokenManager implements TokenManager {
         }
     }
 
-    private Token newToken(final Account account) {
-        return newToken(account, Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES)));
+    private Token newToken(final Account account, final List<String> claims) {
+        return newToken(account, Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES)), claims);
     }
 
-    private Token newToken(final Account account, final Date expires) {
-        final var creator = audience != null
-                ? JWT.create().withIssuer(issuer).withAudience(audience)
-                : JWT.create().withIssuer(issuer);
+    private Token newToken(final Account account, final Date expires, final List<String> claims) {
+        final var jwtIssuer = issuer();
 
-        final var _builder = creator
-                .withSubject(account.getPrincipal().getName())
-                .withExpiresAt(expires)
-                .withIssuer(issuer)
-                .withJWTId(UUID.randomUUID().toString())
-                .withArrayClaim(ROLES, account.getRoles().toArray(new String[account.getRoles().size()]));
+        var builder = jwtIssuer.newBuilder(account.getPrincipal().getName(), account.getRoles(), expires);
 
-        final Builder[] builder = {_builder};
         final Map<String, ? super Object> properties;
 
         if (account instanceof final WithProperties<?> awp) {
-            properties = claimsFromAccountProps(awp.propertiesAsMap());
-            // Always include authDb claim if present (for cache key matching)
-            var authDb = getAuthDb(account);
-            if (authDb != null) {
-                builder[0] = builder[0].withClaim("authDb", authDb);
-            }
-            properties.entrySet().stream().forEach(e -> builder[0] = withClaim(builder[0], e.getKey(), e.getValue()));
+            // authDb is always included when present (the cache key matches on it)
+            builder = jwtIssuer.applyAccountClaims(builder, awp.propertiesAsMap(), claims);
+            properties = jwtIssuer.accountClaims(awp.propertiesAsMap(), claims);
         } else {
             properties = null;
         }
 
-        final var raw = builder[0].sign(algo);
+        final var raw = jwtIssuer.sign(builder);
 
         return new Token(
                 raw.toCharArray(),
@@ -346,91 +422,8 @@ public class JwtTokenManager implements TokenManager {
                 properties);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private Builder withClaim(final Builder b, final String k, final Object v) {
-        if (k == null || v == null) {
-            return b;
-        }
-
-        return switch (v) {
-            case final String s -> b.withClaim(k, s);
-            case final String[] ss -> b.withArrayClaim(k, ss);
-            case final Boolean boo -> b.withClaim(k, boo);
-            case final Integer i -> b.withClaim(k, i);
-            case final Integer[] ii -> b.withArrayClaim(k, ii);
-            case final Long l -> b.withClaim(k, l);
-            case final Long[] ll -> b.withArrayClaim(k, ll);
-            case final Double d -> b.withClaim(k, d);
-            case final Date d -> b.withClaim(k, d);
-            case final Map m -> {
-                try {
-                    yield b.withClaim(k, (Map<String, ?>) m);
-                } catch (final ClassCastException cce) {
-                    LOGGER.warn(ERROR_UNSUPPORTED_JWT_CLAIM_TYPE, k);
-                    yield b;
-                }
-            }
-            case final List l -> b.withClaim(k, (List<?>) l);
-            default -> {
-                LOGGER.warn(ERROR_UNSUPPORTED_JWT_CLAIM_TYPE, k, v.getClass().getSimpleName());
-                yield b;
-            }
-        };
-    }
-
-    private Map<String, ? super Object> claimsFromAccountProps(final Map<String, ? super Object> properties) {
-        final var ret = new HashMap<String, Object>();
-
-        if (accountPropertiesClaims != null) {
-            this.accountPropertiesClaims.stream()
-                    .map(path -> new Pair<String[], Object>(keysFromPath(path), Utils.find(properties, path, true)))
-                    .filter(p -> p.getValue() != null)
-                    .forEach(p -> addClaim(ret, p.getKey(), p.getValue()));
-        }
-
-        return ret;
-    }
-
-    private String[] keysFromPath(final String path) {
-        final var ret = path.contains("/") ? path.split("/") : new String[]{path};
-        // remove empty elements
-        return Arrays.stream(ret).filter(k -> k != null && !k.isBlank()).toArray(String[]::new);
-    }
-
     private String getAuthDb(Account account) {
-        if (account instanceof WithProperties<?> wp) {
-            var props = wp.propertiesAsMap();
-            if (props != null && props.containsKey("authDb")) {
-                Object authDbObj = props.get("authDb");
-                if (authDbObj instanceof String) {
-                    return (String) authDbObj;
-                } else if (authDbObj instanceof BsonString) {
-                    return ((BsonString) authDbObj).getValue();
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * add the claim preserving the json structure
-     * i.e. /a/nested/value -> { a: { nested: value} }
-     *
-     * @param map
-     * @param keys
-     * @param val
-     */
-    private void addClaim(final Map<String, Object> map, final String[] keys, final Object val) {
-        for (var idx = 0;idx < keys.length;idx++) {
-            if (idx == keys.length - 1) {
-                map.put(keys[idx], val);
-            } else {
-                final var nestedMap = new HashMap<String, Object>();
-                map.put(keys[idx], nestedMap);
-                addClaim(nestedMap, Arrays.copyOfRange(keys, idx + 1, keys.length), val);
-                break;
-            }
-        }
+        return account instanceof WithProperties<?> wp ? JwtIssuer.authDb(wp.propertiesAsMap()) : null;
     }
 
     /**
@@ -442,15 +435,20 @@ public class JwtTokenManager implements TokenManager {
      * access token without duplicating the filtering logic.
      */
     public Builder withAccountPropertiesClaims(Builder builder, final Account account) {
+        return withAccountPropertiesClaims(builder, account, null);
+    }
+
+    /**
+     * As {@link #withAccountPropertiesClaims(Builder, Account)}, resolving the effective claim
+     * list from {@code request} — see {@link JwtIssuer#CLAIMS_OVERRIDE_PARAM}.
+     *
+     * <p>Callers that hold a request should prefer this overload. An authorization code that
+     * omits a claim cannot have it reappear in the access token minted from it: the access token
+     * is built from the code's own payload, so a claim dropped here is lost for good.
+     */
+    public Builder withAccountPropertiesClaims(Builder builder, final Account account, final Request<?> request) {
         if (!(account instanceof WithProperties<?> awp)) return builder;
-        var props = awp.propertiesAsMap();
-        if (props == null) return builder;
-        var authDb = getAuthDb(account);
-        if (authDb != null) builder = builder.withClaim("authDb", authDb);
-        for (var e : claimsFromAccountProps(props).entrySet()) {
-            builder = withClaim(builder, e.getKey(), e.getValue());
-        }
-        return builder;
+        return issuer().applyAccountClaims(builder, awp.propertiesAsMap(), JwtIssuer.claimsOverride(request));
     }
 
     @Override
@@ -481,7 +479,9 @@ public class JwtTokenManager implements TokenManager {
                 && request.getAuthenticatedAccount().getPrincipal() != null
                 && request.getAuthenticatedAccount().getPrincipal().getName() != null) {
             final var account = request.getAuthenticatedAccount();
-            final var ca = new ComparableAccount(account);
+            // Same key get() uses: the effective claim list is part of the token's identity
+            final var claims = JwtIssuer.claimsOverride(request);
+            final var ca = new ComparableAccount(account, claims);
 
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
                     URLUtils.removeTrailingSlashes(srvURI));
@@ -495,7 +495,7 @@ public class JwtTokenManager implements TokenManager {
                     || exchange.getQueryParameters().containsKey("renew-auth-token");
 
             if (shouldRenew) {
-                final var newToken = newToken(account);
+                final var newToken = newToken(account, claims);
 
                 this.jwtCache.put(ca, newToken);
                 exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, String.valueOf(newToken.raw()));
@@ -572,7 +572,21 @@ record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Objec
     }
 }
 
-record ComparableAccount(Account wrapped) {
+/**
+ * Cache key for issued tokens.
+ *
+ * <p>{@code claims} is the effective {@code account-properties-claims} list the token was built
+ * with — part of the identity of the cached token, not incidental. On a multi-tenant node two
+ * requests for the same principal can carry different lists (see
+ * {@link JwtIssuer#CLAIMS_OVERRIDE_PARAM}), and the resulting tokens differ in content; keying on
+ * the principal alone would serve one tenant's token to another. {@code null} means "the
+ * configured default was used".
+ */
+record ComparableAccount(Account wrapped, List<String> claims) {
+    ComparableAccount(Account wrapped) {
+        this(wrapped, null);
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -591,6 +605,11 @@ record ComparableAccount(Account wrapped) {
             return false;
         }
 
+        // Compare the effective claim list: same user, different claims -> different token
+        if (!Objects.equals(this.claims, that.claims)) {
+            return false;
+        }
+
         // Compare authDb if present in account properties
         String thisAuthDb = getAuthDb(this.wrapped);
         String thatAuthDb = getAuthDb(that.wrapped);
@@ -601,21 +620,10 @@ record ComparableAccount(Account wrapped) {
     public int hashCode() {
         String username = wrapped.getPrincipal() == null ? null : wrapped.getPrincipal().getName();
         String authDb = getAuthDb(wrapped);
-        return Objects.hash(username, authDb);
+        return Objects.hash(username, authDb, claims);
     }
 
     private String getAuthDb(Account account) {
-        if (account instanceof WithProperties<?> wp) {
-            var props = wp.propertiesAsMap();
-            if (props != null && props.containsKey("authDb")) {
-                Object authDbObj = props.get("authDb");
-                if (authDbObj instanceof String) {
-                    return (String) authDbObj;
-                } else if (authDbObj instanceof BsonString) {
-                    return ((BsonString) authDbObj).getValue();
-                }
-            }
-        }
-        return null;
+        return account instanceof WithProperties<?> wp ? JwtIssuer.authDb(wp.propertiesAsMap()) : null;
     }
 }
