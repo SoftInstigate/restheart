@@ -23,7 +23,7 @@
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15
 /jwtTokenManager/account-properties-claims:
-  - tenants
+  - teams
 
 /authCookieSetter/enabled: true
 /authCookieSetter/ttl: 15
@@ -38,6 +38,13 @@
     - userid: test
       password: secret
       roles: [ test ]
+
+    - userid: claimsTest
+      password: ClaimsPass123!
+      roles: [ user ]
+      profile:
+        name: FileClaims
+      teams: [ acme ]
 
     - userid: testWithArray
       password: secret

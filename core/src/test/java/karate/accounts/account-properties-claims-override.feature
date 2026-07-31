@@ -76,3 +76,38 @@ Feature: override-accounts-account-properties-claims per-request + JWT claims de
     # The override REPLACES the static list — "teams" (from the static default) must
     # not leak in either, since it was not requested in this override.
     * match payload.teams == '#notpresent'
+
+  # ---------------------------------------------------------------------------
+  Scenario: /token applies the same per-request override and denylist
+  # ---------------------------------------------------------------------------
+    # Authenticate as a file-realm user that has a "profile" property,
+    # via /token (JwtTokenManager path) with the override.
+    * def creds = 'claimsTest:ClaimsPass123!'
+    * def Base64 = Java.type('java.util.Base64')
+    * def encoded = Base64.getEncoder().encodeToString(creds.getBytes())
+
+    Given path '/token'
+    And header Authorization = 'Basic ' + encoded
+    And param _claims-override = 'profile,password,emailVerificationToken'
+    When method POST
+    Then status 200
+    And match response.access_token == '#present'
+
+    # Decode the JWT
+    * def jwtPart = response.access_token
+    * def parts = jwtPart.split('.')
+    * def payloadJson = new java.lang.String(java.util.Base64.getUrlDecoder().decode(parts[1]))
+    * def payload = JSON.parse(payloadJson)
+    * karate.log('JWT payload from /token:', payload)
+
+    # Override took effect: "profile" is NOT in the static default list (teams),
+    # so its presence proves the per-request override was applied by JwtTokenManager.
+    * match payload.profile == '#present'
+    * match payload.profile.name == 'FileClaims'
+
+    # Denylist cannot be bypassed
+    * match payload.password == '#notpresent'
+    * match payload.emailVerificationToken == '#notpresent'
+
+    # Override REPLACES the static list — default claims must not leak
+    * match payload.teams == '#notpresent'

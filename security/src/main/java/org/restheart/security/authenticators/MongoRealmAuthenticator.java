@@ -451,10 +451,13 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * if client authenticates passing the real credentials, update the account
-     * in the auth-token cache, otherwise the client authenticating with the
-     * auth-token will not see roles updates until the cache expires (by default
-     * TTL is 15 minutes after last request)
+     * When a client authenticates with real credentials (Basic Auth), invalidate the
+     * cached auth-token so that the next token generation picks up fresh roles and
+     * account-properties-claims from the request context. Simply removing the stale
+     * entry is better than regenerating it here: this method runs before
+     * {@code TokenInjector} attaches the per-request claim list, so any token built
+     * at this point would use the node-wide default instead of the tenant-specific
+     * override.
      *
      * @param account
      */
@@ -463,11 +466,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             final var _tm = registry.getTokenManager();
 
             if (_tm != null) {
-                final var tm = _tm.getInstance();
-
-                if (tm.get(account) != null) {
-                    tm.update(account);
-                }
+                _tm.getInstance().invalidate(account);
             }
         } catch (final ConfigurationException pce) {
             LOGGER.warn("error getting the token manager", pce);
