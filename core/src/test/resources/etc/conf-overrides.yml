@@ -449,6 +449,12 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
+# Test interceptor: attaches override-accounts-account-properties-claims when
+# ?_claims-override=<a,b,c> is present. Used by
+# account-properties-claims-override.feature to verify the per-request override (#661)
+# and that JwtHelper's denylist cannot be bypassed by it. Does not affect other tests.
+/accountPropertiesClaimsOverrideInterceptor/enabled: true
+
 /emails/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
 /emails/smtp-hostname: localhost

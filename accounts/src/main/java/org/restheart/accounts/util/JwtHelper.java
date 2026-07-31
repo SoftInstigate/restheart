@@ -6,7 +6,10 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.AuthCookie;
+import org.restheart.security.authenticators.MongoRealmAuthenticator;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,8 +28,30 @@ import java.util.Set;
  *
  * <p>Le istanze sono thread-safe: {@link Algorithm} è immutabile e {@link JWT} è una
  * factory statica.
+ *
+ * <h2>Denylist</h2>
+ * <p>{@code accountPropertiesClaims} (static config or per-request override, see
+ * {@code RequestOverrides#accountPropertiesClaims}) selects which user-document fields
+ * are copied into the token. Since a JWT payload is base64, not encrypted, {@link #issueToken}
+ * enforces a fixed denylist at issuance regardless of where the list came from:
+ * <ul>
+ *   <li>the configured password property (from {@code mongoRealmAuthenticator/prop-password},
+ *       defaults to {@code "password"})</li>
+ *   <li>{@code emailVerificationToken}, {@code emailVerificationCreatedAt}</li>
+ *   <li>{@code passwordResetToken}, {@code passwordResetCreatedAt}</li>
+ * </ul>
+ * <p>These are one-shot credentials or the password hash — never eligible to become a
+ * JWT claim, whichever party (node operator or, via the per-request override, a tenant)
+ * controls the list.
  */
 public class JwtHelper {
+
+    /** Claims that must never be copied from the user document into a JWT, regardless of override. */
+    private static final Set<String> DENYLISTED_CLAIMS = Set.of(
+            "emailVerificationToken", "emailVerificationCreatedAt",
+            "passwordResetToken", "passwordResetCreatedAt");
+
+    private static final String DEFAULT_PASSWORD_PROPERTY = "password";
 
     private final String key;
     private final String issuer;
@@ -39,24 +64,74 @@ public class JwtHelper {
      */
     private final List<String> accountPropertiesClaims;
 
+    /** Nome della proprietà password, escluso a prescindere dalla denylist (v. classe javadoc). */
+    private final String passwordPropertyName;
+
     /**
      * Costruisce un helper senza propagazione di attached-params (backward-compat).
      */
     public JwtHelper(String key, String issuer, int ttlMinutes) {
-        this(key, issuer, ttlMinutes, null);
+        this(key, issuer, ttlMinutes, null, null);
     }
 
     /**
-     * Costruisce un helper con supporto a {@code account-properties-claims}.
+     * Costruisce un helper con supporto a {@code account-properties-claims}, senza risolvere
+     * il nome della proprietà password da {@code mongoRealmAuthenticator} (usa il default
+     * {@value #DEFAULT_PASSWORD_PROPERTY}).
      *
      * @param accountPropertiesClaims nomi degli attached-params da includere come claim JWT;
      *                                {@code null} = nessuna propagazione aggiuntiva
+     * @deprecated usare {@link #JwtHelper(String, String, int, List, PluginsRegistry)} per
+     *             risolvere correttamente il nome della proprietà password quando
+     *             {@code mongoRealmAuthenticator/prop-password} è configurato diversamente
+     *             dal default.
      */
+    @Deprecated
     public JwtHelper(String key, String issuer, int ttlMinutes, List<String> accountPropertiesClaims) {
+        this(key, issuer, ttlMinutes, accountPropertiesClaims, null);
+    }
+
+    /**
+     * Costruisce un helper con supporto a {@code account-properties-claims} e alla denylist
+     * (v. classe javadoc), risolvendo il nome della proprietà password da
+     * {@code mongoRealmAuthenticator/prop-password} tramite {@code registry}.
+     *
+     * @param accountPropertiesClaims nomi degli attached-params da includere come claim JWT;
+     *                                {@code null} = nessuna propagazione aggiuntiva
+     * @param registry                usato per risolvere {@code mongoRealmAuthenticator.getPropPassword()};
+     *                                {@code null} → usa il default {@value #DEFAULT_PASSWORD_PROPERTY}
+     */
+    public JwtHelper(String key, String issuer, int ttlMinutes, List<String> accountPropertiesClaims,
+                     PluginsRegistry registry) {
         this.key = key;
         this.issuer = issuer;
         this.ttlMinutes = ttlMinutes;
         this.accountPropertiesClaims = accountPropertiesClaims;
+        this.passwordPropertyName = resolvePasswordPropertyName(registry);
+    }
+
+    /** Risolve il nome della proprietà password da {@code mongoRealmAuthenticator}, se disponibile. */
+    private static String resolvePasswordPropertyName(PluginsRegistry registry) {
+        if (registry == null) {
+            return DEFAULT_PASSWORD_PROPERTY;
+        }
+
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+            if (pr != null && pr.isEnabled() && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+                return prop != null && !prop.isBlank() ? prop : DEFAULT_PASSWORD_PROPERTY;
+            }
+        } catch (ConfigurationException ce) {
+            // mongoRealmAuthenticator not configured — fall back to the default
+        }
+
+        return DEFAULT_PASSWORD_PROPERTY;
+    }
+
+    /** Whether {@code claim} must never be copied from the user document into a JWT claim. */
+    private boolean isDenylisted(String claim) {
+        return DENYLISTED_CLAIMS.contains(claim) || passwordPropertyName.equals(claim);
     }
 
     /**
@@ -86,6 +161,30 @@ public class JwtHelper {
                              Map<String, Object> accountProperties,
                              Map<String, Object> extraClaims,
                              BsonDocument userDocument) {
+        return issueToken(email, roles, authDb, accountProperties, extraClaims, userDocument, null);
+    }
+
+    /**
+     * Come {@link #issueToken(String, Set, String, Map, Map, BsonDocument)}, con la lista
+     * di {@code accountPropertiesClaims} effettiva per questa singola chiamata (es. da
+     * {@code RequestOverrides#accountPropertiesClaims}), invece di quella fissata al
+     * costruttore. La denylist (v. classe javadoc) è applicata comunque, indipendentemente
+     * da quale lista è in uso.
+     *
+     * @param accountPropertiesClaimsOverride lista effettiva per questa chiamata;
+     *                                        {@code null} → usa quella del costruttore
+     */
+    public String issueToken(String email,
+                             Set<String> roles,
+                             String authDb,
+                             Map<String, Object> accountProperties,
+                             Map<String, Object> extraClaims,
+                             BsonDocument userDocument,
+                             List<String> accountPropertiesClaimsOverride) {
+        var effectiveClaims = accountPropertiesClaimsOverride != null
+                ? accountPropertiesClaimsOverride
+                : accountPropertiesClaims;
+
         var algo = Algorithm.HMAC256(key);
 
         var builder = JWT.create()
@@ -102,19 +201,23 @@ public class JwtHelper {
         }
 
         // Merge user document properties into accountProperties
-        // Only fields listed in accountPropertiesClaims are included (like JwtTokenManager)
-        if (userDocument != null && accountPropertiesClaims != null) {
+        // Only fields listed in effectiveClaims are included (like JwtTokenManager),
+        // minus the denylist — enforced here regardless of the list's origin (static
+        // config or per-tenant override), see class javadoc.
+        if (userDocument != null && effectiveClaims != null) {
             if (accountProperties == null) accountProperties = new java.util.HashMap<>();
-            for (var claim : accountPropertiesClaims) {
+            for (var claim : effectiveClaims) {
+                if (isDenylisted(claim)) continue;
                 if (userDocument.containsKey(claim) && !accountProperties.containsKey(claim)) {
                     accountProperties.put(claim, bsonValueToObject(userDocument.get(claim)));
                 }
             }
         }
 
-        // Propaga gli attached-params filtrati da accountPropertiesClaims
-        if (accountProperties != null && accountPropertiesClaims != null) {
-            for (var claim : accountPropertiesClaims) {
+        // Propaga gli attached-params filtrati da effectiveClaims
+        if (accountProperties != null && effectiveClaims != null) {
+            for (var claim : effectiveClaims) {
+                if (isDenylisted(claim)) continue;
                 var val = accountProperties.get(claim);
                 if (val == null) continue;
                 builder = withClaim(builder, claim, val);
