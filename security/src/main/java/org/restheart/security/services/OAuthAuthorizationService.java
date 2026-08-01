@@ -148,7 +148,8 @@ public class OAuthAuthorizationService implements ByteArrayService {
                 if (local == null) {
                     var algo = buildAlgorithm(jwtConfig);
                     local = new JwtIssuer(algo, jwtConfig.issuer(), jwtConfig.audience(),
-                            jwtConfig.accountPropertiesClaims(), resolvePasswordPropertyName());
+                            jwtConfig.accountPropertiesClaims(),
+                            jwtConfig.requiredAccountPropertiesClaims(), resolvePasswordPropertyName());
                     this.jwtIssuer = local;
                 }
             }

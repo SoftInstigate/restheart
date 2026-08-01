@@ -191,7 +191,8 @@ public class JwtTokenManager implements TokenManager {
             synchronized (this) {
                 local = this.issuerImpl;
                 if (local == null) {
-                    local = new JwtIssuer(algo, issuer, audience, accountPropertiesClaims, passwordProperty());
+                    local = new JwtIssuer(algo, issuer, audience, accountPropertiesClaims,
+                            jwtConfig.requiredAccountPropertiesClaims(), passwordProperty());
                     this.issuerImpl = local;
                 }
             }

@@ -9,7 +9,10 @@ import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.AuthCookie;
 import org.restheart.security.authenticators.MongoRealmAuthenticator;
+import org.restheart.security.tokens.JwtConfigProvider;
 import org.restheart.security.tokens.JwtIssuer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -42,6 +45,8 @@ import java.util.Set;
  * tokens), whereas the accounts services require a JWT.
  */
 public class JwtHelper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtHelper.class);
 
     private final String key;
     private final String issuer;
@@ -102,7 +107,35 @@ public class JwtHelper {
                 issuer,
                 null,
                 accountPropertiesClaims,
+                resolveRequiredClaims(registry),
                 resolvePasswordPropertyName(registry));
+    }
+
+    /**
+     * The claims that must survive any per-request override, read from the deployment's existing
+     * {@code jwtConfigProvider} configuration rather than duplicated under {@code accountsConfig}:
+     * they are a property of the JWT this deployment issues, so every issuer must apply the same
+     * ones. Without this, a tenant supplying its own claim list on the {@code /auth/*} path could
+     * drop a claim later verified on every request and lock itself out.
+     */
+    private static List<String> resolveRequiredClaims(PluginsRegistry registry) {
+        if (registry == null) {
+            return null;
+        }
+
+        try {
+            for (var pr : registry.getProviders()) {
+                if ("jwtConfigProvider".equals(pr.getName()) && pr.isEnabled()
+                        && pr.getInstance() instanceof JwtConfigProvider jcp
+                        && jcp.get(pr) instanceof JwtConfigProvider.JwtConfig cfg) {
+                    return cfg.requiredAccountPropertiesClaims();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve jwtConfigProvider required-account-properties-claims", e);
+        }
+
+        return null;
     }
 
     /** Risolve il nome della proprietà password da {@code mongoRealmAuthenticator}, se disponibile. */

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonString;
-import org.restheart.configuration.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,6 +109,7 @@ public class JwtIssuer {
     private final String issuer;
     private final String[] audience;
     private final List<String> defaultClaims;
+    private final Set<String> requiredClaims;
     private final Set<String> denylist;
 
     /**
@@ -124,10 +124,21 @@ public class JwtIssuer {
      */
     public JwtIssuer(Algorithm algo, String issuer, String[] audience,
                      List<String> defaultClaims, String passwordProperty) {
+        this(algo, issuer, audience, defaultClaims, null, passwordProperty);
+    }
+
+    /**
+     * @param requiredClaims account properties always copied into the token, whatever the effective
+     *                       claim list — see {@link #accountClaims(Map, List)}; {@code null} means
+     *                       none
+     */
+    public JwtIssuer(Algorithm algo, String issuer, String[] audience,
+                     List<String> defaultClaims, List<String> requiredClaims, String passwordProperty) {
         this.algo = algo;
         this.issuer = issuer;
         this.audience = audience;
         this.defaultClaims = defaultClaims;
+        this.requiredClaims = requiredClaims == null ? Set.of() : Set.copyOf(requiredClaims);
 
         var pwd = passwordProperty == null || passwordProperty.isBlank()
                 ? DEFAULT_PASSWORD_PROPERTY
@@ -159,9 +170,23 @@ public class JwtIssuer {
     public Map<String, Object> accountClaims(Map<String, ? super Object> properties, List<String> claimsOverride) {
         final var ret = new HashMap<String, Object>();
 
-        var claims = claimsOverride != null ? claimsOverride : defaultClaims;
+        if (properties == null) {
+            return ret;
+        }
 
-        if (claims == null || properties == null) {
+        var configured = claimsOverride != null ? claimsOverride : defaultClaims;
+
+        // Required claims are added whatever the effective list says. They are infrastructure the
+        // deployment depends on — e.g. on a multi-tenant node a claim naming the node that issued
+        // the token, checked on every subsequent request — so a tenant supplying its own list must
+        // not be able to drop them and lock itself out. The denylist still wins over this.
+        var claims = new java.util.LinkedHashSet<String>();
+        claims.addAll(requiredClaims);
+        if (configured != null) {
+            claims.addAll(configured);
+        }
+
+        if (claims.isEmpty()) {
             return ret;
         }
 
@@ -177,7 +202,7 @@ public class JwtIssuer {
                 continue;
             }
 
-            var value = Utils.find(properties, path, true);
+            var value = valueAt(properties, keys);
 
             if (value != null) {
                 addClaim(ret, keys, value);
@@ -300,6 +325,36 @@ public class JwtIssuer {
                 yield b;
             }
         };
+    }
+
+    /**
+     * Navigates {@code properties} following {@code keys}, returning the value found or
+     * {@code null}.
+     *
+     * <p>Deliberately a plain map walk rather than {@code Utils.find}'s JXPath: that helper is
+     * meant for the YAML configuration tree, and it resolves against account properties only for
+     * some account types — {@code FileRealmAccount} hands back the map it parsed, whereas
+     * {@code MongoRealmAccount} rebuilds it through GSON. Worse, it swallows every failure
+     * ({@code catch (Throwable)} with {@code silent = true}), so a claim silently vanished from
+     * the token with nothing in the logs. A map lookup has none of those problems and is what
+     * this actually needs.
+     */
+    static Object valueAt(Map<String, ? super Object> properties, String[] keys) {
+        Object current = properties;
+
+        for (var key : keys) {
+            if (!(current instanceof Map<?, ?> map)) {
+                return null;
+            }
+
+            current = map.get(key);
+
+            if (current == null) {
+                return null;
+            }
+        }
+
+        return current;
     }
 
     /** Splits {@code a/b/c} into its keys, dropping empty segments. */

@@ -129,11 +129,12 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
         // Account properties copied into issued tokens. Shared here so that every issuer —
         // jwtTokenManager on /token, restheart-accounts at login — puts the same claims in the
         // token: they are the same JWT, issued at different moments.
-        var accountPropertiesClaims = accountPropertiesClaims(config);
+        var accountPropertiesClaims = claimList(config, "account-properties-claims");
+        var requiredAccountPropertiesClaims = claimList(config, "required-account-properties-claims");
 
         this.jwtConfig = new JwtConfig(key, algorithm, issuer,
                 audience.isEmpty() ? null : audience.toArray(String[]::new),
-                accountPropertiesClaims);
+                accountPropertiesClaims, requiredAccountPropertiesClaims);
 
         BootstrapLogger.info(LOGGER, "Algorithm: {}, Issuer: {}, Audience: {}",
                 algorithm, issuer, audience.isEmpty() ? "null" : String.join(", ", audience));
@@ -158,8 +159,8 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
      * @return the configured names, or {@code null} when not set here — issuers then fall back to
      *         their own deprecated per-plugin setting
      */
-    private List<String> accountPropertiesClaims(Map<String, Object> config) throws ConfigurationException {
-        var configured = argOrDefault(config, "account-properties-claims", null);
+    private List<String> claimList(Map<String, Object> config, String key) throws ConfigurationException {
+        var configured = argOrDefault(config, key, null);
 
         return switch (configured) {
             case null -> null;
@@ -169,7 +170,7 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
                     .map(e -> (String) e)
                     .toList();
             default -> throw new ConfigurationException(
-                    "Wrong account-properties-claims, must be a String or an Array of Strings");
+                    "Wrong " + key + ", must be a String or an Array of Strings");
         };
     }
 
@@ -192,9 +193,14 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
      *        same reason {@code key} and {@code issuer} are: a JWT issued by this deployment is one
      *        thing regardless of which component issues it. {@code null} means "not set here",
      *        in which case issuers fall back to their own deprecated setting.
+     * @param requiredAccountPropertiesClaims account properties always copied into issued tokens,
+     *        even when a per-request override supplies its own list. For claims the deployment
+     *        cannot work without — on a multi-tenant node, the claim naming the issuing node is
+     *        verified on every later request, so a tenant able to drop it would lock itself out.
      */
     public record JwtConfig(String key, String algorithm, String issuer, String[] audience,
-                            List<String> accountPropertiesClaims) {
+                            List<String> accountPropertiesClaims,
+                            List<String> requiredAccountPropertiesClaims) {
         public boolean hasAudience() {
             return audience != null && audience.length > 0;
         }
