@@ -19,6 +19,11 @@
 /jwtConfigProvider/algorithm: HS256
 /jwtConfigProvider/issuer: restheart.org
 /jwtConfigProvider/audience: null
+# Claims that survive a per-request override — see the account-properties-claims-override
+# feature. "teams" stands in for the claim a real deployment cannot lose (on a multi-tenant
+# node, the one naming the issuing node, verified on every later request).
+/jwtConfigProvider/required-account-properties-claims:
+  - teams
 
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15

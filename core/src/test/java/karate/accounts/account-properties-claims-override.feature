@@ -73,9 +73,10 @@ Feature: override-accounts-account-properties-claims per-request + JWT claims de
     * match payload.password == '#notpresent'
     * match payload.emailVerificationToken == '#notpresent'
 
-    # The override REPLACES the static list — "teams" (from the static default) must
-    # not leak in either, since it was not requested in this override.
-    * match payload.teams == '#notpresent'
+    # The override REPLACES the static list, but it cannot lower the required-claims floor:
+    # "teams" is listed in jwtConfigProvider/required-account-properties-claims, so it is
+    # present even though this override never asked for it. See the dedicated scenario below.
+    * match payload.teams == '#present'
 
   # ---------------------------------------------------------------------------
   Scenario: /token applies the same per-request override and denylist
@@ -109,5 +110,117 @@ Feature: override-accounts-account-properties-claims per-request + JWT claims de
     * match payload.password == '#notpresent'
     * match payload.emailVerificationToken == '#notpresent'
 
-    # Override REPLACES the static list — default claims must not leak
-    * match payload.teams == '#notpresent'
+    # Override REPLACES the static list, but required claims survive it — see the
+    # dedicated scenario below.
+    * match payload.teams == '#present'
+
+  # ---------------------------------------------------------------------------
+  Scenario: /token resolves claims from a MongoRealmAccount, not just a file-realm one
+  # ---------------------------------------------------------------------------
+    # Regression test. The two scenarios above cover /auth/verify (a user document read
+    # from MongoDB) and /token (a file-realm user). The combination left untested —
+    # /token with a *MongoRealmAccount* — was broken for a whole release: claim selection
+    # went through a JXPath helper meant for the YAML configuration tree, which resolved
+    # against the plain map a FileRealmAccount hands back but not against the map
+    # MongoRealmAccount rebuilds through GSON. It failed silently, since that helper
+    # swallows every error and returns null.
+    * def email = 'claims-mongo-' + java.util.UUID.randomUUID() + '@example.com'
+    * def password = 'Password123!'
+
+    Given path '/auth/register'
+    And request
+      """
+      {
+        "firstName": "Mongo",
+        "lastName":  "Claims",
+        "teamName":  "Mongo Claims Co",
+        "email":     "#(email)",
+        "password":  "#(password)"
+      }
+      """
+    When method POST
+    Then status 201
+
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    * def verificationToken = response.emailVerificationToken
+
+    Given path '/auth/verify'
+    And param email = email
+    And param token = verificationToken
+    When method GET
+    Then status 302
+
+    # Give the user a nested profile field to select as a claim
+    Given path '/users/' + email
+    And header Authorization = adminAuth
+    And request { "profile": { "name": "MongoClaims" } }
+    When method PATCH
+    Then status 200
+
+    # Authenticate with credentials: the account is a MongoRealmAccount, so its properties
+    # are the user document — the case that used to yield no claims at all.
+    * def Base64 = Java.type('java.util.Base64')
+    * def encoded = Base64.getEncoder().encodeToString((email + ':' + password).getBytes())
+
+    Given path '/token'
+    And header Authorization = 'Basic ' + encoded
+    And param _claims-override = 'profile'
+    When method POST
+    Then status 200
+
+    * def parts = response.access_token.split('.')
+    * def payload = JSON.parse(new java.lang.String(java.util.Base64.getUrlDecoder().decode(parts[1])))
+    * karate.log('JWT payload from /token (mongo realm):', payload)
+
+    * match payload.profile == '#present'
+    * match payload.profile.name == 'MongoClaims'
+
+  # ---------------------------------------------------------------------------
+  Scenario: required claims survive an override that does not list them
+  # ---------------------------------------------------------------------------
+    # required-account-properties-claims is the floor a per-request override cannot lower.
+    # It exists because a deployment can depend on a claim being there — a multi-tenant node
+    # verifies the claim naming the issuing node on every later request, so a tenant able to
+    # drop it would lock itself out with a config change.
+    #
+    # conf-overrides.yml sets jwtConfigProvider/required-account-properties-claims to include
+    # "teams"; the override below asks for "profile" only.
+    * def creds = 'claimsTest:ClaimsPass123!'
+    * def Base64 = Java.type('java.util.Base64')
+    * def encoded = Base64.getEncoder().encodeToString(creds.getBytes())
+
+    Given path '/token'
+    And header Authorization = 'Basic ' + encoded
+    And param _claims-override = 'profile'
+    When method POST
+    Then status 200
+
+    * def parts = response.access_token.split('.')
+    * def payload = JSON.parse(new java.lang.String(java.util.Base64.getUrlDecoder().decode(parts[1])))
+    * karate.log('JWT payload with required claims:', payload)
+
+    # The override was applied ...
+    * match payload.profile == '#present'
+    # ... and the required claim is there anyway, though the override never listed it
+    * match payload.teams == '#present'
+
+  # ---------------------------------------------------------------------------
+  Scenario: the denylist wins over required claims
+  # ---------------------------------------------------------------------------
+    # A credential must not become a claim even if configuration declares it required.
+    * def creds = 'claimsTest:ClaimsPass123!'
+    * def Base64 = Java.type('java.util.Base64')
+    * def encoded = Base64.getEncoder().encodeToString(creds.getBytes())
+
+    Given path '/token'
+    And header Authorization = 'Basic ' + encoded
+    And param _claims-override = 'password'
+    When method POST
+    Then status 200
+
+    * def parts = response.access_token.split('.')
+    * def payload = JSON.parse(new java.lang.String(java.util.Base64.getUrlDecoder().decode(parts[1])))
+    * match payload.password == '#notpresent'
