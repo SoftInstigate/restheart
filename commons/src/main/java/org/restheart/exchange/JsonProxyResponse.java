@@ -207,7 +207,13 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
                                           boolean includeStackTrace) throws IOException {
         var resp = new JsonObject();
         resp.add("http status code", new JsonPrimitive(code));
-        resp.add("http status description", new JsonPrimitive(httpStatusText));
+
+        // null for any status code HttpStatus does not know: omit the description rather than
+        // throw, otherwise an unknown status code turns the response into a 500
+        if (httpStatusText != null) {
+            resp.add("http status description", new JsonPrimitive(httpStatusText));
+        }
+
         if (message != null) {
             resp.add("message", new JsonPrimitive(avoidEscapedChars(message)));
         }
