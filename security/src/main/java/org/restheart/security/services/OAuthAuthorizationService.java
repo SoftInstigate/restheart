@@ -316,9 +316,9 @@ public class OAuthAuthorizationService implements ByteArrayService {
         // Stateless: any node sharing the same JWT key can later verify it.
         var jwtIssuer = issuer();
         var codeBuilder = jwtIssuer.newBuilder(
-                        account.getPrincipal().getName(),
-                        account.getRoles(),
-                        Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
+                account.getPrincipal().getName(),
+                account.getRoles(),
+                Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
                 .withIssuedAt(Instant.now())
                 .withClaim(CLAIM_CODE_CHALLENGE, codeChallenge)
                 .withClaim(CLAIM_CODE_CHALLENGE_METHOD, codeChallengeMethod)

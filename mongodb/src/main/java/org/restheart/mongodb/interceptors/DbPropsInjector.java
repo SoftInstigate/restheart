@@ -41,9 +41,9 @@ import com.mongodb.MongoException;
 /**
  *
  * Injects the db properties into the MongoRequest
- 
-  It is also responsible of sending NOT_FOUND in case of requests involving not
-  existing dbs (that are not PUT)
+  
+   It is also responsible of sending NOT_FOUND in case of requests involving not
+   existing dbs (that are not PUT)
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

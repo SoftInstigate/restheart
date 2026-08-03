@@ -381,7 +381,7 @@ public class JwtIssuer {
      * {@code a/nested/value} becomes <code>{ a: { nested: value } }</code>.
      */
     static void addClaim(final Map<String, Object> map, final String[] keys, final Object val) {
-        for (var idx = 0; idx < keys.length; idx++) {
+        for (var idx = 0;idx < keys.length;idx++) {
             if (idx == keys.length - 1) {
                 map.put(keys[idx], val);
             } else {

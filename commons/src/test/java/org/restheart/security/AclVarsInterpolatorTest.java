@@ -905,7 +905,8 @@ public class AclVarsInterpolatorTest {
         java.util.function.Predicate<Request<?>> testPredicate = req -> AclVarsInterpolator
                 .interpolatePredicate(req, requestPredicate, classLoader).resolve(req.getExchange());
 
-        var permission = new BaseAclPermission(testPredicate, Set.of("user"), 0, null) {};
+        var permission = new BaseAclPermission(testPredicate, Set.of("user"), 0, null) {
+        };
 
         assertFalse(permission.allow(request));
     }

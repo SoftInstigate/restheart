@@ -343,7 +343,7 @@ public class AclVarsInterpolator {
     private static String varName(String value) {
         var rest = value.substring(1);
 
-        for (var i = 0; i < rest.length(); i++) {
+        for (var i = 0;i < rest.length();i++) {
             var c = rest.charAt(i);
             if (c == '.' || c == '(' || c == '[') {
                 return rest.substring(0, i);
