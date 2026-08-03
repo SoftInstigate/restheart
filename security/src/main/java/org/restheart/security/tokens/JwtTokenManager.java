@@ -306,13 +306,15 @@ public class JwtTokenManager implements TokenManager {
                     final var jwtPayload = new String(Base64.getUrlDecoder().decode(decoded.getPayload()),
                             StandardCharsets.UTF_8);
 
-                    // Cache the token exactly as presented, so the fast path above can recognise
-                    // it next time. Re-minting one here from `ca.wrapped()` — a bare BaseAccount
-                    // with no roles and no properties — used to store a degraded impostor under
-                    // this user's key, which get() would then hand back as their token.
+                    // Build the JwtAccount first so the cache key carries authDb —
+                    // get() will receive this same JwtAccount and look up with it.
+                    final var jwtAccount = new JwtAccount(id, roles, jwtPayload);
+                    final var jwtCa = new ComparableAccount(jwtAccount);
+
                     var cacheUpdateStartTime = System.currentTimeMillis();
-                    this.jwtCache.put(ca, new Token(
-                            rawToken,
+                    // Defensive copy: the credential's char[] may be zeroed after verify returns
+                    this.jwtCache.put(jwtCa, new Token(
+                            Arrays.copyOf(rawToken, rawToken.length),
                             decoded.getExpiresAt(),
                             roles.toArray(new String[roles.size()]),
                             null));
@@ -322,7 +324,7 @@ public class JwtTokenManager implements TokenManager {
                     LOGGER.debug("JWT token verification successful for user '{}' with roles: {} - JWT verify: {}ms, Cache update: {}ms, Total: {}ms",
                             id, roles, jwtVerifyDuration, cacheUpdateDuration, totalDuration);
 
-                    return new JwtAccount(id, roles, jwtPayload);
+                    return jwtAccount;
                 } else {
                     var totalDuration = System.currentTimeMillis() - verificationStartTime;
                     LOGGER.warn("Invalid JWT token from user '{}' - Subject mismatch: expected '{}', got '{}' - Verification: {}ms, Total: {}ms",
@@ -376,7 +378,8 @@ public class JwtTokenManager implements TokenManager {
             // The effective claim list is part of the cache key: on a multi-tenant node the same
             // principal can be served with different lists, producing different tokens.
             final var claims = JwtIssuer.claimsOverride(request);
-            final var token = this.jwtCache.getLoading(new ComparableAccount(account, claims)).get();
+            final var ca = new ComparableAccount(account, claims);
+            final var token = this.jwtCache.getLoading(ca).get();
             var cacheDuration = System.currentTimeMillis() - cacheStartTime;
 
             final var newTokenAccount = new PwdCredentialAccount(
@@ -393,6 +396,71 @@ public class JwtTokenManager implements TokenManager {
             LOGGER.error("Error generating JWT token for user '{}' after {}ms", userName, totalDuration, ex);
             throw ex;
         }
+    }
+
+    /**
+     * The account a renewed token is issued from.
+     *
+     * <p>Renewal exists to hand back a token that reflects the account as it is now, so where the
+     * deployment has a users store and the user is in it, the account is re-read from it and the
+     * new token carries the current roles and properties. Without this, renewing while
+     * authenticated with the token itself reissues the very claims being renewed: the account is a
+     * {@link org.restheart.security.JwtAccount} built from the token's own payload, so the caller
+     * gets a later {@code exp} and nothing else — which is not what "renew" means to anyone
+     * changing a user document and expecting the change to take effect.
+     *
+     * <p>Falls back to the authenticated account, i.e. the previous behaviour, when the user
+     * cannot be re-read. That is a normal situation, not an error: the token may have been issued
+     * by another node, or by a realm that is not backed by a users collection at all, and renewal
+     * has to keep working there. The token's own claims are then all there is.
+     *
+     * <p>The re-read is refused when the token's {@code authDb} names a realm other than the one
+     * this request resolves to. Same principal name in two realms is two different people, and
+     * reading the wrong one would mint a token carrying the other's roles.
+     */
+    private Account accountForRenew(final Request<?> request, final Account account) {
+        if (registry == null || account == null || account.getPrincipal() == null
+                || account.getPrincipal().getName() == null) {
+            return account;
+        }
+
+        try {
+            final var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+
+            if (pr == null || !pr.isEnabled()
+                    || !(pr.getInstance() instanceof MongoRealmAuthenticator mra)) {
+                return account;
+            }
+
+            final var name = account.getPrincipal().getName();
+            final var tokenAuthDb = getAuthDb(account);
+            final var requestUsersDb = mra.getUsersDb(request);
+
+            if (tokenAuthDb == null) {
+                LOGGER.debug("Not re-reading account '{}' on renew: no authDb (file realm or external issuer)", name);
+                return account;
+            }
+
+            if (!tokenAuthDb.equals(requestUsersDb)) {
+                LOGGER.debug("Not re-reading account '{}' on renew: token authDb is '{}' but this request resolves to '{}'",
+                        name, tokenAuthDb, requestUsersDb);
+                return account;
+            }
+
+            final var reloaded = mra.reloadAccount(request, name);
+
+            if (reloaded != null) {
+                LOGGER.debug("Renewing token for '{}' from the users store", name);
+                return reloaded;
+            }
+
+            LOGGER.debug("Renewing token for '{}' from its own claims: not found in users store '{}'",
+                    name, requestUsersDb);
+        } catch (final Exception e) {
+            LOGGER.debug("Could not re-read account on renew, using the authenticated account", e);
+        }
+
+        return account;
     }
 
     private Token newToken(final Account account, final List<String> claims) {
@@ -420,6 +488,56 @@ public class JwtTokenManager implements TokenManager {
                 raw.toCharArray(),
                 expires,
                 account.getRoles().toArray(new String[account.getRoles().size()]),
+                properties);
+    }
+
+    /**
+     * Builds a renewed token that carries the account as it is now while preserving every
+     * claim from the original JWT that the renewal did not touch.
+     *
+     * <p>Step&nbsp;1 — copy <em>all</em> claims from the original JWT (except the standard
+     * set that every issuance regenerates: {@code sub}, {@code iss}, {@code exp}, {@code iat},
+     * {@code jti}, {@code roles}). This preserves {@code authDb} and any custom claim a
+     * deployment adds.
+     *
+     * <p>Step&nbsp;2 — overwrite with the configured {@code account-properties-claims} taken
+     * from {@code renewedAccount}. These are the claims that reflect the user document as it
+     * is <em>now</em>, so a change to the document reaches the renewed token.
+     */
+    private Token renewToken(final Account originalAccount, final Account renewedAccount, final List<String> claimsOverride) {
+        final var jwtIssuer = issuer();
+        final var expires = Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES));
+        var builder = jwtIssuer.newBuilder(renewedAccount.getPrincipal().getName(), renewedAccount.getRoles(), expires);
+
+        // Step 1: copy ALL claims from the original JWT (preserves authDb and custom claims)
+        if (originalAccount instanceof WithProperties<?> awp) {
+            var originalClaims = new HashMap<>(awp.propertiesAsMap());
+            originalClaims.remove("sub");
+            originalClaims.remove("iss");
+            originalClaims.remove("exp");
+            originalClaims.remove("iat");
+            originalClaims.remove("jti");
+            originalClaims.remove(ROLES);
+
+            for (var e : originalClaims.entrySet()) {
+                builder = jwtIssuer.withClaim(builder, e.getKey(), e.getValue());
+            }
+        }
+
+        // Step 2: overwrite with configured account-properties-claims from the reloaded account
+        final Map<String, ? super Object> properties;
+        if (renewedAccount instanceof WithProperties<?> awp) {
+            builder = jwtIssuer.applyAccountClaims(builder, awp.propertiesAsMap(), claimsOverride);
+            properties = jwtIssuer.accountClaims(awp.propertiesAsMap(), claimsOverride);
+        } else {
+            properties = null;
+        }
+
+        final var raw = jwtIssuer.sign(builder);
+        return new Token(
+                raw.toCharArray(),
+                expires,
+                renewedAccount.getRoles().toArray(new String[renewedAccount.getRoles().size()]),
                 properties);
     }
 
@@ -496,7 +614,8 @@ public class JwtTokenManager implements TokenManager {
                     || exchange.getQueryParameters().containsKey("renew-auth-token");
 
             if (shouldRenew) {
-                final var newToken = newToken(account, claims);
+                final var renewedAccount = accountForRenew(request, account);
+                final var newToken = renewToken(account, renewedAccount, claims);
 
                 this.jwtCache.put(ca, newToken);
                 exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, String.valueOf(newToken.raw()));
