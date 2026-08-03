@@ -44,8 +44,7 @@ import io.undertow.server.handlers.form.FormDataParser;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+
 import java.util.*;
 
 import static org.restheart.plugins.security.TokenManager.*;
@@ -69,7 +68,6 @@ public class AuthTokenService implements ByteArrayService {
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
-    private static final String ISO8601_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -571,15 +569,13 @@ public class AuthTokenService implements ByteArrayService {
         }
 
         try {
-            var dateFormat = new SimpleDateFormat(ISO8601_PATTERN);
-            var expirationDate = dateFormat.parse(authTokenValidHeader);
-            var now = new Date();
-            var expiresInMillis = expirationDate.getTime() - now.getTime();
-            var expiresInSeconds = (int) (expiresInMillis / 1000);
+            var expirationInstant = java.time.Instant.parse(authTokenValidHeader);
+            var now = java.time.Instant.now();
+            var expiresInSeconds = (int) (expirationInstant.getEpochSecond() - now.getEpochSecond());
 
             // Return 0 if already expired, otherwise return remaining seconds
             return Math.max(0, expiresInSeconds);
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
             LOGGER.warn("Failed to parse Auth-Token-Valid-Until header: {}", authTokenValidHeader, ex);
             return null;
         }
