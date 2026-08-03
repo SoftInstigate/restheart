@@ -191,7 +191,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // d. Audit log — no PII at INFO level
@@ -239,7 +239,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "verification-url", verifyLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // d. Audit log — no PII at INFO level

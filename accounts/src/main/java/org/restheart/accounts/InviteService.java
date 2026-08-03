@@ -220,7 +220,7 @@ public class InviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite sent to <{}> by {} (team={}, newUser={})", invitedEmail, inviterName, callerTeam, isNewUser);

@@ -187,7 +187,7 @@ public class ResendInviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (team={})",
