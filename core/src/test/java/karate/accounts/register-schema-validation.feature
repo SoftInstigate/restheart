@@ -343,6 +343,77 @@ Feature: Apply JSON Schema on user registration
     Then assert responseStatus == 200
 
   # ---------------------------------------------------------------------------
+  Scenario: mapped body fields are not carried over as additional properties
+  # ---------------------------------------------------------------------------
+    # firstName/lastName/email/teamName already reach the document through the
+    # mapping table (profile.name, profile.surname, _id) or the team document, so
+    # they must not also land as top-level properties. additionalProperties:false
+    # is what makes this observable: the tenant declares the document it expects,
+    # and a leaked mapped field fails the registration it never asked for.
+    * header Authorization = adminAuth
+    Given path schemas
+    And request
+      """
+      {
+        "_id": "user-no-extras",
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["_id", "password", "roles", "profile"],
+        "properties": {
+          "_id":      { "type": "string" },
+          "_etag":    { "type": "object" },
+          "password": { "type": "string" },
+          "roles":    { "type": "array" },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "name":    { "type": "string" },
+              "surname": { "type": "string" }
+            }
+          },
+          "consents": { "type": "object" },
+          "emailVerificationToken":     { "type": "string" },
+          "emailVerificationCreatedAt": { "type": "object" }
+        }
+      }
+      """
+    When method POST
+    Then assert responseStatus == 201 || responseStatus == 409
+
+    * header Authorization = adminAuth
+    Given path usersColl
+    And request { "jsonSchema": { "schemaId": "user-no-extras" } }
+    When method PATCH
+    Then assert responseStatus == 200
+
+    * def email = 'reg-no-extras-' + java.util.UUID.randomUUID() + '@example.com'
+
+    Given path '/auth/register'
+    And request { "firstName": "Schema", "lastName": "Test", "teamName": "ST Corp", "email": "#(email)", "password": "Password123!", "consents": { "terms": true } }
+    When method POST
+    Then status 201
+
+    * header Authorization = adminAuth
+    Given path usersColl + '/' + email
+    When method GET
+    Then status 200
+    # the mapped fields landed where the mapping table says, and nowhere else
+    And match response.profile.name == 'Schema'
+    And match response.profile.surname == 'Test'
+    And match response.consents.terms == true
+    And match response !contains { firstName: '#notnull' }
+    And match response !contains { lastName: '#notnull' }
+    And match response !contains { teamName: '#notnull' }
+    And match response !contains { email: '#notnull' }
+
+    * header Authorization = adminAuth
+    Given path usersColl
+    And request { "jsonSchema": null }
+    When method PATCH
+    Then assert responseStatus == 200
+
+  # ---------------------------------------------------------------------------
   Scenario: extra body properties are dropped when no schema is configured
   # ---------------------------------------------------------------------------
     # Without a schema the same body still drops 'consents'

@@ -101,7 +101,10 @@ import java.nio.charset.StandardCharsets;
  * {@code required: [...]} mandates them.  Service-managed fields
  * ({@code _id}, {@code password}, {@code roles}, {@code profile.name},
  * {@code profile.surname}, {@code emailVerificationToken},
- * {@code emailVerificationCreatedAt}) are never overwritten by the body.
+ * {@code emailVerificationCreatedAt}) are never overwritten by the body, and the
+ * body fields of the mapping table above ({@code firstName}, {@code lastName},
+ * {@code email}, {@code teamName}) are not carried over either — they already
+ * reach the document, or the team, through that mapping.
  *
  * <p><strong>The document is validated as it is inserted, which is not its final shape.</strong>
  * {@code createInitialTeam} runs after the insert and adds {@code teams} and {@code team}
@@ -279,8 +282,8 @@ public class RegisterService implements JsonService {
         // remaining body fields are carried into the document as-is; the schema
         // becomes the contract — additionalProperties:false rejects extensions,
         // required:[...] mandates them.
-        // Service-managed fields (_id, password, roles, profile.name, profile.surname,
-        // emailVerificationToken, emailVerificationCreatedAt) are never overwritten.
+        // Service-managed fields are never overwritten, and the mapped body fields
+        // (firstName, lastName, email, teamName) are not carried over as extras.
         if (db(req).hasSchema()) {
             mergeExtraBodyProperties(body, userDoc);
         }
@@ -357,12 +360,24 @@ public class RegisterService implements JsonService {
     }
 
     /**
-     * Top-level fields managed by the registration service.  These are never
-     * overwritten by additional body properties.
+     * Body keys that must not be carried into the user document as additional
+     * properties.
+     *
+     * <p>Two groups: the document fields the service owns ({@code _id},
+     * {@code password}, {@code roles}, {@code profile},
+     * {@code emailVerificationToken}, {@code emailVerificationCreatedAt}), and the
+     * body fields the mapping table sends somewhere else ({@code firstName} and
+     * {@code lastName} to {@code profile.name}/{@code profile.surname},
+     * {@code email} to {@code _id}, {@code teamName} to the team document). Without
+     * the second group the stored document would duplicate its own mapped fields
+     * and carry the team name, and a schema with {@code additionalProperties: false}
+     * would reject every registration over properties the client never sent as
+     * extras.
      */
     private static final java.util.Set<String> SERVICE_MANAGED_FIELDS = java.util.Set.of(
             "_id", "password", "roles", "profile",
-            "emailVerificationToken", "emailVerificationCreatedAt");
+            "emailVerificationToken", "emailVerificationCreatedAt",
+            "firstName", "lastName", "email", "teamName");
 
     /**
      * Fields inside {@code profile} managed by the registration service.
