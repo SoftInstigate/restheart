@@ -14,7 +14,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.security.ACLRegistry;
-import org.restheart.security.predicates.BsonRequestWhitelistPredicate;
+import org.restheart.security.predicates.BsonRequestBlacklistPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,11 +59,18 @@ public class AccountsInitializer implements Initializer {
     // sub, *Token fields, ...) is performed by an accounts-plugin service through
     // DbHelper, i.e. directly via the MongoDB driver — never through the generic
     // MongoDB REST resource, so it never runs through this veto. That means the
-    // generic REST resource at /users can safely be restricted to self-service
-    // profile edits only, for every deployment of restheart-accounts, regardless
-    // of whatever ACL the consuming application configures.
-    private static final BsonRequestWhitelistPredicate PROFILE_ONLY_WHITELIST =
-            new BsonRequestWhitelistPredicate(new String[]{"profile"});
+    // generic REST resource at /users can safely deny self-service writes to just
+    // these fields, for every deployment of restheart-accounts, regardless of
+    // whatever ACL the consuming application configures — every other field
+    // (profile.*, consents, and any app-level field the tenant adds) is left to
+    // the tenant's own ACL.
+    private static final BsonRequestBlacklistPredicate USER_WRITE_DENYLIST =
+            new BsonRequestBlacklistPredicate(new String[]{
+                    "_id", "password", "roles", "team", "teams", "sub",
+                    "socialAuths", "providerId",
+                    "emailVerificationToken", "emailVerificationCreatedAt",
+                    "passwordResetToken", "passwordResetCreatedAt",
+                    "inviteToken"});
 
     /** ACL role carried by a registered-but-not-yet-verified account (see RegisterService). */
     private static final String UNAUTHENTICATED_ROLE = "$unauthenticated";
@@ -96,8 +103,8 @@ public class AccountsInitializer implements Initializer {
 
     @Override
     public void init() {
-        // Generic REST writes to /users are restricted to self-service profile
-        // edits — see PROFILE_ONLY_WHITELIST above for why this is safe to enforce
+        // Generic REST writes to /users are restricted to self-service profile/app-level
+        // edits — see USER_WRITE_DENYLIST above for why this is safe to enforce
         // unconditionally.
         aclRegistry.registerVeto(r -> {
             if (!(r instanceof MongoRequest mr)) return false;
@@ -141,12 +148,11 @@ public class AccountsInitializer implements Initializer {
 
             if (m != METHOD.PATCH) return false;
 
-            // Covers dot notation (profile.name) and update operators ($set, $push,
-            // ...) alike — see BsonRequestWhitelistPredicate. This also subsumes the
-            // old 'sub' veto: 'sub' is never under 'profile', so it's always rejected.
-            if (!PROFILE_ONLY_WHITELIST.resolve(mr.getExchange())) {
-                LOGGER.warn("[accounts] vetoed PATCH to /users: only 'profile.*' fields "
-                        + "may be self-modified");
+            // Covers dot notation (team._id) and update operators ($set, $push, ...)
+            // alike — see BsonRequestBlacklistPredicate.
+            if (!USER_WRITE_DENYLIST.resolve(mr.getExchange())) {
+                LOGGER.warn("[accounts] vetoed PATCH to /users: the request touches a "
+                        + "field reserved to the accounts plugin's own endpoints");
                 return true;
             }
             return false;
