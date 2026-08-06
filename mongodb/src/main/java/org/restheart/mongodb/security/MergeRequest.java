@@ -87,25 +87,33 @@ public class MergeRequest implements MongoInterceptor {
                 }
             });
 
-            // Remove from $set any keys that array operators manage,
+            // Remove from $set and root any keys that array operators manage,
             // to avoid ConflictingUpdateOperators (e.g. $set.consents + $push.consents)
             var arrayOps = new String[] { "$push", "$addToSet", "$pushAll" };
             for (var op : arrayOps) {
-                if (updateOps.containsKey(op) && content.containsKey("$set")) {
+                if (updateOps.containsKey(op)) {
                     var targets = updateOps.get(op);
                     if (targets.isDocument()) {
                         targets.asDocument().keySet().forEach(targetKey -> {
-                            content.get("$set").asDocument().remove(targetKey);
+                            content.remove(targetKey);
+                            if (content.containsKey("$set")) {
+                                content.get("$set").asDocument().remove(targetKey);
+                            }
                         });
                     }
                 }
             }
 
             // Merge regular fields into $set
+            // Remove keys that mergeRequest manages from both $set and root,
+            // so the client cannot override them
             if (!regularFields.isEmpty()) {
+                regularFields.keySet().forEach(key -> content.remove(key));
+
                 if (content.containsKey("$set")) {
                     var setOperator = content.get("$set");
                     if (setOperator.isDocument()) {
+                        regularFields.keySet().forEach(key -> setOperator.asDocument().remove(key));
                         setOperator.asDocument().putAll(regularFields);
                     }
                 } else {
