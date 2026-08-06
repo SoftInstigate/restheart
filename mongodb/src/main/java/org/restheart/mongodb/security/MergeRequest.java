@@ -21,6 +21,8 @@
 package org.restheart.mongodb.security;
 
 import static org.restheart.utils.BsonUtils.containsUpdateOperators;
+import static org.restheart.utils.BsonUtils.isUpdateOperator;
+import static org.restheart.utils.BsonUtils.unescapeKeys;
 
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
@@ -50,27 +52,80 @@ public class MergeRequest implements MongoInterceptor {
     }
 
     private void merge(MongoRequest request, BsonDocument toMerge) {
-        var iToMerge = AclVarsInterpolator.interpolateBson(request, toMerge).asDocument();
+        // unescapeKeys converts _$push -> $push, _$set -> $set, etc.
+        // so that update operators in mergeRequest config are recognized
+        var iToMerge = unescapeKeys(AclVarsInterpolator.interpolateBson(request, toMerge)).asDocument();
 
         var content = request.getContent().asDocument();
 
-        // Check if content contains update operators (e.g., $set, $inc, $push, etc.)
-        if (containsUpdateOperators(content)) {
-            // When using update operators, we need to merge the fields into the $set operator
-            // because MongoDB doesn't allow mixing update operators with regular fields at root level
+        if (containsUpdateOperators(iToMerge)) {
+            // mergeRequest config contains update operators (e.g. $push).
+            // Separate them from regular fields: operators go at root level,
+            // regular fields go into $set.
+
+            var updateOps = new BsonDocument();
+            var regularFields = new BsonDocument();
+
+            iToMerge.keySet().forEach(key -> {
+                if (isUpdateOperator(key)) {
+                    updateOps.put(key, iToMerge.get(key));
+                } else {
+                    regularFields.put(key, iToMerge.get(key));
+                }
+            });
+
+            // Place update operators at root level
+            updateOps.keySet().forEach(key -> {
+                if (content.containsKey(key)) {
+                    var existing = content.get(key);
+                    var incoming = updateOps.get(key);
+                    if (existing.isDocument() && incoming.isDocument()) {
+                        existing.asDocument().putAll(incoming.asDocument());
+                    }
+                } else {
+                    content.put(key, updateOps.get(key));
+                }
+            });
+
+            // Remove from $set any keys that array operators manage,
+            // to avoid ConflictingUpdateOperators (e.g. $set.consents + $push.consents)
+            var arrayOps = new String[] { "$push", "$addToSet", "$pushAll" };
+            for (var op : arrayOps) {
+                if (updateOps.containsKey(op) && content.containsKey("$set")) {
+                    var targets = updateOps.get(op);
+                    if (targets.isDocument()) {
+                        targets.asDocument().keySet().forEach(targetKey -> {
+                            content.get("$set").asDocument().remove(targetKey);
+                        });
+                    }
+                }
+            }
+
+            // Merge regular fields into $set
+            if (!regularFields.isEmpty()) {
+                if (content.containsKey("$set")) {
+                    var setOperator = content.get("$set");
+                    if (setOperator.isDocument()) {
+                        setOperator.asDocument().putAll(regularFields);
+                    }
+                } else {
+                    content.put("$set", regularFields);
+                }
+            }
+        } else if (containsUpdateOperators(content)) {
+            // Client body has update operators, mergeRequest has only regular fields.
+            // Merge into $set.
 
             if (content.containsKey("$set")) {
-                // If $set already exists, merge into it
                 var setOperator = content.get("$set");
                 if (setOperator.isDocument()) {
                     setOperator.asDocument().putAll(iToMerge);
                 }
             } else {
-                // If $set doesn't exist, create it with the merge fields
                 content.put("$set", iToMerge);
             }
         } else {
-            // For regular documents (not using update operators), merge at root level
+            // Neither has update operators — merge at root level
             content.putAll(iToMerge);
         }
     }
