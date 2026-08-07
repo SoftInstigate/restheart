@@ -385,7 +385,10 @@ public class JwtIssuer {
             if (idx == keys.length - 1) {
                 map.put(keys[idx], val);
             } else {
-                final var nestedMap = new HashMap<String, Object>();
+                @SuppressWarnings("unchecked")
+                final var nestedMap = map.containsKey(keys[idx]) && map.get(keys[idx]) instanceof Map
+                        ? (Map<String, Object>) map.get(keys[idx])
+                        : new HashMap<String, Object>();
                 map.put(keys[idx], nestedMap);
                 addClaim(nestedMap, Arrays.copyOfRange(keys, idx + 1, keys.length), val);
                 break;

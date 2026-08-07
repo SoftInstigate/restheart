@@ -504,8 +504,11 @@ public class JwtTokenManager implements TokenManager {
         final var expires = Date.from(Instant.now().plus(ttl, ChronoUnit.MINUTES));
         var builder = jwtIssuer.newBuilder(renewedAccount.getPrincipal().getName(), renewedAccount.getRoles(), expires);
 
-        // Step 1: copy ALL claims from the original JWT (preserves authDb and custom claims)
-        if (originalAccount instanceof WithProperties<?> awp) {
+        // Step 1: copy ALL claims from the original JWT (preserves authDb and custom claims).
+        // Only when the original account is a JwtAccount — i.e. the request authenticated with
+        // an existing JWT (token renewal). A MongoRealmAccount from basic auth carries the full
+        // user document: copying its properties here would leak every field into the token.
+        if (originalAccount instanceof JwtAccount awp) {
             var originalClaims = new HashMap<>(awp.propertiesAsMap());
             originalClaims.remove("sub");
             originalClaims.remove("iss");
