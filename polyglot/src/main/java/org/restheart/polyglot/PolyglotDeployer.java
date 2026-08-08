@@ -353,7 +353,8 @@ public class PolyglotDeployer implements Initializer {
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
                                 try {
-                                    final var language = Source.findLanguage(pluginPath.toFile());
+                                    final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
+                                        () -> Source.findLanguage(pluginPath.toFile()));
                                     if ("js".equals(language)) {
                                         ret.add(pluginPath);
                                     } else {

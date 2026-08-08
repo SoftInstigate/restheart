@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
+import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.StringRequest;
@@ -96,8 +97,9 @@ public class JSStringService extends JSService implements StringService {
         }
 
         try (Context ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions)) {
-            // check that the plugin script is js
-            var language = Source.findLanguage(pluginPath.toFile());
+            // check that the plugin script is js (use PluginsClassloader so js-language is visible)
+            final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
+                () -> Source.findLanguage(pluginPath.toFile()));
 
             if (!"js".equals(language)) {
                 throw new IllegalArgumentException("wrong js plugin, not javascript");

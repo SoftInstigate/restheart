@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
+import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -86,8 +87,9 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // check that the plugin script is js
-        var language = Source.findLanguage(pluginPath.toFile());
+        // check that the plugin script is js (use PluginsClassloader so js-language is visible)
+        final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
+            () -> Source.findLanguage(pluginPath.toFile()));
 
         if (!"js".equals(language)) {
             throw new IllegalArgumentException(
