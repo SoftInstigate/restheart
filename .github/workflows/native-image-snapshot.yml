@@ -14,7 +14,7 @@ jobs:
             arch: windows-amd64
           - os: macos-latest
             arch: "darwin-arm64"
-    timeout-minutes: 45
+    timeout-minutes: 60
     outputs:
       ubuntu: ${{ steps.set-output.outputs.ubuntu }}
     steps:
