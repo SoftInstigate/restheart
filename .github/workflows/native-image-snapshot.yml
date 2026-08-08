@@ -22,11 +22,11 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: "25.1.3"
-          distribution: "graalvm-community"
+          version: '25.1'
+          distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: "maven"
-          native-image-job-reports: "true"
+          cache: 'maven'
+          native-image-job-reports: 'true'
 
       - name: Build MacOS Apple Silicon native
         if: matrix.arch == 'darwin-arm64'
