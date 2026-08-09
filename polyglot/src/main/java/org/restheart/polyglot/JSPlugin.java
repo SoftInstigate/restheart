@@ -39,9 +39,12 @@ public abstract class JSPlugin {
 
     static {
         try {
-            // Engine.create() touches Truffle thread locals, must run on a platform thread (see PolyglotThreadUtils)
-            // and needs PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
-            engine = PolyglotThreadUtils.onPlatformThread(() -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+            // Must be a plain method reference to a method NOT declared here: a lambda
+            // body written inside this static initializer would become a private
+            // synthetic method of JSPlugin, and invoking it from the platform thread
+            // would then require JSPlugin's own <clinit> to finish -- which is exactly
+            // what's blocked waiting for this platform thread, causing a deadlock.
+            engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }

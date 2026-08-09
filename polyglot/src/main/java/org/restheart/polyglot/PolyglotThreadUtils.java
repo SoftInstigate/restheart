@@ -20,10 +20,13 @@
  */
 package org.restheart.polyglot;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.graalvm.polyglot.Engine;
 
 /**
  * Runs GraalVM polyglot Context creation, enter/leave and eval on a platform thread.
@@ -47,6 +50,20 @@ public final class PolyglotThreadUtils {
      * @return the result of the task
      * @throws Exception if the task throws an exception
      */
+    /**
+     * Creates a polyglot Engine with the PluginsClassloader as context classloader.
+     *
+     * <p>Declared here (not as a lambda body inside JSPlugin's static initializer)
+     * so that invoking it from a platform thread never needs to wait on JSPlugin's
+     * own class-initialization monitor, which would deadlock since JSPlugin's
+     * &lt;clinit&gt; is the one submitting this task and blocking on its result.</p>
+     *
+     * @return a newly created Engine
+     */
+    public static Engine createEngine() throws IOException {
+        return PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
+    }
+
     public static <T> T onPlatformThread(Callable<T> task) throws Exception {
         try {
             return PLATFORM_EXECUTOR.submit(task).get();
