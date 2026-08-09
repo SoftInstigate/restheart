@@ -24,63 +24,55 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 
 import org.graalvm.polyglot.Engine;
-import org.restheart.exchange.BadRequestException;
-import org.restheart.utils.HttpStatus;
 
 /**
- * Runs GraalVM polyglot Context creation, enter/leave and eval on a platform thread.
+ * Runs GraalVM polyglot Context creation, enter/leave and eval on a dedicated
+ * single platform thread.
  *
- * <p>Truffle's DefaultContextThreadLocal does not yet support virtual threads
- * (see https://github.com/oracle/graal/issues/7520): entering a Context from a
- * virtual thread can throw {@code ArrayIndexOutOfBoundsException}. RESTHeart
- * runs on Java 25, where virtual threads are used pervasively, so all Context
- * operations must be offloaded to a platform thread.</p>
+ * <p>Truffle's {@code DefaultContextThreadLocal} (see oracle/graal#7520) stores
+ * per-thread state in a fixed-size slot array indexed by an internal counter.
+ * When Engine and Context objects are created on one thread and then used from
+ * a different thread, the slot indices can resolve to {@code -1}, causing an
+ * {@code ArrayIndexOutOfBoundsException}. Using a <em>single</em> dedicated
+ * thread for <strong>all</strong> polyglot operations eliminates the
+ * cross-thread access entirely.</p>
  *
  * <p>When the Truffle bug is fixed, set the system property
  * {@code restheart.polyglot.force-platform-threads=false} to let polyglot
  * operations run on the caller thread (virtual or platform) directly,
- * bypassing the platform-thread pool entirely.</p>
+ * bypassing the dedicated thread entirely.</p>
  */
 public final class PolyglotThreadUtils {
     /**
      * System property to control whether polyglot operations are forced onto
-     * platform threads. Defaults to {@code true} (workaround for oracle/graal#7520).
-     * Set to {@code false} once Truffle fully supports virtual threads.
+     * a dedicated platform thread. Defaults to {@code true} (workaround for
+     * oracle/graal#7520). Set to {@code false} once Truffle fully supports
+     * virtual threads.
      */
     private static final String FORCE_PLATFORM_PROP = "restheart.polyglot.force-platform-threads";
 
     private static final boolean FORCE_PLATFORM;
 
     static {
-        // Read once at class-load time; callers cannot change it at runtime.
         FORCE_PLATFORM = Boolean.parseBoolean(
                 System.getProperty(FORCE_PLATFORM_PROP, "true"));
     }
 
-    // bounded, unlike newCachedThreadPool: an unbounded pool lets concurrent load
-    // spawn unlimited platform threads, which is both a resource-exhaustion risk
-    // and an implicit DoS vector; requests beyond the cap are rejected immediately
-    // instead of queueing or running on the caller thread (which could be virtual).
-    private static final int MAX_POOL_SIZE = Math.max(64, Runtime.getRuntime().availableProcessors() * 16);
-
-    // lazily created: not needed when FORCE_PLATFORM is false
+    // Single dedicated platform thread for ALL Truffle operations.
+    // Using one thread avoids DefaultContextThreadLocal cross-thread corruption
+    // (see oracle/graal#7520).  The unbounded queue serialises polyglot work;
+    // under extreme concurrency this adds latency but never crashes.
     private static volatile ExecutorService platformExecutor;
 
     private static ExecutorService getPlatformExecutor() {
         if (platformExecutor == null) {
             synchronized (PolyglotThreadUtils.class) {
                 if (platformExecutor == null) {
-                    platformExecutor = new ThreadPoolExecutor(
-                            0, MAX_POOL_SIZE,
-                            60L, TimeUnit.SECONDS,
-                            new SynchronousQueue<>(),
-                            Thread.ofPlatform().name("RH JS PLT-", 0).factory());
+                    platformExecutor = Executors.newSingleThreadExecutor(
+                            Thread.ofPlatform().name("RH JS PLT", 0).factory());
                 }
             }
         }
@@ -104,17 +96,16 @@ public final class PolyglotThreadUtils {
     }
 
     /**
-     * Runs the given task on a platform thread and waits for its result.
+     * Runs the given task on the dedicated platform thread and waits for its result.
      *
      * <p>When {@code restheart.polyglot.force-platform-threads} is {@code true}
-     * (the default), the task is dispatched to a bounded platform-thread pool
-     * and the caller blocks until completion. When set to {@code false}, the
-     * task runs directly on the caller thread.</p>
+     * (the default), the task is dispatched to the single dedicated platform
+     * thread. When set to {@code false}, the task runs directly on the caller
+     * thread.</p>
      *
      * @param task the task to run
      * @return the result of the task
-     * @throws Exception if the task throws an exception, or a {@link BadRequestException}
-     *                    with status 429 if the platform thread pool is saturated
+     * @throws Exception if the task throws an exception
      */
     public static <T> T onPlatformThread(Callable<T> task) throws Exception {
         if (!FORCE_PLATFORM) {
@@ -123,9 +114,6 @@ public final class PolyglotThreadUtils {
 
         try {
             return getPlatformExecutor().submit(task).get();
-        } catch (RejectedExecutionException ree) {
-            throw new BadRequestException("Too many concurrent polyglot operations, please retry later",
-                    HttpStatus.SC_TOO_MANY_REQUESTS);
         } catch (ExecutionException e) {
             var cause = e.getCause();
             if (cause instanceof Exception ex) {

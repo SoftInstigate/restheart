@@ -65,9 +65,9 @@ public class JSInterceptorFactory {
         this.mclient = mclient;
         this.config = config;
         try {
-            // Engine.create() called directly on the calling thread (main thread during
-            // startup).  See JSPlugin.<clinit> for the rationale.
-            this.engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
+            // Engine.create() dispatched to the dedicated platform thread.
+            // See JSPlugin.<clinit> for the rationale.
+            this.engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }
