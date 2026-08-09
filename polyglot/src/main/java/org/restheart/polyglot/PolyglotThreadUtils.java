@@ -24,9 +24,14 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.graalvm.polyglot.Engine;
+import org.restheart.exchange.BadRequestException;
+import org.restheart.utils.HttpStatus;
 
 /**
  * Runs GraalVM polyglot Context creation, enter/leave and eval on a platform thread.
@@ -38,18 +43,20 @@ import org.graalvm.polyglot.Engine;
  * operations must be offloaded to a platform thread.</p>
  */
 public final class PolyglotThreadUtils {
-    private static final ExecutorService PLATFORM_EXECUTOR = Executors
-            .newCachedThreadPool(Thread.ofPlatform().name("RH JS PLT-", 0).factory());
+    // bounded, unlike newCachedThreadPool: an unbounded pool lets concurrent load
+    // spawn unlimited platform threads, which is both a resource-exhaustion risk
+    // and an implicit DoS vector; requests beyond the cap are rejected immediately
+    // instead of queueing or running on the caller thread (which could be virtual).
+    private static final int MAX_POOL_SIZE = Math.max(64, Runtime.getRuntime().availableProcessors() * 16);
+
+    private static final ExecutorService PLATFORM_EXECUTOR = new ThreadPoolExecutor(
+            0, MAX_POOL_SIZE,
+            60L, TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            Thread.ofPlatform().name("RH JS PLT-", 0).factory());
 
     private PolyglotThreadUtils() {}
 
-    /**
-     * Runs the given task on a platform thread and waits for its result.
-     *
-     * @param task the task to run
-     * @return the result of the task
-     * @throws Exception if the task throws an exception
-     */
     /**
      * Creates a polyglot Engine with the PluginsClassloader as context classloader.
      *
@@ -64,9 +71,20 @@ public final class PolyglotThreadUtils {
         return PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
     }
 
+    /**
+     * Runs the given task on a platform thread and waits for its result.
+     *
+     * @param task the task to run
+     * @return the result of the task
+     * @throws Exception if the task throws an exception, or a {@link BadRequestException}
+     *                    with status 429 if the platform thread pool is saturated
+     */
     public static <T> T onPlatformThread(Callable<T> task) throws Exception {
         try {
             return PLATFORM_EXECUTOR.submit(task).get();
+        } catch (RejectedExecutionException ree) {
+            throw new BadRequestException("Too many concurrent polyglot operations, please retry later",
+                    HttpStatus.SC_TOO_MANY_REQUESTS);
         } catch (ExecutionException e) {
             var cause = e.getCause();
             if (cause instanceof Exception ex) {
