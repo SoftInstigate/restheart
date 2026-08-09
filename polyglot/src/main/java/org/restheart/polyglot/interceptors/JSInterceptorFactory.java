@@ -55,7 +55,7 @@ public class JSInterceptorFactory {
 
     Map<String, String> contextOptions = new HashMap<>();
 
-    private final Engine engine = Engine.create();
+    private final Engine engine;
 
     private final Optional<MongoClient> mclient;
 
@@ -64,6 +64,13 @@ public class JSInterceptorFactory {
     public JSInterceptorFactory(Optional<MongoClient> mclient, Configuration config) {
         this.mclient = mclient;
         this.config = config;
+        try {
+            // use PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
+            this.engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
+        } catch (IOException e) {
+            // Engine.create() does not throw a checked exception; this cannot happen
+            throw new IllegalStateException(e);
+        }
     }
 
     public PluginRecord<Interceptor<?, ?>> create(Path pluginPath) throws IOException, InterruptedException {

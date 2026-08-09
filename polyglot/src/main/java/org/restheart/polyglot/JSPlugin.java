@@ -20,6 +20,7 @@
  */
 package org.restheart.polyglot;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,7 +36,17 @@ import com.mongodb.client.MongoClient;
 public abstract class JSPlugin {
     protected static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
 
-    private static final Engine engine = Engine.create();
+    private static final Engine engine;
+
+    static {
+        try {
+            // use PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
+            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
+        } catch (IOException e) {
+            // Engine.create() does not throw a checked exception; this cannot happen
+            throw new IllegalStateException(e);
+        }
+    }
 
     private final String modulesReplacements;
     private final Source handleSource;
