@@ -41,19 +41,51 @@ import org.restheart.utils.HttpStatus;
  * virtual thread can throw {@code ArrayIndexOutOfBoundsException}. RESTHeart
  * runs on Java 25, where virtual threads are used pervasively, so all Context
  * operations must be offloaded to a platform thread.</p>
+ *
+ * <p>When the Truffle bug is fixed, set the system property
+ * {@code restheart.polyglot.force-platform-threads=false} to let polyglot
+ * operations run on the caller thread (virtual or platform) directly,
+ * bypassing the platform-thread pool entirely.</p>
  */
 public final class PolyglotThreadUtils {
+    /**
+     * System property to control whether polyglot operations are forced onto
+     * platform threads. Defaults to {@code true} (workaround for oracle/graal#7520).
+     * Set to {@code false} once Truffle fully supports virtual threads.
+     */
+    private static final String FORCE_PLATFORM_PROP = "restheart.polyglot.force-platform-threads";
+
+    private static final boolean FORCE_PLATFORM;
+
+    static {
+        // Read once at class-load time; callers cannot change it at runtime.
+        FORCE_PLATFORM = Boolean.parseBoolean(
+                System.getProperty(FORCE_PLATFORM_PROP, "true"));
+    }
+
     // bounded, unlike newCachedThreadPool: an unbounded pool lets concurrent load
     // spawn unlimited platform threads, which is both a resource-exhaustion risk
     // and an implicit DoS vector; requests beyond the cap are rejected immediately
     // instead of queueing or running on the caller thread (which could be virtual).
     private static final int MAX_POOL_SIZE = Math.max(64, Runtime.getRuntime().availableProcessors() * 16);
 
-    private static final ExecutorService PLATFORM_EXECUTOR = new ThreadPoolExecutor(
-            0, MAX_POOL_SIZE,
-            60L, TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
-            Thread.ofPlatform().name("RH JS PLT-", 0).factory());
+    // lazily created: not needed when FORCE_PLATFORM is false
+    private static volatile ExecutorService platformExecutor;
+
+    private static ExecutorService getPlatformExecutor() {
+        if (platformExecutor == null) {
+            synchronized (PolyglotThreadUtils.class) {
+                if (platformExecutor == null) {
+                    platformExecutor = new ThreadPoolExecutor(
+                            0, MAX_POOL_SIZE,
+                            60L, TimeUnit.SECONDS,
+                            new SynchronousQueue<>(),
+                            Thread.ofPlatform().name("RH JS PLT-", 0).factory());
+                }
+            }
+        }
+        return platformExecutor;
+    }
 
     private PolyglotThreadUtils() {}
 
@@ -74,14 +106,23 @@ public final class PolyglotThreadUtils {
     /**
      * Runs the given task on a platform thread and waits for its result.
      *
+     * <p>When {@code restheart.polyglot.force-platform-threads} is {@code true}
+     * (the default), the task is dispatched to a bounded platform-thread pool
+     * and the caller blocks until completion. When set to {@code false}, the
+     * task runs directly on the caller thread.</p>
+     *
      * @param task the task to run
      * @return the result of the task
      * @throws Exception if the task throws an exception, or a {@link BadRequestException}
      *                    with status 429 if the platform thread pool is saturated
      */
     public static <T> T onPlatformThread(Callable<T> task) throws Exception {
+        if (!FORCE_PLATFORM) {
+            return task.call();
+        }
+
         try {
-            return PLATFORM_EXECUTOR.submit(task).get();
+            return getPlatformExecutor().submit(task).get();
         } catch (RejectedExecutionException ree) {
             throw new BadRequestException("Too many concurrent polyglot operations, please retry later",
                     HttpStatus.SC_TOO_MANY_REQUESTS);
@@ -98,5 +139,13 @@ public final class PolyglotThreadUtils {
             Thread.currentThread().interrupt();
             throw ie;
         }
+    }
+
+    /**
+     * Returns whether polyglot operations are currently forced onto platform threads.
+     * Useful for diagnostics and tests.
+     */
+    public static boolean isForcePlatform() {
+        return FORCE_PLATFORM;
     }
 }
