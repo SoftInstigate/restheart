@@ -41,8 +41,8 @@ public class RunnerIT extends AbstactIT {
     public void run() {
         List<String> tags = new ArrayList<>(List.of("~@ignore", "~@helper"));
 
-        if (!isGraalVMRuntime()) {
-            // Skip polyglot tests on non-GraalVM runtimes (JS plugins won't load)
+        if (!isGraalVM25_1_OrLater()) {
+            // Skip polyglot tests on non-GraalVM or GraalVM < 25.1 (JS plugins won't load)
             tags.add("~@requires-graalvm");
         }
 
@@ -53,11 +53,16 @@ public class RunnerIT extends AbstactIT {
         assertEquals(0, results.getFailCount());
     }
 
-    private static boolean isGraalVMRuntime() {
+    private static boolean isGraalVM25_1_OrLater() {
         try {
-            Class.forName("org.graalvm.home.Version");
-            return true;
-        } catch (ClassNotFoundException e) {
+            var versionClass = Class.forName("org.graalvm.home.Version");
+            var getCurrent = versionClass.getMethod("getCurrent");
+            var version = getCurrent.invoke(null);
+            var compareTo = versionClass.getMethod("compareTo", versionClass);
+            var v25_1 = versionClass.getMethod("create", int.class, int.class)
+                    .invoke(null, 25, 1);
+            return (int) compareTo.invoke(version, v25_1) >= 0;
+        } catch (Exception e) {
             return false;
         }
     }
