@@ -82,9 +82,19 @@ public class ContextQueue {
         this.modulesReplacements = modulesReplacements;
         this.OPTS = OPTS;
 
-        // Pre-populate pool
+        // Pre-populate pool: each Context must be created on a platform thread.
+        // Do NOT delegate to newContext() here -- its callers (args(), create())
+        // are already inside onPlatformThread, so newContext() must not wrap again
+        // (nested dispatch creates the Context on a *different* platform thread
+        // than the one that will enter it, which corrupts Truffle's
+        // DefaultContextThreadLocal bookkeeping, see oracle/graal#7520).
         for (var c = 0;c < POOL_SIZE;c++) {
-            pool.offer(newContext());
+            try {
+                pool.offer(PolyglotThreadUtils.onPlatformThread(
+                        () -> newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS)));
+            } catch (Exception e) {
+                LOGGER.warn("Error pre-creating polyglot context", e);
+            }
         }
     }
 
@@ -134,20 +144,23 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public <T> T executeWithContext(ContextTask<T> task) throws Exception {
-        Context ctx = acquire();
-        try {
-            // Context.enter()/leave() must run on a platform thread, see PolyglotThreadUtils
-            return PolyglotThreadUtils.onPlatformThread(() -> {
+        // acquire/enter/task/leave/release must all happen on the very same
+        // platform thread: if the pool is empty, acquire() calls newContext()
+        // which creates a Context that must be entered on the same thread
+        // (see PolyglotThreadUtils / oracle/graal#7520).
+        return PolyglotThreadUtils.onPlatformThread(() -> {
+            Context ctx = acquire();
+            try {
                 ctx.enter();
                 try {
                     return task.run(ctx);
                 } finally {
                     ctx.leave();
                 }
-            });
-        } finally {
-            release(ctx);
-        }
+            } finally {
+                release(ctx);
+            }
+        });
     }
 
     /**
@@ -157,21 +170,20 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public void executeWithContext(VoidContextTask task) throws Exception {
-        Context ctx = acquire();
-        try {
-            // Context.enter()/leave() must run on a platform thread, see PolyglotThreadUtils
-            PolyglotThreadUtils.onPlatformThread(() -> {
+        PolyglotThreadUtils.onPlatformThread(() -> {
+            Context ctx = acquire();
+            try {
                 ctx.enter();
                 try {
                     task.run(ctx);
                 } finally {
                     ctx.leave();
                 }
-                return null;
-            });
-        } finally {
-            release(ctx);
-        }
+            } finally {
+                release(ctx);
+            }
+            return null;
+        });
     }
 
     /**
@@ -238,28 +250,19 @@ public class ContextQueue {
             LOGGER.trace("modules-replacements ignored (removed in GraalVM 25.1): {}", modulesReplacements);
         }
 
-        try {
-            // Context creation touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-            return PolyglotThreadUtils.onPlatformThread(() -> {
-                var ctx = Context.newBuilder().engine(engine)
-                        .allowAllAccess(true)
-                        .allowHostAccess(HostAccess.ALL)
-                        .allowHostClassLookup(className -> true)
-                        .allowIO(IOAccess.ALL)
-                        .allowExperimentalOptions(true)
-                        .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
-                        .options(OPTS)
-                        .build();
+        var ctx = Context.newBuilder().engine(engine)
+                .allowAllAccess(true)
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup(className -> true)
+                .allowIO(IOAccess.ALL)
+                .allowExperimentalOptions(true)
+                .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
+                .options(OPTS)
+                .build();
 
-                addBindings(ctx, name, conf, logger, mclient);
+        addBindings(ctx, name, conf, logger, mclient);
 
-                return ctx;
-            });
-        } catch (RuntimeException re) {
-            throw re;
-        } catch (Exception e) {
-            throw new IllegalStateException("Error creating polyglot context", e);
-        }
+        return ctx;
     }
 
     private static void addBindings(Context ctx,
