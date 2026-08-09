@@ -22,6 +22,9 @@ package karate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.restheart.test.integration.AbstactIT;
 
@@ -36,10 +39,26 @@ import com.intuit.karate.Runner;
 public class RunnerIT extends AbstactIT {
     @Test
     public void run() {
+        List<String> tags = new ArrayList<>(List.of("~@ignore", "~@helper"));
+
+        if (!isGraalVMRuntime()) {
+            // Skip polyglot tests on non-GraalVM runtimes (JS plugins won't load)
+            tags.add("~@requires-graalvm");
+        }
+
         var results = Runner.path("classpath:karate")
-                .tags("~@ignore", "~@helper")
+                .tags(tags.toArray(new String[0]))
                 .parallel(1);
 
         assertEquals(0, results.getFailCount());
+    }
+
+    private static boolean isGraalVMRuntime() {
+        try {
+            Class.forName("org.graalvm.home.Version");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }
