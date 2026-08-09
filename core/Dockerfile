@@ -34,7 +34,7 @@ ENTRYPOINT [ "java", \
     "--enable-native-access=ALL-UNNAMED", \
     "--sun-misc-unsafe-memory-access=allow", \
     "-XX:MaxRAMPercentage=70.0", \
-    "-XX:InitialRAMPercentage=25.0", \
+    "-XX:InitialRAMPercentage=60.0", \
     "-XX:+DisableExplicitGC", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-XX:+UseCompactObjectHeaders", \
