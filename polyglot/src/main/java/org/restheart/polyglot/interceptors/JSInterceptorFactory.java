@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.restheart.polyglot.JSPlugin;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Engine;
@@ -64,13 +65,10 @@ public class JSInterceptorFactory {
     public JSInterceptorFactory(Optional<MongoClient> mclient, Configuration config) {
         this.mclient = mclient;
         this.config = config;
-        try {
-            // Engine.create() dispatched to the dedicated platform thread.
-            // See JSPlugin.<clinit> for the rationale.
-            this.engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
-        } catch (Exception e) {
-            throw new IllegalStateException("Error creating polyglot Engine", e);
-        }
+        // Reuse the single shared Engine from JSPlugin rather than creating a
+        // second one.  Two concurrent Engines corrupt Truffle's internal
+        // DefaultContextThreadLocal bookkeeping (see oracle/graal#7520).
+        this.engine = JSPlugin.engine();
     }
 
     public PluginRecord<Interceptor<?, ?>> create(Path pluginPath) throws IOException, InterruptedException {
