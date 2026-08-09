@@ -66,11 +66,11 @@ public class JSInterceptorFactory {
         this.mclient = mclient;
         this.config = config;
         try {
-            // use PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
-            this.engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
-        } catch (IOException e) {
-            // Engine.create() does not throw a checked exception; this cannot happen
-            throw new IllegalStateException(e);
+            // Engine.create() touches Truffle thread locals, must run on a platform thread (see PolyglotThreadUtils)
+            // and needs PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
+            this.engine = PolyglotThreadUtils.onPlatformThread(() -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+        } catch (Exception e) {
+            throw new IllegalStateException("Error creating polyglot Engine", e);
         }
     }
 

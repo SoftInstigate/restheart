@@ -20,7 +20,6 @@
  */
 package org.restheart.polyglot;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,11 +39,11 @@ public abstract class JSPlugin {
 
     static {
         try {
-            // use PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
-            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
-        } catch (IOException e) {
-            // Engine.create() does not throw a checked exception; this cannot happen
-            throw new IllegalStateException(e);
+            // Engine.create() touches Truffle thread locals, must run on a platform thread (see PolyglotThreadUtils)
+            // and needs PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
+            engine = PolyglotThreadUtils.onPlatformThread(() -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+        } catch (Exception e) {
+            throw new IllegalStateException("Error creating polyglot Engine", e);
         }
     }
 

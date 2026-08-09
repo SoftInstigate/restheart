@@ -112,4 +112,25 @@ class ContextQueueVirtualThreadTest {
         assertNull(failure.get(), () -> String.valueOf(failure.get()));
         assertEquals(42, result.get());
     }
+
+    @Test
+    void engineCreateSucceedsWhenOffloadedFromVirtualThread() throws Exception {
+        // mirrors how JSPlugin/JSInterceptorFactory build their static Engine field
+        var result = new AtomicReference<Engine>();
+        var failure = new AtomicReference<Throwable>();
+
+        var vt = Thread.ofVirtual().unstarted(() -> {
+            try {
+                result.set(PolyglotThreadUtils.onPlatformThread(Engine::create));
+            } catch (Throwable t) {
+                failure.set(t);
+            }
+        });
+
+        vt.start();
+        vt.join();
+
+        assertNull(failure.get(), () -> String.valueOf(failure.get()));
+        result.get().close();
+    }
 }
