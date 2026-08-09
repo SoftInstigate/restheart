@@ -107,7 +107,14 @@ public class JSInterceptorFactory {
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
+        // Context creation, eval and all Value member access must happen on the very
+        // same platform thread: a Value returned by eval() is only safely readable on
+        // the thread the context is entered on (see PolyglotThreadUtils), so the whole
+        // block below -- not just the eval() calls -- is dispatched as a single task.
+        try {
+        return PolyglotThreadUtils.onPlatformThread(() -> {
         var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
+        ctx.enter();
         try {
 
             // ******** evaluate and check options
@@ -118,8 +125,7 @@ public class JSInterceptorFactory {
             Value options;
 
             try {
-                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                options = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(optionsSource));
+                options = ctx.eval(optionsSource);
             } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
             }
@@ -209,8 +215,7 @@ public class JSInterceptorFactory {
             Value handle;
 
             try {
-                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                handle = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(handleSource));
+                handle = ctx.eval(handleSource);
             } catch (Throwable t) {
                 throw new IllegalArgumentException(
                         "wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
@@ -229,8 +234,7 @@ public class JSInterceptorFactory {
             Value resolve;
 
             try {
-                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                resolve = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(resolveSource));
+                resolve = ctx.eval(resolveSource);
             } catch (Throwable t) {
                 throw new IllegalArgumentException(
                         "wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
@@ -353,15 +357,18 @@ public class JSInterceptorFactory {
                     interceptor,
                     new HashMap<>());
         } finally {
-            try {
-                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                PolyglotThreadUtils.onPlatformThread(() -> {
-                    ctx.close();
-                    return null;
-                });
-            } catch (Exception e) {
-                LOGGER.warn("Error closing context for {}", pluginPath, e);
-            }
+            ctx.leave();
+            ctx.close();
+        }
+        });
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (IOException ioe) {
+            throw ioe;
+        } catch (InterruptedException ie) {
+            throw ie;
+        } catch (Exception e) {
+            throw new IllegalStateException("Error evaluating js interceptor " + pluginPath.toAbsolutePath(), e);
         }
     }
 

@@ -96,82 +96,88 @@ public class JSStringService extends JSService implements StringService {
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
+        // Context creation, eval and all Value member access must happen on the very
+        // same platform thread: a Value returned by eval() is only safely readable on
+        // the thread the context is entered on (see PolyglotThreadUtils), so the whole
+        // block below -- not just the eval() calls -- is dispatched as a single task.
         try {
-            // check that the plugin script is js (use PluginsClassloader so js-language is visible)
-            final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-                () -> Source.findLanguage(pluginPath.toFile()));
+            return PolyglotThreadUtils.onPlatformThread(() -> {
+                var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
+                ctx.enter();
+                try {
+                    // check that the plugin script is js (use PluginsClassloader so js-language is visible)
+                    final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
+                        () -> Source.findLanguage(pluginPath.toFile()));
 
-            if (!"js".equals(language)) {
-                throw new IllegalArgumentException("wrong js plugin, not javascript");
-            }
+                    if (!"js".equals(language)) {
+                        throw new IllegalArgumentException("wrong js plugin, not javascript");
+                    }
 
-            var sindexPath = pluginPath.toUri().toString();
-            LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
-            var optionsScript = "import { options } from '" + sindexPath + "'; options;";
-            var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
+                    var sindexPath = pluginPath.toUri().toString();
+                    LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
+                    var optionsScript = "import { options } from '" + sindexPath + "'; options;";
+                    var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
 
-            Value options;
+                    Value options;
 
-            try {
-                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                options = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(optionsSource));
-            } catch (Throwable t) {
-                if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
-                }
-            }
+                    try {
+                        options = ctx.eval(optionsSource);
+                    } catch (Throwable t) {
+                        if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
+                        }
+                    }
 
-            checkOptions(options, pluginPath);
+                    checkOptions(options, pluginPath);
 
-            var name = options.getMember("name").asString();
-            var description = options.getMember("description").asString();
-            var uri = options.getMember("uri").asString();
-            var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
-            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
-            String modulesReplacements = null;
+                    var name = options.getMember("name").asString();
+                    var description = options.getMember("description").asString();
+                    var uri = options.getMember("uri").asString();
+                    var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
+                    var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
+                    String modulesReplacements = null;
 
-            if (options.getMemberKeys().contains("modulesReplacements")) {
-                var sb = new StringBuilder();
+                    if (options.getMemberKeys().contains("modulesReplacements")) {
+                        var sb = new StringBuilder();
 
-                options.getMember("modulesReplacements").getMemberKeys().stream()
-                        .forEach(k -> sb.append(k).append(":")
-                                .append(options.getMember("modulesReplacements").getMember(k))
-                                .append(","));
+                        options.getMember("modulesReplacements").getMemberKeys().stream()
+                                .forEach(k -> sb.append(k).append(":")
+                                        .append(options.getMember("modulesReplacements").getMember(k))
+                                        .append(","));
 
-                modulesReplacements = sb.toString();
-            }
+                        modulesReplacements = sb.toString();
+                    }
 
-            // ******** evaluate and check handle
-            var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
-            var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
+                    // ******** evaluate and check handle
+                    var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+                    var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
 
-            Value handle;
+                    Value handle;
 
-            try {
-                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                handle = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(handleSource));
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
-            }
+                    try {
+                        handle = ctx.eval(handleSource);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
+                    }
 
-            checkHandle(handle, pluginPath);
+                    checkHandle(handle, pluginPath);
 
-            return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
-        } finally {
-            try {
-                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
-                PolyglotThreadUtils.onPlatformThread(() -> {
+                    return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
+                } finally {
+                    ctx.leave();
                     ctx.close();
-                    return null;
-                });
-            } catch (Exception e) {
-                LOGGER.warn("Error closing context for {}", pluginPath, e);
-            }
+                }
+            });
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (IOException ioe) {
+            throw ioe;
+        } catch (Exception e) {
+            throw new IllegalStateException("Error evaluating js service " + pluginPath.toAbsolutePath(), e);
         }
     }
 
