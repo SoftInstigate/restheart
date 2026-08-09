@@ -110,9 +110,16 @@ public class ContextQueue {
      */
     private void release(Context ctx) {
         if (!pool.offer(ctx)) {
-            // Pool is full, close the context
-            ctx.close();
-            LOGGER.debug("Pool full, closed excess context");
+            try {
+                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                PolyglotThreadUtils.onPlatformThread(() -> {
+                    ctx.close();
+                    return null;
+                });
+                LOGGER.debug("Pool full, closed excess context");
+            } catch (Exception e) {
+                LOGGER.warn("Error closing excess context", e);
+            }
         }
     }
 

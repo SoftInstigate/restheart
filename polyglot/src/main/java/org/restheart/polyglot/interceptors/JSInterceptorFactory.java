@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Engine;
@@ -68,7 +67,7 @@ public class JSInterceptorFactory {
         try {
             // Engine.create() touches Truffle thread locals, must run on a platform thread (see PolyglotThreadUtils)
             // and needs PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
-            this.engine = PolyglotThreadUtils.onPlatformThread(() -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+            this.engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }
@@ -108,7 +107,8 @@ public class JSInterceptorFactory {
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
-        try (Context ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions)) {
+        var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
+        try {
 
             // ******** evaluate and check options
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
@@ -352,6 +352,16 @@ public class JSInterceptorFactory {
                     interceptor.getClass().getName(),
                     interceptor,
                     new HashMap<>());
+        } finally {
+            try {
+                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                PolyglotThreadUtils.onPlatformThread(() -> {
+                    ctx.close();
+                    return null;
+                });
+            } catch (Exception e) {
+                LOGGER.warn("Error closing context for {}", pluginPath, e);
+            }
         }
     }
 

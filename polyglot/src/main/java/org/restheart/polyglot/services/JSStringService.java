@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.restheart.polyglot.PolyglotThreadUtils;
@@ -97,7 +96,8 @@ public class JSStringService extends JSService implements StringService {
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        try (Context ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions)) {
+        var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
+        try {
             // check that the plugin script is js (use PluginsClassloader so js-language is visible)
             final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
                 () -> Source.findLanguage(pluginPath.toFile()));
@@ -162,6 +162,16 @@ public class JSStringService extends JSService implements StringService {
             checkHandle(handle, pluginPath);
 
             return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
+        } finally {
+            try {
+                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                PolyglotThreadUtils.onPlatformThread(() -> {
+                    ctx.close();
+                    return null;
+                });
+            } catch (Exception e) {
+                LOGGER.warn("Error closing context for {}", pluginPath, e);
+            }
         }
     }
 
