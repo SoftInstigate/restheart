@@ -235,11 +235,9 @@ public class JSInterceptorFactory {
             Map<String, String> contextOpts = Maps.newHashMap();
             contextOpts.putAll(contextOptions);
 
+            // js.commonjs-core-modules-replacements was removed in GraalVM 25.1.x
             if (modulesReplacements != null) {
-                LOGGER.trace("modules-replacements: {} ", modulesReplacements);
-                contextOpts.put("js.commonjs-core-modules-replacements", modulesReplacements);
-            } else {
-                contextOpts.remove("js.commonjs-core-modules-replacements");
+                LOGGER.trace("modules-replacements ignored (removed in GraalVM 25.1): {}", modulesReplacements);
             }
 
             switch (pluginClass) {

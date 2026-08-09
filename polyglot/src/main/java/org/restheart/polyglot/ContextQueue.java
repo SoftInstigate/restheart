@@ -213,11 +213,9 @@ public class ContextQueue {
     }
 
     public static Context newContext(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements, Map<String, String> OPTS) {
+        // js.commonjs-core-modules-replacements was removed in GraalVM 25.1.x
         if (modulesReplacements != null) {
-            LOGGER.trace("modules-replacements: {} ", modulesReplacements);
-            OPTS.put("js.commonjs-core-modules-replacements", modulesReplacements);
-        } else {
-            OPTS.remove("js.commonjs-core-modules-replacements");
+            LOGGER.trace("modules-replacements ignored (removed in GraalVM 25.1): {}", modulesReplacements);
         }
 
         var ctx = Context.newBuilder().engine(engine)
