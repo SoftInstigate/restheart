@@ -94,6 +94,13 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
+        // Source.findLanguage() and all Context/Value operations must run on a
+        // platform thread (see PolyglotThreadUtils).  The whole block is dispatched
+        // as a single task so eval() and subsequent Value member access happen on
+        // the very same thread that entered the context.
+        try {
+        return PolyglotThreadUtils.onPlatformThread(() -> {
+
         // check that the plugin script is js (use PluginsClassloader so js-language is visible)
         final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
             () -> Source.findLanguage(pluginPath.toFile()));
@@ -107,12 +114,6 @@ public class JSInterceptorFactory {
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
-        // Context creation, eval and all Value member access must happen on the very
-        // same platform thread: a Value returned by eval() is only safely readable on
-        // the thread the context is entered on (see PolyglotThreadUtils), so the whole
-        // block below -- not just the eval() calls -- is dispatched as a single task.
-        try {
-        return PolyglotThreadUtils.onPlatformThread(() -> {
         var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
         ctx.enter();
         try {
