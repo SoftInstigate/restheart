@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
+import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.StringRequest;
@@ -113,7 +114,8 @@ public class JSStringService extends JSService implements StringService {
             Value options;
 
             try {
-                options = ctx.eval(optionsSource);
+                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                options = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(optionsSource));
             } catch (Throwable t) {
                 if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
                     throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
@@ -151,7 +153,8 @@ public class JSStringService extends JSService implements StringService {
             Value handle;
 
             try {
-                handle = ctx.eval(handleSource);
+                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                handle = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(handleSource));
             } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
             }

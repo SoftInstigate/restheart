@@ -128,11 +128,17 @@ public class ContextQueue {
      */
     public <T> T executeWithContext(ContextTask<T> task) throws Exception {
         Context ctx = acquire();
-        ctx.enter();
         try {
-            return task.run(ctx);
+            // Context.enter()/leave() must run on a platform thread, see PolyglotThreadUtils
+            return PolyglotThreadUtils.onPlatformThread(() -> {
+                ctx.enter();
+                try {
+                    return task.run(ctx);
+                } finally {
+                    ctx.leave();
+                }
+            });
         } finally {
-            ctx.leave();
             release(ctx);
         }
     }
@@ -145,11 +151,18 @@ public class ContextQueue {
      */
     public void executeWithContext(VoidContextTask task) throws Exception {
         Context ctx = acquire();
-        ctx.enter();
         try {
-            task.run(ctx);
+            // Context.enter()/leave() must run on a platform thread, see PolyglotThreadUtils
+            PolyglotThreadUtils.onPlatformThread(() -> {
+                ctx.enter();
+                try {
+                    task.run(ctx);
+                } finally {
+                    ctx.leave();
+                }
+                return null;
+            });
         } finally {
-            ctx.leave();
             release(ctx);
         }
     }
@@ -218,19 +231,28 @@ public class ContextQueue {
             LOGGER.trace("modules-replacements ignored (removed in GraalVM 25.1): {}", modulesReplacements);
         }
 
-        var ctx = Context.newBuilder().engine(engine)
-                .allowAllAccess(true)
-                .allowHostAccess(HostAccess.ALL)
-                .allowHostClassLookup(className -> true)
-                .allowIO(IOAccess.ALL)
-                .allowExperimentalOptions(true)
-                .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
-                .options(OPTS)
-                .build();
+        try {
+            // Context creation touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+            return PolyglotThreadUtils.onPlatformThread(() -> {
+                var ctx = Context.newBuilder().engine(engine)
+                        .allowAllAccess(true)
+                        .allowHostAccess(HostAccess.ALL)
+                        .allowHostClassLookup(className -> true)
+                        .allowIO(IOAccess.ALL)
+                        .allowExperimentalOptions(true)
+                        .allowValueSharing(true)  // Enable value sharing to reduce marshalling overhead
+                        .options(OPTS)
+                        .build();
 
-        addBindings(ctx, name, conf, logger, mclient);
+                addBindings(ctx, name, conf, logger, mclient);
 
-        return ctx;
+                return ctx;
+            });
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new IllegalStateException("Error creating polyglot context", e);
+        }
     }
 
     private static void addBindings(Context ctx,

@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
+import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -117,7 +118,8 @@ public class JSInterceptorFactory {
             Value options;
 
             try {
-                options = ctx.eval(optionsSource);
+                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                options = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(optionsSource));
             } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
             }
@@ -207,7 +209,8 @@ public class JSInterceptorFactory {
             Value handle;
 
             try {
-                handle = ctx.eval(handleSource);
+                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                handle = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(handleSource));
             } catch (Throwable t) {
                 throw new IllegalArgumentException(
                         "wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
@@ -226,7 +229,8 @@ public class JSInterceptorFactory {
             Value resolve;
 
             try {
-                resolve = ctx.eval(resolveSource);
+                // ctx.eval() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                resolve = PolyglotThreadUtils.onPlatformThread(() -> ctx.eval(resolveSource));
             } catch (Throwable t) {
                 throw new IllegalArgumentException(
                         "wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
