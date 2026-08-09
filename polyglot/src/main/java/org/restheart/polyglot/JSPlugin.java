@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
+import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.restheart.polyglot.services.JSServiceArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,16 @@ public abstract class JSPlugin {
 
     static {
         try {
-            // Must be a plain method reference to a method NOT declared here: a lambda
-            // body written inside this static initializer would become a private
-            // synthetic method of JSPlugin, and invoking it from the platform thread
-            // would then require JSPlugin's own <clinit> to finish -- which is exactly
-            // what's blocked waiting for this platform thread, causing a deadlock.
-            engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
+            // Engine.create() is called directly on the main thread (not dispatched
+            // to a pool thread).  This avoids Truffle's DefaultContextThreadLocal
+            // being initialised on a throwaway pool thread, which corrupts the
+            // bookkeeping when a *different* thread later enters a Context
+            // (see oracle/graal#7520).
+            //
+            // No deadlock risk: PolyglotClassloaderHelper and Engine are both on
+            // different classes, so referencing them from this <clinit> never
+            // re-enters JSPlugin's own class initialisation.
+            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }

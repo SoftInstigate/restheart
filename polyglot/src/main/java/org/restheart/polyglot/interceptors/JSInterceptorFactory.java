@@ -65,9 +65,9 @@ public class JSInterceptorFactory {
         this.mclient = mclient;
         this.config = config;
         try {
-            // Engine.create() touches Truffle thread locals, must run on a platform thread (see PolyglotThreadUtils)
-            // and needs PluginsClassloader so ServiceLoader can find js-language's TruffleLanguageProvider
-            this.engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
+            // Engine.create() called directly on the calling thread (main thread during
+            // startup).  See JSPlugin.<clinit> for the rationale.
+            this.engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }
