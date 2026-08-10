@@ -78,9 +78,9 @@ import com.mongodb.client.MongoClient;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "polyglotDeployer",
-        description = "handles GraalVM polyglot plugins",
-        enabledByDefault = true)
+    name = "polyglotDeployer",
+    description = "handles GraalVM polyglot plugins",
+    enabledByDefault = true)
 public class PolyglotDeployer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
@@ -352,17 +352,12 @@ public class PolyglotDeployer implements Initializer {
 
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
-                                try {
-                                    final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-                                        () -> Source.findLanguage(pluginPath.toFile()));
-                                    if ("js".equals(language)) {
-                                        ret.add(pluginPath);
-                                    } else {
-                                        LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
-                                    }
-                                } catch (final IOException e) {
-                                    LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
-                                }
+                                // Source.findLanguage() is NOT called here:
+                                // it triggers Truffle's language-discovery
+                                // internals which corrupt DefaultContextThread-
+                                // Local (oracle/graal#7520).  Files are
+                                // already filtered to .mjs by the deployer.
+                                ret.add(pluginPath);
                             } else {
                                 LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),
                                         packagePath.toAbsolutePath());
@@ -454,8 +449,8 @@ public class PolyglotDeployer implements Initializer {
                 DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
                 LOGGER.info(ansi().fg(GREEN).a(
-                                "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
-                                .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
+                        "Service '{}' deployed at URI '{}' with description: '{}'. Secured: {}. Uri match policy: {}")
+                        .reset().toString(), srv.name(), srv.uri(), srv.getDescription(), srv.secured(),
                         srv.matchPolicy());
             } catch (IOException | InterruptedException | ExecutionException | TimeoutException ex) {
                 LOGGER.error("Error deploying node service {}", pluginPath, ex);

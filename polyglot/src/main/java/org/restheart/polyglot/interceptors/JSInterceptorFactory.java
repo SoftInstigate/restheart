@@ -27,8 +27,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
+import org.restheart.polyglot.JSPlugin;
 import org.restheart.polyglot.PolyglotClassloaderHelper;
+import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -55,7 +56,7 @@ public class JSInterceptorFactory {
 
     Map<String, String> contextOptions = new HashMap<>();
 
-    private final Engine engine = Engine.create();
+    private final Engine engine;
 
     private final Optional<MongoClient> mclient;
 
@@ -64,6 +65,10 @@ public class JSInterceptorFactory {
     public JSInterceptorFactory(Optional<MongoClient> mclient, Configuration config) {
         this.mclient = mclient;
         this.config = config;
+        // Reuse the single shared Engine from JSPlugin rather than creating a
+        // second one.  Two concurrent Engines corrupt Truffle's internal
+        // DefaultContextThreadLocal bookkeeping (see oracle/graal#7520).
+        this.engine = JSPlugin.engine();
     }
 
     public PluginRecord<Interceptor<?, ?>> create(Path pluginPath) throws IOException, InterruptedException {
@@ -87,20 +92,20 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // check that the plugin script is js (use PluginsClassloader so js-language is visible)
-        final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-            () -> Source.findLanguage(pluginPath.toFile()));
-
-        if (!"js".equals(language)) {
-            throw new IllegalArgumentException(
-                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", not javascript");
-        }
+        // Source.findLanguage() is NOT called here: it corrupts Truffle's
+        // DefaultContextThreadLocal (oracle/graal#7520).
+        var language = "js";
 
         // check plugin definition
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
-        try (Context ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions)) {
+        // All Context lifecycle must run on the dedicated platform thread.
+        try {
+        return PolyglotThreadUtils.onPlatformThreadIO(() -> {
+        var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
+        ctx.enter();
+        try {
 
             // ******** evaluate and check options
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
@@ -341,6 +346,18 @@ public class JSInterceptorFactory {
                     interceptor.getClass().getName(),
                     interceptor,
                     new HashMap<>());
+        } finally {
+            ctx.leave();
+            ctx.close();
+        }
+        });
+        } catch (Throwable t) {
+            LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
+                    pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
+            if (t instanceof RuntimeException re) throw re;
+            if (t instanceof IOException ioe) throw ioe;
+            if (t instanceof InterruptedException ie) { Thread.currentThread().interrupt(); throw ie; }
+            throw new IOException(t);
         }
     }
 

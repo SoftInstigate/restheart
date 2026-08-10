@@ -82,9 +82,38 @@ public class ContextQueue {
         this.modulesReplacements = modulesReplacements;
         this.OPTS = OPTS;
 
-        // Pre-populate pool
+        // Pre-populate pool on the dedicated platform thread.  Each Context
+        // is created, entered, bound, left and returned to the pool — all on
+        // the same thread that will be used at runtime, to avoid
+        // DefaultContextThreadLocal index corruption (oracle/graal#7520).
+        //
+        // If already on the platform thread (e.g. called from within a
+        // JSInterceptorFactory.create lambda), create directly to avoid
+        // self-deadlock on the single-threaded executor.
+        if (PolyglotThreadUtils.isAlreadyOnPlatformThread()) {
+            populatePool(engine, name, conf, logger, mclient, modulesReplacements);
+        } else {
+            try {
+                PolyglotThreadUtils.onPlatformThread(() -> {
+                    populatePool(engine, name, conf, logger, mclient, modulesReplacements);
+                    return null;
+                });
+            } catch (Exception e) {
+                throw new IllegalStateException("Error pre-populating polyglot context pool", e);
+            }
+        }
+    }
+
+    private void populatePool(Engine engine, String name, Configuration conf, Logger logger, Optional<MongoClient> mclient, String modulesReplacements) {
         for (var c = 0;c < POOL_SIZE;c++) {
-            pool.offer(newContext());
+            var ctx = newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS);
+            ctx.enter();
+            try {
+                addBindings(ctx, name, conf, logger, mclient);
+            } finally {
+                ctx.leave();
+            }
+            pool.offer(ctx);
         }
     }
 
@@ -110,9 +139,16 @@ public class ContextQueue {
      */
     private void release(Context ctx) {
         if (!pool.offer(ctx)) {
-            // Pool is full, close the context
-            ctx.close();
-            LOGGER.debug("Pool full, closed excess context");
+            try {
+                // Context.close() touches thread locals, must run on a platform thread, see PolyglotThreadUtils
+                PolyglotThreadUtils.onPlatformThread(() -> {
+                    ctx.close();
+                    return null;
+                });
+                LOGGER.debug("Pool full, closed excess context");
+            } catch (Exception e) {
+                LOGGER.warn("Error closing excess context", e);
+            }
         }
     }
 
@@ -127,14 +163,23 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public <T> T executeWithContext(ContextTask<T> task) throws Exception {
-        Context ctx = acquire();
-        ctx.enter();
-        try {
-            return task.run(ctx);
-        } finally {
-            ctx.leave();
-            release(ctx);
-        }
+        // acquire/enter/task/leave/release must all happen on the very same
+        // platform thread: if the pool is empty, acquire() calls newContext()
+        // which creates a Context that must be entered on the same thread
+        // (see PolyglotThreadUtils / oracle/graal#7520).
+        return PolyglotThreadUtils.onPlatformThread(() -> {
+            Context ctx = acquire();
+            try {
+                ctx.enter();
+                try {
+                    return task.run(ctx);
+                } finally {
+                    ctx.leave();
+                }
+            } finally {
+                release(ctx);
+            }
+        });
     }
 
     /**
@@ -144,14 +189,20 @@ public class ContextQueue {
      * @throws Exception if the task throws an exception
      */
     public void executeWithContext(VoidContextTask task) throws Exception {
-        Context ctx = acquire();
-        ctx.enter();
-        try {
-            task.run(ctx);
-        } finally {
-            ctx.leave();
-            release(ctx);
-        }
+        PolyglotThreadUtils.onPlatformThread(() -> {
+            Context ctx = acquire();
+            try {
+                ctx.enter();
+                try {
+                    task.run(ctx);
+                } finally {
+                    ctx.leave();
+                }
+            } finally {
+                release(ctx);
+            }
+            return null;
+        });
     }
 
     /**
@@ -228,12 +279,18 @@ public class ContextQueue {
                 .options(OPTS)
                 .build();
 
-        addBindings(ctx, name, conf, logger, mclient);
-
+        // NOTE: addBindings() is NOT called here.  It requires ctx.enter(),
+        // and a second enter()/leave() cycle before the caller's own
+        // enter() corrupts Truffle's DefaultContextThreadLocal (oracle/graal#7520).
+        // Callers must call addBindings() AFTER entering the context.
         return ctx;
     }
 
-    private static void addBindings(Context ctx,
+    /**
+     * Adds default bindings (LOGGER, mclient, pluginArgs) to an already-entered
+     * context.  Must only be called between ctx.enter() and ctx.leave().
+     */
+    public static void addBindings(Context ctx,
                                     String pluginName,
                                     Configuration conf,
                                     Logger logger,

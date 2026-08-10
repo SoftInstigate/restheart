@@ -61,7 +61,7 @@ public final class PolyglotClassloaderHelper {
      * Returns the PluginsClassloader instance via reflection, or null if
      * unavailable.
      */
-    private static ClassLoader getPluginsClassloader() {
+    public static ClassLoader getPluginsClassloader() {
         try {
             Class<?> pclClass = Class.forName(PCL_CLASS);
             var getInstance = pclClass.getMethod("getInstance");
