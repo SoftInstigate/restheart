@@ -133,7 +133,10 @@ public class ProvidersChecker {
                             var providedType = PluginsFactory.providersTypes().get(otherProviderName);
                             var fieldType = i.clazz();
 
-                            if (!fieldType.isAssignableFrom(providedType)) {
+                            if (providedType == null) {
+                                LOGGER.error("Provider {} disabled: the provider for @Inject(\"{}\") was not instantiated", thisProvider.name(), otherProviderName);
+                                toRemove.add(thisProvider);
+                            } else if (!fieldType.isAssignableFrom(providedType)) {
                                 LOGGER.error("Plugin {} disabled: the type of the provider for @Inject(\"{}\") is {} but the type of the annotated field {} is {}", thisProvider.name(), otherProviderName, providedType, i.field(), fieldType);
                                 toRemove.add(thisProvider);
                             }
