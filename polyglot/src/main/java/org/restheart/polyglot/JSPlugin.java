@@ -35,7 +35,34 @@ import com.mongodb.client.MongoClient;
 public abstract class JSPlugin {
     protected static final Logger LOGGER = LoggerFactory.getLogger(JSPlugin.class);
 
-    private static final Engine engine = Engine.create();
+    private static volatile Engine engine;
+
+    /**
+     * Returns the shared polyglot Engine, creating it on the dedicated
+     * platform thread on first access.  Lazy initialization avoids the
+     * deadlock that would occur if we created the Engine in a static
+     * initializer (the main thread holds the class-init lock while
+     * waiting for the platform thread).
+     */
+    public static Engine engine() {
+        if (engine == null) {
+            synchronized (JSPlugin.class) {
+                if (engine == null) {
+                    try {
+                        if (PolyglotThreadUtils.isAlreadyOnPlatformThread()) {
+                            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
+                        } else {
+                            engine = PolyglotThreadUtils.onPlatformThread(
+                                () -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+                        }
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Error creating polyglot Engine", e);
+                    }
+                }
+            }
+        }
+        return engine;
+    }
 
     private final String modulesReplacements;
     private final Source handleSource;
@@ -116,7 +143,4 @@ public abstract class JSPlugin {
         return configuration;
     }
 
-    public static Engine engine() {
-        return engine;
-    }
 }
