@@ -59,30 +59,31 @@ public class ResourcesExtractor {
     /** Logger instance for this class. */
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
 
-    /**
-     * Map of directory paths to lists of file names, populated at build time
-     * by the GraalVM Feature. Used to enumerate resources in native images
-     * where ClassLoader.getResources() does not work for directories.
-     */
-    private static final Map<String, List<String>> NATIVE_IMAGE_RESOURCES = new HashMap<>();
+    private static final String INDEX_RESOURCE = "META-INF/native-image-resources.properties";
+    private static Map<String, String[]> nativeImageDirectoryIndex;
 
     /**
-     * Registers a resource file under a directory path. Called at build time
-     * by the GraalVM Feature to populate the resource map.
-     *
-     * @param directoryPath the directory path (e.g., "static/metrics")
-     * @param fileName the file name (e.g., "restheart-metrics.html")
+     * Returns the directory index for native image resources, loading it lazily
+     * from the properties file generated at build time by ResourcesScannerFeature.
      */
-    public static void registerNativeImageResource(String directoryPath, String fileName) {
-        NATIVE_IMAGE_RESOURCES.computeIfAbsent(directoryPath, k -> new ArrayList<>()).add(fileName);
-    }
-
-    /**
-     * Returns the map of directory paths to file names for native image resources.
-     * Used by the GraalVM Feature to discover registered resources.
-     */
-    public static Map<String, List<String>> getNativeImageResources() {
-        return NATIVE_IMAGE_RESOURCES;
+    private static Map<String, String[]> getNativeImageDirectoryIndex() {
+        if (nativeImageDirectoryIndex == null) {
+            nativeImageDirectoryIndex = new HashMap<>();
+            try (var is = ResourcesExtractor.class.getClassLoader().getResourceAsStream(INDEX_RESOURCE)) {
+                if (is != null) {
+                    var props = new java.util.Properties();
+                    props.load(is);
+                    for (var entry : props.entrySet()) {
+                        String dir = (String) entry.getKey();
+                        String[] files = ((String) entry.getValue()).split(",");
+                        nativeImageDirectoryIndex.put(dir, files);
+                    }
+                }
+            } catch (IOException e) {
+                // ignore — no index available
+            }
+        }
+        return nativeImageDirectoryIndex;
     }
 
     /**
@@ -323,9 +324,11 @@ public class ResourcesExtractor {
     private static File extractNativeImageResource(Class clazz, String resourcePath) throws IOException {
         Path destinationDir = Files.createTempDirectory("restheart-");
 
-        var files = NATIVE_IMAGE_RESOURCES.get(resourcePath);
-        if (files != null) {
-            for (String fileName : files) {
+        var index = getNativeImageDirectoryIndex();
+        var filesCsv = index.get(resourcePath);
+        if (filesCsv != null) {
+            for (String fileName : filesCsv) {
+                if (fileName.isEmpty()) continue;
                 var url = getClassLoader(clazz).getResource(resourcePath + "/" + fileName);
                 if (url != null) {
                     try (var is = url.openStream()) {

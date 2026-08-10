@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-commons
+ * restheart-core
  * %%
  * Copyright (C) 2014 - 2026 SoftInstigate
  * %%
@@ -21,7 +21,6 @@ package org.restheart.graal;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -34,34 +33,53 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.graalvm.nativeimage.hosted.Feature;
-import org.restheart.utils.ResourcesExtractor;
+import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
 
 /**
  * GraalVM Feature that scans the classpath at build time to discover
- * resource directories and their files. This information is stored in
- * {@link ResourcesExtractor} so that at runtime, embedded static resources
- * can be extracted even though {@code ClassLoader.getResources()} does
- * not work for directories in native images.
+ * resource directories and their files. It registers each individual
+ * file as a resource and also generates a directory-index resource
+ * that {@code ResourcesExtractor} can read at runtime to enumerate
+ * files under a directory path.
  */
 public class ResourcesScannerFeature implements Feature {
 
+    private static final String INDEX_RESOURCE = "META-INF/native-image-resources.properties";
+
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        // Scan the classpath for resource directories
+        var directoryIndex = new HashMap<String, StringBuilder>();
+
         access.getApplicationClassPath().forEach(entry -> {
             try {
                 if (Files.isDirectory(entry)) {
-                    scanDirectory(entry);
+                    scanDirectory(entry, directoryIndex);
                 } else if (entry.toString().endsWith(".jar")) {
-                    scanJar(entry);
+                    scanJar(entry, directoryIndex);
                 }
             } catch (Exception e) {
                 // ignore errors for individual entries
             }
         });
+
+        // Write the directory index as a resource
+        if (!directoryIndex.isEmpty()) {
+            try {
+                var tmpFile = Files.createTempFile("restheart-resources-", ".properties");
+                var sb = new StringBuilder();
+                directoryIndex.forEach((dir, files) -> {
+                    sb.append(dir).append("=").append(files).append("\n");
+                });
+                Files.writeString(tmpFile, sb.toString());
+                RuntimeResourceAccess.addResource(INDEX_RESOURCE, Files.readAllBytes(tmpFile));
+                Files.delete(tmpFile);
+            } catch (IOException e) {
+                System.err.println("[ResourcesScannerFeature] Failed to write directory index: " + e.getMessage());
+            }
+        }
     }
 
-    private void scanDirectory(Path root) throws IOException {
+    private void scanDirectory(Path root, HashMap<String, StringBuilder> directoryIndex) throws IOException {
         if (!Files.exists(root)) return;
 
         Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
@@ -73,14 +91,14 @@ public class ResourcesScannerFeature implements Feature {
                 if (lastSlash > 0) {
                     String dir = path.substring(0, lastSlash);
                     String fileName = path.substring(lastSlash + 1);
-                    ResourcesExtractor.registerNativeImageResource(dir, fileName);
+                    addToIndex(directoryIndex, dir, fileName);
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
     }
 
-    private void scanJar(Path jarPath) throws IOException, URISyntaxException {
+    private void scanJar(Path jarPath, HashMap<String, StringBuilder> directoryIndex) throws IOException {
         Map<String, String> env = Collections.singletonMap("create", "false");
         URI uri = URI.create("jar:" + jarPath.toUri());
 
@@ -95,12 +113,16 @@ public class ResourcesScannerFeature implements Feature {
                     if (lastSlash > 0) {
                         String dir = path.substring(0, lastSlash);
                         String fileName = path.substring(lastSlash + 1);
-                        ResourcesExtractor.registerNativeImageResource(dir, fileName);
+                        addToIndex(directoryIndex, dir, fileName);
                     }
                     return FileVisitResult.CONTINUE;
                 }
             });
         }
+    }
+
+    private void addToIndex(HashMap<String, StringBuilder> directoryIndex, String dir, String fileName) {
+        directoryIndex.computeIfAbsent(dir, k -> new StringBuilder()).append(fileName).append(",");
     }
 
     @Override
