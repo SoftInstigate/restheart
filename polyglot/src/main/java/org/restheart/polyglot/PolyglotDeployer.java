@@ -352,19 +352,12 @@ public class PolyglotDeployer implements Initializer {
 
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
-                                try {
-                                    // Source.findLanguage() runs directly on the calling thread.
-                                    // During startup this is the JVM main thread (platform thread).
-                                    final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-                                            () -> Source.findLanguage(pluginPath.toFile()));
-                                    if ("js".equals(language)) {
-                                        ret.add(pluginPath);
-                                    } else {
-                                        LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
-                                    }
-                                } catch (final Exception e) {
-                                    LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
-                                }
+                                // Source.findLanguage() is NOT called here:
+                                // it triggers Truffle's language-discovery
+                                // internals which corrupt DefaultContextThread-
+                                // Local (oracle/graal#7520).  Files are
+                                // already filtered to .mjs by the deployer.
+                                ret.add(pluginPath);
                             } else {
                                 LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(),
                                         packagePath.toAbsolutePath());

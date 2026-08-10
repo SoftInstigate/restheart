@@ -75,7 +75,7 @@ public class JSStringService extends JSService implements StringService {
         super(args(pluginPath, mclient, config));
     }
 
-    private static JSServiceArgs args(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
+    private static JSServiceArgs args(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException, InterruptedException {
         // find plugin root, i.e the parent dir that contains package.json
         var contextOptions = new HashMap<String, String>();
         var pluginRoot = pluginPath.getParent();
@@ -96,20 +96,16 @@ public class JSStringService extends JSService implements StringService {
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // During startup the calling thread is the JVM main thread (a genuine
-        // platform thread), so no executor dispatch is needed.
+        // All Context lifecycle must run on the dedicated platform thread.
+        // Source.findLanguage() is NOT called here: it corrupts Truffle's
+        // DefaultContextThreadLocal (oracle/graal#7520).
+        var language = "js";
+
         try {
+        return PolyglotThreadUtils.onPlatformThreadIO(() -> {
         var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
         ctx.enter();
         try {
-            // check that the plugin script is js (use PluginsClassloader so js-language is visible)
-            final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-                () -> Source.findLanguage(pluginPath.toFile()));
-
-            if (!"js".equals(language)) {
-                throw new IllegalArgumentException("wrong js plugin, not javascript");
-            }
-
             var sindexPath = pluginPath.toUri().toString();
             LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
             var optionsScript = "import { options } from '" + sindexPath + "'; options;";
@@ -168,11 +164,13 @@ public class JSStringService extends JSService implements StringService {
             ctx.leave();
             ctx.close();
         }
+        });
         } catch (Throwable t) {
-            // DIAGNOSTIC: log full stack trace including PolyglotException chain
             LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
                     pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
-            throw t;
+            if (t instanceof RuntimeException re) throw re;
+            if (t instanceof IOException ioe) throw ioe;
+            throw new IOException(t);
         }
     }
 

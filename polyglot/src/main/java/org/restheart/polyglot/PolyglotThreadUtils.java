@@ -71,8 +71,17 @@ public final class PolyglotThreadUtils {
         if (platformExecutor == null) {
             synchronized (PolyglotThreadUtils.class) {
                 if (platformExecutor == null) {
-                    platformExecutor = Executors.newSingleThreadExecutor(
-                            Thread.ofPlatform().name("RH JS PLT", 0).factory());
+                    platformExecutor = Executors.newSingleThreadExecutor(runnable -> {
+                        return Thread.ofPlatform().name("RH JS PLT", 0).unstarted(() -> {
+                            // Set PluginsClassloader on the platform thread so that ALL
+                            // Truffle operations use the same classloader context.
+                            var pluginsCl = PolyglotClassloaderHelper.getPluginsClassloader();
+                            if (pluginsCl != null) {
+                                Thread.currentThread().setContextClassLoader(pluginsCl);
+                            }
+                            runnable.run();
+                        });
+                    });
                 }
             }
         }
@@ -135,5 +144,31 @@ public final class PolyglotThreadUtils {
      */
     public static boolean isForcePlatform() {
         return FORCE_PLATFORM;
+    }
+
+    /**
+     * Returns {@code true} if the calling thread is the dedicated platform
+     * thread used by {@link #onPlatformThread(Callable)}.  Useful to avoid
+     * self-deadlock when already running inside a platform-thread lambda.
+     */
+    public static boolean isAlreadyOnPlatformThread() {
+        return FORCE_PLATFORM
+                && platformExecutor != null
+                && Thread.currentThread().getName().startsWith("RH JS PLT");
+    }
+
+    /**
+     * IOException-friendly variant of {@link #onPlatformThread(Callable)}.
+     */
+    public static <T> T onPlatformThreadIO(Callable<T> task) throws java.io.IOException, InterruptedException {
+        try {
+            return onPlatformThread(task);
+        } catch (java.io.IOException | InterruptedException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new java.io.IOException(e);
+        }
     }
 }

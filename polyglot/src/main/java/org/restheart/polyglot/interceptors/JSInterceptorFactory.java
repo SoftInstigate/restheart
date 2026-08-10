@@ -92,23 +92,17 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // During startup the calling thread is the JVM main thread (a genuine
-        // platform thread), so no executor dispatch is needed.
-
-        // check that the plugin script is js (use PluginsClassloader so js-language is visible)
-        final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
-            () -> Source.findLanguage(pluginPath.toFile()));
-
-        if (!"js".equals(language)) {
-            throw new IllegalArgumentException(
-                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", not javascript");
-        }
+        // Source.findLanguage() is NOT called here: it corrupts Truffle's
+        // DefaultContextThreadLocal (oracle/graal#7520).
+        var language = "js";
 
         // check plugin definition
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
+        // All Context lifecycle must run on the dedicated platform thread.
         try {
+        return PolyglotThreadUtils.onPlatformThreadIO(() -> {
         var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
         ctx.enter();
         try {
@@ -356,11 +350,14 @@ public class JSInterceptorFactory {
             ctx.leave();
             ctx.close();
         }
+        });
         } catch (Throwable t) {
-            // DIAGNOSTIC: log full stack trace including PolyglotException chain
             LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
                     pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
-            throw t;
+            if (t instanceof RuntimeException re) throw re;
+            if (t instanceof IOException ioe) throw ioe;
+            if (t instanceof InterruptedException ie) { Thread.currentThread().interrupt(); throw ie; }
+            throw new IOException(t);
         }
     }
 
