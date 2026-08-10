@@ -71,7 +71,7 @@ public class ResourcesScannerFeature implements Feature {
                     sb.append(dir).append("=").append(files).append("\n");
                 });
                 Files.writeString(tmpFile, sb.toString());
-                RuntimeResourceAccess.addResource(INDEX_RESOURCE, Files.readAllBytes(tmpFile));
+                RuntimeResourceAccess.addResource(ResourcesScannerFeature.class.getModule(), INDEX_RESOURCE, Files.readAllBytes(tmpFile));
                 Files.delete(tmpFile);
             } catch (IOException e) {
                 System.err.println("[ResourcesScannerFeature] Failed to write directory index: " + e.getMessage());

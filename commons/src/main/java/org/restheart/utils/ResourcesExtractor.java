@@ -222,6 +222,11 @@ public class ResourcesExtractor {
             }
 
             return ret;
+        } else if (ImageInfo.inImageCode()) {
+            // In GraalVM native images resources are bundled into the image
+            // and exposed with the "resource:" scheme instead of file:// URLs,
+            // so they must be extracted via the build-time directory index.
+            return extractNativeImageResource(clazz, resourcePath);
         } else {
             // used when run from an expanded folder
             return new File(uri);
