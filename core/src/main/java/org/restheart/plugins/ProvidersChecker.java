@@ -124,7 +124,9 @@ public class ProvidersChecker {
                             LOGGER.error("Provider {} disabled: no provider found for @Inject(\"{}\")", thisProvider.name(), otherProviderName);
                             toRemove.add(thisProvider);
                         } else if (!enabled(otherProvider)) {
-                            LOGGER.error("Provider {} disabled: the provider for @Inject(\"{}\") is disabled", thisProvider.name(), otherProvider.name());
+                            // Provider exists but is disabled — expected when plugins
+                            // are compiled into the native image but not enabled via config
+                            LOGGER.debug("Provider {} disabled: the provider for @Inject(\"{}\") is disabled", thisProvider.name(), otherProvider.name());
                             toRemove.add(thisProvider);
                         } else {
                             // check provided class vs annotated class
@@ -287,7 +289,15 @@ public class ProvidersChecker {
             var _provider = validProviders.stream().filter(p -> p.name().equals(providerName)).findFirst();
 
             if (_provider.isEmpty()) {
-                LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.name(), providerName);
+                // Check if the provider exists in the full list but is disabled.
+                // In native images, plugins with enabledByDefault=false are compiled
+                // in (build-time override) but disabled at runtime via config.
+                var allProvider = providerDescriptorFromName(providerName);
+                if (allProvider != null && !enabled(allProvider)) {
+                    LOGGER.debug("Plugin {} disabled: the provider for @Inject(\"{}\") is disabled", plugin.name(), providerName);
+                } else {
+                    LOGGER.error("Plugin {} disabled: no provider found for @Inject(\"{}\")", plugin.name(), providerName);
+                }
                 ret = false;
             } else if (_provider.get().clazz().equals(plugin.clazz())) {
                 LOGGER.error("Provider {} disabled: it depends on itself via @Inject(\"{}\")", plugin.name(), providerName);
