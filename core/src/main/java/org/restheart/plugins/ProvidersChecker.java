@@ -292,7 +292,7 @@ public class ProvidersChecker {
                 // Check if the provider exists in the full list but is disabled.
                 // In native images, plugins with enabledByDefault=false are compiled
                 // in (build-time override) but disabled at runtime via config.
-                var allProvider = providerDescriptorFromName(providerName);
+                var allProvider = providerDescriptorFromName((String) providerName);
                 if (allProvider != null && !enabled(allProvider)) {
                     LOGGER.debug("Plugin {} disabled: the provider for @Inject(\"{}\") is disabled", plugin.name(), providerName);
                 } else {
