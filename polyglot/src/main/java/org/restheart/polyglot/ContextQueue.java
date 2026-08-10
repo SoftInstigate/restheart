@@ -82,15 +82,10 @@ public class ContextQueue {
         this.modulesReplacements = modulesReplacements;
         this.OPTS = OPTS;
 
-        // Pre-populate pool: each Context must be created on the same dedicated
-        // platform thread that will later enter it (see PolyglotThreadUtils).
+        // Pre-populate pool: create Contexts directly on the calling thread.
+        // During startup this is the JVM main thread (platform thread).
         for (var c = 0;c < POOL_SIZE;c++) {
-            try {
-                pool.offer(PolyglotThreadUtils.onPlatformThread(
-                        () -> newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS)));
-            } catch (Exception e) {
-                throw new IllegalStateException("Error pre-creating polyglot context", e);
-            }
+            pool.offer(newContext(engine, name, conf, logger, mclient, modulesReplacements, OPTS));
         }
     }
 

@@ -353,12 +353,10 @@ public class PolyglotDeployer implements Initializer {
                         if (checkPluginFiles) {
                             if (Files.isRegularFile(pluginPath)) {
                                 try {
-                                    // Source.findLanguage() touches Truffle internals;
-                                    // this lambda may run on a virtual thread (file watcher),
-                                    // so dispatch to a platform thread (see PolyglotThreadUtils)
-                                    final var language = PolyglotThreadUtils.onPlatformThread(
-                                            () -> PolyglotClassloaderHelper.withPluginsClassloaderResult(
-                                                    () -> Source.findLanguage(pluginPath.toFile())));
+                                    // Source.findLanguage() runs directly on the calling thread.
+                                    // During startup this is the JVM main thread (platform thread).
+                                    final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
+                                            () -> Source.findLanguage(pluginPath.toFile()));
                                     if ("js".equals(language)) {
                                         ret.add(pluginPath);
                                     } else {

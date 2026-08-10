@@ -92,12 +92,8 @@ public class JSInterceptorFactory {
             LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        // Source.findLanguage() and all Context/Value operations must run on a
-        // platform thread (see PolyglotThreadUtils).  The whole block is dispatched
-        // as a single task so eval() and subsequent Value member access happen on
-        // the very same thread that entered the context.
-        try {
-        return PolyglotThreadUtils.onPlatformThread(() -> {
+        // During startup the calling thread is the JVM main thread (a genuine
+        // platform thread), so no executor dispatch is needed.
 
         // check that the plugin script is js (use PluginsClassloader so js-language is visible)
         final var language = PolyglotClassloaderHelper.withPluginsClassloaderResult(
@@ -112,6 +108,7 @@ public class JSInterceptorFactory {
         var sindexPath = pluginPath.toUri().toString();
         LOGGER.debug("Resolved interceptor path: {}", sindexPath);
 
+        try {
         var ctx = ContextQueue.newContext(engine, "foo", config, LOGGER, mclient, "", contextOptions);
         ctx.enter();
         try {
@@ -359,15 +356,11 @@ public class JSInterceptorFactory {
             ctx.leave();
             ctx.close();
         }
-        });
-        } catch (RuntimeException re) {
-            throw re;
-        } catch (IOException ioe) {
-            throw ioe;
-        } catch (InterruptedException ie) {
-            throw ie;
-        } catch (Exception e) {
-            throw new IllegalStateException("Error evaluating js interceptor " + pluginPath.toAbsolutePath(), e);
+        } catch (Throwable t) {
+            // DIAGNOSTIC: log full stack trace including PolyglotException chain
+            LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
+                    pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
+            throw t;
         }
     }
 

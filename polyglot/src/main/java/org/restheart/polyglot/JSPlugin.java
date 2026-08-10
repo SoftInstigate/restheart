@@ -39,16 +39,11 @@ public abstract class JSPlugin {
 
     static {
         try {
-            // ALL Truffle operations (Engine.create, Context build, enter, eval,
-            // leave) must happen on the very same dedicated platform thread to
-            // avoid DefaultContextThreadLocal cross-thread corruption
-            // (see PolyglotThreadUtils / oracle/graal#7520).
-            //
-            // Must be a plain method reference to a method on a DIFFERENT class:
-            // a lambda body here would become a private synthetic method of
-            // JSPlugin, and invoking it from the platform thread would require
-            // JSPlugin's own <clinit> to finish, deadlocking this thread.
-            engine = PolyglotThreadUtils.onPlatformThread(PolyglotThreadUtils::createEngine);
+            // Engine.create() runs directly on the calling thread.  During
+            // startup this is the JVM main thread (a genuine platform thread),
+            // so no executor dispatch is needed.  Must be a plain method
+            // reference to a method on a DIFFERENT class to avoid deadlock.
+            engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
         } catch (Exception e) {
             throw new IllegalStateException("Error creating polyglot Engine", e);
         }
