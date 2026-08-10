@@ -32,10 +32,13 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.restheart.graal.ImageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +58,32 @@ public class ResourcesExtractor {
 
     /** Logger instance for this class. */
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
+
+    /**
+     * Map of directory paths to lists of file names, populated at build time
+     * by the GraalVM Feature. Used to enumerate resources in native images
+     * where ClassLoader.getResources() does not work for directories.
+     */
+    private static final Map<String, List<String>> NATIVE_IMAGE_RESOURCES = new HashMap<>();
+
+    /**
+     * Registers a resource file under a directory path. Called at build time
+     * by the GraalVM Feature to populate the resource map.
+     *
+     * @param directoryPath the directory path (e.g., "static/metrics")
+     * @param fileName the file name (e.g., "restheart-metrics.html")
+     */
+    public static void registerNativeImageResource(String directoryPath, String fileName) {
+        NATIVE_IMAGE_RESOURCES.computeIfAbsent(directoryPath, k -> new ArrayList<>()).add(fileName);
+    }
+
+    /**
+     * Returns the map of directory paths to file names for native image resources.
+     * Used by the GraalVM Feature to discover registered resources.
+     */
+    public static Map<String, List<String>> getNativeImageResources() {
+        return NATIVE_IMAGE_RESOURCES;
+    }
 
     /**
      * Optional fallback class loader used when the class-based class loader
@@ -135,6 +164,11 @@ public class ResourcesExtractor {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
         if (findResource(clazz, resourcePath) == null) {
+            // In GraalVM native images, directory resources are not available.
+            // Try to find the welcome file and extract it.
+            if (ImageInfo.inImageCode()) {
+                return extractNativeImageResource(clazz, resourcePath);
+            }
             LOG.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
@@ -268,9 +302,44 @@ public class ResourcesExtractor {
     @SuppressWarnings("rawtypes")
     private static java.net.URL findResource(Class clazz, String resourcePath) {
         var url = getClassLoader(clazz).getResource(resourcePath);
+
+        // In GraalVM native images, directory resources are not available.
+        // Try common variations: trailing slash, or the welcome file.
+        if (url == null) {
+            url = getClassLoader(clazz).getResource(resourcePath + "/");
+        }
+
         if (url == null && fallbackClassLoader != null) {
             url = fallbackClassLoader.getResource(resourcePath);
         }
         return url;
+    }
+
+    /**
+     * Extracts resources from a native image where directory resources are not available.
+     * Uses the resource map populated at build time by the GraalVM Feature.
+     */
+    @SuppressWarnings("rawtypes")
+    private static File extractNativeImageResource(Class clazz, String resourcePath) throws IOException {
+        Path destinationDir = Files.createTempDirectory("restheart-");
+
+        var files = NATIVE_IMAGE_RESOURCES.get(resourcePath);
+        if (files != null) {
+            for (String fileName : files) {
+                var url = getClassLoader(clazz).getResource(resourcePath + "/" + fileName);
+                if (url != null) {
+                    try (var is = url.openStream()) {
+                        Path dest = destinationDir.resolve(fileName);
+                        Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        }
+
+        if (destinationDir.toFile().list().length == 0) {
+            LOG.warn("no resource found under {} in native image", resourcePath);
+        }
+
+        return destinationDir.toFile();
     }
 }
