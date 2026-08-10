@@ -1,3 +1,4 @@
+
 /*-
  * ========================LICENSE_START=================================
  * restheart-core
@@ -97,7 +98,20 @@ public class ProvidersChecker {
      */
     private static boolean enabled(PluginDescriptor plugin) {
         Map<String, Object> pluginConf = getOrDefault(Bootstrapper.getConfiguration(), plugin.name(), null, true);
-        return PluginRecord.isEnabled(plugin.enabled(), pluginConf);
+
+        // In native images, plugin.enabled() is forced to true at build time
+        // to ensure all plugins are compiled into the image. At runtime we need
+        // the real enabledByDefault value from the annotation.
+        boolean enabledByDefault;
+        try {
+            var clazz = Class.forName(plugin.clazz());
+            var regPlugin = clazz.getAnnotation(RegisterPlugin.class);
+            enabledByDefault = regPlugin != null && regPlugin.enabledByDefault();
+        } catch (ClassNotFoundException e) {
+            enabledByDefault = plugin.enabled();
+        }
+
+        return PluginRecord.isEnabled(enabledByDefault, pluginConf);
     }
 
     /**
