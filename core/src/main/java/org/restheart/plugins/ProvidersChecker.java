@@ -101,14 +101,21 @@ public class ProvidersChecker {
 
         // In native images, plugin.enabled() is forced to true at build time
         // to ensure all plugins are compiled into the image. At runtime we need
-        // the real enabledByDefault value from the annotation.
-        boolean enabledByDefault;
-        try {
-            var clazz = Class.forName(plugin.clazz());
-            var regPlugin = clazz.getAnnotation(RegisterPlugin.class);
-            enabledByDefault = regPlugin != null && regPlugin.enabledByDefault();
-        } catch (ClassNotFoundException e) {
-            enabledByDefault = plugin.enabled();
+        // the real enabledByDefault value from the annotation when no config
+        // override exists.
+        boolean enabledByDefault = plugin.enabled();
+
+        if (pluginConf == null) {
+            // No config entry — check the annotation for the real default
+            try {
+                var clazz = Class.forName(plugin.clazz());
+                var regPlugin = clazz.getAnnotation(RegisterPlugin.class);
+                if (regPlugin != null) {
+                    enabledByDefault = regPlugin.enabledByDefault();
+                }
+            } catch (ClassNotFoundException e) {
+                // keep plugin.enabled()
+            }
         }
 
         return PluginRecord.isEnabled(enabledByDefault, pluginConf);
