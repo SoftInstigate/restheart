@@ -13,9 +13,9 @@
 
 ## What RESTHeart is
 
-Every application built on MongoDB ends up with the same backend layer: routes that map to collections, permission checks on each endpoint, pagination and filtering logic, a way to push updates to clients in real time. That layer is largely mechanical, and writing it by hand for each project is where a lot of backend code goes.
+RESTHeart turns a MongoDB database into a REST, GraphQL, WebSocket, and SSE API, with authentication, authorization, and real-time change streams already wired in.
 
-RESTHeart generates that layer directly from the database. Point it at a MongoDB instance and it exposes the data through REST, GraphQL, WebSocket, and SSE APIs, with authentication, authorization, and real-time change streams already in place. Permissions and behavior are configured declaratively; custom logic is added only for the parts a data API cannot express, through plugins written in Java, Kotlin, JavaScript, or TypeScript.
+Point it at a MongoDB instance and the API is there: no routes to write, no permission checks to hand-code, no pagination or filtering logic to duplicate across endpoints. Permissions and behavior are configured declaratively. Custom logic goes into plugins, written in Java, Kotlin, JavaScript, or TypeScript, only for what a data API cannot express.
 
 ![RESTHeart logical architecture](docs/restheart_logic_architecture.png)
 
