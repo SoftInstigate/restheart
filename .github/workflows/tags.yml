@@ -30,13 +30,15 @@ jobs:
         run: |
           mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
-      - name: Upload build artifacts for Docker jobs
+      - name: Upload build artifacts
         if: matrix.mongodb-version == '8.3'
         uses: actions/upload-artifact@v6
         with:
           name: restheart-artifacts
           path: |
             core/target/restheart.jar
+            core/target/restheart.tar.gz
+            core/target/restheart.zip
             core/target/lib/*.jar
             core/target/plugins/*.jar
             core/target/plugins/lib/*.jar
@@ -48,22 +50,15 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_version.outputs.version }}
-    strategy:
-      matrix:
-        mongodb-version: ["8.3"]
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v5
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
         with:
-          distribution: "graalvm"
-          java-version: "25"
-          cache: "maven"
-
-      - name: Build and Test
-        run: mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+          name: restheart-artifacts
+          path: core/target/
 
       - name: Set VERSION
         id: set_version
@@ -71,18 +66,6 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Extract Version Components
-        id: extract_version
-        run: |
-          MAJOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 1)
-          MINOR=$(echo "${{ env.VERSION }}" | cut -d '.' -f 2)
-          PATCH=$(echo "${{ env.VERSION }}" | cut -d '.' -f 3)
-
-          # Export the major, minor, and patch versions as environment variables
-          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
-          echo "MINOR=$MINOR" >> $GITHUB_ENV
-          echo "PATCH=$PATCH" >> $GITHUB_ENV
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v3
@@ -163,7 +146,7 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "temurin"
+          distribution: "graalvm"
           java-version: "25"
           cache: "maven"
 
