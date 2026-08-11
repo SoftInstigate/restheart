@@ -167,11 +167,11 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-  # Separate job to call the reusable workflow
+  # Build and publish native images
   call-native-image-release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: release
-    uses: ./.github/workflows/native-image-release.yml
+    uses: ./.github/workflows/native-image.yml
     secrets: inherit
     with:
       version: "${{ needs.release.outputs.version }}"

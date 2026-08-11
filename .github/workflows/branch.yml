@@ -41,6 +41,8 @@ jobs:
           name: restheart-artifacts
           path: |
             core/target/restheart.jar
+            core/target/restheart.tar.gz
+            core/target/restheart.zip
             core/target/lib/*.jar
             core/target/plugins/*.jar
             core/target/plugins/lib/*.jar
@@ -57,7 +59,7 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "temurin"
+          distribution: "graalvm"
           java-version: "25"
           cache: "maven"
       - name: Import private gpg key
