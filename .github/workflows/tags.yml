@@ -167,11 +167,21 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-  # Build and publish native images
-  call-native-image-release:
+  # Trigger native image build asynchronously (fire-and-forget).
+  # Native builds take 30-60 min; running them via gh workflow run
+  # decouples them from the parent workflow so tags.yml finishes fast.
+  trigger-native-image:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     needs: release
-    uses: ./.github/workflows/native-image.yml
-    secrets: inherit
-    with:
-      version: "${{ needs.release.outputs.version }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger native image workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          echo "Triggering native-image.yml for version=$VERSION"
+          gh workflow run native-image.yml \
+            --ref "${{ github.ref_name }}" \
+            -f version="$VERSION"
