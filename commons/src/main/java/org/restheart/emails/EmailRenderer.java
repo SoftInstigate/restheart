@@ -1,10 +1,34 @@
-package org.restheart.accounts.util;
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-commons
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.restheart.emails;
 
 import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
  * Renders HTML email templates with multi-language support and variable substitution.
+ *
+ * <p>Moved to {@code restheart-commons} alongside {@link EmailTemplateLoader} when
+ * {@code restheart-stripe} needed the same {@code {{variable}}} + i18n rendering for its
+ * own billing-notification templates — a second module needing this algorithm is the point
+ * at which it stops being an accounts detail.
  *
  * <h2>Template format</h2>
  * Templates are standard HTML files. Two features are layered on top:
