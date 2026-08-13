@@ -81,10 +81,13 @@ public record SubscriptionState(
 
         /**
          * When this entity first went over its seat limit, or {@code null} when it is not
-         * over limit. Must survive a full state replacement — recomputing it from scratch on
-         * every routine webhook delivery would restart the grace period every time and the
-         * expiry would never arrive. Cleared only when the entity returns within its limit;
-         * a partial revocation that is still over limit must not clear or restart it.
+         * over limit. A fact, not a policy — the module does not decide what should happen at
+         * any particular elapsed time; a deployment builds its own enforcement (if any) on top
+         * of {@code @subscription.seats.over_limit_days}, computed from this value.
+         * <p>Must survive a full state replacement — recomputing it from scratch on every
+         * routine webhook delivery would reset the elapsed time to zero on every delivery.
+         * Cleared only when the entity returns within its limit; a partial revocation that is
+         * still over limit must not clear or reset it.
          */
         Instant overLimitSince) {
 

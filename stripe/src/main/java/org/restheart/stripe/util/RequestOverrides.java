@@ -67,8 +67,6 @@ public final class RequestOverrides {
     public static final String CANCEL_URL = "override-stripe-cancel-url";
     public static final String PORTAL_RETURN_URL = "override-stripe-portal-return-url";
 
-    public static final String OVER_LIMIT_GRACE_DAYS = "override-stripe-over-limit-grace-days";
-
     /** {@code override-stripe-tmpl-{name}} — inline HTML for a notification template. */
     public static final String TMPL_PREFIX = "override-stripe-tmpl-";
 
@@ -144,22 +142,6 @@ public final class RequestOverrides {
     /** Effective Customer Portal return URL. */
     public static String portalReturnUrl(ServiceRequest<?> req, StripeConfigData conf) {
         return str(req, PORTAL_RETURN_URL, conf.portalReturnUrl());
-    }
-
-    /** Effective over-limit grace period, in days, for the given plan. {@code null} = never expires. */
-    public static Integer overLimitGraceDays(ServiceRequest<?> req, StripeConfigData conf, String planId) {
-        var v = req.attachedParam(OVER_LIMIT_GRACE_DAYS);
-        if (v instanceof Integer i) {
-            return i;
-        }
-        if (v instanceof String s && !s.isBlank()) {
-            try {
-                return Integer.parseInt(s);
-            } catch (NumberFormatException ignored) {
-                // fall through to the static value
-            }
-        }
-        return conf.effectiveOverLimitGraceDays(planId);
     }
 
     /** Inline HTML override for a notification template, or {@code null} if not overridden. */

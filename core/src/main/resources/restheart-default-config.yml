@@ -511,12 +511,6 @@ stripeConfig:
   cancel-url: "https://app.example.com/billing?canceled=true"
   portal-return-url: "https://app.example.com/billing"
 
-  # Days an over-limit entity may keep working before every one of its users
-  # is blocked (@subscription.licensed becomes false for all of them).
-  # 0 = block immediately on the downgrade. Omit to never expire the grace
-  # period (nothing is ever blocked automatically). Overridable per plan.
-  # over-limit-grace-days: 7
-
   # The plan catalog. Display data (name, description, price) is not
   # configured here - it is read from the Stripe Product/Price the price
   # ids point at (GET /stripe/plans). Configuration carries only what this
