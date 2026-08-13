@@ -484,6 +484,90 @@ emails:
   smtp-username: null
   smtp-password: null
 
+# Stripe SaaS billing: Customer lifecycle, Checkout, Customer Portal, webhook
+# ingestion, plan catalog and seat licensing.
+# See https://restheart.org/docs/stripe
+stripeConfig:
+  enabled: false
+  # sk_test_... in development, sk_live_... in production. Never commit to
+  # version control - inject via environment variable substitution.
+  secret-key: $(STRIPE_SECRET_KEY)
+  # From the Stripe Dashboard -> Developers -> Webhooks -> signing secret.
+  webhook-secret: $(STRIPE_WEBHOOK_SECRET)
+
+  # The MongoDB database containing the teams collection is sourced from
+  # mongoRealmAuthenticator (users-db), the same way accountsConfig sources
+  # it, so this module always reads and writes team documents where
+  # restheart-accounts writes them.
+  teams-collection: teams
+
+  # Plan id assigned to an entity with no subscription. Must name a key
+  # declared under 'plans' below.
+  default-plan: free
+  # Trial days used when a plan does not declare its own trial-period-days.
+  default-trial-period-days: 0
+
+  success-url: "https://app.example.com/billing?success=true"
+  cancel-url: "https://app.example.com/billing?canceled=true"
+  portal-return-url: "https://app.example.com/billing"
+
+  # Days an over-limit entity may keep working before every one of its users
+  # is blocked (@subscription.licensed becomes false for all of them).
+  # 0 = block immediately on the downgrade. Omit to never expire the grace
+  # period (nothing is ever blocked automatically). Overridable per plan.
+  # over-limit-grace-days: 7
+
+  # The plan catalog. Display data (name, description, price) is not
+  # configured here - it is read from the Stripe Product/Price the price
+  # ids point at (GET /stripe/plans). Configuration carries only what this
+  # module must enforce.
+  plans:
+    free:
+      seats:
+        mode: capped
+        max: 1
+    # gold:
+    #   price-id-monthly: price_xxx
+    #   price-id-annual:  price_yyy
+    #   trial-period-days: 30
+    #   seats:
+    #     mode: capped   # capped | per-seat | unlimited
+    #     max: 10
+    #   limits:
+    #     max-projects: 50
+
+  # payment-failed and trial-will-end default to disabled: Stripe can send
+  # its own equivalent email from the Dashboard ("Subscriptions and
+  # emails"), and duplication cannot be detected at runtime. Enabling one
+  # here means turning the matching Stripe dashboard email off.
+  # notifications:
+  #   payment-failed:        { enabled: false }
+  #   trial-will-end:        { enabled: false }
+  #   subscription-canceled: { enabled: true }
+  #   over-limit:            { enabled: true }
+
+  # Custom email template paths (null = use built-in templates)
+  # templates:
+  #   payment-failed:        etc/email-templates/stripe/payment-failed.html
+  #   trial-will-end:        etc/email-templates/stripe/trial-will-end.html
+  #   subscription-canceled: etc/email-templates/stripe/subscription-canceled.html
+  #   over-limit:            etc/email-templates/stripe/over-limit.html
+
+stripeService:
+  enabled: false
+
+stripeInitializer:
+  enabled: false
+
+stripeCheckoutService:
+  enabled: false
+
+stripePortalService:
+  enabled: false
+
+stripeSubscriptionService:
+  enabled: false
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/
