@@ -20,6 +20,7 @@
 package org.restheart.plugins.stripe;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
@@ -174,9 +175,9 @@ public interface SubscriptionOwnerProvider {
      * @param userId the member to licence
      * @param limit  the plan's seat limit ({@code null} for unlimited); comes from module
      *               configuration, which the provider does not read itself
-     * @return {@code false} if no seat was available — not an error
+     * @return the outcome — see {@link LicenseGrantResult}
      */
-    boolean grantLicense(SubscriptionOwner owner, String userId, Integer limit);
+    LicenseGrantResult grantLicense(SubscriptionOwner owner, String userId, Integer limit);
 
     /**
      * Revokes a member's seat licence. A no-op if the member was not licensed.
@@ -191,6 +192,12 @@ public interface SubscriptionOwnerProvider {
      * @return the number of currently licensed members
      */
     int licensedCount(SubscriptionOwner owner);
+
+    /**
+     * @param owner the entity
+     * @return the ids of currently licensed members
+     */
+    List<String> licensedUserIds(SubscriptionOwner owner);
 
     /**
      * @param owner  the entity
