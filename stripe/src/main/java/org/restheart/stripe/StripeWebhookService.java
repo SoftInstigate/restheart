@@ -261,14 +261,11 @@ public class StripeWebhookService implements ByteArrayService {
     private void notifyOverLimit(Context ctx, SubscriptionOwner owner, SubscriptionState state, int licensedCount) {
         var planConf = conf.plan(state.plan());
         var limit = Seats.limit(planConf, state);
-        var graceDays = RequestOverrides.overLimitGraceDays(ctx.req(), conf, state.plan());
-        var graceExpiresAt = Seats.graceExpiresAt(state, graceDays);
 
         var vars = new HashMap<String, String>();
         vars.put("plan", state.plan());
         vars.put("seats-limit", limit != null ? String.valueOf(limit) : "∞");
         vars.put("seats-licensed", String.valueOf(licensedCount));
-        vars.put("grace-expires-date", graceExpiresAt != null ? graceExpiresAt.toString() : "");
 
         StripeNotifications.send(emailSender, ctx.req(), conf, NotificationConfig.OVER_LIMIT, owner, vars);
     }
@@ -428,7 +425,8 @@ public class StripeWebhookService implements ByteArrayService {
     /**
      * @param previousOverLimitSince the entity's prior {@code over_limit_since} — carried
      *                               forward unchanged if still over limit, so a partial
-     *                               revocation never restarts the grace period
+     *                               revocation never resets {@code seats.over_limit_days}
+     *                               back to zero for whatever policy a deployment builds on it
      * @param limit                  the new seat limit, {@code null} for unlimited
      * @param licensedCount          the entity's current licensed member count
      * @return the timestamp to store: {@code null} if within limit (or unlimited), the

@@ -40,6 +40,13 @@ import org.restheart.plugins.stripe.SubscriptionState;
  * {@link SubscriptionState#priceId()} — internal Stripe identifiers with no client use —
  * and {@code SubscriptionOwner#stripeCustomerId()}. Serialises named fields rather than
  * mapping the record wholesale, so an added internal field does not leak by default.
+ *
+ * <p>⚠️ {@code licensed} is a pure fact — whether the caller holds a seat licence — not
+ * conditioned on the entity's over-limit state. The module states {@code seats.over_limit},
+ * {@code seats.over_limit_since} and {@code seats.over_limit_days}; whether and when that
+ * should affect access is a policy decision left to the deployment's own ACL predicate
+ * (composing {@code over_limit_days} with the {@code gte}/{@code lte} predicates), not
+ * something this module decides on the deployment's behalf.
  */
 public final class SubscriptionView {
 
@@ -63,22 +70,22 @@ public final class SubscriptionView {
         var limit = Seats.limit(planConf, state);
         var licensedCount = provider.licensedCount(owner);
         var available = Seats.available(limit, licensedCount);
-
-        var graceDays = RequestOverrides.overLimitGraceDays(req, conf, state.plan());
-        var graceExpiresAt = Seats.graceExpiresAt(state, graceDays);
-        var blocked = Seats.isBlocked(state, graceDays);
+        var overLimitDays = Seats.overLimitDays(state);
 
         var account = req.getAuthenticatedAccount();
         var callerId = account != null && account.getPrincipal() != null ? account.getPrincipal().getName() : null;
-        var licensed = !blocked && callerId != null && provider.isLicensed(owner, callerId);
+        var licensed = callerId != null && provider.isLicensed(owner, callerId);
 
         var seatsDoc = new BsonDocument()
                 .append("limit", limit != null ? new BsonInt32(limit) : BsonNull.VALUE)
                 .append("licensed", new BsonInt32(licensedCount))
                 .append("available", available != null ? new BsonInt32(available) : BsonNull.VALUE)
                 .append("over_limit", BsonBoolean.valueOf(state.isOverLimit()));
-        if (graceExpiresAt != null) {
-            seatsDoc.append("grace_expires_at", new BsonDateTime(graceExpiresAt.toEpochMilli()));
+        if (state.overLimitSince() != null) {
+            seatsDoc.append("over_limit_since", new BsonDateTime(state.overLimitSince().toEpochMilli()));
+        }
+        if (overLimitDays != null) {
+            seatsDoc.append("over_limit_days", new BsonInt32(overLimitDays));
         }
 
         var doc = new BsonDocument()

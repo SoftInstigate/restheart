@@ -79,18 +79,6 @@ public record StripeConfigData(
         /** Customer Portal return URL. */
         String portalReturnUrl,
 
-        // ── Seat over-limit grace ────────────────────────────────────────────────
-
-        /**
-         * Days an entity may remain over its seat limit before every user of that
-         * entity is blocked ({@code @subscription.licensed} returns {@code false}
-         * for all of them). {@code 0} blocks immediately on the downgrade;
-         * {@code null} means the over-limit state never expires — nothing is ever
-         * blocked automatically. Overridable per plan via
-         * {@link PlanConfig#overLimitGraceDays()}.
-         */
-        Integer overLimitGraceDays,
-
         // ── Billing notifications ────────────────────────────────────────────────
 
         /** Notification configuration, keyed by name — see {@link NotificationConfig}. Never {@code null}. */
@@ -155,18 +143,6 @@ public record StripeConfigData(
         return plan != null && plan.trialPeriodDays() != null
                 ? plan.trialPeriodDays()
                 : defaultTrialPeriodDays;
-    }
-
-    /**
-     * @param planId a configured plan id
-     * @return the effective over-limit grace days for that plan: {@link PlanConfig#overLimitGraceDays()}
-     *         if declared, otherwise {@link #overLimitGraceDays()}. {@code null} means never expires.
-     */
-    public Integer effectiveOverLimitGraceDays(String planId) {
-        var plan = plan(planId);
-        return plan != null && plan.overLimitGraceDays() != null
-                ? plan.overLimitGraceDays()
-                : overLimitGraceDays;
     }
 
     /**

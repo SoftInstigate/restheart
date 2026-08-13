@@ -64,28 +64,20 @@ public final class Seats {
     }
 
     /**
-     * @param state     the entity's subscription state
-     * @param graceDays the effective over-limit grace period in days, or {@code null} if it
-     *                  never expires
-     * @return when the over-limit grace period expires, or {@code null} if the entity is not
-     *         over limit, or the grace period never expires
+     * Days elapsed since the entity crossed into the over-limit state — a fact, not a
+     * policy. The module does not decide what should happen at any particular value; a
+     * deployment composes it with the {@code gte}/{@code lte} ACL predicates to build
+     * whatever enforcement (or none) it wants, e.g.
+     * {@code gte(@subscription.seats.over_limit_days, 5)}.
+     *
+     * @param state the entity's subscription state
+     * @return whole days elapsed since {@link SubscriptionState#overLimitSince()}, or
+     *         {@code null} if the entity is not over limit
      */
-    public static Instant graceExpiresAt(SubscriptionState state, Integer graceDays) {
-        if (state.overLimitSince() == null || graceDays == null) {
+    public static Integer overLimitDays(SubscriptionState state) {
+        if (state.overLimitSince() == null) {
             return null;
         }
-        return state.overLimitSince().plus(graceDays, ChronoUnit.DAYS);
-    }
-
-    /**
-     * @param state     the entity's subscription state
-     * @param graceDays the effective over-limit grace period in days
-     * @return {@code true} if the entity is over limit and its grace period has expired —
-     *         every user of the entity is blocked ({@code @subscription.licensed} is
-     *         {@code false} for all of them), regardless of their individual licence
-     */
-    public static boolean isBlocked(SubscriptionState state, Integer graceDays) {
-        var expiresAt = graceExpiresAt(state, graceDays);
-        return expiresAt != null && Instant.now().isAfter(expiresAt);
+        return (int) ChronoUnit.DAYS.between(state.overLimitSince(), Instant.now());
     }
 }

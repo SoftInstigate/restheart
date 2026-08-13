@@ -39,16 +39,13 @@ import java.util.Map;
  * @param limits             arbitrary additional plan limits (e.g. {@code max-projects}),
  *                            opaque to the module — surfaced via {@code GET /stripe/plans}
  *                            and {@code @subscription} for the deployment's own ACL rules
- * @param overLimitGraceDays per-plan override of {@link StripeConfigData#overLimitGraceDays()};
- *                           {@code null} inherits the module default
  */
 public record PlanConfig(
         String priceIdMonthly,
         String priceIdAnnual,
         Integer trialPeriodDays,
         SeatsConfig seats,
-        Map<String, Object> limits,
-        Integer overLimitGraceDays) {
+        Map<String, Object> limits) {
 
     /**
      * @return {@code true} if this plan has a price id for the given interval

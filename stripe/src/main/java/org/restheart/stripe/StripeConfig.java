@@ -59,7 +59,6 @@ import org.restheart.plugins.stripe.StripeConfigData;
  *   success-url:                https://app.example.com/billing?success=true
  *   cancel-url:                 https://app.example.com/billing?canceled=true
  *   portal-return-url:          https://app.example.com/billing
- *   over-limit-grace-days:      7        # null = never expires
  *   plans:
  *     free:
  *       seats: { mode: capped, max: 1 }
@@ -143,7 +142,6 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(config, "success-url", ""),
                 configVal(config, "cancel-url", ""),
                 configVal(config, "portal-return-url", ""),
-                configVal(config, "over-limit-grace-days", (Integer) null),
                 notifications);
     }
 
@@ -161,8 +159,7 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(planMap, "price-id-annual", null),
                 configVal(planMap, "trial-period-days", (Integer) null),
                 seats,
-                limits,
-                configVal(planMap, "over-limit-grace-days", (Integer) null));
+                limits);
     }
 
     private SeatsConfig parseSeats(Map<String, Object> seatsMap) {

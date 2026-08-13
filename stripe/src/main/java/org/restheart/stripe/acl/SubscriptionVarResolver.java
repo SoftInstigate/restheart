@@ -39,6 +39,12 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  * - roles: [user]
  *   predicate: "path-prefix('/api') and @subscription.licensed"
+ *
+ * # a deployment that wants to lock out an over-limit entity after 5 days composes it itself:
+ * - roles: [user]
+ *   predicate: >
+ *     path-prefix('/api') and @subscription.licensed
+ *     and not (@subscription.seats.over_limit and gte(@subscription.seats.over_limit_days, 5))
  * }</pre>
  *
  * <h2>Shape</h2>
@@ -56,14 +62,17 @@ import org.slf4j.LoggerFactory;
  *     "licensed":         7,
  *     "available":        3,
  *     "over_limit":       false,
- *     "grace_expires_at": ISODate
+ *     "over_limit_since": ISODate,
+ *     "over_limit_days":  0
  *   }
  * }
  * }</pre>
  *
- * <p>{@code licensed} (top level) is the calling user's own licence, already accounting for
- * the over-limit block: once the grace period has expired it is {@code false} for every user
- * of the entity, regardless of their individual licence — see {@link Seats#isBlocked}.
+ * <p>{@code licensed} (top level) is a pure fact — whether the calling user holds a seat
+ * licence — never conditioned on the entity's over-limit state. Whether, and after how long,
+ * being over the seat limit should affect access is a policy decision this module does not
+ * make; a deployment that wants one composes {@code seats.over_limit_days} with the
+ * {@code gte}/{@code lte} ACL predicates, as in the second example above.
  *
  * <h2>Failure semantics</h2>
  * <p>Any failure resolving the owner, or any exception during resolution, returns
