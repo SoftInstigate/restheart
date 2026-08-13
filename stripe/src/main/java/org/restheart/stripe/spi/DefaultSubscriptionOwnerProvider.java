@@ -20,6 +20,7 @@
 package org.restheart.stripe.spi;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,6 +28,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.stripe.BillingScope;
+import org.restheart.plugins.stripe.LicenseGrantResult;
 import org.restheart.plugins.stripe.SubscriptionOwner;
 import org.restheart.plugins.stripe.SubscriptionOwnerProvider;
 import org.restheart.plugins.stripe.SubscriptionState;
@@ -145,7 +147,7 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
     // ── seat licensing ───────────────────────────────────────────────────────
 
     @Override
-    public boolean grantLicense(SubscriptionOwner owner, String userId, Integer limit) {
+    public LicenseGrantResult grantLicense(SubscriptionOwner owner, String userId, Integer limit) {
         return repo.grantLicense(owner.scope(), owner.id(), userId, limit);
     }
 
@@ -157,6 +159,11 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
     @Override
     public int licensedCount(SubscriptionOwner owner) {
         return repo.licensedCount(owner.scope(), owner.id());
+    }
+
+    @Override
+    public List<String> licensedUserIds(SubscriptionOwner owner) {
+        return repo.licensedUserIds(owner.scope(), owner.id());
     }
 
     @Override

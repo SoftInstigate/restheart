@@ -568,6 +568,25 @@ stripePortalService:
 stripeSubscriptionService:
   enabled: false
 
+# Verifies the Stripe-Signature header and processes billing events. The only
+# public endpoint in the module - security is the signing secret, not authentication.
+stripeWebhookService:
+  enabled: false
+
+# Grants, revokes, and lists seat licences.
+stripeLicensesService:
+  enabled: false
+
+# GET /stripe/plans. Registers no ACL rule of its own - follows the deployment's
+# ACL like any other endpoint except stripeWebhookService.
+stripePlansService:
+  enabled: false
+
+# Shared cache for the plan catalog's Stripe display data (name, description, price),
+# invalidated by stripeWebhookService on product.updated / price.updated.
+stripeCatalogCache:
+  enabled: false
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/

@@ -33,6 +33,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.restheart.plugins.stripe.BillingScope;
+import org.restheart.plugins.stripe.LicenseGrantResult;
 import org.restheart.plugins.stripe.SubscriptionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -293,13 +294,17 @@ public class TeamRepository {
      * one operation — the count is recomputed from the {@code members} array itself, so
      * it cannot drift, and it needs no denormalised counter.
      *
+     * <p>On failure, a follow-up read distinguishes why (member not found, already
+     * licensed, or no seat available) so the caller can answer with the right HTTP status.
+     * This extra query only happens on the failure path.
+     *
      * @param scope  the storage scope
      * @param teamId the team's {@code _id}
      * @param userId the member to licence
      * @param limit  the seat limit, or {@code null} for unlimited
-     * @return {@code false} if no seat was available, or the member is not found / already licensed
+     * @return the outcome — see {@link LicenseGrantResult}
      */
-    public boolean grantLicense(BillingScope scope, BsonValue teamId, String userId, Integer limit) {
+    public LicenseGrantResult grantLicense(BillingScope scope, BsonValue teamId, String userId, Integer limit) {
         var filters = new ArrayList<org.bson.conversions.Bson>();
         filters.add(Filters.eq("_id", teamId));
         filters.add(Filters.elemMatch(MEMBERS,
@@ -316,7 +321,29 @@ public class TeamRepository {
                 Filters.and(filters),
                 Updates.set(MEMBERS + ".$.licensed", true));
 
-        return updated != null;
+        if (updated != null) {
+            return LicenseGrantResult.GRANTED;
+        }
+
+        return diagnoseGrantFailure(scope, teamId, userId);
+    }
+
+    private LicenseGrantResult diagnoseGrantFailure(BillingScope scope, BsonValue teamId, String userId) {
+        var teamDoc = collection(scope).find(Filters.eq("_id", teamId)).first();
+        if (teamDoc == null || !teamDoc.containsKey(MEMBERS) || !teamDoc.get(MEMBERS).isArray()) {
+            return LicenseGrantResult.MEMBER_NOT_FOUND;
+        }
+
+        for (var m : teamDoc.getArray(MEMBERS)) {
+            if (m.isDocument() && userId.equals(str(m.asDocument(), "userId", null))) {
+                var entry = m.asDocument();
+                var alreadyLicensed = entry.containsKey("licensed") && entry.get("licensed").isBoolean()
+                        && entry.getBoolean("licensed").getValue();
+                return alreadyLicensed ? LicenseGrantResult.ALREADY_LICENSED : LicenseGrantResult.NO_SEAT_AVAILABLE;
+            }
+        }
+
+        return LicenseGrantResult.MEMBER_NOT_FOUND;
     }
 
     /**
@@ -345,6 +372,33 @@ public class TeamRepository {
             }
         }
         return count;
+    }
+
+    /**
+     * @return the ids of currently licensed members, or an empty list if the team is not found
+     */
+    public java.util.List<String> licensedUserIds(BillingScope scope, BsonValue teamId) {
+        var teamDoc = collection(scope).find(Filters.eq("_id", teamId)).first();
+        if (teamDoc == null || !teamDoc.containsKey(MEMBERS) || !teamDoc.get(MEMBERS).isArray()) {
+            return java.util.List.of();
+        }
+
+        var ids = new ArrayList<String>();
+        for (var m : teamDoc.getArray(MEMBERS)) {
+            if (!m.isDocument()) {
+                continue;
+            }
+            var entry = m.asDocument();
+            var licensed = entry.containsKey("licensed") && entry.get("licensed").isBoolean()
+                    && entry.getBoolean("licensed").getValue();
+            if (licensed) {
+                var userId = str(entry, "userId", null);
+                if (userId != null) {
+                    ids.add(userId);
+                }
+            }
+        }
+        return ids;
     }
 
     /**
