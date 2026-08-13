@@ -20,18 +20,24 @@
 package org.restheart.stripe;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.restheart.emails.EmailSender;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.BillingScope;
+import org.restheart.plugins.stripe.NotificationConfig;
 import org.restheart.plugins.stripe.PriceAttribution;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.plugins.stripe.SubscriptionOwner;
@@ -41,6 +47,7 @@ import org.restheart.security.ACLRegistry;
 import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.stripe.util.Seats;
 import org.restheart.stripe.util.StripeCatalogCache;
+import org.restheart.stripe.util.StripeNotifications;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,11 +113,37 @@ public class StripeWebhookService implements ByteArrayService {
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
+    /**
+     * Not {@code @Inject("emails")} deliberately: every deployment that enables the webhook
+     * (i.e. every deployment) would then be forced to also enable {@code restheart-emails},
+     * even one that sets all four notifications to {@code enabled: false} — RESTHeart
+     * validates every declared {@code @Inject} target at startup and refuses to load a
+     * plugin whose target is missing or disabled. Resolved softly instead, the same way
+     * {@code StripeService} resolves {@code accountsConfig} — see that class's javadoc.
+     */
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    private EmailSender emailSender;
+
     @OnInit
     public void onInit() {
         // The only public endpoint in the module. Exact-path match — must never widen to
         // the other /stripe/* endpoints, which all require authentication.
         aclRegistry.registerAllow(r -> "/stripe/webhook".equals(r.getPath()) && (r.isPost() || r.isOptions()));
+
+        for (var providerRecord : registry.getProviders()) {
+            if ("emails".equals(providerRecord.getName()) && providerRecord.isEnabled()) {
+                Object value = providerRecord.getInstance().get(null);
+                if (value instanceof EmailSender sender) {
+                    this.emailSender = sender;
+                }
+                break;
+            }
+        }
+        if (emailSender == null) {
+            LOGGER.info("[stripe] 'emails' plugin not found or not enabled — billing notifications will not be sent");
+        }
     }
 
     @Override
@@ -144,6 +177,7 @@ public class StripeWebhookService implements ByteArrayService {
         }
 
         var ctx = new Context(
+                req,
                 stripeService.getSubscriptionOwnerProvider(),
                 RequestOverrides.scope(req, conf),
                 RequestOverrides.defaultPlan(req, conf),
@@ -155,7 +189,7 @@ public class StripeWebhookService implements ByteArrayService {
                 case "customer.subscription.created", "customer.subscription.updated" ->
                         handleSubscriptionUpsert(event, ctx);
                 case "customer.subscription.deleted" -> handleSubscriptionDeleted(event, ctx);
-                case "customer.subscription.trial_will_end" -> handleTrialWillEnd(event);
+                case "customer.subscription.trial_will_end" -> handleTrialWillEnd(event, ctx);
                 case "invoice.payment_succeeded" -> handleInvoicePaymentSucceeded(event, ctx);
                 case "invoice.payment_failed" -> handleInvoicePaymentFailed(event, ctx);
                 case "product.updated", "price.updated" -> catalogCache.invalidateAll();
@@ -177,7 +211,8 @@ public class StripeWebhookService implements ByteArrayService {
     }
 
     /** Per-delivery context, resolved once and threaded through the handlers. */
-    private record Context(SubscriptionOwnerProvider provider, BillingScope scope, String defaultPlanId, Instant appliedAt) {
+    private record Context(ByteArrayRequest req, SubscriptionOwnerProvider provider, BillingScope scope,
+            String defaultPlanId, Instant appliedAt) {
     }
 
     // ── Handlers ─────────────────────────────────────────────────────────────
@@ -216,9 +251,26 @@ public class StripeWebhookService implements ByteArrayService {
         var licensedCount = ctx.provider().licensedCount(owner);
         var newState = buildState(subscription, previous, licensedCount);
 
-        ctx.provider().writeSubscription(owner, newState, ctx.appliedAt());
-        logIfEnteredOverLimit(owner, previous, newState);
-        // #684 hooks in here: notify on the transition into over-limit.
+        var applied = ctx.provider().writeSubscription(owner, newState, ctx.appliedAt());
+        if (applied && enteredOverLimit(previous, newState)) {
+            LOGGER.info("[stripe] entity {} entered over-limit state (plan={})", owner.id(), newState.plan());
+            notifyOverLimit(ctx, owner, newState, licensedCount);
+        }
+    }
+
+    private void notifyOverLimit(Context ctx, SubscriptionOwner owner, SubscriptionState state, int licensedCount) {
+        var planConf = conf.plan(state.plan());
+        var limit = Seats.limit(planConf, state);
+        var graceDays = RequestOverrides.overLimitGraceDays(ctx.req(), conf, state.plan());
+        var graceExpiresAt = Seats.graceExpiresAt(state, graceDays);
+
+        var vars = new HashMap<String, String>();
+        vars.put("plan", state.plan());
+        vars.put("seats-limit", limit != null ? String.valueOf(limit) : "∞");
+        vars.put("seats-licensed", String.valueOf(licensedCount));
+        vars.put("grace-expires-date", graceExpiresAt != null ? graceExpiresAt.toString() : "");
+
+        StripeNotifications.send(emailSender, ctx.req(), conf, NotificationConfig.OVER_LIMIT, owner, vars);
     }
 
     private void handleSubscriptionDeleted(Event event, Context ctx) {
@@ -242,18 +294,45 @@ public class StripeWebhookService implements ByteArrayService {
         var overLimitSince = computeOverLimitSince(previous.overLimitSince(), limit, licensedCount);
 
         var newState = new SubscriptionState(ctx.defaultPlanId(), null, "canceled", null, null, null, 1, false, overLimitSince);
-        ctx.provider().writeSubscription(owner, newState, ctx.appliedAt());
-        logIfEnteredOverLimit(owner, previous, newState);
-        // #684 hooks in here: subscription-canceled notification.
+        var applied = ctx.provider().writeSubscription(owner, newState, ctx.appliedAt());
+        if (applied) {
+            if (enteredOverLimit(previous, newState)) {
+                LOGGER.info("[stripe] entity {} entered over-limit state (plan={})", owner.id(), newState.plan());
+                notifyOverLimit(ctx, owner, newState, licensedCount);
+            }
+            var vars = Map.of("plan", previous.plan() != null ? previous.plan() : "");
+            StripeNotifications.send(emailSender, ctx.req(), conf, NotificationConfig.SUBSCRIPTION_CANCELED, owner, vars);
+        }
     }
 
-    private void handleTrialWillEnd(Event event) {
+    private void handleTrialWillEnd(Event event, Context ctx) {
         var subscription = deserialize(event, Subscription.class);
         if (subscription == null) {
             return;
         }
-        LOGGER.info("[stripe] trial ending soon for customer {}", subscription.getCustomer());
-        // #684 hooks in here: trial-will-end notification (disabled by default — see #684).
+
+        var ownerOpt = ctx.provider().byStripeCustomerId(ctx.scope(), subscription.getCustomer());
+        if (ownerOpt.isEmpty()) {
+            LOGGER.warn("[stripe] trial_will_end for unknown customer {}", subscription.getCustomer());
+            return;
+        }
+        var owner = ownerOpt.get();
+
+        // This event changes no real subscription field — the marker is written purely to
+        // reuse the staleness guard as an idempotency check, so a redelivered event does
+        // not send the notification twice.
+        var changes = new BsonDocument().append("trial_will_end_notified_at",
+                new BsonDateTime(ctx.appliedAt().toEpochMilli()));
+        var applied = ctx.provider().patchSubscription(owner, changes, ctx.appliedAt());
+        if (!applied) {
+            return;
+        }
+
+        var trialEnd = subscription.getTrialEnd() != null ? Instant.ofEpochSecond(subscription.getTrialEnd()) : null;
+        var vars = new HashMap<String, String>();
+        vars.put("plan", conf.byPriceId(firstPriceId(subscription)).map(PriceAttribution::planId).orElse(""));
+        vars.put("trial-end-date", trialEnd != null ? trialEnd.toString() : "");
+        StripeNotifications.send(emailSender, ctx.req(), conf, NotificationConfig.TRIAL_WILL_END, owner, vars);
     }
 
     private void handleInvoicePaymentSucceeded(Event event, Context ctx) {
@@ -283,10 +362,20 @@ public class StripeWebhookService implements ByteArrayService {
             LOGGER.warn("[stripe] invoice.payment_failed for unknown customer {}", invoice.getCustomer());
             return;
         }
+        var owner = ownerOpt.get();
 
         var changes = new BsonDocument().append("status", new BsonString("past_due"));
-        ctx.provider().patchSubscription(ownerOpt.get(), changes, ctx.appliedAt());
-        // #684 hooks in here: payment-failed notification (disabled by default — see #684).
+        var applied = ctx.provider().patchSubscription(owner, changes, ctx.appliedAt());
+        if (applied) {
+            var state = ctx.provider().readSubscription(owner, ctx.defaultPlanId());
+            var vars = Map.of("plan", state.plan() != null ? state.plan() : "");
+            StripeNotifications.send(emailSender, ctx.req(), conf, NotificationConfig.PAYMENT_FAILED, owner, vars);
+        }
+    }
+
+    private static String firstPriceId(Subscription subscription) {
+        var items = subscription.getItems() != null ? subscription.getItems().getData() : List.<SubscriptionItem>of();
+        return items.isEmpty() || items.get(0).getPrice() == null ? null : items.get(0).getPrice().getId();
     }
 
     // ── Shared state-building ───────────────────────────────────────────────
@@ -352,10 +441,9 @@ public class StripeWebhookService implements ByteArrayService {
         return previousOverLimitSince != null ? previousOverLimitSince : Instant.now();
     }
 
-    private static void logIfEnteredOverLimit(SubscriptionOwner owner, SubscriptionState previous, SubscriptionState updated) {
-        if (updated.overLimitSince() != null && !updated.overLimitSince().equals(previous.overLimitSince())) {
-            LOGGER.info("[stripe] entity {} entered over-limit state (plan={})", owner.id(), updated.plan());
-        }
+    /** @return {@code true} only on the actual transition into the over-limit state — not while already over. */
+    private static boolean enteredOverLimit(SubscriptionState previous, SubscriptionState updated) {
+        return updated.overLimitSince() != null && !updated.overLimitSince().equals(previous.overLimitSince());
     }
 
     private static boolean hasSubscription(Invoice invoice) {

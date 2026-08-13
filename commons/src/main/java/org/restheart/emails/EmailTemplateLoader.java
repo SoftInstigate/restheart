@@ -1,7 +1,23 @@
-package org.restheart.accounts.util;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-commons
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.restheart.emails;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +26,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Loads email templates from the filesystem or from bundled classpath resources.
+ *
+ * <p>Originally part of {@code restheart-accounts}; moved to {@code restheart-commons} when
+ * {@code restheart-stripe} needed the same resolution for its own billing-notification
+ * templates. A second module needing this logic is the point at which it stops being an
+ * accounts detail — copying the class instead would leave two implementations of a
+ * security-relevant path resolution to keep in step, which is how one of them ends up with
+ * a fix the other never gets.
  *
  * <h2>Resolution order</h2>
  * <ol>
@@ -19,12 +45,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>If it is a relative path that resolves against the JVM working directory → load
  *       from file system.</li>
  *   <li>Otherwise (or if the file is not found) → load from classpath under
- *       {@code email-templates/<name>}.</li>
+ *       {@code email-templates/<name>} — resolved against whichever module's classpath
+ *       resources actually contain it (each module bundles its own built-ins).</li>
  * </ol>
  *
  * <h2>Caching</h2>
  * File-system templates are cached in memory after the first load. Pass {@code true} to
- * {@link #load(String, boolean)} to force a reload (useful in development).
+ * {@link #load(String, String, boolean)} to force a reload (useful in development).
  */
 public final class EmailTemplateLoader {
 
@@ -77,18 +104,19 @@ public final class EmailTemplateLoader {
      *
      * <p>Resolution order:
      * <ol>
-     *   <li>If {@code inlineHtml} is non-blank → use it directly (MongoDB per-team template).</li>
+     *   <li>If {@code inlineHtml} is non-blank → use it directly (e.g. a per-tenant override
+     *       held in MongoDB).</li>
      *   <li>Otherwise → delegate to {@link #load(String, String)} (file path or built-in).</li>
      * </ol>
      *
-     * @param inlineHtml     optional HTML string from a MongoDB {@code confs} document
+     * @param inlineHtml     optional HTML string from a per-tenant configuration document
      * @param pathOrResource optional file-system path (may be null)
      * @param builtinName    fallback built-in resource name, e.g. {@code "verification.html"}
      * @return the raw template content
-     * @throws java.io.IOException if the file/classpath resource cannot be read
+     * @throws IOException if the file/classpath resource cannot be read
      */
     public static String loadWithFallback(String inlineHtml, String pathOrResource,
-                                          String builtinName) throws java.io.IOException {
+                                          String builtinName) throws IOException {
         if (inlineHtml != null && !inlineHtml.isBlank()) {
             return loadInline(inlineHtml);
         }
