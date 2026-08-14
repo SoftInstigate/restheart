@@ -84,6 +84,7 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
     {
       id: 'evt_unknown_price',
       object: 'event',
+      api_version: '2026-07-29.dahlia',
       type: 'customer.subscription.updated',
       created: 1700000100,
       data: {
@@ -154,6 +155,7 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
     {
       id: 'evt_deleted_1',
       object: 'event',
+      api_version: '2026-07-29.dahlia',
       type: 'customer.subscription.deleted',
       created: 1700000300,
       data: {
@@ -182,6 +184,7 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
     {
       id: 'evt_stale_update_1',
       object: 'event',
+      api_version: '2026-07-29.dahlia',
       type: 'customer.subscription.updated',
       created: 1700000100,
       data: {

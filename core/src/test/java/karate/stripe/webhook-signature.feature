@@ -101,6 +101,7 @@ Scenario: customer.subscription.updated for a linked team updates its persisted 
     {
       id: 'evt_sub_updated_1',
       object: 'event',
+      api_version: '2026-07-29.dahlia',
       type: 'customer.subscription.updated',
       created: 1700000000,
       data: {

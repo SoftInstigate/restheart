@@ -48,6 +48,14 @@ Scenario: a gold-plan owner is allowed through the same gate
     When method PATCH
     Then status 200
 
+    # Diagnostic: confirm the write is actually visible via the same collection/db the
+    # stripe module reads (restheart-test.teams) before relying on @subscription to see it.
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    And match response.subscription.plan == 'gold'
+
     Given path '/restheart-test/stripe-gated/gold-owner-doc'
     # PUT to a document defaults to write-mode 'update' (404 if absent) — 'upsert' is
     # required to create it fresh. See MongoRequest#defaultWriteMode.
