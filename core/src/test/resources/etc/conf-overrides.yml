@@ -312,6 +312,17 @@
       predicate: path-prefix[path="/test-no-permissions"]
       priority: 0
 
+    # restheart-stripe registers no ACL rule of its own for these (only /stripe/webhook
+    # is self-registered, since it has no authenticated caller) — a deployment must grant
+    # access itself. Exercised by karate/stripe/licenses-and-subscription.feature.
+    - role: user
+      predicate: >
+        (path-prefix[path="/stripe/checkout"]
+        or path-prefix[path="/stripe/portal"]
+        or path-prefix[path="/stripe/subscription"]
+        or path-prefix[path="/stripe/licenses"])
+      priority: 100
+
 /mongoAclAuthorizer/acl-db: restheart-test
 /mongoAclAuthorizer/cache-enabled: false
 
