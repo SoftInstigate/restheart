@@ -41,7 +41,7 @@ Background:
     When method PUT
     * match [200, 201] contains responseStatus
 
-    Given path '/restheart-test/teams'
+    Given path '/teams'
     And header Authorization = adminAuth
     When method PUT
     * match [200, 201] contains responseStatus
@@ -50,7 +50,7 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
     * def teamId = '507f191e810c19729de860eb'
     * def customerId = 'cus_test_plan_attr_1'
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     * match [204, 404] contains responseStatus
@@ -70,7 +70,7 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
       members: [ { userId: 'u1', role: 'owner', licensed: true } ]
     }
     """
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     And request team
     When method PUT
@@ -115,7 +115,7 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
     When method POST
     Then status 200
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method GET
     Then status 200
@@ -123,7 +123,7 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
     And match response.subscription.plan == 'gold'
     And match response.subscription.price_id == 'price_totally_unrecognised'
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     Then status 204
@@ -132,13 +132,13 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
     * def teamId = '507f191e810c19729de860ec'
     * def customerId = 'cus_test_staleness_1'
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     * match [204, 404] contains responseStatus
 
     * def team = { stripe_customer_id: '#(customerId)', members: [ { userId: 'u1', role: 'owner', licensed: true } ] }
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     And request team
     When method PUT
@@ -213,14 +213,14 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
     # A skipped-as-stale write is not an error — Stripe must not retry it.
     Then status 200
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method GET
     Then status 200
     # the entity must stay canceled — the stale 'active' update must not have applied
     And match response.subscription.status == 'canceled'
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     Then status 204
