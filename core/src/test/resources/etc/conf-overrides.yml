@@ -493,3 +493,32 @@
 # is present. Used by oauth-invite.feature to verify per-team OAuth overrides
 # are honored on both the authorize AND callback legs. Does not affect other tests.
 /oauthOverrideInterceptor/enabled: true
+
+# restheart-stripe — db/teams-collection are sourced from mongoRealmAuthenticator
+# (see /mongoRealmAuthenticator/users-db above), same "teams" collection accountsConfig
+# uses. secret-key is a fake sk_test_ value: the karate suite only exercises paths that
+# never call the real Stripe API (webhook signature verification against
+# webhook-secret, and the auth checks on checkout/portal/licenses).
+/stripeConfig/enabled: true
+/stripeConfig/secret-key: sk_test_fake_key_for_tests_only
+/stripeConfig/webhook-secret: whsec_test_secret_for_karate_tests
+/stripeConfig/default-plan: free
+/stripeConfig/success-url: http://localhost:4200/billing?success=true
+/stripeConfig/cancel-url: http://localhost:4200/billing?canceled=true
+/stripeConfig/portal-return-url: http://localhost:4200/billing
+/stripeConfig/plans/free/seats/mode: capped
+/stripeConfig/plans/free/seats/max: 1
+/stripeConfig/plans/gold/price-id-monthly: price_test_gold_monthly
+/stripeConfig/plans/gold/price-id-annual: price_test_gold_annual
+/stripeConfig/plans/gold/seats/mode: capped
+/stripeConfig/plans/gold/seats/max: 10
+
+/stripeService/enabled: true
+/stripeInitializer/enabled: true
+/stripeCheckoutService/enabled: true
+/stripePortalService/enabled: true
+/stripeSubscriptionService/enabled: true
+/stripeWebhookService/enabled: true
+/stripeLicensesService/enabled: true
+/stripePlansService/enabled: true
+/stripeCatalogCache/enabled: true
