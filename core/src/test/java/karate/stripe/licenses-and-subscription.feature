@@ -131,6 +131,6 @@ Scenario: GET /stripe/licenses lists the licensed member and seat counts
     And header Authorization = authHeader
     When method GET
     Then status 200
-    * def expectedLicensed = [ownerEmail]
+    * def expectedLicensed = [ '#(ownerEmail)' ]
     And match response.licensed == expectedLicensed
     And match response.seats == { limit: 1, licensed: 1, available: 0 }

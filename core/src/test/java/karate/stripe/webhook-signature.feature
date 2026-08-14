@@ -88,6 +88,9 @@ Scenario: customer.subscription.updated for a linked team updates its persisted 
 
     * def team = { stripe_customer_id: '#(customerId)', members: [ { userId: 'u1', role: 'owner', licensed: false } ] }
     Given path '/teams/' + teamId
+    # PUT to a document defaults to write-mode 'update' (404 if absent) — 'upsert' is
+    # required to create it fresh. See MongoRequest#defaultWriteMode.
+    And param wm = 'upsert'
     And header Authorization = adminAuth
     And request team
     When method PUT
