@@ -28,7 +28,7 @@ Background:
     When method PUT
     Then match [200, 201] contains responseStatus
 
-    Given path '/restheart-test/teams'
+    Given path '/teams'
     And header Authorization = adminAuth
     When method PUT
     Then match [200, 201] contains responseStatus
@@ -81,13 +81,13 @@ Scenario: a verified event of an unhandled type is accepted and ignored
 
 Scenario: customer.subscription.updated for a linked team updates its persisted subscription state
     # Clean slate: remove any leftover team doc from a previous run.
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     * match [204, 404] contains responseStatus
 
     * def team = { stripe_customer_id: '#(customerId)', members: [ { userId: 'u1', role: 'owner', licensed: false } ] }
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     And request team
     When method PUT
@@ -132,7 +132,7 @@ Scenario: customer.subscription.updated for a linked team updates its persisted 
     When method POST
     Then status 200
 
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method GET
     Then status 200
@@ -142,7 +142,7 @@ Scenario: customer.subscription.updated for a linked team updates its persisted 
     And match response.subscription.seats == 1
 
     # Cleanup.
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     When method DELETE
     Then status 204

@@ -167,6 +167,14 @@ public class StripeWebhookService implements ByteArrayService {
             return;
         }
 
+        if (sigHeader == null || sigHeader.isBlank()) {
+            // Webhook.constructEvent() throws an unchecked NullPointerException rather than
+            // SignatureVerificationException for a missing header — reject before calling it.
+            LOGGER.warn("[stripe] webhook received without a Stripe-Signature header — rejecting");
+            res.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            return;
+        }
+
         Event event;
         try {
             event = Webhook.constructEvent(rawBody, sigHeader, webhookSecret);

@@ -225,14 +225,32 @@ public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvid
 
         if (claimValue instanceof Map<?, ?> claimMap) {
             var idValue = claimMap.get("_id") != null ? claimMap.get("_id") : claimMap.get("id");
-            if (idValue == null) {
+            var teamId = extractId(idValue);
+            if (teamId == null) {
                 return null;
             }
             var roleValue = claimMap.get("role");
-            return new TeamClaim(idValue.toString(), roleValue != null ? roleValue.toString() : null);
+            return new TeamClaim(teamId, roleValue != null ? roleValue.toString() : null);
         }
 
         // legacy scalar shape: just an id, no role — canManageBilling always denies for this shape
-        return new TeamClaim(claimValue.toString(), null);
+        return new TeamClaim(extractId(claimValue), null);
+    }
+
+    /**
+     * Extracts a plain id string from a claim id value, which is either already a plain
+     * string/ObjectId, or — as every JWT {@code team} claim is, see
+     * {@code org.restheart.plugins.accounts.TeamClaim} — MongoDB Extended JSON's
+     * {@code {"$oid": "<hex>"}} shape for an ObjectId. A naive {@code toString()} on the
+     * latter would yield {@code "{$oid=<hex>}"}, not the hex string {@link #byId} needs.
+     */
+    private static String extractId(Object idValue) {
+        if (idValue == null) {
+            return null;
+        }
+        if (idValue instanceof Map<?, ?> extendedJson && extendedJson.get("$oid") != null) {
+            return extendedJson.get("$oid").toString();
+        }
+        return idValue.toString();
     }
 }

@@ -29,7 +29,8 @@ Background:
     When method GET
     Then status 200
     * def activeTeams = karate.filter(response, function(x){ return x.active == true })
-    * def teamId = activeTeams[0].id
+    # 'id' serialises as extended JSON ({"$oid": "<hex>"}), not a plain string.
+    * def teamId = activeTeams[0].id['$oid']
 
 Scenario: a free-plan owner is denied a path gated on equals[@subscription.plan, "gold"]
     Given path '/restheart-test/stripe-gated/free-owner-doc'
@@ -41,7 +42,7 @@ Scenario: a free-plan owner is denied a path gated on equals[@subscription.plan,
 Scenario: a gold-plan owner is allowed through the same gate
     # Admin writes the subscription state directly — equivalent to what a webhook-driven
     # state update would leave behind.
-    Given path '/restheart-test/teams/' + teamId
+    Given path '/teams/' + teamId
     And header Authorization = adminAuth
     And request { subscription: { plan: 'gold', status: 'active', seats: 1, cancel_at_period_end: false } }
     When method PATCH
