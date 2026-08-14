@@ -323,6 +323,15 @@
         or path-prefix[path="/stripe/licenses"])
       priority: 100
 
+    # Exercises the @subscription ACL variable end to end (webhook/admin-driven MongoDB
+    # write -> SubscriptionVarResolver -> predicate). Exercised by
+    # karate/stripe/subscription-acl-variable.feature.
+    - role: user
+      predicate: >
+        path-prefix[path="/restheart-test/stripe-gated"]
+        and equals[@subscription.plan, "gold"]
+      priority: 100
+
 /mongoAclAuthorizer/acl-db: restheart-test
 /mongoAclAuthorizer/cache-enabled: false
 
