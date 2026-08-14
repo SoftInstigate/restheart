@@ -49,6 +49,9 @@ Scenario: a gold-plan owner is allowed through the same gate
     Then status 200
 
     Given path '/restheart-test/stripe-gated/gold-owner-doc'
+    # PUT to a document defaults to write-mode 'update' (404 if absent) — 'upsert' is
+    # required to create it fresh. See MongoRequest#defaultWriteMode.
+    And param wm = 'upsert'
     And header Authorization = authHeader
     And request {}
     When method PUT

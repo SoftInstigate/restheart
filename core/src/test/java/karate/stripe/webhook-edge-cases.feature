@@ -71,6 +71,9 @@ Scenario: an unrecognised price id keeps the previous plan instead of falling ba
     }
     """
     Given path '/teams/' + teamId
+    # PUT to a document defaults to write-mode 'update' (404 if absent) — 'upsert' is
+    # required to create it fresh. See MongoRequest#defaultWriteMode.
+    And param wm = 'upsert'
     And header Authorization = adminAuth
     And request team
     When method PUT
@@ -139,6 +142,7 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
 
     * def team = { stripe_customer_id: '#(customerId)', members: [ { userId: 'u1', role: 'owner', licensed: true } ] }
     Given path '/teams/' + teamId
+    And param wm = 'upsert'
     And header Authorization = adminAuth
     And request team
     When method PUT
