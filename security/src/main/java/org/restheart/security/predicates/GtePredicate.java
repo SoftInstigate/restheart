@@ -47,8 +47,8 @@ import io.undertow.predicate.PredicateBuilder;
  */
 public class GtePredicate extends NumericComparisonPredicate {
 
-    public GtePredicate(ExchangeAttribute value1, ExchangeAttribute value2) {
-        super(value1, value2);
+    public GtePredicate(ExchangeAttribute[] values) {
+        super(values);
     }
 
     @Override
@@ -65,24 +65,23 @@ public class GtePredicate extends NumericComparisonPredicate {
         @Override
         public Map<String, Class<?>> parameters() {
             var params = Maps.<String, Class<?>>newHashMap();
-            params.put("value1", ExchangeAttribute.class);
-            params.put("value2", ExchangeAttribute.class);
+            params.put("value", ExchangeAttribute[].class);
             return params;
         }
 
         @Override
         public Set<String> requiredParameters() {
-            return Sets.newHashSet("value1", "value2");
+            return Sets.newHashSet("value");
         }
 
         @Override
         public String defaultParameter() {
-            return null;
+            return "value";
         }
 
         @Override
         public Predicate build(Map<String, Object> config) {
-            return new GtePredicate((ExchangeAttribute) config.get("value1"), (ExchangeAttribute) config.get("value2"));
+            return new GtePredicate((ExchangeAttribute[]) config.get("value"));
         }
     }
 }

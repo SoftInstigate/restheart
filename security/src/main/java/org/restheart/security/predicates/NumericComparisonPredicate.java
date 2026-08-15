@@ -43,9 +43,23 @@ abstract class NumericComparisonPredicate implements Predicate {
     private final ExchangeAttribute left;
     private final ExchangeAttribute right;
 
-    protected NumericComparisonPredicate(ExchangeAttribute left, ExchangeAttribute right) {
-        this.left = left;
-        this.right = right;
+    /**
+     * @param attributes exactly two attributes — the left and right operands. Takes an array
+     *                   rather than two parameters so the builders can expose them as a single
+     *                   default parameter, which is what makes the positional form
+     *                   {@code gte(a, b)} parse; this mirrors
+     *                   {@code io.undertow.predicate.EqualsPredicate}, the predicate users
+     *                   pattern-match this syntax from.
+     * @throws IllegalArgumentException if not given exactly two attributes
+     */
+    protected NumericComparisonPredicate(ExchangeAttribute[] attributes) {
+        if (attributes == null || attributes.length != 2) {
+            throw new IllegalArgumentException(
+                    "numeric comparison predicates require exactly two values, got "
+                            + (attributes == null ? 0 : attributes.length));
+        }
+        this.left = attributes[0];
+        this.right = attributes[1];
     }
 
     @Override
