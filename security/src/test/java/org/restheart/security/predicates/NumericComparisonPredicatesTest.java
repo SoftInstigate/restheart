@@ -36,8 +36,10 @@ import io.undertow.server.HttpServerExchange;
 public class NumericComparisonPredicatesTest {
 
     private static boolean resolve(String predicate) {
+        // io.undertow.server.HttpServerExchange is stubbed under src/test/java in this
+        // module; both operands here are constants, so the exchange is never read.
         return PredicateParser.parse(predicate, NumericComparisonPredicatesTest.class.getClassLoader())
-                .resolve(new HttpServerExchange(null));
+                .resolve(new HttpServerExchange());
     }
 
     @Test
