@@ -317,10 +317,10 @@
     # access itself. Exercised by karate/stripe/licenses-and-subscription.feature.
     - role: user
       predicate: >
-        (path-prefix[path="/stripe/checkout"]
-        or path-prefix[path="/stripe/portal"]
-        or path-prefix[path="/stripe/subscription"]
-        or path-prefix[path="/stripe/licenses"])
+        (path-prefix(path="/stripe/checkout")
+        or path-prefix(path="/stripe/portal")
+        or path-prefix(path="/stripe/subscription")
+        or path-prefix(path="/stripe/licenses"))
       priority: 100
 
     # Exercises the @subscription ACL variable end to end (webhook/admin-driven MongoDB
@@ -328,9 +328,13 @@
     # karate/stripe/subscription-acl-variable.feature.
     - role: user
       predicate: >
-        path-prefix[path="/restheart-test/stripe-gated"]
-        and equals[@subscription.plan, "gold"]
+        path-prefix(path="/restheart-test/stripe-gated")
+        and equals(@subscription.plan, "gold")
       priority: 100
+      mongo:
+        # the feature PUTs with ?wm=upsert; without this the mongoPermissionAllowWriteMode
+        # transformer ANDs a false predicate into the permission and it never matches
+        allowWriteMode: true
 
 /mongoAclAuthorizer/acl-db: restheart-test
 /mongoAclAuthorizer/cache-enabled: false
