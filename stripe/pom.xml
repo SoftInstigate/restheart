@@ -42,6 +42,10 @@
       <groupId>com.stripe</groupId>
       <artifactId>stripe-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
     <!-- Test -->
     <dependency>
       <groupId>com.intuit.karate</groupId>

@@ -323,6 +323,15 @@
         or path-prefix(path="/stripe/licenses"))
       priority: 100
 
+    # products mode: customers create orders and browse the catalog. The module registers
+    # no ACL rule for these collections — a deployment grants access itself.
+    # Exercised by karate/stripe/products-*.feature.
+    - role: user
+      predicate: >
+        path-prefix(path="/restheart-test/orders")
+        or path-prefix(path="/restheart-test/catalog")
+      priority: 100
+
     # Exercises the @subscription ACL variable end to end (webhook/admin-driven MongoDB
     # write -> SubscriptionVarResolver -> predicate). Exercised by
     # karate/stripe/subscription-acl-variable.feature.
@@ -538,6 +547,22 @@
 /stripeConfig/subscriptions/plans/gold/seats/mode: capped
 /stripeConfig/subscriptions/plans/gold/seats/max: 10
 
+# products mode. The catalog/orders/transactions collections live in restheart-test
+# (sourced from mongoRealmAuthenticator/users-db, same as everything else here).
+/stripeConfig/products/enabled: true
+/stripeConfig/products/catalog-collection: catalog
+/stripeConfig/products/orders-collection: orders
+/stripeConfig/products/transactions-collection: transactions
+/stripeConfig/products/default-currency: eur
+/stripeConfig/products/buyer-email-field: sub
+/stripeConfig/products/success-url: http://localhost:4200/shop/done?session={CHECKOUT_SESSION_ID}
+/stripeConfig/products/cancel-url: http://localhost:4200/shop/cart
+/stripeConfig/products/session-expires-minutes: 60
+/stripeConfig/products/max-line-items: 5
+/stripeConfig/products/max-quantity-per-line: 10
+# off: Stripe Tax would require a live account, and these tests never reach Stripe
+/stripeConfig/products/automatic-tax: false
+
 /stripeService/enabled: true
 /stripeInitializer/enabled: true
 /stripeCheckoutService/enabled: true
@@ -547,3 +572,5 @@
 /stripeLicensesService/enabled: true
 /stripePlansService/enabled: true
 /stripeCatalogCache/enabled: true
+/ordersCheckoutInterceptor/enabled: true
+/ordersCheckoutResponseInterceptor/enabled: true
