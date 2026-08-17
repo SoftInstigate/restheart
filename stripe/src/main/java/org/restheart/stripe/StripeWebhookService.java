@@ -37,6 +37,7 @@ import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.security.ACLRegistry;
 import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.stripe.util.StripeCatalogCache;
+import org.restheart.stripe.webhook.OrderEventHandler;
 import org.restheart.stripe.webhook.StripeEventContext;
 import org.restheart.stripe.webhook.StripeEventHandler;
 import org.restheart.stripe.webhook.SubscriptionEventHandler;
@@ -123,7 +124,8 @@ public class StripeWebhookService implements ByteArrayService {
         // Register subscription event handler
         handlers.add(new SubscriptionEventHandler(catalogCache, emailSender));
 
-        // TODO: register order event handler when implemented (#692)
+        // Register order event handler (products mode)
+        handlers.add(new OrderEventHandler());
     }
 
     @Override
