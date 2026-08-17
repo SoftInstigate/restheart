@@ -27,7 +27,6 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
@@ -139,8 +138,6 @@ public class RegisterService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterService.class);
 
-    private static final String JSON_SCHEMAS_PROVIDER = "json-schemas";
-
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
@@ -156,13 +153,7 @@ public class RegisterService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
-    @Inject("registry")
-    private PluginsRegistry registry;
-
-    // resolved through the registry rather than with @Inject("json-schemas") on purpose:
-    // that provider lives in restheart-mongodb, and a hard injection would disable the
-    // whole registration endpoint wherever that module is not deployed. Null here only
-    // matters when the users collection actually carries a jsonSchema — see validate().
+    @Inject(value = "json-schemas", required = false)
     private JsonSchemas jsonSchemas;
 
     @OnInit
@@ -170,18 +161,9 @@ public class RegisterService implements JsonService {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/register") && (r.isPost() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/register"));
 
-        this.jsonSchemas = registry.getProviders().stream()
-                .filter(pd -> JSON_SCHEMAS_PROVIDER.equals(pd.getName()))
-                .filter(pd -> pd.isEnabled())
-                .map(pd -> pd.getInstance())
-                .filter(p -> JsonSchemas.class.getName().equals(p.rawType().getName()))
-                .map(p -> (JsonSchemas) p.get(null))
-                .findFirst()
-                .orElse(null);
-
         if (this.jsonSchemas == null) {
-            LOGGER.info("Provider '{}' not available: a jsonSchema on the users collection "
-                    + "cannot be applied and registration would fail with 500", JSON_SCHEMAS_PROVIDER);
+            LOGGER.info("Provider 'json-schemas' not available: a jsonSchema on the users collection "
+                    + "cannot be applied and registration would fail with 500");
         }
     }
 
