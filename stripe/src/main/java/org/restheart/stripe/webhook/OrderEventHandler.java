@@ -38,8 +38,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.stripe.model.Event;
-import com.stripe.model.checkout.Session;
 import com.stripe.model.StripeObject;
+import com.stripe.model.Charge;
+import com.stripe.model.Dispute;
+import com.stripe.model.checkout.Session;
 
 /**
  * Handles order-related Stripe webhook events for the products mode.
@@ -62,7 +64,9 @@ public class OrderEventHandler implements StripeEventHandler {
                 "checkout.session.completed",
                 "checkout.session.async_payment_succeeded",
                 "checkout.session.async_payment_failed",
-                "checkout.session.expired");
+                "checkout.session.expired",
+                "charge.refunded",
+                "charge.dispute.created");
     }
 
     @Override
@@ -77,6 +81,8 @@ public class OrderEventHandler implements StripeEventHandler {
             case "checkout.session.async_payment_succeeded" -> handleAsyncPaymentSucceeded(event, ctx, products);
             case "checkout.session.async_payment_failed" -> handleAsyncPaymentFailed(event, ctx, products);
             case "checkout.session.expired" -> handleSessionExpired(event, ctx, products);
+            case "charge.refunded" -> handleChargeRefunded(event, ctx, products);
+            case "charge.dispute.created" -> handleDisputeCreated(event, ctx, products);
         }
     }
 
@@ -152,6 +158,77 @@ public class OrderEventHandler implements StripeEventHandler {
         } else {
             LOGGER.debug("[stripe] session.expired skipped — session={} not in pending_payment", sessionId);
         }
+    }
+
+    private void handleChargeRefunded(Event event, StripeEventContext ctx, ProductsConfig products) {
+        var charge = deserialize(event, Charge.class);
+        if (charge == null) {
+            return;
+        }
+
+        var paymentIntentId = charge.getPaymentIntent();
+        if (paymentIntentId == null) {
+            LOGGER.warn("[stripe] charge.refunded without payment_intent — skipping");
+            return;
+        }
+
+        var ordersCol = ordersCollection(ctx, products);
+        var transactionsCol = transactionsCollection(ctx, products);
+
+        // Find order by payment_intent
+        var order = ordersCol.find(Filters.eq("stripe_payment_intent", paymentIntentId)).first();
+        if (order == null) {
+            LOGGER.warn("[stripe] charge.refunded for unknown payment_intent={}", paymentIntentId);
+            return;
+        }
+
+        var orderId = order.getObjectId("_id");
+        var refundAmount = charge.getAmountRefunded() != null ? charge.getAmountRefunded() : 0L;
+        var currency = charge.getCurrency() != null ? charge.getCurrency() : "eur";
+
+        // Update amount_refunded on order
+        ordersCol.updateOne(
+                Filters.eq("_id", orderId),
+                Updates.set("amount_refunded", refundAmount));
+
+        // Append refund transaction to ledger
+        appendTransaction(transactionsCol, orderId, "refund", -refundAmount, currency,
+                charge.getId(), event.getId(), ctx.appliedAt());
+
+        LOGGER.info("[stripe] refund recorded — order={}, amount={}", orderId, refundAmount);
+    }
+
+    private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
+        var dispute = deserialize(event, Dispute.class);
+        if (dispute == null) {
+            return;
+        }
+
+        var paymentIntentId = dispute.getPaymentIntent();
+        if (paymentIntentId == null) {
+            LOGGER.warn("[stripe] charge.dispute.created without payment_intent — skipping");
+            return;
+        }
+
+        var ordersCol = ordersCollection(ctx, products);
+        var transactionsCol = transactionsCollection(ctx, products);
+
+        // Find order by payment_intent
+        var order = ordersCol.find(Filters.eq("stripe_payment_intent", paymentIntentId)).first();
+        if (order == null) {
+            LOGGER.warn("[stripe] charge.dispute.created for unknown payment_intent={}", paymentIntentId);
+            return;
+        }
+
+        var orderId = order.getObjectId("_id");
+        var disputeAmount = dispute.getAmount() != null ? dispute.getAmount() : 0L;
+        var currency = dispute.getCurrency() != null ? dispute.getCurrency() : "eur";
+
+        // Append dispute transaction to ledger
+        appendTransaction(transactionsCol, orderId, "dispute", disputeAmount, currency,
+                dispute.getId(), event.getId(), ctx.appliedAt());
+
+        LOGGER.info("[stripe] dispute recorded — order={}, amount={}", orderId, disputeAmount);
     }
 
     // ── Shared logic ─────────────────────────────────────────────────────────
