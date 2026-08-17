@@ -24,6 +24,18 @@ Background:
     * def ownerJwt = ownerSetup.ownerJwt
     * def authHeader = 'Bearer ' + ownerJwt
 
+    # The gated collection must exist: collectionPropsInjector answers 404 for a document
+    # request against a collection with no _properties, which would mask the real result.
+    Given path '/restheart-test'
+    And header Authorization = adminAuth
+    When method PUT
+    * match [200, 201] contains responseStatus
+
+    Given path '/restheart-test/stripe-gated'
+    And header Authorization = adminAuth
+    When method PUT
+    * match [200, 201] contains responseStatus
+
     Given path '/auth/teams'
     And header Authorization = authHeader
     When method GET

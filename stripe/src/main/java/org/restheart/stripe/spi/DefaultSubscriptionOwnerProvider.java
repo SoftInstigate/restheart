@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.LicenseGrantResult;
@@ -35,8 +34,6 @@ import org.restheart.plugins.stripe.SubscriptionState;
 import org.restheart.security.WithProperties;
 import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.stripe.util.TeamRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
@@ -67,8 +64,6 @@ import com.mongodb.client.MongoClient;
  * widen access.
  */
 public class DefaultSubscriptionOwnerProvider implements SubscriptionOwnerProvider {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSubscriptionOwnerProvider.class);
 
     /** Used when {@code accountsConfig} could not be resolved — see {@code StripeService}. */
     public static final String DEFAULT_TEAM_CLAIM_NAME = "team";
