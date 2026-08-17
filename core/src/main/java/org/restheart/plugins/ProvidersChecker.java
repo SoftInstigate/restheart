@@ -137,6 +137,7 @@ public class ProvidersChecker {
             thisProvider.injections().stream()
                     .filter(i -> i instanceof FieldInjectionDescriptor a)
                     .map(i -> (FieldInjectionDescriptor) i)
+                    .filter(FieldInjectionDescriptor::required)
                     .forEach(i -> {
                         var otherProviderName = (String) i.annotationParams().get(0).getValue();
                         var otherProvider = providerDescriptorFromName(otherProviderName);
@@ -223,12 +224,12 @@ public class ProvidersChecker {
         // add nodes
         enabled.stream().forEach(providersGraph::addNode);
 
-        // add edges — only for enabled providers to avoid implicitly adding
-        // disabled providers as graph nodes (which would trigger false ERROR logs)
+        // add edges — only for enabled providers and required dependencies
         for (var thisProvider : enabled) {
             thisProvider.injections().stream()
                     .filter(i -> i instanceof FieldInjectionDescriptor a)
                     .map(i -> (FieldInjectionDescriptor) i)
+                    .filter(FieldInjectionDescriptor::required)
                     .forEach(i -> {
                         var otherProviderName = (String) i.annotationParams().get(0).getValue();
                         var otherProvider = providerDescriptorFromName(otherProviderName);
@@ -308,6 +309,11 @@ public class ProvidersChecker {
                 .forEach(injections::add);
 
         for (var injection : injections) {
+            // optional dependencies are not validated
+            if (!injection.required()) {
+                continue;
+            }
+
             var providerName = injection.annotationParams().get(0).getValue();
 
             var _provider = validProviders.stream().filter(p -> p.name().equals(providerName)).findFirst();
