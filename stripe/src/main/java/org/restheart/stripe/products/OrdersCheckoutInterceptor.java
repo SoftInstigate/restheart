@@ -1,0 +1,485 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-stripe
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.restheart.stripe.products;
+
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonNull;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.types.ObjectId;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.stripe.ProductsConfig;
+import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.RequestOptions;
+import com.stripe.param.checkout.SessionCreateParams;
+
+/**
+ * Intercepts {@code POST /{orders-collection}} to create an order from a cart.
+ *
+ * <p>Replaces the request content with a full order document. The MongoDB handler
+ * then inserts this document into the collection.
+ *
+ * <p>The client sends {@code {items: [{productId, quantity}]}} (and optionally
+ * {@code email} for guests). The interceptor:
+ * <ol>
+ *   <li>Validates the request (only {@code items} and {@code email} allowed)</li>
+ *   <li>Reads the catalog (one query)</li>
+ *   <li>Rejects unpurchasable, unknown, recurring, mixed-currency items</li>
+ *   <li>Computes totals</li>
+ *   <li>Creates a Stripe Checkout Session</li>
+ *   <li>Builds the full order document</li>
+ *   <li>Replaces the request content</li>
+ * </ol>
+ */
+@RegisterPlugin(
+        name = "ordersCheckoutInterceptor",
+        description = "Intercepts POST /orders to create an order from a cart",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        priority = Integer.MAX_VALUE,
+        requiresContent = true,
+        enabledByDefault = false)
+public class OrdersCheckoutInterceptor implements MongoInterceptor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrdersCheckoutInterceptor.class);
+    private static final SecureRandom RNG = new SecureRandom();
+
+    @Inject("stripeConfig")
+    private StripeConfigData conf;
+
+    @Inject("mclient")
+    private MongoClient mclient;
+
+    @Override
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        var products = conf.products();
+        if (products == null || !products.enabled()) {
+            return;
+        }
+
+        // 1. Parse and validate request body
+        if (!(request.getContent() instanceof BsonDocument body)) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "request body must be a JSON object");
+            return;
+        }
+
+        // Reject any field other than 'items' (and 'email' for guests)
+        for (var key : body.keySet()) {
+            if (!"items".equals(key) && !"email".equals(key)) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "unexpected field '%s' — only 'items' (and 'email' for guests) are allowed".formatted(key));
+                return;
+            }
+        }
+
+        if (!body.containsKey("items") || !body.get("items").isArray()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "'items' must be an array");
+            return;
+        }
+
+        var itemsArray = body.getArray("items");
+        if (itemsArray.isEmpty()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "'items' must not be empty");
+            return;
+        }
+
+        if (itemsArray.size() > products.maxLineItems()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST,
+                    "too many items: %d (max %d)".formatted(itemsArray.size(), products.maxLineItems()));
+            return;
+        }
+
+        // 2. Parse and validate each item
+        var requestedItems = new ArrayList<RequestedItem>();
+        for (var item : itemsArray) {
+            if (!item.isDocument()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "each item must be an object");
+                return;
+            }
+            var itemDoc = item.asDocument();
+
+            var productId = stringField(itemDoc, "productId");
+            if (productId == null || productId.isBlank()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "each item must have a 'productId'");
+                return;
+            }
+
+            if (!itemDoc.containsKey("quantity") || !itemDoc.get("quantity").isNumber()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' must have a numeric 'quantity'".formatted(productId));
+                return;
+            }
+
+            var quantity = itemDoc.getNumber("quantity").intValue();
+            if (quantity < 1) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' quantity must be at least 1".formatted(productId));
+                return;
+            }
+
+            if (quantity > products.maxQuantityPerLine()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' quantity %d exceeds max %d".formatted(productId, quantity, products.maxQuantityPerLine()));
+                return;
+            }
+
+            requestedItems.add(new RequestedItem(productId, quantity));
+        }
+
+        // 3. Read catalog (one query)
+        var catalogReader = new CatalogReader(mclient, conf.db(), products);
+        var productIds = requestedItems.stream().map(RequestedItem::productId).collect(java.util.stream.Collectors.toSet());
+
+        java.util.List<CatalogItem> catalogItems;
+        try {
+            catalogItems = catalogReader.readItems(productIds);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // Check all requested products were found
+        var foundIds = catalogItems.stream().map(CatalogItem::id).collect(java.util.stream.Collectors.toSet());
+        for (var requested : requestedItems) {
+            if (!foundIds.contains(requested.productId())) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "unknown product '%s'".formatted(requested.productId()));
+                return;
+            }
+        }
+
+        // Check purchasable
+        try {
+            catalogReader.checkPurchasable(catalogItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+            return;
+        }
+
+        // Check single currency
+        try {
+            catalogReader.checkSingleCurrency(catalogItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // 4. Resolve currency and compute totals
+        var catalogMap = new LinkedHashMap<String, CatalogItem>();
+        for (var item : catalogItems) {
+            catalogMap.put(item.id(), item);
+        }
+
+        var currency = catalogItems.get(0).currency() != null
+                ? catalogItems.get(0).currency().toLowerCase()
+                : products.defaultCurrency().toLowerCase();
+
+        long amountSubtotal = 0;
+        boolean requiresShipping = false;
+        var lineItemsBson = new BsonArray();
+
+        for (var requested : requestedItems) {
+            var catalogItem = catalogMap.get(requested.productId());
+            var subtotal = catalogItem.unitAmount() * requested.quantity();
+            amountSubtotal += subtotal;
+
+            if (catalogItem.isPhysical()) {
+                requiresShipping = true;
+            }
+
+            lineItemsBson.add(new BsonDocument()
+                    .append("product_id", new BsonString(catalogItem.id()))
+                    .append("type", new BsonString(catalogItem.type()))
+                    .append("name", new BsonString(catalogItem.name()))
+                    .append("unit_amount", new BsonInt64(catalogItem.unitAmount()))
+                    .append("quantity", new BsonInt32(requested.quantity()))
+                    .append("subtotal", new BsonInt64(subtotal))
+                    .append("tax_code", catalogItem.taxCode() != null
+                            ? new BsonString(catalogItem.taxCode())
+                            : BsonNull.VALUE));
+        }
+
+        // 5. Resolve buyer info
+        var buyerId = resolveBuyerId(request);
+        var buyerEmail = resolveBuyerEmail(request, body);
+
+        // 6. Build Stripe Checkout Session
+        var sessionBuilder = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(products.successUrl())
+                .setCancelUrl(products.cancelUrl())
+                .putMetadata("order_source", "restheart-products");
+
+        if (buyerId != null) {
+            sessionBuilder.setClientReferenceId(buyerId);
+            sessionBuilder.putMetadata("buyer_id", buyerId);
+        }
+
+        if (buyerEmail != null) {
+            sessionBuilder.setCustomerEmail(buyerEmail);
+        }
+
+        // Add line items
+        for (var requested : requestedItems) {
+            var catalogItem = catalogMap.get(requested.productId());
+
+            SessionCreateParams.LineItem.Builder lineItemBuilder;
+
+            if (catalogItem.stripePriceId() != null) {
+                // Escape hatch: use a real Stripe Price
+                lineItemBuilder = SessionCreateParams.LineItem.builder()
+                        .setPrice(catalogItem.stripePriceId())
+                        .setQuantity((long) requested.quantity());
+            } else {
+                // Normal case: ad-hoc price_data
+                var priceDataBuilder = SessionCreateParams.LineItem.PriceData.builder()
+                        .setCurrency(currency)
+                        .setUnitAmount(catalogItem.unitAmount())
+                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                .setName(catalogItem.name())
+                                .build());
+
+                if (catalogItem.description() != null) {
+                    priceDataBuilder.setProductData(
+                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                    .setName(catalogItem.name())
+                                    .setDescription(catalogItem.description())
+                                    .build());
+                }
+
+                if (catalogItem.taxCode() != null && products.automaticTax()) {
+                    priceDataBuilder.setProductData(
+                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                    .setName(catalogItem.name())
+                                    .setTaxCode(catalogItem.taxCode())
+                                    .build());
+                }
+
+                lineItemBuilder = SessionCreateParams.LineItem.builder()
+                        .setPriceData(priceDataBuilder.build())
+                        .setQuantity((long) requested.quantity());
+            }
+
+            sessionBuilder.addLineItem(lineItemBuilder.build());
+        }
+
+        // Automatic tax
+        if (products.automaticTax()) {
+            sessionBuilder.setAutomaticTax(
+                    SessionCreateParams.AutomaticTax.builder().setEnabled(true).build());
+        }
+
+        // Shipping options (for physical products)
+        if (requiresShipping && products.shippingOptions() != null) {
+            for (var shippingOpt : products.shippingOptions()) {
+                sessionBuilder.addShippingOption(
+                        SessionCreateParams.ShippingOption.builder()
+                                .setShippingRateData(
+                                        SessionCreateParams.ShippingOption.ShippingRateData.builder()
+                                                .setDisplayName(shippingOpt.displayName())
+                                                .setFixedAmount(
+                                                        SessionCreateParams.ShippingOption.ShippingRateData.FixedAmount.builder()
+                                                                .setAmount(shippingOpt.amount())
+                                                                .setCurrency(currency)
+                                                                .build())
+                                                .build())
+                                .build());
+            }
+        }
+
+        // Session expiry (min 30 min, max 24 h)
+        var expiresMinutes = Math.max(30, Math.min(products.sessionExpiresMinutes(), 1440));
+
+        // Create the Stripe session
+        var apiKey = conf.secretKey();
+        var opts = RequestOptions.builder()
+                .setApiKey(apiKey)
+                .setIdempotencyKey("order-" + buyerId + "-" + System.currentTimeMillis())
+                .build();
+
+        Session session;
+        try {
+            session = Session.create(sessionBuilder.build(), opts);
+        } catch (StripeException e) {
+            LOGGER.error("[stripe] failed to create Checkout session: {}", e.getMessage());
+            reject(response, HttpStatus.SC_BAD_GATEWAY, "unable to reach Stripe");
+            return;
+        }
+
+        // 7. Build order document
+        var orderId = new ObjectId();
+        var secret = generateSecret();
+        var now = System.currentTimeMillis();
+        var expiresAt = now + (expiresMinutes * 60L * 1000L);
+
+        var order = new BsonDocument()
+                .append("_id", new BsonObjectId(orderId))
+                .append("stripe_session_id", new BsonString(session.getId()))
+                .append("stripe_payment_intent", BsonNull.VALUE)
+                .append("secret", new BsonString(secret))
+                .append("checkout_url", new BsonString(session.getUrl()))
+                .append("buyer_id", buyerId != null ? new BsonString(buyerId) : BsonNull.VALUE)
+                .append("buyer_email", buyerEmail != null ? new BsonString(buyerEmail) : BsonNull.VALUE)
+                .append("payer", buildPayerDocument(request))
+                .append("status", new BsonString("pending_payment"))
+                .append("requires_shipping", BsonBoolean.valueOf(requiresShipping))
+                .append("line_items", lineItemsBson)
+                .append("currency", new BsonString(currency))
+                .append("amount_subtotal", new BsonInt64(amountSubtotal))
+                .append("amount_tax", new BsonInt64(0))
+                .append("amount_shipping", new BsonInt64(0))
+                .append("amount_total", new BsonInt64(amountSubtotal))
+                .append("amount_refunded", new BsonInt64(0))
+                .append("shipping_address", BsonNull.VALUE)
+                .append("created_at", new BsonDocument().append("$date", new BsonInt64(now)))
+                .append("paid_at", BsonNull.VALUE)
+                .append("expires_at", new BsonDocument().append("$date", new BsonInt64(expiresAt)));
+
+        // 8. Replace request content with order document
+        request.setContent(order);
+
+        LOGGER.info("[stripe] order created — id={}, session={}, buyer={}", orderId, session.getId(), buyerId);
+    }
+
+    @Override
+    public boolean resolve(MongoRequest request, MongoResponse response) {
+        var products = conf.products();
+        if (products == null || !products.enabled()) {
+            return false;
+        }
+
+        return request.isPost()
+                && request.isWriteDocument()
+                && products.ordersCollection().equals(request.getCollectionName());
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private String resolveBuyerId(MongoRequest request) {
+        var account = request.getAuthenticatedAccount();
+        if (account == null) {
+            return null;
+        }
+        if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+            var props = withProperties.propertiesAsMap();
+            if (props != null && props.get("_id") != null) {
+                return props.get("_id").toString();
+            }
+        }
+        return null;
+    }
+
+    private String resolveBuyerEmail(MongoRequest request, BsonDocument body) {
+        // Guest: email from body
+        if (!request.isAuthenticated()) {
+            return stringField(body, "email");
+        }
+
+        // Authenticated: from user document field
+        if (conf.products().buyerEmailField() != null) {
+            var account = request.getAuthenticatedAccount();
+            if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+                var props = withProperties.propertiesAsMap();
+                if (props != null) {
+                    var emailValue = props.get(conf.products().buyerEmailField());
+                    if (emailValue != null) {
+                        return emailValue.toString();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private BsonDocument buildPayerDocument(MongoRequest request) {
+        if (!request.isAuthenticated()) {
+            return new BsonDocument()
+                    .append("type", new BsonString("guest"))
+                    .append("id", BsonNull.VALUE)
+                    .append("stripe_customer_id", BsonNull.VALUE);
+        }
+
+        // Authenticated: resolve team
+        var account = request.getAuthenticatedAccount();
+        if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+            var props = withProperties.propertiesAsMap();
+            if (props != null && props.get("team") instanceof Map<?, ?> teamMap) {
+                var teamId = teamMap.get("_id") != null ? teamMap.get("_id") : teamMap.get("id");
+                var stripeCustomerId = teamMap.get("stripe_customer_id");
+
+                return new BsonDocument()
+                        .append("type", new BsonString("team"))
+                        .append("id", teamId != null ? new BsonObjectId(new ObjectId(teamId.toString())) : BsonNull.VALUE)
+                        .append("stripe_customer_id", stripeCustomerId != null
+                                ? new BsonString(stripeCustomerId.toString())
+                                : BsonNull.VALUE);
+            }
+        }
+
+        // Fallback: guest (should not happen for authenticated users)
+        return new BsonDocument()
+                .append("type", new BsonString("guest"))
+                .append("id", BsonNull.VALUE)
+                .append("stripe_customer_id", BsonNull.VALUE);
+    }
+
+    private static String stringField(BsonDocument doc, String key) {
+        if (doc == null || !doc.containsKey(key) || !doc.get(key).isString()) {
+            return null;
+        }
+        return doc.getString(key).getValue();
+    }
+
+    private static String generateSecret() {
+        var bytes = new byte[32];
+        RNG.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
+    private static void reject(MongoResponse response, int status, String message) {
+        response.setInError(status, message);
+        LOGGER.warn("[stripe] order creation rejected: {}", message);
+    }
+
+    private record RequestedItem(String productId, int quantity) {}
+}
