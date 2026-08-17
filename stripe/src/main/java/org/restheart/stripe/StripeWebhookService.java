@@ -21,7 +21,6 @@ package org.restheart.stripe;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.restheart.emails.EmailSender;
@@ -30,7 +29,6 @@ import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.StripeConfigData;
@@ -94,13 +92,12 @@ public class StripeWebhookService implements ByteArrayService {
     @Inject("acl-registry")
     private ACLRegistry aclRegistry;
 
-    @Inject("registry")
-    private PluginsRegistry registry;
+    @Inject(value = "emails", required = false)
+    private EmailSender emailSender;
 
     @Inject("mclient")
     private com.mongodb.client.MongoClient mclient;
 
-    private EmailSender emailSender;
     private final List<StripeEventHandler> handlers = new ArrayList<>();
 
     @OnInit
@@ -108,24 +105,11 @@ public class StripeWebhookService implements ByteArrayService {
         LOGGER.info("[stripe] StripeWebhookService.onInit: starting");
         aclRegistry.registerAllow(r -> "/stripe/webhook".equals(r.getPath()) && (r.isPost() || r.isOptions()));
 
-        // Resolve email sender softly
-        for (var providerRecord : registry.getProviders()) {
-            if ("emails".equals(providerRecord.getName()) && providerRecord.isEnabled()) {
-                Object value = providerRecord.getInstance().get(null);
-                if (value instanceof EmailSender sender) {
-                    this.emailSender = sender;
-                }
-                break;
-            }
-        }
         if (emailSender == null) {
             LOGGER.info("[stripe] 'emails' plugin not found or not enabled — billing notifications will not be sent");
         }
 
-        // Register subscription event handler
         handlers.add(new SubscriptionEventHandler(catalogCache, emailSender));
-
-        // Register order event handler (products mode)
         handlers.add(new OrderEventHandler(emailSender));
     }
 

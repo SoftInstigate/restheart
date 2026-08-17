@@ -22,7 +22,6 @@ package org.restheart.stripe;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.accounts.AccountsConfigData;
@@ -57,18 +56,9 @@ import com.mongodb.client.MongoClient;
  * }
  * }</pre>
  *
- * <h2>⚠️ {@code accountsConfig} is looked up softly, not injected</h2>
- * <p>This class deliberately does <strong>not</strong> declare {@code @Inject("accountsConfig")}.
- * RESTHeart validates every declared {@code @Inject} target at startup and refuses to start
- * the plugin if the target provider does not exist or is disabled ({@code ProvidersChecker}) —
- * so a hard-declared injection would make {@code restheart-stripe} require
- * {@code restheart-accounts} to be present and enabled, defeating the point of the SPI (a
- * deployment without {@code restheart-accounts} is exactly the one that needs a custom
- * {@link SubscriptionOwnerProvider}).
- *
- * <p>Instead, {@code accountsConfig} is looked up at {@code @OnInit} time through the injected
- * {@link PluginsRegistry} — a lookup RESTHeart's dependency validation does not see, since it
- * is not a declared {@code @Inject} field. If {@code accountsConfig} is absent or disabled,
+ * <h2>⚠️ {@code accountsConfig} is an optional dependency</h2>
+ * <p>This class declares {@code @Inject(value = "accountsConfig", required = false)}.
+ * If {@code accountsConfig} is absent or disabled, the field is {@code null} and
  * {@link DefaultSubscriptionOwnerProvider} falls back to its own defaults
  * ({@value DefaultSubscriptionOwnerProvider#DEFAULT_TEAM_CLAIM_NAME} /
  * {@value DefaultSubscriptionOwnerProvider#DEFAULT_OWNERSHIP_ROLE}).
@@ -82,20 +72,16 @@ public class StripeService implements Provider<StripeService>, SubscriptionOwner
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StripeService.class);
 
-    private static final String ACCOUNTS_CONFIG_PLUGIN_NAME = "accountsConfig";
-
     @Inject("mclient")
     private MongoClient mclient;
 
-    @Inject("registry")
-    private PluginsRegistry registry;
+    @Inject(value = "accountsConfig", required = false)
+    private AccountsConfigData accountsConf;
 
     private volatile SubscriptionOwnerProvider subscriptionOwnerProvider;
 
     @OnInit
     public void onInit() {
-        var accountsConf = resolveAccountsConfigData();
-
         this.subscriptionOwnerProvider = accountsConf != null
                 ? new DefaultSubscriptionOwnerProvider(mclient, accountsConf.teamClaimName(), accountsConf.ownershipRole())
                 : new DefaultSubscriptionOwnerProvider(mclient, null, null);
@@ -143,43 +129,5 @@ public class StripeService implements Provider<StripeService>, SubscriptionOwner
     @Override
     public StripeService get(PluginRecord<?> caller) {
         return this;
-    }
-
-    // ── Internal helpers ────────────────────────────────────────────────────
-
-    /**
-     * Looks up the {@code accountsConfig} provider through the plugin registry, without
-     * declaring a hard {@code @Inject} dependency on it — see the class javadoc.
-     *
-     * @return the resolved {@link AccountsConfigData}, or {@code null} if {@code accountsConfig}
-     *         is not registered, is disabled, or does not provide the expected type
-     */
-    private AccountsConfigData resolveAccountsConfigData() {
-        if (registry == null) {
-            return null;
-        }
-
-        for (var providerRecord : registry.getProviders()) {
-            if (!ACCOUNTS_CONFIG_PLUGIN_NAME.equals(providerRecord.getName())) {
-                continue;
-            }
-            if (!providerRecord.isEnabled()) {
-                LOGGER.info("[stripe] accountsConfig plugin found but not enabled");
-                return null;
-            }
-
-            // Provider.get(caller) is used by every provider we've inspected only for
-            // caller-specific logging or customisation; AccountsConfig.get() ignores it
-            // entirely and returns a fixed instance, so passing null here is safe.
-            Object value = providerRecord.getInstance().get(null);
-            if (value instanceof AccountsConfigData accountsConfigData) {
-                return accountsConfigData;
-            }
-
-            LOGGER.warn("[stripe] accountsConfig plugin found but did not provide AccountsConfigData");
-            return null;
-        }
-
-        return null;
     }
 }
