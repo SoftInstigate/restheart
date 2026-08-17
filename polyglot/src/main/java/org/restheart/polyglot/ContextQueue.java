@@ -291,10 +291,10 @@ public class ContextQueue {
      * context.  Must only be called between ctx.enter() and ctx.leave().
      */
     public static void addBindings(Context ctx,
-                                    String pluginName,
-                                    Configuration conf,
-                                    Logger logger,
-                                    Optional<MongoClient> mclient) {
+                                   String pluginName,
+                                   Configuration conf,
+                                   Logger logger,
+                                   Optional<MongoClient> mclient) {
         ctx.getBindings("js").putMember("LOGGER", logger);
 
         if (mclient.isPresent()) {

@@ -21,7 +21,6 @@
 package org.restheart.polyglot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,9 +39,9 @@ class PolyglotClassloaderHelperTest {
     @Test
     void withPluginsClassloaderResultPropagatesException() {
         assertThrows(IOException.class, () ->
-            PolyglotClassloaderHelper.withPluginsClassloaderResult(() -> {
-                throw new IOException("test");
-            }));
+                PolyglotClassloaderHelper.withPluginsClassloaderResult(() -> {
+                    throw new IOException("test");
+                }));
     }
 
     @Test
@@ -52,7 +51,7 @@ class PolyglotClassloaderHelperTest {
         PolyglotClassloaderHelper.withPluginsClassloaderResult(() -> "done");
 
         assertSame(original, Thread.currentThread().getContextClassLoader(),
-            "context classloader must be restored after call");
+                "context classloader must be restored after call");
     }
 
     @Test
@@ -60,12 +59,12 @@ class PolyglotClassloaderHelperTest {
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
         assertThrows(IOException.class, () ->
-            PolyglotClassloaderHelper.withPluginsClassloaderResult(() -> {
-                throw new IOException("fail");
-            }));
+                PolyglotClassloaderHelper.withPluginsClassloaderResult(() -> {
+                    throw new IOException("fail");
+                }));
 
         assertSame(original, Thread.currentThread().getContextClassLoader(),
-            "context classloader must be restored even after exception");
+                "context classloader must be restored even after exception");
     }
 
     @Test
@@ -78,9 +77,9 @@ class PolyglotClassloaderHelperTest {
     @Test
     void withPluginsClassloaderVoidPropagatesException() {
         assertThrows(IOException.class, () ->
-            PolyglotClassloaderHelper.withPluginsClassloader(() -> {
-                throw new IOException("test");
-            }));
+                PolyglotClassloaderHelper.withPluginsClassloader(() -> {
+                    throw new IOException("test");
+                }));
     }
 
     @Test
@@ -88,12 +87,12 @@ class PolyglotClassloaderHelperTest {
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
         assertThrows(IOException.class, () ->
-            PolyglotClassloaderHelper.withPluginsClassloader(() -> {
-                throw new IOException("fail");
-            }));
+                PolyglotClassloaderHelper.withPluginsClassloader(() -> {
+                    throw new IOException("fail");
+                }));
 
         assertSame(original, Thread.currentThread().getContextClassLoader(),
-            "context classloader must be restored even after exception");
+                "context classloader must be restored even after exception");
     }
 
     @Test

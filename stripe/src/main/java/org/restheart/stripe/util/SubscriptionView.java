@@ -63,7 +63,7 @@ public final class SubscriptionView {
      * @return the view document — see the class javadoc for its shape
      */
     public static BsonDocument build(SubscriptionOwnerProvider provider, ServiceRequest<?> req,
-            StripeConfigData conf, SubscriptionOwner owner, SubscriptionState state) {
+                                     StripeConfigData conf, SubscriptionOwner owner, SubscriptionState state) {
 
         var plans = RequestOverrides.plans(req, conf);
         var planConf = plans.get(state.plan());
