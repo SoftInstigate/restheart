@@ -12,6 +12,11 @@
     <native.gc>--gc=serial</native.gc>
     <native.march>-march=compatibility</native.march>
     <mongodb.port>27017</mongodb.port>
+    <!-- Which integration tests failsafe runs. The default matches every IT class, which is
+         what the previous (unconfigured) failsafe default did — all 33 IT classes in this
+         module end in 'IT'. Override to run a subset, e.g. only the Karate suite:
+             mvn verify -Pmongodb -Dit.includes=**/RunnerIT.java -->
+    <it.includes>**/*IT.java</it.includes>
   </properties>
 
   <groupId>org.restheart</groupId>
@@ -226,6 +231,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>${it.includes}</include>
+          </includes>
+        </configuration>
         <executions>
           <execution>
             <goals>

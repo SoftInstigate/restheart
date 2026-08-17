@@ -22,7 +22,7 @@ Thank you for your interest in contributing to RESTHeart! This guide covers ever
 |------|---------|-------|
 | Java | 25 | Use [SDKMAN](https://sdkman.io/): `sdk install java 25-tem` |
 | Maven | via wrapper | No separate installation needed — use `./mvnw` |
-| Docker | any recent | Required only for integration tests (Testcontainers) |
+| Docker | any recent | Required only for integration tests, which start a MongoDB container |
 | GraalVM | 25-graal | Required only for native-image builds: `sdk install java 25-graalce` |
 
 The project uses the Maven Wrapper (`./mvnw` / `mvnw.cmd`), so you do **not** need a global Maven installation.
@@ -47,11 +47,16 @@ The main artifact is produced at `core/target/restheart.jar`.
 
 ### Run all tests (unit + integration)
 
-Integration tests start a MongoDB container automatically via Testcontainers:
-
 ```bash
 ./mvnw clean verify
 ```
+
+The integration tests need a MongoDB instance and a running RESTHeart, and `verify` provides both automatically — two profiles activate whenever `-DskipTests` is *not* passed:
+
+- **`mongodb`** starts a `mongo:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
+- **`start-server`** builds and starts RESTHeart before the tests and stops it after.
+
+All integration tests live in the `core` module.
 
 ### Skip integration tests
 
@@ -83,13 +88,45 @@ Integration tests start a MongoDB container automatically via Testcontainers:
 ./mvnw verify -Dit.test=MyClassIT
 ```
 
+Alternatively, select them by file pattern with `it.includes` (default `**/*IT.java`):
+
+```bash
+./mvnw verify -Dit.includes=**/RunnerIT.java
+```
+
+### Run only the Karate suite
+
+The BDD tests under `core/src/test/java/karate/` are all driven by a single JUnit class, `RunnerIT`. Excluding the other integration test classes cuts the cycle down considerably while working on a feature file:
+
+```bash
+./mvnw clean verify -Dit.includes=**/RunnerIT.java
+```
+
+### Run specific Karate features
+
+`RunnerIT` runs `classpath:karate` by default. Point it somewhere narrower with `karate.path`, which accepts a comma-separated list of feature files or directories:
+
+```bash
+# a single feature
+./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+  -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
+
+# a whole directory, or several
+./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+  -Dkarate.path=classpath:karate/stripe,classpath:karate/accounts
+```
+
+Note that features are not fully independent: some rely on data created by others, and helpers under `karate/accounts/helpers/` are called explicitly by the features that need them. A feature that passes in the full suite can fail when run alone — that is usually a missing fixture, not a regression.
+
+Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
+
 ### Test against a specific MongoDB version
 
 ```bash
 ./mvnw clean verify -Dmongodb.version="7.0"
 ```
 
-Supported values: `6.0`, `7.0`, `8.0` (default: `8.0`).
+Any published `mongo` image tag works; the default is set by the `mongodb.version` property in the root POM.
 
 ### Skip updating license headers (faster iteration)
 
