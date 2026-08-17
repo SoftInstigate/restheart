@@ -26,7 +26,6 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.Cache.EXPIRE_POLICY;
 import org.restheart.cache.CacheFactory;
 import org.restheart.plugins.stripe.PlanConfig;
-import org.restheart.plugins.stripe.StripeConfigData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +125,7 @@ public class StripeCatalogCache {
     }
 
     private PlanDisplay fetchPlanDisplay(String planId, PlanConfig planConf, PriceRetrieveParams expandProduct,
-            RequestOptions opts) throws StripeException {
+                                         RequestOptions opts) throws StripeException {
         var monthly = fetchPrice(planConf.priceIdMonthly(), expandProduct, opts);
         var annual = fetchPrice(planConf.priceIdAnnual(), expandProduct, opts);
 

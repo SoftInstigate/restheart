@@ -195,7 +195,7 @@ public class StripeWebhookService implements ByteArrayService {
             switch (event.getType()) {
                 case "checkout.session.completed" -> handleCheckoutSessionCompleted(event);
                 case "customer.subscription.created", "customer.subscription.updated" ->
-                        handleSubscriptionUpsert(event, ctx);
+                    handleSubscriptionUpsert(event, ctx);
                 case "customer.subscription.deleted" -> handleSubscriptionDeleted(event, ctx);
                 case "customer.subscription.trial_will_end" -> handleTrialWillEnd(event, ctx);
                 case "invoice.payment_succeeded" -> handleInvoicePaymentSucceeded(event, ctx);
@@ -220,7 +220,7 @@ public class StripeWebhookService implements ByteArrayService {
 
     /** Per-delivery context, resolved once and threaded through the handlers. */
     private record Context(ByteArrayRequest req, SubscriptionOwnerProvider provider, BillingScope scope,
-            String defaultPlanId, Instant appliedAt) {
+                           String defaultPlanId, Instant appliedAt) {
     }
 
     // ── Handlers ─────────────────────────────────────────────────────────────

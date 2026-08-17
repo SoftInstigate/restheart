@@ -67,7 +67,7 @@ public final class StripeNotifications {
      *                    {@code billing-url}, which are filled in here
      */
     public static void send(EmailSender emailSender, ServiceRequest<?> req, StripeConfigData conf,
-            String name, SubscriptionOwner owner, Map<String, String> vars) {
+                            String name, SubscriptionOwner owner, Map<String, String> vars) {
         if (!RequestOverrides.notificationEnabled(req, conf, name)) {
             return;
         }

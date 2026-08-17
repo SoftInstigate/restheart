@@ -117,7 +117,7 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 : Map.<String, Object>of();
 
         var notifications = new HashMap<String, NotificationConfig>();
-        for (var name : new String[] {
+        for (var name : new String[]{
                 NotificationConfig.PAYMENT_FAILED,
                 NotificationConfig.TRIAL_WILL_END,
                 NotificationConfig.SUBSCRIPTION_CANCELED,

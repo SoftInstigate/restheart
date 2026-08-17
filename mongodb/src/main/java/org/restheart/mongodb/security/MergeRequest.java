@@ -89,7 +89,7 @@ public class MergeRequest implements MongoInterceptor {
 
             // Remove from $set and root any keys that array operators manage,
             // to avoid ConflictingUpdateOperators (e.g. $set.consents + $push.consents)
-            var arrayOps = new String[] { "$push", "$addToSet", "$pushAll" };
+            var arrayOps = new String[]{"$push", "$addToSet", "$pushAll"};
             for (var op : arrayOps) {
                 if (updateOps.containsKey(op)) {
                     var targets = updateOps.get(op);

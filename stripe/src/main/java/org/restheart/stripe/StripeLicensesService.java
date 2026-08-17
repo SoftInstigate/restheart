@@ -137,7 +137,7 @@ public class StripeLicensesService implements BsonService {
     }
 
     private void grant(BsonRequest req, BsonResponse res, SubscriptionOwnerProvider provider,
-            SubscriptionOwner owner, String userId) {
+                       SubscriptionOwner owner, String userId) {
         var limit = currentLimit(req, provider, owner);
         var result = provider.grantLicense(owner, userId, limit);
 

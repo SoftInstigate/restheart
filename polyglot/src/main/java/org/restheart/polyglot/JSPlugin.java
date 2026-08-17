@@ -53,7 +53,7 @@ public abstract class JSPlugin {
                             engine = PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create);
                         } else {
                             engine = PolyglotThreadUtils.onPlatformThread(
-                                () -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
+                                    () -> PolyglotClassloaderHelper.withPluginsClassloaderResult(Engine::create));
                         }
                     } catch (Exception e) {
                         throw new IllegalStateException("Error creating polyglot Engine", e);
