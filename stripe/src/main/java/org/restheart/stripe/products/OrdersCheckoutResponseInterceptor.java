@@ -92,6 +92,11 @@ public class OrdersCheckoutResponseInterceptor implements MongoInterceptor {
             return false;
         }
 
+        // Request-level disable (for RESTHeart Cloud multi-tenancy)
+        if (request.attachedParam("rh-stripe-products-disabled") != null) {
+            return false;
+        }
+
         return request.isPost()
                 && request.isWriteDocument()
                 && products.ordersCollection().equals(request.getCollectionName());
