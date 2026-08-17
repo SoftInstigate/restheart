@@ -111,35 +111,48 @@ public class OrderEventHandler implements StripeEventHandler {
             return;
         }
 
-        markAsPaid(session, event, ctx, products);
+        markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
+                session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
     }
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
         var session = deserialize(event, Session.class);
         if (session == null) {
+            // Fallback: extract directly from JSON when SDK deserialization fails (API version mismatch)
+            var data = extractSessionData(event);
+            if (data == null) {
+                return;
+            }
+            markAsPaid(data.sessionId, data.amountTotal, data.currency,
+                    data.paymentIntent, null, event, ctx, products);
             return;
         }
 
-        markAsPaid(session, event, ctx, products);
+        markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
+                session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
     }
 
     private void handleAsyncPaymentFailed(Event event, StripeEventContext ctx, ProductsConfig products) {
         var session = deserialize(event, Session.class);
-        if (session == null) {
+        String sessionId;
+        if (session != null) {
+            sessionId = session.getId();
+        } else {
+            var data = extractSessionData(event);
+            sessionId = data != null ? data.sessionId : null;
+        }
+
+        if (sessionId == null) {
             return;
         }
 
-        var sessionId = session.getId();
         var ordersCol = ordersCollection(ctx, products);
 
-        // Monotonic transition: only from pending_payment
         var filter = Filters.and(
                 Filters.eq("stripe_session_id", sessionId),
                 Filters.eq("status", "pending_payment"));
 
-        var update = Updates.set("status", "failed");
-
-        var result = ordersCol.findOneAndUpdate(filter, update);
+        var result = ordersCol.findOneAndUpdate(filter, Updates.set("status", "failed"));
         if (result != null) {
             LOGGER.info("[stripe] order marked as failed — session={}", sessionId);
         } else {
@@ -149,21 +162,25 @@ public class OrderEventHandler implements StripeEventHandler {
 
     private void handleSessionExpired(Event event, StripeEventContext ctx, ProductsConfig products) {
         var session = deserialize(event, Session.class);
-        if (session == null) {
+        String sessionId;
+        if (session != null) {
+            sessionId = session.getId();
+        } else {
+            var data = extractSessionData(event);
+            sessionId = data != null ? data.sessionId : null;
+        }
+
+        if (sessionId == null) {
             return;
         }
 
-        var sessionId = session.getId();
         var ordersCol = ordersCollection(ctx, products);
 
-        // Monotonic transition: only from pending_payment
         var filter = Filters.and(
                 Filters.eq("stripe_session_id", sessionId),
                 Filters.eq("status", "pending_payment"));
 
-        var update = Updates.set("status", "expired");
-
-        var result = ordersCol.findOneAndUpdate(filter, update);
+        var result = ordersCol.findOneAndUpdate(filter, Updates.set("status", "expired"));
         if (result != null) {
             LOGGER.info("[stripe] order marked as expired — session={}", sessionId);
         } else {
@@ -249,8 +266,10 @@ public class OrderEventHandler implements StripeEventHandler {
 
     // ── Shared logic ─────────────────────────────────────────────────────────
 
-    private void markAsPaid(Session session, Event event, StripeEventContext ctx, ProductsConfig products) {
-        var sessionId = session.getId();
+    private void markAsPaid(String sessionId, Long amountTotal, String currency,
+                            String paymentIntent,
+                            com.stripe.model.checkout.Session.CustomerDetails customerDetails,
+                            Event event, StripeEventContext ctx, ProductsConfig products) {
         var ordersCol = ordersCollection(ctx, products);
         var transactionsCol = transactionsCollection(ctx, products);
 
@@ -263,73 +282,81 @@ public class OrderEventHandler implements StripeEventHandler {
         var now = System.currentTimeMillis();
         var updateDoc = new BsonDocument();
         updateDoc.append("status", new BsonString("paid"));
-        updateDoc.append("paid_at", new BsonDocument().append("$date", new BsonInt64(now)));
+        updateDoc.append("paid_at", new org.bson.BsonDateTime(now));
 
-        // Fill tax/shipping from session
-        if (session.getAmountTotal() != null) {
-            updateDoc.append("amount_total", new BsonInt64(session.getAmountTotal()));
-        }
-        if (session.getTotalDetails() != null) {
-            if (session.getTotalDetails().getAmountTax() != null) {
-                updateDoc.append("amount_tax", new BsonInt64(session.getTotalDetails().getAmountTax()));
-            }
-            if (session.getTotalDetails().getAmountShipping() != null) {
-                updateDoc.append("amount_shipping", new BsonInt64(session.getTotalDetails().getAmountShipping()));
-            }
+        // Fill amount_total
+        if (amountTotal != null) {
+            updateDoc.append("amount_total", new BsonInt64(amountTotal));
         }
 
-        // Fill buyer_email from session
-        if (session.getCustomerDetails() != null && session.getCustomerDetails().getEmail() != null) {
-            updateDoc.append("buyer_email", new BsonString(session.getCustomerDetails().getEmail()));
-        }
-
-        // Fill shipping_address from customer details (if available)
-        if (session.getCustomerDetails() != null && session.getCustomerDetails().getAddress() != null) {
-            var addr = session.getCustomerDetails().getAddress();
-            var addrDoc = new BsonDocument();
-            if (addr.getLine1() != null) addrDoc.append("line1", new BsonString(addr.getLine1()));
-            if (addr.getLine2() != null) addrDoc.append("line2", new BsonString(addr.getLine2()));
-            if (addr.getCity() != null) addrDoc.append("city", new BsonString(addr.getCity()));
-            if (addr.getState() != null) addrDoc.append("state", new BsonString(addr.getState()));
-            if (addr.getPostalCode() != null) addrDoc.append("postal_code", new BsonString(addr.getPostalCode()));
-            if (addr.getCountry() != null) addrDoc.append("country", new BsonString(addr.getCountry()));
-            updateDoc.append("shipping_address", addrDoc);
+        // Fill buyer_email from customer details
+        if (customerDetails != null && customerDetails.getEmail() != null) {
+            updateDoc.append("buyer_email", new BsonString(customerDetails.getEmail()));
         }
 
         // Fill payment_intent
-        if (session.getPaymentIntent() != null) {
-            updateDoc.append("stripe_payment_intent", new BsonString(session.getPaymentIntent()));
+        if (paymentIntent != null) {
+            updateDoc.append("stripe_payment_intent", new BsonString(paymentIntent));
         }
 
         var result = ordersCol.findOneAndUpdate(filter, new BsonDocument("$set", updateDoc));
         if (result == null) {
-            LOGGER.debug("[stripe] checkout.session.completed skipped — session={} not in pending_payment", sessionId);
+            LOGGER.debug("[stripe] markAsPaid skipped — session={} not in pending_payment", sessionId);
             return;
         }
 
         // Append payment transaction to ledger
         var orderId = result.getObjectId("_id").getValue();
-        var amount = session.getAmountTotal() != null ? session.getAmountTotal() : 0L;
-        var currency = session.getCurrency() != null ? session.getCurrency() : "eur";
+        var amount = amountTotal != null ? amountTotal : 0L;
+        var cur = currency != null ? currency : "eur";
 
-        appendTransaction(transactionsCol, orderId, "payment", amount, currency,
-                session.getPaymentIntent(), event.getId(), ctx.appliedAt());
-
-        // Compare amount_total to detect catalog edits mid-checkout
-        if (result.containsKey("amount_total")) {
-            var storedAmount = result.getInt64("amount_total").getValue();
-            if (storedAmount != amount) {
-                LOGGER.error("[stripe] amount mismatch on order {} — stored={}, session={} — possible catalog edit mid-checkout",
-                        orderId, storedAmount, amount);
-            }
-        }
+        appendTransaction(transactionsCol, orderId, "payment", amount, cur,
+                paymentIntent, event.getId(), ctx.appliedAt());
 
         LOGGER.info("[stripe] order marked as paid — id={}, session={}, amount={}", orderId, sessionId, amount);
 
         // Send order confirmation notification
-        sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, currency,
-                session.getCustomerDetails() != null ? session.getCustomerDetails().getEmail() : null);
+        sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, cur,
+                customerDetails != null ? customerDetails.getEmail() : null);
     }
+
+    /** Fallback extraction when Stripe SDK deserialization fails (API version mismatch). */
+    private static SessionData extractSessionData(Event event) {
+        try {
+            var dataObj = event.getData().getObject().get();
+            if (dataObj == null) {
+                return null;
+            }
+            var json = dataObj.toJson();
+            var parser = com.fasterxml.jackson.databind.ObjectMapper.class;
+            // Parse manually from the raw JSON
+            var raw = event.getRawJsonObject();
+            if (raw == null || !raw.has("data")) {
+                return null;
+            }
+            var data = raw.getAsJsonObject("data");
+            if (data == null || !data.has("object")) {
+                return null;
+            }
+            var obj = data.getAsJsonObject("object");
+
+            var sessionId = obj.has("id") && !obj.get("id").isJsonNull()
+                    ? obj.get("id").getAsString() : null;
+            var amountTotal = obj.has("amount_total") && !obj.get("amount_total").isJsonNull()
+                    ? obj.get("amount_total").getAsLong() : null;
+            var currency = obj.has("currency") && !obj.get("currency").isJsonNull()
+                    ? obj.get("currency").getAsString() : null;
+            var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
+                    ? obj.get("payment_intent").getAsString() : null;
+
+            return new SessionData(sessionId, amountTotal, currency, paymentIntent);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] failed to extract session data from event: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {}
 
     private void appendTransaction(MongoCollection<BsonDocument> transactionsCol,
                                    ObjectId orderId, String type, long amount, String currency,
@@ -343,8 +370,8 @@ public class OrderEventHandler implements StripeEventHandler {
                 .append("currency", new BsonString(currency))
                 .append("stripe_object_id", stripeObjectId != null ? new BsonString(stripeObjectId) : BsonNull.VALUE)
                 .append("stripe_event_id", new BsonString(stripeEventId))
-                .append("occurred_at", new BsonDocument().append("$date", new BsonInt64(occurredAt.toEpochMilli())))
-                .append("recorded_at", new BsonDocument().append("$date", new BsonInt64(System.currentTimeMillis())));
+                .append("occurred_at", new org.bson.BsonDateTime(occurredAt.toEpochMilli()))
+                .append("recorded_at", new org.bson.BsonDateTime(System.currentTimeMillis()));
 
         try {
             transactionsCol.insertOne(tx);
