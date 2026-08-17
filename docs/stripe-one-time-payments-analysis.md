@@ -452,6 +452,7 @@ stripeConfig:
 
   products:
     enabled: true
+    init-enabled: true         # false to skip automatic init; use StripeProductsInitService on demand
 
     catalog-collection:      catalog
     orders-collection:       orders
@@ -511,6 +512,10 @@ Product-mode overrides follow the existing convention: `override-stripe-products
 
 `override-stripe-secret-key`, `override-stripe-webhook-secret` and `override-stripe-db` are **shared across both modes** — one tenant resolution feeds both, which is the point of keeping them at the top level.
 
+**Disabling products per request.** A request parameter `rh-stripe-products-disabled` (value ignored, presence is the signal) makes the module skip all products-mode interceptors and webhook handling for that request. Default: not present = not blocked. This is the same override mechanism RESTHeart Cloud uses for other per-service controls: the platform attaches the parameter when the service has not enabled payments.
+
+**On-demand initialization.** When `init-enabled: false`, the `stripeInitializer` skips products-mode setup (collections, indexes, schema). Instead, `StripeProductsInitService` — a `@Injectable` service — can be called programmatically to initialize a specific database. RESTHeart Cloud calls it when a service enables payments, passing the tenant database name. The service is idempotent (same rules as the initializer: create-if-absent, error on failed unique indexes).
+
 ### 8.3 ⚠️ A recurring catalog item collides with the subscriptions mode
 
 `price_data` supports `setRecurring(...)`, so nothing structurally stops a catalog document describing a monthly box. It must be rejected when building line items.
@@ -547,6 +552,8 @@ Everything a read endpoint would have had to implement — filtering, sorting, p
 **3. Webhook handlers** (§6.1) — update the order and append to `transactions`.
 
 **4. A `jsonSchema` on `orders`** describing the final document (§7.1).
+
+**5. `StripeProductsInitService`** — `@Injectable` service for on-demand initialization. When `products.init-enabled: false`, the automatic initializer skips products-mode setup. RESTHeart Cloud calls this service programmatically when a service enables payments, passing the tenant database name. Idempotent: create-if-absent, error on failed unique indexes.
 
 Writes other than the interceptor-mediated `POST` should be denied by ACL: a customer must not `PATCH` their own order to `status: "paid"`. Grant `POST` and `GET` only.
 
@@ -619,7 +626,7 @@ Everything here is created for the **statically configured** database only.
 
 A deployment whose database varies per tenant (`override-stripe-db`) must create the collections, indexes and schema on every tenant database itself. This caveat already exists for the subscriptions mode's single index; the products mode makes it considerably larger, and the unique indexes it now covers are correctness-critical rather than merely useful.
 
-Document this next to the override.
+**RESTHeart Cloud flow:** set `products.init-enabled: false` in the static config. When a service enables payments, call `StripeProductsInitService.init(dbName)` programmatically. The service creates collections, indexes and schema on the given database — idempotent, same rules as the automatic initializer.
 
 ---
 
@@ -643,6 +650,9 @@ Both modes ship in 9.8.0, so this is one milestone rather than a follow-up. Size
 
 **Completing it (~3 issues)**
 Refunds and disputes into the ledger · Stripe Tax and shipping options · order-confirmation and refund notifications · optional stock check
+
+**Multi-tenancy (~1 issue)**
+`StripeProductsInitService` for on-demand initialization · `rh-stripe-products-disabled` request parameter · `init-enabled` config flag
 
 Smaller than the subscriptions mode was, because the read side is not written at all.
 
