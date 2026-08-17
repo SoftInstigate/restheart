@@ -22,10 +22,14 @@ class StripeConfigDataTest {
                 "gold", new PlanConfig("price_monthly", "price_annual", 30,
                         new SeatsConfig(SeatsMode.CAPPED, 10), Map.of("max-projects", 50)));
 
-        return new StripeConfigData(
-                "sk_test_x", "whsec_x", plans, "free", 0,
-                "restheart", "teams", "https://x/success", "https://x/cancel", "https://x/portal",
+        var subscriptions = new SubscriptionsConfig(
+                true, plans, "free", 0,
+                "https://x/success", "https://x/cancel", "https://x/portal",
                 Map.of());
+
+        return new StripeConfigData(
+                "sk_test_x", "whsec_x", "restheart", "teams",
+                subscriptions, null);
     }
 
     @Test
@@ -86,9 +90,28 @@ class StripeConfigDataTest {
     void isLiveMode_trueOnlyForLiveSecretKey() {
         assertFalse(conf().isLiveMode()); // sk_test_x
 
+        var subscriptions = new SubscriptionsConfig(
+                true, Map.of(), "free", 0, "", "", "", Map.of());
+
         var liveConf = new StripeConfigData(
-                "sk_live_x", "whsec_x", Map.of(), "free", 0,
-                "restheart", "teams", "", "", "", Map.of());
+                "sk_live_x", "whsec_x", "restheart", "teams",
+                subscriptions, null);
         assertTrue(liveConf.isLiveMode());
+    }
+
+    @Test
+    void nullSubscriptions_returnsSafeDefaults() {
+        var conf = new StripeConfigData(
+                "sk_test_x", "whsec_x", "restheart", "teams",
+                null, null);
+
+        assertTrue(conf.plans().isEmpty());
+        assertNull(conf.defaultPlan());
+        assertEquals(0, conf.defaultTrialPeriodDays());
+        assertEquals("", conf.successUrl());
+        assertNull(conf.plan("any"));
+        assertNull(conf.priceId("any", "month"));
+        assertTrue(conf.byPriceId("any").isEmpty());
+        assertEquals(0, conf.effectiveTrialPeriodDays("any"));
     }
 }

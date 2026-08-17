@@ -501,51 +501,94 @@ stripeConfig:
   # restheart-accounts writes them.
   teams-collection: teams
 
-  # Plan id assigned to an entity with no subscription. Must name a key
-  # declared under 'plans' below.
-  default-plan: free
-  # Trial days used when a plan does not declare its own trial-period-days.
-  default-trial-period-days: 0
+  subscriptions:
+    enabled: true
+    # Plan id assigned to an entity with no subscription. Must name a key
+    # declared under 'plans' below.
+    default-plan: free
+    # Trial days used when a plan does not declare its own trial-period-days.
+    default-trial-period-days: 0
 
-  success-url: "https://app.example.com/billing?success=true"
-  cancel-url: "https://app.example.com/billing?canceled=true"
-  portal-return-url: "https://app.example.com/billing"
+    success-url: "https://app.example.com/billing?success=true"
+    cancel-url: "https://app.example.com/billing?canceled=true"
+    portal-return-url: "https://app.example.com/billing"
 
-  # The plan catalog. Display data (name, description, price) is not
-  # configured here - it is read from the Stripe Product/Price the price
-  # ids point at (GET /stripe/plans). Configuration carries only what this
-  # module must enforce.
-  plans:
-    free:
-      seats:
-        mode: capped
-        max: 1
-    # gold:
-    #   price-id-monthly: price_xxx
-    #   price-id-annual:  price_yyy
-    #   trial-period-days: 30
-    #   seats:
-    #     mode: capped   # capped | per-seat | unlimited
-    #     max: 10
-    #   limits:
-    #     max-projects: 50
+    # The plan catalog. Display data (name, description, price) is not
+    # configured here - it is read from the Stripe Product/Price the price
+    # ids point at (GET /stripe/plans). Configuration carries only what this
+    # module must enforce.
+    plans:
+      free:
+        seats:
+          mode: capped
+          max: 1
+      # gold:
+      #   price-id-monthly: price_xxx
+      #   price-id-annual:  price_yyy
+      #   trial-period-days: 30
+      #   seats:
+      #     mode: capped   # capped | per-seat | unlimited
+      #     max: 10
+      #   limits:
+      #     max-projects: 50
 
-  # payment-failed and trial-will-end default to disabled: Stripe can send
-  # its own equivalent email from the Dashboard ("Subscriptions and
-  # emails"), and duplication cannot be detected at runtime. Enabling one
-  # here means turning the matching Stripe dashboard email off.
-  # notifications:
-  #   payment-failed:        { enabled: false }
-  #   trial-will-end:        { enabled: false }
-  #   subscription-canceled: { enabled: true }
-  #   over-limit:            { enabled: true }
+    # payment-failed and trial-will-end default to disabled: Stripe can send
+    # its own equivalent email from the Dashboard ("Subscriptions and
+    # emails"), and duplication cannot be detected at runtime. Enabling one
+    # here means turning the matching Stripe dashboard email off.
+    # notifications:
+    #   payment-failed:        { enabled: false }
+    #   trial-will-end:        { enabled: false }
+    #   subscription-canceled: { enabled: true }
+    #   over-limit:            { enabled: true }
 
-  # Custom email template paths (null = use built-in templates)
-  # templates:
-  #   payment-failed:        etc/email-templates/stripe/payment-failed.html
-  #   trial-will-end:        etc/email-templates/stripe/trial-will-end.html
-  #   subscription-canceled: etc/email-templates/stripe/subscription-canceled.html
-  #   over-limit:            etc/email-templates/stripe/over-limit.html
+    # Custom email template paths (null = use built-in templates)
+    # templates:
+    #   payment-failed:        etc/email-templates/stripe/payment-failed.html
+    #   trial-will-end:        etc/email-templates/stripe/trial-will-end.html
+    #   subscription-canceled: etc/email-templates/stripe/subscription-canceled.html
+    #   over-limit:            etc/email-templates/stripe/over-limit.html
+
+  products:
+    enabled: false
+    # Set to false to skip automatic init; use StripeProductsInitService on demand.
+    init-enabled: true
+
+    catalog-collection: catalog
+    orders-collection: orders
+    transactions-collection: transactions
+    # inventory-collection: inventory   # omit to disable stock checks entirely
+
+    default-currency: eur
+    # User-document field holding the buyer's email; omit if users have none.
+    # Guests always supply it in the request body.
+    buyer-email-field: _id
+    # Stripe-issued invoices for team-paid orders; guests always get a receipt.
+    invoice-team-orders: true
+    collect-tax-id: true
+
+    success-url: "https://shop.example.com/done?session={CHECKOUT_SESSION_ID}"
+    cancel-url: "https://shop.example.com/cart"
+
+    session-expires-minutes: 60
+    max-line-items: 50
+    max-quantity-per-line: 100
+
+    # Stripe Tax. false => amounts are taken as final and tax is the deployment's problem.
+    automatic-tax: true
+
+    # Offered for carts containing a physical product.
+    # shipping-options:
+    #   - display-name: Standard
+    #     amount: 500
+    #     delivery-estimate-days: { minimum: 3, maximum: 5 }
+    #   - display-name: Express
+    #     amount: 1500
+    #     delivery-estimate-days: { minimum: 1, maximum: 2 }
+
+    # notifications:
+    #   order-confirmed: { enabled: true }
+    #   order-refunded:  { enabled: true }
 
 stripeService:
   enabled: false

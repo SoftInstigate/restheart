@@ -19,8 +19,10 @@
  */
 package org.restheart.stripe;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.restheart.configuration.Configuration;
@@ -31,9 +33,11 @@ import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.NotificationConfig;
 import org.restheart.plugins.stripe.PlanConfig;
+import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.SeatsConfig;
 import org.restheart.plugins.stripe.SeatsMode;
 import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.plugins.stripe.SubscriptionsConfig;
 
 /**
  * RESTHeart {@link Provider} that reads the {@code stripeConfig} YAML block and exposes
@@ -43,39 +47,12 @@ import org.restheart.plugins.stripe.StripeConfigData;
  * reason {@code accountsConfig} sources its own {@code db} from there — see
  * {@link StripeConfigData}'s class javadoc.
  *
- * <p>Required-field validation (non-blank {@code secret-key} / {@code webhook-secret})
- * is not performed here — it is {@code stripeInitializer}'s job, so that a blank value
- * fails startup with a message naming the missing keys rather than surfacing later as a
- * Stripe {@code 401} on the first checkout.
- *
- * <p>Expected YAML configuration:
- * <pre>{@code
- * stripeConfig:
- *   secret-key:                $(STRIPE_SECRET_KEY)
- *   webhook-secret:             $(STRIPE_WEBHOOK_SECRET)
- *   default-plan:               free
- *   default-trial-period-days:  0
- *   teams-collection:           teams
- *   success-url:                https://app.example.com/billing?success=true
- *   cancel-url:                 https://app.example.com/billing?canceled=true
- *   portal-return-url:          https://app.example.com/billing
- *   plans:
- *     free:
- *       seats: { mode: capped, max: 1 }
- *     gold:
- *       price-id-monthly: price_xxx
- *       price-id-annual:  price_yyy
- *       trial-period-days: 30
- *       seats: { mode: capped, max: 10 }
- *       limits: { max-projects: 50 }
- *   notifications:
- *     payment-failed:        { enabled: false }
- *     trial-will-end:        { enabled: false }
- *     subscription-canceled: { enabled: true }
- *     over-limit:             { enabled: true }
- *   templates:
- *     payment-failed:        etc/email-templates/stripe/payment-failed.html
- * }</pre>
+ * <p>Supports two YAML formats:
+ * <ul>
+ *   <li><b>Flat (legacy):</b> subscriptions fields at the top level of {@code stripeConfig}</li>
+ *   <li><b>Nested:</b> {@code subscriptions} and {@code products} sub-sections</li>
+ * </ul>
+ * If the {@code subscriptions} sub-section is present, it takes precedence over flat fields.
  *
  * <p>Inject into other plugins with {@code @Inject("stripeConfig")}.
  */
@@ -98,7 +75,38 @@ public class StripeConfig implements Provider<StripeConfigData> {
     @OnInit
     @SuppressWarnings("unchecked")
     public void onInit() {
-        var plansConf = config != null && config.get("plans") instanceof Map<?, ?> m
+        var subscriptions = parseSubscriptions();
+        var products = parseProducts();
+
+        data = new StripeConfigData(
+                configVal(config, "secret-key", ""),
+                configVal(config, "webhook-secret", ""),
+                db(),
+                configVal(config, "teams-collection", "teams"),
+                subscriptions,
+                products);
+    }
+
+    /**
+     * Parses subscriptions config. Supports both nested ({@code subscriptions: {...}})
+     * and flat (fields at top level) formats. Nested takes precedence.
+     */
+    @SuppressWarnings("unchecked")
+    private SubscriptionsConfig parseSubscriptions() {
+        Map<String, Object> subMap = null;
+        boolean nested = false;
+
+        // Check for nested format first
+        if (config.get("subscriptions") instanceof Map<?, ?> m) {
+            subMap = (Map<String, Object>) m;
+            nested = true;
+        }
+
+        // Source of truth for each field: nested sub-section or flat top level
+        var source = nested ? subMap : config;
+        var enabled = configVal(source, "enabled", true);
+
+        var plansConf = source.get("plans") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m
                 : Map.<String, Object>of();
 
@@ -109,10 +117,10 @@ public class StripeConfig implements Provider<StripeConfigData> {
             }
         }
 
-        var notificationsConf = config != null && config.get("notifications") instanceof Map<?, ?> m
+        var notificationsConf = source.get("notifications") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m
                 : Map.<String, Object>of();
-        var templatesConf = config != null && config.get("templates") instanceof Map<?, ?> m
+        var templatesConf = source.get("templates") instanceof Map<?, ?> m
                 ? (Map<String, Object>) m
                 : Map.<String, Object>of();
 
@@ -123,26 +131,82 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 NotificationConfig.SUBSCRIPTION_CANCELED,
                 NotificationConfig.OVER_LIMIT
         }) {
-            var enabled = NotificationConfig.defaultEnabled(name);
+            var nEnabled = NotificationConfig.defaultEnabled(name);
             if (notificationsConf.get(name) instanceof Map<?, ?> nm && nm.get("enabled") instanceof Boolean b) {
-                enabled = b;
+                nEnabled = b;
             }
             var template = templatesConf.get(name) instanceof String s && !s.isBlank() ? s : null;
-            notifications.put(name, new NotificationConfig(enabled, template));
+            notifications.put(name, new NotificationConfig(nEnabled, template));
         }
 
-        data = new StripeConfigData(
-                configVal(config, "secret-key", ""),
-                configVal(config, "webhook-secret", ""),
+        return new SubscriptionsConfig(
+                enabled,
                 plans,
-                configVal(config, "default-plan", "free"),
-                configVal(config, "default-trial-period-days", 0),
-                db(),
-                configVal(config, "teams-collection", "teams"),
-                configVal(config, "success-url", ""),
-                configVal(config, "cancel-url", ""),
-                configVal(config, "portal-return-url", ""),
+                configVal(source, "default-plan", "free"),
+                configVal(source, "default-trial-period-days", 0),
+                configVal(source, "success-url", ""),
+                configVal(source, "cancel-url", ""),
+                configVal(source, "portal-return-url", ""),
                 notifications);
+    }
+
+    /**
+     * Parses products config from the {@code products} sub-section.
+     * Returns {@code null} if the sub-section is absent (products mode not configured).
+     */
+    @SuppressWarnings("unchecked")
+    private ProductsConfig parseProducts() {
+        if (!(config.get("products") instanceof Map<?, ?> m)) {
+            return null;
+        }
+
+        var prodMap = (Map<String, Object>) m;
+        var enabled = configVal(prodMap, "enabled", false);
+
+        var shippingOptions = new ArrayList<ProductsConfig.ShippingOption>();
+        if (prodMap.get("shipping-options") instanceof List<?> list) {
+            for (var item : list) {
+                if (item instanceof Map<?, ?> shipMap) {
+                    var displayName = configVal(shipMap, "display-name", "");
+                    var amount = configVal(shipMap, "amount", 0L);
+                    var deliveryMap = shipMap.get("delivery-estimate-days") instanceof Map<?, ?> dm
+                            ? (Map<String, Object>) dm : Map.<String, Object>of();
+                    var delivery = new ProductsConfig.ShippingOption.DeliveryEstimateDays(
+                            configVal(deliveryMap, "minimum", 0),
+                            configVal(deliveryMap, "maximum", 0));
+                    shippingOptions.add(new ProductsConfig.ShippingOption(displayName, amount, delivery));
+                }
+            }
+        }
+
+        var orderNotifications = new HashMap<String, ProductsConfig.OrderNotificationConfig>();
+        if (prodMap.get("notifications") instanceof Map<?, ?> nm) {
+            for (var name : new String[]{"order-confirmed", "order-refunded"}) {
+                if (nm.get(name) instanceof Map<?, ?> onm && onm.get("enabled") instanceof Boolean b) {
+                    orderNotifications.put(name, new ProductsConfig.OrderNotificationConfig(b));
+                }
+            }
+        }
+
+        return new ProductsConfig(
+                enabled,
+                configVal(prodMap, "init-enabled", true),
+                configVal(prodMap, "catalog-collection", "catalog"),
+                configVal(prodMap, "orders-collection", "orders"),
+                configVal(prodMap, "transactions-collection", "transactions"),
+                configVal(prodMap, "inventory-collection", (String) null),
+                configVal(prodMap, "default-currency", "eur"),
+                configVal(prodMap, "buyer-email-field", "_id"),
+                configVal(prodMap, "invoice-team-orders", true),
+                configVal(prodMap, "collect-tax-id", true),
+                configVal(prodMap, "success-url", ""),
+                configVal(prodMap, "cancel-url", ""),
+                configVal(prodMap, "session-expires-minutes", 60),
+                configVal(prodMap, "max-line-items", 50),
+                configVal(prodMap, "max-quantity-per-line", 100),
+                configVal(prodMap, "automatic-tax", true),
+                shippingOptions,
+                orderNotifications);
     }
 
     @SuppressWarnings("unchecked")
