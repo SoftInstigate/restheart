@@ -203,7 +203,17 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return;
         }
 
-        // 4. Resolve currency and compute totals
+        // 4. Check inventory (optional)
+        if (products.inventoryCollection() != null) {
+            try {
+                checkInventory(catalogItems, requestedItems, products, request);
+            } catch (CatalogReader.CatalogValidationException e) {
+                reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+                return;
+            }
+        }
+
+        // 5. Resolve currency and compute totals
         var catalogMap = new LinkedHashMap<String, CatalogItem>();
         for (var item : catalogItems) {
             catalogMap.put(item.id(), item);
@@ -484,6 +494,45 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     private static void reject(MongoResponse response, int status, String message) {
         response.setInError(status, message);
         LOGGER.warn("[stripe] order creation rejected: {}", message);
+    }
+
+    /**
+     * Checks inventory for physical products. Refuses if available stock is below requested quantity.
+     */
+    private void checkInventory(java.util.List<CatalogItem> catalogItems,
+                                 java.util.List<RequestedItem> requestedItems,
+                                 ProductsConfig products,
+                                 MongoRequest request) throws CatalogReader.CatalogValidationException {
+        var inventoryCol = mclient.getDatabase(conf.db())
+                .getCollection(products.inventoryCollection(), org.bson.BsonDocument.class);
+
+        var requestedMap = new java.util.LinkedHashMap<String, Integer>();
+        for (var item : requestedItems) {
+            requestedMap.merge(item.productId(), item.quantity(), Integer::sum);
+        }
+
+        for (var catalogItem : catalogItems) {
+            if (!catalogItem.isPhysical()) {
+                continue;
+            }
+
+            var requested = requestedMap.getOrDefault(catalogItem.id(), 0);
+            if (requested <= 0) {
+                continue;
+            }
+
+            var inventoryDoc = inventoryCol.find(com.mongodb.client.model.Filters.eq("_id", catalogItem.id())).first();
+            if (inventoryDoc == null) {
+                // No inventory record = unlimited stock
+                continue;
+            }
+
+            var available = inventoryDoc.getInt32("available").getValue();
+            if (available < requested) {
+                throw new CatalogReader.CatalogValidationException(
+                        "product %s has %d available but %d requested".formatted(catalogItem.id(), available, requested));
+            }
+        }
     }
 
     private record RequestedItem(String productId, int quantity) {}
