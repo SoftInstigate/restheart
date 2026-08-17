@@ -380,9 +380,9 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 .append("amount_total", new BsonInt64(amountSubtotal))
                 .append("amount_refunded", new BsonInt64(0))
                 .append("shipping_address", BsonNull.VALUE)
-                .append("created_at", new BsonDocument().append("$date", new BsonInt64(now)))
+                .append("created_at", new org.bson.BsonDateTime(now))
                 .append("paid_at", BsonNull.VALUE)
-                .append("expires_at", new BsonDocument().append("$date", new BsonInt64(expiresAt)));
+                .append("expires_at", new org.bson.BsonDateTime(expiresAt));
 
         // 8. Replace request content with order document
         request.setContent(order);
@@ -413,6 +413,12 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var account = request.getAuthenticatedAccount();
         if (account == null) {
             return null;
+        }
+        // The principal name is the one identifier every account type carries. A JWT issued by
+        // restheart-accounts has no "_id" claim — the identity is in "sub" — so reading "_id"
+        // off the properties would silently make every authenticated buyer look like a guest.
+        if (account.getPrincipal() != null && account.getPrincipal().getName() != null) {
+            return account.getPrincipal().getName();
         }
         if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
             var props = withProperties.propertiesAsMap();
@@ -459,12 +465,15 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
             var props = withProperties.propertiesAsMap();
             if (props != null && props.get("team") instanceof Map<?, ?> teamMap) {
-                var teamId = teamMap.get("_id") != null ? teamMap.get("_id") : teamMap.get("id");
+                // The claim carries {"$oid": "<hex>"}, which toString()s to "{$oid=<hex>}" —
+                // ObjectId would reject that, failing every authenticated order.
+                var teamId = org.restheart.stripe.util.StripeIds.fromClaim(
+                        teamMap.get("_id") != null ? teamMap.get("_id") : teamMap.get("id"));
                 var stripeCustomerId = teamMap.get("stripe_customer_id");
 
                 return new BsonDocument()
                         .append("type", new BsonString("team"))
-                        .append("id", teamId != null ? new BsonObjectId(new ObjectId(teamId.toString())) : BsonNull.VALUE)
+                        .append("id", teamId != null ? new BsonObjectId(new ObjectId(teamId)) : BsonNull.VALUE)
                         .append("stripe_customer_id", stripeCustomerId != null
                                 ? new BsonString(stripeCustomerId.toString())
                                 : BsonNull.VALUE);

@@ -105,6 +105,7 @@ public class StripeWebhookService implements ByteArrayService {
 
     @OnInit
     public void onInit() {
+        LOGGER.info("[stripe] StripeWebhookService.onInit: starting");
         aclRegistry.registerAllow(r -> "/stripe/webhook".equals(r.getPath()) && (r.isPost() || r.isOptions()));
 
         // Resolve email sender softly

@@ -67,6 +67,7 @@ public class OrderEventHandler implements StripeEventHandler {
 
     public OrderEventHandler(EmailSender emailSender) {
         this.emailSender = emailSender;
+        LOGGER.info("[stripe] OrderEventHandler created");
     }
 
     @Override
@@ -82,10 +83,15 @@ public class OrderEventHandler implements StripeEventHandler {
 
     @Override
     public void handle(Event event, StripeEventContext ctx) throws Exception {
+        LOGGER.info("[stripe] OrderEventHandler.handle: called with event type={}", event.getType());
         var products = ctx.conf().products();
+        LOGGER.info("[stripe] OrderEventHandler.handle: products={}, products.enabled={}", products, products != null ? products.enabled() : "N/A");
         if (products == null || !products.enabled()) {
+            LOGGER.warn("[stripe] OrderEventHandler: products mode not enabled, skipping");
             return;
         }
+
+        LOGGER.info("[stripe] OrderEventHandler: processing event type={}", event.getType());
 
         switch (event.getType()) {
             case "checkout.session.completed" -> handleSessionCompleted(event, ctx, products);
@@ -129,13 +135,17 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
+        LOGGER.info("[stripe] handleAsyncPaymentSucceeded: starting");
         var session = deserialize(event, Session.class);
         if (session == null) {
+            LOGGER.info("[stripe] handleAsyncPaymentSucceeded: session is null, trying fallback extraction");
             // Fallback: extract directly from JSON when SDK deserialization fails (API version mismatch)
             var data = extractSessionData(event);
             if (data == null) {
+                LOGGER.warn("[stripe] handleAsyncPaymentSucceeded: fallback extraction failed");
                 return;
             }
+            LOGGER.info("[stripe] handleAsyncPaymentSucceeded: extracted sessionId={}, amountTotal={}", data.sessionId, data.amountTotal);
             markAsPaid(data.sessionId, data.amountTotal, data.currency,
                     data.paymentIntent, null, event, ctx, products);
             return;
@@ -312,6 +322,8 @@ public class OrderEventHandler implements StripeEventHandler {
                             String paymentIntent,
                             com.stripe.model.checkout.Session.CustomerDetails customerDetails,
                             Event event, StripeEventContext ctx, ProductsConfig products) {
+        LOGGER.info("[stripe] markAsPaid: sessionId={}, amountTotal={}, currency={}", sessionId, amountTotal, currency);
+
         var ordersCol = ordersCollection(ctx, products);
         var transactionsCol = transactionsCollection(ctx, products);
 
@@ -319,6 +331,8 @@ public class OrderEventHandler implements StripeEventHandler {
         var filter = Filters.and(
                 Filters.eq("stripe_session_id", sessionId),
                 Filters.eq("status", "pending_payment"));
+
+        LOGGER.info("[stripe] markAsPaid: looking for order with filter={}", filter);
 
         // Build update
         var now = System.currentTimeMillis();
@@ -343,9 +357,11 @@ public class OrderEventHandler implements StripeEventHandler {
 
         var result = ordersCol.findOneAndUpdate(filter, new BsonDocument("$set", updateDoc));
         if (result == null) {
-            LOGGER.debug("[stripe] markAsPaid skipped — session={} not in pending_payment", sessionId);
+            LOGGER.warn("[stripe] markAsPaid skipped — session={} not in pending_payment", sessionId);
             return;
         }
+
+        LOGGER.info("[stripe] markAsPaid: found and updating order");
 
         // Append payment transaction to ledger
         var orderId = result.getObjectId("_id").getValue();
@@ -366,12 +382,15 @@ public class OrderEventHandler implements StripeEventHandler {
     private static SessionData extractSessionData(Event event) {
         try {
             var rawJson = event.getDataObjectDeserializer().getRawJson();
+            LOGGER.info("[stripe] extractSessionData: rawJson={}", rawJson);
             if (rawJson == null || rawJson.isBlank()) {
+                LOGGER.warn("[stripe] extractSessionData: rawJson is null or blank");
                 return null;
             }
 
             var parser = com.google.gson.JsonParser.parseString(rawJson);
             if (!parser.isJsonObject()) {
+                LOGGER.warn("[stripe] extractSessionData: parser is not a JSON object");
                 return null;
             }
             var obj = parser.getAsJsonObject();
@@ -385,9 +404,12 @@ public class OrderEventHandler implements StripeEventHandler {
             var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
                     ? obj.get("payment_intent").getAsString() : null;
 
+            LOGGER.info("[stripe] extractSessionData: sessionId={}, amountTotal={}, currency={}, paymentIntent={}",
+                    sessionId, amountTotal, currency, paymentIntent);
+
             return new SessionData(sessionId, amountTotal, currency, paymentIntent);
         } catch (Exception e) {
-            LOGGER.warn("[stripe] failed to extract session data from event: {}", e.getMessage());
+            LOGGER.error("[stripe] failed to extract session data from event: {}", e.getMessage(), e);
             return null;
         }
     }
