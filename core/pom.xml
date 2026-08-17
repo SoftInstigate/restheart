@@ -17,6 +17,11 @@
          module end in 'IT'. Override to run a subset, e.g. only the Karate suite:
              mvn verify -Pmongodb -Dit.includes=**/RunnerIT.java -->
     <it.includes>**/*IT.java</it.includes>
+    <!-- Whether the integration-test phases start/stop the MongoDB container and the RESTHeart
+         server. Defaults to skipITs, i.e. they run whenever the ITs run. Set to true to reuse a
+         MongoDB and a RESTHeart that are already running, so the tests can be re-run without
+         rebuilding — see CONTRIBUTING.md. -->
+    <skipTestEnv>${skipITs}</skipTestEnv>
   </properties>
 
   <groupId>org.restheart</groupId>
@@ -438,7 +443,7 @@
             <groupId>io.fabric8</groupId>
             <artifactId>docker-maven-plugin</artifactId>
             <configuration>
-              <skip>${skipITs}</skip>
+              <skip>${skipTestEnv}</skip>
               <showLogs>false</showLogs>
               <removeVolumes>true</removeVolumes>
               <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
@@ -514,7 +519,7 @@
                 <id>start-server</id>
                 <phase>pre-integration-test</phase>
                 <configuration>
-                  <skip>${skipITs}</skip>
+                  <skip>${skipTestEnv}</skip>
                   <target>
                     <ant antfile="./build.xml" target="start-server" />
                   </target>
@@ -527,7 +532,7 @@
                 <id>stop-server</id>
                 <phase>post-integration-test</phase>
                 <configuration>
-                  <skip>${skipITs}</skip>
+                  <skip>${skipTestEnv}</skip>
                   <target>
                     <delete file="./target/plugins/restheart-test-plugins.jar" />
                     <echo level="info">***** Stopping RESTHeart process...</echo>

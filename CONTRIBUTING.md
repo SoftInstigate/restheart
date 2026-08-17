@@ -120,6 +120,40 @@ Note that features are not fully independent: some rely on data created by other
 
 Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
 
+### Re-run tests without rebuilding
+
+Each `verify` rebuilds, then starts MongoDB and RESTHeart, runs the tests, and shuts both down. When iterating on a feature file that whole cycle is mostly waste.
+
+First, drop `clean` — the build is incremental, so unchanged sources are not recompiled:
+
+```bash
+./mvnw verify -o -DskipUTs -DskipUpdateLicense=true -Dit.includes=**/RunnerIT.java
+```
+
+To skip the rebuild entirely, keep MongoDB and RESTHeart running between runs and tell Maven not to manage them with `-DskipTestEnv=true`.
+
+Start the environment once:
+
+```bash
+docker run -d --rm --name rh-mongo -p 27017:27017 mongo:8.3 --bind_ip_all --replSet rs0
+docker exec rh-mongo mongosh --eval 'rs.initiate()'
+
+cd core && bin/start.sh -o src/test/resources/etc/conf-overrides.yml --fork
+```
+
+Then re-run the tests as many times as needed, invoking failsafe directly so nothing before `integration-test` executes:
+
+```bash
+./mvnw -pl core failsafe:integration-test failsafe:verify \
+  -DskipTestEnv=true \
+  -Dit.includes=**/RunnerIT.java \
+  -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
+```
+
+Two caveats. Feature files and `conf-overrides.yml` are test *resources*, so after editing them run `./mvnw -pl core process-test-resources` to copy them into `target/test-classes` — failsafe reads them from there, not from `src`. And changes to Java under `commons/`, `security/` or any plugin module do **not** reach the running server, which is executing the already-built `core/target/restheart.jar`: those need a real build and a server restart.
+
+Stop the environment with `core/bin/stop.sh` and `docker stop rh-mongo`.
+
 ### Test against a specific MongoDB version
 
 ```bash
