@@ -38,10 +38,15 @@ import java.util.Optional;
  * {@code stripeConfig.db} key: two independent settings could drift apart, and the
  * failure is silent — checkout succeeds, the webhook updates a document, and the
  * running application never sees the plan change.
+ *
+ * <p>The config is restructured into {@code subscriptions} and {@code products}
+ * sub-sections. For backward compatibility, subscriptions fields can also be specified
+ * at the top level (flat format). If the {@code subscriptions} sub-section is present,
+ * it takes precedence.
  */
 public record StripeConfigData(
 
-        // ── Stripe API credentials ──────────────────────────────────────────────
+        // ── Stripe API credentials (shared) ─────────────────────────────────
 
         /** Stripe secret key ({@code sk_test_...} or {@code sk_live_...}). */
         String secretKey,
@@ -49,18 +54,7 @@ public record StripeConfigData(
         /** Webhook signing secret ({@code whsec_...}). */
         String webhookSecret,
 
-        // ── Plan catalog ─────────────────────────────────────────────────────────
-
-        /** The configured plan catalog, keyed by plan id. Never {@code null}. */
-        Map<String, PlanConfig> plans,
-
-        /** The plan id assigned to an entity with no subscription. Must name a key in {@link #plans}. */
-        String defaultPlan,
-
-        /** Trial days used when a plan does not declare its own {@link PlanConfig#trialPeriodDays()}. */
-        int defaultTrialPeriodDays,
-
-        // ── MongoDB ───────────────────────────────────────────────────────────────
+        // ── MongoDB (shared, from restheart-accounts) ───────────────────────
 
         /** MongoDB database containing the teams collection, sourced from {@code mongoRealmAuthenticator}. */
         String db,
@@ -68,91 +62,118 @@ public record StripeConfigData(
         /** Name of the teams collection. Default: {@code "teams"}. */
         String teamsCollection,
 
-        // ── URLs ──────────────────────────────────────────────────────────────────
+        // ── Mode sub-configs ────────────────────────────────────────────────
 
-        /** Stripe Checkout success redirect URL. */
-        String successUrl,
+        /** Subscriptions mode configuration. */
+        SubscriptionsConfig subscriptions,
 
-        /** Stripe Checkout cancel redirect URL. */
-        String cancelUrl,
-
-        /** Customer Portal return URL. */
-        String portalReturnUrl,
-
-        // ── Billing notifications ────────────────────────────────────────────────
-
-        /** Notification configuration, keyed by name — see {@link NotificationConfig}. Never {@code null}. */
-        Map<String, NotificationConfig> notifications) {
+        /** Products mode configuration. */
+        ProductsConfig products) {
 
     /** @return {@code true} if {@link #secretKey()} is a live-mode key ({@code sk_live_...}). */
     public boolean isLiveMode() {
         return secretKey != null && secretKey.startsWith("sk_live_");
     }
 
+    // ── Backward-compatible convenience methods (delegate to subscriptions) ──
+
     /** @return the configured plan, or {@code null} if {@code planId} is not in the catalog. */
     public PlanConfig plan(String planId) {
-        return planId == null ? null : plans.get(planId);
+        return subscriptions == null ? null : subscriptions.plan(planId);
     }
 
     /**
      * @param planId   a configured plan id
      * @param interval {@code "month"} or {@code "year"}
-     * @return the Stripe price id for that plan and interval, or {@code null} if the
-     *         plan is unknown or has no price for that interval
+     * @return the Stripe price id for that plan and interval, or {@code null}
      */
     public String priceId(String planId, String interval) {
-        var plan = plan(planId);
-        return plan == null ? null : plan.priceId(interval);
+        return subscriptions == null ? null : subscriptions.priceId(planId, interval);
     }
 
     /**
-     * Resolves a Stripe price id back to the plan it belongs to. Iterates the
-     * (typically small) configured catalog — this runs on the webhook path, never
-     * on the request hot path, so no reverse index is precomputed or cached.
+     * Resolves a Stripe price id back to the plan it belongs to.
      *
      * @param priceId a Stripe price id as carried by a subscription item
-     * @return the matching plan and interval, or empty if the price id is not in
-     *         the configured catalog — see {@code TeamRepository} on why an unknown
-     *         price id must not resolve to {@link #defaultPlan()}
+     * @return the matching plan and interval, or empty
      */
     public Optional<PriceAttribution> byPriceId(String priceId) {
-        if (priceId == null || priceId.isBlank()) {
-            return Optional.empty();
-        }
-
-        for (var entry : plans.entrySet()) {
-            var plan = entry.getValue();
-            if (priceId.equals(plan.priceIdMonthly())) {
-                return Optional.of(new PriceAttribution(entry.getKey(), "month"));
-            }
-            if (priceId.equals(plan.priceIdAnnual())) {
-                return Optional.of(new PriceAttribution(entry.getKey(), "year"));
-            }
-        }
-
-        return Optional.empty();
+        return subscriptions == null ? Optional.empty() : subscriptions.byPriceId(priceId);
     }
 
     /**
      * @param planId a configured plan id
-     * @return the effective trial period days for that plan: {@link PlanConfig#trialPeriodDays()}
-     *         if declared, otherwise {@link #defaultTrialPeriodDays()}
+     * @return the effective trial period days for that plan
      */
     public int effectiveTrialPeriodDays(String planId) {
-        var plan = plan(planId);
-        return plan != null && plan.trialPeriodDays() != null
-                ? plan.trialPeriodDays()
-                : defaultTrialPeriodDays;
+        return subscriptions == null ? 0 : subscriptions.effectiveTrialPeriodDays(planId);
     }
 
     /**
-     * @param name a notification name, see {@link NotificationConfig}
-     * @return the configured notification, falling back to a default-shaped one with
-     *         the name's default {@code enabled} and no template override, if not
-     *         explicitly configured
+     * @param name a notification name
+     * @return the configured notification, falling back to a default-shaped one
      */
     public NotificationConfig notification(String name) {
-        var n = notifications.get(name);
-        return n != null ? n : new NotificationConfig(NotificationConfig.defaultEnabled(name), null);
+        return subscriptions == null
+                ? new NotificationConfig(NotificationConfig.defaultEnabled(name), null)
+                : subscriptions.notification(name);
+    }
+
+    // ── Deprecated accessors for flat-format backward compatibility ─────────
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public Map<String, PlanConfig> plans() {
+        return subscriptions == null ? Map.of() : subscriptions.plans();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public String defaultPlan() {
+        return subscriptions == null ? null : subscriptions.defaultPlan();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public int defaultTrialPeriodDays() {
+        return subscriptions == null ? 0 : subscriptions.defaultTrialPeriodDays();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public String successUrl() {
+        return subscriptions == null ? "" : subscriptions.successUrl();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public String cancelUrl() {
+        return subscriptions == null ? "" : subscriptions.cancelUrl();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public String portalReturnUrl() {
+        return subscriptions == null ? "" : subscriptions.portalReturnUrl();
+    }
+
+    /**
+     * @deprecated use {@link #subscriptions()} and access fields from there.
+     */
+    @Deprecated
+    public Map<String, NotificationConfig> notifications() {
+        return subscriptions == null ? Map.of() : subscriptions.notifications();
     }
 }

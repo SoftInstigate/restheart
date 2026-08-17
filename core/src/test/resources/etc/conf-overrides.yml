@@ -526,16 +526,17 @@
 /stripeConfig/enabled: true
 /stripeConfig/secret-key: sk_test_fake_key_for_tests_only
 /stripeConfig/webhook-secret: whsec_test_secret_for_karate_tests
-/stripeConfig/default-plan: free
-/stripeConfig/success-url: http://localhost:4200/billing?success=true
-/stripeConfig/cancel-url: http://localhost:4200/billing?canceled=true
-/stripeConfig/portal-return-url: http://localhost:4200/billing
-/stripeConfig/plans/free/seats/mode: capped
-/stripeConfig/plans/free/seats/max: 1
-/stripeConfig/plans/gold/price-id-monthly: price_test_gold_monthly
-/stripeConfig/plans/gold/price-id-annual: price_test_gold_annual
-/stripeConfig/plans/gold/seats/mode: capped
-/stripeConfig/plans/gold/seats/max: 10
+/stripeConfig/subscriptions/enabled: true
+/stripeConfig/subscriptions/default-plan: free
+/stripeConfig/subscriptions/success-url: http://localhost:4200/billing?success=true
+/stripeConfig/subscriptions/cancel-url: http://localhost:4200/billing?canceled=true
+/stripeConfig/subscriptions/portal-return-url: http://localhost:4200/billing
+/stripeConfig/subscriptions/plans/free/seats/mode: capped
+/stripeConfig/subscriptions/plans/free/seats/max: 1
+/stripeConfig/subscriptions/plans/gold/price-id-monthly: price_test_gold_monthly
+/stripeConfig/subscriptions/plans/gold/price-id-annual: price_test_gold_annual
+/stripeConfig/subscriptions/plans/gold/seats/mode: capped
+/stripeConfig/subscriptions/plans/gold/seats/max: 10
 
 /stripeService/enabled: true
 /stripeInitializer/enabled: true

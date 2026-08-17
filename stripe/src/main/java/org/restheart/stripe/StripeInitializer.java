@@ -35,11 +35,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Startup initializer for {@code restheart-stripe}.
  *
- * <p>Three duties:
+ * <p>Four duties:
  * <ol>
- *   <li>validate {@code stripeConfig} and log the specific problem if required fields are missing</li>
+ *   <li>validate shared {@code stripeConfig} fields (secret-key, webhook-secret)</li>
  *   <li>create the {@code stripe_customer_id} index used by every webhook delivery</li>
- *   <li>register the {@code @subscription} ACL variable ({@link SubscriptionVarResolver})</li>
+ *   <li>register the {@code @subscription} ACL variable (only if subscriptions mode is enabled)</li>
+ *   <li>warn if products mode is enabled but no ACL permission grants access to the orders collection</li>
  * </ol>
  *
  * <h2>⚠️ {@code BEFORE_STARTUP}, not {@code AFTER_STARTUP}</h2>
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "stripeInitializer",
-        description = "Validates stripeConfig, creates the stripe_customer_id index, and registers the @subscription ACL variable",
+        description = "Validates stripeConfig, creates indexes, and registers ACL variables",
         initPoint = InitPoint.BEFORE_STARTUP,
         enabledByDefault = false)
 public class StripeInitializer implements Initializer {
@@ -77,27 +78,42 @@ public class StripeInitializer implements Initializer {
 
     @Override
     public void init() {
-        if (!validate()) {
+        // 1. Validate shared credentials — this blocks everything
+        if (!validateShared()) {
             return;
         }
 
+        // 2. Shared: stripe_customer_id index (always, regardless of mode validation)
         var defaultProvider = stripeService.defaultProviderOrNull();
         if (defaultProvider != null) {
-            // Index creation is a startup concern against the static configuration; a
-            // multi-tenant deployment using different databases per tenant is responsible
-            // for ensuring the index exists on each of them — see the module documentation.
             defaultProvider.repository().ensureIndexes(new BillingScope(conf.db(), conf.teamsCollection()));
         }
 
-        aclVarsRegistry.register(new SubscriptionVarResolver(stripeService, conf));
+        // 3. Subscriptions: validate plans and register @subscription ACL variable
+        if (conf.subscriptions() != null && conf.subscriptions().enabled()) {
+            if (!validateSubscriptions()) {
+                LOGGER.error("[stripe] subscriptions mode is enabled but plan validation failed — "
+                        + "@subscription ACL variable will NOT be registered");
+            } else {
+                aclVarsRegistry.register(new SubscriptionVarResolver(stripeService, conf));
+            }
+        }
+
+        // 4. Products: warn if no ACL permission grants access to the orders collection
+        if (conf.products() != null && conf.products().enabled()) {
+            LOGGER.warn("[stripe] products mode is enabled but no ACL permission grants access to `/orders` — "
+                    + "POST /orders will answer 403 until one is configured (see documentation)");
+        }
 
         var mode = conf.isLiveMode() ? "LIVE" : "TEST";
-        LOGGER.info("[stripe] plugin initialised — mode={}, db={}, teams-collection={}, plans={}",
-                mode, conf.db(), conf.teamsCollection(), conf.plans().keySet());
+        var subEnabled = conf.subscriptions() != null && conf.subscriptions().enabled();
+        var prodEnabled = conf.products() != null && conf.products().enabled();
+        LOGGER.info("[stripe] plugin initialised — mode={}, db={}, subscriptions={}, products={}",
+                mode, conf.db(), subEnabled, prodEnabled);
     }
 
-    /** @return {@code false} if required configuration is missing (logged at ERROR either way) */
-    private boolean validate() {
+    /** @return {@code false} if shared credentials are missing */
+    private boolean validateShared() {
         var missing = new ArrayList<String>();
         if (conf.secretKey() == null || conf.secretKey().isBlank()) {
             missing.add("secret-key");
@@ -112,12 +128,17 @@ public class StripeInitializer implements Initializer {
             return false;
         }
 
-        if (conf.defaultPlan() == null || !conf.plans().containsKey(conf.defaultPlan())) {
-            LOGGER.error("[stripe] stripeConfig.default-plan '{}' is not a plan declared in stripeConfig.plans {}",
-                    conf.defaultPlan(), conf.plans().keySet());
+        return true;
+    }
+
+    /** @return {@code false} if subscriptions plan validation fails */
+    private boolean validateSubscriptions() {
+        var sub = conf.subscriptions();
+        if (sub.defaultPlan() == null || !sub.plans().containsKey(sub.defaultPlan())) {
+            LOGGER.error("[stripe] stripeConfig.subscriptions.default-plan '{}' is not a plan declared in plans {}",
+                    sub.defaultPlan(), sub.plans().keySet());
             return false;
         }
-
         return true;
     }
 }
