@@ -34,6 +34,7 @@ import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.security.AclVarsRegistry;
 import org.restheart.stripe.acl.SubscriptionVarResolver;
+import org.restheart.stripe.products.OrderSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +165,7 @@ public class StripeInitializer implements Initializer {
     }
 
     /**
-     * Installs the products mode domain model: collections and indexes.
+     * Installs the products mode domain model: collections, indexes, and schema.
      * All operations are idempotent (create-if-absent).
      */
     private void installProductsDomainModel(ProductsConfig products) {
@@ -183,6 +184,9 @@ public class StripeInitializer implements Initializer {
 
         // Create transactions indexes
         createTransactionsIndexes(db, products);
+
+        // Install JSON schema for orders
+        installOrderSchema(db, products);
     }
 
     private void createCollectionIfAbsent(MongoDatabase db, String collectionName) {
@@ -292,6 +296,48 @@ public class StripeInitializer implements Initializer {
             } else {
                 LOGGER.error("[stripe] failed to create index 'order_id': {}", e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Installs the order JSON schema into the {@code _schemas} collection and
+     * sets the {@code jsonSchema} metadata on the orders collection.
+     */
+    private void installOrderSchema(MongoDatabase db, ProductsConfig products) {
+        var schemasCol = db.getCollection("_schemas", BsonDocument.class);
+
+        // Insert schema if absent
+        var existing = schemasCol.find(Filters.eq("_id", OrderSchema.SCHEMA_ID)).first();
+        if (existing == null) {
+            try {
+                var schemaDoc = OrderSchema.schema();
+                schemaDoc.append("_id", new BsonString(OrderSchema.SCHEMA_ID));
+                schemasCol.insertOne(schemaDoc);
+                LOGGER.info("[stripe] installed schema '{}' into _schemas", OrderSchema.SCHEMA_ID);
+            } catch (MongoException e) {
+                if (e.getCode() == 11000) {
+                    LOGGER.debug("[stripe] schema '{}' already exists", OrderSchema.SCHEMA_ID);
+                } else {
+                    LOGGER.error("[stripe] failed to install schema '{}': {}", OrderSchema.SCHEMA_ID, e.getMessage());
+                }
+            }
+        } else {
+            LOGGER.debug("[stripe] schema '{}' already exists", OrderSchema.SCHEMA_ID);
+        }
+
+        // Set collection metadata to reference the schema
+        var propsCol = db.getCollection("_properties", BsonDocument.class);
+        var propsId = "_properties." + products.ordersCollection();
+        var propsDoc = new BsonDocument()
+                .append("_id", new BsonString(propsId))
+                .append("jsonSchema", new BsonDocument()
+                        .append("schemaId", new BsonString(OrderSchema.SCHEMA_ID)));
+
+        try {
+            propsCol.replaceOne(Filters.eq("_id", propsId), propsDoc, new com.mongodb.client.model.ReplaceOptions().upsert(true));
+            LOGGER.info("[stripe] set jsonSchema metadata on '{}' collection", products.ordersCollection());
+        } catch (MongoException e) {
+            LOGGER.error("[stripe] failed to set jsonSchema metadata: {}", e.getMessage());
         }
     }
 }
