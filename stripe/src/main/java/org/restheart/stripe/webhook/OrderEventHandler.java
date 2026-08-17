@@ -101,18 +101,31 @@ public class OrderEventHandler implements StripeEventHandler {
 
     private void handleSessionCompleted(Event event, StripeEventContext ctx, ProductsConfig products) {
         var session = deserialize(event, Session.class);
-        if (session == null) {
+        if (session != null) {
+            if (!"paid".equals(session.getPaymentStatus())) {
+                LOGGER.info("[stripe] checkout.session.completed with status '{}' — leaving as pending_payment",
+                        session.getPaymentStatus());
+                return;
+            }
+            markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
+                    session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
             return;
         }
 
-        if (!"paid".equals(session.getPaymentStatus())) {
+        // Fallback: extract directly from JSON when SDK deserialization fails
+        var data = extractSessionData(event);
+        if (data == null) {
+            return;
+        }
+        // Check payment_status from raw JSON
+        var paymentStatus = extractPaymentStatus(event);
+        if (!"paid".equals(paymentStatus)) {
             LOGGER.info("[stripe] checkout.session.completed with status '{}' — leaving as pending_payment",
-                    session.getPaymentStatus());
+                    paymentStatus);
             return;
         }
-
-        markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
-                session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
+        markAsPaid(data.sessionId, data.amountTotal, data.currency,
+                data.paymentIntent, null, event, ctx, products);
     }
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -190,11 +203,25 @@ public class OrderEventHandler implements StripeEventHandler {
 
     private void handleChargeRefunded(Event event, StripeEventContext ctx, ProductsConfig products) {
         var charge = deserialize(event, Charge.class);
-        if (charge == null) {
-            return;
+        String paymentIntentId;
+        Long refundAmount;
+        String currency;
+
+        if (charge != null) {
+            paymentIntentId = charge.getPaymentIntent();
+            refundAmount = charge.getAmountRefunded() != null ? charge.getAmountRefunded() : 0L;
+            currency = charge.getCurrency() != null ? charge.getCurrency() : "eur";
+        } else {
+            // Fallback: extract from raw JSON
+            var data = extractChargeData(event);
+            if (data == null) {
+                return;
+            }
+            paymentIntentId = data.paymentIntent;
+            refundAmount = data.amountRefunded;
+            currency = data.currency;
         }
 
-        var paymentIntentId = charge.getPaymentIntent();
         if (paymentIntentId == null) {
             LOGGER.warn("[stripe] charge.refunded without payment_intent — skipping");
             return;
@@ -211,8 +238,7 @@ public class OrderEventHandler implements StripeEventHandler {
         }
 
         var orderId = order.getObjectId("_id").getValue();
-        var refundAmount = charge.getAmountRefunded() != null ? charge.getAmountRefunded() : 0L;
-        var currency = charge.getCurrency() != null ? charge.getCurrency() : "eur";
+        var cur = currency != null ? currency : "eur";
 
         // Update amount_refunded on order
         ordersCol.updateOne(
@@ -220,24 +246,41 @@ public class OrderEventHandler implements StripeEventHandler {
                 Updates.set("amount_refunded", refundAmount));
 
         // Append refund transaction to ledger
-        appendTransaction(transactionsCol, orderId, "refund", -refundAmount, currency,
-                charge.getId(), event.getId(), ctx.appliedAt());
+        appendTransaction(transactionsCol, orderId, "refund", -refundAmount, cur,
+                charge != null ? charge.getId() : null, event.getId(), ctx.appliedAt());
 
         LOGGER.info("[stripe] refund recorded — order={}, amount={}", orderId, refundAmount);
 
         // Send refund notification
         var buyerEmail = order.containsKey("buyer_email") && order.get("buyer_email").isString()
                 ? order.getString("buyer_email").getValue() : null;
-        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, currency, buyerEmail);
+        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, cur, buyerEmail);
     }
 
     private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
         var dispute = deserialize(event, Dispute.class);
-        if (dispute == null) {
-            return;
+        String paymentIntentId;
+        Long disputeAmount;
+        String currency;
+        String disputeId;
+
+        if (dispute != null) {
+            paymentIntentId = dispute.getPaymentIntent();
+            disputeAmount = dispute.getAmount() != null ? dispute.getAmount() : 0L;
+            currency = dispute.getCurrency() != null ? dispute.getCurrency() : "eur";
+            disputeId = dispute.getId();
+        } else {
+            // Fallback: extract from raw JSON
+            var data = extractDisputeData(event);
+            if (data == null) {
+                return;
+            }
+            paymentIntentId = data.paymentIntent;
+            disputeAmount = data.amount;
+            currency = data.currency;
+            disputeId = data.disputeId;
         }
 
-        var paymentIntentId = dispute.getPaymentIntent();
         if (paymentIntentId == null) {
             LOGGER.warn("[stripe] charge.dispute.created without payment_intent — skipping");
             return;
@@ -254,12 +297,11 @@ public class OrderEventHandler implements StripeEventHandler {
         }
 
         var orderId = order.getObjectId("_id").getValue();
-        var disputeAmount = dispute.getAmount() != null ? dispute.getAmount() : 0L;
-        var currency = dispute.getCurrency() != null ? dispute.getCurrency() : "eur";
+        var cur = currency != null ? currency : "eur";
 
         // Append dispute transaction to ledger
-        appendTransaction(transactionsCol, orderId, "dispute", disputeAmount, currency,
-                dispute.getId(), event.getId(), ctx.appliedAt());
+        appendTransaction(transactionsCol, orderId, "dispute", disputeAmount, cur,
+                disputeId, event.getId(), ctx.appliedAt());
 
         LOGGER.info("[stripe] dispute recorded — order={}, amount={}", orderId, disputeAmount);
     }
@@ -323,13 +365,6 @@ public class OrderEventHandler implements StripeEventHandler {
     /** Fallback extraction when Stripe SDK deserialization fails (API version mismatch). */
     private static SessionData extractSessionData(Event event) {
         try {
-            var dataObj = event.getData().getObject().get();
-            if (dataObj == null) {
-                return null;
-            }
-            var json = dataObj.toJson();
-            var parser = com.fasterxml.jackson.databind.ObjectMapper.class;
-            // Parse manually from the raw JSON
             var raw = event.getRawJsonObject();
             if (raw == null || !raw.has("data")) {
                 return null;
@@ -356,7 +391,88 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
+    /** Extracts payment_status from raw JSON for fallback handling. */
+    private static String extractPaymentStatus(Event event) {
+        try {
+            var raw = event.getRawJsonObject();
+            if (raw == null || !raw.has("data")) {
+                return null;
+            }
+            var data = raw.getAsJsonObject("data");
+            if (data == null || !data.has("object")) {
+                return null;
+            }
+            var obj = data.getAsJsonObject("object");
+            return obj.has("payment_status") && !obj.get("payment_status").isJsonNull()
+                    ? obj.get("payment_status").getAsString() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {}
+
+    /** Extracts charge data from raw JSON for fallback handling. */
+    private static ChargeData extractChargeData(Event event) {
+        try {
+            var raw = event.getRawJsonObject();
+            if (raw == null || !raw.has("data")) {
+                return null;
+            }
+            var data = raw.getAsJsonObject("data");
+            if (data == null || !data.has("object")) {
+                return null;
+            }
+            var obj = data.getAsJsonObject("object");
+
+            var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
+                    ? obj.get("payment_intent").getAsString() : null;
+            var amountRefunded = obj.has("amount_refunded") && !obj.get("amount_refunded").isJsonNull()
+                    ? obj.get("amount_refunded").getAsLong() : 0L;
+            var currency = obj.has("currency") && !obj.get("currency").isJsonNull()
+                    ? obj.get("currency").getAsString() : null;
+            var chargeId = obj.has("id") && !obj.get("id").isJsonNull()
+                    ? obj.get("id").getAsString() : null;
+
+            return new ChargeData(paymentIntent, amountRefunded, currency, chargeId);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] failed to extract charge data from event: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private record ChargeData(String paymentIntent, Long amountRefunded, String currency, String chargeId) {}
+
+    /** Extracts dispute data from raw JSON for fallback handling. */
+    private static DisputeData extractDisputeData(Event event) {
+        try {
+            var raw = event.getRawJsonObject();
+            if (raw == null || !raw.has("data")) {
+                return null;
+            }
+            var data = raw.getAsJsonObject("data");
+            if (data == null || !data.has("object")) {
+                return null;
+            }
+            var obj = data.getAsJsonObject("object");
+
+            var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
+                    ? obj.get("payment_intent").getAsString() : null;
+            var amount = obj.has("amount") && !obj.get("amount").isJsonNull()
+                    ? obj.get("amount").getAsLong() : 0L;
+            var currency = obj.has("currency") && !obj.get("currency").isJsonNull()
+                    ? obj.get("currency").getAsString() : null;
+            var disputeId = obj.has("id") && !obj.get("id").isJsonNull()
+                    ? obj.get("id").getAsString() : null;
+
+            return new DisputeData(paymentIntent, amount, currency, disputeId);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] failed to extract dispute data from event: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private record DisputeData(String paymentIntent, Long amount, String currency, String disputeId) {}
 
     private void appendTransaction(MongoCollection<BsonDocument> transactionsCol,
                                    ObjectId orderId, String type, long amount, String currency,
