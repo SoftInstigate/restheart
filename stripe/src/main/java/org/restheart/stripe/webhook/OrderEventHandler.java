@@ -182,13 +182,13 @@ public class OrderEventHandler implements StripeEventHandler {
             return;
         }
 
-        var orderId = order.getObjectId("_id");
+        var orderId = order.getObjectId("_id").getValue();
         var refundAmount = charge.getAmountRefunded() != null ? charge.getAmountRefunded() : 0L;
         var currency = charge.getCurrency() != null ? charge.getCurrency() : "eur";
 
         // Update amount_refunded on order
         ordersCol.updateOne(
-                Filters.eq("_id", orderId),
+                Filters.eq("_id", order.getObjectId("_id")),
                 Updates.set("amount_refunded", refundAmount));
 
         // Append refund transaction to ledger
@@ -220,7 +220,7 @@ public class OrderEventHandler implements StripeEventHandler {
             return;
         }
 
-        var orderId = order.getObjectId("_id");
+        var orderId = order.getObjectId("_id").getValue();
         var disputeAmount = dispute.getAmount() != null ? dispute.getAmount() : 0L;
         var currency = dispute.getCurrency() != null ? dispute.getCurrency() : "eur";
 
@@ -267,9 +267,9 @@ public class OrderEventHandler implements StripeEventHandler {
             updateDoc.append("buyer_email", new BsonString(session.getCustomerDetails().getEmail()));
         }
 
-        // Fill shipping_address
-        if (session.getShippingDetails() != null && session.getShippingDetails().getAddress() != null) {
-            var addr = session.getShippingDetails().getAddress();
+        // Fill shipping_address from customer details (if available)
+        if (session.getCustomerDetails() != null && session.getCustomerDetails().getAddress() != null) {
+            var addr = session.getCustomerDetails().getAddress();
             var addrDoc = new BsonDocument();
             if (addr.getLine1() != null) addrDoc.append("line1", new BsonString(addr.getLine1()));
             if (addr.getLine2() != null) addrDoc.append("line2", new BsonString(addr.getLine2()));
@@ -292,7 +292,7 @@ public class OrderEventHandler implements StripeEventHandler {
         }
 
         // Append payment transaction to ledger
-        var orderId = result.getObjectId("_id");
+        var orderId = result.getObjectId("_id").getValue();
         var amount = session.getAmountTotal() != null ? session.getAmountTotal() : 0L;
         var currency = session.getCurrency() != null ? session.getCurrency() : "eur";
 
