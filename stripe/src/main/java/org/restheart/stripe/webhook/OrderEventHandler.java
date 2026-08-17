@@ -365,15 +365,16 @@ public class OrderEventHandler implements StripeEventHandler {
     /** Fallback extraction when Stripe SDK deserialization fails (API version mismatch). */
     private static SessionData extractSessionData(Event event) {
         try {
-            var raw = event.getRawJsonObject();
-            if (raw == null || !raw.has("data")) {
+            var rawJson = event.getDataObjectDeserializer().getRawJson();
+            if (rawJson == null || rawJson.isBlank()) {
                 return null;
             }
-            var data = raw.getAsJsonObject("data");
-            if (data == null || !data.has("object")) {
+
+            var parser = com.google.gson.JsonParser.parseString(rawJson);
+            if (!parser.isJsonObject()) {
                 return null;
             }
-            var obj = data.getAsJsonObject("object");
+            var obj = parser.getAsJsonObject();
 
             var sessionId = obj.has("id") && !obj.get("id").isJsonNull()
                     ? obj.get("id").getAsString() : null;
@@ -394,15 +395,17 @@ public class OrderEventHandler implements StripeEventHandler {
     /** Extracts payment_status from raw JSON for fallback handling. */
     private static String extractPaymentStatus(Event event) {
         try {
-            var raw = event.getRawJsonObject();
-            if (raw == null || !raw.has("data")) {
+            var rawJson = event.getDataObjectDeserializer().getRawJson();
+            if (rawJson == null || rawJson.isBlank()) {
                 return null;
             }
-            var data = raw.getAsJsonObject("data");
-            if (data == null || !data.has("object")) {
+
+            var parser = com.google.gson.JsonParser.parseString(rawJson);
+            if (!parser.isJsonObject()) {
                 return null;
             }
-            var obj = data.getAsJsonObject("object");
+            var obj = parser.getAsJsonObject();
+
             return obj.has("payment_status") && !obj.get("payment_status").isJsonNull()
                     ? obj.get("payment_status").getAsString() : null;
         } catch (Exception e) {
@@ -415,15 +418,16 @@ public class OrderEventHandler implements StripeEventHandler {
     /** Extracts charge data from raw JSON for fallback handling. */
     private static ChargeData extractChargeData(Event event) {
         try {
-            var raw = event.getRawJsonObject();
-            if (raw == null || !raw.has("data")) {
+            var rawJson = event.getDataObjectDeserializer().getRawJson();
+            if (rawJson == null || rawJson.isBlank()) {
                 return null;
             }
-            var data = raw.getAsJsonObject("data");
-            if (data == null || !data.has("object")) {
+
+            var parser = com.google.gson.JsonParser.parseString(rawJson);
+            if (!parser.isJsonObject()) {
                 return null;
             }
-            var obj = data.getAsJsonObject("object");
+            var obj = parser.getAsJsonObject();
 
             var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
                     ? obj.get("payment_intent").getAsString() : null;
@@ -446,15 +450,16 @@ public class OrderEventHandler implements StripeEventHandler {
     /** Extracts dispute data from raw JSON for fallback handling. */
     private static DisputeData extractDisputeData(Event event) {
         try {
-            var raw = event.getRawJsonObject();
-            if (raw == null || !raw.has("data")) {
+            var rawJson = event.getDataObjectDeserializer().getRawJson();
+            if (rawJson == null || rawJson.isBlank()) {
                 return null;
             }
-            var data = raw.getAsJsonObject("data");
-            if (data == null || !data.has("object")) {
+
+            var parser = com.google.gson.JsonParser.parseString(rawJson);
+            if (!parser.isJsonObject()) {
                 return null;
             }
-            var obj = data.getAsJsonObject("object");
+            var obj = parser.getAsJsonObject();
 
             var paymentIntent = obj.has("payment_intent") && !obj.get("payment_intent").isJsonNull()
                     ? obj.get("payment_intent").getAsString() : null;
