@@ -29,6 +29,9 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailSender;
+import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.plugins.stripe.ProductsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,11 +55,19 @@ import com.stripe.model.checkout.Session;
  *   <li>{@code checkout.session.async_payment_succeeded} — mark as paid</li>
  *   <li>{@code checkout.session.async_payment_failed} — mark as failed</li>
  *   <li>{@code checkout.session.expired} — mark as expired</li>
+ *   <li>{@code charge.refunded} — append refund transaction, update amount_refunded</li>
+ *   <li>{@code charge.dispute.created} — append dispute transaction</li>
  * </ul>
  */
 public class OrderEventHandler implements StripeEventHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OrderEventHandler.class);
+
+    private final EmailSender emailSender;
+
+    public OrderEventHandler(EmailSender emailSender) {
+        this.emailSender = emailSender;
+    }
 
     @Override
     public Set<String> handledEventTypes() {
@@ -196,6 +207,11 @@ public class OrderEventHandler implements StripeEventHandler {
                 charge.getId(), event.getId(), ctx.appliedAt());
 
         LOGGER.info("[stripe] refund recorded — order={}, amount={}", orderId, refundAmount);
+
+        // Send refund notification
+        var buyerEmail = order.containsKey("buyer_email") && order.get("buyer_email").isString()
+                ? order.getString("buyer_email").getValue() : null;
+        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, currency, buyerEmail);
     }
 
     private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -309,6 +325,10 @@ public class OrderEventHandler implements StripeEventHandler {
         }
 
         LOGGER.info("[stripe] order marked as paid — id={}, session={}, amount={}", orderId, sessionId, amount);
+
+        // Send order confirmation notification
+        sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, currency,
+                session.getCustomerDetails() != null ? session.getCustomerDetails().getEmail() : null);
     }
 
     private void appendTransaction(MongoCollection<BsonDocument> transactionsCol,
@@ -361,5 +381,42 @@ public class OrderEventHandler implements StripeEventHandler {
             return null;
         }
         return (T) obj.get();
+    }
+
+    // ── Notifications ────────────────────────────────────────────────────────
+
+    private void sendOrderNotification(StripeEventContext ctx, ProductsConfig products, String name,
+                                       ObjectId orderId, long amount, String currency, String email) {
+        if (emailSender == null || !emailSender.isEnabled()) {
+            return;
+        }
+
+        var notification = products.orderNotifications() != null
+                ? products.orderNotifications().get(name)
+                : null;
+
+        if (notification == null || !notification.enabled()) {
+            return;
+        }
+
+        if (email == null || email.isBlank()) {
+            LOGGER.debug("[stripe] cannot send '{}' notification: no email for order {}", name, orderId);
+            return;
+        }
+
+        try {
+            var vars = new java.util.HashMap<String, String>();
+            vars.put("order-id", orderId.toHexString());
+            vars.put("amount", String.valueOf(amount));
+            vars.put("currency", currency);
+
+            var raw = EmailTemplateLoader.loadWithFallback(null, null, name + ".html");
+            var rendered = EmailRenderer.render(raw, vars, "en");
+
+            emailSender.sendEmailAsync(ctx.req(), email, email, rendered.subject(), rendered.htmlBody());
+            LOGGER.info("[stripe] sent '{}' notification for order {}", name, orderId);
+        } catch (Exception e) {
+            LOGGER.error("[stripe] failed to send '{}' notification for order {}: {}", name, orderId, e.getMessage());
+        }
     }
 }

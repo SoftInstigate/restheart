@@ -125,7 +125,7 @@ public class StripeWebhookService implements ByteArrayService {
         handlers.add(new SubscriptionEventHandler(catalogCache, emailSender));
 
         // Register order event handler (products mode)
-        handlers.add(new OrderEventHandler());
+        handlers.add(new OrderEventHandler(emailSender));
     }
 
     @Override
