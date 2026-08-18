@@ -62,6 +62,10 @@ import com.stripe.net.Webhook;
  *
  * <h2>Status codes</h2>
  * <ul>
+ *   <li>{@code 404} — {@code rh-stripe-subscriptions-disabled} is attached for this request;
+ *       see {@link RequestOverrides}. Stripe stops retrying on a {@code 4xx} it does not
+ *       recognise as transient, which is correct here — the tenant does not have this
+ *       endpoint.</li>
  *   <li>{@code 400} — signature verification failed, or no webhook secret is configured</li>
  *   <li>{@code 200} — verified event, whether handled, unhandled, or skipped as stale: Stripe
  *       must stop retrying an event that succeeded or that a newer update has superseded</li>
@@ -123,6 +127,10 @@ public class StripeWebhookService implements ByteArrayService {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             return;
         }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
+            return;
+        }
 
         var rawBody = req.getContentString();
         var sigHeader = req.getHeader(STRIPE_SIGNATURE_HEADER);
@@ -154,6 +162,7 @@ public class StripeWebhookService implements ByteArrayService {
                 conf,
                 stripeService.getSubscriptionOwnerProvider(),
                 RequestOverrides.scope(req, conf),
+                RequestOverrides.products(req, conf),
                 RequestOverrides.defaultPlan(req, conf),
                 Instant.ofEpochSecond(event.getCreated() != null ? event.getCreated() : Instant.now().getEpochSecond()),
                 mclient);

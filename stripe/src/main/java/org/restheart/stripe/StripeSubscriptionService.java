@@ -42,6 +42,9 @@ import org.restheart.utils.HttpStatus;
  *
  * <p>Reuses {@link SubscriptionView#build}, the same computation the {@code @subscription}
  * ACL variable uses, so this response and what the ACL plan gates enforce never disagree.
+ *
+ * <p>{@code 404} when {@code rh-stripe-subscriptions-disabled} is attached — see
+ * {@link RequestOverrides}.
  */
 @RegisterPlugin(
         name = "stripeSubscriptionService",
@@ -60,6 +63,10 @@ public class StripeSubscriptionService implements BsonService {
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
+            return;
+        }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
         if (!req.isGet()) {

@@ -57,6 +57,9 @@ import org.restheart.utils.HttpStatus;
  * owner sees it (via {@code GET /stripe/subscription} / {@code @subscription.seats}) and
  * revokes down to the limit themselves — see #683 on why blocking is total and reversible
  * rather than the module choosing who to cut.
+ *
+ * <p>{@code 404} when {@code rh-stripe-subscriptions-disabled} is attached — see
+ * {@link RequestOverrides}.
  */
 @RegisterPlugin(
         name = "stripeLicensesService",
@@ -75,6 +78,10 @@ public class StripeLicensesService implements BsonService {
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
+            return;
+        }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
         if (!req.isAuthenticated()) {

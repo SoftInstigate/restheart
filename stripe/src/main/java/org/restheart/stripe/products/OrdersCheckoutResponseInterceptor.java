@@ -28,6 +28,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
@@ -51,7 +52,9 @@ public class OrdersCheckoutResponseInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var products = conf.products();
+        // Same effective config as OrdersCheckoutInterceptor used to build this order —
+        // conf.products() alone would disagree with it for a tenant with an override.
+        var products = RequestOverrides.products(request, conf);
         if (products == null || !products.enabled()) {
             return;
         }
@@ -87,13 +90,13 @@ public class OrdersCheckoutResponseInterceptor implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var products = conf.products();
-        if (products == null || !products.enabled()) {
+        // Request-level disable (for RESTHeart Cloud multi-tenancy) — see RequestOverrides
+        if (RequestOverrides.productsDisabled(request)) {
             return false;
         }
 
-        // Request-level disable (for RESTHeart Cloud multi-tenancy)
-        if (request.attachedParam("rh-stripe-products-disabled") != null) {
+        var products = RequestOverrides.products(request, conf);
+        if (products == null || !products.enabled()) {
             return false;
         }
 

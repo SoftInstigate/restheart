@@ -43,6 +43,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -92,10 +93,15 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var products = conf.products();
+        // Effective (possibly per-tenant) config — resolved once, threaded through this method
+        // instead of re-reading conf.products()/conf.db()/conf.secretKey() piecemeal, so a
+        // multi-tenant deployment cannot end up mixing one tenant's products config with
+        // another's db or key.
+        var products = RequestOverrides.products(request, conf);
         if (products == null || !products.enabled()) {
             return;
         }
+        var db = RequestOverrides.db(request, conf);
 
         // 1. Parse and validate request body
         if (!(request.getContent() instanceof BsonDocument body)) {
@@ -167,7 +173,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         }
 
         // 3. Read catalog (one query)
-        var catalogReader = new CatalogReader(mclient, conf.db(), products);
+        var catalogReader = new CatalogReader(mclient, db, products);
         var productIds = requestedItems.stream().map(RequestedItem::productId).collect(java.util.stream.Collectors.toSet());
 
         java.util.List<CatalogItem> catalogItems;
@@ -206,7 +212,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         // 4. Check inventory (optional)
         if (products.inventoryCollection() != null) {
             try {
-                checkInventory(catalogItems, requestedItems, products, request);
+                checkInventory(catalogItems, requestedItems, products, db);
             } catch (CatalogReader.CatalogValidationException e) {
                 reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
                 return;
@@ -250,7 +256,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
         // 5. Resolve buyer info
         var buyerId = resolveBuyerId(request);
-        var buyerEmail = resolveBuyerEmail(request, body);
+        var buyerEmail = resolveBuyerEmail(request, body, products);
 
         // 6. Build Stripe Checkout Session
         var sessionBuilder = SessionCreateParams.builder()
@@ -340,7 +346,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var expiresMinutes = Math.max(30, Math.min(products.sessionExpiresMinutes(), 1440));
 
         // Create the Stripe session
-        var apiKey = conf.secretKey();
+        var apiKey = RequestOverrides.secretKey(request, conf);
         var opts = RequestOptions.builder()
                 .setApiKey(apiKey)
                 .setIdempotencyKey("order-" + buyerId + "-" + System.currentTimeMillis())
@@ -392,13 +398,15 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var products = conf.products();
-        if (products == null || !products.enabled()) {
+        // Request-level disable (for RESTHeart Cloud multi-tenancy) — see RequestOverrides.
+        // Checked before resolving the effective config: a disabled tenant should never pay
+        // for reading a per-tenant products config it isn't entitled to.
+        if (RequestOverrides.productsDisabled(request)) {
             return false;
         }
 
-        // Request-level disable (for RESTHeart Cloud multi-tenancy)
-        if (request.attachedParam("rh-stripe-products-disabled") != null) {
+        var products = RequestOverrides.products(request, conf);
+        if (products == null || !products.enabled()) {
             return false;
         }
 
@@ -429,19 +437,19 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         return null;
     }
 
-    private String resolveBuyerEmail(MongoRequest request, BsonDocument body) {
+    private String resolveBuyerEmail(MongoRequest request, BsonDocument body, ProductsConfig products) {
         // Guest: email from body
         if (!request.isAuthenticated()) {
             return stringField(body, "email");
         }
 
         // Authenticated: from user document field
-        if (conf.products().buyerEmailField() != null) {
+        if (products.buyerEmailField() != null) {
             var account = request.getAuthenticatedAccount();
             if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
                 var props = withProperties.propertiesAsMap();
                 if (props != null) {
-                    var emailValue = props.get(conf.products().buyerEmailField());
+                    var emailValue = props.get(products.buyerEmailField());
                     if (emailValue != null) {
                         return emailValue.toString();
                     }
@@ -511,8 +519,8 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     private void checkInventory(java.util.List<CatalogItem> catalogItems,
                                  java.util.List<RequestedItem> requestedItems,
                                  ProductsConfig products,
-                                 MongoRequest request) throws CatalogReader.CatalogValidationException {
-        var inventoryCol = mclient.getDatabase(conf.db())
+                                 String db) throws CatalogReader.CatalogValidationException {
+        var inventoryCol = mclient.getDatabase(db)
                 .getCollection(products.inventoryCollection(), org.bson.BsonDocument.class);
 
         var requestedMap = new java.util.LinkedHashMap<String, Integer>();

@@ -54,6 +54,9 @@ import com.stripe.param.checkout.SessionCreateParams;
  * <p>Requires the caller to be authenticated and to be allowed to manage the resolved
  * entity's billing ({@link org.restheart.plugins.stripe.SubscriptionOwnerProvider#canManageBilling}) —
  * starting a checkout commits the entity to a recurring charge.
+ *
+ * <p>{@code 404} when {@code rh-stripe-subscriptions-disabled} is attached — see
+ * {@link RequestOverrides}.
  */
 @RegisterPlugin(
         name = "stripeCheckoutService",
@@ -74,6 +77,10 @@ public class StripeCheckoutService implements BsonService {
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
+            return;
+        }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
         if (!req.isPost()) {

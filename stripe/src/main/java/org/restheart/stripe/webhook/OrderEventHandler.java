@@ -84,7 +84,9 @@ public class OrderEventHandler implements StripeEventHandler {
     @Override
     public void handle(Event event, StripeEventContext ctx) throws Exception {
         LOGGER.info("[stripe] OrderEventHandler.handle: called with event type={}", event.getType());
-        var products = ctx.conf().products();
+        // The effective (possibly per-tenant) products config, not ctx.conf().products() — the
+        // latter is the static one and disagrees with it for a tenant with an override.
+        var products = ctx.products();
         LOGGER.info("[stripe] OrderEventHandler.handle: products={}, products.enabled={}", products, products != null ? products.enabled() : "N/A");
         if (products == null || !products.enabled()) {
             LOGGER.warn("[stripe] OrderEventHandler: products mode not enabled, skipping");
@@ -531,14 +533,16 @@ public class OrderEventHandler implements StripeEventHandler {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private MongoCollection<BsonDocument> ordersCollection(StripeEventContext ctx, ProductsConfig products) {
+        // ctx.scope().db(), not ctx.conf().db(): the former is the effective (possibly
+        // per-tenant) database, the latter the static one — see StripeEventContext javadoc.
         return ctx.mclient()
-                .getDatabase(ctx.conf().db())
+                .getDatabase(ctx.scope().db())
                 .getCollection(products.ordersCollection(), BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> transactionsCollection(StripeEventContext ctx, ProductsConfig products) {
         return ctx.mclient()
-                .getDatabase(ctx.conf().db())
+                .getDatabase(ctx.scope().db())
                 .getCollection(products.transactionsCollection(), BsonDocument.class);
     }
 

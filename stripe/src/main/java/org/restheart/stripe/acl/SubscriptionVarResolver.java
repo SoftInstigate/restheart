@@ -77,7 +77,9 @@ import org.slf4j.LoggerFactory;
  * <h2>Failure semantics</h2>
  * <p>Any failure resolving the owner, or any exception during resolution, returns
  * {@link BsonNull#VALUE} — treated by {@code AclVarsInterpolator} as unresolved, which denies
- * rather than grants. This resolver never throws.
+ * rather than grants. This resolver never throws. A tenant for which
+ * {@code rh-stripe-subscriptions-disabled} is attached (see {@link RequestOverrides}) falls
+ * under the same rule — it has nothing to resolve, not a special case to branch on.
  *
  * <h2>Cost</h2>
  * <p>The underlying {@code SubscriptionOwner} / state / licence lookups are cached on the
@@ -154,6 +156,12 @@ public class SubscriptionVarResolver implements VarResolver {
     }
 
     private BsonDocument build(ServiceRequest<?> req) {
+        // A disabled tenant has no subscription to speak of — same outcome as any other
+        // resolution failure (see class javadoc "Failure semantics"), not a special case.
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            return null;
+        }
+
         var provider = stripeService.getSubscriptionOwnerProvider();
         var scope = RequestOverrides.scope(req, conf);
 

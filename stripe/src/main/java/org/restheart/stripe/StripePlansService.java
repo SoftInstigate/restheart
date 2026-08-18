@@ -48,6 +48,9 @@ import org.restheart.utils.HttpStatus;
  * <p>Configuration declares what the module enforces (plan ids, price ids, seat limits);
  * Stripe holds what the customer reads (name, description, price). This endpoint is where
  * the two are joined for a client.
+ *
+ * <p>{@code 404} when {@code rh-stripe-subscriptions-disabled} is attached — see
+ * {@link RequestOverrides}.
  */
 @RegisterPlugin(
         name = "stripePlansService",
@@ -66,6 +69,10 @@ public class StripePlansService implements BsonService {
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
+            return;
+        }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
         if (!req.isGet()) {

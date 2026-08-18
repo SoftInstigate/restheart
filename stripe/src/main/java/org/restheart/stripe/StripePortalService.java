@@ -49,6 +49,9 @@ import com.stripe.param.billingportal.SessionCreateParams;
  * <p>Gated on {@code canManageBilling}: the Portal gives full control over the subscription
  * (cancel it, change plan, see every invoice and the billing address on them) — not
  * something every member of an entity should be able to do.
+ *
+ * <p>{@code 404} when {@code rh-stripe-subscriptions-disabled} is attached — see
+ * {@link RequestOverrides}.
  */
 @RegisterPlugin(
         name = "stripePortalService",
@@ -69,6 +72,10 @@ public class StripePortalService implements BsonService {
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
+            return;
+        }
+        if (RequestOverrides.subscriptionsDisabled(req)) {
+            res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
         if (!req.isPost()) {

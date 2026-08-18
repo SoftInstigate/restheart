@@ -23,6 +23,7 @@ import java.time.Instant;
 
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.plugins.stripe.BillingScope;
+import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.plugins.stripe.SubscriptionOwnerProvider;
 
@@ -34,9 +35,16 @@ import com.mongodb.client.MongoClient;
  * <p>Resolved once by the webhook service and threaded through all handlers.
  *
  * @param req              the raw request (for notifications)
- * @param conf             the full Stripe config
+ * @param conf             the full Stripe config — ⚠️ {@code conf.db()}/{@code conf.products()}
+ *                         are the <em>static</em> values; handlers needing the effective
+ *                         (possibly per-tenant) ones must use {@link #scope} / {@link #products}
+ *                         instead, the same way {@code OrdersCheckoutInterceptor} does
  * @param provider         the subscription owner provider
- * @param scope            the billing scope (db + collection)
+ * @param scope            the effective billing scope (db + collection), pre-resolved via
+ *                         {@code RequestOverrides.scope(req, conf)}
+ * @param products         the effective products configuration, pre-resolved via
+ *                         {@code RequestOverrides.products(req, conf)}; {@code null} if products
+ *                         mode is not configured for this request
  * @param defaultPlanId    the default plan id
  * @param appliedAt        the event's creation timestamp (for staleness guard)
  * @param mclient          the MongoDB client (for order/transaction operations)
@@ -46,6 +54,7 @@ public record StripeEventContext(
         StripeConfigData conf,
         SubscriptionOwnerProvider provider,
         BillingScope scope,
+        ProductsConfig products,
         String defaultPlanId,
         Instant appliedAt,
         MongoClient mclient) {
