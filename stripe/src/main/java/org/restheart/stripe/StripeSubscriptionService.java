@@ -59,6 +59,9 @@ public class StripeSubscriptionService implements BsonService {
     @Inject("stripeService")
     private StripeService stripeService;
 
+    @Inject("stripeInitTracker")
+    private StripeInitTracker initTracker;
+
     @Override
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
@@ -75,6 +78,10 @@ public class StripeSubscriptionService implements BsonService {
         }
         if (!req.isAuthenticated()) {
             res.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
+            return;
+        }
+        if (!initTracker.isSubscriptionsInitialized(RequestOverrides.db(req, conf))) {
+            res.setInError(HttpStatus.SC_SERVICE_UNAVAILABLE, "Stripe subscriptions module is not initialized");
             return;
         }
 

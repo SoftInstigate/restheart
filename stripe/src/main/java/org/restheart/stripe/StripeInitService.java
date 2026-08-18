@@ -80,6 +80,9 @@ public class StripeInitService {
     @Inject("stripeService")
     private StripeService stripeService;
 
+    @Inject("stripeInitTracker")
+    private StripeInitTracker initTracker;
+
     @Inject("mclient")
     private MongoClient mclient;
 
@@ -120,6 +123,7 @@ public class StripeInitService {
 
         LOGGER.info("[stripe] initializing subscriptions mode on database '{}'", dbName);
         defaultProvider.repository().ensureIndexes(new BillingScope(dbName, conf.teamsCollection()));
+        initTracker.markSubscriptionsInitialized(dbName);
         LOGGER.info("[stripe] subscriptions mode initialized on database '{}'", dbName);
     }
 
@@ -170,6 +174,7 @@ public class StripeInitService {
         createTransactionsIndexes(db, products);
         installOrderSchema(db, products);
 
+        initTracker.markProductsInitialized(dbName);
         LOGGER.info("[stripe] products mode initialized on database '{}'", dbName);
     }
 

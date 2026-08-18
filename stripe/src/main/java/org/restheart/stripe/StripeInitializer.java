@@ -25,11 +25,14 @@ import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.security.AclVarsRegistry;
 import org.restheart.stripe.acl.SubscriptionVarResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
 
 /**
  * Startup initializer for {@code restheart-stripe}.
@@ -91,6 +94,12 @@ public class StripeInitializer implements Initializer {
     @Inject(value = "stripeInitService", required = false)
     private StripeInitService initService;
 
+    @Inject("stripeInitTracker")
+    private StripeInitTracker initTracker;
+
+    @Inject("mclient")
+    private MongoClient mclient;
+
     @Inject("acl-vars-registry")
     private AclVarsRegistry aclVarsRegistry;
 
@@ -102,12 +111,23 @@ public class StripeInitializer implements Initializer {
 
         // 2. Single-tenant database initialization, on the statically configured database. A
         //    multi-tenant deployment calls StripeInitService itself, per tenant.
+        var needsSubInit = conf.subscriptions() != null && conf.subscriptions().enabled();
+        var needsProdInit = conf.products() != null && conf.products().enabled() && conf.products().initEnabled();
+
         if (initService != null) {
-            if (conf.subscriptions() != null && conf.subscriptions().enabled()) {
+            if (needsSubInit) {
                 initService.initSubscriptions(conf.db());
             }
-            if (conf.products() != null && conf.products().enabled() && conf.products().initEnabled()) {
+            if (needsProdInit) {
                 initService.initProducts(conf.db());
+            }
+        } else {
+            // stripeInitService not available — initialize directly
+            if (needsSubInit) {
+                initSubscriptionsDirect(conf.db());
+            }
+            if (needsProdInit) {
+                initProductsDirect(conf.db());
             }
         }
 
@@ -132,6 +152,28 @@ public class StripeInitializer implements Initializer {
         var prodEnabled = conf.products() != null && conf.products().enabled();
         LOGGER.info("[stripe] plugin initialised — mode={}, db={}, subscriptions={}, products={}",
                 mode, conf.db(), subEnabled, prodEnabled);
+    }
+
+    /** Direct subscriptions initialization when stripeInitService is not available. */
+    private void initSubscriptionsDirect(String dbName) {
+        var defaultProvider = stripeService.defaultProviderOrNull();
+        if (defaultProvider == null) {
+            LOGGER.debug("[stripe] active SubscriptionOwnerProvider is not the default one — "
+                    + "skipping index creation for '{}'", dbName);
+            return;
+        }
+
+        LOGGER.info("[stripe] initializing subscriptions mode on database '{}'", dbName);
+        defaultProvider.repository().ensureIndexes(new BillingScope(dbName, conf.teamsCollection()));
+        initTracker.markSubscriptionsInitialized(dbName);
+        LOGGER.info("[stripe] subscriptions mode initialized on database '{}'", dbName);
+    }
+
+    /** Direct products initialization when stripeInitService is not available. */
+    private void initProductsDirect(String dbName) {
+        // Delegate to StripeInitService if available, otherwise log a warning
+        LOGGER.warn("[stripe] products mode initialization requires stripeInitService — "
+                + "enable stripeInitService or call StripeInitService.initProducts() manually");
     }
 
     /** Logs, but never gates: see class javadoc. */
