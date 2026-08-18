@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @param enabled               whether the products mode is active
  * @param initEnabled           whether the automatic initializer creates collections/indexes/schema;
- *                              set to {@code false} for on-demand init via {@code StripeProductsInitService}
+ *                              set to {@code false} for on-demand init via {@code StripeInitService}
  * @param catalogCollection     MongoDB collection holding the product catalog
  * @param ordersCollection      MongoDB collection for orders
  * @param transactionsCollection MongoDB collection for the transactions ledger

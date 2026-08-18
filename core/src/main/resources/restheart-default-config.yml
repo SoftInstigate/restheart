@@ -551,7 +551,7 @@ stripeConfig:
 
   products:
     enabled: false
-    # Set to false to skip automatic init; use StripeProductsInitService on demand.
+    # Set to false to skip automatic init; use StripeInitService on demand.
     init-enabled: true
 
     catalog-collection: catalog

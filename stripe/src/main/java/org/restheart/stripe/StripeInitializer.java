@@ -20,42 +20,43 @@
 package org.restheart.stripe;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
-import org.bson.BsonDocument;
-import org.bson.BsonString;
-import org.bson.Document;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.stripe.BillingScope;
-import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.security.AclVarsRegistry;
 import org.restheart.stripe.acl.SubscriptionVarResolver;
-import org.restheart.stripe.products.OrderSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mongodb.MongoException;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.Indexes;
 
 /**
  * Startup initializer for {@code restheart-stripe}.
  *
- * <p>Five duties:
+ * <p>Four duties:
  * <ol>
- *   <li>validate shared {@code stripeConfig} fields (secret-key, webhook-secret)</li>
- *   <li>create the {@code stripe_customer_id} index used by every webhook delivery</li>
+ *   <li>validate shared {@code stripeConfig} fields (secret-key, webhook-secret) — logs, does
+ *       not gate anything else</li>
+ *   <li>on a single-tenant deployment, initialize the statically configured database via
+ *       {@link StripeInitService} — a multi-tenant deployment calls that service itself, per
+ *       tenant, instead of relying on this startup hook</li>
  *   <li>register the {@code @subscription} ACL variable (only if subscriptions mode is enabled)</li>
- *   <li>install products mode domain model: collections, indexes (if {@code init-enabled} is true)</li>
  *   <li>warn if products mode is enabled but no ACL permission grants access to the orders collection</li>
  * </ol>
+ *
+ * <h2>⚠️ Registering {@code @subscription} does not depend on credentials</h2>
+ * <p>Whether the shared {@code secret-key} / {@code webhook-secret} are set is orthogonal to
+ * whether the plan catalog is valid and the ACL variable should exist: a multi-tenant node has
+ * no static credentials at all — they arrive per-request (see {@code RequestOverrides}) — and
+ * would otherwise never get plan gates. Missing credentials are still logged as an error; they
+ * no longer suppress registration.
+ *
+ * <h2>⚠️ Database initialization is not credential-gated either</h2>
+ * <p>Creating indexes and collections is a MongoDB operation, not a Stripe one — it does not
+ * need a Stripe API key to be correct, and an operator who has not set the key yet still
+ * benefits from the index existing before they do. See {@link StripeInitService} for the actual
+ * per-database work; this class only decides, for the single-tenant case, which database that is.
  *
  * <h2>⚠️ {@code BEFORE_STARTUP}, not {@code AFTER_STARTUP}</h2>
  * <p>{@code AFTER_STARTUP} initializers run concurrently with request processing — the HTTP
@@ -74,7 +75,7 @@ import com.mongodb.client.model.Indexes;
  */
 @RegisterPlugin(
         name = "stripeInitializer",
-        description = "Validates stripeConfig, creates indexes, and registers ACL variables",
+        description = "Validates stripeConfig, initializes the static database, and registers ACL variables",
         initPoint = InitPoint.BEFORE_STARTUP,
         enabledByDefault = false)
 public class StripeInitializer implements Initializer {
@@ -87,23 +88,25 @@ public class StripeInitializer implements Initializer {
     @Inject("stripeService")
     private StripeService stripeService;
 
+    @Inject("stripeInitService")
+    private StripeInitService initService;
+
     @Inject("acl-vars-registry")
     private AclVarsRegistry aclVarsRegistry;
 
-    @Inject("mclient")
-    private MongoClient mclient;
-
     @Override
     public void init() {
-        // 1. Validate shared credentials — this blocks everything
-        if (!validateShared()) {
-            return;
-        }
+        // 1. Validate shared credentials — logs only, never gates what follows. A multi-tenant
+        //    node has none of these statically and must still get everything below.
+        validateShared();
 
-        // 2. Shared: stripe_customer_id index (always, regardless of mode validation)
-        var defaultProvider = stripeService.defaultProviderOrNull();
-        if (defaultProvider != null) {
-            defaultProvider.repository().ensureIndexes(new BillingScope(conf.db(), conf.teamsCollection()));
+        // 2. Single-tenant database initialization, on the statically configured database. A
+        //    multi-tenant deployment calls StripeInitService itself, per tenant.
+        if (conf.subscriptions() != null && conf.subscriptions().enabled()) {
+            initService.initSubscriptions(conf.db());
+        }
+        if (conf.products() != null && conf.products().enabled() && conf.products().initEnabled()) {
+            initService.initProducts(conf.db());
         }
 
         // 3. Subscriptions: validate plans and register @subscription ACL variable
@@ -116,12 +119,7 @@ public class StripeInitializer implements Initializer {
             }
         }
 
-        // 4. Products: install domain model (collections, indexes)
-        if (conf.products() != null && conf.products().enabled() && conf.products().initEnabled()) {
-            installProductsDomainModel(conf.products());
-        }
-
-        // 5. Products: warn if no ACL permission grants access to the orders collection
+        // 4. Products: warn if no ACL permission grants access to the orders collection
         if (conf.products() != null && conf.products().enabled()) {
             LOGGER.warn("[stripe] products mode is enabled but no ACL permission grants access to `/orders` — "
                     + "POST /orders will answer 403 until one is configured (see documentation)");
@@ -134,8 +132,8 @@ public class StripeInitializer implements Initializer {
                 mode, conf.db(), subEnabled, prodEnabled);
     }
 
-    /** @return {@code false} if shared credentials are missing */
-    private boolean validateShared() {
+    /** Logs, but never gates: see class javadoc. */
+    private void validateShared() {
         var missing = new ArrayList<String>();
         if (conf.secretKey() == null || conf.secretKey().isBlank()) {
             missing.add("secret-key");
@@ -147,10 +145,7 @@ public class StripeInitializer implements Initializer {
         if (!missing.isEmpty()) {
             LOGGER.error("[stripe] stripeConfig is missing required field(s): {} — the module will not function "
                     + "correctly until they are set", String.join(", ", missing));
-            return false;
         }
-
-        return true;
     }
 
     /** @return {@code false} if subscriptions plan validation fails */
@@ -162,182 +157,5 @@ public class StripeInitializer implements Initializer {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Installs the products mode domain model: collections, indexes, and schema.
-     * All operations are idempotent (create-if-absent).
-     */
-    private void installProductsDomainModel(ProductsConfig products) {
-        var db = mclient.getDatabase(conf.db());
-
-        // Create collections
-        createCollectionIfAbsent(db, products.catalogCollection());
-        createCollectionIfAbsent(db, products.ordersCollection());
-        createCollectionIfAbsent(db, products.transactionsCollection());
-        if (products.inventoryCollection() != null) {
-            createCollectionIfAbsent(db, products.inventoryCollection());
-        }
-
-        // Create orders indexes
-        createOrdersIndexes(db, products);
-
-        // Create transactions indexes
-        createTransactionsIndexes(db, products);
-
-        // Install JSON schema for orders
-        installOrderSchema(db, products);
-    }
-
-    private void createCollectionIfAbsent(MongoDatabase db, String collectionName) {
-        try {
-            db.createCollection(collectionName);
-            LOGGER.info("[stripe] created collection '{}'", collectionName);
-        } catch (MongoException e) {
-            if (e.getCode() == 48) {
-                // Collection already exists — safe to ignore
-                LOGGER.debug("[stripe] collection '{}' already exists", collectionName);
-            } else {
-                LOGGER.error("[stripe] failed to create collection '{}': {}", collectionName, e.getMessage());
-            }
-        }
-    }
-
-    private void createOrdersIndexes(MongoDatabase db, ProductsConfig products) {
-        var col = db.getCollection(products.ordersCollection(), BsonDocument.class);
-
-        // Unique stripe_session_id — idempotency
-        try {
-            col.createIndex(
-                    Indexes.ascending("stripe_session_id"),
-                    new IndexOptions().unique(true).name("stripe_session_id_unique"));
-            LOGGER.info("[stripe] created index 'stripe_session_id_unique' on {}", products.ordersCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'stripe_session_id_unique' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'stripe_session_id_unique': {}", e.getMessage());
-            }
-        }
-
-        // Unique secret — guest access
-        try {
-            col.createIndex(
-                    Indexes.ascending("secret"),
-                    new IndexOptions().unique(true).name("secret_unique"));
-            LOGGER.info("[stripe] created index 'secret_unique' on {}", products.ordersCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'secret_unique' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'secret_unique': {}", e.getMessage());
-            }
-        }
-
-        // (buyer_id, created_at desc) — scoping
-        try {
-            col.createIndex(
-                    Indexes.compoundIndex(Indexes.ascending("buyer_id"), Indexes.descending("created_at")),
-                    new IndexOptions().name("buyer_id_created_at"));
-            LOGGER.info("[stripe] created index 'buyer_id_created_at' on {}", products.ordersCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'buyer_id_created_at' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'buyer_id_created_at': {}", e.getMessage());
-            }
-        }
-
-        // TTL on expires_at, partial to status: "pending_payment"
-        try {
-            var partialFilter = Filters.eq("status", "pending_payment");
-            col.createIndex(
-                    Indexes.ascending("expires_at"),
-                    new IndexOptions()
-                            .expireAfter(0L, TimeUnit.SECONDS)
-                            .partialFilterExpression(partialFilter)
-                            .name("expires_at_ttl_pending"));
-            LOGGER.info("[stripe] created index 'expires_at_ttl_pending' on {}", products.ordersCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'expires_at_ttl_pending' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'expires_at_ttl_pending': {}", e.getMessage());
-            }
-        }
-    }
-
-    private void createTransactionsIndexes(MongoDatabase db, ProductsConfig products) {
-        var col = db.getCollection(products.transactionsCollection(), BsonDocument.class);
-
-        // Unique stripe_event_id — idempotency
-        try {
-            col.createIndex(
-                    Indexes.ascending("stripe_event_id"),
-                    new IndexOptions().unique(true).name("stripe_event_id_unique"));
-            LOGGER.info("[stripe] created index 'stripe_event_id_unique' on {}", products.transactionsCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'stripe_event_id_unique' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'stripe_event_id_unique': {}", e.getMessage());
-            }
-        }
-
-        // order_id — lookup
-        try {
-            col.createIndex(
-                    Indexes.ascending("order_id"),
-                    new IndexOptions().name("order_id"));
-            LOGGER.info("[stripe] created index 'order_id' on {}", products.transactionsCollection());
-        } catch (MongoException e) {
-            if (e.getCode() == 85) {
-                LOGGER.debug("[stripe] index 'order_id' already exists");
-            } else {
-                LOGGER.error("[stripe] failed to create index 'order_id': {}", e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * Installs the order JSON schema into the {@code _schemas} collection and
-     * sets the {@code jsonSchema} metadata on the orders collection.
-     */
-    private void installOrderSchema(MongoDatabase db, ProductsConfig products) {
-        var schemasCol = db.getCollection("_schemas", BsonDocument.class);
-
-        // Insert schema if absent
-        var existing = schemasCol.find(Filters.eq("_id", OrderSchema.SCHEMA_ID)).first();
-        if (existing == null) {
-            try {
-                var schemaDoc = OrderSchema.schema();
-                schemaDoc.append("_id", new BsonString(OrderSchema.SCHEMA_ID));
-                schemasCol.insertOne(schemaDoc);
-                LOGGER.info("[stripe] installed schema '{}' into _schemas", OrderSchema.SCHEMA_ID);
-            } catch (MongoException e) {
-                if (e.getCode() == 11000) {
-                    LOGGER.debug("[stripe] schema '{}' already exists", OrderSchema.SCHEMA_ID);
-                } else {
-                    LOGGER.error("[stripe] failed to install schema '{}': {}", OrderSchema.SCHEMA_ID, e.getMessage());
-                }
-            }
-        } else {
-            LOGGER.debug("[stripe] schema '{}' already exists", OrderSchema.SCHEMA_ID);
-        }
-
-        // Set collection metadata to reference the schema
-        var propsCol = db.getCollection("_properties", BsonDocument.class);
-        var propsId = "_properties." + products.ordersCollection();
-        var propsDoc = new BsonDocument()
-                .append("_id", new BsonString(propsId))
-                .append("jsonSchema", new BsonDocument()
-                        .append("schemaId", new BsonString(OrderSchema.SCHEMA_ID)));
-
-        try {
-            propsCol.replaceOne(Filters.eq("_id", propsId), propsDoc, new com.mongodb.client.model.ReplaceOptions().upsert(true));
-            LOGGER.info("[stripe] set jsonSchema metadata on '{}' collection", products.ordersCollection());
-        } catch (MongoException e) {
-            LOGGER.error("[stripe] failed to set jsonSchema metadata: {}", e.getMessage());
-        }
     }
 }
