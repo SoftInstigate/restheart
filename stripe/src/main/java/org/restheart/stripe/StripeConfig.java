@@ -34,8 +34,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.NotificationConfig;
 import org.restheart.plugins.stripe.PlanConfig;
 import org.restheart.plugins.stripe.ProductsConfig;
-import org.restheart.plugins.stripe.SeatsConfig;
-import org.restheart.plugins.stripe.SeatsMode;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.plugins.stripe.SubscriptionsConfig;
 
@@ -113,7 +111,8 @@ public class StripeConfig implements Provider<StripeConfigData> {
         var plans = new LinkedHashMap<String, PlanConfig>();
         for (var entry : plansConf.entrySet()) {
             if (entry.getValue() instanceof Map<?, ?> planMap) {
-                plans.put(entry.getKey(), parsePlan((Map<String, Object>) planMap));
+                // The one parser for a plan entry — see PlanConfig.fromMap javadoc.
+                plans.put(entry.getKey(), PlanConfig.fromMap((Map<String, Object>) planMap));
             }
         }
 
@@ -207,38 +206,6 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(prodMap, "automatic-tax", true),
                 shippingOptions,
                 orderNotifications);
-    }
-
-    @SuppressWarnings("unchecked")
-    private PlanConfig parsePlan(Map<String, Object> planMap) {
-        var seatsMap = planMap.get("seats") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
-        var seats = parseSeats(seatsMap);
-
-        var limits = planMap.get("limits") instanceof Map<?, ?> m
-                ? (Map<String, Object>) m
-                : Map.<String, Object>of();
-
-        return new PlanConfig(
-                configVal(planMap, "price-id-monthly", null),
-                configVal(planMap, "price-id-annual", null),
-                configVal(planMap, "trial-period-days", (Integer) null),
-                seats,
-                limits);
-    }
-
-    private SeatsConfig parseSeats(Map<String, Object> seatsMap) {
-        if (seatsMap == null) {
-            return new SeatsConfig(SeatsMode.UNLIMITED, null);
-        }
-        var modeStr = configVal(seatsMap, "mode", "unlimited");
-        SeatsMode mode;
-        try {
-            mode = SeatsMode.valueOf(modeStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            mode = SeatsMode.UNLIMITED;
-        }
-        var max = configVal(seatsMap, "max", (Integer) null);
-        return new SeatsConfig(mode, max);
     }
 
     /**

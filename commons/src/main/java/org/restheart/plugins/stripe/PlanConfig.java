@@ -63,4 +63,66 @@ public record PlanConfig(
     public String priceId(String interval) {
         return "year".equals(interval) ? priceIdAnnual : priceIdMonthly;
     }
+
+    /**
+     * Parses a single plan entry using the same field names {@code stripeConfig.plans.<id>} uses
+     * in YAML: {@code price-id-monthly}, {@code price-id-annual}, {@code trial-period-days},
+     * {@code seats.mode} / {@code seats.max}, {@code limits}.
+     *
+     * <p>This is the <em>one</em> parser for a plan entry — {@code StripeConfig} (this module's
+     * own YAML loader) and a multi-tenant deployment's own per-tenant config interceptor (which
+     * parses the equivalent structure out of a MongoDB document instead of YAML) both call this,
+     * so the two representations of "a plan" cannot silently drift apart. A deployment converts
+     * its {@code BsonDocument} to a {@code Map<String, Object>} first (e.g. via the driver's
+     * {@code Document} codec) — this method does not know or care where the map came from.
+     *
+     * <p>Tolerant the same way the YAML loader is: an unrecognized {@code seats.mode} falls back
+     * to {@link SeatsMode#UNLIMITED} rather than throwing, and a missing {@code seats} block is
+     * {@link SeatsMode#UNLIMITED} with no maximum.
+     */
+    public static PlanConfig fromMap(Map<String, Object> planMap) {
+        var seatsMap = planMap.get("seats") instanceof Map<?, ?> m ? asStringKeyedMap(m) : null;
+        var seats = parseSeats(seatsMap);
+
+        var limits = planMap.get("limits") instanceof Map<?, ?> m ? asStringKeyedMap(m) : Map.<String, Object>of();
+
+        return new PlanConfig(
+                configVal(planMap, "price-id-monthly", (String) null),
+                configVal(planMap, "price-id-annual", (String) null),
+                configVal(planMap, "trial-period-days", (Integer) null),
+                seats,
+                limits);
+    }
+
+    private static SeatsConfig parseSeats(Map<String, Object> seatsMap) {
+        if (seatsMap == null) {
+            return new SeatsConfig(SeatsMode.UNLIMITED, null);
+        }
+        var modeStr = configVal(seatsMap, "mode", "unlimited");
+        SeatsMode mode;
+        try {
+            mode = SeatsMode.valueOf(modeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            mode = SeatsMode.UNLIMITED;
+        }
+        var max = configVal(seatsMap, "max", (Integer) null);
+        return new SeatsConfig(mode, max);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asStringKeyedMap(Map<?, ?> m) {
+        return (Map<String, Object>) m;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T configVal(Map<?, ?> map, String key, T defaultValue) {
+        if (map == null || !map.containsKey(key) || map.get(key) == null) {
+            return defaultValue;
+        }
+        try {
+            return (T) map.get(key);
+        } catch (ClassCastException e) {
+            return defaultValue;
+        }
+    }
 }
