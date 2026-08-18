@@ -88,7 +88,7 @@ public class StripeInitializer implements Initializer {
     @Inject("stripeService")
     private StripeService stripeService;
 
-    @Inject("stripeInitService")
+    @Inject(value = "stripeInitService", required = false)
     private StripeInitService initService;
 
     @Inject("acl-vars-registry")
@@ -102,11 +102,13 @@ public class StripeInitializer implements Initializer {
 
         // 2. Single-tenant database initialization, on the statically configured database. A
         //    multi-tenant deployment calls StripeInitService itself, per tenant.
-        if (conf.subscriptions() != null && conf.subscriptions().enabled()) {
-            initService.initSubscriptions(conf.db());
-        }
-        if (conf.products() != null && conf.products().enabled() && conf.products().initEnabled()) {
-            initService.initProducts(conf.db());
+        if (initService != null) {
+            if (conf.subscriptions() != null && conf.subscriptions().enabled()) {
+                initService.initSubscriptions(conf.db());
+            }
+            if (conf.products() != null && conf.products().enabled() && conf.products().initEnabled()) {
+                initService.initProducts(conf.db());
+            }
         }
 
         // 3. Subscriptions: validate plans and register @subscription ACL variable
