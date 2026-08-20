@@ -41,7 +41,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.stripe.model.Event;
-import com.stripe.model.StripeObject;
 import com.stripe.model.Charge;
 import com.stripe.model.Dispute;
 import com.stripe.model.checkout.Session;
@@ -108,7 +107,7 @@ public class OrderEventHandler implements StripeEventHandler {
     // ── Handlers ─────────────────────────────────────────────────────────────
 
     private void handleSessionCompleted(Event event, StripeEventContext ctx, ProductsConfig products) {
-        var session = deserialize(event, Session.class);
+        var session = EventPayloads.deserialize(event, Session.class);
         if (session != null) {
             if (!"paid".equals(session.getPaymentStatus())) {
                 LOGGER.info("[stripe] checkout.session.completed with status '{}' — leaving as pending_payment",
@@ -138,7 +137,7 @@ public class OrderEventHandler implements StripeEventHandler {
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
         LOGGER.info("[stripe] handleAsyncPaymentSucceeded: starting");
-        var session = deserialize(event, Session.class);
+        var session = EventPayloads.deserialize(event, Session.class);
         if (session == null) {
             LOGGER.info("[stripe] handleAsyncPaymentSucceeded: session is null, trying fallback extraction");
             // Fallback: extract directly from JSON when SDK deserialization fails (API version mismatch)
@@ -158,7 +157,7 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
     private void handleAsyncPaymentFailed(Event event, StripeEventContext ctx, ProductsConfig products) {
-        var session = deserialize(event, Session.class);
+        var session = EventPayloads.deserialize(event, Session.class);
         String sessionId;
         if (session != null) {
             sessionId = session.getId();
@@ -186,7 +185,7 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
     private void handleSessionExpired(Event event, StripeEventContext ctx, ProductsConfig products) {
-        var session = deserialize(event, Session.class);
+        var session = EventPayloads.deserialize(event, Session.class);
         String sessionId;
         if (session != null) {
             sessionId = session.getId();
@@ -214,7 +213,7 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
     private void handleChargeRefunded(Event event, StripeEventContext ctx, ProductsConfig products) {
-        var charge = deserialize(event, Charge.class);
+        var charge = EventPayloads.deserialize(event, Charge.class);
         String paymentIntentId;
         Long refundAmount;
         String currency;
@@ -270,7 +269,7 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
     private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
-        var dispute = deserialize(event, Dispute.class);
+        var dispute = EventPayloads.deserialize(event, Dispute.class);
         String paymentIntentId;
         Long disputeAmount;
         String currency;
@@ -546,16 +545,6 @@ public class OrderEventHandler implements StripeEventHandler {
                 .getCollection(products.transactionsCollection(), BsonDocument.class);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T extends StripeObject> T deserialize(Event event, Class<T> type) {
-        var obj = event.getDataObjectDeserializer().getObject();
-        if (obj.isEmpty() || !type.isInstance(obj.get())) {
-            LOGGER.warn("[stripe] could not deserialize {} payload as {} (API version mismatch?)",
-                    event.getType(), type.getSimpleName());
-            return null;
-        }
-        return (T) obj.get();
-    }
 
     // ── Notifications ────────────────────────────────────────────────────────
 

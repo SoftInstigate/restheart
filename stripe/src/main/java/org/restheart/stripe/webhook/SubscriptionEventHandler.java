@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import com.stripe.model.Event;
 import com.stripe.model.Invoice;
-import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.checkout.Session;
@@ -95,7 +94,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     // ── Handlers ─────────────────────────────────────────────────────────────
 
     private void handleCheckoutSessionCompleted(Event event) {
-        var session = deserialize(event, Session.class);
+        var session = EventPayloads.deserialize(event, Session.class);
         if (session == null) {
             return;
         }
@@ -104,7 +103,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     }
 
     private void handleSubscriptionUpsert(Event event, StripeEventContext ctx) {
-        var subscription = deserialize(event, Subscription.class);
+        var subscription = EventPayloads.deserialize(event, Subscription.class);
         if (subscription == null) {
             return;
         }
@@ -141,7 +140,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     }
 
     private void handleSubscriptionDeleted(Event event, StripeEventContext ctx) {
-        var subscription = deserialize(event, Subscription.class);
+        var subscription = EventPayloads.deserialize(event, Subscription.class);
         if (subscription == null) {
             return;
         }
@@ -173,7 +172,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     }
 
     private void handleTrialWillEnd(Event event, StripeEventContext ctx) {
-        var subscription = deserialize(event, Subscription.class);
+        var subscription = EventPayloads.deserialize(event, Subscription.class);
         if (subscription == null) {
             return;
         }
@@ -200,7 +199,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     }
 
     private void handleInvoicePaymentSucceeded(Event event, StripeEventContext ctx) {
-        var invoice = deserialize(event, Invoice.class);
+        var invoice = EventPayloads.deserialize(event, Invoice.class);
         if (invoice == null || !hasSubscription(invoice)) {
             return;
         }
@@ -216,7 +215,7 @@ public class SubscriptionEventHandler implements StripeEventHandler {
     }
 
     private void handleInvoicePaymentFailed(Event event, StripeEventContext ctx) {
-        var invoice = deserialize(event, Invoice.class);
+        var invoice = EventPayloads.deserialize(event, Invoice.class);
         if (invoice == null || !hasSubscription(invoice)) {
             return;
         }
@@ -297,14 +296,4 @@ public class SubscriptionEventHandler implements StripeEventHandler {
                 && invoice.getParent().getSubscriptionDetails().getSubscription() != null;
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T extends StripeObject> T deserialize(Event event, Class<T> type) {
-        var obj = event.getDataObjectDeserializer().getObject();
-        if (obj.isEmpty() || !type.isInstance(obj.get())) {
-            LOGGER.warn("[stripe] could not deserialize {} payload as {} (API version mismatch?)",
-                    event.getType(), type.getSimpleName());
-            return null;
-        }
-        return (T) obj.get();
-    }
 }
