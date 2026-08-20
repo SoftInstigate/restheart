@@ -56,10 +56,13 @@ public class StripeInitTracker implements Provider<StripeInitTracker> {
     @Inject("mclient")
     private MongoClient mclient;
 
-    @Inject("stripeConfig")
+    // Always enabled by default (see class javadoc), unlike every other stripe plugin — so on
+    // a node that never enables stripeConfig/stripeService at all, this provider must still
+    // load cleanly rather than crash boot on a hard-required dependency that was never turned on.
+    @Inject(value = "stripeConfig", required = false)
     private StripeConfigData conf;
 
-    @Inject("stripeService")
+    @Inject(value = "stripeService", required = false)
     private StripeService stripeService;
 
     private final Set<String> subscriptionsDbs = ConcurrentHashMap.newKeySet();
@@ -86,6 +89,14 @@ public class StripeInitTracker implements Provider<StripeInitTracker> {
             return true;
         }
 
+        if (conf == null || stripeService == null) {
+            // stripeConfig/stripeService aren't enabled on this node at all — no stripe
+            // service could be enabled either (they all hard-require stripeConfig), so
+            // nothing will ever actually gate on this. Nothing to wait on.
+            subscriptionsDbs.add(dbName);
+            return true;
+        }
+
         if (stripeService.defaultProviderOrNull() == null) {
             subscriptionsDbs.add(dbName);
             return true;
@@ -107,6 +118,12 @@ public class StripeInitTracker implements Provider<StripeInitTracker> {
      */
     public boolean isProductsInitialized(String dbName) {
         if (productsDbs.contains(dbName)) {
+            return true;
+        }
+
+        if (conf == null) {
+            // stripeConfig isn't enabled on this node at all — see isSubscriptionsInitialized.
+            productsDbs.add(dbName);
             return true;
         }
 

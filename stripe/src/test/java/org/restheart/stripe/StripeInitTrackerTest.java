@@ -158,6 +158,23 @@ class StripeInitTrackerTest {
     }
 
     @Test
+    @DisplayName("stripeConfig not injected (not enabled on this node) -> true, no Mongo call, and cached")
+    void stripeConfigNotEnabled() throws Exception {
+        setField(tracker, "conf", null);
+
+        assertTrue(tracker.isSubscriptionsInitialized("acme"));
+        assertTrue(tracker.isProductsInitialized("acme"));
+    }
+
+    @Test
+    @DisplayName("stripeService not injected (not enabled on this node) -> true, no Mongo call, and cached")
+    void stripeServiceNotEnabled() throws Exception {
+        setField(tracker, "stripeService", null);
+
+        assertTrue(tracker.isSubscriptionsInitialized("acme"));
+    }
+
+    @Test
     @DisplayName("two different databases are tracked independently")
     void independentPerDatabase() {
         tracker.markSubscriptionsInitialized("acme");
