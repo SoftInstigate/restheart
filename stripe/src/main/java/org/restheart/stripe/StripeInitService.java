@@ -171,7 +171,23 @@ public class StripeInitService implements Provider<StripeInitService> {
         initProducts(dbName, conf.products());
     }
 
-    private void initProducts(String dbName, ProductsConfig products) {
+    /**
+     * Initializes the products mode domain model on {@code dbName} using the given configuration
+     * instead of the statically configured one.
+     *
+     * <p>This is the overload a multi-tenant deployment needs. {@link #initProducts(String)} reads
+     * collection names from {@code stripeConfig.products}, which on a node serving many tenants is
+     * either absent or belongs to no tenant in particular — initializing from it would create the
+     * wrong collections, and leave the ones the tenant actually configured missing. Pass the
+     * tenant's own {@code ProductsConfig} (RESTHeart Cloud takes it from
+     * {@code override-stripe-products}) so that what gets created is what that tenant will read
+     * and write.
+     *
+     * @param dbName   the database name to initialize
+     * @param products the configuration to initialize from — collection names, and the inventory
+     *                 collection when that tenant uses one
+     */
+    public void initProducts(String dbName, ProductsConfig products) {
         var db = mclient.getDatabase(dbName);
 
         LOGGER.info("[stripe] initializing products mode on database '{}'", dbName);
