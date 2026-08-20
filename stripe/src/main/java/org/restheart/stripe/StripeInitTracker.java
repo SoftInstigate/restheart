@@ -42,7 +42,13 @@ import com.mongodb.client.MongoClient;
 @RegisterPlugin(
         name = "stripeInitTracker",
         description = "Tracks Stripe database initialization state",
-        enabledByDefault = true)
+        enabledByDefault = true,
+        // Must run after MongoClientProvider ("mclient", priority 11) has had its own @OnInit
+        // called — RESTHeart instantiates/injects providers in ascending priority order, and
+        // MongoClientProvider.get() throws IllegalStateException("not initialized") if called
+        // before its @OnInit runs. Default priority (10) sorts before 11 and hits exactly that
+        // — same reason StripeService uses priority = 20 for the same @Inject("mclient").
+        priority = 20)
 public class StripeInitTracker implements Provider<StripeInitTracker> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StripeInitTracker.class);

@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.plugins.Inject;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.ProductsConfig;
@@ -69,8 +71,11 @@ import com.mongodb.client.model.ReplaceOptions;
 @RegisterPlugin(
         name = "stripeInitService",
         description = "On-demand, per-database initialization of subscriptions and products mode",
-        enabledByDefault = false)
-public class StripeInitService {
+        enabledByDefault = false,
+        // Same reasoning as StripeInitTracker/StripeService: @Inject("mclient") must not be
+        // resolved before MongoClientProvider's own @OnInit (priority 11) has run.
+        priority = 20)
+public class StripeInitService implements Provider<StripeInitService> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StripeInitService.class);
 
@@ -292,5 +297,10 @@ public class StripeInitService {
             LOGGER.error("[stripe] failed to set jsonSchema metadata on '{}.{}': {}",
                     db.getName(), products.ordersCollection(), e.getMessage());
         }
+    }
+
+    @Override
+    public StripeInitService get(PluginRecord<?> caller) {
+        return this;
     }
 }
