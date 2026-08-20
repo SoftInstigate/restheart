@@ -74,6 +74,9 @@ public class StripeInitService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StripeInitService.class);
 
+    /** Name of one of the indexes {@link #createOrdersIndexes} creates — public so {@code StripeInitTracker} can use it as a cheap "was products mode initialized" marker without duplicating the literal. */
+    public static final String ORDERS_SESSION_ID_INDEX = "stripe_session_id_unique";
+
     @Inject("stripeConfig")
     private StripeConfigData conf;
 
@@ -116,6 +119,11 @@ public class StripeInitService {
 
         var defaultProvider = stripeService.defaultProviderOrNull();
         if (defaultProvider == null) {
+            // A custom SubscriptionOwnerProvider owns its own storage and indexing — there is
+            // nothing here for this service to do. Still mark it initialized: the gated
+            // services (StripeCheckoutService et al.) check this per db before serving a
+            // request, and a custom provider has no index of its own for them to wait on.
+            initTracker.markSubscriptionsInitialized(dbName);
             LOGGER.debug("[stripe] active SubscriptionOwnerProvider is not the default one — "
                     + "skipping index creation for '{}'", dbName);
             return;
@@ -196,7 +204,7 @@ public class StripeInitService {
         var col = db.getCollection(products.ordersCollection(), BsonDocument.class);
 
         createIndexIfAbsent(col, Indexes.ascending("stripe_session_id"),
-                new IndexOptions().unique(true).name("stripe_session_id_unique"),
+                new IndexOptions().unique(true).name(ORDERS_SESSION_ID_INDEX),
                 products.ordersCollection(), db.getName());
 
         createIndexIfAbsent(col, Indexes.ascending("secret"),

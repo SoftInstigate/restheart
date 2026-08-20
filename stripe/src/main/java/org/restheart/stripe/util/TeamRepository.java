@@ -83,6 +83,9 @@ public class TeamRepository {
 
     private static final String SUBSCRIPTION = "subscription";
     private static final String STRIPE_CUSTOMER_ID = "stripe_customer_id";
+
+    /** Name of the index {@link #ensureIndexes} creates — public so {@code StripeInitTracker} can check for its existence without duplicating the literal. */
+    public static final String STRIPE_CUSTOMER_ID_INDEX = "stripe_customer_id_unique_sparse";
     private static final String MEMBERS = "members";
     private static final String LAST_APPLIED_EVENT_AT = SUBSCRIPTION + ".last_applied_event_at";
 
@@ -430,7 +433,7 @@ public class TeamRepository {
     public void ensureIndexes(BillingScope scope) {
         collection(scope).createIndex(
                 Indexes.ascending(STRIPE_CUSTOMER_ID),
-                new IndexOptions().unique(true).sparse(true).name("stripe_customer_id_unique_sparse"));
+                new IndexOptions().unique(true).sparse(true).name(STRIPE_CUSTOMER_ID_INDEX));
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────
