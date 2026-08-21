@@ -178,11 +178,21 @@ public class StripeConfig implements Provider<StripeConfigData> {
             }
         }
 
+        // Same shape as SubscriptionsConfig's own notifications/templates split — a sibling
+        // "templates" map keyed by notification name, not a "template" field nested under each
+        // notification. Keeping the two conventions identical is what lets
+        // StripeTenantConfigInterceptor (Cloud) attach every override-stripe-tmpl-{name} with one
+        // parser instead of two.
+        var orderTemplatesConf = prodMap.get("templates") instanceof Map<?, ?> tm
+                ? (Map<String, Object>) tm
+                : Map.<String, Object>of();
+
         var orderNotifications = new HashMap<String, ProductsConfig.OrderNotificationConfig>();
         if (prodMap.get("notifications") instanceof Map<?, ?> nm) {
             for (var name : new String[]{"order-confirmed", "order-refunded"}) {
                 if (nm.get(name) instanceof Map<?, ?> onm && onm.get("enabled") instanceof Boolean b) {
-                    orderNotifications.put(name, new ProductsConfig.OrderNotificationConfig(b));
+                    var template = orderTemplatesConf.get(name) instanceof String s && !s.isBlank() ? s : null;
+                    orderNotifications.put(name, new ProductsConfig.OrderNotificationConfig(b, template));
                 }
             }
         }

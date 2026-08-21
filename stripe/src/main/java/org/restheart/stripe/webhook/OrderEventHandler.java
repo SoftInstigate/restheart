@@ -33,6 +33,7 @@ import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailSender;
 import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.plugins.stripe.ProductsConfig;
+import org.restheart.stripe.util.RequestOverrides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -571,9 +572,20 @@ public class OrderEventHandler implements StripeEventHandler {
             var vars = new java.util.HashMap<String, String>();
             vars.put("order-id", orderId.toHexString());
             vars.put("amount", String.valueOf(amount));
+            vars.put("amount-formatted", formatAmount(amount, currency));
             vars.put("currency", currency);
+            // Same convention StripeNotifications.send() uses for subscriptions — kept in step
+            // with it deliberately, not reinvented here. "App" is the fallback because, unlike
+            // subscriptions, nothing upstream of this handler resolves a tenant's real app name.
+            vars.putIfAbsent("year", String.valueOf(java.time.Year.now().getValue()));
+            vars.putIfAbsent("app-name", "App");
 
-            var raw = EmailTemplateLoader.loadWithFallback(null, null, name + ".html");
+            // Same inline > path > built-in precedence as subscription notifications, and the
+            // same override key convention: override-stripe-tmpl-{name} is generic on the
+            // notification name, so it already covers order-confirmed/order-refunded without any
+            // dedicated wiring — see RequestOverrides.templateInline().
+            var inline = RequestOverrides.templateInline(ctx.req(), name);
+            var raw = EmailTemplateLoader.loadWithFallback(inline, notification.templatePath(), name + ".html");
             var rendered = EmailRenderer.render(raw, vars, "en");
 
             emailSender.sendEmailAsync(ctx.req(), email, email, rendered.subject(), rendered.htmlBody());
@@ -581,5 +593,31 @@ public class OrderEventHandler implements StripeEventHandler {
         } catch (Exception e) {
             LOGGER.error("[stripe] failed to send '{}' notification for order {}: {}", name, orderId, e.getMessage());
         }
+    }
+
+    /**
+     * {@code amountMinorUnits} converted to the currency's major unit, formatted with that
+     * currency's own number of fraction digits — 2 for EUR/USD, 0 for JPY, 3 for BHD, etc. Stripe
+     * amounts are always in the minor unit (docs.stripe.com/currencies#zero-decimal), so a naive
+     * "divide by 100" would misrender any zero- or three-decimal currency.
+     *
+     * <p>Falls back to 2 fraction digits for a currency code {@link java.util.Currency} does not
+     * recognize (Stripe supports a few it does not, e.g. some historical or crypto-adjacent
+     * codes) — the common case, better than failing the whole notification over formatting.
+     */
+    static String formatAmount(long amountMinorUnits, String currencyCode) {
+        int fractionDigits;
+        try {
+            fractionDigits = java.util.Currency.getInstance(currencyCode.toUpperCase()).getDefaultFractionDigits();
+            if (fractionDigits < 0) {
+                fractionDigits = 2;
+            }
+        } catch (IllegalArgumentException e) {
+            fractionDigits = 2;
+        }
+
+        // BigDecimal.valueOf(unscaled, scale) is amountMinorUnits * 10^-fractionDigits by
+        // definition — exact, no division and no rounding mode to get wrong.
+        return java.math.BigDecimal.valueOf(amountMinorUnits, fractionDigits).toPlainString();
     }
 }

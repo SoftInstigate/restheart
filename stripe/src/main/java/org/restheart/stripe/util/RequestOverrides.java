@@ -99,7 +99,15 @@ public final class RequestOverrides {
     public static final String CANCEL_URL = "override-stripe-cancel-url";
     public static final String PORTAL_RETURN_URL = "override-stripe-portal-return-url";
 
-    /** {@code override-stripe-tmpl-{name}} — inline HTML for a notification template. */
+    /**
+     * {@code override-stripe-tmpl-{name}} — inline HTML for a notification template.
+     *
+     * <p>Generic on {@code name}: it covers subscription notifications
+     * ({@link org.restheart.plugins.stripe.NotificationConfig#PAYMENT_FAILED} and friends) and
+     * order notifications ({@code order-confirmed}, {@code order-refunded}) alike, with no
+     * per-mode wiring needed on either side — {@link #templateInline} does not know or care which
+     * mode a given name belongs to, and neither does the caller that attaches it.
+     */
     public static final String TMPL_PREFIX = "override-stripe-tmpl-";
 
     /** {@code override-stripe-notify-{name}-enabled}. */
@@ -209,7 +217,11 @@ public final class RequestOverrides {
         return req.attachedParam(PRODUCTS_DISABLED) != null;
     }
 
-    /** Inline HTML override for a notification template, or {@code null} if not overridden. */
+    /**
+     * Inline HTML override for a notification template, or {@code null} if not overridden.
+     * {@code notificationName} may name a subscription or an order notification — see
+     * {@link #TMPL_PREFIX}.
+     */
     public static String templateInline(ServiceRequest<?> req, String notificationName) {
         var v = req.attachedParam(TMPL_PREFIX + notificationName);
         return (v instanceof String s && !s.isBlank()) ? s : null;

@@ -83,7 +83,12 @@ public record ProductsConfig(
     /**
      * Notification configuration for order events.
      *
-     * @param enabled whether this notification is sent
+     * @param enabled      whether this notification is sent
+     * @param templatePath path to the HTML template, or {@code null} to use the built-in — same
+     *                     meaning {@code templatePath} has on {@link NotificationConfig}, the
+     *                     equivalent record for subscription notifications. A request-scoped
+     *                     inline override still wins over this when present; see
+     *                     {@code RequestOverrides.templateInline()} in {@code restheart-stripe}.
      */
-    public record OrderNotificationConfig(boolean enabled) {}
+    public record OrderNotificationConfig(boolean enabled, String templatePath) {}
 }
