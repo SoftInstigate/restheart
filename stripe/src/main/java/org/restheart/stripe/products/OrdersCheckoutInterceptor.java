@@ -19,6 +19,8 @@
  */
 package org.restheart.stripe.products;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HexFormat;
@@ -258,10 +260,19 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var buyerId = resolveBuyerId(request);
         var buyerEmail = resolveBuyerEmail(request, body, products);
 
+        // 5b. Mint the order identity up front.
+        //
+        // Both of these are generated locally — an ObjectId needs no round trip
+        // and the secret comes from an RNG — so nothing is gained by waiting.
+        // Minting them here instead of after Session.create is what lets the
+        // success URL carry them: see interpolateOrderRef.
+        var orderId = new ObjectId();
+        var secret = generateSecret();
+
         // 6. Build Stripe Checkout Session
         var sessionBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl(products.successUrl())
+                .setSuccessUrl(interpolateOrderRef(products.successUrl(), orderId, secret))
                 .setCancelUrl(products.cancelUrl())
                 .putMetadata("order_source", "restheart-products");
 
@@ -361,9 +372,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return;
         }
 
-        // 7. Build order document
-        var orderId = new ObjectId();
-        var secret = generateSecret();
+        // 7. Build order document (orderId and secret were minted at step 5b)
         var now = System.currentTimeMillis();
         var expiresAt = now + (expiresMinutes * 60L * 1000L);
 
@@ -500,6 +509,44 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return null;
         }
         return doc.getString(key).getValue();
+    }
+
+    /**
+     * Substitutes {@code {ORDER_ID}} and {@code {ORDER_SECRET}} in the configured
+     * success URL.
+     *
+     * <p>Without this the buyer comes back from Checkout holding nothing that
+     * identifies their order. Stripe substitutes only {@code {CHECKOUT_SESSION_ID}},
+     * and a guest has no session for the server to recognise them by — so every
+     * client had to invent its own way to carry the reference across the redirect
+     * (typically stashing it in {@code localStorage}, which does not survive a
+     * different browser, a cleared store, or a private window).
+     *
+     * <p>Substitution is opt-in: a URL without the placeholders is returned
+     * unchanged, so existing configurations keep working untouched.
+     *
+     * <p><b>Put {@code {ORDER_SECRET}} in the URL fragment, not the query
+     * string.</b> The secret is a bearer credential — it is the only thing
+     * standing between a stranger and a guest's order, with their email and
+     * shipping address in it. A fragment is never sent to the server, so it stays
+     * out of access logs, proxy logs and {@code Referer} headers, and the client
+     * can strip it from the address bar on arrival:
+     *
+     * <pre>
+     * success-url: https://shop.example.com/order#order={ORDER_ID}&amp;secret={ORDER_SECRET}
+     * </pre>
+     *
+     * <p>Both values are URL-encoded. An ObjectId is hex and a secret is hex, so
+     * in practice neither changes — the encoding is there so this stays correct
+     * if either representation ever does.
+     */
+    static String interpolateOrderRef(String url, ObjectId orderId, String secret) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        return url
+                .replace("{ORDER_ID}", URLEncoder.encode(orderId.toHexString(), StandardCharsets.UTF_8))
+                .replace("{ORDER_SECRET}", URLEncoder.encode(secret, StandardCharsets.UTF_8));
     }
 
     private static String generateSecret() {
