@@ -32,6 +32,8 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -180,7 +182,7 @@ public class ResourcesExtractor {
 
             try {
                 // used when run as a JAR file
-                Path destinationDir = Files.createTempDirectory("restheart-");
+                Path destinationDir = Files.createTempDirectory("restheart-", ownerOnly());
 
                 ret = destinationDir.toFile();
 
@@ -325,7 +327,7 @@ public class ResourcesExtractor {
      */
     @SuppressWarnings("rawtypes")
     private static File extractNativeImageResource(Class clazz, String resourcePath) throws IOException {
-        Path destinationDir = Files.createTempDirectory("restheart-");
+        Path destinationDir = Files.createTempDirectory("restheart-", ownerOnly());
 
         var index = getNativeImageDirectoryIndex();
         var filesCsv = index.get(resourcePath);
@@ -347,5 +349,22 @@ public class ResourcesExtractor {
         }
 
         return destinationDir.toFile();
+    }
+
+    /**
+     * Owner-only permissions for a temporary directory.
+     *
+     * <p>{@code createTempDirectory} without attributes falls back to the
+     * filesystem default, which in a shared temp directory means anything the
+     * umask allows. Extracted resources are readable by whoever can reach them,
+     * so the permissions are stated rather than inherited.
+     *
+     * <p>Empty on filesystems with no POSIX view — Windows — where asking for
+     * POSIX permissions would throw rather than protect anything.
+     */
+    private static FileAttribute<?>[] ownerOnly() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
+            ? new FileAttribute<?>[] { PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")) }
+            : new FileAttribute<?>[0];
     }
 }
