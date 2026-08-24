@@ -14,6 +14,21 @@
 /jwtAuthenticationMechanism/rolesClaim: roles
 /jwtAuthenticationMechanism/base64Encoded: false
 
+# apiKeyAuthMechanism shares the Bearer scheme with jwtAuthenticationMechanism: it runs
+# first (priority) and declines, with NOT_ATTEMPTED, anything not carrying the prefix.
+# Both are enabled here so api-key-auth.feature can prove they actually compose in a
+# running instance — the one claim the unit tests structurally cannot reach.
+/apiKeyAuthMechanism/enabled: true
+/apiKeyAuthMechanism/authenticator: mongoApiKeyAuthenticator
+/apiKeyAuthMechanism/prefix: rhak_
+
+/mongoApiKeyAuthenticator/enabled: true
+/mongoApiKeyAuthenticator/keys-db: test-apikeys
+/mongoApiKeyAuthenticator/keys-collection: keys
+# Off so the feature seeds keys and uses them immediately, and so a revocation test
+# would not have to wait out a TTL.
+/mongoApiKeyAuthenticator/cache-enabled: false
+
 /jwtConfigProvider/enabled: true
 /jwtConfigProvider/key: secret
 /jwtConfigProvider/algorithm: HS256
