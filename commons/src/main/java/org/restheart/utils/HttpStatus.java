@@ -59,7 +59,7 @@ public class HttpStatus {
             new String[3],
             new String[8],
             new String[8],
-            new String[30],
+            new String[52], // up to 451 Unavailable For Legal Reasons
             new String[8]
     };
 
@@ -255,6 +255,10 @@ public class HttpStatus {
      * {@literal <tt>}429 Too Many Requests{@literal <tt/>} (Additional HTTP Status Codes - RFC 6585)
      */
     public static final int SC_TOO_MANY_REQUESTS = 429;
+    /**
+     * {@literal <tt>}451 Unavailable For Legal Reasons{@literal <tt/>} (RFC 7725)
+     */
+    public static final int SC_UNAVAILABLE_FOR_LEGAL_REASONS = 451;
 
 
     // --- 5xx Server Error ---
@@ -350,6 +354,7 @@ public class HttpStatus {
 
         // HTTP 1.1 Additional HTTP Status Codes -- see RFC 6585
         addStatusCodeMap(SC_TOO_MANY_REQUESTS, "Too Many Requests");
+        addStatusCodeMap(SC_UNAVAILABLE_FOR_LEGAL_REASONS, "Unavailable For Legal Reasons");
     }
 
     // --------------------------------------------------------- Public Methods

@@ -18,6 +18,7 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
@@ -66,11 +67,14 @@ public class SwitchTeamService implements JsonService {
     @Inject("mclient")
     private com.mongodb.client.MongoClient mclient;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-team") && (r.isPost() || r.isOptions()));
         }
@@ -166,7 +170,8 @@ public class SwitchTeamService implements JsonService {
                 req.attachedParams(),
                 java.util.Map.<String, Object>of(conf.teamClaimName(),
                         TeamClaim.of(matched.teamId(), matched.role())),
-                null);
+                null,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         // Deliver the reissued token per the `delivery` query parameter
         // (cookie by default, body for bearer SPAs).

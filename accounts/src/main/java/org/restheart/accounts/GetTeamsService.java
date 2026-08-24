@@ -18,6 +18,7 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
@@ -86,11 +87,14 @@ public class GetTeamsService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/teams")
                     && (r.isGet() || r.isPost() || r.isOptions()));
@@ -196,7 +200,8 @@ public class GetTeamsService implements JsonService {
                 req.attachedParams(),
                 java.util.Map.<String, Object>of(conf.teamClaimName(),
                         TeamClaim.of(teamRef.id(), RequestOverrides.ownershipRole(req, conf))),
-                null);
+                null,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         var delivery = TokenDelivery.resolve(
                 req.getQueryParameterOrDefault("delivery", null), TokenDelivery.Mode.COOKIE);

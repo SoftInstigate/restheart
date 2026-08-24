@@ -10,8 +10,8 @@ import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -220,7 +220,7 @@ public class InviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite sent to <{}> by {} (team={}, newUser={})", invitedEmail, inviterName, callerTeam, isNewUser);

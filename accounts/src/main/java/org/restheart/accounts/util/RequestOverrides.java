@@ -96,6 +96,24 @@ import java.util.List;
  *         (see {@code AccountsInitializer})</td>
  *     <td>{@link AccountsConfigData#usersUnrestrictedRoles()}</td>
  *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-terms-version}</td>
+ *     <td>Terms of Service version recorded in the {@code ConsentRecord} on OAuth activation</td>
+ *     <td>{@link AccountsConfigData#termsVersion()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-privacy-version}</td>
+ *     <td>Privacy Policy version recorded in the {@code ConsentRecord} on OAuth activation</td>
+ *     <td>{@link AccountsConfigData#privacyVersion()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-account-properties-claims}</td>
+ *     <td>User-document fields copied into the issued JWT (see {@code JwtHelper}).
+ *         A fixed denylist — the configured password property and the one-shot
+ *         verification/reset token fields — is enforced at token issuance regardless
+ *         of this override</td>
+ *     <td>{@link AccountsConfigData#accountPropertiesClaims()}</td>
+ *   </tr>
  * </table>
  *
  * <h2>Multi-team usage (restheart-cloud)</h2>
@@ -109,6 +127,9 @@ import java.util.List;
  *     "app-name": "Customer App",
  *     "frontend-url": "https://app.customer.com",
  *     "frontend-app-url": "https://app.customer.com/app",
+ *     "terms-version": "2.0",
+ *     "privacy-version": "2.0",
+ *     "account-properties-claims": ["consents", "plan"],
  *     "templates": {
  *       "verification":   "<html>...</html>",
  *       "password-reset": "<html>...</html>",
@@ -179,10 +200,25 @@ public final class RequestOverrides {
     /** Team role for the user who creates a team (override for multi-team). */
     public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
 
+    // ── Legal ─────────────────────────────────────────────────────────────
+
+    /** Terms of Service version override (recorded in {@code ConsentRecord} on OAuth activation). */
+    public static final String TERMS_VERSION = "override-accounts-terms-version";
+
+    /** Privacy Policy version override (recorded in {@code ConsentRecord} on OAuth activation). */
+    public static final String PRIVACY_VERSION = "override-accounts-privacy-version";
+
     // ── Users self-service write restriction override ───────────────────────
 
     /** Roles exempt from the {@code /users} self-service write restriction (override for multi-team). */
     public static final String USERS_UNRESTRICTED_ROLES = "override-accounts-users-unrestricted-roles";
+
+    /**
+     * User-document fields copied into the issued JWT (override for multi-team).
+     * A fixed denylist is enforced at token issuance by {@code JwtHelper} regardless of
+     * this override — see its class javadoc.
+     */
+    public static final String ACCOUNT_PROPERTIES_CLAIMS = "override-accounts-account-properties-claims";
 
     /**
      * Whether Sign-up Management is enabled for this tenant (override for multi-team).
@@ -270,9 +306,31 @@ public final class RequestOverrides {
         return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
+    /** Effective Terms of Service version, recorded in {@code ConsentRecord} on OAuth activation. */
+    public static String termsVersion(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, TERMS_VERSION, conf.termsVersion());
+    }
+
+    /** Effective Privacy Policy version, recorded in {@code ConsentRecord} on OAuth activation. */
+    public static String privacyVersion(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, PRIVACY_VERSION, conf.privacyVersion());
+    }
+
     /** Effective roles exempt from the {@code /users} self-service write restriction. */
     public static List<String> usersUnrestrictedRoles(ServiceRequest<?> req, AccountsConfigData conf) {
         return list(req, USERS_UNRESTRICTED_ROLES, conf.usersUnrestrictedRoles());
+    }
+
+    /**
+     * Effective list of user-document fields to copy into the issued JWT.
+     *
+     * <p><b>Not authoritative for security</b>: {@code JwtHelper} enforces a fixed denylist
+     * (the configured password property and one-shot verification/reset token fields) at
+     * token issuance, so a tenant cannot use this override to exfiltrate credentials even
+     * if it lists them.
+     */
+    public static List<String> accountPropertiesClaims(ServiceRequest<?> req, AccountsConfigData conf) {
+        return list(req, ACCOUNT_PROPERTIES_CLAIMS, conf.accountPropertiesClaims());
     }
 
     /**

@@ -615,6 +615,15 @@ public class DbHelper {
     }
 
     /**
+     * Returns {@code true} if the users collection carries a {@code jsonSchema}
+     * metadata document. Used by {@code RegisterService} to decide whether
+     * additional body properties should be carried into the user document.
+     */
+    public boolean hasSchema() {
+        return resolveSchemaMeta() != null;
+    }
+
+    /**
      * Validates a user document against the JSON Schema declared by {@code schemaMeta}.
      *
      * <p>Validation is opt-in — call sites only reach this method once

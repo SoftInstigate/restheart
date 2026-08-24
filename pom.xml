@@ -76,6 +76,7 @@
         <module>metrics</module>
         <module>accounts</module>
         <module>emails</module>
+        <module>stripe</module>
         <module>core</module>
     </modules>
 
@@ -227,6 +228,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-stripe</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
                 <version>5.9.1</version>
@@ -322,13 +328,18 @@
             <dependency>
                 <groupId>com.softinstigate</groupId>
                 <artifactId>ermes-mail</artifactId>
-                <version>2.1.0</version>
+                <version>3.0.0</version>
                 <classifier>shaded</classifier>
             </dependency>
             <dependency>
                 <groupId>com.github.scribejava</groupId>
                 <artifactId>scribejava-apis</artifactId>
                 <version>8.3.3</version>
+            </dependency>
+            <dependency>
+                <groupId>com.stripe</groupId>
+                <artifactId>stripe-java</artifactId>
+                <version>33.3.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -398,7 +409,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.188</version>
+                <version>4.8.189</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>

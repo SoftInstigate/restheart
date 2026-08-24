@@ -43,7 +43,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.graalvm.home.Version;
-import org.graalvm.polyglot.Source;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
@@ -93,6 +92,9 @@ public class PolyglotDeployer implements Initializer {
     @Inject("rh-config")
     private Configuration config;
 
+    @Inject(value = "mclient", required = false)
+    private MongoClient mclientInjected;
+
     private Optional<MongoClient> mclient;
 
     @OnInit
@@ -106,20 +108,11 @@ public class PolyglotDeployer implements Initializer {
 
         LOGGER.trace("pluginsDirectory: {}", pluginsDirectory);
 
-        this.mclient = mongoClient(registry);
+        this.mclient = Optional.ofNullable(mclientInjected);
 
         this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config);
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
-    }
-
-    private Optional<MongoClient> mongoClient(final PluginsRegistry registry) {
-        return registry.getProviders().stream()
-                .filter(pd -> pd.isEnabled())
-                .map(pd -> pd.getInstance())
-                .filter(p -> MongoClient.class.getName().equals(p.rawType().getName()))
-                .map(p -> (MongoClient) p.get(null))
-                .findFirst();
     }
 
     private boolean isRunningOnGraalVM() {

@@ -18,6 +18,7 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
@@ -88,12 +89,14 @@ public class EmailVerificationService implements JsonService {
     @Inject("json-schemas")
     private JsonSchemas jsonSchemas;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
 
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/verify") && (r.isGet() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/verify"));
     }
@@ -192,7 +195,8 @@ public class EmailVerificationService implements JsonService {
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,
-                user);
+                user,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 

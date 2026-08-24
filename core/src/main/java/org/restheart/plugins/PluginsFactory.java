@@ -489,6 +489,11 @@ public class PluginsFactory {
                     LOGGER.trace("Provider '{}' injected {} into field {} of {} ({}) - Provider call: {}ms, Total: {}ms",
                             providerName, value != null ? value.getClass().getSimpleName() : "null",
                             injection.field(), ip.name, ip.clazz.getSimpleName(), getDuration, injectionDuration);
+                } else if (!injection.required()) {
+                    field.setAccessible(true);
+                    field.set(ip.instance, null);
+                    LOGGER.debug("Optional provider '{}' not found for @Inject(required=false) field {} in {} ({}) - field set to null",
+                            providerName, injection.field(), ip.name, ip.clazz.getSimpleName());
                 } else {
                     var availableProviders = providers().stream().map(p -> p.getName()).toList();
                     LOGGER.error("No provider found for @Inject(\"{}\") in {} ({}). Available providers: {}",

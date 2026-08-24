@@ -20,6 +20,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.schema.JsonSchemas;
@@ -97,11 +98,14 @@ public class OAuthCallback implements StringService {
     @Inject("json-schemas")
     private JsonSchemas jsonSchemas;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
 
         Predicate<Request<?>> isCallback = r ->
                 r.getMethod() == METHOD.GET &&
@@ -187,8 +191,8 @@ public class OAuthCallback implements StringService {
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
                     var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
-                    consents = new ConsentRecord(conf.termsVersion(), conf.privacyVersion(),
-                            ip, Instant.now());
+                    consents = new ConsentRecord(RequestOverrides.termsVersion(req, conf),
+                            RequestOverrides.privacyVersion(req, conf), ip, Instant.now());
                 }
 
                 // If a pending invite token is present, add membership now so activateViaOAuth
@@ -219,7 +223,8 @@ public class OAuthCallback implements StringService {
                             req.attachedParams(),
                             java.util.Map.<String, Object>of(conf.teamClaimName(),
                                     TeamClaim.of(membership.get().teamId(), membership.get().role())),
-                            null);
+                            null,
+                            RequestOverrides.accountPropertiesClaims(req, conf));
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
                 }
@@ -255,7 +260,8 @@ public class OAuthCallback implements StringService {
                         RequestOverrides.db(req, conf),
                         req.attachedParams(),
                         java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
-                        null);
+                        null,
+                        RequestOverrides.accountPropertiesClaims(req, conf));
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
             }
@@ -270,7 +276,8 @@ public class OAuthCallback implements StringService {
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
                     extraClaims,
-                    null);
+                    null,
+                    RequestOverrides.accountPropertiesClaims(req, conf));
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 
         } catch (OAuthService.OAuthException e) {

@@ -339,7 +339,12 @@ public class MongoResponse extends BsonResponse {
         var rep = new BsonDocument();
 
         rep.put("http status code", new BsonInt32(code));
-        rep.put("http status description", new BsonString(httpStatusText));
+
+        // null for any status code HttpStatus does not know: omit the description rather than
+        // throw, otherwise an unknown status code turns the response into a 500
+        if (httpStatusText != null) {
+            rep.put("http status description", new BsonString(httpStatusText));
+        }
 
         if (message != null) {
             rep.put("message", new BsonString(avoidEscapedChars(message)));

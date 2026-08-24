@@ -9,3 +9,5 @@ org.restheart.security.predicates.BsonRequestPropEqualsPredicate$Builder
 org.restheart.security.predicates.BsonRequestArrayContainsPredicate$Builder
 org.restheart.security.predicates.BsonRequestArrayIsSubsetPredicate$Builder
 org.restheart.security.predicates.InPredicate$Builder
+org.restheart.security.predicates.GtePredicate$Builder
+org.restheart.security.predicates.LtePredicate$Builder

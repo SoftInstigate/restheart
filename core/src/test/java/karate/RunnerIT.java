@@ -46,7 +46,12 @@ public class RunnerIT extends AbstactIT {
             tags.add("~@requires-graalvm");
         }
 
-        var results = Runner.path("classpath:karate")
+        // Defaults to the whole suite. Narrow it while debugging with a comma-separated list:
+        //   mvn verify -Dit.includes=**/RunnerIT.java \
+        //              -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
+        var paths = System.getProperty("karate.path", "classpath:karate").split(",");
+
+        var results = Runner.path(paths)
                 .tags(tags.toArray(new String[0]))
                 .parallel(1);
 
