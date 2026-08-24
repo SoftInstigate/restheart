@@ -21,6 +21,7 @@ package org.restheart.graal;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -62,20 +63,17 @@ public class ResourcesScannerFeature implements Feature {
             }
         });
 
-        // Write the directory index as a resource
+        // Write the directory index as a resource.
+        //
+        // This used to round-trip through a temp file — write the string, read it
+        // straight back as bytes, delete it. The file bought nothing, and on the
+        // exception path it was never deleted; handing the bytes over directly is
+        // both simpler and one less file in a shared temp directory.
         if (!directoryIndex.isEmpty()) {
-            try {
-                var tmpFile = Files.createTempFile("restheart-resources-", ".properties");
-                var sb = new StringBuilder();
-                directoryIndex.forEach((dir, files) -> {
-                    sb.append(dir).append("=").append(files).append("\n");
-                });
-                Files.writeString(tmpFile, sb.toString());
-                RuntimeResourceAccess.addResource(ResourcesScannerFeature.class.getModule(), INDEX_RESOURCE, Files.readAllBytes(tmpFile));
-                Files.delete(tmpFile);
-            } catch (IOException e) {
-                System.err.println("[ResourcesScannerFeature] Failed to write directory index: " + e.getMessage());
-            }
+            var sb = new StringBuilder();
+            directoryIndex.forEach((dir, files) -> sb.append(dir).append("=").append(files).append("\n"));
+            RuntimeResourceAccess.addResource(ResourcesScannerFeature.class.getModule(), INDEX_RESOURCE,
+                    sb.toString().getBytes(StandardCharsets.UTF_8));
         }
     }
 
