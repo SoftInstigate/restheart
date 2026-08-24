@@ -49,6 +49,17 @@ jwtConfigProvider:
   issuer: restheart.org
   audience: null   # null or array of audience strings
 
+# API Key Authentication
+# Authenticates long-lived, revocable keys sent as `Authorization: Bearer <prefix>...`.
+# Shares the Bearer scheme with jwtAuthenticationMechanism: it runs first (priority) and
+# declines, with NOT_ATTEMPTED, any Bearer value that does not carry `prefix` — the same way
+# tokenBasicAuthMechanism shares Basic with basicAuthMechanism. So the prefix is required:
+# it is what tells a key from a JWT.
+apiKeyAuthMechanism:
+  enabled: false
+  authenticator: mongoApiKeyAuthenticator
+  prefix: rhak_
+
 # JSON Web Token Authentication
 # See https://restheart.org/docs/security/authentication#jwt-authentication
 jwtAuthenticationMechanism:
@@ -86,6 +97,26 @@ fileRealmAuthenticator:
     - userid: admin
       password: null
       roles: [admin]
+
+# mongoApiKeyAuthenticator verifies API keys stored in a MongoDB collection.
+# The account it builds carries the roles named on the *key* document, never the user's:
+# a key is deny-by-default, so it reaches only what has been granted to it deliberately.
+# Keys are hashed with SHA-256 rather than bcrypt — a key is high-entropy, and bcrypt's
+# slowness would be paid on every request instead of once per login.
+# Expiry wants a TTL index on `expiresAt`; revocation takes effect within cache-ttl.
+mongoApiKeyAuthenticator:
+  enabled: false
+  keys-db: restheart
+  keys-collection: apiKeys
+  prop-hash: hash
+  prop-principal: user
+  prop-roles: roles
+  prop-expires: expiresAt
+  track-last-used: true
+  cache-enabled: true
+  cache-size: 1000
+  cache-ttl: 60000
+  cache-expire-policy: AFTER_WRITE
 
 # mongoRealmAuthenticator authenticates users defined in a MongoDB collection.
 # See https://restheart.org/docs/security/authentication#mongo-realm-authenticator
