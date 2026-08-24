@@ -7,8 +7,8 @@ import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -187,7 +187,7 @@ public class ResendInviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (team={})",

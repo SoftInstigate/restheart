@@ -81,17 +81,17 @@ public class SecurityHandler extends PipelinedHandler {
                     .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
                     .collect(java.util.stream.Collectors.toList());
 
-            BootstrapLogger.debugItem(SecurityHandler.LOGGER, "AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
+            BootstrapLogger.item(SecurityHandler.LOGGER, "AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
                     authorizers.size(), vetoers, allowers);
 
             // Log token manager info
             if (tokenManager != null) {
                 var tokenManagerName = org.restheart.utils.PluginUtils.name(tokenManager);
                 var tokenManagerClass = tokenManager.getClass().getSimpleName();
-                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: token manager {} ({})",
+                BootstrapLogger.item(SecurityHandler.LOGGER, "TokenInjector: token manager {} ({})",
                         tokenManagerName, tokenManagerClass);
             } else {
-                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: no token manager");
+                BootstrapLogger.item(SecurityHandler.LOGGER, "TokenInjector: no token manager");
             }
 
             var duration = System.currentTimeMillis() - startTime;

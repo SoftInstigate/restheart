@@ -38,14 +38,14 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.WithProperties;
 import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
 import org.restheart.security.tokens.JwtConfigProvider;
-import org.restheart.security.tokens.JwtTokenManager;
+import org.restheart.security.tokens.JwtIssuer;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
 import io.undertow.util.Headers;
@@ -73,12 +73,17 @@ import io.undertow.util.HttpString;
  * <p>The code JWT carries the following claims:
  * <ul>
  *   <li>{@code sub} — username</li>
+ *   <li>{@code iss} — issuer (from jwtConfigProvider)</li>
+ *   <li>{@code aud} — audience (from jwtConfigProvider, when configured)</li>
+ *   <li>{@code jti} — unique JWT identifier</li>
+ *   <li>{@code iat} — issued-at timestamp</li>
+ *   <li>{@code exp} — expiry ({@value #CODE_TTL_MINUTES} minutes)</li>
  *   <li>{@code roles} — array of roles</li>
  *   <li>{@code cc} — code_challenge (PKCE)</li>
  *   <li>{@code ccm} — code_challenge_method</li>
  *   <li>{@code ruri} — redirect_uri</li>
  *   <li>{@code cid} — client_id</li>
- *   <li>{@code exp} — expiry ({@value #CODE_TTL_MINUTES} minutes)</li>
+ *   <li>account-properties-claims (from {@link JwtIssuer})</li>
  * </ul>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -118,16 +123,56 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
-    private Algorithm signingAlgo;
+    private volatile JwtIssuer jwtIssuer;
 
     @OnInit
     public void init() {
         this.loginUrl = argOrDefault(config, "login-url", null);
         this.allowedRedirectUris = argOrDefault(config, "allowed-redirect-uris", List.of());
-        this.signingAlgo = buildAlgorithm(jwtConfig);
 
         // allow unauthenticated GET (redirect to login) and authenticated POST (issue code)
         aclRegistry.registerAllow(req -> "/authorize".equals(req.getPath()));
+    }
+
+    /**
+     * The shared JWT issuance policy. Built lazily: resolving the password property name
+     * needs {@code mongoRealmAuthenticator}, which may not be initialized when this plugin's
+     * {@code @OnInit} runs.
+     */
+    private JwtIssuer issuer() {
+        var local = this.jwtIssuer;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.jwtIssuer;
+                if (local == null) {
+                    var algo = buildAlgorithm(jwtConfig);
+                    local = new JwtIssuer(algo, jwtConfig.issuer(), jwtConfig.audience(),
+                            jwtConfig.accountPropertiesClaims(),
+                            jwtConfig.requiredAccountPropertiesClaims(), resolvePasswordPropertyName());
+                    this.jwtIssuer = local;
+                }
+            }
+        }
+
+        return local;
+    }
+
+    private String resolvePasswordPropertyName() {
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+            if (pr != null && pr.isEnabled()
+                    && pr.getInstance() instanceof org.restheart.security.authenticators.MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+                if (prop != null && !prop.isBlank()) {
+                    return prop;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
+        }
+
+        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
     }
 
     @Override
@@ -269,24 +314,26 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
         // Issue authorization code as a short-lived signed JWT.
         // Stateless: any node sharing the same JWT key can later verify it.
-        var roles = account.getRoles().toArray(String[]::new);
-        var codeBuilder = JWT.create()
-                .withIssuer(jwtConfig.issuer())
-                .withSubject(account.getPrincipal().getName())
-                .withExpiresAt(Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
-                .withArrayClaim(CLAIM_ROLES, roles)
+        var jwtIssuer = issuer();
+        var codeBuilder = jwtIssuer.newBuilder(
+                account.getPrincipal().getName(),
+                account.getRoles(),
+                Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
+                .withIssuedAt(Instant.now())
                 .withClaim(CLAIM_CODE_CHALLENGE, codeChallenge)
                 .withClaim(CLAIM_CODE_CHALLENGE_METHOD, codeChallengeMethod)
                 .withClaim(CLAIM_REDIRECT_URI, redirectUri)
                 .withClaim(CLAIM_CLIENT_ID, clientId);
 
-        // Propagate account-properties-claims via JwtTokenManager so the logic stays in one place.
-        var tokenMgr = registry.getTokenManager();
-        if (tokenMgr != null && tokenMgr.getInstance() instanceof JwtTokenManager jtm) {
-            codeBuilder = jtm.withAccountPropertiesClaims(codeBuilder, account);
+        // Propagate account-properties-claims so the access token (later built from this
+        // code's payload) carries the same claims. The request carries the effective claim
+        // list on a multi-tenant deployment.
+        if (account instanceof WithProperties<?> awp) {
+            codeBuilder = jwtIssuer.applyAccountClaims(codeBuilder, awp.propertiesAsMap(),
+                    JwtIssuer.claimsOverride(request));
         }
 
-        var code = codeBuilder.sign(signingAlgo);
+        var code = jwtIssuer.sign(codeBuilder);
 
         var sb = new StringBuilder(redirectUri);
         sb.append(redirectUri.contains("?") ? "&" : "?");

@@ -389,11 +389,11 @@ public final class Bootstrapper {
 
         if (beforeStartupInitializers.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
-            BootstrapLogger.debugInfo(LOGGER, "No initializers configured");
+            BootstrapLogger.info(LOGGER, "No initializers configured");
             BootstrapLogger.endPhase(LOGGER, "BEFORE_STARTUP COMPLETED in 0ms");
         } else {
             BootstrapLogger.startPhase(LOGGER, "BEFORE_STARTUP INITIALIZERS");
-            BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", beforeStartupInitializers.size());
+            BootstrapLogger.info(LOGGER, "Found {} initializers", beforeStartupInitializers.size());
         }
         final var beforeStartupStartTime = System.currentTimeMillis();
 
@@ -403,7 +403,7 @@ public final class Bootstrapper {
             final var initializerClass = i.getInstance().getClass().getSimpleName();
             final var initializerPriority = getPluginPriority(i.getInstance());
 
-            BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}",
+            BootstrapLogger.item(LOGGER, "{} ({}) - Priority: {}",
                     initializerName, initializerClass, initializerPriority);
 
             try {
@@ -464,11 +464,11 @@ public final class Bootstrapper {
 
         if (afterStartupInitializers.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
-            BootstrapLogger.debugInfo(LOGGER, "No initializers found");
+            BootstrapLogger.info(LOGGER, "No initializers found");
             BootstrapLogger.endPhase(LOGGER, "AFTER_STARTUP COMPLETED in 0ms");
         } else {
             BootstrapLogger.startPhase(LOGGER, "AFTER_STARTUP INITIALIZERS");
-            BootstrapLogger.debugInfo(LOGGER, "Found {} initializers", afterStartupInitializers.size());
+            BootstrapLogger.info(LOGGER, "Found {} initializers", afterStartupInitializers.size());
 
             final var afterStartupStartTime = System.currentTimeMillis();
 
@@ -478,7 +478,7 @@ public final class Bootstrapper {
                 final var initializerClass = i.getInstance().getClass().getSimpleName();
                 final var initializerPriority = getPluginPriority(i.getInstance());
 
-                BootstrapLogger.debugItem(LOGGER, "{} ({}) - Priority: {}", initializerName, initializerClass,
+                BootstrapLogger.item(LOGGER, "{} ({}) - Priority: {}", initializerName, initializerClass,
                         initializerPriority);
 
                 try {
@@ -978,7 +978,7 @@ public final class Bootstrapper {
 
         if (proxies == null || proxies.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "PROXY BINDING");
-            BootstrapLogger.debugInfo(LOGGER, "No proxies configured");
+            BootstrapLogger.info(LOGGER, "No proxies configured");
             BootstrapLogger.endPhase(LOGGER, "PROXY BINDING COMPLETED");
             return;
         }
@@ -1045,7 +1045,7 @@ public final class Bootstrapper {
             PluginsRegistryImpl.getInstance().plugPipeline(proxy.location(), rhProxy,
                     new PipelineInfo(PROXY, proxy.location(), proxy.name()));
 
-            BootstrapLogger.debugItem(LOGGER, "URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
+            BootstrapLogger.item(LOGGER, "URI {} bound to proxy resource {}", proxy.location(), proxy.proxyPass());
         });
 
         final var duration = System.currentTimeMillis() - startTime;
@@ -1063,7 +1063,7 @@ public final class Bootstrapper {
 
         if (staticResources == null || staticResources.isEmpty()) {
             BootstrapLogger.startPhase(LOGGER, "STATIC RESOURCE BINDING");
-            BootstrapLogger.debugInfo(LOGGER, "No static resources configured");
+            BootstrapLogger.info(LOGGER, "No static resources configured");
             BootstrapLogger.endPhase(LOGGER, "STATIC RESOURCE BINDING COMPLETED");
             return;
         }
@@ -1093,7 +1093,7 @@ public final class Bootstrapper {
 
                         if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, sr.what())) {
                             TMP_EXTRACTED_FILES.put(sr.what(), file);
-                            BootstrapLogger.debugItem(LOGGER, "Embedded static resources {} extracted in {}", sr.what(),
+                            BootstrapLogger.item(LOGGER, "Embedded static resources {} extracted in {}", sr.what(),
                                     file.toString());
                         }
                     } catch (URISyntaxException | IOException | IllegalStateException ex) {
@@ -1126,7 +1126,7 @@ public final class Bootstrapper {
                     PluginsRegistryImpl.getInstance().plugPipeline(sr.where(), ph,
                             new PipelineInfo(STATIC_RESOURCE, sr.where(), sr.what()));
 
-                    BootstrapLogger.debugItem(LOGGER, "URI {} bound to static resource {}", sr.where(),
+                    BootstrapLogger.item(LOGGER, "URI {} bound to static resource {}", sr.where(),
                             file.getAbsolutePath());
                 } else {
                     BootstrapLogger.errorItem(LOGGER,

@@ -126,10 +126,23 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
             throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
         }
 
-        this.jwtConfig = new JwtConfig(key, algorithm, issuer, audience.isEmpty() ? null : audience.toArray(String[]::new));
+        // Account properties copied into issued tokens. Shared here so that every issuer —
+        // jwtTokenManager on /token, restheart-accounts at login — puts the same claims in the
+        // token: they are the same JWT, issued at different moments.
+        var accountPropertiesClaims = claimList(config, "account-properties-claims");
+        var requiredAccountPropertiesClaims = claimList(config, "required-account-properties-claims");
+
+        this.jwtConfig = new JwtConfig(key, algorithm, issuer,
+                audience.isEmpty() ? null : audience.toArray(String[]::new),
+                accountPropertiesClaims, requiredAccountPropertiesClaims);
 
         BootstrapLogger.info(LOGGER, "Algorithm: {}, Issuer: {}, Audience: {}",
                 algorithm, issuer, audience.isEmpty() ? "null" : String.join(", ", audience));
+
+        if (accountPropertiesClaims != null) {
+            BootstrapLogger.info(LOGGER, "Account properties claims: {}",
+                    String.join(", ", accountPropertiesClaims));
+        }
 
         BootstrapLogger.endPhase(LOGGER, "JWT CONFIGURATION COMPLETED");
     }
@@ -138,6 +151,27 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     public JwtConfig get(PluginRecord<?> caller) {
         LOGGER.debug("Providing JWT config to: {}", caller.getName());
         return this.jwtConfig;
+    }
+
+    /**
+     * Reads {@code account-properties-claims}, accepting a single String or a List of Strings.
+     *
+     * @return the configured names, or {@code null} when not set here — issuers then fall back to
+     *         their own deprecated per-plugin setting
+     */
+    private List<String> claimList(Map<String, Object> config, String key) throws ConfigurationException {
+        var configured = argOrDefault(config, key, null);
+
+        return switch (configured) {
+            case null -> null;
+            case String s -> List.of(s);
+            case List<?> l -> l.stream()
+                    .filter(String.class::isInstance)
+                    .map(e -> (String) e)
+                    .toList();
+            default -> throw new ConfigurationException(
+                    "Wrong " + key + ", must be a String or an Array of Strings");
+        };
     }
 
     /**
@@ -153,9 +187,20 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     }
 
     /**
-     * JWT configuration record containing all shared JWT settings
+     * JWT configuration record containing all shared JWT settings.
+     *
+     * @param accountPropertiesClaims account properties copied into issued tokens. Shared for the
+     *        same reason {@code key} and {@code issuer} are: a JWT issued by this deployment is one
+     *        thing regardless of which component issues it. {@code null} means "not set here",
+     *        in which case issuers fall back to their own deprecated setting.
+     * @param requiredAccountPropertiesClaims account properties always copied into issued tokens,
+     *        even when a per-request override supplies its own list. For claims the deployment
+     *        cannot work without — on a multi-tenant node, the claim naming the issuing node is
+     *        verified on every later request, so a tenant able to drop it would lock itself out.
      */
-    public record JwtConfig(String key, String algorithm, String issuer, String[] audience) {
+    public record JwtConfig(String key, String algorithm, String issuer, String[] audience,
+                            List<String> accountPropertiesClaims,
+                            List<String> requiredAccountPropertiesClaims) {
         public boolean hasAudience() {
             return audience != null && audience.length > 0;
         }

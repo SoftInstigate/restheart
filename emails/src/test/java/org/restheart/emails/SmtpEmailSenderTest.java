@@ -3,50 +3,33 @@ package org.restheart.emails;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Request;
 
 import com.softinstigate.ermes.mail.EmailService;
-import com.softinstigate.ermes.mail.SMTPConfig;
 
 /**
  * Unit tests for SmtpEmailSender's config validation, enabled/disabled
- * behavior, and per-request override signature logic.
+ * behavior, and per-request override logic.
  *
- * <p>Tests avoid exercising {@code EmailService.send()} since it opens a
- * live SMTP connection; only config parsing and wiring are covered. Any
- * SmtpEmailSender that successfully initializes a real EmailService (which
- * spawns a non-daemon thread pool) is shut down in {@link #cleanup()}.
+ * <p>Tests avoid exercising {@code EmailService.sendSynch()} since it opens a
+ * live SMTP connection; only config parsing and wiring are covered. No cleanup
+ * is needed: EmailService is built with a zero-sized thread pool, so it never
+ * creates an ExecutorService and holds no resource to release.
  */
 class SmtpEmailSenderTest {
 
     private SmtpEmailSender sender;
-
-    @AfterEach
-    void cleanup() throws Exception {
-        if (sender == null) {
-            return;
-        }
-        var field = SmtpEmailSender.class.getDeclaredField("emailSrv");
-        field.setAccessible(true);
-        var emailSrv = field.get(sender);
-        if (emailSrv != null) {
-            var shutdown = emailSrv.getClass().getMethod("shutdown", long.class);
-            shutdown.invoke(emailSrv, 0L);
-        }
-    }
 
     private static void setConf(SmtpEmailSender sender, Map<String, Object> conf) throws Exception {
         var field = SmtpEmailSender.class.getDeclaredField("conf");
@@ -58,12 +41,6 @@ class SmtpEmailSenderTest {
         Method m = SmtpEmailSender.class.getDeclaredMethod("hasOverride", Request.class);
         m.setAccessible(true);
         return (boolean) m.invoke(null, req);
-    }
-
-    private static String buildSignature(Request<?> req) throws Exception {
-        Method m = SmtpEmailSender.class.getDeclaredMethod("buildSignature", Request.class);
-        m.setAccessible(true);
-        return (String) m.invoke(null, req);
     }
 
     private static void overrideIfPresent(Map<String, Object> m, String key, String value) throws Exception {
@@ -78,24 +55,28 @@ class SmtpEmailSenderTest {
         return (EmailService) field.get(sender);
     }
 
-    /** OverrideEntry is a private nested record; built via reflection since tests can't name it. */
-    private static Object newOverrideEntry(EmailService emailSrv, String senderEmail, String appName) throws Exception {
-        var overrideEntryClass = Class.forName("org.restheart.emails.SmtpEmailSender$OverrideEntry");
-        var ctor = overrideEntryClass.getDeclaredConstructor(EmailService.class, String.class, String.class);
-        ctor.setAccessible(true);
-        return ctor.newInstance(emailSrv, senderEmail, appName);
-    }
-
-    private static void invokeOnOverrideEntryRemoved(SmtpEmailSender sender, Map.Entry<String, Optional<?>> entry) throws Exception {
-        Method m = SmtpEmailSender.class.getDeclaredMethod("onOverrideEntryRemoved", Map.Entry.class);
+    /** Settings is a private nested record; invoked via reflection since tests can't name it. */
+    private static Object buildOverride(SmtpEmailSender sender, Request<?> req) throws Exception {
+        Method m = SmtpEmailSender.class.getDeclaredMethod("buildOverride", Request.class);
         m.setAccessible(true);
-        m.invoke(sender, entry);
+        return m.invoke(sender, req);
     }
 
-    private static boolean isShutdown(EmailService emailSrv) throws Exception {
-        var field = EmailService.class.getDeclaredField("executor");
-        field.setAccessible(true);
-        return ((ExecutorService) field.get(emailSrv)).isShutdown();
+    private static Object component(Object override, String name) throws Exception {
+        var accessor = override.getClass().getDeclaredMethod(name);
+        accessor.setAccessible(true);
+        return accessor.invoke(override);
+    }
+
+    private static Map<String, Object> validConf() {
+        return Map.of(
+                "enabled", true,
+                "app-name", "Test App",
+                "sender-email", "noreply@example.com",
+                "smtp-hostname", "smtp.example.com",
+                "smtp-port", 465,
+                "smtp-username", "user",
+                "smtp-password", "pass");
     }
 
     @Test
@@ -113,7 +94,7 @@ class SmtpEmailSenderTest {
     void onInit_whenRequiredSmtpKeyMissing_pluginEndsDisabledInsteadOfThrowing() throws Exception {
         sender = new SmtpEmailSender();
         // "smtp-hostname" intentionally missing: cfgRequired() must fail before any
-        // EmailService (and its thread pool) is constructed.
+        // EmailService is constructed.
         setConf(sender, Map.of(
                 "enabled", true,
                 "app-name", "Test App",
@@ -130,18 +111,12 @@ class SmtpEmailSenderTest {
     @Test
     void onInit_whenConfigValid_pluginIsEnabled() throws Exception {
         sender = new SmtpEmailSender();
-        setConf(sender, Map.of(
-                "enabled", true,
-                "app-name", "Test App",
-                "sender-email", "noreply@example.com",
-                "smtp-hostname", "smtp.example.com",
-                "smtp-port", 465,
-                "smtp-username", "user",
-                "smtp-password", "pass"));
+        setConf(sender, validConf());
 
         sender.onInit();
 
         assertTrue(sender.isEnabled());
+        assertNotNull(getEmailSrv(sender));
     }
 
     @Test
@@ -160,48 +135,44 @@ class SmtpEmailSenderTest {
     }
 
     @Test
-    void buildSignature_joinsOverrideParamsInOrderWithEmptyPlaceholdersForMissingOnes() throws Exception {
+    void buildOverride_appliesAttachedParamsAndKeepsStaticValuesForTheRest() throws Exception {
+        sender = new SmtpEmailSender();
+        setConf(sender, validConf());
+        sender.onInit();
+
         Request<?> req = mock(Request.class);
-        when(req.attachedParam("override-emails-sender-email")).thenReturn("a@b.com");
+        when(req.attachedParam("override-emails-sender-email")).thenReturn("override@example.com");
         when(req.attachedParam("override-emails-smtp-hostname")).thenReturn("smtp.override.com");
         when(req.attachedParam("override-emails-smtp-port")).thenReturn(587);
 
-        assertEquals("a@b.com||smtp.override.com|587||", buildSignature(req));
+        var override = buildOverride(sender, req);
+
+        assertNotNull(override);
+        assertEquals("override@example.com", component(override, "senderEmail"));
+        // "sender-name" was not overridden, so the static app-name is preserved
+        assertEquals("Test App", component(override, "appName"));
+        // a distinct EmailService is built for the overridden SMTP settings
+        assertNotNull(component(override, "emailSrv"));
+        assertTrue(component(override, "emailSrv") != getEmailSrv(sender));
     }
 
     @Test
-    void onOverrideEntryRemoved_shutsDownDistinctOverrideEmailService() throws Exception {
+    void buildOverride_returnsNullWhenResultingConfigIsInvalid() throws Exception {
         sender = new SmtpEmailSender();
-        var overriddenSrv = new EmailService(SMTPConfig.forSsl("smtp.override.com", 465, "user", "pass", 465), 1);
-        var overrideEntry = newOverrideEntry(overriddenSrv, "from@example.com", "App");
-        var cacheEntry = new AbstractMap.SimpleEntry<String, Optional<?>>("signature", Optional.of(overrideEntry));
-
-        invokeOnOverrideEntryRemoved(sender, cacheEntry);
-
-        assertTrue(isShutdown(overriddenSrv));
-    }
-
-    @Test
-    void onOverrideEntryRemoved_neverShutsDownSharedStaticEmailService() throws Exception {
-        sender = new SmtpEmailSender();
+        // "smtp-hostname" is missing from the static config and not supplied by the
+        // override either, so building the EmailService must fail and yield null.
         setConf(sender, Map.of(
                 "enabled", true,
                 "app-name", "Test App",
                 "sender-email", "noreply@example.com",
-                "smtp-hostname", "smtp.example.com",
                 "smtp-port", 465,
                 "smtp-username", "user",
                 "smtp-password", "pass"));
-        sender.onInit();
-        var staticSrv = getEmailSrv(sender);
-        // Mirrors SmtpEmailSender#buildOverrideEntry's catch-block fallback, which reuses
-        // the static emailSrv when building an override fails.
-        var fallbackEntry = newOverrideEntry(staticSrv, "noreply@example.com", "Test App");
-        var cacheEntry = new AbstractMap.SimpleEntry<String, Optional<?>>("signature", Optional.of(fallbackEntry));
 
-        invokeOnOverrideEntryRemoved(sender, cacheEntry);
+        Request<?> req = mock(Request.class);
+        when(req.attachedParam("override-emails-sender-email")).thenReturn("override@example.com");
 
-        assertFalse(isShutdown(staticSrv));
+        assertNull(buildOverride(sender, req));
     }
 
     @Test

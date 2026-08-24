@@ -429,6 +429,50 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
+    /**
+     * Re-reads an account from the users store, bypassing the account cache, without verifying
+     * any credential.
+     *
+     * <p>For callers that must see the account as it is <em>now</em> rather than as it was when
+     * the caller authenticated — token renewal being the case this exists for. The cache entry is
+     * invalidated first, so the guarantee is "re-read", not "re-read unless the cache happens to
+     * still hold it"; the reload repopulates it for the requests that follow.
+     *
+     * <p>The configured {@code attached-props} are copied onto the account exactly as
+     * {@link #verify(Request, String, Credential)} does. Skipping that step would hand back an
+     * account missing the properties a deployment attaches per-request — on a multi-tenant
+     * deployment those identify the node, and a token issued without them is a token its own
+     * verifier rejects.
+     *
+     * <p>This performs no authentication and no authorization: the caller has already established
+     * who the principal is and is responsible for deciding that re-reading it is legitimate — in
+     * particular that {@code id} belongs to the same realm the request resolves to.
+     *
+     * @param req the current request, which determines the users db (see {@link #getUsersDb(Request)})
+     * @param id  the principal name
+     * @return the account, or {@code null} if this deployment has no users store or the user is
+     *         not in it
+     */
+    public MongoRealmAccount reloadAccount(final Request<?> req, final String id) {
+        if (this.mclient == null || id == null) {
+            return null;
+        }
+
+        final var usersDb = getUsersDb(req);
+
+        if (USERS_CACHE != null) {
+            USERS_CACHE.invalidate(new CacheKey(id, usersDb));
+        }
+
+        final var account = getAccount(usersDb, id);
+
+        if (account != null && this.attachedProps != null && !this.attachedProps.isEmpty()) {
+            copyAttachedParamsToAccount(req, account);
+        }
+
+        return account;
+    }
+
     private MongoRealmAccount getAccount(final String usersDb, final String id) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
@@ -451,10 +495,13 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * if client authenticates passing the real credentials, update the account
-     * in the auth-token cache, otherwise the client authenticating with the
-     * auth-token will not see roles updates until the cache expires (by default
-     * TTL is 15 minutes after last request)
+     * When a client authenticates with real credentials (Basic Auth), invalidate the
+     * cached auth-token so that the next token generation picks up fresh roles and
+     * account-properties-claims from the request context. Simply removing the stale
+     * entry is better than regenerating it here: this method runs before
+     * {@code TokenInjector} attaches the per-request claim list, so any token built
+     * at this point would use the node-wide default instead of the tenant-specific
+     * override.
      *
      * @param account
      */
@@ -463,11 +510,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             final var _tm = registry.getTokenManager();
 
             if (_tm != null) {
-                final var tm = _tm.getInstance();
-
-                if (tm.get(account) != null) {
-                    tm.update(account);
-                }
+                _tm.getInstance().invalidate(account);
             }
         } catch (final ConfigurationException pce) {
             LOGGER.warn("error getting the token manager", pce);

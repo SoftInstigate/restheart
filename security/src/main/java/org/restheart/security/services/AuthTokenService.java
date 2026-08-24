@@ -44,8 +44,7 @@ import io.undertow.server.handlers.form.FormDataParser;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+
 import java.util.*;
 
 import static org.restheart.plugins.security.TokenManager.*;
@@ -69,7 +68,6 @@ public class AuthTokenService implements ByteArrayService {
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
-    private static final String ISO8601_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 
     @Inject("registry")
     private PluginsRegistry registry;
@@ -167,7 +165,7 @@ public class AuthTokenService implements ByteArrayService {
             if (!isCookieEndpoint) {
                 var bodyParams = parseFormBody(request);
                 if ("authorization_code".equals(bodyParams.get("grant_type"))) {
-                    handleAuthorizationCodeGrant(bodyParams, response);
+                    handleAuthorizationCodeGrant(request, bodyParams, response);
                     return;
                 }
             }
@@ -238,7 +236,7 @@ public class AuthTokenService implements ByteArrayService {
      * <p>After signature/expiry verification, PKCE S256 is checked:
      * {@code BASE64URL(SHA-256(code_verifier)) == code_challenge}.
      */
-    private void handleAuthorizationCodeGrant(Map<String, String> bodyParams, ByteArrayResponse response) {
+    private void handleAuthorizationCodeGrant(ByteArrayRequest request, Map<String, String> bodyParams, ByteArrayResponse response) {
         var code = bodyParams.get("code");
         var codeVerifier = bodyParams.get("code_verifier");
 
@@ -288,7 +286,9 @@ public class AuthTokenService implements ByteArrayService {
             return;
         }
 
-        var credential = tokenManagerRecord.getInstance().get(account);
+        // pass the request so the token manager can resolve per-request state, e.g. the
+        // per-tenant account-properties-claims list
+        var credential = tokenManagerRecord.getInstance().get(account, request);
 
         if (credential == null) {
             LOGGER.error("Token manager returned null credential for user '{}'", username);
@@ -569,15 +569,13 @@ public class AuthTokenService implements ByteArrayService {
         }
 
         try {
-            var dateFormat = new SimpleDateFormat(ISO8601_PATTERN);
-            var expirationDate = dateFormat.parse(authTokenValidHeader);
-            var now = new Date();
-            var expiresInMillis = expirationDate.getTime() - now.getTime();
-            var expiresInSeconds = (int) (expiresInMillis / 1000);
+            var expirationInstant = java.time.Instant.parse(authTokenValidHeader);
+            var now = java.time.Instant.now();
+            var expiresInSeconds = (int) (expirationInstant.getEpochSecond() - now.getEpochSecond());
 
             // Return 0 if already expired, otherwise return remaining seconds
             return Math.max(0, expiresInSeconds);
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
             LOGGER.warn("Failed to parse Auth-Token-Valid-Until header: {}", authTokenValidHeader, ex);
             return null;
         }

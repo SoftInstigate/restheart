@@ -426,7 +426,17 @@ public class PluginsScanner {
 
                 try {
                     final var fieldClass = PluginsClassloader.getInstance().loadClass(fi.getTypeDescriptor().toString());
-                    ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode()));
+
+                    // extract the 'required' parameter (defaults to true for backward compatibility)
+                    boolean required = true;
+                    for (var p : annotationParams) {
+                        if ("required".equals(p.getKey()) && p.getValue() instanceof Boolean b) {
+                            required = b;
+                            break;
+                        }
+                    }
+
+                    ret.add(new FieldInjectionDescriptor(fi.getName(), fieldClass, annotationParams, fi.hashCode(), required));
                 } catch (final ClassNotFoundException cnfe) {
                     // should not happen
                     throw new IllegalStateException(cnfe);
@@ -701,6 +711,7 @@ record MethodInjectionDescriptor(String method, Class<?> clazz,
 }
 
 record FieldInjectionDescriptor(String field, Class<?> clazz,
-                                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash)
+                                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash,
+                                boolean required)
         implements InjectionDescriptor {
 }

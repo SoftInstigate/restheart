@@ -1,84 +1,188 @@
 package org.restheart.accounts.util;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.configuration.ConfigurationException;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.AuthCookie;
+import org.restheart.security.authenticators.MongoRealmAuthenticator;
+import org.restheart.security.tokens.JwtConfigProvider;
+import org.restheart.security.tokens.JwtIssuer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Helper (NON un plugin RESTHeart) per emettere JWT compatibili con RESTHeart.
+ * Helper (NOT a RESTHeart plugin) to issue RESTHeart-compatible JWTs.
  *
- * <p>RESTHeart verifica i JWT tramite {@code jwtAuthenticationMechanism}; il formato atteso è:
+ * <p>RESTHeart verifies JWTs via {@code jwtAuthenticationMechanism}; the expected format is:
  * <pre>
  *   Authorization: Bearer &lt;jwt&gt;
  * </pre>
- * oppure via cookie {@code rh_auth=Bearer_&lt;jwt&gt;} (authCookieHandler).
+ * or via the {@code rh_auth=Bearer_&lt;jwt&gt;} cookie (authCookieHandler).
  *
- * <p>Le istanze sono thread-safe: {@link Algorithm} è immutabile e {@link JWT} è una
- * factory statica.
+ * <p>Instances are thread-safe: {@link Algorithm} is immutable and {@link JWT} is a static
+ * factory.
+ *
+ * <h2>There is one issuance logic</h2>
+ * <p>What ends up in a JWT — which account properties become claims, the denylist, the nested
+ * path syntax — is decided by {@link JwtIssuer}, the same class {@code jwtTokenManager} uses on
+ * {@code /token}. A RESTHeart JWT is one thing: these are different moments of issuance, not
+ * different tokens. This class only supplies the data (the re-read user document, attached
+ * params, extra claims) and signs through the issuer.
+ *
+ * <p>It deliberately does not delegate to the configured {@code TokenManager}: that one is
+ * pluggable and need not issue JWTs at all (see {@code RndTokenManager}, which issues opaque
+ * tokens), whereas the accounts services require a JWT.
  */
 public class JwtHelper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtHelper.class);
 
     private final String key;
     private final String issuer;
     private final int ttlMinutes;
 
     /**
-     * Elenco di nomi di claim da includere nel JWT leggendoli dagli attached-params della
-     * request. Replica {@code jwtTokenManager.account-properties-claims}.
-     * {@code null} significa "nessuna propagazione di attached-params".
+     * Claim names to include in the JWT, read from the request's attached params. Mirrors
+     * {@code jwtTokenManager.account-properties-claims}. {@code null} means "no attached-param
+     * propagation".
      */
     private final List<String> accountPropertiesClaims;
 
+    /** The issuance logic shared with {@code jwtTokenManager}. */
+    private final JwtIssuer jwtIssuer;
+
     /**
-     * Costruisce un helper senza propagazione di attached-params (backward-compat).
+     * Builds a helper without attached-param propagation (backward compatible).
      */
     public JwtHelper(String key, String issuer, int ttlMinutes) {
-        this(key, issuer, ttlMinutes, null);
+        this(key, issuer, ttlMinutes, null, null);
     }
 
     /**
-     * Costruisce un helper con supporto a {@code account-properties-claims}.
+     * Builds a helper supporting {@code account-properties-claims}, without resolving the
+     * password property name from {@code mongoRealmAuthenticator} (uses the default
+     * {@value JwtIssuer#DEFAULT_PASSWORD_PROPERTY}).
      *
-     * @param accountPropertiesClaims nomi degli attached-params da includere come claim JWT;
-     *                                {@code null} = nessuna propagazione aggiuntiva
+     * @param accountPropertiesClaims names of the attached params to include as JWT claims;
+     *                                {@code null} = no additional propagation
+     * @deprecated use {@link #JwtHelper(String, String, int, List, PluginsRegistry)} to resolve
+     *             the password property name correctly when
+     *             {@code mongoRealmAuthenticator/prop-password} is configured to something other
+     *             than the default.
      */
+    @Deprecated
     public JwtHelper(String key, String issuer, int ttlMinutes, List<String> accountPropertiesClaims) {
+        this(key, issuer, ttlMinutes, accountPropertiesClaims, null);
+    }
+
+    /**
+     * Builds a helper supporting {@code account-properties-claims} and the denylist, resolving
+     * the password property name from {@code mongoRealmAuthenticator/prop-password} via
+     * {@code registry}.
+     *
+     * @param accountPropertiesClaims names of the attached params to include as JWT claims;
+     *                                {@code null} = no additional propagation
+     * @param registry                used to resolve {@code mongoRealmAuthenticator.getPropPassword()};
+     *                                {@code null} → uses the default
+     */
+    public JwtHelper(String key, String issuer, int ttlMinutes, List<String> accountPropertiesClaims,
+                     PluginsRegistry registry) {
         this.key = key;
         this.issuer = issuer;
         this.ttlMinutes = ttlMinutes;
         this.accountPropertiesClaims = accountPropertiesClaims;
+        this.jwtIssuer = new JwtIssuer(
+                Algorithm.HMAC256(key),
+                issuer,
+                null,
+                accountPropertiesClaims,
+                resolveRequiredClaims(registry),
+                resolvePasswordPropertyName(registry));
     }
 
     /**
-     * Emette un JWT replicando la logica di {@code JwtTokenManager}, senza dipendere
-     * dal plugin (che potrebbe non essere configurato o potrebbe essere sostituito).
+     * The claims that must survive any per-request override, read from the deployment's existing
+     * {@code jwtConfigProvider} configuration rather than duplicated under {@code accountsConfig}:
+     * they are a property of the JWT this deployment issues, so every issuer must apply the same
+     * ones. Without this, a tenant supplying its own claim list on the {@code /auth/*} path could
+     * drop a claim later verified on every request and lock itself out.
+     */
+    private static List<String> resolveRequiredClaims(PluginsRegistry registry) {
+        if (registry == null) {
+            return null;
+        }
+
+        try {
+            for (var pr : registry.getProviders()) {
+                if ("jwtConfigProvider".equals(pr.getName()) && pr.isEnabled()
+                        && pr.getInstance() instanceof JwtConfigProvider jcp
+                        && jcp.get(pr) instanceof JwtConfigProvider.JwtConfig cfg) {
+                    return cfg.requiredAccountPropertiesClaims();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve jwtConfigProvider required-account-properties-claims", e);
+        }
+
+        return null;
+    }
+
+    /** Risolve il nome della proprietà password da {@code mongoRealmAuthenticator}, se disponibile. */
+    private static String resolvePasswordPropertyName(PluginsRegistry registry) {
+        if (registry == null) {
+            return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
+        }
+
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+            if (pr != null && pr.isEnabled() && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+                return prop != null && !prop.isBlank() ? prop : JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
+            }
+        } catch (ConfigurationException ce) {
+            // mongoRealmAuthenticator not configured — fall back to the default
+        }
+
+        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
+    }
+
+    /** Whether {@code claim} must never be copied from the user document into a JWT claim. */
+    private boolean isDenylisted(String claim) {
+        return jwtIssuer.isDenylisted(claim);
+    }
+
+    /**
+     * Issues a JWT through {@link JwtIssuer}, the same issuance logic {@code jwtTokenManager}
+     * applies, without depending on the configured token manager (which may be absent, or may
+     * not issue JWTs at all).
      *
      * <ul>
-     *   <li>{@code authDb} — sempre incluso se non nullo/blank (richiesto da
-     *       {@code JwtAuthDbVerifier} per il routing multi-team)</li>
-     *   <li>{@code accountProperties} — filtrato da {@code accountPropertiesClaims}:
-     *       solo i nomi presenti nella lista sono aggiunti come claim
-     *       (es. {@code srvNode} impostato da {@code SrvNodeEnricher})</li>
-     *   <li>{@code extraClaims} — sempre inclusi (es. {@code team}, {@code status})</li>
+     *   <li>{@code authDb} — always included when not null/blank (required by
+     *       {@code JwtAuthDbVerifier} for multi-team routing)</li>
+     *   <li>{@code accountProperties} — filtered by {@code accountPropertiesClaims}: only the
+     *       names in the list become claims (e.g. {@code srvNode}, set by
+     *       {@code SrvNodeEnricher})</li>
+     *   <li>{@code extraClaims} — always included (e.g. {@code team}, {@code status})</li>
      * </ul>
      *
-     * @param email             identità dell'utente ({@code sub})
-     * @param roles             ruoli ({@code roles})
-     * @param authDb            database MongoDB di autenticazione ({@code authDb}); può essere {@code null}
-     * @param accountProperties tutti gli attached-params della request (vedi {@code Request.attachedParams()});
-     *                          filtrati da {@code accountPropertiesClaims}; può essere {@code null}
-     * @param extraClaims       claim aggiuntivi sempre inclusi (es. team, status); può essere {@code null}
-     * @return JWT firmato
+     * @param email             the user identity ({@code sub})
+     * @param roles             the roles ({@code roles})
+     * @param authDb            the MongoDB authentication database ({@code authDb}); may be {@code null}
+     * @param accountProperties all the request's attached params (see {@code Request.attachedParams()});
+     *                          filtered by {@code accountPropertiesClaims}; may be {@code null}
+     * @param extraClaims       additional claims, always included (e.g. team, status); may be {@code null}
+     * @return the signed JWT
      */
     public String issueToken(String email,
                              Set<String> roles,
@@ -86,109 +190,123 @@ public class JwtHelper {
                              Map<String, Object> accountProperties,
                              Map<String, Object> extraClaims,
                              BsonDocument userDocument) {
-        var algo = Algorithm.HMAC256(key);
-
-        var builder = JWT.create()
-                .withSubject(email)
-                .withIssuer(issuer)
-                .withIssuedAt(Instant.now())
-                .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
-                .withJWTId(java.util.UUID.randomUUID().toString())
-                .withArrayClaim("roles", roles.toArray(new String[0]));
-
-        // authDb è sempre incluso (come in JwtTokenManager) — serve a JwtAuthDbVerifier
-        if (authDb != null && !authDb.isBlank()) {
-            builder = builder.withClaim("authDb", authDb);
-        }
-
-        // Merge user document properties into accountProperties
-        // Only fields listed in accountPropertiesClaims are included (like JwtTokenManager)
-        if (userDocument != null && accountPropertiesClaims != null) {
-            if (accountProperties == null) accountProperties = new java.util.HashMap<>();
-            for (var claim : accountPropertiesClaims) {
-                if (userDocument.containsKey(claim) && !accountProperties.containsKey(claim)) {
-                    accountProperties.put(claim, bsonValueToObject(userDocument.get(claim)));
-                }
-            }
-        }
-
-        // Propaga gli attached-params filtrati da accountPropertiesClaims
-        if (accountProperties != null && accountPropertiesClaims != null) {
-            for (var claim : accountPropertiesClaims) {
-                var val = accountProperties.get(claim);
-                if (val == null) continue;
-                builder = withClaim(builder, claim, val);
-            }
-        }
-
-        // Extra claims sempre inclusi (team, status, ecc.)
-        if (extraClaims != null) {
-            for (var entry : extraClaims.entrySet()) {
-                // BsonValue viene prima convertito al tipo Java corrispondente
-                var val = entry.getValue() instanceof BsonValue bv ? bsonValueToObject(bv) : entry.getValue();
-                builder = withClaim(builder, entry.getKey(), val);
-            }
-        }
-
-        return builder.sign(algo);
+        return issueToken(email, roles, authDb, accountProperties, extraClaims, userDocument, null);
     }
 
     /**
-     * Emette un JWT con i soli claim espliciti passati in {@code extraClaims}.
-     * Non include {@code authDb} né propaga gli attached-params.
+     * As {@link #issueToken(String, Set, String, Map, Map, BsonDocument)}, with the effective
+     * {@code accountPropertiesClaims} list for this single call (e.g. from
+     * {@code RequestOverrides#accountPropertiesClaims}) instead of the one fixed at construction
+     * time. The denylist is enforced regardless of which list is in use.
      *
-     * @deprecated Usare {@link #issueToken(String, Set, String, Map, Map)} per includere
-     *             {@code authDb} e i claim configurati in {@code account-properties-claims}.
+     * @param accountPropertiesClaimsOverride the effective list for this call;
+     *                                        {@code null} → use the constructor's
+     */
+    public String issueToken(String email,
+                             Set<String> roles,
+                             String authDb,
+                             Map<String, Object> accountProperties,
+                             Map<String, Object> extraClaims,
+                             BsonDocument userDocument,
+                             List<String> accountPropertiesClaimsOverride) {
+        var effectiveClaims = accountPropertiesClaimsOverride != null
+                ? accountPropertiesClaimsOverride
+                : accountPropertiesClaims;
+
+        // The properties JwtIssuer selects claims from: the re-read user document, plus the
+        // attached params, which win (they are fresher — e.g. srvNode set by SrvNodeEnricher).
+        var properties = new java.util.HashMap<String, Object>();
+
+        if (userDocument != null) {
+            for (var e : userDocument.entrySet()) {
+                properties.put(e.getKey(), bsonValueToObject(e.getValue()));
+            }
+        }
+
+        if (accountProperties != null) {
+            properties.putAll(accountProperties);
+        }
+
+        // authDb is always included (as in JwtTokenManager) — JwtAuthDbVerifier needs it
+        if (authDb != null && !authDb.isBlank()) {
+            properties.put("authDb", authDb);
+        }
+
+        // Extra claims are always included (team, status, ...), converted from BsonValue if needed
+        var extra = new java.util.HashMap<String, Object>();
+        if (extraClaims != null) {
+            for (var entry : extraClaims.entrySet()) {
+                var val = entry.getValue() instanceof BsonValue bv ? bsonValueToObject(bv) : entry.getValue();
+                extra.put(entry.getKey(), val);
+            }
+        }
+
+        // Claim selection, denylist and nested paths all live in JwtIssuer — the same logic
+        // jwtTokenManager applies on /token.
+        var builder = jwtIssuer.newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
+                .withIssuedAt(Instant.now());
+
+        builder = jwtIssuer.applyAccountClaims(builder, properties, effectiveClaims);
+
+        for (var e : extra.entrySet()) {
+            if (isDenylisted(e.getKey())) continue;
+            builder = jwtIssuer.withClaim(builder, e.getKey(), e.getValue());
+        }
+
+        return jwtIssuer.sign(builder);
+    }
+
+    /**
+     * Issues a JWT carrying only the explicit claims passed in {@code extraClaims}. Does not
+     * include {@code authDb} and does not propagate attached params.
+     *
+     * @deprecated Use {@link #issueToken(String, Set, String, Map, Map, BsonDocument)} to include
+     *             {@code authDb} and the claims configured in {@code account-properties-claims}.
      */
     @Deprecated
     public String issueToken(String email, Set<String> roles, Map<String, String> extraClaims) {
-        var algo = Algorithm.HMAC256(key);
-
-        var builder = JWT.create()
-                .withSubject(email)
-                .withIssuer(issuer)
-                .withIssuedAt(Instant.now())
-                .withExpiresAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
-                .withJWTId(java.util.UUID.randomUUID().toString())
-                .withArrayClaim("roles", roles.toArray(new String[0]));
+        var builder = jwtIssuer
+                .newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
+                .withIssuedAt(Instant.now());
 
         if (extraClaims != null) {
             for (var entry : extraClaims.entrySet()) {
-                builder = builder.withClaim(entry.getKey(), entry.getValue());
+                if (isDenylisted(entry.getKey())) continue;
+                builder = jwtIssuer.withClaim(builder, entry.getKey(), entry.getValue());
             }
         }
 
-        return builder.sign(algo);
+        return jwtIssuer.sign(builder);
     }
 
     /**
-     * Costruisce il valore del cookie {@code rh_auth} compatibile con
-     * {@code authCookieHandler} di RESTHeart.
+     * Builds the {@code rh_auth} cookie value compatible with RESTHeart's
+     * {@code authCookieHandler}.
      *
-     * <p>Formato: {@code Bearer_<jwt>}
+     * <p>Format: {@code Bearer_<jwt>}
      *
-     * @param jwt token JWT emesso da {@link #issueToken}
-     * @return valore da assegnare al cookie {@code rh_auth}
+     * @param jwt the JWT issued by {@link #issueToken}
+     * @return the value to assign to the {@code rh_auth} cookie
      */
     public static String cookieValue(String jwt) {
         return AuthCookie.bearerValue(jwt);
     }
 
     /**
-     * Costruisce il valore completo dell'header {@code Set-Cookie} nel formato canonico
+     * Builds the full {@code Set-Cookie} header value in the canonical format
      * {@code <name>=Bearer_<jwt>; Domain=…; Path=/; HttpOnly; SameSite=Strict[; Secure][; Max-Age=…]},
-     * compatibile con {@code authCookieHandler} (che si aspetta il prefisso {@code Bearer_}).
+     * compatible with {@code authCookieHandler} (which expects the {@code Bearer_} prefix).
      *
-     * <p>Questo è l'unico costruttore canonico del cookie di autenticazione lato accounts:
-     * tutti i service devono passare da qui (direttamente o via {@code TokenDelivery}) per
-     * garantire coerenza di formato, {@code Secure} e {@code Max-Age}.
+     * <p>This is the single canonical builder of the authentication cookie on the accounts side:
+     * every service must go through it (directly or via {@code TokenDelivery}) so that format,
+     * {@code Secure} and {@code Max-Age} stay consistent.
      *
-     * @param jwt        token JWT
-     * @param cookieName nome del cookie (es. {@code "8x5_auth"})
-     * @param domain     dominio del cookie (es. {@code ".example.com"})
-     * @param ttlMinutes durata del JWT in minuti — usata per impostare {@code Max-Age};
-     *                   se ≤ 0 il cookie è una session cookie (nessun Max-Age)
-     * @param secure     se {@code true} aggiunge l'attributo {@code Secure} (obbligatorio su HTTPS)
+     * @param jwt        the JWT
+     * @param cookieName the cookie name (e.g. {@code "8x5_auth"})
+     * @param domain     the cookie domain (e.g. {@code ".example.com"})
+     * @param ttlMinutes the JWT lifetime in minutes — used to set {@code Max-Age};
+     *                   when ≤ 0 the cookie is a session cookie (no Max-Age)
+     * @param secure     when {@code true} adds the {@code Secure} attribute (required over HTTPS)
      */
     public static String setCookieHeader(String jwt, String cookieName, String domain, int ttlMinutes, boolean secure) {
         long maxAgeSeconds = ttlMinutes > 0 ? (long) ttlMinutes * 60 : -1;
@@ -220,36 +338,6 @@ public class JwtHelper {
     @Deprecated
     public static String setCookieHeader(String jwt, String domain) {
         return setCookieHeader(jwt, "rh_auth", domain);
-    }
-
-    private static JWTCreator.Builder withClaim(JWTCreator.Builder b, String k, Object v) {
-        if (k == null || v == null) return b;
-        return switch (v) {
-            case String s -> b.withClaim(k, s);
-            case Boolean boo -> b.withClaim(k, boo);
-            case Integer i -> b.withClaim(k, i);
-            case Long l -> b.withClaim(k, l);
-            case Double d -> b.withClaim(k, d);
-            case Map m -> {
-                try {
-                    yield b.withClaim(k, (Map<String, ?>) m);
-                } catch (ClassCastException e) {
-                    yield b;
-                }
-            }
-            case List l -> b.withClaim(k, (List<?>) l);
-            default -> b.withClaim(k, v.toString());
-        };
-    }
-
-    private static String bsonValueToString(Object v) {
-        if (v == null) return null;
-        if (v instanceof BsonValue bv) {
-            if (bv.isString()) return bv.asString().getValue();
-            if (bv.isObjectId()) return bv.asObjectId().getValue().toHexString();
-            return bv.toString();
-        }
-        return v.toString();
     }
 
     private static Object bsonValueToObject(BsonValue value) {
