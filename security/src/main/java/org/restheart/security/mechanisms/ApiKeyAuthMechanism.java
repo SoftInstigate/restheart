@@ -101,15 +101,15 @@ public class ApiKeyAuthMechanism implements AuthMechanism {
         }
 
         final String authenticatorName = arg(config, "authenticator");
-        final var record = registry.getAuthenticator(authenticatorName);
+        final var authenticatorRecord = registry.getAuthenticator(authenticatorName);
 
-        if (record == null) {
+        if (authenticatorRecord == null) {
             throw new ConfigurationException(
                 "apiKeyAuthMechanism is configured with authenticator '" + authenticatorName
                 + "' which is not enabled or does not exist");
         }
 
-        this.authenticator = record.getInstance();
+        this.authenticator = authenticatorRecord.getInstance();
     }
 
     @Override
