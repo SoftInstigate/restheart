@@ -46,6 +46,8 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.stripe.StripeService;
+import org.restheart.stripe.util.CustomerProvisioning;
 import org.restheart.stripe.util.RequestOverrides;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
@@ -108,6 +110,9 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
     @Inject("mclient")
     private MongoClient mclient;
+
+    @Inject("stripeService")
+    private StripeService stripeService;
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -286,6 +291,9 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var secret = generateSecret();
 
         // 6. Build Stripe Checkout Session
+        // Resolved before the session is built: attaching a Customer needs it too.
+        var apiKey = RequestOverrides.secretKey(request, conf);
+
         var sessionBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(interpolateOrderRef(products.successUrl(), orderId, secret))
@@ -297,7 +305,31 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             sessionBuilder.putMetadata("buyer_id", buyerId);
         }
 
-        if (buyerEmail != null) {
+        // A Customer, so Stripe remembers.
+        //
+        // Without one every checkout creates a fresh anonymous Customer, and
+        // nothing survives it: the VAT number, the delivery address and the card
+        // are all typed again next time. With one, Stripe offers what it already
+        // has — and `stripePortalService`, which refuses anyone without a
+        // Customer id, starts working for this shop's buyers too.
+        //
+        // Per billing account rather than per user: the account is what an order
+        // is charged to and what the invoice is addressed to, and two colleagues
+        // sharing one should not each build their own history of it.
+        //
+        // Only for a signed-in buyer. A guest has no account to attach anything
+        // to, and creating a Customer per guest checkout would fill the Stripe
+        // dashboard with one-purchase strangers.
+        String customerId = null;
+        if (request.isAuthenticated()) {
+            customerId = ensureBillingCustomer(request, apiKey);
+        }
+
+        if (customerId != null) {
+            sessionBuilder.setCustomer(customerId);
+        } else if (buyerEmail != null) {
+            // Never both: Stripe rejects a session carrying `customer` and
+            // `customer_email` together.
             sessionBuilder.setCustomerEmail(buyerEmail);
         }
 
@@ -417,7 +449,6 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var expiresMinutes = Math.max(30, Math.min(products.sessionExpiresMinutes(), 1440));
 
         // Create the Stripe session
-        var apiKey = RequestOverrides.secretKey(request, conf);
         var opts = RequestOptions.builder()
                 .setApiKey(apiKey)
                 .setIdempotencyKey("order-" + buyerId + "-" + System.currentTimeMillis())
@@ -485,6 +516,29 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * The billing account's Stripe Customer, created on first purchase.
+     *
+     * Never fatal: if Stripe or the owner lookup fails the checkout goes ahead
+     * without a Customer — the buyer types their details again, which is a
+     * worse afternoon than a lost sale. `ensureCustomer` is idempotent under
+     * concurrency, so two tabs cannot produce two Customers for one account.
+     */
+    private String ensureBillingCustomer(MongoRequest request, String apiKey) {
+        try {
+            var provider = stripeService.getSubscriptionOwnerProvider();
+            var owner = provider.fromRequest(request, RequestOverrides.scope(request, conf));
+            if (owner.isEmpty()) {
+                return null;
+            }
+            return CustomerProvisioning.ensureCustomer(provider, owner.get(), apiKey);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] could not attach a Stripe Customer to this checkout — "
+                    + "the buyer will be asked for their details again: {}", e.getMessage());
+            return null;
+        }
+    }
 
     private String resolveBuyerId(MongoRequest request) {
         var account = request.getAuthenticatedAccount();
