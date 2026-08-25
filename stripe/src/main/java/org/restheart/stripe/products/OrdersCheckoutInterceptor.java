@@ -25,6 +25,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -362,8 +363,8 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         // and a service that never named a country is a misconfiguration rather
         // than a preference, and says so once per order rather than silently.
         if (requiresShipping) {
-            var countries = products.shippingAddressCountries();
-            if (countries != null && !countries.isEmpty()) {
+            var countries = allowedCountries(products.shippingAddressCountries());
+            if (!countries.isEmpty()) {
                 sessionBuilder.setShippingAddressCollection(
                         SessionCreateParams.ShippingAddressCollection.builder()
                                 .addAllAllowedCountry(countries)
@@ -580,6 +581,34 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
      * in practice neither changes — the encoding is there so this stays correct
      * if either representation ever does.
      */
+    /**
+     * Configured country codes as Stripe's enum, dropping what it does not know.
+     *
+     * `AllowedCountry.valueOf` throws on anything that is not an ISO 3166-1
+     * alpha-2 code Stripe recognises, and a typo in a service's configuration
+     * must not take a checkout down with it: a customer cannot act on it, and
+     * the rest of the list is still good. So an unknown code is a warning and a
+     * skip — and if that empties the list, the caller falls through to not
+     * collecting an address at all, which it already knows how to report.
+     */
+    private static List<SessionCreateParams.ShippingAddressCollection.AllowedCountry> allowedCountries(
+            List<String> codes) {
+        var allowed = new ArrayList<SessionCreateParams.ShippingAddressCollection.AllowedCountry>();
+        if (codes == null) {
+            return allowed;
+        }
+        for (var code : codes) {
+            try {
+                allowed.add(SessionCreateParams.ShippingAddressCollection.AllowedCountry
+                        .valueOf(code.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("[stripe] products.shipping-address-countries: '{}' is not a country "
+                        + "code Stripe accepts — ignoring it", code);
+            }
+        }
+        return allowed;
+    }
+
     static String interpolateOrderRef(String url, ObjectId orderId, String secret) {
         if (url == null || url.isEmpty()) {
             return url;
