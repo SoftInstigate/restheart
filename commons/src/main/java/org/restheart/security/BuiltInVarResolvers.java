@@ -60,6 +60,7 @@ final class BuiltInVarResolvers {
                 new MongoPermissionsVarResolver(),
                 new RndVarResolver(),
                 new RolesVarResolver(),
+                new AuthenticatedVarResolver(),
                 new QparamsVarResolver());
     }
 
@@ -317,16 +318,19 @@ final class BuiltInVarResolvers {
      * done; a predicate had no way to ask.
      *
      * <pre>
-     * # applies only to callers who are signed in
-     * not in(value='$unauthenticated', array=@roles)
-     *
-     * # applies only to anonymous ones
-     * in(value='$unauthenticated', array=@roles)
+     * # applies only to callers holding a given role
+     * in(value='staff', array=@roles)
      * </pre>
      *
      * <p>{@code $unauthenticated} is the name {@code mongoAclAuthorizer} already
-     * uses for that case, so permissions and predicates speak of anonymity in
-     * one vocabulary rather than two.
+     * uses for a request with no account, and it is what appears here, so
+     * permissions and predicates speak of anonymity in one vocabulary.
+     *
+     * <p><b>It cannot be compared in a predicate, though</b> — {@code $} is
+     * Undertow's sigil for an exchange attribute, so {@code value='$unauthenticated'}
+     * is read as an attribute of that name, resolves to nothing, and matches
+     * nothing. Use {@link AuthenticatedVarResolver @authenticated} to ask whether
+     * anyone is signed in.
      *
      * <p>An authenticated account holding no roles resolves to an empty array,
      * not to {@code $unauthenticated}. The two are different — an API key naming
@@ -357,6 +361,40 @@ final class BuiltInVarResolvers {
             }
 
             return roles;
+        }
+    }
+
+    /**
+     * {@code @authenticated} — {@code 'true'} when the request carries an
+     * account, {@code 'false'} when it does not.
+     *
+     * <pre>
+     * # applies only to callers who are signed in
+     * equals(@authenticated, 'true')
+     *
+     * # applies only to anonymous ones
+     * equals(@authenticated, 'false')
+     * </pre>
+     *
+     * <p>Exists because {@code @roles} cannot answer this one. The role for a
+     * request with no account is {@code $unauthenticated}, and {@code $} is
+     * Undertow's sigil for an exchange attribute: written into a predicate it is
+     * read as an attribute of that name, resolves to nothing, and the comparison
+     * quietly fails. A rule guarded that way applies to everybody, which is the
+     * opposite of what it says.
+     *
+     * <p>A string rather than a boolean because the predicate language compares
+     * attributes, and every attribute is text.
+     */
+    private static final class AuthenticatedVarResolver implements VarResolver {
+        @Override
+        public String name() {
+            return "authenticated";
+        }
+
+        @Override
+        public BsonValue resolve(Request<?> request, String var) {
+            return new BsonString(request != null && request.isAuthenticated() ? "true" : "false");
         }
     }
 
