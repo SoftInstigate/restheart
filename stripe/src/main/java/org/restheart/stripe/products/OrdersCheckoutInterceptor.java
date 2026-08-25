@@ -351,6 +351,25 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                     SessionCreateParams.AutomaticTax.builder().setEnabled(true).build());
         }
 
+        // A VAT number, and an invoice to put it on.
+        //
+        // Both settings have existed on ProductsConfig since products mode was
+        // written, both default to true, and neither was ever read — so the
+        // console offered "collect tax id" and Checkout never asked, and no
+        // order ever produced an invoice. Two switches wired to nothing.
+        if (products.collectTaxId()) {
+            sessionBuilder.setTaxIdCollection(
+                    SessionCreateParams.TaxIdCollection.builder().setEnabled(true).build());
+        }
+
+        // Business buyers are the ones who need the document, and a signed-in
+        // buyer is the only one this shop knows to be one — a guest checkout has
+        // no team behind it. Which is what the setting has always been called.
+        if (products.invoiceTeamOrders() && request.isAuthenticated()) {
+            sessionBuilder.setInvoiceCreation(
+                    SessionCreateParams.InvoiceCreation.builder().setEnabled(true).build());
+        }
+
         // Ask for somewhere to send it.
         //
         // Without this Stripe never shows the address form, so `shipping_address`
