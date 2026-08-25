@@ -116,7 +116,8 @@ public class OrderEventHandler implements StripeEventHandler {
                 return;
             }
             markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
-                    session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
+                    session.getPaymentIntent(), session.getCustomerDetails(),
+                    session.getCollectedInformation(), event, ctx, products);
             return;
         }
 
@@ -133,7 +134,7 @@ public class OrderEventHandler implements StripeEventHandler {
             return;
         }
         markAsPaid(data.sessionId, data.amountTotal, data.currency,
-                data.paymentIntent, null, event, ctx, products);
+                data.paymentIntent, null, null, event, ctx, products);
     }
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -149,12 +150,13 @@ public class OrderEventHandler implements StripeEventHandler {
             }
             LOGGER.info("[stripe] handleAsyncPaymentSucceeded: extracted sessionId={}, amountTotal={}", data.sessionId, data.amountTotal);
             markAsPaid(data.sessionId, data.amountTotal, data.currency,
-                    data.paymentIntent, null, event, ctx, products);
+                    data.paymentIntent, null, null, event, ctx, products);
             return;
         }
 
         markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
-                session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
+                session.getPaymentIntent(), session.getCustomerDetails(),
+                session.getCollectedInformation(), event, ctx, products);
     }
 
     private void handleAsyncPaymentFailed(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -323,6 +325,7 @@ public class OrderEventHandler implements StripeEventHandler {
     private void markAsPaid(String sessionId, Long amountTotal, String currency,
                             String paymentIntent,
                             com.stripe.model.checkout.Session.CustomerDetails customerDetails,
+                            com.stripe.model.checkout.Session.CollectedInformation collected,
                             Event event, StripeEventContext ctx, ProductsConfig products) {
         LOGGER.info("[stripe] markAsPaid: sessionId={}, amountTotal={}, currency={}", sessionId, amountTotal, currency);
 
@@ -355,6 +358,21 @@ public class OrderEventHandler implements StripeEventHandler {
         // Fill payment_intent
         if (paymentIntent != null) {
             updateDoc.append("stripe_payment_intent", new BsonString(paymentIntent));
+        }
+
+        // Where it goes.
+        //
+        // The order document has carried a `shipping_address` field since it was
+        // first written — always null, because nothing ever filled it in. Stripe
+        // collects the address on its own page (when the service names the
+        // countries it ships to), and this is where it comes back: a shop that
+        // never reads it has an order it cannot post.
+        //
+        // Absent for a digital-only cart, and absent on the JSON fallback path,
+        // where the SDK failed to deserialise and there is no structure to read.
+        var shipping = shippingAddress(collected);
+        if (shipping != null) {
+            updateDoc.append("shipping_address", shipping);
         }
 
         var result = ordersCol.findOneAndUpdate(filter, new BsonDocument("$set", updateDoc));
@@ -546,6 +564,42 @@ public class OrderEventHandler implements StripeEventHandler {
                 .getCollection(products.transactionsCollection(), BsonDocument.class);
     }
 
+
+    /**
+     * Stripe's shipping details as the order schema declares them.
+     *
+     * Field by field rather than by serialising Stripe's own object: the schema
+     * on the collection is closed over these names, and letting an SDK upgrade
+     * decide the shape of a stored document is how a validator starts rejecting
+     * writes nobody changed.
+     */
+    private static BsonDocument shippingAddress(
+            com.stripe.model.checkout.Session.CollectedInformation collected) {
+        if (collected == null || collected.getShippingDetails() == null) {
+            return null;
+        }
+        var details = collected.getShippingDetails();
+        var address = details.getAddress();
+        if (address == null) {
+            return null;
+        }
+
+        var doc = new BsonDocument();
+        putIfPresent(doc, "name", details.getName());
+        putIfPresent(doc, "line1", address.getLine1());
+        putIfPresent(doc, "line2", address.getLine2());
+        putIfPresent(doc, "city", address.getCity());
+        putIfPresent(doc, "state", address.getState());
+        putIfPresent(doc, "postal_code", address.getPostalCode());
+        putIfPresent(doc, "country", address.getCountry());
+        return doc.isEmpty() ? null : doc;
+    }
+
+    private static void putIfPresent(BsonDocument doc, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            doc.append(key, new BsonString(value));
+        }
+    }
 
     // ── Notifications ────────────────────────────────────────────────────────
 

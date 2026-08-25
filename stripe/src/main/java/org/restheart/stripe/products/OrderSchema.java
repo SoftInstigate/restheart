@@ -114,6 +114,7 @@ public final class OrderSchema {
                 "shipping_address": {
                   "type": ["object", "null"],
                   "properties": {
+                    "name": { "type": "string" },
                     "line1": { "type": "string" },
                     "line2": { "type": "string" },
                     "city": { "type": "string" },
