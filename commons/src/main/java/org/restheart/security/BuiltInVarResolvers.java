@@ -24,6 +24,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 
+import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -58,6 +59,7 @@ final class BuiltInVarResolvers {
                 new NowVarResolver(),
                 new MongoPermissionsVarResolver(),
                 new RndVarResolver(),
+                new RolesVarResolver(),
                 new QparamsVarResolver());
     }
 
@@ -305,6 +307,59 @@ final class BuiltInVarResolvers {
     }
 
     /** {@code @qparams['key']}, {@code @qparams["key"]} — a query parameter value. */
+    /**
+     * {@code @roles} — the roles of whoever is making the request, as an array,
+     * or {@code ["$unauthenticated"]} when nobody is.
+     *
+     * <p>Fills a gap that is easy to miss until it costs something: a rule keyed
+     * on a user's state runs the same comparison for a caller who has no user,
+     * finds it false, and acts. A permission can say {@code roles: [...]} and be
+     * done; a predicate had no way to ask.
+     *
+     * <pre>
+     * # applies only to callers who are signed in
+     * not in(value='$unauthenticated', array=@roles)
+     *
+     * # applies only to anonymous ones
+     * in(value='$unauthenticated', array=@roles)
+     * </pre>
+     *
+     * <p>{@code $unauthenticated} is the name {@code mongoAclAuthorizer} already
+     * uses for that case, so permissions and predicates speak of anonymity in
+     * one vocabulary rather than two.
+     *
+     * <p>An authenticated account holding no roles resolves to an empty array,
+     * not to {@code $unauthenticated}. The two are different — an API key naming
+     * no roles is a credential, and a rule written for guests must not apply to
+     * it.
+     */
+    private static final class RolesVarResolver implements VarResolver {
+        private static final String UNAUTHENTICATED = "$unauthenticated";
+
+        @Override
+        public String name() {
+            return "roles";
+        }
+
+        @Override
+        public BsonValue resolve(Request<?> request, String var) {
+            var roles = new BsonArray();
+
+            if (request == null || !request.isAuthenticated()) {
+                roles.add(new BsonString(UNAUTHENTICATED));
+                return roles;
+            }
+
+            var account = request.getAuthenticatedAccount();
+
+            if (account != null && account.getRoles() != null) {
+                account.getRoles().forEach(r -> roles.add(new BsonString(r)));
+            }
+
+            return roles;
+        }
+    }
+
     private static final class QparamsVarResolver implements VarResolver {
         @Override
         public String name() {
