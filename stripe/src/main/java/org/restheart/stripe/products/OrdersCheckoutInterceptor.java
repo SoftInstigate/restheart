@@ -350,6 +350,31 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                     SessionCreateParams.AutomaticTax.builder().setEnabled(true).build());
         }
 
+        // Ask for somewhere to send it.
+        //
+        // Without this Stripe never shows the address form, so `shipping_address`
+        // on the order stays null for ever — and the shipping *rates* below were
+        // being offered all the same, which is a checkout that charges for
+        // delivery and never learns the destination.
+        //
+        // Stripe has no "anywhere": the allowed countries are an explicit list,
+        // so an empty one can only mean "do not ask". A cart that needs shipping
+        // and a service that never named a country is a misconfiguration rather
+        // than a preference, and says so once per order rather than silently.
+        if (requiresShipping) {
+            var countries = products.shippingAddressCountries();
+            if (countries != null && !countries.isEmpty()) {
+                sessionBuilder.setShippingAddressCollection(
+                        SessionCreateParams.ShippingAddressCollection.builder()
+                                .addAllAllowedCountry(countries)
+                                .build());
+            } else {
+                LOGGER.warn("[stripe] order {} needs shipping but products.shipping-address-countries "
+                        + "is empty: Stripe will not ask for an address and the order will have none",
+                        orderId);
+            }
+        }
+
         // Shipping options (for physical products)
         if (requiresShipping && products.shippingOptions() != null) {
             for (var shippingOpt : products.shippingOptions()) {

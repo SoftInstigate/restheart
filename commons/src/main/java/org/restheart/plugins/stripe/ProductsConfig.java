@@ -43,6 +43,9 @@ import java.util.Map;
  * @param maxQuantityPerLine    maximum quantity per line item
  * @param automaticTax          whether to enable Stripe Tax
  * @param shippingOptions       shipping options offered for carts containing physical products
+ * @param shippingAddressCountries ISO 3166-1 alpha-2 codes Stripe Checkout will accept a shipping
+ *                              address in. Empty means no address is collected — Stripe has no
+ *                              "anywhere" setting, so a list is the only way to ask at all.
  * @param orderNotifications    notification configuration for orders (order-confirmed, order-refunded)
  */
 public record ProductsConfig(
@@ -63,6 +66,7 @@ public record ProductsConfig(
         int maxQuantityPerLine,
         boolean automaticTax,
         List<ShippingOption> shippingOptions,
+        List<String> shippingAddressCountries,
         Map<String, OrderNotificationConfig> orderNotifications) {
 
     /**
