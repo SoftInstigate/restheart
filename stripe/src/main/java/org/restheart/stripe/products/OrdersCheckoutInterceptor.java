@@ -79,7 +79,22 @@ import com.stripe.param.checkout.SessionCreateParams;
         name = "ordersCheckoutInterceptor",
         description = "Intercepts POST /orders to create an order from a cart",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-        priority = Integer.MAX_VALUE,
+        // Must run *before* `jsonSchemaBeforeWrite`, which is registered at
+        // `Integer.MAX_VALUE` precisely so it is the last thing to see the
+        // content. This interceptor is what produces that content: the client
+        // sends `{items, email}` and the stored order is a different document
+        // altogether — `_id`, `stripe_session_id`, `secret`, `status`,
+        // `line_items`, the amounts.
+        //
+        // At MAX_VALUE the two tie, the order between them is whatever the sort
+        // happens to do, and when the checker wins it validates the cart against
+        // the schema of the order and answers 400 naming twelve fields that were
+        // about to be written. The Stripe session is created either way, so the
+        // failure arrives *after* the money side already happened.
+        //
+        // The default, 10, is the right value: this is an ordinary request
+        // transform, and nothing about it wants to be last.
+        priority = 10,
         requiresContent = true,
         enabledByDefault = false)
 public class OrdersCheckoutInterceptor implements MongoInterceptor {
