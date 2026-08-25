@@ -327,6 +327,27 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
         if (customerId != null) {
             sessionBuilder.setCustomer(customerId);
+
+            // Save back what the buyer types at Checkout.
+            //
+            // Attaching a Customer is what makes this necessary: Stripe will not
+            // let a session collect a shipping address for a Customer it is not
+            // allowed to write it to while automatic tax is on — automatic tax
+            // reads the address off the Customer, so an address collected and
+            // discarded would be taxed against whatever was there before. The
+            // session is simply refused, which is what "12 schema violations"
+            // turned out to be: the checkout threw, the interceptor never
+            // transformed the body, and the raw {items, email} met the order
+            // schema.
+            //
+            // `auto` is also the whole point of having a Customer here — an
+            // address saved is an address offered back next time.
+            sessionBuilder.setCustomerUpdate(
+                    SessionCreateParams.CustomerUpdate.builder()
+                            .setShipping(SessionCreateParams.CustomerUpdate.Shipping.AUTO)
+                            .setAddress(SessionCreateParams.CustomerUpdate.Address.AUTO)
+                            .setName(SessionCreateParams.CustomerUpdate.Name.AUTO)
+                            .build());
         } else if (buyerEmail != null) {
             // Never both: Stripe rejects a session carrying `customer` and
             // `customer_email` together.
