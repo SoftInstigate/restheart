@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.conversions.Bson;
 import org.restheart.plugins.stripe.ProductsConfig;
 import org.slf4j.Logger;
@@ -66,15 +68,99 @@ public class CatalogReader {
             return List.of();
         }
 
-        var filter = Filters.in("_id", productIds);
-        var documents = find(filter);
+        // One query, whatever mix of plain products and variants was asked for: everything before
+        // the slash is a document id.
+        var documentIds = new java.util.LinkedHashSet<String>();
+        for (var requested : productIds) {
+            documentIds.add(documentIdOf(requested));
+        }
+
+        var byId = new java.util.HashMap<String, BsonDocument>();
+        for (var doc : find(Filters.in("_id", documentIds))) {
+            var docId = docString(doc, "_id");
+            if (docId != null) {
+                byId.put(docId, doc);
+            }
+        }
 
         var items = new ArrayList<CatalogItem>();
-        for (var doc : documents) {
-            items.add(validate(doc));
+        for (var requested : productIds) {
+            var doc = byId.get(documentIdOf(requested));
+            if (doc == null) {
+                // Missing products are the caller's to report — it knows which of them the buyer
+                // asked for and can name them all at once.
+                continue;
+            }
+            items.add(validate(resolve(doc, requested)));
         }
 
         return items;
+    }
+
+    /** Everything before the first slash: {@code tee-classic/yellow-l} is document {@code tee-classic}. */
+    static String documentIdOf(String requested) {
+        var slash = requested.indexOf('/');
+        return slash < 0 ? requested : requested.substring(0, slash);
+    }
+
+    /** Everything after it, or {@code null} when a plain product was asked for. */
+    private static String variantIdOf(String requested) {
+        var slash = requested.indexOf('/');
+        return slash < 0 ? null : requested.substring(slash + 1);
+    }
+
+    /**
+     * The document to validate for a requested id: the product itself, or a variant flattened
+     * onto it.
+     *
+     * <p>Flattened rather than read field by field, so that <em>every</em> field a variant
+     * declares overrides the product's — price, name, tax code, images, whatever gets added next
+     * year — and {@link #validate} stays the single description of what a purchasable item needs.
+     * A variant that declares nothing but a price inherits the rest, which is the common case and
+     * the reason a shop writes variants instead of whole products.
+     *
+     * <p>The resulting {@code _id} is the composite, so an order line records what was actually
+     * bought rather than the family it belongs to.
+     */
+    static BsonDocument resolve(BsonDocument product, String requested)
+            throws CatalogValidationException {
+        var variantId = variantIdOf(requested);
+
+        if (variantId == null) {
+            if (product.get("variants") instanceof BsonArray variants && !variants.isEmpty()) {
+                throw new CatalogValidationException(
+                        ("product %s has variants and cannot be bought on its own — "
+                                + "ask for one of them, as '%s/<variant>'")
+                                .formatted(requested, requested));
+            }
+            return product;
+        }
+
+        if (!(product.get("variants") instanceof BsonArray variants)) {
+            throw new CatalogValidationException(
+                    "product %s has no variants".formatted(documentIdOf(requested)));
+        }
+
+        for (var value : variants) {
+            if (value instanceof BsonDocument variant && variantId.equals(docString(variant, "id"))) {
+                var merged = new BsonDocument();
+                product.forEach((k, v) -> {
+                    if (!"variants".equals(k)) {
+                        merged.append(k, v);
+                    }
+                });
+                variant.forEach((k, v) -> {
+                    if (!"id".equals(k)) {
+                        merged.append(k, v);
+                    }
+                });
+                merged.put("_id", new BsonString(requested));
+                return merged;
+            }
+        }
+
+        throw new CatalogValidationException(
+                "product %s has no variant '%s'".formatted(documentIdOf(requested), variantId));
     }
 
     /**
@@ -125,11 +211,11 @@ public class CatalogReader {
      * @throws CatalogValidationException if the item fails validation
      */
     public Optional<CatalogItem> readItem(String productId) throws CatalogValidationException {
-        var doc = collection().find(Filters.eq("_id", productId)).first();
+        var doc = collection().find(Filters.eq("_id", documentIdOf(productId))).first();
         if (doc == null) {
             return Optional.empty();
         }
-        return Optional.of(validate(doc));
+        return Optional.of(validate(resolve(doc, productId)));
     }
 
     private List<BsonDocument> find(Bson filter) {
