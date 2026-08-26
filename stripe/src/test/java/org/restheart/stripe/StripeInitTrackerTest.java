@@ -83,7 +83,7 @@ class StripeInitTrackerTest {
     }
 
     private static ProductsConfig productsConf(String ordersCollection) {
-        return new ProductsConfig(true, true, "catalog", ordersCollection, "transactions", null,
+        return new ProductsConfig(true, true, "catalog", ordersCollection, "transactions",
                 "eur", "_id", true, true, "", "", 60, 50, 100, true, List.of(), List.of(), Map.of());
     }
 

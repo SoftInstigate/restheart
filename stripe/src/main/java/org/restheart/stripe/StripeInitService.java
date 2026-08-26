@@ -184,8 +184,7 @@ public class StripeInitService implements Provider<StripeInitService> {
      * and write.
      *
      * @param dbName   the database name to initialize
-     * @param products the configuration to initialize from — collection names, and the inventory
-     *                 collection when that tenant uses one
+     * @param products the configuration to initialize from — the collection names that tenant reads
      */
     public void initProducts(String dbName, ProductsConfig products) {
         var db = mclient.getDatabase(dbName);
@@ -195,9 +194,6 @@ public class StripeInitService implements Provider<StripeInitService> {
         createCollectionIfAbsent(db, products.catalogCollection());
         createCollectionIfAbsent(db, products.ordersCollection());
         createCollectionIfAbsent(db, products.transactionsCollection());
-        if (products.inventoryCollection() != null) {
-            createCollectionIfAbsent(db, products.inventoryCollection());
-        }
 
         createOrdersIndexes(db, products);
         createTransactionsIndexes(db, products);

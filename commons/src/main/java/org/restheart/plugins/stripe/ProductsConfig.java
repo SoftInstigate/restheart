@@ -31,7 +31,6 @@ import java.util.Map;
  * @param catalogCollection     MongoDB collection holding the product catalog
  * @param ordersCollection      MongoDB collection for orders
  * @param transactionsCollection MongoDB collection for the transactions ledger
- * @param inventoryCollection   MongoDB collection for stock data, or {@code null} to disable stock checks
  * @param defaultCurrency       default currency code (e.g. {@code "eur"})
  * @param buyerEmailField       user-document field holding the buyer's email; {@code null} if users have none
  * @param invoiceTeamOrders     whether to issue Stripe invoices for team-paid orders
@@ -54,7 +53,6 @@ public record ProductsConfig(
         String catalogCollection,
         String ordersCollection,
         String transactionsCollection,
-        String inventoryCollection,
         String defaultCurrency,
         String buyerEmailField,
         boolean invoiceTeamOrders,

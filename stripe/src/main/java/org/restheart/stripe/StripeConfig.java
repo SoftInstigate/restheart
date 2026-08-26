@@ -217,7 +217,6 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(prodMap, "catalog-collection", "catalog"),
                 configVal(prodMap, "orders-collection", "orders"),
                 configVal(prodMap, "transactions-collection", "transactions"),
-                configVal(prodMap, "inventory-collection", (String) null),
                 configVal(prodMap, "default-currency", "eur"),
                 configVal(prodMap, "buyer-email-field", "_id"),
                 configVal(prodMap, "invoice-team-orders", true),

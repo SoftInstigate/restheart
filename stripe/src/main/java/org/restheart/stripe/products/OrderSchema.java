@@ -117,6 +117,7 @@ public final class OrderSchema {
                 "amount_shipping": { "type": "integer", "minimum": 0 },
                 "amount_total": { "type": "integer", "minimum": 0 },
                 "amount_refunded": { "type": "integer", "minimum": 0 },
+                "oversold": { "type": "boolean" },
                 "shipping_address": {
                   "type": ["object", "null"],
                   "properties": {

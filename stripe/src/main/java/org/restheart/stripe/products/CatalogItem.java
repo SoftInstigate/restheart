@@ -49,7 +49,15 @@ public record CatalogItem(
         String currency,
         boolean purchasable,
         String taxCode,
-        String stripePriceId) {
+        String stripePriceId,
+        /**
+         * Units on hand, or {@code null} for unlimited.
+         *
+         * <p>Read from the same document as the price — from the variant when the reference names
+         * one. A field that is simply absent means the shop does not count this item, which is the
+         * right default: most of what a small shop sells it can always get more of.
+         */
+        Integer inStock) {
 
     /** Product types. */
     public static final String PHYSICAL = "physical";

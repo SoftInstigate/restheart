@@ -251,14 +251,12 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return;
         }
 
-        // 4. Check inventory (optional)
-        if (products.inventoryCollection() != null) {
-            try {
-                checkInventory(catalogItems, requestedItems, products, db);
-            } catch (CatalogReader.CatalogValidationException e) {
-                reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
-                return;
-            }
+        // 4. Refuse what is already sold out
+        try {
+            checkInventory(catalogItems, requestedItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+            return;
         }
 
         // 5. Resolve currency and compute totals
@@ -735,22 +733,28 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     }
 
     /**
-     * Checks inventory for physical products. Refuses if available stock is below requested quantity.
+     * Refuses a cart asking for more than the catalog says is there.
+     *
+     * <p>Read from the product document — from the variant, when the line names one — because that
+     * is the document the price came from and it was already fetched. There used to be a second
+     * collection for this, keyed by product id, and nothing in the pipeline ever wrote to it: the
+     * number it held could only ever be the one somebody typed by hand.
+     *
+     * <p>This closes the wide window, not the narrow one. Between this check and the payment
+     * arriving, another buyer can take the last unit — see the decrement in the webhook, which is
+     * what makes that case visible rather than preventing it.
      */
-    private void checkInventory(java.util.List<CatalogItem> catalogItems,
-                                 java.util.List<RequestedItem> requestedItems,
-                                 ProductsConfig products,
-                                 String db) throws CatalogReader.CatalogValidationException {
-        var inventoryCol = mclient.getDatabase(db)
-                .getCollection(products.inventoryCollection(), org.bson.BsonDocument.class);
-
+    private static void checkInventory(java.util.List<CatalogItem> catalogItems,
+                                       java.util.List<RequestedItem> requestedItems)
+            throws CatalogReader.CatalogValidationException {
         var requestedMap = new java.util.LinkedHashMap<String, Integer>();
         for (var item : requestedItems) {
             requestedMap.merge(item.productId(), item.quantity(), Integer::sum);
         }
 
         for (var catalogItem : catalogItems) {
-            if (!catalogItem.isPhysical()) {
+            // Absent means the shop does not count this item.
+            if (catalogItem.inStock() == null) {
                 continue;
             }
 
@@ -759,16 +763,10 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 continue;
             }
 
-            var inventoryDoc = inventoryCol.find(com.mongodb.client.model.Filters.eq("_id", catalogItem.id())).first();
-            if (inventoryDoc == null) {
-                // No inventory record = unlimited stock
-                continue;
-            }
-
-            var available = inventoryDoc.getInt32("available").getValue();
-            if (available < requested) {
+            if (catalogItem.inStock() < requested) {
                 throw new CatalogReader.CatalogValidationException(
-                        "product %s has %d available but %d requested".formatted(catalogItem.id(), available, requested));
+                        "product %s has %d available but %d requested"
+                                .formatted(catalogItem.id(), catalogItem.inStock(), requested));
             }
         }
     }

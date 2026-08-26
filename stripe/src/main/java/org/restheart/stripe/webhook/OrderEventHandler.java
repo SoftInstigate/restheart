@@ -35,6 +35,7 @@ import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailSender;
 import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.plugins.stripe.ProductsConfig;
+import org.restheart.stripe.products.StockKeeper;
 import org.restheart.stripe.util.RequestOverrides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -394,6 +395,32 @@ public class OrderEventHandler implements StripeEventHandler {
                 paymentIntent, event.getId(), ctx.appliedAt());
 
         LOGGER.info("[stripe] order marked as paid — id={}, session={}, amount={}", orderId, sessionId, amount);
+
+        // Take the stock.
+        //
+        // Here and not at checkout, because a cart that is never paid for must not hold anything
+        // back. Safe against Stripe redelivering this event: the transition above only fires from
+        // pending_payment, so a second delivery returns null and never reaches this line.
+        //
+        // `result` is the order as it was before the update — which is what we want, since the
+        // lines are the same either way and this saves reading it again.
+        var oversold = StockKeeper.take(
+                ctx.mclient().getDatabase(ctx.scope().db()),
+                products.catalogCollection(),
+                StockKeeper.quantitiesOf(result));
+
+        if (!oversold.isEmpty()) {
+            // Sold something that is not there. The order stands — the buyer has paid and Stripe
+            // has the money — and the shop settles it with a refund from the Stripe dashboard,
+            // which comes back as charge.refunded and is already handled. All this has to do is
+            // make sure somebody knows.
+            for (var line : oversold) {
+                LOGGER.warn("[stripe] OVERSOLD — order={} took {} of {} leaving {}; refund from Stripe",
+                        orderId, line.quantity(), line.productId(), line.remaining());
+            }
+            ordersCol.updateOne(Filters.eq("_id", orderId),
+                    new BsonDocument("$set", new BsonDocument("oversold", org.bson.BsonBoolean.TRUE)));
+        }
 
         // Send order confirmation notification
         sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, cur,

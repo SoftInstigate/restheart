@@ -104,7 +104,7 @@ public class CatalogReader {
     }
 
     /** Everything after it, or {@code null} when a plain product was asked for. */
-    private static String variantIdOf(String requested) {
+    static String variantIdOf(String requested) {
         var slash = requested.indexOf('/');
         return slash < 0 ? null : requested.substring(slash + 1);
     }
@@ -278,6 +278,23 @@ public class CatalogReader {
         // purchasable
         var purchasable = doc.getBoolean("purchasable", org.bson.BsonBoolean.TRUE).getValue();
 
+        // in_stock: absent means unlimited, but present and unreadable is a mistake worth shouting
+        // about — silently treating "12 units" written as the string "12" as unlimited is how a
+        // shop oversells everything it has.
+        Integer inStock = null;
+        if (doc.containsKey("in_stock") && !doc.get("in_stock").isNull()) {
+            var value = doc.get("in_stock");
+            if (value.isInt32()) {
+                inStock = value.asInt32().getValue();
+            } else if (value.isInt64()) {
+                inStock = (int) value.asInt64().getValue();
+            } else {
+                throw new CatalogValidationException(
+                        "product %s has a non-integer in_stock (%s) — refusing to sell it"
+                                .formatted(id, value));
+            }
+        }
+
         // optional fields
         var description = docString(doc, "description");
         var images = docStrings(doc, "images");
@@ -293,7 +310,7 @@ public class CatalogReader {
                             .formatted(id));
         }
 
-        return new CatalogItem(id, type, name, description, images, unitAmount, currency, purchasable, taxCode, stripePriceId);
+        return new CatalogItem(id, type, name, description, images, unitAmount, currency, purchasable, taxCode, stripePriceId, inStock);
     }
 
     /**

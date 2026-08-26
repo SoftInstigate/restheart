@@ -588,7 +588,6 @@ stripeConfig:
     catalog-collection: catalog
     orders-collection: orders
     transactions-collection: transactions
-    # inventory-collection: inventory   # omit to disable stock checks entirely
 
     default-currency: eur
     # User-document field holding the buyer's email; omit if users have none.
