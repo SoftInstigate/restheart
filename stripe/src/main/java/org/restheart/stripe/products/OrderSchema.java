@@ -101,7 +101,13 @@ public final class OrderSchema {
                       "unit_amount": { "type": "integer", "minimum": 0 },
                       "quantity": { "type": "integer", "minimum": 1 },
                       "subtotal": { "type": "integer", "minimum": 0 },
-                      "tax_code": { "type": ["string", "null"] }
+                      "tax_code": { "type": ["string", "null"] },
+                      "metadata": {
+                        "type": "object",
+                        "maxProperties": 50,
+                        "propertyNames": { "maxLength": 40 },
+                        "additionalProperties": { "type": "string", "maxLength": 500 }
+                      }
                     }
                   }
                 },
@@ -122,6 +128,12 @@ public final class OrderSchema {
                     "postal_code": { "type": "string" },
                     "country": { "type": "string" }
                   }
+                },
+                "metadata": {
+                  "type": "object",
+                  "maxProperties": 50,
+                  "propertyNames": { "maxLength": 40 },
+                  "additionalProperties": { "type": "string", "maxLength": 500 }
                 },
                 "created_at": { "type": "object" },
                 "paid_at": { "type": ["object", "null"] },

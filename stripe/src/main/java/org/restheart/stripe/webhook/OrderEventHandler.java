@@ -22,6 +22,8 @@ package org.restheart.stripe.webhook;
 import java.util.Set;
 
 import org.bson.BsonArray;
+import org.bson.BsonValue;
+import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
@@ -268,7 +270,7 @@ public class OrderEventHandler implements StripeEventHandler {
         // Send refund notification
         var buyerEmail = order.containsKey("buyer_email") && order.get("buyer_email").isString()
                 ? order.getString("buyer_email").getValue() : null;
-        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, cur, buyerEmail);
+        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, cur, buyerEmail, order);
     }
 
     private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -395,7 +397,7 @@ public class OrderEventHandler implements StripeEventHandler {
 
         // Send order confirmation notification
         sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, cur,
-                customerDetails != null ? customerDetails.getEmail() : null);
+                customerDetails != null ? customerDetails.getEmail() : null, result);
     }
 
     /** Fallback extraction when Stripe SDK deserialization fails (API version mismatch). */
@@ -566,6 +568,69 @@ public class OrderEventHandler implements StripeEventHandler {
 
 
     /**
+     * Pours an order's metadata into the template variables.
+     *
+     * <p>The order's own always. A line's only when the order has exactly one line: with several,
+     * a flat {@code {{key}}} cannot come from all of them, so it comes from none — an empty
+     * variable is better than the description of one item out of three. Templates that need the
+     * detail use {@code {{items}}}.
+     */
+    private static void putMetadata(Map<String, String> vars, BsonDocument order) {
+        if (order == null) {
+            return;
+        }
+
+        putStrings(vars, order.get("metadata"));
+
+        if (order.get("line_items") instanceof BsonArray lines && lines.size() == 1
+                && lines.get(0) instanceof BsonDocument line) {
+            putStrings(vars, line.get("metadata"));
+        }
+    }
+
+    private static void putStrings(Map<String, String> vars, BsonValue metadata) {
+        if (metadata instanceof BsonDocument doc) {
+            doc.forEach((k, v) -> {
+                if (v.isString()) {
+                    vars.put(k, v.asString().getValue());
+                }
+            });
+        }
+    }
+
+    /**
+     * The order's lines as one line of text: {@code "2 × Classic T-shirt, 1 × Enamel mug"}.
+     *
+     * <p>Rendered here because {@link org.restheart.emails.EmailRenderer} substitutes
+     * {@code {{key}}} and has no loops. A template language would let the shop lay this out
+     * itself, and is a decision about every email RESTHeart sends rather than about orders.
+     */
+    private static String renderItems(BsonDocument order) {
+        if (order == null || !(order.get("line_items") instanceof BsonArray lines)) {
+            return "";
+        }
+
+        var out = new StringBuilder();
+        for (var value : lines) {
+            if (!(value instanceof BsonDocument line)) {
+                continue;
+            }
+            var quantity = line.get("quantity") != null && line.get("quantity").isNumber()
+                    ? line.getNumber("quantity").intValue() : 1;
+            var itemName = line.get("name") != null && line.get("name").isString()
+                    ? line.getString("name").getValue() : "";
+            if (itemName.isBlank()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(quantity).append(" \u00d7 ").append(itemName);
+        }
+        return out.toString();
+    }
+
+    /**
      * Stripe's shipping details as the order schema declares them.
      *
      * Field by field rather than by serialising Stripe's own object: the schema
@@ -604,7 +669,8 @@ public class OrderEventHandler implements StripeEventHandler {
     // ── Notifications ────────────────────────────────────────────────────────
 
     private void sendOrderNotification(StripeEventContext ctx, ProductsConfig products, String name,
-                                       ObjectId orderId, long amount, String currency, String email) {
+                                       ObjectId orderId, long amount, String currency, String email,
+                                       BsonDocument order) {
         if (emailSender == null || !emailSender.isEnabled()) {
             return;
         }
@@ -624,6 +690,15 @@ public class OrderEventHandler implements StripeEventHandler {
 
         try {
             var vars = new java.util.HashMap<String, String>();
+
+            // The metadata become template variables, and go in first.
+            //
+            // Whoever builds the shop names the keys — call one `pippo` and the template writes
+            // {{pippo}}. The plugin reserves no name and knows none. Written before the plugin's
+            // own variables on purpose: a metadata key called `amount` must not be able to change
+            // the amount the email prints.
+            putMetadata(vars, order);
+
             vars.put("order-id", orderId.toHexString());
             vars.put("amount", String.valueOf(amount));
             vars.put("amount-formatted", formatAmount(amount, currency));
@@ -633,6 +708,11 @@ public class OrderEventHandler implements StripeEventHandler {
             // subscriptions, nothing upstream of this handler resolves a tenant's real app name.
             vars.putIfAbsent("year", String.valueOf(java.time.Year.now().getValue()));
             vars.putIfAbsent("app-name", "App");
+
+            // What the buyer bought, as a line of text, for templates that do not care about the
+            // detail. The renderer substitutes {{key}} and cannot iterate, so a list has to arrive
+            // already rendered.
+            vars.put("items", renderItems(order));
 
             // Same inline > path > built-in precedence as subscription notifications, and the
             // same override key convention: override-stripe-tmpl-{name} is generic on the

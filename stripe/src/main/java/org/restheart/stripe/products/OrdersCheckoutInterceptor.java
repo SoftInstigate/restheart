@@ -192,7 +192,26 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 return;
             }
 
-            requestedItems.add(new RequestedItem(productId, quantity));
+            BsonDocument itemMetadata;
+            try {
+                itemMetadata = metadataOf(itemDoc, "item '%s'".formatted(productId));
+            } catch (IllegalArgumentException e) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+
+            requestedItems.add(new RequestedItem(productId, quantity, itemMetadata));
+        }
+
+        // The order's own metadata — the seller's, not the buyer's: a tracking code, a courier,
+        // whatever the application decides to keep beside an order. Validated here so a malformed
+        // one is a readable 400 rather than a Stripe rejection or a schema violation.
+        BsonDocument orderMetadata;
+        try {
+            orderMetadata = metadataOf(body, "order");
+        } catch (IllegalArgumentException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
         }
 
         // 3. Read catalog (one query)
@@ -274,7 +293,10 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                     .append("subtotal", new BsonInt64(subtotal))
                     .append("tax_code", catalogItem.taxCode() != null
                             ? new BsonString(catalogItem.taxCode())
-                            : BsonNull.VALUE));
+                            : BsonNull.VALUE)
+                    // Verbatim, unread. What the buyer chose — a colour, a size — travels to
+                    // whoever packs the parcel, and the plugin never learns what it means.
+                    .append("metadata", requested.metadata()));
         }
 
         // 5. Resolve buyer info
@@ -303,6 +325,12 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         if (buyerId != null) {
             sessionBuilder.setClientReferenceId(buyerId);
             sessionBuilder.putMetadata("buyer_id", buyerId);
+        }
+
+        // The order's metadata reach Stripe's dashboard, receipt and invoice — where whoever
+        // fulfils the order tends to look before looking at us.
+        if (!orderMetadata.isEmpty()) {
+            sessionBuilder.putAllMetadata(asStringMap(orderMetadata));
         }
 
         // A Customer, so Stripe remembers.
@@ -370,25 +398,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 var priceDataBuilder = SessionCreateParams.LineItem.PriceData.builder()
                         .setCurrency(currency)
                         .setUnitAmount(catalogItem.unitAmount())
-                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                .setName(catalogItem.name())
-                                .build());
-
-                if (catalogItem.description() != null) {
-                    priceDataBuilder.setProductData(
-                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(catalogItem.name())
-                                    .setDescription(catalogItem.description())
-                                    .build());
-                }
-
-                if (catalogItem.taxCode() != null && products.automaticTax()) {
-                    priceDataBuilder.setProductData(
-                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(catalogItem.name())
-                                    .setTaxCode(catalogItem.taxCode())
-                                    .build());
-                }
+                        .setProductData(productData(catalogItem, requested, products));
 
                 lineItemBuilder = SessionCreateParams.LineItem.builder()
                         .setPriceData(priceDataBuilder.build())
@@ -497,6 +507,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 .append("buyer_id", buyerId != null ? new BsonString(buyerId) : BsonNull.VALUE)
                 .append("buyer_email", buyerEmail != null ? new BsonString(buyerEmail) : BsonNull.VALUE)
                 .append("payer", buildPayerDocument(request))
+                .append("metadata", orderMetadata)
                 .append("status", new BsonString("pending_payment"))
                 .append("requires_shipping", BsonBoolean.valueOf(requiresShipping))
                 .append("line_items", lineItemsBson)
@@ -762,5 +773,92 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         }
     }
 
-    private record RequestedItem(String productId, int quantity) {}
+    /**
+     * The Stripe product for one line: name, description, tax code and metadata.
+     *
+     * <p>Built once. The previous version set {@code productData} three times — once with the
+     * name, again with the description, again with the tax code — and each call replaced the
+     * whole object rather than adding to it, so an item carrying both a description and a tax
+     * code reached Stripe with only the tax code. The receipt lost the description and nothing
+     * said so.
+     */
+    private static SessionCreateParams.LineItem.PriceData.ProductData productData(
+            CatalogItem catalogItem, RequestedItem requested, ProductsConfig products) {
+        var builder = SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                .setName(catalogItem.name());
+
+        if (catalogItem.description() != null) {
+            builder.setDescription(catalogItem.description());
+        }
+        if (catalogItem.taxCode() != null && products.automaticTax()) {
+            builder.setTaxCode(catalogItem.taxCode());
+        }
+        // What the buyer chose, on Stripe's own copy of the line: it shows in the dashboard and
+        // on the invoice, which is where an order gets read before it gets packed.
+        if (!requested.metadata().isEmpty()) {
+            builder.putAllMetadata(asStringMap(requested.metadata()));
+        }
+
+        return builder.build();
+    }
+
+    /** Stripe's own limits, taken as they are — ours can only be stricter, never looser. */
+    private static final int METADATA_MAX_KEYS = 50;
+    private static final int METADATA_MAX_KEY_LENGTH = 40;
+    private static final int METADATA_MAX_VALUE_LENGTH = 500;
+
+    /**
+     * The {@code metadata} of a request document, validated in shape and never in meaning.
+     *
+     * <p>A map of strings, because that is what Stripe accepts and translating a vocabulary at the
+     * boundary is how the two drift apart. The plugin does not know what any key means and must
+     * not: they are the application's, and a colour or a size is not something a payment plugin
+     * has an opinion about.
+     *
+     * <p>Rejected here rather than only by the collection's schema. Both matter and they protect
+     * different things — the schema keeps the collection consistent, this keeps the buyer from
+     * reading a list of schema violations when the real answer is "that value is too long".
+     *
+     * @throws IllegalArgumentException with a message naming what is wrong and where
+     */
+    static BsonDocument metadataOf(BsonDocument doc, String what) {
+        if (!doc.containsKey("metadata")) {
+            return new BsonDocument();
+        }
+        if (!doc.get("metadata").isDocument()) {
+            throw new IllegalArgumentException("%s: 'metadata' must be an object".formatted(what));
+        }
+
+        var metadata = doc.getDocument("metadata");
+        if (metadata.size() > METADATA_MAX_KEYS) {
+            throw new IllegalArgumentException("%s: at most %d metadata keys, found %d"
+                    .formatted(what, METADATA_MAX_KEYS, metadata.size()));
+        }
+
+        for (var entry : metadata.entrySet()) {
+            if (entry.getKey().length() > METADATA_MAX_KEY_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata key '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_KEY_LENGTH));
+            }
+            if (!entry.getValue().isString()) {
+                throw new IllegalArgumentException("%s: metadata '%s' must be a string"
+                        .formatted(what, entry.getKey()));
+            }
+            if (entry.getValue().asString().getValue().length() > METADATA_MAX_VALUE_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_VALUE_LENGTH));
+            }
+        }
+
+        return metadata;
+    }
+
+    /** The same document as a plain map, which is what Stripe's builders take. */
+    private static Map<String, String> asStringMap(BsonDocument metadata) {
+        var map = new LinkedHashMap<String, String>();
+        metadata.forEach((k, v) -> map.put(k, v.asString().getValue()));
+        return map;
+    }
+
+    private record RequestedItem(String productId, int quantity, BsonDocument metadata) {}
 }

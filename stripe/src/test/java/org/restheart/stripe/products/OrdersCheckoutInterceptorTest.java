@@ -2,8 +2,11 @@ package org.restheart.stripe.products;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.Test;
 
@@ -74,5 +77,86 @@ class OrdersCheckoutInterceptorTest {
         // session later — that failure should stay Stripe's, not become an NPE here.
         assertEquals("", OrdersCheckoutInterceptor.interpolateOrderRef("", ORDER_ID, SECRET));
         assertNull(OrdersCheckoutInterceptor.interpolateOrderRef(null, ORDER_ID, SECRET));
+    }
+
+    // ── metadata ─────────────────────────────────────────────────────────────
+
+    @Test
+    void metadata_absentIsEmptyRatherThanNull() {
+        // Every order line carries the field, so a line without metadata and a line whose
+        // metadata were dropped look the same in the database — which is the point.
+        assertEquals(new BsonDocument(),
+                OrdersCheckoutInterceptor.metadataOf(BsonDocument.parse("{}"), "item 'x'"));
+    }
+
+    @Test
+    void metadata_stringsPassThroughUntouched() {
+        var doc = BsonDocument.parse("""
+                { "metadata": { "colour": "yellow", "size": "L" } }
+                """);
+
+        var metadata = OrdersCheckoutInterceptor.metadataOf(doc, "item 'x'");
+
+        assertEquals("yellow", metadata.getString("colour").getValue());
+        assertEquals("L", metadata.getString("size").getValue());
+    }
+
+    @Test
+    void metadata_mustBeAnObject() {
+        var doc = BsonDocument.parse("""
+                { "metadata": [ { "key": "colour", "value": "yellow" } ] }
+                """);
+
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> OrdersCheckoutInterceptor.metadataOf(doc, "item 'tee'"));
+        assertTrue(e.getMessage().contains("item 'tee'"), e.getMessage());
+    }
+
+    @Test
+    void metadata_valuesMustBeStrings() {
+        // Stripe's metadata are strings. Accepting a number here would mean deciding how to
+        // render it at the boundary, which is a decision nobody asked us to make.
+        var doc = BsonDocument.parse("""
+                { "metadata": { "size": 42 } }
+                """);
+
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> OrdersCheckoutInterceptor.metadataOf(doc, "item 'tee'"));
+        assertTrue(e.getMessage().contains("size"), e.getMessage());
+    }
+
+    @Test
+    void metadata_refusesMoreKeysThanStripeAccepts() {
+        var metadata = new BsonDocument();
+        for (var i = 0; i < 51; i++) {
+            metadata.append("k" + i, new BsonString("v"));
+        }
+
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> OrdersCheckoutInterceptor.metadataOf(
+                        new BsonDocument("metadata", metadata), "order"));
+        assertTrue(e.getMessage().contains("50"), e.getMessage());
+    }
+
+    @Test
+    void metadata_refusesAValueLongerThanStripeAccepts() {
+        var doc = new BsonDocument("metadata",
+                new BsonDocument("note", new BsonString("x".repeat(501))));
+
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> OrdersCheckoutInterceptor.metadataOf(doc, "order"));
+        assertTrue(e.getMessage().contains("note"), e.getMessage());
+    }
+
+    @Test
+    void metadata_theMessageSaysWhichItem() {
+        // A cart of five items and one bad value: "metadata too long" would send the developer
+        // looking through all five.
+        var doc = new BsonDocument("metadata",
+                new BsonDocument("k".repeat(41), new BsonString("v")));
+
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> OrdersCheckoutInterceptor.metadataOf(doc, "item 'tee-classic/yellow-l'"));
+        assertTrue(e.getMessage().contains("tee-classic/yellow-l"), e.getMessage());
     }
 }
