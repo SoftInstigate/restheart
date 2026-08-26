@@ -280,7 +280,7 @@ public class CatalogReader {
 
         // optional fields
         var description = docString(doc, "description");
-        var imageUrl = docString(doc, "image_url");
+        var images = docStrings(doc, "images");
         var currency = docString(doc, "currency");
         var taxCode = docString(doc, "tax_code");
         var stripePriceId = docString(doc, "stripe_price_id");
@@ -293,7 +293,27 @@ public class CatalogReader {
                             .formatted(id));
         }
 
-        return new CatalogItem(id, type, name, description, imageUrl, unitAmount, currency, purchasable, taxCode, stripePriceId);
+        return new CatalogItem(id, type, name, description, images, unitAmount, currency, purchasable, taxCode, stripePriceId);
+    }
+
+    /**
+     * A string array field, ignoring anything in it that is not a string.
+     *
+     * <p>Lenient on purpose: one malformed entry among a product's images should not stop the
+     * product being sold. A missing price refuses the sale; a broken image URL is a picture that
+     * does not load.
+     */
+    private static List<String> docStrings(BsonDocument doc, String key) {
+        if (!(doc.get(key) instanceof BsonArray array)) {
+            return List.of();
+        }
+        var out = new ArrayList<String>(array.size());
+        for (var value : array) {
+            if (value.isString() && !value.asString().getValue().isBlank()) {
+                out.add(value.asString().getValue());
+            }
+        }
+        return out;
     }
 
     private static String docString(BsonDocument doc, String key) {

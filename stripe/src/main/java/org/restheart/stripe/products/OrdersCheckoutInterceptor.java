@@ -793,6 +793,12 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         if (catalogItem.taxCode() != null && products.automaticTax()) {
             builder.setTaxCode(catalogItem.taxCode());
         }
+        // Stripe shows these on its own checkout page, and takes at most eight. Until now the
+        // catalog's image was read and then dropped: the buyer left our shop and arrived at a
+        // page with no picture of what they were buying.
+        if (!catalogItem.images().isEmpty()) {
+            builder.addAllImage(catalogItem.images().stream().limit(8).toList());
+        }
         // What the buyer chose, on Stripe's own copy of the line: it shows in the dashboard and
         // on the invoice, which is where an order gets read before it gets packed.
         if (!requested.metadata().isEmpty()) {
