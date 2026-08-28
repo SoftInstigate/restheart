@@ -194,6 +194,21 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
+        // Nothing to validate once the request has already been refused: the
+        // document is never going to be written, and checking it here replaces
+        // whatever the refusal said with a list of missing keys.
+        //
+        // This runs at Integer.MAX_VALUE, so it runs after every other request
+        // interceptor — including the ones that rewrite a request body into the
+        // document to store. When one of those rejects, the body is still what
+        // the client sent, and validating *that* against the collection's schema
+        // reports every required field as missing. A shopper told "this is out
+        // of stock" was instead shown twelve schema violations naming fields
+        // they had never heard of and could not have supplied.
+        if (response.isInError()) {
+            return false;
+        }
+
         return request.isHandledBy("mongo")
                 && ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
