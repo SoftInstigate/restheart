@@ -48,6 +48,16 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     private static final int NO_THREAD_POOL = 0;
     private static SmtpEmailSender initializedInstance;
 
+    /**
+     * Consulted before every send, when the deployment registered one.
+     *
+     * <p>{@code required = false} is what makes this safe to add: a single-tenant install has
+     * nobody to protect from anybody and registers no gate, and without it every such install
+     * would refuse to start. Null means send.
+     */
+    @Inject(value = "email-gate", required = false)
+    private EmailGate gate = null;
+
     @Inject("config")
     private Map<String, Object> conf;
 
@@ -91,7 +101,38 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             LOGGER.warn("Emails plugin disabled, skipping email to <{}>", to);
             return;
         }
+        if (!permitted(request, to)) {
+            return;
+        }
         send(resolve(request), to, recipientName, subject, htmlBody);
+    }
+
+    /**
+     * Asks the gate, if there is one.
+     *
+     * <p>The check happens here and not inside {@link #send}, so it costs nothing on a deployment
+     * that registered no gate, and so an asynchronous send is refused on the calling thread —
+     * where the request is still readable — rather than later, when the exchange may already have
+     * been recycled.
+     */
+    private boolean permitted(Request<?> request, String to) {
+        if (gate == null) {
+            return true;
+        }
+
+        try {
+            var decision = gate.check(request, to, request != null && hasOverride(request));
+            if (!decision.allowed()) {
+                LOGGER.warn("Email to <{}> not sent: {}", to, decision.reason());
+                return false;
+            }
+        } catch (Exception e) {
+            // A broken gate must not take the mail down with it: a deployment that cannot count
+            // is worse off refusing everything than sending it.
+            LOGGER.error("Email gate failed, sending anyway", e);
+        }
+
+        return true;
     }
 
     /**
@@ -104,6 +145,9 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
     public void sendEmailAsync(Request<?> request, String to, String recipientName, String subject, String htmlBody) {
         if (!this.enabled) {
             LOGGER.warn("Emails plugin disabled, skipping email to <{}>", to);
+            return;
+        }
+        if (!permitted(request, to)) {
             return;
         }
         var settings = resolve(request);
