@@ -50,7 +50,7 @@ import com.intuit.karate.core.StepResult;
  */
 public class ProgressHook implements RuntimeHook {
 
-    private static final int BAR_WIDTH = 30;
+    private static final int BAR_WIDTH = 20;
     private static final boolean CI = System.getenv("CI") != null;
     private static final PrintStream NULL_OUT = new PrintStream(OutputStream.nullOutputStream());
 
@@ -71,7 +71,7 @@ public class ProgressHook implements RuntimeHook {
         // Undoes the afterFeature() suppression below, right before this (real, selected)
         // feature's own scenarios would need to print anything.
         if (fr.caller.isNone()) {
-            currentFeature = fr.featureCall.feature.toString();
+            currentFeature = shortName(fr.featureCall.feature.toString());
             if (realOut != null) {
                 System.setOut(realOut);
                 realOut = null;
@@ -164,6 +164,21 @@ public class ProgressHook implements RuntimeHook {
         featuresDone.set(featuresTotal);
         printProgress();
         System.out.println();
+    }
+
+    // Just the filename, truncated, instead of the full "classpath:karate/stripe/..." path:
+    // Java has no portable way to read the terminal's current column width, so the line is
+    // kept short enough by construction to stay on one row on any reasonably-sized terminal
+    // instead - \r\033[K only erases the current physical row, so if the line wrapped onto
+    // a second one (long feature path, or a narrow/just-resized terminal) that row is left
+    // behind and the bar appears to break. A terminal narrower than ~100 columns can still
+    // wrap a long filename; there's no fully portable fix for that short of a terminal lib.
+    private static final int MAX_FEATURE_NAME = 30;
+
+    private static String shortName(String featurePath) {
+        var slash = featurePath.lastIndexOf('/');
+        var name = slash < 0 ? featurePath : featurePath.substring(slash + 1);
+        return name.length() <= MAX_FEATURE_NAME ? name : "…" + name.substring(name.length() - MAX_FEATURE_NAME + 1);
     }
 
     private void printProgress() {
