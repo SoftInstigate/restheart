@@ -55,7 +55,8 @@ public final class PolyglotClassloaderHelper {
         T call() throws IOException;
     }
 
-    private PolyglotClassloaderHelper() {}
+    private PolyglotClassloaderHelper() {
+    }
 
     /**
      * Returns the PluginsClassloader instance via reflection, or null if

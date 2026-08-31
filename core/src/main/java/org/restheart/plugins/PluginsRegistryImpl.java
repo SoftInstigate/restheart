@@ -370,7 +370,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     /** Cache key for SRV_INTERCEPTORS_CACHE - cheaper and more readable than a SimpleEntry. */
-    private record InterceptorCacheKey(String service, InterceptPoint point) {}
+    private record InterceptorCacheKey(String service, InterceptPoint point) {
+    }
 
     private final LoadingCache<InterceptorCacheKey, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
             .createHashMapLoadingCache((key) -> __interceptors(key.service(), key.point()));

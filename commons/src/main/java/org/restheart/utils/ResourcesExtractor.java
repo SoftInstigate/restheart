@@ -364,7 +364,7 @@ public class ResourcesExtractor {
      */
     private static FileAttribute<?>[] ownerOnly() {
         return FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
-            ? new FileAttribute<?>[] { PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")) }
-            : new FileAttribute<?>[0];
+                ? new FileAttribute<?>[]{PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))}
+                : new FileAttribute<?>[0];
     }
 }

@@ -88,7 +88,8 @@ public final class PolyglotThreadUtils {
         return platformExecutor;
     }
 
-    private PolyglotThreadUtils() {}
+    private PolyglotThreadUtils() {
+    }
 
     /**
      * Creates a polyglot Engine with the PluginsClassloader as context classloader.

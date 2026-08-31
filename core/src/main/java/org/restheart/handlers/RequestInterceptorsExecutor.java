@@ -155,7 +155,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
         var totalInterceptors = resolvedInterceptors.size();
 
-        for (int i = 0; i < totalInterceptors; i++) {
+        for (int i = 0;i < totalInterceptors;i++) {
             var ri = resolvedInterceptors.get(i);
             var interceptorStartTime = System.nanoTime();
 

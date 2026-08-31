@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Source;
-import org.restheart.polyglot.PolyglotClassloaderHelper;
 import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
@@ -102,69 +101,69 @@ public class JSStringService extends JSService implements StringService {
         var language = "js";
 
         try {
-        return PolyglotThreadUtils.onPlatformThreadIO(() -> {
-        var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
-        ctx.enter();
-        try {
-            var sindexPath = pluginPath.toUri().toString();
-            LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
-            var optionsScript = "import { options } from '" + sindexPath + "'; options;";
-            var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
+            return PolyglotThreadUtils.onPlatformThreadIO(() -> {
+                var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
+                ctx.enter();
+                try {
+                    var sindexPath = pluginPath.toUri().toString();
+                    LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
+                    var optionsScript = "import { options } from '" + sindexPath + "'; options;";
+                    var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
 
-            Value options;
+                    Value options;
 
-            try {
-                options = ctx.eval(optionsSource);
-            } catch (Throwable t) {
-                if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
+                    try {
+                        options = ctx.eval(optionsSource);
+                    } catch (Throwable t) {
+                        if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
+                        }
+                    }
+
+                    checkOptions(options, pluginPath);
+
+                    var name = options.getMember("name").asString();
+                    var description = options.getMember("description").asString();
+                    var uri = options.getMember("uri").asString();
+                    var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
+                    var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
+                    String modulesReplacements = null;
+
+                    if (options.getMemberKeys().contains("modulesReplacements")) {
+                        var sb = new StringBuilder();
+
+                        options.getMember("modulesReplacements").getMemberKeys().stream()
+                                .forEach(k -> sb.append(k).append(":")
+                                        .append(options.getMember("modulesReplacements").getMember(k))
+                                        .append(","));
+
+                        modulesReplacements = sb.toString();
+                    }
+
+                    // ******** evaluate and check handle
+                    var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+                    var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
+
+                    Value handle;
+
+                    try {
+                        handle = ctx.eval(handleSource);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
+                    }
+
+                    checkHandle(handle, pluginPath);
+
+                    return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
+                } finally {
+                    ctx.leave();
+                    ctx.close();
                 }
-            }
-
-            checkOptions(options, pluginPath);
-
-            var name = options.getMember("name").asString();
-            var description = options.getMember("description").asString();
-            var uri = options.getMember("uri").asString();
-            var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
-            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
-            String modulesReplacements = null;
-
-            if (options.getMemberKeys().contains("modulesReplacements")) {
-                var sb = new StringBuilder();
-
-                options.getMember("modulesReplacements").getMemberKeys().stream()
-                        .forEach(k -> sb.append(k).append(":")
-                                .append(options.getMember("modulesReplacements").getMember(k))
-                                .append(","));
-
-                modulesReplacements = sb.toString();
-            }
-
-            // ******** evaluate and check handle
-            var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
-            var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
-
-            Value handle;
-
-            try {
-                handle = ctx.eval(handleSource);
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
-            }
-
-            checkHandle(handle, pluginPath);
-
-            return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
-        } finally {
-            ctx.leave();
-            ctx.close();
-        }
-        });
+            });
         } catch (Throwable t) {
             LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
                     pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
