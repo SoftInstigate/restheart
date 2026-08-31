@@ -37,36 +37,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Embedding provider for any endpoint that speaks the OpenAI {@code /v1/embeddings}
- * wire format: {@code {"model", "input"}} request, {@code {"data": [{"embedding",
- * "index"}]}} response, Bearer auth. This covers OpenAI itself as well as
- * OpenAI-compatible gateways such as OpenRouter (verified against
- * https://openrouter.ai/docs/api_reference/embeddings on 2026-08-31 — same request
- * and response shape at {@code https://openrouter.ai/api/v1/embeddings}), Together.ai,
- * Groq, or a self-hosted OpenAI-compatible server — by pointing {@code base-url}
- * elsewhere. No per-gateway code or dependency is needed because the wire shape is
- * shared; this is unlike a proprietary API (e.g. AWS Bedrock), which needs its own
- * provider implementation.
+ * Embedding provider for the Voyage AI API (verified against
+ * https://docs.voyageai.com/reference/embeddings-api on 2026-08-31):
+ * {@code POST https://api.voyageai.com/v1/embeddings}, Bearer auth, request
+ * {@code {"model", "input"}} plus an optional {@code input_type} ({@code "query"}
+ * or {@code "document"}, improves retrieval quality when set), response
+ * {@code {"data": [{"embedding": [...], "index": ...}]}} — the exact same shape as
+ * OpenAI's {@code /v1/embeddings}, so response parsing is shared with
+ * {@link OpenAIEmbeddingProvider} via {@link OpenAiWireEmbeddings}.
  *
  * <pre>{@code
  * plugins-args:
- *   openAIEmbeddingProvider:
+ *   voyageEmbeddingProvider:
  *     enabled: true
  *     api-key: <key>
- *     model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
- *     base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
+ *     model: voyage-3.5        # optional, this is the default
+ *     input-type: document     # optional: "query" or "document"; omitted by default
  * }</pre>
  */
 @RegisterPlugin(
-    name = "openAIEmbeddingProvider",
-    description = "Provides text embeddings via any OpenAI-compatible /v1/embeddings endpoint",
+    name = "voyageEmbeddingProvider",
+    description = "Provides text embeddings via the Voyage AI API",
     enabledByDefault = false
 )
-public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIEmbeddingProvider.class);
+public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VoyageEmbeddingProvider.class);
 
-    private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
-    private static final String DEFAULT_MODEL = "text-embedding-3-small";
+    private static final String DEFAULT_BASE_URL = "https://api.voyageai.com/v1";
+    private static final String DEFAULT_MODEL = "voyage-3.5";
 
     @Inject("config")
     private Map<String, Object> config;
@@ -74,6 +72,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
     private String apiKey;
     private String model;
     private String baseUrl;
+    private String inputType;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
@@ -83,9 +82,10 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         this.apiKey = argOrDefault(config, "api-key", "");
         this.model = argOrDefault(config, "model", DEFAULT_MODEL);
         this.baseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
+        this.inputType = argOrDefault(config, "input-type", "");
 
         if (apiKey == null || apiKey.isBlank()) {
-            LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail");
+            LOGGER.warn("voyageEmbeddingProvider: no api-key configured, embedding calls will fail");
         }
 
         this.instance = this::embed;
@@ -101,16 +101,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
             return List.of();
         }
 
-        var inputJson = new StringBuilder("[");
-        for (int i = 0; i < texts.size(); i++) {
-            inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
-            if (i < texts.size() - 1) {
-                inputJson.append(",");
-            }
-        }
-        inputJson.append("]");
-
-        var payload = "{\"model\":\"" + OpenAiWireEmbeddings.escape(model) + "\",\"input\":" + inputJson + "}";
+        var payload = buildPayload(model, texts, inputType);
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
 
         var httpReq = HttpRequest.newBuilder()
@@ -124,25 +115,46 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
-                throw new RuntimeException("Embeddings endpoint " + endpoint + " returned HTTP "
+                throw new RuntimeException("Voyage embeddings endpoint " + endpoint + " returned HTTP "
                     + httpResp.statusCode() + ": " + httpResp.body());
             }
 
-            return parseEmbeddings(httpResp.body());
+            return OpenAiWireEmbeddings.parse(httpResp.body());
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to call embeddings endpoint " + endpoint + ": " + e.getMessage(), e);
+            throw new RuntimeException("Failed to call Voyage embeddings endpoint " + endpoint + ": " + e.getMessage(), e);
         }
     }
 
     /**
-     * Parses an OpenAI-wire-format {@code /v1/embeddings} response body into one
-     * vector per input text. See {@link OpenAiWireEmbeddings#parse} — kept here as
-     * a named delegate so the existing test suite for this class doesn't need to
-     * know about the shared parser used by every OpenAI-wire-format provider.
+     * Builds the request payload, including the optional {@code input_type} field
+     * only when configured — Voyage treats a present-but-unrecognized value as an
+     * error, so an empty/unset {@code inputType} must omit the field entirely
+     * rather than send it as {@code ""}. Package-private and pure so this
+     * provider-specific detail (the one thing that differs from plain
+     * OpenAI-wire-format providers) can be unit-tested without an HTTP round-trip.
      */
-    static List<float[]> parseEmbeddings(String responseBody) {
-        return OpenAiWireEmbeddings.parse(responseBody);
+    static String buildPayload(String model, List<String> texts, String inputType) {
+        var inputJson = new StringBuilder("[");
+        for (int i = 0; i < texts.size(); i++) {
+            inputJson.append("\"").append(OpenAiWireEmbeddings.escape(texts.get(i))).append("\"");
+            if (i < texts.size() - 1) {
+                inputJson.append(",");
+            }
+        }
+        inputJson.append("]");
+
+        var payload = new StringBuilder("{\"model\":\"")
+            .append(OpenAiWireEmbeddings.escape(model))
+            .append("\",\"input\":")
+            .append(inputJson);
+
+        if (inputType != null && !inputType.isBlank()) {
+            payload.append(",\"input_type\":\"").append(OpenAiWireEmbeddings.escape(inputType)).append("\"");
+        }
+
+        payload.append("}");
+        return payload.toString();
     }
 }
