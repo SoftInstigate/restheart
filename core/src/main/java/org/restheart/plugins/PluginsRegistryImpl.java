@@ -26,9 +26,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.restheart.cache.CacheFactory;
@@ -144,6 +146,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private boolean sseServicesInitialized = false;
 
     private final Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
+    // O(1) lookup by name, kept in sync with `services` at every mutation point
+    // (getServices() lazy init, plugService(), unplug()) instead of scanning it linearly.
+    private final Map<String, PluginRecord<Service<?, ?>>> servicesByName = new ConcurrentHashMap<>();
     // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
     private boolean servicesInitialized = false;
@@ -370,7 +375,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
 
     private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
-        Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
+        Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : Optional.ofNullable(getService(serviceName));
 
         var _interceptors = getInterceptors();
 
@@ -456,11 +461,21 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<PluginRecord<Service<?, ?>>> getServices() {
         if (!servicesInitialized) {
-            this.services.addAll(PluginsFactory.getInstance().services());
+            var scanned = PluginsFactory.getInstance().services();
+            this.services.addAll(scanned);
+            scanned.forEach(srv -> this.servicesByName.put(srv.getName(), srv));
             this.servicesInitialized = true;
         }
 
         return Collections.unmodifiableSet(this.services);
+    }
+
+    @Override
+    public PluginRecord<Service<?, ?>> getService(String name) {
+        // covers services added by an Initializer before the lazy scan above has run
+        // (e.g. PolyglotDeployer) — same call, so it also performs that scan if needed
+        getServices();
+        return name == null ? null : this.servicesByName.get(name);
     }
 
     @Override
@@ -546,6 +561,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
 
         this.services.add(srv);
+        this.servicesByName.put(srv.getName(), srv);
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
@@ -622,6 +638,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         var pi = getPipelineInfo(uri);
 
         this.services.removeIf(s -> s.getName().equals(pi.getName()));
+        this.servicesByName.remove(pi.getName());
 
         if (mp == MATCH_POLICY.PREFIX) {
             ROOT_PATH_HANDLER.removePrefixPath(uri);
