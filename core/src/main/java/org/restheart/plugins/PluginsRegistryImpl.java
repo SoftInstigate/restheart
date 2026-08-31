@@ -21,7 +21,6 @@
 package org.restheart.plugins;
 
 import java.net.URL;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -72,7 +71,6 @@ import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.utils.PluginUtils;
 import org.restheart.utils.BootstrapLogger;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import static io.undertow.Handlers.path;
@@ -371,8 +369,11 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return this.interceptors.removeIf(filter);
     }
 
-    private final LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
-            .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
+    /** Cache key for SRV_INTERCEPTORS_CACHE - cheaper and more readable than a SimpleEntry. */
+    private record InterceptorCacheKey(String service, InterceptPoint point) {}
+
+    private final LoadingCache<InterceptorCacheKey, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
+            .createHashMapLoadingCache((key) -> __interceptors(key.service(), key.point()));
 
     private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
         Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : Optional.ofNullable(getService(serviceName));
@@ -425,9 +426,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         var serviceName = PluginUtils.name(srv);
 
-        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(serviceName, interceptPoint));
+        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new InterceptorCacheKey(serviceName, interceptPoint));
 
-        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
+        return _ret.isPresent() ? _ret.get() : List.of();
     }
 
     /**
@@ -437,9 +438,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      */
     @Override
     public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint) {
-        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(null, interceptPoint));
+        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new InterceptorCacheKey(null, interceptPoint));
 
-        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
+        return _ret.isPresent() ? _ret.get() : List.of();
     }
 
     /**
