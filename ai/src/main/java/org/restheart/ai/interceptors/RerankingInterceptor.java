@@ -232,8 +232,18 @@ public class RerankingInterceptor implements MongoInterceptor {
                 + ": " + httpResp.body());
         }
 
-        // Response: [{"index": N, "score": F}, ...]
-        var respDoc  = BsonDocument.parse("{\"results\":" + httpResp.body() + "}");
+        return applyRanking(originalResults, httpResp.body());
+    }
+
+    /**
+     * Reorders {@code originalResults} according to the rerank API's response body
+     * ({@code [{"index": N, "score": F}, ...]}), appending {@code _rerankScore} to each
+     * surviving document. Entries with an out-of-range or missing {@code index}, or that
+     * don't reference a document, are skipped. Pulled out of {@link #callRerankApi} so
+     * the response-parsing logic can be unit-tested without an HTTP round-trip.
+     */
+    static BsonArray applyRanking(BsonArray originalResults, String rerankResponseBody) {
+        var respDoc  = BsonDocument.parse("{\"results\":" + rerankResponseBody + "}");
         var rankings = respDoc.getArray("results");
 
         var reranked = new BsonArray();
@@ -252,7 +262,7 @@ public class RerankingInterceptor implements MongoInterceptor {
         return reranked;
     }
 
-    private static String escape(String s) {
+    static String escape(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
