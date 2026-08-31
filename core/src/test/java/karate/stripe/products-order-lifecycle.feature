@@ -349,3 +349,53 @@ Scenario: a refund is appended to the ledger and reflected on the order
     * def total = 0
     * eval for (var i = 0; i < response.length; i++) total += response[i].amount
     * assert total == 3000
+
+# ── disputes ─────────────────────────────────────────────────────────────────
+
+Scenario: a chargeback is appended to the ledger, matched by payment_intent
+    * def sid = 'cs_test_dispute'
+    * def oid = oidFor(sid)
+    * eval seedOrder(oid, sid)
+
+    * def paidEvent =
+    """
+    {
+      id: 'evt_dispute_paid', object: 'event', api_version: '2026-07-29.dahlia',
+      type: 'checkout.session.completed', created: 1700000900,
+      data: { object: { id: '#(sid)', object: 'checkout_session', payment_status: 'paid',
+                        payment_intent: 'pi_dispute', amount_total: 5000, currency: 'eur' } }
+    }
+    """
+    * def p1 = karate.toString(paidEvent)
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sign(webhookSecret, p1)
+    And request p1
+    When method POST
+    Then status 200
+
+    * def disputeEvent =
+    """
+    {
+      id: 'evt_dispute_created', object: 'event', api_version: '2026-07-29.dahlia',
+      type: 'charge.dispute.created', created: 1700001000,
+      data: { object: { id: 'dp_test_1', object: 'dispute', payment_intent: 'pi_dispute',
+                        amount: 5000, currency: 'eur' } }
+    }
+    """
+    * def p2 = karate.toString(disputeEvent)
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sign(webhookSecret, p2)
+    And request p2
+    When method POST
+    Then status 200
+
+    Given path '/restheart-test/transactions'
+    And header Authorization = adminAuth
+    And param filter = '{"order_id":{"$oid":"' + oid + '"},"type":"dispute"}'
+    And param rep = 's'
+    When method GET
+    Then status 200
+    And assert response.length == 1
+    And match response[0].amount == 5000
+    And match response[0].stripe_object_id == 'dp_test_1'
+    And match response[0].stripe_event_id == 'evt_dispute_created'

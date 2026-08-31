@@ -55,6 +55,18 @@
       "allDeclaredConstructors": true
     },
     {
+      "type": "com.stripe.model.Invoice$Parent",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Invoice$Parent$SubscriptionDetails",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
       "type": "com.stripe.model.Subscription",
       "allDeclaredFields": true,
       "allDeclaredMethods": true,
