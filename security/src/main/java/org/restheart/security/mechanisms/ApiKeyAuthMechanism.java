@@ -96,8 +96,8 @@ public class ApiKeyAuthMechanism implements AuthMechanism {
 
         if (this.prefix == null || this.prefix.isBlank()) {
             throw new ConfigurationException(
-                "apiKeyAuthMechanism requires a non-empty 'prefix'; it is what tells an API key "
-                + "from a JWT under the same Bearer scheme");
+                    "apiKeyAuthMechanism requires a non-empty 'prefix'; it is what tells an API key "
+                            + "from a JWT under the same Bearer scheme");
         }
 
         final String authenticatorName = arg(config, "authenticator");
@@ -105,8 +105,8 @@ public class ApiKeyAuthMechanism implements AuthMechanism {
 
         if (authenticatorRecord == null) {
             throw new ConfigurationException(
-                "apiKeyAuthMechanism is configured with authenticator '" + authenticatorName
-                + "' which is not enabled or does not exist");
+                    "apiKeyAuthMechanism is configured with authenticator '" + authenticatorName
+                            + "' which is not enabled or does not exist");
         }
 
         this.authenticator = authenticatorRecord.getInstance();

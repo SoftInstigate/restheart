@@ -22,6 +22,7 @@ package org.restheart.handlers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.restheart.exchange.Exchange;
@@ -127,19 +128,25 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
         RequestPhaseContext.setPhase(Phase.INFO);
         LOGGER.debug("Found {} wildcard interceptors", interceptors.size());
 
-        var executionStartTime = System.currentTimeMillis();
-
-        var applicableInterceptors = interceptors.stream().filter(ri -> {
+        List<WildcardInterceptor> applicableInterceptors = null;
+        for (var ri : interceptors) {
             try {
-                return ri.resolve(request, response);
+                if (ri.resolve(request, response)) {
+                    if (applicableInterceptors == null) {
+                        applicableInterceptors = new ArrayList<>(interceptors.size());
+                    }
+                    applicableInterceptors.add(ri);
+                }
             } catch (Exception ex) {
                 LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, ex);
 
                 Exchange.setInError(exchange);
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
-                return false;
             }
-        }).collect(Collectors.toList());
+        }
+        if (applicableInterceptors == null) {
+            applicableInterceptors = List.of();
+        }
 
         if (applicableInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.INFO);
@@ -151,33 +158,38 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
-        applicableInterceptors.forEach(ri -> {
-            var interceptorStartTime = System.currentTimeMillis();
-            var interceptorName = PluginUtils.name(ri);
-            var isRequired = PluginUtils.requiredinterceptor(ri) ? " (required)" : "";
+        var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
+
+        for (var ri : applicableInterceptors) {
+            var interceptorStartTime = System.nanoTime();
 
             RequestPhaseContext.setPhase(Phase.ITEM);
-            LOGGER.debug("{} (priority: {}){}", interceptorName, PluginUtils.priority(ri), isRequired);
+            if (LOGGER.isDebugEnabled()) {
+                var isRequired = PluginUtils.requiredinterceptor(ri) ? " (required)" : "";
+                LOGGER.debug("{} (priority: {}){}", PluginUtils.name(ri), PluginUtils.priority(ri), isRequired);
+            }
 
             try {
                 ri.handle(request, response);
 
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.debug("✓ {}ms", interceptorDuration);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("✓ {}ms", (System.nanoTime() - interceptorStartTime) / 1_000_000);
+                }
             } catch (Exception ex) {
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                var interceptorDurationMs = (System.nanoTime() - interceptorStartTime) / 1_000_000;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
 
                 Exchange.setInError(exchange);
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
             }
-        });
+        }
 
-        var totalDuration = System.currentTimeMillis() - executionStartTime;
         RequestPhaseContext.setPhase(Phase.PHASE_END);
-        LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in {}ms", totalDuration);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("BEFORE_EXCHANGE_INIT COMPLETED in {}ms", (System.nanoTime() - executionStartTime) / 1_000_000);
+        }
         RequestPhaseContext.reset();
 
         next(exchange);

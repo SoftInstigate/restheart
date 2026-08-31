@@ -486,6 +486,12 @@ ping:
 database-probe:
   enabled: false
 
+# Tracks Stripe database initialization state; enabled by default because services inject
+# it unconditionally, but it hard-requires the MongoDB client ("mclient", not registered here).
+# Disabled by default when running standalone without MongoDB.
+stripeInitTracker:
+  enabled: false
+
 # Returns the roles of the authenticated user
 roles:
   uri: /roles

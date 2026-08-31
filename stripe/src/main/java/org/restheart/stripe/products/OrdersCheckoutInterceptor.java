@@ -25,8 +25,8 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -45,8 +45,9 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.ProductsConfig;
 import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.stripe.StripeService;
+import org.restheart.stripe.util.CustomerProvisioning;
 import org.restheart.stripe.util.RequestOverrides;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,22 @@ import com.stripe.param.checkout.SessionCreateParams;
         name = "ordersCheckoutInterceptor",
         description = "Intercepts POST /orders to create an order from a cart",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-        priority = Integer.MAX_VALUE,
+        // Must run *before* `jsonSchemaBeforeWrite`, which is registered at
+        // `Integer.MAX_VALUE` precisely so it is the last thing to see the
+        // content. This interceptor is what produces that content: the client
+        // sends `{items, email}` and the stored order is a different document
+        // altogether — `_id`, `stripe_session_id`, `secret`, `status`,
+        // `line_items`, the amounts.
+        //
+        // At MAX_VALUE the two tie, the order between them is whatever the sort
+        // happens to do, and when the checker wins it validates the cart against
+        // the schema of the order and answers 400 naming twelve fields that were
+        // about to be written. The Stripe session is created either way, so the
+        // failure arrives *after* the money side already happened.
+        //
+        // The default, 10, is the right value: this is an ordinary request
+        // transform, and nothing about it wants to be last.
+        priority = 10,
         requiresContent = true,
         enabledByDefault = false)
 public class OrdersCheckoutInterceptor implements MongoInterceptor {
@@ -92,6 +108,9 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
 
     @Inject("mclient")
     private MongoClient mclient;
+
+    @Inject("stripeService")
+    private StripeService stripeService;
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -171,7 +190,26 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 return;
             }
 
-            requestedItems.add(new RequestedItem(productId, quantity));
+            BsonDocument itemMetadata;
+            try {
+                itemMetadata = metadataOf(itemDoc, "item '%s'".formatted(productId));
+            } catch (IllegalArgumentException e) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+
+            requestedItems.add(new RequestedItem(productId, quantity, itemMetadata));
+        }
+
+        // The order's own metadata — the seller's, not the buyer's: a tracking code, a courier,
+        // whatever the application decides to keep beside an order. Validated here so a malformed
+        // one is a readable 400 rather than a Stripe rejection or a schema violation.
+        BsonDocument orderMetadata;
+        try {
+            orderMetadata = metadataOf(body, "order");
+        } catch (IllegalArgumentException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
         }
 
         // 3. Read catalog (one query)
@@ -211,14 +249,12 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             return;
         }
 
-        // 4. Check inventory (optional)
-        if (products.inventoryCollection() != null) {
-            try {
-                checkInventory(catalogItems, requestedItems, products, db);
-            } catch (CatalogReader.CatalogValidationException e) {
-                reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
-                return;
-            }
+        // 4. Refuse what is already sold out
+        try {
+            checkInventory(catalogItems, requestedItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+            return;
         }
 
         // 5. Resolve currency and compute totals
@@ -253,7 +289,10 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                     .append("subtotal", new BsonInt64(subtotal))
                     .append("tax_code", catalogItem.taxCode() != null
                             ? new BsonString(catalogItem.taxCode())
-                            : BsonNull.VALUE));
+                            : BsonNull.VALUE)
+                    // Verbatim, unread. What the buyer chose — a colour, a size — travels to
+                    // whoever packs the parcel, and the plugin never learns what it means.
+                    .append("metadata", requested.metadata()));
         }
 
         // 5. Resolve buyer info
@@ -270,6 +309,9 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var secret = generateSecret();
 
         // 6. Build Stripe Checkout Session
+        // Resolved before the session is built: attaching a Customer needs it too.
+        var apiKey = RequestOverrides.secretKey(request, conf);
+
         var sessionBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(interpolateOrderRef(products.successUrl(), orderId, secret))
@@ -281,7 +323,58 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
             sessionBuilder.putMetadata("buyer_id", buyerId);
         }
 
-        if (buyerEmail != null) {
+        // The order's metadata reach Stripe's dashboard, receipt and invoice — where whoever
+        // fulfils the order tends to look before looking at us.
+        if (!orderMetadata.isEmpty()) {
+            sessionBuilder.putAllMetadata(asStringMap(orderMetadata));
+        }
+
+        // A Customer, so Stripe remembers.
+        //
+        // Without one every checkout creates a fresh anonymous Customer, and
+        // nothing survives it: the VAT number, the delivery address and the card
+        // are all typed again next time. With one, Stripe offers what it already
+        // has — and `stripePortalService`, which refuses anyone without a
+        // Customer id, starts working for this shop's buyers too.
+        //
+        // Per billing account rather than per user: the account is what an order
+        // is charged to and what the invoice is addressed to, and two colleagues
+        // sharing one should not each build their own history of it.
+        //
+        // Only for a signed-in buyer. A guest has no account to attach anything
+        // to, and creating a Customer per guest checkout would fill the Stripe
+        // dashboard with one-purchase strangers.
+        String customerId = null;
+        if (request.isAuthenticated()) {
+            customerId = ensureBillingCustomer(request, apiKey);
+        }
+
+        if (customerId != null) {
+            sessionBuilder.setCustomer(customerId);
+
+            // Save back what the buyer types at Checkout.
+            //
+            // Attaching a Customer is what makes this necessary: Stripe will not
+            // let a session collect a shipping address for a Customer it is not
+            // allowed to write it to while automatic tax is on — automatic tax
+            // reads the address off the Customer, so an address collected and
+            // discarded would be taxed against whatever was there before. The
+            // session is simply refused, which is what "12 schema violations"
+            // turned out to be: the checkout threw, the interceptor never
+            // transformed the body, and the raw {items, email} met the order
+            // schema.
+            //
+            // `auto` is also the whole point of having a Customer here — an
+            // address saved is an address offered back next time.
+            sessionBuilder.setCustomerUpdate(
+                    SessionCreateParams.CustomerUpdate.builder()
+                            .setShipping(SessionCreateParams.CustomerUpdate.Shipping.AUTO)
+                            .setAddress(SessionCreateParams.CustomerUpdate.Address.AUTO)
+                            .setName(SessionCreateParams.CustomerUpdate.Name.AUTO)
+                            .build());
+        } else if (buyerEmail != null) {
+            // Never both: Stripe rejects a session carrying `customer` and
+            // `customer_email` together.
             sessionBuilder.setCustomerEmail(buyerEmail);
         }
 
@@ -301,25 +394,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 var priceDataBuilder = SessionCreateParams.LineItem.PriceData.builder()
                         .setCurrency(currency)
                         .setUnitAmount(catalogItem.unitAmount())
-                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                .setName(catalogItem.name())
-                                .build());
-
-                if (catalogItem.description() != null) {
-                    priceDataBuilder.setProductData(
-                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(catalogItem.name())
-                                    .setDescription(catalogItem.description())
-                                    .build());
-                }
-
-                if (catalogItem.taxCode() != null && products.automaticTax()) {
-                    priceDataBuilder.setProductData(
-                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName(catalogItem.name())
-                                    .setTaxCode(catalogItem.taxCode())
-                                    .build());
-                }
+                        .setProductData(productData(catalogItem, requested, products));
 
                 lineItemBuilder = SessionCreateParams.LineItem.builder()
                         .setPriceData(priceDataBuilder.build())
@@ -333,6 +408,50 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         if (products.automaticTax()) {
             sessionBuilder.setAutomaticTax(
                     SessionCreateParams.AutomaticTax.builder().setEnabled(true).build());
+        }
+
+        // A VAT number, and an invoice to put it on.
+        //
+        // Both settings have existed on ProductsConfig since products mode was
+        // written, both default to true, and neither was ever read — so the
+        // console offered "collect tax id" and Checkout never asked, and no
+        // order ever produced an invoice. Two switches wired to nothing.
+        if (products.collectTaxId()) {
+            sessionBuilder.setTaxIdCollection(
+                    SessionCreateParams.TaxIdCollection.builder().setEnabled(true).build());
+        }
+
+        // Business buyers are the ones who need the document, and a signed-in
+        // buyer is the only one this shop knows to be one — a guest checkout has
+        // no team behind it. Which is what the setting has always been called.
+        if (products.invoiceTeamOrders() && request.isAuthenticated()) {
+            sessionBuilder.setInvoiceCreation(
+                    SessionCreateParams.InvoiceCreation.builder().setEnabled(true).build());
+        }
+
+        // Ask for somewhere to send it.
+        //
+        // Without this Stripe never shows the address form, so `shipping_address`
+        // on the order stays null for ever — and the shipping *rates* below were
+        // being offered all the same, which is a checkout that charges for
+        // delivery and never learns the destination.
+        //
+        // Stripe has no "anywhere": the allowed countries are an explicit list,
+        // so an empty one can only mean "do not ask". A cart that needs shipping
+        // and a service that never named a country is a misconfiguration rather
+        // than a preference, and says so once per order rather than silently.
+        if (requiresShipping) {
+            var countries = allowedCountries(products.shippingAddressCountries());
+            if (!countries.isEmpty()) {
+                sessionBuilder.setShippingAddressCollection(
+                        SessionCreateParams.ShippingAddressCollection.builder()
+                                .addAllAllowedCountry(countries)
+                                .build());
+            } else {
+                LOGGER.warn("[stripe] order {} needs shipping but products.shipping-address-countries "
+                        + "is empty: Stripe will not ask for an address and the order will have none",
+                        orderId);
+            }
         }
 
         // Shipping options (for physical products)
@@ -357,7 +476,6 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         var expiresMinutes = Math.max(30, Math.min(products.sessionExpiresMinutes(), 1440));
 
         // Create the Stripe session
-        var apiKey = RequestOverrides.secretKey(request, conf);
         var opts = RequestOptions.builder()
                 .setApiKey(apiKey)
                 .setIdempotencyKey("order-" + buyerId + "-" + System.currentTimeMillis())
@@ -385,6 +503,7 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 .append("buyer_id", buyerId != null ? new BsonString(buyerId) : BsonNull.VALUE)
                 .append("buyer_email", buyerEmail != null ? new BsonString(buyerEmail) : BsonNull.VALUE)
                 .append("payer", buildPayerDocument(request))
+                .append("metadata", orderMetadata)
                 .append("status", new BsonString("pending_payment"))
                 .append("requires_shipping", BsonBoolean.valueOf(requiresShipping))
                 .append("line_items", lineItemsBson)
@@ -425,6 +544,29 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * The billing account's Stripe Customer, created on first purchase.
+     *
+     * Never fatal: if Stripe or the owner lookup fails the checkout goes ahead
+     * without a Customer — the buyer types their details again, which is a
+     * worse afternoon than a lost sale. `ensureCustomer` is idempotent under
+     * concurrency, so two tabs cannot produce two Customers for one account.
+     */
+    private String ensureBillingCustomer(MongoRequest request, String apiKey) {
+        try {
+            var provider = stripeService.getSubscriptionOwnerProvider();
+            var owner = provider.fromRequest(request, RequestOverrides.scope(request, conf));
+            if (owner.isEmpty()) {
+                return null;
+            }
+            return CustomerProvisioning.ensureCustomer(provider, owner.get(), apiKey);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] could not attach a Stripe Customer to this checkout — "
+                    + "the buyer will be asked for their details again: {}", e.getMessage());
+            return null;
+        }
+    }
 
     private String resolveBuyerId(MongoRequest request) {
         var account = request.getAuthenticatedAccount();
@@ -540,6 +682,34 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
      * in practice neither changes — the encoding is there so this stays correct
      * if either representation ever does.
      */
+    /**
+     * Configured country codes as Stripe's enum, dropping what it does not know.
+     *
+     * `AllowedCountry.valueOf` throws on anything that is not an ISO 3166-1
+     * alpha-2 code Stripe recognises, and a typo in a service's configuration
+     * must not take a checkout down with it: a customer cannot act on it, and
+     * the rest of the list is still good. So an unknown code is a warning and a
+     * skip — and if that empties the list, the caller falls through to not
+     * collecting an address at all, which it already knows how to report.
+     */
+    private static List<SessionCreateParams.ShippingAddressCollection.AllowedCountry> allowedCountries(
+            List<String> codes) {
+        var allowed = new ArrayList<SessionCreateParams.ShippingAddressCollection.AllowedCountry>();
+        if (codes == null) {
+            return allowed;
+        }
+        for (var code : codes) {
+            try {
+                allowed.add(SessionCreateParams.ShippingAddressCollection.AllowedCountry
+                        .valueOf(code.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("[stripe] products.shipping-address-countries: '{}' is not a country "
+                        + "code Stripe accepts — ignoring it", code);
+            }
+        }
+        return allowed;
+    }
+
     static String interpolateOrderRef(String url, ObjectId orderId, String secret) {
         if (url == null || url.isEmpty()) {
             return url;
@@ -561,22 +731,28 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
     }
 
     /**
-     * Checks inventory for physical products. Refuses if available stock is below requested quantity.
+     * Refuses a cart asking for more than the catalog says is there.
+     *
+     * <p>Read from the product document — from the variant, when the line names one — because that
+     * is the document the price came from and it was already fetched. There used to be a second
+     * collection for this, keyed by product id, and nothing in the pipeline ever wrote to it: the
+     * number it held could only ever be the one somebody typed by hand.
+     *
+     * <p>This closes the wide window, not the narrow one. Between this check and the payment
+     * arriving, another buyer can take the last unit — see the decrement in the webhook, which is
+     * what makes that case visible rather than preventing it.
      */
-    private void checkInventory(java.util.List<CatalogItem> catalogItems,
-                                 java.util.List<RequestedItem> requestedItems,
-                                 ProductsConfig products,
-                                 String db) throws CatalogReader.CatalogValidationException {
-        var inventoryCol = mclient.getDatabase(db)
-                .getCollection(products.inventoryCollection(), org.bson.BsonDocument.class);
-
+    private static void checkInventory(java.util.List<CatalogItem> catalogItems,
+                                       java.util.List<RequestedItem> requestedItems)
+            throws CatalogReader.CatalogValidationException {
         var requestedMap = new java.util.LinkedHashMap<String, Integer>();
         for (var item : requestedItems) {
             requestedMap.merge(item.productId(), item.quantity(), Integer::sum);
         }
 
         for (var catalogItem : catalogItems) {
-            if (!catalogItem.isPhysical()) {
+            // Absent means the shop does not count this item.
+            if (catalogItem.inStock() == null) {
                 continue;
             }
 
@@ -585,19 +761,107 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
                 continue;
             }
 
-            var inventoryDoc = inventoryCol.find(com.mongodb.client.model.Filters.eq("_id", catalogItem.id())).first();
-            if (inventoryDoc == null) {
-                // No inventory record = unlimited stock
-                continue;
-            }
-
-            var available = inventoryDoc.getInt32("available").getValue();
-            if (available < requested) {
+            if (catalogItem.inStock() < requested) {
                 throw new CatalogReader.CatalogValidationException(
-                        "product %s has %d available but %d requested".formatted(catalogItem.id(), available, requested));
+                        "product %s has %d available but %d requested"
+                                .formatted(catalogItem.id(), catalogItem.inStock(), requested));
             }
         }
     }
 
-    private record RequestedItem(String productId, int quantity) {}
+    /**
+     * The Stripe product for one line: name, description, tax code and metadata.
+     *
+     * <p>Built once. The previous version set {@code productData} three times — once with the
+     * name, again with the description, again with the tax code — and each call replaced the
+     * whole object rather than adding to it, so an item carrying both a description and a tax
+     * code reached Stripe with only the tax code. The receipt lost the description and nothing
+     * said so.
+     */
+    private static SessionCreateParams.LineItem.PriceData.ProductData productData(
+            CatalogItem catalogItem, RequestedItem requested, ProductsConfig products) {
+        var builder = SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                .setName(catalogItem.name());
+
+        if (catalogItem.description() != null) {
+            builder.setDescription(catalogItem.description());
+        }
+        if (catalogItem.taxCode() != null && products.automaticTax()) {
+            builder.setTaxCode(catalogItem.taxCode());
+        }
+        // Stripe shows these on its own checkout page, and takes at most eight. Until now the
+        // catalog's image was read and then dropped: the buyer left our shop and arrived at a
+        // page with no picture of what they were buying.
+        if (!catalogItem.images().isEmpty()) {
+            builder.addAllImage(catalogItem.images().stream().limit(8).toList());
+        }
+        // What the buyer chose, on Stripe's own copy of the line: it shows in the dashboard and
+        // on the invoice, which is where an order gets read before it gets packed.
+        if (!requested.metadata().isEmpty()) {
+            builder.putAllMetadata(asStringMap(requested.metadata()));
+        }
+
+        return builder.build();
+    }
+
+    /** Stripe's own limits, taken as they are — ours can only be stricter, never looser. */
+    private static final int METADATA_MAX_KEYS = 50;
+    private static final int METADATA_MAX_KEY_LENGTH = 40;
+    private static final int METADATA_MAX_VALUE_LENGTH = 500;
+
+    /**
+     * The {@code metadata} of a request document, validated in shape and never in meaning.
+     *
+     * <p>A map of strings, because that is what Stripe accepts and translating a vocabulary at the
+     * boundary is how the two drift apart. The plugin does not know what any key means and must
+     * not: they are the application's, and a colour or a size is not something a payment plugin
+     * has an opinion about.
+     *
+     * <p>Rejected here rather than only by the collection's schema. Both matter and they protect
+     * different things — the schema keeps the collection consistent, this keeps the buyer from
+     * reading a list of schema violations when the real answer is "that value is too long".
+     *
+     * @throws IllegalArgumentException with a message naming what is wrong and where
+     */
+    static BsonDocument metadataOf(BsonDocument doc, String what) {
+        if (!doc.containsKey("metadata")) {
+            return new BsonDocument();
+        }
+        if (!doc.get("metadata").isDocument()) {
+            throw new IllegalArgumentException("%s: 'metadata' must be an object".formatted(what));
+        }
+
+        var metadata = doc.getDocument("metadata");
+        if (metadata.size() > METADATA_MAX_KEYS) {
+            throw new IllegalArgumentException("%s: at most %d metadata keys, found %d"
+                    .formatted(what, METADATA_MAX_KEYS, metadata.size()));
+        }
+
+        for (var entry : metadata.entrySet()) {
+            if (entry.getKey().length() > METADATA_MAX_KEY_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata key '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_KEY_LENGTH));
+            }
+            if (!entry.getValue().isString()) {
+                throw new IllegalArgumentException("%s: metadata '%s' must be a string"
+                        .formatted(what, entry.getKey()));
+            }
+            if (entry.getValue().asString().getValue().length() > METADATA_MAX_VALUE_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_VALUE_LENGTH));
+            }
+        }
+
+        return metadata;
+    }
+
+    /** The same document as a plain map, which is what Stripe's builders take. */
+    private static Map<String, String> asStringMap(BsonDocument metadata) {
+        var map = new LinkedHashMap<String, String>();
+        metadata.forEach((k, v) -> map.put(k, v.asString().getValue()));
+        return map;
+    }
+
+    private record RequestedItem(String productId, int quantity, BsonDocument metadata) {
+    }
 }

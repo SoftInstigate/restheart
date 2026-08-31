@@ -178,6 +178,20 @@ public class StripeConfig implements Provider<StripeConfigData> {
             }
         }
 
+        // Where Stripe Checkout will accept a shipping address. There is no
+        // "anywhere" — Stripe wants an explicit list — so an empty one means no
+        // address is asked for, which is what every service did before this
+        // existed: shipping *rates* were offered and the address to send the
+        // parcel to was never collected.
+        var shippingAddressCountries = new ArrayList<String>();
+        if (prodMap.get("shipping-address-countries") instanceof List<?> countries) {
+            for (var c : countries) {
+                if (c instanceof String code && !code.isBlank()) {
+                    shippingAddressCountries.add(code.trim().toUpperCase());
+                }
+            }
+        }
+
         // Same shape as SubscriptionsConfig's own notifications/templates split — a sibling
         // "templates" map keyed by notification name, not a "template" field nested under each
         // notification. Keeping the two conventions identical is what lets
@@ -203,7 +217,6 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(prodMap, "catalog-collection", "catalog"),
                 configVal(prodMap, "orders-collection", "orders"),
                 configVal(prodMap, "transactions-collection", "transactions"),
-                configVal(prodMap, "inventory-collection", (String) null),
                 configVal(prodMap, "default-currency", "eur"),
                 configVal(prodMap, "buyer-email-field", "_id"),
                 configVal(prodMap, "invoice-team-orders", true),
@@ -215,6 +228,7 @@ public class StripeConfig implements Provider<StripeConfigData> {
                 configVal(prodMap, "max-quantity-per-line", 100),
                 configVal(prodMap, "automatic-tax", true),
                 shippingOptions,
+                shippingAddressCountries,
                 orderNotifications);
     }
 

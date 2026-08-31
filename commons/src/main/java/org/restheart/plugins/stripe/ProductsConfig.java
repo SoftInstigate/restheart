@@ -31,7 +31,6 @@ import java.util.Map;
  * @param catalogCollection     MongoDB collection holding the product catalog
  * @param ordersCollection      MongoDB collection for orders
  * @param transactionsCollection MongoDB collection for the transactions ledger
- * @param inventoryCollection   MongoDB collection for stock data, or {@code null} to disable stock checks
  * @param defaultCurrency       default currency code (e.g. {@code "eur"})
  * @param buyerEmailField       user-document field holding the buyer's email; {@code null} if users have none
  * @param invoiceTeamOrders     whether to issue Stripe invoices for team-paid orders
@@ -43,6 +42,9 @@ import java.util.Map;
  * @param maxQuantityPerLine    maximum quantity per line item
  * @param automaticTax          whether to enable Stripe Tax
  * @param shippingOptions       shipping options offered for carts containing physical products
+ * @param shippingAddressCountries ISO 3166-1 alpha-2 codes Stripe Checkout will accept a shipping
+ *                              address in. Empty means no address is collected — Stripe has no
+ *                              "anywhere" setting, so a list is the only way to ask at all.
  * @param orderNotifications    notification configuration for orders (order-confirmed, order-refunded)
  */
 public record ProductsConfig(
@@ -51,7 +53,6 @@ public record ProductsConfig(
         String catalogCollection,
         String ordersCollection,
         String transactionsCollection,
-        String inventoryCollection,
         String defaultCurrency,
         String buyerEmailField,
         boolean invoiceTeamOrders,
@@ -63,6 +64,7 @@ public record ProductsConfig(
         int maxQuantityPerLine,
         boolean automaticTax,
         List<ShippingOption> shippingOptions,
+        List<String> shippingAddressCountries,
         Map<String, OrderNotificationConfig> orderNotifications) {
 
     /**
@@ -77,7 +79,8 @@ public record ProductsConfig(
             long amount,
             DeliveryEstimateDays deliveryEstimateDays) {
 
-        public record DeliveryEstimateDays(int minimum, int maximum) {}
+        public record DeliveryEstimateDays(int minimum, int maximum) {
+        }
     }
 
     /**
@@ -90,5 +93,6 @@ public record ProductsConfig(
      *                     inline override still wins over this when present; see
      *                     {@code RequestOverrides.templateInline()} in {@code restheart-stripe}.
      */
-    public record OrderNotificationConfig(boolean enabled, String templatePath) {}
+    public record OrderNotificationConfig(boolean enabled, String templatePath) {
+    }
 }

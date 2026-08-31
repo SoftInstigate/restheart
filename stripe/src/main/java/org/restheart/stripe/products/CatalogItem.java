@@ -19,6 +19,8 @@
  */
 package org.restheart.stripe.products;
 
+import java.util.List;
+
 /**
  * A parsed product from the {@code catalog} MongoDB collection.
  *
@@ -28,7 +30,9 @@ package org.restheart.stripe.products;
  * @param type           {@code "physical"} or {@code "digital"}
  * @param name           display name
  * @param description    optional description
- * @param imageUrl       optional image URL
+ * @param images         product images, most representative first — a variant's replace the
+ *                       product's rather than adding to them, so choosing a colour shows that
+ *                       colour. Never null; empty when there are none.
  * @param unitAmount     price in smallest currency unit (non-negative integer)
  * @param currency       currency code, or {@code null} to use the default
  * @param purchasable    whether this product can be purchased
@@ -40,12 +44,20 @@ public record CatalogItem(
         String type,
         String name,
         String description,
-        String imageUrl,
+        List<String> images,
         long unitAmount,
         String currency,
         boolean purchasable,
         String taxCode,
-        String stripePriceId) {
+        String stripePriceId,
+        /**
+         * Units on hand, or {@code null} for unlimited.
+         *
+         * <p>Read from the same document as the price — from the variant when the reference names
+         * one. A field that is simply absent means the shop does not count this item, which is the
+         * right default: most of what a small shop sells it can always get more of.
+         */
+        Integer inStock) {
 
     /** Product types. */
     public static final String PHYSICAL = "physical";

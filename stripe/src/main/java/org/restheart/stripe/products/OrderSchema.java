@@ -20,7 +20,6 @@
 package org.restheart.stripe.products;
 
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 
 /**
  * JSON schema for the order document ({@code stripe-order-v1}).
@@ -38,7 +37,8 @@ public final class OrderSchema {
     /** Schema id used in {@code _schemas} and in collection metadata. */
     public static final String SCHEMA_ID = "stripe-order-v1";
 
-    private OrderSchema() {}
+    private OrderSchema() {
+    }
 
     /**
      * Returns the JSON schema as a BsonDocument.
@@ -101,7 +101,13 @@ public final class OrderSchema {
                       "unit_amount": { "type": "integer", "minimum": 0 },
                       "quantity": { "type": "integer", "minimum": 1 },
                       "subtotal": { "type": "integer", "minimum": 0 },
-                      "tax_code": { "type": ["string", "null"] }
+                      "tax_code": { "type": ["string", "null"] },
+                      "metadata": {
+                        "type": "object",
+                        "maxProperties": 50,
+                        "propertyNames": { "maxLength": 40 },
+                        "additionalProperties": { "type": "string", "maxLength": 500 }
+                      }
                     }
                   }
                 },
@@ -111,9 +117,11 @@ public final class OrderSchema {
                 "amount_shipping": { "type": "integer", "minimum": 0 },
                 "amount_total": { "type": "integer", "minimum": 0 },
                 "amount_refunded": { "type": "integer", "minimum": 0 },
+                "oversold": { "type": "boolean" },
                 "shipping_address": {
                   "type": ["object", "null"],
                   "properties": {
+                    "name": { "type": "string" },
                     "line1": { "type": "string" },
                     "line2": { "type": "string" },
                     "city": { "type": "string" },
@@ -121,6 +129,12 @@ public final class OrderSchema {
                     "postal_code": { "type": "string" },
                     "country": { "type": "string" }
                   }
+                },
+                "metadata": {
+                  "type": "object",
+                  "maxProperties": 50,
+                  "propertyNames": { "maxLength": 40 },
+                  "additionalProperties": { "type": "string", "maxLength": 500 }
                 },
                 "created_at": { "type": "object" },
                 "paid_at": { "type": ["object", "null"] },

@@ -68,16 +68,23 @@ public class StripePortalService implements BsonService {
     @Inject("stripeService")
     private StripeService stripeService;
 
-    @Inject("stripeInitTracker")
-    private StripeInitTracker initTracker;
-
     @Override
     public void handle(BsonRequest req, BsonResponse res) throws Exception {
         if (req.isOptions()) {
             handleOptions(req);
             return;
         }
-        if (RequestOverrides.subscriptionsDisabled(req)) {
+        // The portal belongs to whoever has a Stripe Customer, and since products
+        // mode started provisioning one, that is no longer only subscribers. A
+        // shop's buyer has cards, past payments and invoices to look at exactly
+        // as a subscriber does — it is Stripe's page either way, and it renders
+        // what the Customer holds.
+        //
+        // Gone with it: the subscriptions-initialised check below, which asked
+        // whether a collection this endpoint never reads exists. It answered 503
+        // "Stripe subscriptions module is not initialized" to a shop that has no
+        // subscriptions and never will, for a page that would have worked.
+        if (RequestOverrides.subscriptionsDisabled(req) && RequestOverrides.productsDisabled(req)) {
             res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             return;
         }
@@ -89,11 +96,6 @@ public class StripePortalService implements BsonService {
             res.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }
-        if (!initTracker.isSubscriptionsInitialized(RequestOverrides.db(req, conf))) {
-            res.setInError(HttpStatus.SC_SERVICE_UNAVAILABLE, "Stripe subscriptions module is not initialized");
-            return;
-        }
-
         var provider = stripeService.getSubscriptionOwnerProvider();
         var scope = RequestOverrides.scope(req, conf);
 
@@ -116,9 +118,28 @@ public class StripePortalService implements BsonService {
 
         var apiKey = RequestOverrides.secretKey(req, conf);
 
+        // Where Stripe sends them back.
+        //
+        // `portal-return-url` is a subscriptions setting, and a shop that sells
+        // products has no reason to have set it — so fall back to where an
+        // abandoned checkout goes, which is a page of that same shop and the
+        // nearest thing to "back where you were". Stripe rejects a session with
+        // no return url at all, so an empty one is a 400 the buyer cannot read.
+        var returnUrl = RequestOverrides.portalReturnUrl(req, conf);
+        if (returnUrl == null || returnUrl.isBlank()) {
+            var products = RequestOverrides.products(req, conf);
+            returnUrl = products != null ? products.cancelUrl() : null;
+        }
+        if (returnUrl == null || returnUrl.isBlank()) {
+            res.setInError(HttpStatus.SC_SERVICE_UNAVAILABLE,
+                    "No return url configured: set subscriptions.portal-return-url "
+                            + "or products.cancel-url");
+            return;
+        }
+
         var params = SessionCreateParams.builder()
                 .setCustomer(owner.stripeCustomerId())
-                .setReturnUrl(RequestOverrides.portalReturnUrl(req, conf))
+                .setReturnUrl(returnUrl)
                 .build();
 
         var opts = RequestOptions.builder().setApiKey(apiKey).build();

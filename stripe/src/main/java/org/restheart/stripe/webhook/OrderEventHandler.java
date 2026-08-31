@@ -22,17 +22,19 @@ package org.restheart.stripe.webhook;
 import java.util.Set;
 
 import org.bson.BsonArray;
+import org.bson.BsonValue;
+import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailSender;
 import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.plugins.stripe.ProductsConfig;
+import org.restheart.stripe.products.StockKeeper;
 import org.restheart.stripe.util.RequestOverrides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +118,8 @@ public class OrderEventHandler implements StripeEventHandler {
                 return;
             }
             markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
-                    session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
+                    session.getPaymentIntent(), session.getCustomerDetails(),
+                    session.getCollectedInformation(), event, ctx, products);
             return;
         }
 
@@ -133,7 +136,7 @@ public class OrderEventHandler implements StripeEventHandler {
             return;
         }
         markAsPaid(data.sessionId, data.amountTotal, data.currency,
-                data.paymentIntent, null, event, ctx, products);
+                data.paymentIntent, null, null, event, ctx, products);
     }
 
     private void handleAsyncPaymentSucceeded(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -149,12 +152,13 @@ public class OrderEventHandler implements StripeEventHandler {
             }
             LOGGER.info("[stripe] handleAsyncPaymentSucceeded: extracted sessionId={}, amountTotal={}", data.sessionId, data.amountTotal);
             markAsPaid(data.sessionId, data.amountTotal, data.currency,
-                    data.paymentIntent, null, event, ctx, products);
+                    data.paymentIntent, null, null, event, ctx, products);
             return;
         }
 
         markAsPaid(session.getId(), session.getAmountTotal(), session.getCurrency(),
-                session.getPaymentIntent(), session.getCustomerDetails(), event, ctx, products);
+                session.getPaymentIntent(), session.getCustomerDetails(),
+                session.getCollectedInformation(), event, ctx, products);
     }
 
     private void handleAsyncPaymentFailed(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -266,7 +270,7 @@ public class OrderEventHandler implements StripeEventHandler {
         // Send refund notification
         var buyerEmail = order.containsKey("buyer_email") && order.get("buyer_email").isString()
                 ? order.getString("buyer_email").getValue() : null;
-        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, cur, buyerEmail);
+        sendOrderNotification(ctx, products, "order-refunded", orderId, refundAmount, cur, buyerEmail, order);
     }
 
     private void handleDisputeCreated(Event event, StripeEventContext ctx, ProductsConfig products) {
@@ -323,6 +327,7 @@ public class OrderEventHandler implements StripeEventHandler {
     private void markAsPaid(String sessionId, Long amountTotal, String currency,
                             String paymentIntent,
                             com.stripe.model.checkout.Session.CustomerDetails customerDetails,
+                            com.stripe.model.checkout.Session.CollectedInformation collected,
                             Event event, StripeEventContext ctx, ProductsConfig products) {
         LOGGER.info("[stripe] markAsPaid: sessionId={}, amountTotal={}, currency={}", sessionId, amountTotal, currency);
 
@@ -357,6 +362,21 @@ public class OrderEventHandler implements StripeEventHandler {
             updateDoc.append("stripe_payment_intent", new BsonString(paymentIntent));
         }
 
+        // Where it goes.
+        //
+        // The order document has carried a `shipping_address` field since it was
+        // first written — always null, because nothing ever filled it in. Stripe
+        // collects the address on its own page (when the service names the
+        // countries it ships to), and this is where it comes back: a shop that
+        // never reads it has an order it cannot post.
+        //
+        // Absent for a digital-only cart, and absent on the JSON fallback path,
+        // where the SDK failed to deserialise and there is no structure to read.
+        var shipping = shippingAddress(collected);
+        if (shipping != null) {
+            updateDoc.append("shipping_address", shipping);
+        }
+
         var result = ordersCol.findOneAndUpdate(filter, new BsonDocument("$set", updateDoc));
         if (result == null) {
             LOGGER.warn("[stripe] markAsPaid skipped — session={} not in pending_payment", sessionId);
@@ -375,9 +395,35 @@ public class OrderEventHandler implements StripeEventHandler {
 
         LOGGER.info("[stripe] order marked as paid — id={}, session={}, amount={}", orderId, sessionId, amount);
 
+        // Take the stock.
+        //
+        // Here and not at checkout, because a cart that is never paid for must not hold anything
+        // back. Safe against Stripe redelivering this event: the transition above only fires from
+        // pending_payment, so a second delivery returns null and never reaches this line.
+        //
+        // `result` is the order as it was before the update — which is what we want, since the
+        // lines are the same either way and this saves reading it again.
+        var oversold = StockKeeper.take(
+                ctx.mclient().getDatabase(ctx.scope().db()),
+                products.catalogCollection(),
+                StockKeeper.quantitiesOf(result));
+
+        if (!oversold.isEmpty()) {
+            // Sold something that is not there. The order stands — the buyer has paid and Stripe
+            // has the money — and the shop settles it with a refund from the Stripe dashboard,
+            // which comes back as charge.refunded and is already handled. All this has to do is
+            // make sure somebody knows.
+            for (var line : oversold) {
+                LOGGER.warn("[stripe] OVERSOLD — order={} took {} of {} leaving {}; refund from Stripe",
+                        orderId, line.quantity(), line.productId(), line.remaining());
+            }
+            ordersCol.updateOne(Filters.eq("_id", orderId),
+                    new BsonDocument("$set", new BsonDocument("oversold", org.bson.BsonBoolean.TRUE)));
+        }
+
         // Send order confirmation notification
         sendOrderNotification(ctx, products, "order-confirmed", orderId, amount, cur,
-                customerDetails != null ? customerDetails.getEmail() : null);
+                customerDetails != null ? customerDetails.getEmail() : null, result);
     }
 
     /** Fallback extraction when Stripe SDK deserialization fails (API version mismatch). */
@@ -437,7 +483,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {}
+    private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {
+    }
 
     /** Extracts charge data from raw JSON for fallback handling. */
     private static ChargeData extractChargeData(Event event) {
@@ -469,7 +516,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record ChargeData(String paymentIntent, Long amountRefunded, String currency, String chargeId) {}
+    private record ChargeData(String paymentIntent, Long amountRefunded, String currency, String chargeId) {
+    }
 
     /** Extracts dispute data from raw JSON for fallback handling. */
     private static DisputeData extractDisputeData(Event event) {
@@ -501,7 +549,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record DisputeData(String paymentIntent, Long amount, String currency, String disputeId) {}
+    private record DisputeData(String paymentIntent, Long amount, String currency, String disputeId) {
+    }
 
     private void appendTransaction(MongoCollection<BsonDocument> transactionsCol,
                                    ObjectId orderId, String type, long amount, String currency,
@@ -547,10 +596,110 @@ public class OrderEventHandler implements StripeEventHandler {
     }
 
 
+    /**
+     * Pours an order's metadata into the template variables.
+     *
+     * <p>The order's own always. A line's only when the order has exactly one line: with several,
+     * a flat {@code {{key}}} cannot come from all of them, so it comes from none — an empty
+     * variable is better than the description of one item out of three. Templates that need the
+     * detail use {@code {{items}}}.
+     */
+    private static void putMetadata(Map<String, String> vars, BsonDocument order) {
+        if (order == null) {
+            return;
+        }
+
+        putStrings(vars, order.get("metadata"));
+
+        if (order.get("line_items") instanceof BsonArray lines && lines.size() == 1
+                && lines.get(0) instanceof BsonDocument line) {
+            putStrings(vars, line.get("metadata"));
+        }
+    }
+
+    private static void putStrings(Map<String, String> vars, BsonValue metadata) {
+        if (metadata instanceof BsonDocument doc) {
+            doc.forEach((k, v) -> {
+                if (v.isString()) {
+                    vars.put(k, v.asString().getValue());
+                }
+            });
+        }
+    }
+
+    /**
+     * The order's lines as one line of text: {@code "2 × Classic T-shirt, 1 × Enamel mug"}.
+     *
+     * <p>Rendered here because {@link org.restheart.emails.EmailRenderer} substitutes
+     * {@code {{key}}} and has no loops. A template language would let the shop lay this out
+     * itself, and is a decision about every email RESTHeart sends rather than about orders.
+     */
+    private static String renderItems(BsonDocument order) {
+        if (order == null || !(order.get("line_items") instanceof BsonArray lines)) {
+            return "";
+        }
+
+        var out = new StringBuilder();
+        for (var value : lines) {
+            if (!(value instanceof BsonDocument line)) {
+                continue;
+            }
+            var quantity = line.get("quantity") != null && line.get("quantity").isNumber()
+                    ? line.getNumber("quantity").intValue() : 1;
+            var itemName = line.get("name") != null && line.get("name").isString()
+                    ? line.getString("name").getValue() : "";
+            if (itemName.isBlank()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append(", ");
+            }
+            out.append(quantity).append(" \u00d7 ").append(itemName);
+        }
+        return out.toString();
+    }
+
+    /**
+     * Stripe's shipping details as the order schema declares them.
+     *
+     * Field by field rather than by serialising Stripe's own object: the schema
+     * on the collection is closed over these names, and letting an SDK upgrade
+     * decide the shape of a stored document is how a validator starts rejecting
+     * writes nobody changed.
+     */
+    private static BsonDocument shippingAddress(
+            com.stripe.model.checkout.Session.CollectedInformation collected) {
+        if (collected == null || collected.getShippingDetails() == null) {
+            return null;
+        }
+        var details = collected.getShippingDetails();
+        var address = details.getAddress();
+        if (address == null) {
+            return null;
+        }
+
+        var doc = new BsonDocument();
+        putIfPresent(doc, "name", details.getName());
+        putIfPresent(doc, "line1", address.getLine1());
+        putIfPresent(doc, "line2", address.getLine2());
+        putIfPresent(doc, "city", address.getCity());
+        putIfPresent(doc, "state", address.getState());
+        putIfPresent(doc, "postal_code", address.getPostalCode());
+        putIfPresent(doc, "country", address.getCountry());
+        return doc.isEmpty() ? null : doc;
+    }
+
+    private static void putIfPresent(BsonDocument doc, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            doc.append(key, new BsonString(value));
+        }
+    }
+
     // ── Notifications ────────────────────────────────────────────────────────
 
     private void sendOrderNotification(StripeEventContext ctx, ProductsConfig products, String name,
-                                       ObjectId orderId, long amount, String currency, String email) {
+                                       ObjectId orderId, long amount, String currency, String email,
+                                       BsonDocument order) {
         if (emailSender == null || !emailSender.isEnabled()) {
             return;
         }
@@ -570,6 +719,15 @@ public class OrderEventHandler implements StripeEventHandler {
 
         try {
             var vars = new java.util.HashMap<String, String>();
+
+            // The metadata become template variables, and go in first.
+            //
+            // Whoever builds the shop names the keys — call one `pippo` and the template writes
+            // {{pippo}}. The plugin reserves no name and knows none. Written before the plugin's
+            // own variables on purpose: a metadata key called `amount` must not be able to change
+            // the amount the email prints.
+            putMetadata(vars, order);
+
             vars.put("order-id", orderId.toHexString());
             vars.put("amount", String.valueOf(amount));
             vars.put("amount-formatted", formatAmount(amount, currency));
@@ -579,6 +737,11 @@ public class OrderEventHandler implements StripeEventHandler {
             // subscriptions, nothing upstream of this handler resolves a tenant's real app name.
             vars.putIfAbsent("year", String.valueOf(java.time.Year.now().getValue()));
             vars.putIfAbsent("app-name", "App");
+
+            // What the buyer bought, as a line of text, for templates that do not care about the
+            // detail. The renderer substitutes {{key}} and cannot iterate, so a list has to arrive
+            // already rendered.
+            vars.put("items", renderItems(order));
 
             // Same inline > path > built-in precedence as subscription notifications, and the
             // same override key convention: override-stripe-tmpl-{name} is generic on the

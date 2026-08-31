@@ -24,6 +24,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 
+import org.bson.BsonArray;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -58,6 +59,8 @@ final class BuiltInVarResolvers {
                 new NowVarResolver(),
                 new MongoPermissionsVarResolver(),
                 new RndVarResolver(),
+                new RolesVarResolver(),
+                new AuthenticatedVarResolver(),
                 new QparamsVarResolver());
     }
 
@@ -305,6 +308,96 @@ final class BuiltInVarResolvers {
     }
 
     /** {@code @qparams['key']}, {@code @qparams["key"]} — a query parameter value. */
+    /**
+     * {@code @roles} — the roles of whoever is making the request, as an array,
+     * or {@code ["$unauthenticated"]} when nobody is.
+     *
+     * <p>Fills a gap that is easy to miss until it costs something: a rule keyed
+     * on a user's state runs the same comparison for a caller who has no user,
+     * finds it false, and acts. A permission can say {@code roles: [...]} and be
+     * done; a predicate had no way to ask.
+     *
+     * <pre>
+     * # applies only to callers holding a given role
+     * in(value='staff', array=@roles)
+     * </pre>
+     *
+     * <p>{@code $unauthenticated} is the name {@code mongoAclAuthorizer} already
+     * uses for a request with no account, and it is what appears here, so
+     * permissions and predicates speak of anonymity in one vocabulary.
+     *
+     * <p><b>It cannot be compared in a predicate, though</b> — {@code $} is
+     * Undertow's sigil for an exchange attribute, so {@code value='$unauthenticated'}
+     * is read as an attribute of that name, resolves to nothing, and matches
+     * nothing. Use {@link AuthenticatedVarResolver @authenticated} to ask whether
+     * anyone is signed in.
+     *
+     * <p>An authenticated account holding no roles resolves to an empty array,
+     * not to {@code $unauthenticated}. The two are different — an API key naming
+     * no roles is a credential, and a rule written for guests must not apply to
+     * it.
+     */
+    private static final class RolesVarResolver implements VarResolver {
+        private static final String UNAUTHENTICATED = "$unauthenticated";
+
+        @Override
+        public String name() {
+            return "roles";
+        }
+
+        @Override
+        public BsonValue resolve(Request<?> request, String var) {
+            var roles = new BsonArray();
+
+            if (request == null || !request.isAuthenticated()) {
+                roles.add(new BsonString(UNAUTHENTICATED));
+                return roles;
+            }
+
+            var account = request.getAuthenticatedAccount();
+
+            if (account != null && account.getRoles() != null) {
+                account.getRoles().forEach(r -> roles.add(new BsonString(r)));
+            }
+
+            return roles;
+        }
+    }
+
+    /**
+     * {@code @authenticated} — {@code 'true'} when the request carries an
+     * account, {@code 'false'} when it does not.
+     *
+     * <pre>
+     * # applies only to callers who are signed in
+     * equals(@authenticated, 'true')
+     *
+     * # applies only to anonymous ones
+     * equals(@authenticated, 'false')
+     * </pre>
+     *
+     * <p>Exists because {@code @roles} cannot answer this one. The role for a
+     * request with no account is {@code $unauthenticated}, and {@code $} is
+     * Undertow's sigil for an exchange attribute: written into a predicate it is
+     * read as an attribute of that name, resolves to nothing, and the comparison
+     * quietly fails. A rule guarded that way applies to everybody, which is the
+     * opposite of what it says.
+     *
+     * <p>A string rather than a boolean because the predicate language compares
+     * attributes, and every attribute is text.
+     */
+    private static final class AuthenticatedVarResolver implements VarResolver {
+        @Override
+        public String name() {
+            return "authenticated";
+        }
+
+        @Override
+        public BsonValue resolve(Request<?> request, String var) {
+            return new BsonString(request != null && request.isAuthenticated() ? "true" : "false");
+        }
+    }
+
     private static final class QparamsVarResolver implements VarResolver {
         @Override
         public String name() {

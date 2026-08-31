@@ -134,7 +134,7 @@ public class GetCollectionCache {
                 return null;
             }
         } else {
-            LOGGER.debug(ansi().fg(RED).bold().a("missed").reset().toString() + " get collection cache.");
+            LOGGER.debug("{} get collection cache.", ansi().fg(RED).bold().a("missed").reset().toString());
             return null;
         }
     }

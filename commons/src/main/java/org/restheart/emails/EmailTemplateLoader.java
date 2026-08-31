@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -57,6 +59,7 @@ public final class EmailTemplateLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailTemplateLoader.class);
     private static final String CLASSPATH_PREFIX = "email-templates/";
+    private static final String PACKAGE = EmailTemplateLoader.class.getPackageName();
 
     /** Simple in-memory cache: resolved path/resource name → content. */
     private static final ConcurrentHashMap<String, String> CACHE = new ConcurrentHashMap<>();
@@ -192,14 +195,56 @@ public final class EmailTemplateLoader {
 
     private static String loadFromClasspath(String name) throws IOException {
         var resourceName = CLASSPATH_PREFIX + name;
-        try (InputStream is = EmailTemplateLoader.class
-                     .getClassLoader()
-                     .getResourceAsStream(resourceName)) {
-            if (is == null) {
-                throw new IOException("Built-in email template not found on classpath: " + resourceName);
+
+        for (var cl : classloaders()) {
+            if (cl == null) {
+                continue;
             }
-            LOGGER.debug("Loading built-in email template: {}", resourceName);
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            try (InputStream is = cl.getResourceAsStream(resourceName)) {
+                if (is != null) {
+                    LOGGER.debug("Loading built-in email template: {} via {}", resourceName, cl);
+                    return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                }
+            }
         }
+
+        throw new IOException("Built-in email template not found on classpath: " + resourceName);
+    }
+
+    /**
+     * Where to look for a built-in, in order: the calling module, the thread's
+     * context, then this one.
+     *
+     * <p>The calling module comes first because that is where the resource is:
+     * each module bundles its own built-ins — {@code accounts} ships
+     * {@code verification.html}, {@code stripe} ships {@code order-confirmed.html}
+     * — and this class lives in {@code commons}, which ships none.
+     *
+     * <p>Asking {@code EmailTemplateLoader.class.getClassLoader()} therefore
+     * cannot work once a plugin is loaded in its own classloader, which is how
+     * RESTHeart loads every one of them. It looked right and failed everywhere:
+     * every verification, invitation and password-reset email was refused a
+     * template, and because sending is best-effort the caller logs a warning and
+     * carries on — registration answers {@code 201}, no email is sent, and
+     * nothing else says so.
+     */
+    private static List<ClassLoader> classloaders() {
+        var loaders = new ArrayList<ClassLoader>(3);
+
+        // The first frame outside this package: the module that asked for the
+        // template, and so the one whose jar contains it. `EmailRenderer` is in
+        // here too, which is why the test is on the package and not the class.
+        StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                .walk(frames -> frames
+                        .map(StackWalker.StackFrame::getDeclaringClass)
+                        .filter(c -> !PACKAGE.equals(c.getPackageName()))
+                        .findFirst())
+                .map(Class::getClassLoader)
+                .ifPresent(loaders::add);
+
+        loaders.add(Thread.currentThread().getContextClassLoader());
+        loaders.add(EmailTemplateLoader.class.getClassLoader());
+
+        return loaders;
     }
 }

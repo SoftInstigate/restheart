@@ -231,3 +231,310 @@ Scenario: an out-of-order subscription.updated delivered after subscription.dele
     And header Authorization = adminAuth
     When method DELETE
     Then status 204
+
+Scenario: customer.subscription.created links a brand new subscription to its team
+    * def teamId = '507f191e810c19729de860ed'
+    * def customerId = 'cus_test_sub_created_1'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [204, 404] contains responseStatus
+
+    * def team = { stripe_customer_id: '#(customerId)', members: [ { userId: 'u1', role: 'owner', licensed: true } ] }
+    Given path '/teams/' + teamId
+    And param wm = 'upsert'
+    And header Authorization = adminAuth
+    And request team
+    When method PUT
+    * match [200, 201] contains responseStatus
+
+    * def event =
+    """
+    {
+      id: 'evt_sub_created_1',
+      object: 'event',
+      api_version: '2026-07-29.dahlia',
+      type: 'customer.subscription.created',
+      created: 1700000900,
+      data: {
+        object: {
+          id: 'sub_created_1',
+          object: 'subscription',
+          customer: '#(customerId)',
+          status: 'active',
+          cancel_at_period_end: false,
+          items: {
+            object: 'list',
+            data: [
+              {
+                id: 'si_created_1',
+                object: 'subscription_item',
+                quantity: 1,
+                current_period_end: 1702592400,
+                price: { id: 'price_test_gold_monthly', object: 'price' }
+              }
+            ]
+          }
+        }
+      }
+    }
+    """
+    * def payload = karate.toString(event)
+    * def sig = sign(webhookSecret, payload)
+
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sig
+    And request payload
+    When method POST
+    Then status 200
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    And match response.subscription.plan == 'gold'
+    And match response.subscription.status == 'active'
+    And match response.subscription.stripe_subscription_id == 'sub_created_1'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    Then status 204
+
+Scenario: customer.subscription.trial_will_end records the notification timestamp
+    * def teamId = '507f191e810c19729de860ee'
+    * def customerId = 'cus_test_trial_end_1'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [204, 404] contains responseStatus
+
+    * def team =
+    """
+    {
+      stripe_customer_id: '#(customerId)',
+      subscription: {
+        plan: 'gold',
+        status: 'trialing',
+        stripe_subscription_id: 'sub_trial_1',
+        seats: 1,
+        cancel_at_period_end: false
+      },
+      members: [ { userId: 'u1', role: 'owner', licensed: true } ]
+    }
+    """
+    Given path '/teams/' + teamId
+    And param wm = 'upsert'
+    And header Authorization = adminAuth
+    And request team
+    When method PUT
+    * match [200, 201] contains responseStatus
+
+    * def event =
+    """
+    {
+      id: 'evt_trial_end_1',
+      object: 'event',
+      api_version: '2026-07-29.dahlia',
+      type: 'customer.subscription.trial_will_end',
+      created: 1700001000,
+      data: {
+        object: {
+          id: 'sub_trial_1',
+          object: 'subscription',
+          customer: '#(customerId)',
+          status: 'trialing'
+        }
+      }
+    }
+    """
+    * def payload = karate.toString(event)
+    * def sig = sign(webhookSecret, payload)
+
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sig
+    And request payload
+    When method POST
+    Then status 200
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    And match response.subscription.trial_will_end_notified_at == '#present'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    Then status 204
+
+Scenario: invoice.payment_succeeded reactivates a past_due subscription
+    * def teamId = '507f191e810c19729de860ef'
+    * def customerId = 'cus_test_invoice_ok_1'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [204, 404] contains responseStatus
+
+    * def team =
+    """
+    {
+      stripe_customer_id: '#(customerId)',
+      subscription: {
+        plan: 'gold',
+        status: 'past_due',
+        stripe_subscription_id: 'sub_invoice_ok_1',
+        seats: 1,
+        cancel_at_period_end: false
+      },
+      members: [ { userId: 'u1', role: 'owner', licensed: true } ]
+    }
+    """
+    Given path '/teams/' + teamId
+    And param wm = 'upsert'
+    And header Authorization = adminAuth
+    And request team
+    When method PUT
+    * match [200, 201] contains responseStatus
+
+    * def event =
+    """
+    {
+      id: 'evt_invoice_ok_1',
+      object: 'event',
+      api_version: '2026-07-29.dahlia',
+      type: 'invoice.payment_succeeded',
+      created: 1700001100,
+      data: {
+        object: {
+          id: 'in_test_ok_1',
+          object: 'invoice',
+          customer: '#(customerId)',
+          parent: {
+            type: 'subscription_details',
+            subscription_details: { subscription: 'sub_invoice_ok_1' }
+          }
+        }
+      }
+    }
+    """
+    * def payload = karate.toString(event)
+    * def sig = sign(webhookSecret, payload)
+
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sig
+    And request payload
+    When method POST
+    Then status 200
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    And match response.subscription.status == 'active'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    Then status 204
+
+Scenario: invoice.payment_failed marks an active subscription past_due
+    * def teamId = '507f191e810c19729de860f0'
+    * def customerId = 'cus_test_invoice_fail_1'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    * match [204, 404] contains responseStatus
+
+    * def team =
+    """
+    {
+      stripe_customer_id: '#(customerId)',
+      subscription: {
+        plan: 'gold',
+        status: 'active',
+        stripe_subscription_id: 'sub_invoice_fail_1',
+        seats: 1,
+        cancel_at_period_end: false
+      },
+      members: [ { userId: 'u1', role: 'owner', licensed: true } ]
+    }
+    """
+    Given path '/teams/' + teamId
+    And param wm = 'upsert'
+    And header Authorization = adminAuth
+    And request team
+    When method PUT
+    * match [200, 201] contains responseStatus
+
+    * def event =
+    """
+    {
+      id: 'evt_invoice_fail_1',
+      object: 'event',
+      api_version: '2026-07-29.dahlia',
+      type: 'invoice.payment_failed',
+      created: 1700001200,
+      data: {
+        object: {
+          id: 'in_test_fail_1',
+          object: 'invoice',
+          customer: '#(customerId)',
+          parent: {
+            type: 'subscription_details',
+            subscription_details: { subscription: 'sub_invoice_fail_1' }
+          }
+        }
+      }
+    }
+    """
+    * def payload = karate.toString(event)
+    * def sig = sign(webhookSecret, payload)
+
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sig
+    And request payload
+    When method POST
+    Then status 200
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method GET
+    Then status 200
+    And match response.subscription.status == 'past_due'
+
+    Given path '/teams/' + teamId
+    And header Authorization = adminAuth
+    When method DELETE
+    Then status 204
+
+Scenario: product.updated and price.updated are accepted and just invalidate the catalog cache
+    * def productEvent =
+    """
+    { id: 'evt_product_updated_1', object: 'event', api_version: '2026-07-29.dahlia',
+      type: 'product.updated', created: 1700001300,
+      data: { object: { id: 'prod_test_1', object: 'product' } } }
+    """
+    * def p1 = karate.toString(productEvent)
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sign(webhookSecret, p1)
+    And request p1
+    When method POST
+    Then status 200
+
+    * def priceEvent =
+    """
+    { id: 'evt_price_updated_1', object: 'event', api_version: '2026-07-29.dahlia',
+      type: 'price.updated', created: 1700001400,
+      data: { object: { id: 'price_test_1', object: 'price' } } }
+    """
+    * def p2 = karate.toString(priceEvent)
+    Given path '/stripe/webhook'
+    And header Stripe-Signature = sign(webhookSecret, p2)
+    And request p2
+    When method POST
+    Then status 200

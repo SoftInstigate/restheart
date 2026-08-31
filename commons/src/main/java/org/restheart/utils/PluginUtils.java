@@ -21,6 +21,7 @@ package org.restheart.utils;
 
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.Optional;
 
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -41,6 +42,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
  * Utility class providing helper methods for plugin management and introspection.
@@ -170,7 +172,7 @@ public class PluginUtils {
      * @return the plugin name
      */
     public static String name(Plugin plugin) {
-        var a = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        var a = ANNOTATION_CACHE.getLoading(plugin.getClass()).orElse(null);
 
         if (a == null) {
             return findNameField(plugin.getClass(), plugin);
@@ -356,23 +358,36 @@ public class PluginUtils {
      * @return the plugin record of the service handling the exchange, or null if
      *         the request is not handled by a service
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static PluginRecord<Service<?, ?>> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
+        // the handling service is invariant for the whole request but this is called from
+        // several handlers on the hot path (CORS, content injection, before/after-auth and
+        // response interceptors...) - cache it on the exchange after the first call. The
+        // cached value is an Optional so "not yet computed" (attachment absent) can be told
+        // apart from "computed, no service" (proxy requests legitimately have none).
+        var cached = (Optional<PluginRecord<Service<?, ?>>>) (Optional) exchange.getAttachment(HANDLING_SERVICE_KEY);
+
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+
+        PluginRecord<Service<?, ?>> result = null;
         var pi = Request.getPipelineInfo(exchange);
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
 
             if (srvName != null) {
-                var _s = registry.getServices().stream().filter(s -> srvName.equals(s.getName())).findAny();
-
-                if (_s.isPresent()) {
-                    return _s.get();
-                }
+                result = registry.getService(srvName);
             }
         }
 
-        return null;
+        exchange.putAttachment(HANDLING_SERVICE_KEY, Optional.ofNullable(result));
+
+        return result;
     }
+
+    private static final AttachmentKey<Optional> HANDLING_SERVICE_KEY = AttachmentKey.create(Optional.class);
 
     /**
      * Retrieves the intercept points that should be excluded when processing
@@ -387,6 +402,14 @@ public class PluginUtils {
 
         return hs == null ? new InterceptPoint[0] : dontIntercept(hs);
     }
+
+    /**
+     * Cache for the @RegisterPlugin annotation of a plugin class, keyed by class.
+     * getDeclaredAnnotation() resolves the class's annotation map on every call, and
+     * name()/priority() are invoked once per interceptor per phase — this makes them O(1)
+     * after the first lookup for a given class.
+     */
+    private static final LoadingCache<Class<?>, RegisterPlugin> ANNOTATION_CACHE = CacheFactory.createHashMapLoadingCache(c -> c.getDeclaredAnnotation(RegisterPlugin.class));
 
     /** Cache for plugin request types to improve performance of type resolution. */
     @SuppressWarnings("rawtypes")
@@ -404,7 +427,7 @@ public class PluginUtils {
      */
     public static int priority(Plugin plugin) {
         if (plugin == null) return 10; // default priority
-        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        var annotation = ANNOTATION_CACHE.getLoading(plugin.getClass()).orElse(null);
         return annotation != null ? annotation.priority() : 10; // default priority
     }
 

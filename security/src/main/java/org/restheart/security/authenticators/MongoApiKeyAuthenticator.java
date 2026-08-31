@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -131,7 +132,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
                 policy = Cache.EXPIRE_POLICY.valueOf(expirePolicy);
             } catch (final IllegalArgumentException iae) {
                 throw new ConfigurationException("wrong configuration of mongoApiKeyAuthenticator, "
-                    + "cache-expire-policy is not valid: " + expirePolicy);
+                        + "cache-expire-policy is not valid: " + expirePolicy);
             }
 
             // Revocation takes effect within this TTL. Revocation immediacy is
@@ -159,8 +160,8 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         }
 
         final var account = this.keysCache == null
-            ? findKey(hash)
-            : this.keysCache.getLoading(hash).orElse(null);
+                ? findKey(hash)
+                : this.keysCache.getLoading(hash).orElse(null);
 
         if (account == null) {
             LOGGER.debug("API key not found");
@@ -195,8 +196,8 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      */
     private MongoRealmAccount findKey(final String hash) {
         final var coll = mclient.getDatabase(this.keysDb)
-            .getCollection(this.keysCollection)
-            .withDocumentClass(BsonDocument.class);
+                .getCollection(this.keysCollection)
+                .withDocumentClass(BsonDocument.class);
 
         final BsonDocument key;
 
@@ -218,6 +219,43 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             return null;
         }
 
+        return accountOf(key);
+    }
+
+    /**
+     * Builds the account for a key document, or {@code null} when the document
+     * cannot name a principal.
+     *
+     * <h3>The properties carry the principal, and that is not decoration</h3>
+     *
+     * <p>An account's identity is read from its <em>properties</em>, not from
+     * its principal name, by everything downstream that asks who is calling: an
+     * ACL predicate writing {@code equals(@user._id, ${userId})}, a GraphQL
+     * mapping matching {@code $arg: "@user._id"}, an aggregation interpolating
+     * {@code @user}. All of them resolve against
+     * {@link org.restheart.security.WithProperties#propertiesAsMap()}.
+     *
+     * <p>An empty document therefore does not fail — it resolves to
+     * {@code null}, and a query matching on {@code null} matches nothing. The
+     * caller authenticates, is authorised, gets a {@code 200}, and sees no data.
+     * That is the worst shape a bug can take here, and it is why this is a
+     * document rather than an empty one.
+     *
+     * <h3>Why only the principal, and not the key document</h3>
+     *
+     * <p>The key document holds the hash. It is also the tenant's to shape, so
+     * whatever else sits in it was not written with an ACL predicate or a
+     * GraphQL context in mind. Identity is the one thing every consumer needs
+     * and the one thing that is safe to hand over; anything more is a decision
+     * to be taken deliberately, with a configuration option to go with it.
+     *
+     * <p>The key is fixed at {@code _id} rather than following
+     * {@code prop-principal}, because {@code _id} is what a consumer writes.
+     * {@code prop-principal} says where to read the principal <em>from</em> in
+     * this collection, which is a different question from what to call it once
+     * it is on the account.
+     */
+    MongoRealmAccount accountOf(final BsonDocument key) {
         final var principal = key.get(this.propPrincipal);
 
         if (principal == null || !principal.isString() || principal.asString().getValue().isBlank()) {
@@ -225,11 +263,13 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             return null;
         }
 
+        final var name = principal.asString().getValue();
+
         return new MongoRealmAccount(this.keysDb,
-            principal.asString().getValue(),
-            new char[0],
-            rolesOf(key),
-            new BsonDocument());
+                name,
+                new char[0],
+                rolesOf(key),
+                new BsonDocument("_id", new BsonString(name)));
     }
 
     /**
@@ -251,7 +291,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
 
         if (roles.isEmpty()) {
             LOGGER.warn("API key for '{}' names no roles; it will be able to reach only what is "
-                + "granted to no role at all", key.get(this.propPrincipal));
+                    + "granted to no role at all", key.get(this.propPrincipal));
         }
 
         return roles;
@@ -281,9 +321,9 @@ public class MongoApiKeyAuthenticator implements Authenticator {
     private void touch(final String hash) {
         try {
             mclient.getDatabase(this.keysDb)
-                .getCollection(this.keysCollection)
-                .withDocumentClass(BsonDocument.class)
-                .updateOne(eq(this.propHash, hash), currentDate("lastUsedAt"));
+                    .getCollection(this.keysCollection)
+                    .withDocumentClass(BsonDocument.class)
+                    .updateOne(eq(this.propHash, hash), currentDate("lastUsedAt"));
         } catch (final Throwable t) {
             LOGGER.warn("Could not update lastUsedAt for an API key", t);
         }
@@ -306,7 +346,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             final var digest = MessageDigest.getInstance(SHA_256).digest(bytes);
             final var hex = new char[digest.length * 2];
 
-            for (int i = 0; i < digest.length; i++) {
+            for (int i = 0;i < digest.length;i++) {
                 hex[i * 2] = HEX[(digest[i] >> 4) & 0xf];
                 hex[i * 2 + 1] = HEX[digest[i] & 0xf];
             }

@@ -30,7 +30,6 @@ import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.stripe.BillingScope;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.security.ACLRegistry;
 import org.restheart.stripe.util.RequestOverrides;

@@ -83,21 +83,47 @@ class StripeInitTrackerTest {
     }
 
     private static ProductsConfig productsConf(String ordersCollection) {
-        return new ProductsConfig(true, true, "catalog", ordersCollection, "transactions", null,
-                "eur", "_id", true, true, "", "", 60, 50, 100, true, List.of(), Map.of());
+        return new ProductsConfig(true, true, "catalog", ordersCollection, "transactions",
+                "eur", "_id", true, true, "", "", 60, 50, 100, true, List.of(), List.of(), Map.of());
     }
 
     /** {@code ListIndexesIterable.iterator()} returns a {@code MongoCursor}, not a plain {@code Iterator} — wrap a list for stubbing. */
     private static MongoCursor<Document> cursorOf(List<Document> docs) {
         var it = docs.iterator();
         return new MongoCursor<>() {
-            @Override public void close() { }
-            @Override public boolean hasNext() { return it.hasNext(); }
-            @Override public Document next() { return it.next(); }
-            @Override public int available() { return 0; }
-            @Override public Document tryNext() { return it.hasNext() ? it.next() : null; }
-            @Override public ServerCursor getServerCursor() { return null; }
-            @Override public ServerAddress getServerAddress() { return new ServerAddress(); }
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Document next() {
+                return it.next();
+            }
+
+            @Override
+            public int available() {
+                return 0;
+            }
+
+            @Override
+            public Document tryNext() {
+                return it.hasNext() ? it.next() : null;
+            }
+
+            @Override
+            public ServerCursor getServerCursor() {
+                return null;
+            }
+
+            @Override
+            public ServerAddress getServerAddress() {
+                return new ServerAddress();
+            }
         };
     }
 

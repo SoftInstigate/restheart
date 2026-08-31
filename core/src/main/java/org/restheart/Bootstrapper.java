@@ -362,6 +362,25 @@ public final class Bootstrapper {
             logErrorAndExit(
                     "Error instantiating plugins: an external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath",
                     ncdfe, false, -112);
+        } catch (final ExceptionInInitializerError eiie) {
+            // A static initializer threw. This extends LinkageError, so it used to be reported by
+            // the branch below as a version mismatch — sending whoever read it to check that their
+            // plugins were compiled against the right restheart-commons, which was never the
+            // problem. What actually happened is that some class was touched before whatever it
+            // depends on was ready, and the cause below says which.
+            //
+            // The way it happens: a Provider is injected before the Mongo client exists, so
+            // @Inject("mclient") on one asks MongoClientSingleton for an instance it has not built
+            // yet, and the singleton's holder class fails to initialize.
+            final var cause = eiie.getCause() != null ? eiie.getCause() : eiie;
+
+            logErrorAndExit(
+                    "A plugin failed to initialize: " + cause
+                            + ". Something was used before it was ready — a Provider that injects a"
+                            + " dependency the server has not built yet is the usual cause; give it"
+                            + " a later priority, or take the dependency when it is first used"
+                            + " rather than at startup",
+                    eiie, false, -113);
         } catch (final LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons

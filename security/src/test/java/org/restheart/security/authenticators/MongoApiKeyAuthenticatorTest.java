@@ -66,7 +66,7 @@ public class MongoApiKeyAuthenticatorTest {
     void sha256MatchesAKnownVector() {
         // echo -n "abc" | shasum -a 256
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-            MongoApiKeyAuthenticator.sha256("abc".toCharArray()));
+                MongoApiKeyAuthenticator.sha256("abc".toCharArray()));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class MongoApiKeyAuthenticatorTest {
     @Test
     void rolesComeFromTheKey() {
         final var doc = key().append("roles", new BsonArray(java.util.List.<org.bson.BsonValue>of(
-            new BsonString("cli"), new BsonString("reader"))));
+                new BsonString("cli"), new BsonString("reader"))));
 
         assertEquals(Set.of("cli", "reader"), this.authenticator.rolesOf(doc));
     }
@@ -111,7 +111,7 @@ public class MongoApiKeyAuthenticatorTest {
     void malformedRolesAreIgnoredRatherThanGuessed() {
         assertTrue(this.authenticator.rolesOf(key().append("roles", new BsonString("cli"))).isEmpty());
         assertEquals(Set.of("cli"), this.authenticator.rolesOf(key().append("roles",
-            new BsonArray(java.util.List.<org.bson.BsonValue>of(new BsonString("cli"), new BsonInt32(7))))));
+                new BsonArray(java.util.List.<org.bson.BsonValue>of(new BsonString("cli"), new BsonInt32(7))))));
     }
 
     // ── expiry ───────────────────────────────────────────────────────────────
@@ -139,6 +139,64 @@ public class MongoApiKeyAuthenticatorTest {
         // should keep working.
         assertTrue(this.authenticator.isExpired(key().append("expiresAt", new BsonBoolean(false))));
         assertTrue(this.authenticator.isExpired(key().append("expiresAt", new BsonString("tomorrow"))));
+    }
+
+    // ── the account ──────────────────────────────────────────────────────────
+
+    @Test
+    void theAccountCarriesThePrincipalInItsProperties() throws Exception {
+        // Not decoration. An ACL predicate writing equals(@user._id, ${userId}),
+        // a GraphQL mapping matching $arg: "@user._id" and an aggregation
+        // interpolating @user all read identity from the properties, never from
+        // the principal name. With an empty document they resolve to null, a
+        // query matching on null matches nothing, and the caller authenticates,
+        // is authorised, gets a 200 and sees no data.
+        set("keysDb", "restheart");
+
+        final var account = this.authenticator.accountOf(key());
+
+        assertEquals("robot", account.getPrincipal().getName());
+        assertEquals(new BsonString("robot"), account.properties().get("_id"));
+    }
+
+    @Test
+    void theAccountCarriesNothingBeyondIdentity() throws Exception {
+        // The key document holds the hash, and is the tenant's to shape — what
+        // else is in it was not written with an ACL predicate in mind.
+        set("keysDb", "restheart");
+
+        final var account = this.authenticator.accountOf(key()
+                .append("hash", new BsonString("d41d8cd9"))
+                .append("name", new BsonString("CI deploy"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
+
+        assertEquals(Set.of("_id"), account.properties().keySet());
+        assertEquals(Set.of("cli"), account.getRoles());
+    }
+
+    @Test
+    void theIdentityKeyIsIdNotThePrincipalPropertyName() throws Exception {
+        // prop-principal says where to read the principal from in this
+        // collection. What to call it once it is on the account is a different
+        // question, and the answer is what consumers write: _id.
+        set("keysDb", "restheart");
+        set("propPrincipal", "owner");
+
+        final var account = this.authenticator.accountOf(
+                new BsonDocument("owner", new BsonString("robot")));
+
+        assertEquals(new BsonString("robot"), account.properties().get("_id"));
+        assertNull(account.properties().get("owner"));
+    }
+
+    @Test
+    void aKeyThatNamesNoPrincipalYieldsNoAccount() throws Exception {
+        set("keysDb", "restheart");
+
+        assertNull(this.authenticator.accountOf(new BsonDocument()));
+        assertNull(this.authenticator.accountOf(new BsonDocument("user", BsonNull.VALUE)));
+        assertNull(this.authenticator.accountOf(new BsonDocument("user", new BsonString("  "))));
+        assertNull(this.authenticator.accountOf(new BsonDocument("user", new BsonInt32(7))));
     }
 
     // ── the SPI's other verify() forms ───────────────────────────────────────
