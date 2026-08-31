@@ -20,6 +20,7 @@
  */
 package org.restheart.handlers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.restheart.exchange.ByteArrayProxyRequest;
@@ -121,20 +122,27 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
             inteceptors = this.pluginsRegistry.getProxyInterceptors(InterceptPoint.RESPONSE);
         }
 
-        var applicableInterceptors = inteceptors.stream()
-                .filter(ri -> ri instanceof Interceptor)
-                .map(ri -> (Interceptor) ri)
-                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-                .filter(ri -> {
-                    try {
-                        return ri.resolve(request, response);
-                    } catch (Exception ex) {
-                        LOGGER.warn("Error resolving response interceptor {} for {} {}",
-                                ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
-                        return false;
+        List<Interceptor> applicableInterceptors = null;
+        for (var ri : inteceptors) {
+            var interceptor = (Interceptor) ri;
+            if (this.filterRequiringContent && requiresContent(interceptor)) {
+                continue;
+            }
+            try {
+                if (interceptor.resolve(request, response)) {
+                    if (applicableInterceptors == null) {
+                        applicableInterceptors = new ArrayList<>(inteceptors.size());
                     }
-                })
-                .collect(java.util.stream.Collectors.toList());
+                    applicableInterceptors.add(interceptor);
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("Error resolving response interceptor {} for {} {}",
+                        interceptor.getClass().getSimpleName(), requestMethod, requestPath, ex);
+            }
+        }
+        if (applicableInterceptors == null) {
+            applicableInterceptors = List.of();
+        }
 
         if (applicableInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
@@ -152,34 +160,37 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         RequestPhaseContext.setPhase(Phase.INFO);
         LOGGER.debug("Found {} applicable interceptors", applicableInterceptors.size());
 
-        var executionStartTime = System.currentTimeMillis();
+        var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
 
-        applicableInterceptors.forEach(ri -> {
-            var interceptorStartTime = System.currentTimeMillis();
-            var interceptorName = PluginUtils.name(ri);
+        for (var ri : applicableInterceptors) {
+            var interceptorStartTime = System.nanoTime();
 
             RequestPhaseContext.setPhase(Phase.ITEM);
-            LOGGER.debug("{} (priority: {})", interceptorName, PluginUtils.priority(ri));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
+            }
 
             try {
                 ri.handle(request, response);
 
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.debug("✓ {}ms", interceptorDuration);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("✓ {}ms", (System.nanoTime() - interceptorStartTime) / 1_000_000);
+                }
             } catch (Exception ex) {
-                var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                var interceptorDurationMs = (System.nanoTime() - interceptorStartTime) / 1_000_000;
                 RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
 
                 Exchange.setInError(exchange);
                 LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
             }
-        });
+        }
 
-        var totalDuration = System.currentTimeMillis() - executionStartTime;
         RequestPhaseContext.setPhase(Phase.PHASE_END);
-        LOGGER.debug("RESPONSE COMPLETED in {}ms", totalDuration);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("RESPONSE COMPLETED in {}ms", (System.nanoTime() - executionStartTime) / 1_000_000);
+        }
         RequestPhaseContext.reset();
     }
 
@@ -198,20 +209,27 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
             inteceptors = this.pluginsRegistry.getProxyInterceptors(InterceptPoint.RESPONSE_ASYNC);
         }
 
-        var applicableAsyncInterceptors = inteceptors.stream()
-                .filter(ri -> ri instanceof Interceptor)
-                .map(ri -> (Interceptor) ri)
-                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-                .filter(ri -> {
-                    try {
-                        return ri.resolve(request, response);
-                    } catch (Exception ex) {
-                        LOGGER.warn("Error resolving async interceptor {} for {} {}",
-                                ri.getClass().getSimpleName(), requestMethod, requestPath, ex);
-                        return false;
+        List<Interceptor> applicableAsyncInterceptors = null;
+        for (var ri : inteceptors) {
+            var interceptor = (Interceptor) ri;
+            if (this.filterRequiringContent && requiresContent(interceptor)) {
+                continue;
+            }
+            try {
+                if (interceptor.resolve(request, response)) {
+                    if (applicableAsyncInterceptors == null) {
+                        applicableAsyncInterceptors = new ArrayList<>(inteceptors.size());
                     }
-                })
-                .collect(java.util.stream.Collectors.toList());
+                    applicableAsyncInterceptors.add(interceptor);
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("Error resolving async interceptor {} for {} {}",
+                        interceptor.getClass().getSimpleName(), requestMethod, requestPath, ex);
+            }
+        }
+        if (applicableAsyncInterceptors == null) {
+            applicableAsyncInterceptors = List.of();
+        }
 
         if (!applicableAsyncInterceptors.isEmpty()) {
             RequestPhaseContext.setPhase(Phase.PHASE_START);
@@ -235,23 +253,25 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                 try {
                     // Use ScopedValue to propagate exchange to the async virtual thread
                     RequestPhaseContext.callWithCurrentExchange(() -> {
-                        var interceptorStartTime = System.currentTimeMillis();
-                        var interceptorName = PluginUtils.name(ri);
+                        var interceptorStartTime = System.nanoTime();
 
                         RequestPhaseContext.setPhase(Phase.ITEM);
-                        LOGGER.debug("ASYNC {} (priority: {}, thread: {})",
-                                interceptorName, PluginUtils.priority(ri), Thread.currentThread().getName());
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("ASYNC {} (priority: {}, thread: {})",
+                                    PluginUtils.name(ri), PluginUtils.priority(ri), Thread.currentThread().getName());
+                        }
 
                         try {
                             ri.handle(request, response);
 
-                            var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
                             RequestPhaseContext.setPhase(Phase.SUBITEM);
-                            LOGGER.debug("✓ {}ms (async)", interceptorDuration);
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("✓ {}ms (async)", (System.nanoTime() - interceptorStartTime) / 1_000_000);
+                            }
                         } catch (Exception ex) {
-                            var interceptorDuration = System.currentTimeMillis() - interceptorStartTime;
+                            var interceptorDurationMs = (System.nanoTime() - interceptorStartTime) / 1_000_000;
                             RequestPhaseContext.setPhase(Phase.SUBITEM);
-                            LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDuration, ex.getMessage());
+                            LOGGER.error("✗ ASYNC FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
 
                             Exchange.setInError(exchange);
                             LambdaUtils.throwsSneakyException(new InterceptorException("Error executing async interceptor " + ri.getClass().getSimpleName(), ex));
