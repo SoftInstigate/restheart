@@ -93,7 +93,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
             return;
         }
 
-        LOGGER.trace("GET " + exchange.getRequestURL());
+        LOGGER.trace("GET {}", exchange.getRequestURL());
         final var bucket = GridFs.extractBucketName(request.getCollectionName());
 
         var gridFSBucket = GridFSBuckets.create(RHMongoClients.mclient().getDatabase(request.getDBName()), bucket);
