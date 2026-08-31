@@ -39,41 +39,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Embedding provider for any endpoint that speaks the OpenAI {@code /v1/embeddings}
- * wire format: {@code {"model", "input"}} request, {@code {"data": [{"embedding",
- * "index"}]}} response, Bearer auth. This covers OpenAI itself as well as
- * OpenAI-compatible gateways such as OpenRouter (verified against
- * https://openrouter.ai/docs/api_reference/embeddings on 2026-08-31 — same request
- * and response shape at {@code https://openrouter.ai/api/v1/embeddings}), Together.ai,
- * Groq, or a self-hosted OpenAI-compatible server — by pointing {@code base-url}
- * elsewhere. No per-gateway code or dependency is needed because the wire shape is
- * shared; this is unlike a proprietary API (e.g. AWS Bedrock), which needs its own
- * provider implementation.
+ * Embedding provider for a local or self-hosted Ollama server's
+ * {@code POST /api/embed} endpoint (verified against
+ * https://docs.ollama.com/api/embed on 2026-08-31): request
+ * {@code {"model", "input"}} (a string or an array of strings), response
+ * {@code {"model", "embeddings": [[...], ...]}} — no auth, embeddings returned in
+ * the same order as the input array (unlike the OpenAI wire format, there is no
+ * per-item {@code index} to re-sort by).
  *
  * <pre>{@code
  * plugins-args:
- *   openAIEmbeddingProvider:
+ *   ollamaEmbeddingProvider:
  *     enabled: true
- *     api-key: <key>
- *     model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
- *     base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
+ *     base-url: http://localhost:11434   # optional, this is the default
+ *     model: nomic-embed-text            # optional, this is the default
  * }</pre>
  */
 @RegisterPlugin(
-    name = "openAIEmbeddingProvider",
-    description = "Provides text embeddings via any OpenAI-compatible /v1/embeddings endpoint",
+    name = "ollamaEmbeddingProvider",
+    description = "Provides text embeddings via a local or self-hosted Ollama server",
     enabledByDefault = false
 )
-public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIEmbeddingProvider.class);
+public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OllamaEmbeddingProvider.class);
 
-    private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
-    private static final String DEFAULT_MODEL = "text-embedding-3-small";
+    private static final String DEFAULT_BASE_URL = "http://localhost:11434";
+    private static final String DEFAULT_MODEL = "nomic-embed-text";
 
     @Inject("config")
     private Map<String, Object> config;
 
-    private String apiKey;
     private String model;
     private String baseUrl;
 
@@ -82,13 +77,8 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
 
     @OnInit
     public void init() {
-        this.apiKey = argOrDefault(config, "api-key", "");
         this.model = argOrDefault(config, "model", DEFAULT_MODEL);
         this.baseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
-
-        if (apiKey == null || apiKey.isBlank()) {
-            LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail");
-        }
 
         this.instance = this::embed;
     }
@@ -113,12 +103,11 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         inputJson.append("]");
 
         var payload = "{\"model\":\"" + escape(model) + "\",\"input\":" + inputJson + "}";
-        var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";
+        var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "api/embed";
 
         var httpReq = HttpRequest.newBuilder()
             .uri(URI.create(endpoint))
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + apiKey)
             .POST(HttpRequest.BodyPublishers.ofString(payload))
             .build();
 
@@ -126,7 +115,7 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
             var httpResp = httpClient.send(httpReq, HttpResponse.BodyHandlers.ofString());
 
             if (httpResp.statusCode() != 200) {
-                throw new RuntimeException("Embeddings endpoint " + endpoint + " returned HTTP "
+                throw new RuntimeException("Ollama embeddings endpoint " + endpoint + " returned HTTP "
                     + httpResp.statusCode() + ": " + httpResp.body());
             }
 
@@ -134,35 +123,28 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to call embeddings endpoint " + endpoint + ": " + e.getMessage(), e);
+            throw new RuntimeException("Failed to call Ollama embeddings endpoint " + endpoint + ": " + e.getMessage(), e);
         }
     }
 
     /**
-     * Parses an OpenAI-wire-format {@code /v1/embeddings} response body
-     * ({@code {"data": [{"embedding": [...], "index": ...}]}}) into one vector per
-     * input text, reordered by each entry's {@code index} since the API does not
-     * guarantee entries are returned in request order. Pulled out of {@link #embed}
-     * so the parsing logic can be unit-tested without an HTTP round-trip.
+     * Parses an Ollama {@code /api/embed} response body ({@code {"embeddings":
+     * [[...], ...]}}) into one vector per input text, in the same order as
+     * returned (Ollama already preserves input order, unlike the OpenAI wire
+     * format's {@code index}-tagged entries). Pulled out of {@link #embed} so the
+     * parsing logic can be unit-tested without an HTTP round-trip.
      */
     static List<float[]> parseEmbeddings(String responseBody) {
         var respDoc = BsonDocument.parse(responseBody);
-        var data = respDoc.getArray("data");
+        var embeddings = respDoc.getArray("embeddings");
 
-        var ordered = new float[data.size()][];
-        for (var item : data) {
-            var doc = item.asDocument();
-            var idx = doc.getInt32("index").getValue();
-            var vector = doc.getArray("embedding");
+        var result = new ArrayList<float[]>(embeddings.size());
+        for (var item : embeddings) {
+            var vector = item.asArray();
             var embedding = new float[vector.size()];
             for (int i = 0; i < vector.size(); i++) {
                 embedding[i] = (float) vector.get(i).asNumber().doubleValue();
             }
-            ordered[idx] = embedding;
-        }
-
-        var result = new ArrayList<float[]>(ordered.length);
-        for (var embedding : ordered) {
             result.add(embedding);
         }
         return result;
