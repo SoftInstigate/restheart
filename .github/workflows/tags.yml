@@ -183,5 +183,6 @@ jobs:
           VERSION="${{ needs.release.outputs.version }}"
           echo "Triggering native-image.yml for version=$VERSION"
           gh workflow run native-image.yml \
+            --repo "${{ github.repository }}" \
             --ref "${{ github.ref_name }}" \
             -f version="$VERSION"
