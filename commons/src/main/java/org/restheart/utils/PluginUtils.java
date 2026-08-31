@@ -170,7 +170,7 @@ public class PluginUtils {
      * @return the plugin name
      */
     public static String name(Plugin plugin) {
-        var a = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        var a = ANNOTATION_CACHE.getLoading(plugin.getClass()).orElse(null);
 
         if (a == null) {
             return findNameField(plugin.getClass(), plugin);
@@ -388,6 +388,14 @@ public class PluginUtils {
         return hs == null ? new InterceptPoint[0] : dontIntercept(hs);
     }
 
+    /**
+     * Cache for the @RegisterPlugin annotation of a plugin class, keyed by class.
+     * getDeclaredAnnotation() resolves the class's annotation map on every call, and
+     * name()/priority() are invoked once per interceptor per phase — this makes them O(1)
+     * after the first lookup for a given class.
+     */
+    private static final LoadingCache<Class<?>, RegisterPlugin> ANNOTATION_CACHE = CacheFactory.createHashMapLoadingCache(c -> c.getDeclaredAnnotation(RegisterPlugin.class));
+
     /** Cache for plugin request types to improve performance of type resolution. */
     @SuppressWarnings("rawtypes")
     private static final LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.requestType());
@@ -404,7 +412,7 @@ public class PluginUtils {
      */
     public static int priority(Plugin plugin) {
         if (plugin == null) return 10; // default priority
-        var annotation = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+        var annotation = ANNOTATION_CACHE.getLoading(plugin.getClass()).orElse(null);
         return annotation != null ? annotation.priority() : 10; // default priority
     }
 
