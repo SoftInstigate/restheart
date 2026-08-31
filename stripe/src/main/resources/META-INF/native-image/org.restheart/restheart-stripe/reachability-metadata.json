@@ -79,6 +79,12 @@
       "allDeclaredConstructors": true
     },
     {
+      "type": "com.stripe.model.SubscriptionItemCollection",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
       "type": "com.stripe.model.Charge",
       "allDeclaredFields": true,
       "allDeclaredMethods": true,
