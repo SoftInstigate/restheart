@@ -23,11 +23,13 @@ package org.restheart.ai.interceptors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonValue;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -73,6 +75,17 @@ import org.slf4j.LoggerFactory;
  * {@code embeddingField} array appended before the write reaches MongoDB. Documents
  * without a string {@code textField} value are left untouched. Multiple documents in
  * one request are embedded in a single batched call to the provider.
+ *
+ * <h2>Multi-tenant</h2>
+ * <p>Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#EMBEDDING_PROVIDER} to route that request to a different
+ * {@code Provider<EmbeddingModel>} than this interceptor's own static
+ * {@code embedding-provider} — a tenant with no static configuration at all can be
+ * enabled purely through this override. The named provider's own implementation is
+ * responsible for resolving any further per-request overrides it defines (API key,
+ * model, base URL) — this interceptor only resolves and passes through <em>which</em>
+ * provider to use, plus the {@link org.restheart.exchange.Request} itself so the
+ * provider can look up its own overrides.
  */
 @RegisterPlugin(
     name = "autoEmbeddingInterceptor",
@@ -93,28 +106,30 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
     @Inject("registry")
     private PluginsRegistry registry;
 
-    private String providerName;
+    private String defaultProviderName;
     private boolean enabled = false;
 
-    // resolved lazily on first handle(), once all plugins have finished @OnInit
-    private EmbeddingModel embeddingModel;
+    // resolved lazily (once all plugins have finished @OnInit) and cached per provider
+    // name, since override-ai-embedding-provider can name a different provider per request
+    private final Map<String, EmbeddingModel> resolvedModels = new ConcurrentHashMap<>();
 
     @OnInit
     public void init() {
-        this.providerName = argOrDefault(config, "embedding-provider", "");
-        this.enabled = providerName != null && !providerName.isBlank();
+        this.defaultProviderName = argOrDefault(config, "embedding-provider", "");
+        this.enabled = defaultProviderName != null && !defaultProviderName.isBlank();
 
         if (!enabled) {
-            LOGGER.warn("autoEmbeddingInterceptor: no embedding-provider configured, interceptor is a no-op");
+            LOGGER.warn("autoEmbeddingInterceptor: no embedding-provider configured, interceptor is a no-op "
+                + "unless every request overrides it via {}", RequestOverrides.EMBEDDING_PROVIDER);
         }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return enabled
-            && request.isHandledBy("mongo")
+        return request.isHandledBy("mongo")
             && request.isWriteDocument()
             && !response.isInError()
+            && !effectiveProviderName(request).isBlank()
             && findVectorSearchConfig(request.getCollectionProps()) != null;
     }
 
@@ -143,14 +158,15 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
             return;
         }
 
-        var model = resolveEmbeddingModel();
+        var providerName = effectiveProviderName(request);
+        var model = resolveEmbeddingModel(providerName);
         if (model == null) {
             return;
         }
 
         List<float[]> vectors;
         try {
-            vectors = model.embed(texts);
+            vectors = model.embed(texts, request);
         } catch (Exception e) {
             LOGGER.error("autoEmbeddingInterceptor: failed to generate embeddings via '{}': {}",
                 providerName, e.getMessage(), e);
@@ -159,6 +175,18 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
         }
 
         applyEmbeddings(targets, vectors, embeddingField);
+    }
+
+    /**
+     * The embedding provider name to use for this request: the per-request
+     * {@link RequestOverrides#EMBEDDING_PROVIDER} override if attached, else this
+     * interceptor's own static {@code embedding-provider} configuration. Note this
+     * means a tenant with no static configuration at all can still use this
+     * interceptor purely via a per-request override — {@link #enabled} does not
+     * gate this, only the (unused-if-overridden) static default does.
+     */
+    private String effectiveProviderName(MongoRequest request) {
+        return RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultProviderName);
     }
 
     // -------------------------------------------------------------------------
@@ -254,11 +282,14 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
      * Resolved lazily (rather than in {@link #init()}) so that this interceptor
      * does not depend on plugin initialization order relative to the configured
      * provider — by the time requests are handled, every plugin's {@code @OnInit}
-     * has already run.
+     * has already run. Cached per provider name (not a single field) because
+     * {@link RequestOverrides#EMBEDDING_PROVIDER} can name a different provider on
+     * a per-request basis — different tenants may use different vendors.
      */
-    private EmbeddingModel resolveEmbeddingModel() {
-        if (embeddingModel != null) {
-            return embeddingModel;
+    private EmbeddingModel resolveEmbeddingModel(String providerName) {
+        var cached = resolvedModels.get(providerName);
+        if (cached != null) {
+            return cached;
         }
 
         var providerRecord = registry.getProviders().stream()
@@ -277,7 +308,7 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
             return null;
         }
 
-        this.embeddingModel = model;
+        resolvedModels.put(providerName, model);
         return model;
     }
 }

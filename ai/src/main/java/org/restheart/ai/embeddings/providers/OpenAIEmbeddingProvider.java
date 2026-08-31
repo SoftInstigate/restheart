@@ -27,6 +27,8 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.ai.util.RequestOverrides;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -56,6 +58,14 @@ import org.slf4j.LoggerFactory;
  *     model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
  *     base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
  * }</pre>
+ *
+ * <h2>Multi-tenant</h2>
+ * <p>{@code api-key}/{@code model}/{@code base-url} above are the single-tenant
+ * defaults. Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#OPENAI_API_KEY}, {@link RequestOverrides#OPENAI_MODEL},
+ * {@link RequestOverrides#OPENAI_BASE_URL} to use different values for that tenant —
+ * nothing is cached across requests, so there is no risk of one tenant's key leaking
+ * into another tenant's call.
  */
 @RegisterPlugin(
     name = "openAIEmbeddingProvider",
@@ -71,21 +81,23 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
     @Inject("config")
     private Map<String, Object> config;
 
-    private String apiKey;
-    private String model;
-    private String baseUrl;
+    // static, single-tenant defaults; overridden per request via RequestOverrides
+    private String defaultApiKey;
+    private String defaultModel;
+    private String defaultBaseUrl;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
 
     @OnInit
     public void init() {
-        this.apiKey = argOrDefault(config, "api-key", "");
-        this.model = argOrDefault(config, "model", DEFAULT_MODEL);
-        this.baseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
+        this.defaultApiKey = argOrDefault(config, "api-key", "");
+        this.defaultModel = argOrDefault(config, "model", DEFAULT_MODEL);
+        this.defaultBaseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
 
-        if (apiKey == null || apiKey.isBlank()) {
-            LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail");
+        if (defaultApiKey == null || defaultApiKey.isBlank()) {
+            LOGGER.warn("openAIEmbeddingProvider: no api-key configured, embedding calls will fail "
+                + "unless every request overrides it via {}", RequestOverrides.OPENAI_API_KEY);
         }
 
         this.instance = this::embed;
@@ -96,10 +108,14 @@ public class OpenAIEmbeddingProvider implements Provider<EmbeddingModel> {
         return instance;
     }
 
-    private List<float[]> embed(List<String> texts) {
+    private List<float[]> embed(List<String> texts, Request<?> request) {
         if (texts == null || texts.isEmpty()) {
             return List.of();
         }
+
+        var apiKey = RequestOverrides.str(request, RequestOverrides.OPENAI_API_KEY, defaultApiKey);
+        var model = RequestOverrides.str(request, RequestOverrides.OPENAI_MODEL, defaultModel);
+        var baseUrl = RequestOverrides.str(request, RequestOverrides.OPENAI_BASE_URL, defaultBaseUrl);
 
         var inputJson = new StringBuilder("[");
         for (int i = 0; i < texts.size(); i++) {

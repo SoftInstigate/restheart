@@ -36,6 +36,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -70,6 +71,11 @@ import com.mongodb.client.model.InsertManyOptions;
  *     target-collection: _chunks # collection where chunks are stored (default: _chunks)
  * }</pre>
  *
+ * <h2>Multi-tenant</h2>
+ * <p>Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#CHUNK_SIZE}, {@link RequestOverrides#CHUNK_OVERLAP},
+ * {@link RequestOverrides#TARGET_COLLECTION} to use different values for that tenant.
+ *
  * <h2>Stored chunk document shape</h2>
  * <pre>{@code
  * {
@@ -92,9 +98,10 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentChunkingInterceptor.class);
 
-    private int chunkSize        = 1000;
-    private int chunkOverlap     = 200;
-    private String targetCollection = "_chunks";
+    // static, single-tenant defaults; overridden per request via RequestOverrides
+    private int defaultChunkSize        = 1000;
+    private int defaultChunkOverlap     = 200;
+    private String defaultTargetCollection = "_chunks";
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -104,9 +111,9 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
     @OnInit
     public void setup() {
-        this.chunkSize        = argOrDefault(config, "chunk-size", 1000);
-        this.chunkOverlap     = argOrDefault(config, "chunk-overlap", 200);
-        this.targetCollection = argOrDefault(config, "target-collection", "_chunks");
+        this.defaultChunkSize        = argOrDefault(config, "chunk-size", 1000);
+        this.defaultChunkOverlap     = argOrDefault(config, "chunk-overlap", 200);
+        this.defaultTargetCollection = argOrDefault(config, "target-collection", "_chunks");
     }
 
     @Override
@@ -163,6 +170,10 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
             LOGGER.debug("documentChunkingInterceptor: no text extracted from file {} in {}/{}", fileId, dbName, bucketName);
             return;
         }
+
+        var chunkSize = RequestOverrides.intVal(request, RequestOverrides.CHUNK_SIZE, defaultChunkSize);
+        var chunkOverlap = RequestOverrides.intVal(request, RequestOverrides.CHUNK_OVERLAP, defaultChunkOverlap);
+        var targetCollection = RequestOverrides.str(request, RequestOverrides.TARGET_COLLECTION, defaultTargetCollection);
 
         var chunks = splitIntoChunks(text.strip(), chunkSize, chunkOverlap);
         if (chunks.isEmpty()) return;

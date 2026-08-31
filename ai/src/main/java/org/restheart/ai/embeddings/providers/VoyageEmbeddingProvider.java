@@ -27,6 +27,8 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.ai.util.RequestOverrides;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -54,6 +56,12 @@ import org.slf4j.LoggerFactory;
  *     model: voyage-3.5        # optional, this is the default
  *     input-type: document     # optional: "query" or "document"; omitted by default
  * }</pre>
+ *
+ * <h2>Multi-tenant</h2>
+ * <p>Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#VOYAGE_API_KEY}, {@link RequestOverrides#VOYAGE_MODEL},
+ * {@link RequestOverrides#VOYAGE_BASE_URL}, {@link RequestOverrides#VOYAGE_INPUT_TYPE}
+ * to use different values for that tenant.
  */
 @RegisterPlugin(
     name = "voyageEmbeddingProvider",
@@ -69,23 +77,25 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
     @Inject("config")
     private Map<String, Object> config;
 
-    private String apiKey;
-    private String model;
-    private String baseUrl;
-    private String inputType;
+    // static, single-tenant defaults; overridden per request via RequestOverrides
+    private String defaultApiKey;
+    private String defaultModel;
+    private String defaultBaseUrl;
+    private String defaultInputType;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
 
     @OnInit
     public void init() {
-        this.apiKey = argOrDefault(config, "api-key", "");
-        this.model = argOrDefault(config, "model", DEFAULT_MODEL);
-        this.baseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
-        this.inputType = argOrDefault(config, "input-type", "");
+        this.defaultApiKey = argOrDefault(config, "api-key", "");
+        this.defaultModel = argOrDefault(config, "model", DEFAULT_MODEL);
+        this.defaultBaseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
+        this.defaultInputType = argOrDefault(config, "input-type", "");
 
-        if (apiKey == null || apiKey.isBlank()) {
-            LOGGER.warn("voyageEmbeddingProvider: no api-key configured, embedding calls will fail");
+        if (defaultApiKey == null || defaultApiKey.isBlank()) {
+            LOGGER.warn("voyageEmbeddingProvider: no api-key configured, embedding calls will fail "
+                + "unless every request overrides it via {}", RequestOverrides.VOYAGE_API_KEY);
         }
 
         this.instance = this::embed;
@@ -96,10 +106,15 @@ public class VoyageEmbeddingProvider implements Provider<EmbeddingModel> {
         return instance;
     }
 
-    private List<float[]> embed(List<String> texts) {
+    private List<float[]> embed(List<String> texts, Request<?> request) {
         if (texts == null || texts.isEmpty()) {
             return List.of();
         }
+
+        var apiKey = RequestOverrides.str(request, RequestOverrides.VOYAGE_API_KEY, defaultApiKey);
+        var model = RequestOverrides.str(request, RequestOverrides.VOYAGE_MODEL, defaultModel);
+        var baseUrl = RequestOverrides.str(request, RequestOverrides.VOYAGE_BASE_URL, defaultBaseUrl);
+        var inputType = RequestOverrides.str(request, RequestOverrides.VOYAGE_INPUT_TYPE, defaultInputType);
 
         var payload = buildPayload(model, texts, inputType);
         var endpoint = (baseUrl.endsWith("/") ? baseUrl : baseUrl + "/") + "embeddings";

@@ -33,6 +33,7 @@ import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -83,6 +84,11 @@ import org.slf4j.LoggerFactory;
  * <p>The {@code query} field in the {@code rerank} block supports a simple
  * {@code "$avars.<varName>"} expression resolved against the current aggregation
  * variables.
+ *
+ * <h2>Multi-tenant</h2>
+ * <p>Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#ATLAS_API_KEY} / {@link RequestOverrides#RERANK_API_URL} to
+ * use different values for that tenant.
  */
 @RegisterPlugin(
     name = "rerankingInterceptor",
@@ -98,8 +104,9 @@ public class RerankingInterceptor implements MongoInterceptor {
     static final String RERANK_ELEMENT_NAME      = "rerank";
     static final String AGGREGATIONS_ELEMENT_NAME = "aggrs";
 
-    private String atlasApiKey;
-    private String rerankApiUrl;
+    // static, single-tenant defaults; overridden per request via RequestOverrides
+    private String defaultAtlasApiKey;
+    private String defaultRerankApiUrl;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -108,8 +115,8 @@ public class RerankingInterceptor implements MongoInterceptor {
 
     @OnInit
     public void setup() {
-        this.atlasApiKey  = argOrDefault(config, "atlas-api-key", "");
-        this.rerankApiUrl = argOrDefault(config, "rerank-api-url",
+        this.defaultAtlasApiKey  = argOrDefault(config, "atlas-api-key", "");
+        this.defaultRerankApiUrl = argOrDefault(config, "rerank-api-url",
             "https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank");
     }
 
@@ -142,9 +149,12 @@ public class RerankingInterceptor implements MongoInterceptor {
         var documents = extractTexts(content.asArray());
         if (documents.isEmpty()) return;
 
+        var atlasApiKey = RequestOverrides.str(request, RequestOverrides.ATLAS_API_KEY, defaultAtlasApiKey);
+        var rerankApiUrl = RequestOverrides.str(request, RequestOverrides.RERANK_API_URL, defaultRerankApiUrl);
+
         BsonArray reranked;
         try {
-            reranked = callRerankApi(model, query, topK, content.asArray(), documents);
+            reranked = callRerankApi(model, query, topK, content.asArray(), documents, atlasApiKey, rerankApiUrl);
         } catch (Exception e) {
             LOGGER.error("rerankingInterceptor: rerank API call failed: {}", e.getMessage(), e);
             response.addWarning("reranking failed: " + e.getMessage());
@@ -205,7 +215,8 @@ public class RerankingInterceptor implements MongoInterceptor {
 
     private BsonArray callRerankApi(
         String model, String query, int topK,
-        BsonArray originalResults, java.util.List<String> documents) throws Exception {
+        BsonArray originalResults, java.util.List<String> documents,
+        String atlasApiKey, String rerankApiUrl) throws Exception {
 
         var docsJson = new StringBuilder("[");
         for (int i = 0; i < documents.size(); i++) {

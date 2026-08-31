@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.BsonDocument;
+import org.restheart.ai.util.RequestOverrides;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
@@ -54,6 +56,11 @@ import org.slf4j.LoggerFactory;
  *     base-url: http://localhost:11434   # optional, this is the default
  *     model: nomic-embed-text            # optional, this is the default
  * }</pre>
+ *
+ * <h2>Multi-tenant</h2>
+ * <p>Per request, a deployment's tenant-config interceptor may attach
+ * {@link RequestOverrides#OLLAMA_BASE_URL} / {@link RequestOverrides#OLLAMA_MODEL} to
+ * point different tenants at different Ollama servers/models.
  */
 @RegisterPlugin(
     name = "ollamaEmbeddingProvider",
@@ -69,16 +76,17 @@ public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
     @Inject("config")
     private Map<String, Object> config;
 
-    private String model;
-    private String baseUrl;
+    // static, single-tenant defaults; overridden per request via RequestOverrides
+    private String defaultModel;
+    private String defaultBaseUrl;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private EmbeddingModel instance;
 
     @OnInit
     public void init() {
-        this.model = argOrDefault(config, "model", DEFAULT_MODEL);
-        this.baseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
+        this.defaultModel = argOrDefault(config, "model", DEFAULT_MODEL);
+        this.defaultBaseUrl = argOrDefault(config, "base-url", DEFAULT_BASE_URL);
 
         this.instance = this::embed;
     }
@@ -88,10 +96,13 @@ public class OllamaEmbeddingProvider implements Provider<EmbeddingModel> {
         return instance;
     }
 
-    private List<float[]> embed(List<String> texts) {
+    private List<float[]> embed(List<String> texts, Request<?> request) {
         if (texts == null || texts.isEmpty()) {
             return List.of();
         }
+
+        var model = RequestOverrides.str(request, RequestOverrides.OLLAMA_MODEL, defaultModel);
+        var baseUrl = RequestOverrides.str(request, RequestOverrides.OLLAMA_BASE_URL, defaultBaseUrl);
 
         var inputJson = new StringBuilder("[");
         for (int i = 0; i < texts.size(); i++) {

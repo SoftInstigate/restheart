@@ -21,6 +21,7 @@ package org.restheart.plugins.ai;
 
 import java.util.List;
 
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 
@@ -34,7 +35,7 @@ import org.restheart.plugins.RegisterPlugin;
  * public class MyEmbeddingProvider implements Provider<EmbeddingModel> {
  *     @Override
  *     public EmbeddingModel get(PluginRecord<?> caller) {
- *         return texts -> myClient.embed(texts);
+ *         return (texts, request) -> myClient.embed(texts);
  *     }
  * }
  * }</pre>
@@ -49,13 +50,22 @@ import org.restheart.plugins.RegisterPlugin;
  * }
  * }</pre>
  *
+ * <p>The {@link Request} is passed through to every call so a multi-tenant
+ * implementation can resolve per-request overrides (API key, model, base URL — a
+ * deployment's tenant-config interceptor attaches these before this plugin runs) rather
+ * than baking a single tenant's configuration into a cached instance at plugin
+ * {@code @OnInit} time. A single-tenant implementation is free to ignore it.
+ *
  * @see Provider
  * @see RegisterPlugin
  */
 public interface EmbeddingModel {
     /**
      * @param texts the texts to embed, in order
+     * @param request the request this call is made on behalf of — used to resolve
+     *        per-request configuration overrides; may be {@code null} for callers
+     *        outside a request context (e.g. a startup self-test)
      * @return one embedding vector per input text, in the same order
      */
-    List<float[]> embed(List<String> texts);
+    List<float[]> embed(List<String> texts, Request<?> request);
 }
