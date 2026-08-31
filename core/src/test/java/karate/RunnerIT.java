@@ -53,6 +53,7 @@ public class RunnerIT extends AbstactIT {
 
         var results = Runner.path(paths)
                 .tags(tags.toArray(new String[0]))
+                .hook(new ProgressHook())
                 .parallel(1);
 
         assertEquals(0, results.getFailCount());

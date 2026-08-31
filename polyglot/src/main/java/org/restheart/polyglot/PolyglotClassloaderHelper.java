@@ -68,7 +68,7 @@ public final class PolyglotClassloaderHelper {
             var getInstance = pclClass.getMethod("getInstance");
             return (ClassLoader) getInstance.invoke(null);
         } catch (Exception e) {
-            LOGGER.debug("PluginsClassloader not available via reflection", e);
+            LOGGER.debug("PluginsClassloader not available via reflection: {}", e.toString());
             return null;
         }
     }
