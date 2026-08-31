@@ -20,7 +20,6 @@
 package org.restheart.stripe.products;
 
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.Inject;
@@ -29,7 +28,6 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.stripe.util.RequestOverrides;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 /**

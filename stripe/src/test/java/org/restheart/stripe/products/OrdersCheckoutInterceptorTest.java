@@ -128,7 +128,7 @@ class OrdersCheckoutInterceptorTest {
     @Test
     void metadata_refusesMoreKeysThanStripeAccepts() {
         var metadata = new BsonDocument();
-        for (var i = 0; i < 51; i++) {
+        for (var i = 0;i < 51;i++) {
             metadata.append("k" + i, new BsonString("v"));
         }
 

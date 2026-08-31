@@ -132,7 +132,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
                 policy = Cache.EXPIRE_POLICY.valueOf(expirePolicy);
             } catch (final IllegalArgumentException iae) {
                 throw new ConfigurationException("wrong configuration of mongoApiKeyAuthenticator, "
-                    + "cache-expire-policy is not valid: " + expirePolicy);
+                        + "cache-expire-policy is not valid: " + expirePolicy);
             }
 
             // Revocation takes effect within this TTL. Revocation immediacy is
@@ -160,8 +160,8 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         }
 
         final var account = this.keysCache == null
-            ? findKey(hash)
-            : this.keysCache.getLoading(hash).orElse(null);
+                ? findKey(hash)
+                : this.keysCache.getLoading(hash).orElse(null);
 
         if (account == null) {
             LOGGER.debug("API key not found");
@@ -196,8 +196,8 @@ public class MongoApiKeyAuthenticator implements Authenticator {
      */
     private MongoRealmAccount findKey(final String hash) {
         final var coll = mclient.getDatabase(this.keysDb)
-            .getCollection(this.keysCollection)
-            .withDocumentClass(BsonDocument.class);
+                .getCollection(this.keysCollection)
+                .withDocumentClass(BsonDocument.class);
 
         final BsonDocument key;
 
@@ -266,10 +266,10 @@ public class MongoApiKeyAuthenticator implements Authenticator {
         final var name = principal.asString().getValue();
 
         return new MongoRealmAccount(this.keysDb,
-            name,
-            new char[0],
-            rolesOf(key),
-            new BsonDocument("_id", new BsonString(name)));
+                name,
+                new char[0],
+                rolesOf(key),
+                new BsonDocument("_id", new BsonString(name)));
     }
 
     /**
@@ -291,7 +291,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
 
         if (roles.isEmpty()) {
             LOGGER.warn("API key for '{}' names no roles; it will be able to reach only what is "
-                + "granted to no role at all", key.get(this.propPrincipal));
+                    + "granted to no role at all", key.get(this.propPrincipal));
         }
 
         return roles;
@@ -321,9 +321,9 @@ public class MongoApiKeyAuthenticator implements Authenticator {
     private void touch(final String hash) {
         try {
             mclient.getDatabase(this.keysDb)
-                .getCollection(this.keysCollection)
-                .withDocumentClass(BsonDocument.class)
-                .updateOne(eq(this.propHash, hash), currentDate("lastUsedAt"));
+                    .getCollection(this.keysCollection)
+                    .withDocumentClass(BsonDocument.class)
+                    .updateOne(eq(this.propHash, hash), currentDate("lastUsedAt"));
         } catch (final Throwable t) {
             LOGGER.warn("Could not update lastUsedAt for an API key", t);
         }
@@ -346,7 +346,7 @@ public class MongoApiKeyAuthenticator implements Authenticator {
             final var digest = MessageDigest.getInstance(SHA_256).digest(bytes);
             final var hex = new char[digest.length * 2];
 
-            for (int i = 0; i < digest.length; i++) {
+            for (int i = 0;i < digest.length;i++) {
                 hex[i * 2] = HEX[(digest[i] >> 4) & 0xf];
                 hex[i * 2 + 1] = HEX[digest[i] & 0xf];
             }

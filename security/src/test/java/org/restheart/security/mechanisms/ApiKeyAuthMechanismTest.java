@@ -134,7 +134,7 @@ public class ApiKeyAuthMechanismTest {
         assertEquals(AuthenticationMechanismOutcome.NOT_ATTEMPTED, authenticate("Bearer " + jwt));
         assertNull(this.authenticator.seen);
         verify(this.securityContext, never())
-            .authenticationFailed(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
+                .authenticationFailed(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
     }
 
     @Test
@@ -150,8 +150,8 @@ public class ApiKeyAuthMechanismTest {
         assertEquals(AuthenticationMechanismOutcome.AUTHENTICATED, authenticate("Bearer " + GOOD_KEY));
         assertEquals(GOOD_KEY, this.authenticator.seen, "the prefix is part of the key, not stripped");
         verify(this.securityContext)
-            .authenticationComplete(ArgumentMatchers.any(Account.class), ArgumentMatchers.anyString(),
-                ArgumentMatchers.anyBoolean());
+                .authenticationComplete(ArgumentMatchers.any(Account.class), ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyBoolean());
     }
 
     @Test

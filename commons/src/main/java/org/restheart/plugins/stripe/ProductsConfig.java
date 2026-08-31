@@ -79,7 +79,8 @@ public record ProductsConfig(
             long amount,
             DeliveryEstimateDays deliveryEstimateDays) {
 
-        public record DeliveryEstimateDays(int minimum, int maximum) {}
+        public record DeliveryEstimateDays(int minimum, int maximum) {
+        }
     }
 
     /**
@@ -92,5 +93,6 @@ public record ProductsConfig(
      *                     inline override still wins over this when present; see
      *                     {@code RequestOverrides.templateInline()} in {@code restheart-stripe}.
      */
-    public record OrderNotificationConfig(boolean enabled, String templatePath) {}
+    public record OrderNotificationConfig(boolean enabled, String templatePath) {
+    }
 }

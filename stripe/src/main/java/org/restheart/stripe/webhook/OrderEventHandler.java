@@ -29,7 +29,6 @@ import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.emails.EmailRenderer;
 import org.restheart.emails.EmailSender;
@@ -484,7 +483,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {}
+    private record SessionData(String sessionId, Long amountTotal, String currency, String paymentIntent) {
+    }
 
     /** Extracts charge data from raw JSON for fallback handling. */
     private static ChargeData extractChargeData(Event event) {
@@ -516,7 +516,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record ChargeData(String paymentIntent, Long amountRefunded, String currency, String chargeId) {}
+    private record ChargeData(String paymentIntent, Long amountRefunded, String currency, String chargeId) {
+    }
 
     /** Extracts dispute data from raw JSON for fallback handling. */
     private static DisputeData extractDisputeData(Event event) {
@@ -548,7 +549,8 @@ public class OrderEventHandler implements StripeEventHandler {
         }
     }
 
-    private record DisputeData(String paymentIntent, Long amount, String currency, String disputeId) {}
+    private record DisputeData(String paymentIntent, Long amount, String currency, String disputeId) {
+    }
 
     private void appendTransaction(MongoCollection<BsonDocument> transactionsCol,
                                    ObjectId orderId, String type, long amount, String currency,

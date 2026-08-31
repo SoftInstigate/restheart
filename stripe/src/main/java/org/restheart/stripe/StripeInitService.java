@@ -254,7 +254,7 @@ public class StripeInitService implements Provider<StripeInitService> {
     }
 
     private void createIndexIfAbsent(MongoCollection<BsonDocument> col, org.bson.conversions.Bson keys,
-                                      IndexOptions options, String collectionName, String dbName) {
+                                     IndexOptions options, String collectionName, String dbName) {
         try {
             col.createIndex(keys, options);
             LOGGER.info("[stripe] created index '{}' on '{}.{}'", options.getName(), dbName, collectionName);

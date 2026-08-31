@@ -100,8 +100,8 @@ public final class StockKeeper {
             var filter = variantId == null
                     ? Filters.and(Filters.eq("_id", documentId), Filters.exists("in_stock"))
                     : Filters.and(Filters.eq("_id", documentId),
-                            Filters.elemMatch("variants",
-                                    Filters.and(Filters.eq("id", variantId), Filters.exists("in_stock"))));
+                    Filters.elemMatch("variants",
+                            Filters.and(Filters.eq("id", variantId), Filters.exists("in_stock"))));
 
             var field = variantId == null ? "in_stock" : "variants.$.in_stock";
 

@@ -51,7 +51,7 @@ class EmailTemplateLoaderTest {
         var dir = bundle.resolve("email-templates");
         Files.createDirectories(dir);
         Files.writeString(dir.resolve(name), content);
-        return new URLClassLoader(new URL[] { bundle.toUri().toURL() }, null);
+        return new URLClassLoader(new URL[]{bundle.toUri().toURL()}, null);
     }
 
     @Test

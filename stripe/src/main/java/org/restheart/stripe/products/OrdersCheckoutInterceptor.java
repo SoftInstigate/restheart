@@ -27,7 +27,6 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
@@ -49,7 +48,6 @@ import org.restheart.plugins.stripe.StripeConfigData;
 import org.restheart.stripe.StripeService;
 import org.restheart.stripe.util.CustomerProvisioning;
 import org.restheart.stripe.util.RequestOverrides;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -864,5 +862,6 @@ public class OrdersCheckoutInterceptor implements MongoInterceptor {
         return map;
     }
 
-    private record RequestedItem(String productId, int quantity, BsonDocument metadata) {}
+    private record RequestedItem(String productId, int quantity, BsonDocument metadata) {
+    }
 }

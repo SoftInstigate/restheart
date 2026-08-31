@@ -66,7 +66,7 @@ public class MongoApiKeyAuthenticatorTest {
     void sha256MatchesAKnownVector() {
         // echo -n "abc" | shasum -a 256
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-            MongoApiKeyAuthenticator.sha256("abc".toCharArray()));
+                MongoApiKeyAuthenticator.sha256("abc".toCharArray()));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class MongoApiKeyAuthenticatorTest {
     @Test
     void rolesComeFromTheKey() {
         final var doc = key().append("roles", new BsonArray(java.util.List.<org.bson.BsonValue>of(
-            new BsonString("cli"), new BsonString("reader"))));
+                new BsonString("cli"), new BsonString("reader"))));
 
         assertEquals(Set.of("cli", "reader"), this.authenticator.rolesOf(doc));
     }
@@ -111,7 +111,7 @@ public class MongoApiKeyAuthenticatorTest {
     void malformedRolesAreIgnoredRatherThanGuessed() {
         assertTrue(this.authenticator.rolesOf(key().append("roles", new BsonString("cli"))).isEmpty());
         assertEquals(Set.of("cli"), this.authenticator.rolesOf(key().append("roles",
-            new BsonArray(java.util.List.<org.bson.BsonValue>of(new BsonString("cli"), new BsonInt32(7))))));
+                new BsonArray(java.util.List.<org.bson.BsonValue>of(new BsonString("cli"), new BsonInt32(7))))));
     }
 
     // ── expiry ───────────────────────────────────────────────────────────────
@@ -166,9 +166,9 @@ public class MongoApiKeyAuthenticatorTest {
         set("keysDb", "restheart");
 
         final var account = this.authenticator.accountOf(key()
-            .append("hash", new BsonString("d41d8cd9"))
-            .append("name", new BsonString("CI deploy"))
-            .append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
+                .append("hash", new BsonString("d41d8cd9"))
+                .append("name", new BsonString("CI deploy"))
+                .append("roles", new BsonArray(java.util.List.of(new BsonString("cli")))));
 
         assertEquals(Set.of("_id"), account.properties().keySet());
         assertEquals(Set.of("cli"), account.getRoles());
@@ -183,7 +183,7 @@ public class MongoApiKeyAuthenticatorTest {
         set("propPrincipal", "owner");
 
         final var account = this.authenticator.accountOf(
-            new BsonDocument("owner", new BsonString("robot")));
+                new BsonDocument("owner", new BsonString("robot")));
 
         assertEquals(new BsonString("robot"), account.properties().get("_id"));
         assertNull(account.properties().get("owner"));
