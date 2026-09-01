@@ -34,12 +34,14 @@ import com.intuit.karate.Runner;
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove 'ignore' tag from streams.feature
  *
- * karate/ai/*.feature are disabled by default for the same reason (the {@code @ignore}
- * tag) — they need MongoDB with {@code $vectorSearch}/{@code createSearchIndexes}
- * support (e.g. {@code mongodb/mongodb-atlas-local:preview}), not the plain MongoDB
- * the rest of the suite runs against. To run them: point MongoDB at that image,
- * temporarily remove their {@code @ignore} tag, then run with
- * {@code -Dkarate.path=classpath:karate/ai}.
+ * The default MongoDB (started by core/pom.xml's docker-maven-plugin binding, "mongodb"
+ * profile) is {@code mongodb/mongodb-atlas-local} — bundles mongod + mongot as a
+ * self-initializing single-node replica set — so {@code karate/ai/*.feature}
+ * ({@code @requires-vector-search}) run by default, no separate setup needed. CI's
+ * compatibility-matrix legs that instead start the official {@code mongo} image (no
+ * {@code $vectorSearch}/{@code createSearchIndexes} support — see the
+ * {@code mongodb-classic} profile) pass {@code -Dkarate.vectorSearch=false} to exclude
+ * them on those legs specifically.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -51,6 +53,13 @@ public class RunnerIT extends AbstactIT {
         if (!isGraalVM25_1_OrLater()) {
             // Skip polyglot tests on non-GraalVM or GraalVM < 25.1 (JS plugins won't load)
             tags.add("~@requires-graalvm");
+        }
+
+        // true unless a caller explicitly says the running MongoDB lacks $vectorSearch/
+        // createSearchIndexes support (CI's official-mongo compatibility-matrix legs) —
+        // matches the default MongoDB (mongodb-atlas-local) actually supporting them.
+        if (!Boolean.parseBoolean(System.getProperty("karate.vectorSearch", "true"))) {
+            tags.add("~@requires-vector-search");
         }
 
         // Defaults to the whole suite. Narrow it while debugging with a comma-separated list:

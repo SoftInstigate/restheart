@@ -449,13 +449,103 @@
               <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
               <images>
                 <image>
-                  <name>mongo:${mongodb.version}</name>
+                  <!--
+                      mongodb/mongodb-atlas-local bundles mongod + mongot as a
+                      self-initializing single-node replica set, so restheart-ai's
+                      $vectorSearch/createSearchIndexes-dependent karate tests
+                      (karate/ai/*.feature) work out of the box. Deliberately NO <cmd>
+                      here: this image's own ENTRYPOINT does the replica-set init and
+                      mongot wiring — a custom command (the old "--bind_ip_all
+                      --replSet rs0", needed for the plain mongo:X image) overrides
+                      that entrypoint and breaks the image.
+                  -->
+                  <name>${mongodb.image}:${mongodb.version}</name>
+                  <run>
+                    <env>
+                      <DO_NOT_TRACK>1</DO_NOT_TRACK>
+                    </env>
+                    <ports>
+                      <port>${mongodb.port}:${mongodb.port}</port>
+                    </ports>
+                    <!-- remove showLogs=false above to get logs -->
+                    <log>
+                      <prefix>[mongodb]</prefix>
+                      <enabled>true</enabled>
+                      <color>yellow</color>
+                    </log>
+                    <wait>
+                      <tcp>
+                        <mode>mapped</mode>
+                        <host>localhost</host>
+                        <ports>
+                          <port>${mongodb.port}</port>
+                        </ports>
+                      </tcp>
+                      <!-- longer than the plain-mongo default: this image also brings
+                           up mongot and self-initializes the replica set before it's
+                           actually ready to serve, not just accept TCP connections -->
+                      <time>30000</time>
+                      <shutdown>1000</shutdown>
+                    </wait>
+                  </run>
+                </image>
+              </images>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!--
+        Alternative to the "mongodb" profile above: starts the OFFICIAL mongo image
+        (needs its own --bind_ip_all --replSet rs0 command + a separate rs.initiate()
+        step in build.xml — it does not self-initialize like mongodb-atlas-local does)
+        instead of mongodb/mongodb-atlas-local. Used by CI's compatibility matrix to
+        test against specific official MongoDB releases (including ones with no
+        mongodb-atlas-local equivalent tag, e.g. 8.3) — those legs get no
+        $vectorSearch/createSearchIndexes support, so karate/ai/*.feature must be
+        skipped there too (see RunnerIT's karate.vectorSearch system property).
+
+        Never active by default — must be explicitly selected, deactivating the default
+        "mongodb" profile in the same invocation:
+            mvn clean verify -P-mongodb,mongodb-classic \
+                -Dmongodb.image=mongo -Dmongodb.version=8.3 -Dkarate.vectorSearch=false
+    -->
+    <profile>
+      <id>mongodb-classic</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.fabric8</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipTestEnv}</skip>
+              <showLogs>false</showLogs>
+              <removeVolumes>true</removeVolumes>
+              <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
+              <images>
+                <image>
+                  <name>${mongodb.image}:${mongodb.version}</name>
                   <run>
                     <cmd>--bind_ip_all --replSet rs0</cmd>
                     <ports>
                       <port>${mongodb.port}:${mongodb.port}</port>
                     </ports>
-                    <!-- remove showLogs=false above to get logs -->
                     <log>
                       <prefix>[mongodb]</prefix>
                       <enabled>true</enabled>

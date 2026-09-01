@@ -53,7 +53,7 @@ The main artifact is produced at `core/target/restheart.jar`.
 
 The integration tests need a MongoDB instance and a running RESTHeart, and `verify` provides both automatically — two profiles activate whenever `-DskipTests` is *not* passed:
 
-- **`mongodb`** starts a `mongo:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
+- **`mongodb`** starts a `mongodb/mongodb-atlas-local:${mongodb.version}` container (fabric8 `docker-maven-plugin`) in `pre-integration-test` and stops it afterwards — bundles mongod + mongot as a self-initializing single-node replica set, so `$vectorSearch`/`createSearchIndexes` (restheart-ai) work without extra setup. Docker must be running. If you already have MongoDB on `localhost:27017`, disable it with `-P-mongodb`.
 - **`start-server`** builds and starts RESTHeart before the tests and stops it after.
 
 All integration tests live in the `core` module.
@@ -135,11 +135,14 @@ To skip the rebuild entirely, keep MongoDB and RESTHeart running between runs an
 Start the environment once:
 
 ```bash
-docker run -d --rm --name rh-mongo -p 27017:27017 mongo:8.3 --bind_ip_all --replSet rs0
-docker exec rh-mongo mongosh --eval 'rs.initiate()'
+docker run -d --rm --name rh-mongo -p 27017:27017 -e DO_NOT_TRACK=1 mongodb/mongodb-atlas-local:preview
 
 cd core && bin/start.sh -o src/test/resources/etc/conf-overrides.yml --fork
 ```
+
+No manual `rs.initiate()` needed — this image self-initializes its own single-node
+replica set. Do not pass a custom command to it (no `--bind_ip_all --replSet rs0`, unlike
+the old plain `mongo` image) — that overrides its entrypoint and breaks it.
 
 Then re-run the tests as many times as needed, invoking failsafe directly so nothing before `integration-test` executes:
 
@@ -157,10 +160,10 @@ Stop the environment with `core/bin/stop.sh` and `docker stop rh-mongo`.
 ### Test against a specific MongoDB version
 
 ```bash
-./mvnw clean verify -Dmongodb.version="7.0"
+./mvnw clean verify -Dmongodb.version="8.0"
 ```
 
-Any published `mongo` image tag works; the default is set by the `mongodb.version` property in the root POM.
+Any published `mongodb/mongodb-atlas-local` tag works (`latest`, `preview`, `8.0`, `7.0`, or a pinned `<major>.<minor>.<patch>-<timestamp>` build); the default is set by the `mongodb.version` property in the root POM.
 
 ### Skip updating license headers (faster iteration)
 

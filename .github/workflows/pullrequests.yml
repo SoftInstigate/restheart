@@ -13,8 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ["7.0", "8.0", "8.3"]
-    timeout-minutes: 10
+        include:
+          # Official mongo image — MongoDB release compatibility matrix. No
+          # $vectorSearch/createSearchIndexes support, so restheart-ai's
+          # @requires-vector-search karate scenarios are excluded on these legs.
+          - mongodb-version: "7.0"
+            mongodb-image: "mongo"
+            mongodb-profile: "-P-mongodb,mongodb-classic"
+            vector-search: "false"
+          - mongodb-version: "8.0"
+            mongodb-image: "mongo"
+            mongodb-profile: "-P-mongodb,mongodb-classic"
+            vector-search: "false"
+          - mongodb-version: "8.3"
+            mongodb-image: "mongo"
+            mongodb-profile: "-P-mongodb,mongodb-classic"
+            vector-search: "false"
+          # mongodb-atlas-local — the default "mongodb" profile's image (mongod +
+          # mongot, self-initializing replica set): runs restheart-ai's vector search
+          # tests, which none of the official-mongo legs above can.
+          - mongodb-version: "preview"
+            mongodb-image: "mongodb/mongodb-atlas-local"
+            mongodb-profile: ""
+            vector-search: "true"
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -29,4 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
         run: |
-          mvn -B clean verify -Dmongodb.version="${{ matrix.mongodb-version }}"
+          mvn -B clean verify ${{ matrix.mongodb-profile }} \
+            -Dmongodb.image="${{ matrix.mongodb-image }}" \
+            -Dmongodb.version="${{ matrix.mongodb-version }}" \
+            -Dkarate.vectorSearch="${{ matrix.vector-search }}"

@@ -1,11 +1,12 @@
-@ignore
+@requires-vector-search
 Feature: restheart-ai — vector search index management via /_indexes
 
-# Disabled by default — see RunnerIT's class javadoc for why and how to run this file.
-# In short: needs MongoDB with $vectorSearch + createSearchIndexes support, e.g.:
-#   docker run -p 27017:27017 -e DO_NOT_TRACK=1 mongodb/mongodb-atlas-local:preview
-# then, with @ignore temporarily removed from this file:
-#   mvn -pl core verify -Dit.test=RunnerIT -Dkarate.path=classpath:karate/ai
+# Part of the default suite: core/pom.xml starts mongodb/mongodb-atlas-local (mongod +
+# mongot, self-initializing single-node replica set) for `mvn verify`, so
+# $vectorSearch/createSearchIndexes are available without any extra setup. On CI legs
+# that instead run the official mongo image (no $vectorSearch support — see
+# RunnerIT.java and core/pom.xml's "mongodb-classic" profile), the @requires-vector-search
+# tag excludes this feature via -Dkarate.vectorSearch=false, rather than @ignore.
 #
 # Exercises VectorSearchIndexCreateInterceptor / ListInterceptor / DeleteInterceptor
 # (ai/src/main/java/org/restheart/ai/interceptors/) — all three are enabled for the

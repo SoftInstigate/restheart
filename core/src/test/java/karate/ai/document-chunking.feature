@@ -1,11 +1,9 @@
-@ignore
 Feature: restheart-ai — document chunking on GridFS upload
 
-# Disabled by default — see RunnerIT's class javadoc for why and how to run this file.
-# Unlike vector-search-indexes.feature, this one doesn't actually need $vectorSearch
-# (Tika text extraction + GridFS work on any MongoDB) — it's tagged @ignore anyway for
-# consistency, since it needs the same "run karate/ai explicitly" setup and there's no
-# value in running it against a different MongoDB than the rest of karate/ai.
+# Part of the default suite. Deliberately NOT tagged @requires-vector-search (unlike
+# vector-search-indexes.feature): this one only needs Tika text extraction + GridFS,
+# which work against any MongoDB — so it also runs on CI's official-mongo
+# compatibility-matrix legs (see RunnerIT.java), for extra coverage at no cost.
 #
 # Exercises DocumentChunkingInterceptor (ai/src/main/java/org/restheart/ai/interceptors/),
 # enabled for the whole suite via conf-overrides.yml with its code defaults
