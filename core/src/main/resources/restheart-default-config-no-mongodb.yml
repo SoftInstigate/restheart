@@ -445,6 +445,38 @@ csvLoader:
 #  - max-queue-size (optional, default 0) Controls the number of connections to create per thread.
 #  - connections-ttl (optional, default -1) Connections Time to Live in seconds.
 #  - problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+
+# restheart-ai requires MongoDB (and, for $vectorSearch itself, mongot) - not available
+# in standalone mode. See https://restheart.org/docs/ai
+vectorSearchIndexCreateInterceptor:
+  enabled: false
+vectorSearchIndexListInterceptor:
+  enabled: false
+vectorSearchIndexDeleteInterceptor:
+  enabled: false
+documentChunkingInterceptor:
+  enabled: false
+autoEmbeddingInterceptor:
+  enabled: false
+vectorizeOperator:
+  enabled: false
+rerankingInterceptor:
+  enabled: false
+vectorScanInterceptor:
+  enabled: false
+openAIEmbeddingProvider:
+  enabled: false
+voyageEmbeddingProvider:
+  enabled: false
+voyageContextualEmbeddingProvider:
+  enabled: false
+ollamaEmbeddingProvider:
+  enabled: false
+cohereRerankProvider:
+  enabled: false
+voyageRerankProvider:
+  enabled: false
+
 proxies:
 #   - location: /anything
 #     proxy-pass: https://httpbin.org/anything
