@@ -32,9 +32,11 @@ import java.util.Set;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Provider;
+import org.restheart.plugins.ai.ContextualEmbeddingModel;
 import org.restheart.plugins.ai.EmbeddingModel;
 
 @SuppressWarnings("unchecked")
@@ -77,6 +79,37 @@ public class DocumentChunkingInterceptorTest {
 
         assertEquals(0.1, docs.get(0).getArray("vector").get(0).asDouble().getValue(), 1e-6);
         assertEquals(0.3, docs.get(1).getArray("vector").get(0).asDouble().getValue(), 1e-6);
+    }
+
+    @Test
+    public void embedChunks_prefersContextualEmbeddingWhenAvailable() throws Exception {
+        class ContextualModel implements EmbeddingModel, ContextualEmbeddingModel {
+            boolean contextualCalled = false;
+            boolean plainCalled = false;
+
+            @Override
+            public List<float[]> embed(List<String> texts, Request<?> request) {
+                plainCalled = true;
+                return List.of(new float[] {9f}, new float[] {9f});
+            }
+
+            @Override
+            public List<float[]> embedChunks(List<String> chunksOfSameDocument, Request<?> request) {
+                contextualCalled = true;
+                return List.of(new float[] {0.1f}, new float[] {0.2f});
+            }
+        }
+
+        var model = new ContextualModel();
+        var interceptor = newInterceptor(registryWithProvider("voyageContextualEmbeddingProvider", true, model));
+
+        var docs = List.of(chunkDoc("first"), chunkDoc("second"));
+        interceptor.embedChunks(docs, List.of("first", "second"), "voyageContextualEmbeddingProvider", null, new BsonString("f1"), "db");
+
+        assertTrue(model.contextualCalled, "embedChunks (contextual) should have been called");
+        assertFalse(model.plainCalled, "embed (independent) should not have been called when contextual is available");
+        assertEquals(0.1, docs.get(0).getArray("vector").get(0).asDouble().getValue(), 1e-6);
+        assertEquals(0.2, docs.get(1).getArray("vector").get(0).asDouble().getValue(), 1e-6);
     }
 
     @Test

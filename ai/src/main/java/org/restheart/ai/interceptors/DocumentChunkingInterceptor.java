@@ -49,6 +49,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.ai.ContextualEmbeddingModel;
 import org.restheart.plugins.ai.EmbeddingModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,12 @@ import com.mongodb.client.model.InsertManyOptions;
  * {@code autoEmbed} index type. A failed embedding call does not lose the chunks — they
  * are still stored, just without a {@code vector} field, exactly as if no provider were
  * configured.
+ *
+ * <p>When the resolved provider also implements {@code ContextualEmbeddingModel}
+ * (e.g. {@code voyageContextualEmbeddingProvider}), all of a file's chunks are embedded
+ * together via that capability instead of the plain {@code EmbeddingModel.embed} call —
+ * each chunk's vector is then computed with awareness of the other chunks in the same
+ * file, rather than in isolation.
  *
  * <h2>Multi-tenant</h2>
  * <p>Per request, a deployment's tenant-config interceptor may attach
@@ -256,7 +263,13 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
 
         List<float[]> vectors;
         try {
-            vectors = model.get().embed(chunkTexts, request);
+            var resolved = model.get();
+            // every chunk here belongs to the same file — when the provider supports
+            // contextualized chunk embeddings, prefer it over the plain independent
+            // embed() call for better retrieval quality (see ContextualEmbeddingModel)
+            vectors = resolved instanceof ContextualEmbeddingModel contextual
+                ? contextual.embedChunks(chunkTexts, request)
+                : resolved.embed(chunkTexts, request);
         } catch (Exception e) {
             LOGGER.error("documentChunkingInterceptor: embedding call to '{}' failed for file {} in {}: {} "
                 + "— storing chunks without vectors", providerName, fileId, dbName, e.getMessage(), e);

@@ -61,6 +61,15 @@ public final class RequestOverrides {
     public static final String VOYAGE_BASE_URL = "override-ai-voyage-base-url";
     public static final String VOYAGE_INPUT_TYPE = "override-ai-voyage-input-type";
 
+    // ── voyageContextualEmbeddingProvider overrides ──────────────────────────
+    // (kept distinct from VOYAGE_API_KEY etc. above — a tenant may use a different
+    // Voyage key/model for contextualized chunk embeddings than for plain embeddings)
+    public static final String VOYAGE_CONTEXTUAL_API_KEY = "override-ai-voyage-contextual-api-key";
+    public static final String VOYAGE_CONTEXTUAL_MODEL = "override-ai-voyage-contextual-model";
+    public static final String VOYAGE_CONTEXTUAL_BASE_URL = "override-ai-voyage-contextual-base-url";
+    public static final String VOYAGE_CONTEXTUAL_INPUT_TYPE = "override-ai-voyage-contextual-input-type";
+    public static final String VOYAGE_CONTEXTUAL_OUTPUT_DIMENSION = "override-ai-voyage-contextual-output-dimension";
+
     // ── ollamaEmbeddingProvider overrides ────────────────────────────────────
     public static final String OLLAMA_BASE_URL = "override-ai-ollama-base-url";
     public static final String OLLAMA_MODEL = "override-ai-ollama-model";
