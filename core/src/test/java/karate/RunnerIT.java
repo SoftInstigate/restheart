@@ -43,6 +43,14 @@ import com.intuit.karate.Runner;
  * {@code mongodb-classic} profile) pass {@code -Dkarate.vectorSearch=false} to exclude
  * them on those legs specifically.
  *
+ * {@code karate/ai/embedding-provider.feature} ({@code @requires-embedding-provider})
+ * additionally needs a real embedding-provider API key (a live HTTP call, not just a
+ * running MongoDB) and is opt-in via {@code -Dkarate.embeddingProvider=true} — off by
+ * default so a plain {@code mvn clean verify} never requires a secret. CI's atlas-local
+ * leg sets it (and the {@code RHO} env var carrying the key — see
+ * {@code .github/workflows/*.yml}) only when a {@code VOYAGE_API_KEY} secret is
+ * configured on the repository.
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RunnerIT extends AbstactIT {
@@ -60,6 +68,13 @@ public class RunnerIT extends AbstactIT {
         // matches the default MongoDB (mongodb-atlas-local) actually supporting them.
         if (!Boolean.parseBoolean(System.getProperty("karate.vectorSearch", "true"))) {
             tags.add("~@requires-vector-search");
+        }
+
+        // false unless a caller explicitly opts in AND has wired a real embedding-provider
+        // API key via the RHO env var (see karate/ai/embedding-provider.feature) — never
+        // required for a plain local run.
+        if (!Boolean.parseBoolean(System.getProperty("karate.embeddingProvider", "false"))) {
+            tags.add("~@requires-embedding-provider");
         }
 
         // Defaults to the whole suite. Narrow it while debugging with a comma-separated list:

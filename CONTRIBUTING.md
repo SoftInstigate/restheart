@@ -118,6 +118,21 @@ The BDD tests under `core/src/test/java/karate/` are all driven by a single JUni
 
 Note that features are not fully independent: some rely on data created by others, and helpers under `karate/accounts/helpers/` are called explicitly by the features that need them. A feature that passes in the full suite can fail when run alone — that is usually a missing fixture, not a regression.
 
+### Run the live embedding-provider tests
+
+`karate/ai/embedding-provider.feature` makes real HTTP calls to a `Provider<EmbeddingModel>` (Voyage AI), so it needs a real API key and is skipped by default (`@requires-embedding-provider` tag). Wire the key in via the `RHO` configuration-override environment variable — never write it into any file — and opt in with `-Dkarate.embeddingProvider=true`:
+
+```bash
+export VOYAGE_API_KEY=<your-key>
+export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-key->\"$VOYAGE_API_KEY\";/documentChunkingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/autoEmbeddingInterceptor/enabled->true;/autoEmbeddingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/vectorizeOperator/enabled->true;/vectorizeOperator/embedding-provider->\"voyageEmbeddingProvider\""
+
+./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+  -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
+  -Dkarate.embeddingProvider=true
+```
+
+CI's atlas-local matrix leg does the same automatically, but only when a `VOYAGE_API_KEY` repository secret is configured — otherwise the feature stays skipped and the build stays green.
+
 Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
 
 ### Re-run tests without rebuilding

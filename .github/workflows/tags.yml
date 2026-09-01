@@ -49,11 +49,22 @@ jobs:
           cache: "maven"
 
       - name: Build and Test
+        env:
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
         run: |
+          # Live embedding-provider calls (karate/ai/embedding-provider.feature) only run
+          # on the atlas-local leg, and only when a VOYAGE_API_KEY secret is configured —
+          # never required for the build to pass otherwise.
+          KARATE_EMBEDDING=false
+          if [ "${{ matrix.vector-search }}" = "true" ] && [ -n "$VOYAGE_API_KEY" ]; then
+            KARATE_EMBEDDING=true
+            export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-key->\"$VOYAGE_API_KEY\";/documentChunkingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/autoEmbeddingInterceptor/enabled->true;/autoEmbeddingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/vectorizeOperator/enabled->true;/vectorizeOperator/embedding-provider->\"voyageEmbeddingProvider\""
+          fi
           mvn -B clean verify ${{ matrix.mongodb-profile }} \
             -Dmongodb.image="${{ matrix.mongodb-image }}" \
             -Dmongodb.version="${{ matrix.mongodb-version }}" \
-            -Dkarate.vectorSearch="${{ matrix.vector-search }}"
+            -Dkarate.vectorSearch="${{ matrix.vector-search }}" \
+            -Dkarate.embeddingProvider="$KARATE_EMBEDDING"
 
       - name: Upload build artifacts
         if: matrix.mongodb-version == '8.3'

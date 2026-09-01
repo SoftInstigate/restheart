@@ -1,0 +1,11 @@
+{
+    "aggrs": [
+        {
+            "uri": "queryVector",
+            "stages": [
+                { "$addFields": { "queryVector": { "$vectorize": "hello world" } } },
+                { "$project": { "_id": 0, "queryVector": 1 } }
+            ]
+        }
+    ]
+}
