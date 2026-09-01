@@ -33,6 +33,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.exchange.Request;
 import static org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.MongoPermissions;
@@ -114,6 +115,20 @@ public class StagesInterpolator {
      * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     public static List<BsonDocument> interpolate(VAR_OPERATOR varOperator, STAGE_OPERATOR stageOperator, BsonArray stages, BsonDocument values) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(varOperator, stageOperator, stages, values, null);
+    }
+
+    /**
+     * Same as {@link #interpolate(VAR_OPERATOR, STAGE_OPERATOR, BsonArray, BsonDocument)},
+     * additionally passing {@code request} through to {@link VarsInterpolator} so a
+     * registered {@link CustomOperator} (e.g. {@code $vectorize}) can resolve its own
+     * per-request overrides.
+     *
+     * @param request the current request; may be {@code null} for contexts without one
+     *        (e.g. GraphQL mapping interpolation)
+     * @since 9.10.0
+     */
+    public static List<BsonDocument> interpolate(VAR_OPERATOR varOperator, STAGE_OPERATOR stageOperator, BsonArray stages, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
         var stagesWithUnescapedOperators = BsonUtils.unescapeKeys(stages).asArray();
 
         // check optional stages
@@ -133,7 +148,7 @@ public class StagesInterpolator {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(BsonArray::new));
 
-        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values).asArray();
+        var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values, request).asArray();
 
         var ret = new ArrayList<BsonDocument>();
 

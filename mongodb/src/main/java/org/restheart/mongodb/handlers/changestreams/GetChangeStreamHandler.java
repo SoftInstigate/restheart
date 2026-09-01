@@ -266,7 +266,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException, SecurityException {
         var pipeline = findOperation(request);
         var avars = request.getExchange().getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
-        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars);
+        var resolvedStages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.getStages(), avars, request);
 
         var stagesArray = new BsonArray();
         resolvedStages.forEach(stagesArray::add);
