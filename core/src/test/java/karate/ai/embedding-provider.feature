@@ -31,6 +31,9 @@ Feature: restheart-ai — live embedding provider calls (Voyage AI)
 Background:
     * url 'http://localhost:8080'
     * def adminAuth = 'Basic YWRtaW46c2VjcmV0'
+    # a mongo collection POST returns 201 with an empty body and the new id only in the
+    # Location header (an ObjectId, i.e. its last 24 characters) — see write-mode.feature
+    * def idFromLocation = function(url) { return url.substring(url.length-24); }
 
 Scenario: uploading a text-extractable file produces chunks with a real embedding vector
     * header Authorization = adminAuth
@@ -51,7 +54,7 @@ Scenario: uploading a text-extractable file produces chunks with a real embeddin
     And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
     When method POST
     Then status 201
-    * def fileId = response._id
+    * def fileId = idFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-chunking/_chunks'
@@ -81,7 +84,7 @@ Scenario: writing a document to a vectorSearch-enabled collection triggers auto-
     And request { "description": "RESTHeart is a low-code API server for MongoDB" }
     When method POST
     Then status 201
-    * def docId = response._id
+    * def docId = idFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-auto/articles/' + docId

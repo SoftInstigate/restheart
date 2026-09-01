@@ -23,6 +23,9 @@ Background:
     * def bucket = '/ai-test-chunking/docs.files'
     * def chunksColl = '/ai-test-chunking/_chunks'
     * def adminAuth = 'Basic YWRtaW46c2VjcmV0'
+    # a GridFS file upload returns 201 with an empty body and the new id only in the
+    # Location header (an ObjectId, i.e. its last 24 characters) — see write-mode.feature
+    * def idFromLocation = function(url) { return url.substring(url.length-24); }
 
     * header Authorization = adminAuth
     Given path db
@@ -43,7 +46,7 @@ Scenario: uploading a text-extractable file triggers chunking into the target co
     And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
     When method POST
     Then status 201
-    * def fileId = response._id
+    * def fileId = idFromLocation(responseHeaders['Location'][0])
 
     # DocumentChunkingInterceptor runs at RESPONSE, synchronously — the chunks
     # collection is already populated by the time the upload request returns.
@@ -65,7 +68,7 @@ Scenario: an upload with no extractable text does not create any chunks
     And multipart field metadata = '{ "filename": "empty.txt" }'
     When method POST
     Then status 201
-    * def emptyFileId = response._id
+    * def emptyFileId = idFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = adminAuth
     Given path chunksColl
