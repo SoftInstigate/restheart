@@ -158,7 +158,7 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
         // close the current buffer pool
         var oldBuffers = getWrappedExchange().getAttachment(getRawContentKey());
         if (oldBuffers != null) {
-            for (var oldBuffer: oldBuffers) {
+            for (var oldBuffer : oldBuffers) {
                 if (oldBuffer != null) {
                     oldBuffer.close();
                 }
@@ -243,7 +243,7 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
     @Override
     public void close() {
         if (isContentAvailable()) {
-            for (var b: this.getBuffer()) {
+            for (var b : this.getBuffer()) {
                 if (b != null) {
                     b.close();
                 }

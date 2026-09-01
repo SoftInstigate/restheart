@@ -1,0 +1,2328 @@
+{
+  "reflection": [
+    {
+      "type": "com.stripe.model.StripeObject",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Event",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Event$Data",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Event$Request",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Customer",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Price",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.checkout.Session",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.billingportal.Session",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Invoice",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Invoice$Parent",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Invoice$Parent$SubscriptionDetails",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Subscription",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.SubscriptionItem",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.SubscriptionItemCollection",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Charge",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Dispute",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allDeclaredConstructors": true
+    },
+    {
+      "type": "com.stripe.model.Account"
+    },
+    {
+      "type": "com.stripe.model.Account$BusinessProfile"
+    },
+    {
+      "type": "com.stripe.model.Account$BusinessProfile$AnnualRevenue"
+    },
+    {
+      "type": "com.stripe.model.Account$BusinessProfile$MonthlyEstimatedRevenue"
+    },
+    {
+      "type": "com.stripe.model.Account$Capabilities"
+    },
+    {
+      "type": "com.stripe.model.Account$Company"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$AddressKana"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$AddressKanji"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$DirectorshipDeclaration"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$OwnershipDeclaration"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$RegistrationDate"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$RepresentativeDeclaration"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$Verification"
+    },
+    {
+      "type": "com.stripe.model.Account$Company$Verification$Document"
+    },
+    {
+      "type": "com.stripe.model.Account$Controller"
+    },
+    {
+      "type": "com.stripe.model.Account$Controller$Fees"
+    },
+    {
+      "type": "com.stripe.model.Account$Controller$Losses"
+    },
+    {
+      "type": "com.stripe.model.Account$Controller$StripeDashboard"
+    },
+    {
+      "type": "com.stripe.model.Account$FutureRequirements"
+    },
+    {
+      "type": "com.stripe.model.Account$FutureRequirements$Alternative"
+    },
+    {
+      "type": "com.stripe.model.Account$FutureRequirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.Account$Groups"
+    },
+    {
+      "type": "com.stripe.model.Account$Requirements"
+    },
+    {
+      "type": "com.stripe.model.Account$Requirements$Alternative"
+    },
+    {
+      "type": "com.stripe.model.Account$Requirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$BacsDebitPayments"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Branding"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$CardIssuing"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$CardIssuing$TosAcceptance"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$CardPayments"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$CardPayments$DeclineOn"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Dashboard"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Invoices"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Payments"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Payouts"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Payouts$Schedule"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$SepaDebitPayments"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Treasury"
+    },
+    {
+      "type": "com.stripe.model.Account$Settings$Treasury$TosAcceptance"
+    },
+    {
+      "type": "com.stripe.model.Account$TosAcceptance"
+    },
+    {
+      "type": "com.stripe.model.Address"
+    },
+    {
+      "type": "com.stripe.model.ApplicationFee"
+    },
+    {
+      "type": "com.stripe.model.ApplicationFee$FeeSource"
+    },
+    {
+      "type": "com.stripe.model.BalanceTransaction"
+    },
+    {
+      "type": "com.stripe.model.BalanceTransaction$FeeDetail"
+    },
+    {
+      "type": "com.stripe.model.BankAccount"
+    },
+    {
+      "type": "com.stripe.model.BankAccount$FutureRequirements"
+    },
+    {
+      "type": "com.stripe.model.BankAccount$FutureRequirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.BankAccount$Requirements"
+    },
+    {
+      "type": "com.stripe.model.BankAccount$Requirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.Card"
+    },
+    {
+      "type": "com.stripe.model.Card$Networks"
+    },
+    {
+      "type": "com.stripe.model.Charge$BillingDetails"
+    },
+    {
+      "type": "com.stripe.model.Charge$FraudDetails"
+    },
+    {
+      "type": "com.stripe.model.Charge$Level3"
+    },
+    {
+      "type": "com.stripe.model.Charge$Level3$LineItem"
+    },
+    {
+      "type": "com.stripe.model.Charge$Outcome"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AchCreditTransfer"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AchDebit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Affirm"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AfterpayClearpay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Alipay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Alma"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Alma$Installments"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AmazonPay$Funding"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AmazonPay$Funding$Card"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$AuBecsDebit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$BacsDebit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Billie"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Bizum"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Blik"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Boleto"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Checks"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$ExtendedAuthorization"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$IncrementalAuthorization"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Installments"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Installments$Plan"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Multicapture"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$NetworkToken"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Overcapture"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$ThreeDSecure"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$AmexExpressCheckout"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$ApplePay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$GooglePay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$Link"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$Masterpass"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$SamsungPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Card$Wallet$VisaCheckout"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$CardPresent$Offline"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$CardPresent$Receipt"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$CardPresent$Wallet"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Cashapp"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Crypto"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$CustomerBalance"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Eps"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Fpx"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Giropay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Grabpay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Ideal"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$InteracPresent"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$InteracPresent$Receipt"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$KakaoPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Klarna"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Klarna$PayerDetails"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Klarna$PayerDetails$Address"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Konbini"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Konbini$Store"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$KrCard"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Link"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$MbWay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Mobilepay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Mobilepay$Card"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Multibanco"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$NaverPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$NzBankAccount"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Oxxo"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$P24"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$PayByBank"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Payco"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Paynow"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Paypal"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Paypal$SellerProtection"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Payto"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Pix"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Promptpay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$RevolutPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$RevolutPay$Funding"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$RevolutPay$Funding$Card"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$SamsungPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Satispay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Scalapay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$SepaCreditTransfer"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Sofort"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$StripeAccount"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Sunbit"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Swish"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Twint"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Upi"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Wechat"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$WechatPay"
+    },
+    {
+      "type": "com.stripe.model.Charge$PaymentMethodDetails$Zip"
+    },
+    {
+      "type": "com.stripe.model.Charge$PresentmentDetails"
+    },
+    {
+      "type": "com.stripe.model.Charge$RadarOptions"
+    },
+    {
+      "type": "com.stripe.model.Charge$TransferData"
+    },
+    {
+      "type": "com.stripe.model.ConnectCollectionTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$AdjustedForOverdraft"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$AppliedToPayment"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded$BankTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded$BankTransfer$EuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded$BankTransfer$GbBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded$BankTransfer$JpBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$Funded$BankTransfer$UsBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$RefundedFromPayment"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$TransferredToBalance"
+    },
+    {
+      "type": "com.stripe.model.CustomerCashBalanceTransaction$UnappliedFromPayment"
+    },
+    {
+      "type": "com.stripe.model.Discount"
+    },
+    {
+      "type": "com.stripe.model.Discount$Source"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$MastercardCompliance"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompellingEvidence3"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompellingEvidence3$DisputedTransaction"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompellingEvidence3$DisputedTransaction$ShippingAddress"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompellingEvidence3$PriorUndisputedTransaction"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompellingEvidence3$PriorUndisputedTransaction$ShippingAddress"
+    },
+    {
+      "type": "com.stripe.model.Dispute$Evidence$EnhancedEvidence$VisaCompliance"
+    },
+    {
+      "type": "com.stripe.model.Dispute$EvidenceDetails"
+    },
+    {
+      "type": "com.stripe.model.Dispute$EvidenceDetails$EnhancedEligibility"
+    },
+    {
+      "type": "com.stripe.model.Dispute$EvidenceDetails$EnhancedEligibility$MastercardCompliance"
+    },
+    {
+      "type": "com.stripe.model.Dispute$EvidenceDetails$EnhancedEligibility$VisaCompellingEvidence3"
+    },
+    {
+      "type": "com.stripe.model.Dispute$EvidenceDetails$EnhancedEligibility$VisaCompliance"
+    },
+    {
+      "type": "com.stripe.model.Dispute$PaymentMethodDetails"
+    },
+    {
+      "type": "com.stripe.model.Dispute$PaymentMethodDetails$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.Dispute$PaymentMethodDetails$Card"
+    },
+    {
+      "type": "com.stripe.model.Dispute$PaymentMethodDetails$Klarna"
+    },
+    {
+      "type": "com.stripe.model.Dispute$PaymentMethodDetails$Paypal"
+    },
+    {
+      "type": "com.stripe.model.ExternalAccountCollection"
+    },
+    {
+      "type": "com.stripe.model.FeeRefund"
+    },
+    {
+      "type": "com.stripe.model.FeeRefundCollection"
+    },
+    {
+      "type": "com.stripe.model.Invoice$AutomaticTax"
+    },
+    {
+      "type": "com.stripe.model.Invoice$AutomaticTax$Liability"
+    },
+    {
+      "type": "com.stripe.model.Invoice$ConfirmationSecret"
+    },
+    {
+      "type": "com.stripe.model.Invoice$CustomField"
+    },
+    {
+      "type": "com.stripe.model.Invoice$CustomerTaxId"
+    },
+    {
+      "type": "com.stripe.model.Invoice$FromInvoice"
+    },
+    {
+      "type": "com.stripe.model.Invoice$Issuer"
+    },
+    {
+      "type": "com.stripe.model.Invoice$Parent$QuoteDetails"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$AcssDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Card"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Card$Installments"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$CustomerBalance"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$CustomerBalance$BankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$CustomerBalance$BankTransfer$EuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Konbini"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Payto"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Payto$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Pix"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Upi"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$Upi$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$UsBankAccount$FinancialConnections"
+    },
+    {
+      "type": "com.stripe.model.Invoice$PaymentSettings$PaymentMethodOptions$UsBankAccount$FinancialConnections$Filters"
+    },
+    {
+      "type": "com.stripe.model.Invoice$Rendering"
+    },
+    {
+      "type": "com.stripe.model.Invoice$Rendering$Pdf"
+    },
+    {
+      "type": "com.stripe.model.Invoice$ShippingCost"
+    },
+    {
+      "type": "com.stripe.model.Invoice$ShippingCost$Tax"
+    },
+    {
+      "type": "com.stripe.model.Invoice$StatusTransitions"
+    },
+    {
+      "type": "com.stripe.model.Invoice$ThresholdReason"
+    },
+    {
+      "type": "com.stripe.model.Invoice$ThresholdReason$ItemReason"
+    },
+    {
+      "type": "com.stripe.model.Invoice$TotalDiscountAmount"
+    },
+    {
+      "type": "com.stripe.model.Invoice$TotalPretaxCreditAmount"
+    },
+    {
+      "type": "com.stripe.model.Invoice$TotalTax"
+    },
+    {
+      "type": "com.stripe.model.Invoice$TotalTax$TaxRateDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$DiscountAmount"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$InvoiceItemDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$InvoiceItemDetails$ProrationDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$InvoiceItemDetails$ProrationDetails$CreditedItems"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$SubscriptionItemDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$SubscriptionItemDetails$ProrationDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Parent$SubscriptionItemDetails$ProrationDetails$CreditedItems"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Period"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$PretaxCreditAmount"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Pricing"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Pricing$PriceDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Tax"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItem$Tax$TaxRateDetails"
+    },
+    {
+      "type": "com.stripe.model.InvoiceLineItemCollection"
+    },
+    {
+      "type": "com.stripe.model.InvoicePayment"
+    },
+    {
+      "type": "com.stripe.model.InvoicePayment$Payment"
+    },
+    {
+      "type": "com.stripe.model.InvoicePayment$StatusTransitions"
+    },
+    {
+      "type": "com.stripe.model.InvoicePaymentCollection"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AmountDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AmountDetails$Errors"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AmountDetails$Shipping"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AmountDetails$Tax"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AmountDetails$Tip"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$AutomaticPaymentMethods"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Hooks"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Hooks$Inputs"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Hooks$Inputs$Tax"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$ManagedPayments"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$AlipayHandleRedirect"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$BlikAuthorize"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$BoletoDisplayDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$CardAwaitNotification"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$CashappHandleRedirectOrDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$CashappHandleRedirectOrDisplayQrCode$QrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$Aba"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$Iban"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$SortCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$Spei"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$Swift"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$DisplayBankTransferInstructions$FinancialAddress$Zengin"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KlarnaDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails$Stores"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails$Stores$Familymart"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails$Stores$Lawson"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails$Stores$Ministop"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$KonbiniDisplayDetails$Stores$Seicomart"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$MultibancoDisplayDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$OxxoDisplayDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$PaynowDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$PixDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$PromptpayDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$RedirectToUrl"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$SwishHandleRedirectOrDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$SwishHandleRedirectOrDisplayQrCode$QrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$UpiHandleRedirectOrDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$UpiHandleRedirectOrDisplayQrCode$QrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$VerifyWithMicrodeposits"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$WechatPayDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$WechatPayRedirectToAndroidApp"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$NextAction$WechatPayRedirectToIosApp"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodConfigurationDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$AcssDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Affirm"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$AfterpayClearpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Alipay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Alma"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$AuBecsDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$BacsDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$BacsDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Billie"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Bizum"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Blik"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Boleto"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Card"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Card$Installments"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Card$Installments$AvailablePlan"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Card$Installments$Plan"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Card$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$CardPresent$Routing"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Cashapp"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Crypto"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$CustomerBalance"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$CustomerBalance$BankTransfer"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$CustomerBalance$BankTransfer$EuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Eps"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Fpx"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Giropay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Grabpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Ideal"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$InteracPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$KakaoPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Klarna"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Konbini"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$KrCard"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Link"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$MbWay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Mobilepay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Multibanco"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$NaverPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$NzBankAccount"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Oxxo"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$P24"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$PayByBank"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Payco"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Paynow"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Paypal"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Payto"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Payto$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Pix"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Pix$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Promptpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$RevolutPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$SamsungPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Satispay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Scalapay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$SepaDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Sofort"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Sunbit"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Swish"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Twint"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Upi"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$UsBankAccount$FinancialConnections"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$UsBankAccount$FinancialConnections$Filters"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$UsBankAccount$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$WechatPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PaymentMethodOptions$Zip"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$PresentmentDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Processing"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Processing$Card"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$Processing$Card$CustomerNotification"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$TransferData"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntent$TransferData$PaymentData"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$PaymentMethodOptions$Card"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$PaymentMethodOptions$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$PaymentMethodOptions$Klarna"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$PaymentMethodOptions$Paypal"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItem$Tax"
+    },
+    {
+      "type": "com.stripe.model.PaymentIntentAmountDetailsLineItemCollection"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Affirm"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$AfterpayClearpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Alipay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Alma"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$AuBecsDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$BacsDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Billie"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$BillingDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Bizum"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Blik"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Boleto"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Checks"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom$PaymentMethodDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom$PaymentMethodDetails$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom$PaymentMethodDetails$CardPresent$Offline"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom$PaymentMethodDetails$CardPresent$Receipt"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$GeneratedFrom$PaymentMethodDetails$CardPresent$Wallet"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Networks"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$ThreeDSecureUsage"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$AmexExpressCheckout"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$ApplePay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$GooglePay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$Link"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$Masterpass"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$SamsungPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Card$Wallet$VisaCheckout"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$CardPresent$Networks"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$CardPresent$Offline"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$CardPresent$Wallet"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Cashapp"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Crypto"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Custom"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Custom$Logo"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$CustomerBalance"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Eps"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Fpx"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Giropay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Grabpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Ideal"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$InteracPresent"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$InteracPresent$Networks"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$KakaoPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Klarna"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Klarna$Dob"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Konbini"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$KrCard"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Link"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$MbWay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Mobilepay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Multibanco"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$NaverPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$NzBankAccount"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Oxxo"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$P24"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$PayByBank"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Payco"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Paynow"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Paypal"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Payto"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Pix"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Promptpay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$RadarOptions"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$RevolutPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$SamsungPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Satispay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Scalapay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$SepaDebit$GeneratedFrom"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Sofort"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Sunbit"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Swish"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Twint"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Upi"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$UsBankAccount$Networks"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$UsBankAccount$StatusDetails"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$UsBankAccount$StatusDetails$Blocked"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$WechatPay"
+    },
+    {
+      "type": "com.stripe.model.PaymentMethod$Zip"
+    },
+    {
+      "type": "com.stripe.model.Payout"
+    },
+    {
+      "type": "com.stripe.model.Payout$TraceId"
+    },
+    {
+      "type": "com.stripe.model.Person"
+    },
+    {
+      "type": "com.stripe.model.Person$AdditionalTosAcceptances"
+    },
+    {
+      "type": "com.stripe.model.Person$AdditionalTosAcceptances$Account"
+    },
+    {
+      "type": "com.stripe.model.Person$AddressKana"
+    },
+    {
+      "type": "com.stripe.model.Person$AddressKanji"
+    },
+    {
+      "type": "com.stripe.model.Person$Dob"
+    },
+    {
+      "type": "com.stripe.model.Person$FutureRequirements"
+    },
+    {
+      "type": "com.stripe.model.Person$FutureRequirements$Alternative"
+    },
+    {
+      "type": "com.stripe.model.Person$FutureRequirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.Person$Relationship"
+    },
+    {
+      "type": "com.stripe.model.Person$Requirements"
+    },
+    {
+      "type": "com.stripe.model.Person$Requirements$Alternative"
+    },
+    {
+      "type": "com.stripe.model.Person$Requirements$Errors"
+    },
+    {
+      "type": "com.stripe.model.Person$UsCfpbData"
+    },
+    {
+      "type": "com.stripe.model.Person$UsCfpbData$EthnicityDetails"
+    },
+    {
+      "type": "com.stripe.model.Person$UsCfpbData$RaceDetails"
+    },
+    {
+      "type": "com.stripe.model.Person$Verification"
+    },
+    {
+      "type": "com.stripe.model.Person$Verification$AdditionalDocument"
+    },
+    {
+      "type": "com.stripe.model.Person$Verification$Document"
+    },
+    {
+      "type": "com.stripe.model.Plan"
+    },
+    {
+      "type": "com.stripe.model.Plan$Tier"
+    },
+    {
+      "type": "com.stripe.model.Plan$TransformUsage"
+    },
+    {
+      "type": "com.stripe.model.Price$CurrencyOption"
+    },
+    {
+      "type": "com.stripe.model.Price$CurrencyOption$CustomUnitAmount"
+    },
+    {
+      "type": "com.stripe.model.Price$CurrencyOption$Tier"
+    },
+    {
+      "type": "com.stripe.model.Price$CustomUnitAmount"
+    },
+    {
+      "type": "com.stripe.model.Price$Recurring"
+    },
+    {
+      "type": "com.stripe.model.Price$Tier"
+    },
+    {
+      "type": "com.stripe.model.Price$TransformQuantity"
+    },
+    {
+      "type": "com.stripe.model.Refund"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Affirm"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$AfterpayClearpay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Alipay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Alma"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$AuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Blik"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$BrBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Card"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Cashapp"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Crypto"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$CustomerCashBalance"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Eps"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$EuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$GbBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Giropay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Grabpay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$JpBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Klarna"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$MbWay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Multibanco"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$MxBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$NzBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$P24"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Paynow"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Paypal"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Pix"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Revolut"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Scalapay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Sofort"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Swish"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$ThBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Twint"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$UsBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$WechatPay"
+    },
+    {
+      "type": "com.stripe.model.Refund$DestinationDetails$Zip"
+    },
+    {
+      "type": "com.stripe.model.Refund$NextAction"
+    },
+    {
+      "type": "com.stripe.model.Refund$NextAction$DisplayDetails"
+    },
+    {
+      "type": "com.stripe.model.Refund$NextAction$DisplayDetails$EmailSent"
+    },
+    {
+      "type": "com.stripe.model.Refund$PresentmentDetails"
+    },
+    {
+      "type": "com.stripe.model.RefundCollection"
+    },
+    {
+      "type": "com.stripe.model.ReserveTransaction"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$AutomaticPaymentMethods"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$ManagedPayments"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$BlikAuthorize"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$CashappHandleRedirectOrDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$CashappHandleRedirectOrDisplayQrCode$QrCode"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$PixDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$RedirectToUrl"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$UpiHandleRedirectOrDisplayQrCode"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$UpiHandleRedirectOrDisplayQrCode$QrCode"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$NextAction$VerifyWithMicrodeposits"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodConfigurationDetails"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$AcssDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$AmazonPay"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$BacsDebit"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$BacsDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Bizum"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Card"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Card$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Klarna"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Link"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Paypal"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Payto"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Payto$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Pix"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Pix$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$SepaDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Upi"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$Upi$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$UsBankAccount$FinancialConnections"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$UsBankAccount$FinancialConnections$Filters"
+    },
+    {
+      "type": "com.stripe.model.SetupIntent$PaymentMethodOptions$UsBankAccount$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.ShippingDetails"
+    },
+    {
+      "type": "com.stripe.model.Source"
+    },
+    {
+      "type": "com.stripe.model.Source$AchCreditTransfer"
+    },
+    {
+      "type": "com.stripe.model.Source$AchDebit"
+    },
+    {
+      "type": "com.stripe.model.Source$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.Source$Alipay"
+    },
+    {
+      "type": "com.stripe.model.Source$AuBecsDebit"
+    },
+    {
+      "type": "com.stripe.model.Source$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.Source$Card"
+    },
+    {
+      "type": "com.stripe.model.Source$CardPresent"
+    },
+    {
+      "type": "com.stripe.model.Source$CodeVerification"
+    },
+    {
+      "type": "com.stripe.model.Source$Eps"
+    },
+    {
+      "type": "com.stripe.model.Source$Giropay"
+    },
+    {
+      "type": "com.stripe.model.Source$Ideal"
+    },
+    {
+      "type": "com.stripe.model.Source$Klarna"
+    },
+    {
+      "type": "com.stripe.model.Source$Multibanco"
+    },
+    {
+      "type": "com.stripe.model.Source$Owner"
+    },
+    {
+      "type": "com.stripe.model.Source$P24"
+    },
+    {
+      "type": "com.stripe.model.Source$Receiver"
+    },
+    {
+      "type": "com.stripe.model.Source$Redirect"
+    },
+    {
+      "type": "com.stripe.model.Source$SepaCreditTransfer"
+    },
+    {
+      "type": "com.stripe.model.Source$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.Source$Sofort"
+    },
+    {
+      "type": "com.stripe.model.Source$SourceOrder"
+    },
+    {
+      "type": "com.stripe.model.Source$SourceOrder$Item"
+    },
+    {
+      "type": "com.stripe.model.Source$ThreeDSecure"
+    },
+    {
+      "type": "com.stripe.model.Source$Wechat"
+    },
+    {
+      "type": "com.stripe.model.StripeCollection",
+      "fields": [
+        {
+          "name": "data"
+        },
+        {
+          "name": "object"
+        }
+      ]
+    },
+    {
+      "type": "com.stripe.model.StripeError"
+    },
+    {
+      "type": "com.stripe.model.Subscription$AutomaticTax"
+    },
+    {
+      "type": "com.stripe.model.Subscription$AutomaticTax$Liability"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingCycleAnchorConfig"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingMode"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingMode$Flexible"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingSchedule"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingSchedule$AppliesTo"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingSchedule$BillUntil"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingSchedule$BillUntil$Duration"
+    },
+    {
+      "type": "com.stripe.model.Subscription$BillingThresholds"
+    },
+    {
+      "type": "com.stripe.model.Subscription$CancellationDetails"
+    },
+    {
+      "type": "com.stripe.model.Subscription$InvoiceSettings"
+    },
+    {
+      "type": "com.stripe.model.Subscription$InvoiceSettings$CustomField"
+    },
+    {
+      "type": "com.stripe.model.Subscription$InvoiceSettings$Issuer"
+    },
+    {
+      "type": "com.stripe.model.Subscription$ManagedPayments"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PauseCollection"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$AcssDebit"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$AcssDebit$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Bancontact"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Card"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Card$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$CustomerBalance"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$CustomerBalance$BankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$CustomerBalance$BankTransfer$EuBankTransfer"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Konbini"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Payto"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Payto$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Pix"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Pix$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$SepaDebit"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Upi"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$Upi$MandateOptions"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$UsBankAccount$FinancialConnections"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PaymentSettings$PaymentMethodOptions$UsBankAccount$FinancialConnections$Filters"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PendingInvoiceItemInterval"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PendingUpdate"
+    },
+    {
+      "type": "com.stripe.model.Subscription$PresentmentDetails"
+    },
+    {
+      "type": "com.stripe.model.Subscription$TransferData"
+    },
+    {
+      "type": "com.stripe.model.Subscription$TrialSettings"
+    },
+    {
+      "type": "com.stripe.model.Subscription$TrialSettings$EndBehavior"
+    },
+    {
+      "type": "com.stripe.model.SubscriptionItem$BillingThresholds"
+    },
+    {
+      "type": "com.stripe.model.TaxDeductedAtSource"
+    },
+    {
+      "type": "com.stripe.model.TaxRate"
+    },
+    {
+      "type": "com.stripe.model.TaxRate$FlatAmount"
+    },
+    {
+      "type": "com.stripe.model.Topup"
+    },
+    {
+      "type": "com.stripe.model.Topup$PaymentMethodOptions"
+    },
+    {
+      "type": "com.stripe.model.Topup$PaymentMethodOptions$UsBankAccount"
+    },
+    {
+      "type": "com.stripe.model.Transfer"
+    },
+    {
+      "type": "com.stripe.model.TransferReversal"
+    },
+    {
+      "type": "com.stripe.model.TransferReversalCollection"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$AmountDetails"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet$CardholderPromptData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet$ReportedBreakdown"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet$ReportedBreakdown$Fuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet$ReportedBreakdown$NonFuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fleet$ReportedBreakdown$Tax"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$FraudChallenge"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Fuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$MerchantData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$NetworkData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$PendingRequest"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$PendingRequest$AmountDetails"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$RequestHistory"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$RequestHistory$AmountDetails"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$Treasury"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$VerificationData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$VerificationData$AuthenticationExemption"
+    },
+    {
+      "type": "com.stripe.model.issuing.Authorization$VerificationData$ThreeDSecure"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$LatestFraudWarning"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$LifecycleControls"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$LifecycleControls$CancelAfter"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Shipping"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Shipping$AddressValidation"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Shipping$Customs"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$SpendingControls"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$SpendingControls$SpendingLimit"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Wallets"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Wallets$ApplePay"
+    },
+    {
+      "type": "com.stripe.model.issuing.Card$Wallets$GooglePay"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Billing"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Company"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual$CardIssuing"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual$CardIssuing$UserTermsAcceptance"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual$Dob"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual$Verification"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Individual$Verification$Document"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$Requirements"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$SpendingControls"
+    },
+    {
+      "type": "com.stripe.model.issuing.Cardholder$SpendingControls$SpendingLimit"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$Canceled"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$Duplicate"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$Fraudulent"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$MerchandiseNotAsDescribed"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$NoValidAuthorization"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$NotReceived"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$Other"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Evidence$ServiceNotAsDescribed"
+    },
+    {
+      "type": "com.stripe.model.issuing.Dispute$Treasury"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$AmountDetails"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$MerchantData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$NetworkData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet$CardholderPromptData"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet$ReportedBreakdown"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet$ReportedBreakdown$Fuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet$ReportedBreakdown$NonFuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fleet$ReportedBreakdown$Tax"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Flight"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Flight$Segment"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Fuel"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Lodging"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$PurchaseDetails$Receipt"
+    },
+    {
+      "type": "com.stripe.model.issuing.Transaction$Treasury"
+    },
+    {
+      "type": "com.stripe.net.ApiResource"
+    }
+  ]
+}

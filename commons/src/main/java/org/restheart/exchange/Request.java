@@ -209,8 +209,8 @@ public abstract class Request<T> extends Exchange<T> {
     @Deprecated
     public String getQueryParameterOfDefault(final String name, final String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
-            ? wrapped.getQueryParameters().get(name).getFirst()
-            : defaultValue;
+                ? wrapped.getQueryParameters().get(name).getFirst()
+                : defaultValue;
     }
 
     /**
@@ -226,8 +226,8 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public String getQueryParameterOrDefault(final String name, final String defaultValue) {
         return wrapped.getQueryParameters().containsKey(name)
-            ? wrapped.getQueryParameters().get(name).getFirst()
-            : defaultValue;
+                ? wrapped.getQueryParameters().get(name).getFirst()
+                : defaultValue;
     }
 
     /**
@@ -332,8 +332,8 @@ public abstract class Request<T> extends Exchange<T> {
         final var match = ptm.match(getPath());
 
         return match != null
-            ? ptm.match(getPath()).getParameters()
-            : new HashMap<>();
+                ? ptm.match(getPath()).getParameters()
+                : new HashMap<>();
     }
 
     /**
@@ -352,8 +352,8 @@ public abstract class Request<T> extends Exchange<T> {
         final var params = getPathParams(pathTemplate);
 
         return params != null
-            ? params.get(paramName)
-            : null;
+                ? params.get(paramName)
+                : null;
     }
 
     /**
@@ -420,8 +420,8 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public Account getAuthenticatedAccount() {
         return getWrappedExchange().getSecurityContext() != null
-            ? getWrappedExchange().getSecurityContext().getAuthenticatedAccount()
-            : null;
+                ? getWrappedExchange().getSecurityContext().getAuthenticatedAccount()
+                : null;
     }
 
     /**
@@ -639,8 +639,8 @@ public abstract class Request<T> extends Exchange<T> {
         final var val = getWrappedExchange().getAttachment(ATTACHED_PARAMS_KEY).get(key);
 
         return val == null
-            ? null
-            : (V) attachedParams().get(key);
+                ? null
+                : (V) attachedParams().get(key);
     }
 
     /**

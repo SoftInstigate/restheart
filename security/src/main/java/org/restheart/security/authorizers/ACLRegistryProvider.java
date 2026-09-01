@@ -25,7 +25,7 @@ import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 
-@RegisterPlugin(name="acl-registry", description="provides the ACLRegistry to programmatically define an ACL")
+@RegisterPlugin(name = "acl-registry", description = "provides the ACLRegistry to programmatically define an ACL")
 public class ACLRegistryProvider implements Provider<ACLRegistry> {
 
     @Override

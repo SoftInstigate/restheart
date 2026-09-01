@@ -48,7 +48,7 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
     private final String collection;
     private final long queryTimeLimit;
 
-    public static void setMongoClient(MongoClient mClient){
+    public static void setMongoClient(MongoClient mClient) {
         mongoClient = mClient;
     }
 
@@ -89,7 +89,7 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
         try {
             // if there are at least 2 queries within the batch
-            if (queries.size() > 1){
+            if (queries.size() > 1) {
                 var mergedCond = new BsonArray();
                 var listOfFacets = new ArrayList<Facet>();
 
@@ -110,9 +110,9 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
                 stages.add(Aggregates.facet(listOfFacets));
 
                 var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class)
-                    .aggregate(stages)
-                    .allowDiskUse(true)
-                    .maxTime(this.queryTimeLimit, TimeUnit.MILLISECONDS);
+                        .aggregate(stages)
+                        .allowDiskUse(true)
+                        .maxTime(this.queryTimeLimit, TimeUnit.MILLISECONDS);
 
                 var aggResult = new BsonArray();
 
@@ -136,12 +136,12 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
             }
 
             return CompletableFuture.completedFuture(res);
-        } catch(MongoExecutionTimeoutException toe) {
+        } catch (MongoExecutionTimeoutException toe) {
             throw new GraphQLQueryTimeoutException("Maximum query time limit of " + this.queryTimeLimit + "ms exceeded");
         }
     }
 
-    private ArrayList<Bson> getQueryStages(BsonDocument queryDoc){
+    private ArrayList<Bson> getQueryStages(BsonDocument queryDoc) {
         var stages = new ArrayList<Bson>();
 
         if (queryDoc.containsKey("find")) {

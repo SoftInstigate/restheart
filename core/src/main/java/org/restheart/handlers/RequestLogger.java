@@ -164,8 +164,8 @@ public class RequestLogger extends PipelinedHandler {
         if (requestsLogExcludePatterns.size() == 1) {
             final String pattern = requestsLogExcludePatterns.get(0);
             return matchesPattern(requestPath, pattern)
-                ? pattern
-                : null;
+                    ? pattern
+                    : null;
         }
 
         // Multiple patterns - use stream for flexibility
@@ -260,11 +260,11 @@ public class RequestLogger extends PipelinedHandler {
 
         // Pre-allocate StringBuilder with appropriate capacity based on log level
         final StringBuilder sb = new StringBuilder(logLevel == 1
-            ? 256
-            : 2048);
+                ? 256
+                : 2048);
         final long start = request != null && request.getStartTime() != null
-            ? request.getStartTime()
-            : System.currentTimeMillis();
+                ? request.getStartTime()
+                : System.currentTimeMillis();
 
         if (logLevel == 1) {
             logRequestSummary(exchange, sb);
@@ -324,14 +324,14 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     private void logRequestPipelineInfo(final HttpServerExchange exchange, final JsonProxyRequest request,
-            final StringBuilder sb) {
+                                        final StringBuilder sb) {
         sb.append("\n----------------------------REQUEST---------------------------\n");
 
         sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
 
         final var pb = request == null
-            ? null
-            : request.getPipelineInfo();
+                ? null
+                : request.getPipelineInfo();
 
         if (pb != null) {
             sb.append("          servedBy=").append(pb.getType().name().toLowerCase()).append(" ");
@@ -354,7 +354,7 @@ public class RequestLogger extends PipelinedHandler {
         header.stream().forEach(value -> {
             if (header.getHeaderName() != null
                     && "Authorization".equalsIgnoreCase(header
-                            .getHeaderName().toString())) {
+                    .getHeaderName().toString())) {
                 value = "**********";
             }
 
@@ -376,8 +376,8 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     private void addExchangeCompleteListener(final HttpServerExchange exchange, final Integer logLevel,
-            final StringBuilder sb,
-            final long start) {
+                                             final StringBuilder sb,
+                                             final long start) {
         exchange.addExchangeCompleteListener(
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
                     if (logLevel < 1) {
@@ -421,7 +421,7 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     private void logResponseSummary(final HttpServerExchange exchange, final StringBuilder sb, final long start,
-            final HttpServerExchange exchange1) {
+                                    final HttpServerExchange exchange1) {
         sb.append("            status=");
 
         if (exchange.getStatusCode() >= 300) {
@@ -440,7 +440,7 @@ public class RequestLogger extends PipelinedHandler {
         header.stream().forEach(value -> {
             if (header.getHeaderName() != null
                     && AUTH_TOKEN_HEADER.toString().equalsIgnoreCase(header
-                            .getHeaderName().toString())) {
+                    .getHeaderName().toString())) {
                 value = "**********";
             }
 
@@ -460,7 +460,7 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     private void logResponseAuthDetails(final StringBuilder sb, final HttpServerExchange exchange1,
-            final SecurityContext sc) {
+                                        final SecurityContext sc) {
         sb.append("--------------------------RESPONSE--------------------------\n");
         if (sc != null) {
             if (sc.isAuthenticated()) {
@@ -478,7 +478,7 @@ public class RequestLogger extends PipelinedHandler {
     }
 
     private void logResponseDetails(final HttpServerExchange exchange, final StringBuilder sb, final long start,
-            final HttpServerExchange exchange1, final SecurityContext sc) {
+                                    final HttpServerExchange exchange1, final SecurityContext sc) {
         sb.append(" =>").append(" status=");
 
         if (exchange.getStatusCode() >= 300 && exchange.getStatusCode() != 304) {

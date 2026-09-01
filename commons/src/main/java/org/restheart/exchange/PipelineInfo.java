@@ -68,24 +68,25 @@ public class PipelineInfo {
      */
     public enum PIPELINE_TYPE {
         /** Service pipeline for dynamic content generation and API operations. */
-        SERVICE, 
-        
+        SERVICE,
+
         /** Proxy pipeline for forwarding requests to backend services. */
-        PROXY, 
-        
+        PROXY,
+
         /** Static resource pipeline for serving files from the filesystem. */
         STATIC_RESOURCE
-    };
+    }
+    ;
 
     /** The type of pipeline handling this request. */
     private final PIPELINE_TYPE type;
-    
+
     /** The URI pattern that this pipeline matches against. */
     private final String uri;
-    
+
     /** The policy used for matching URIs against this pipeline. */
     private final MATCH_POLICY matchPolicy;
-    
+
     /** The name identifier for this specific pipeline instance. */
     private final String name;
 

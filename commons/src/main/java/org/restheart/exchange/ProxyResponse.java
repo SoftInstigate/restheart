@@ -174,7 +174,7 @@ public abstract class ProxyResponse<T> extends Response<T> implements BufferedEx
         // close the current buffer pool
         var oldBuffers = getWrappedExchange().getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY);
         if (oldBuffers != null) {
-            for (var oldBuffer: oldBuffers) {
+            for (var oldBuffer : oldBuffers) {
                 if (oldBuffer != null) {
                     oldBuffer.close();
                 }
@@ -273,10 +273,10 @@ public abstract class ProxyResponse<T> extends Response<T> implements BufferedEx
      * @throws IOException if there is an error generating the error content
      */
     protected abstract T getErrorContent(int code,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) throws IOException;
+                                         String httpStatusText,
+                                         String message,
+                                         Throwable t,
+                                         boolean includeStackTrace) throws IOException;
 
     /**
      * Closes this resource, relinquishing any underlying buffer resources.
@@ -302,7 +302,7 @@ public abstract class ProxyResponse<T> extends Response<T> implements BufferedEx
      */
     public void close() {
         if (isContentAvailable()) {
-            for (var b: this.getBuffer()) {
+            for (var b : this.getBuffer()) {
                 if (b != null) {
                     b.close();
                 }

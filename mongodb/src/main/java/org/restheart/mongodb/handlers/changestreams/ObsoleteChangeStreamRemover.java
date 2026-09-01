@@ -38,20 +38,20 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
         } else if ((request.isPut() || request.isPatch()) && request.isCollection()) {
             // here we need to check if the collection stream definitions got updated
             var oldStreams = response.getDbOperationResult() != null
-                ? response.getDbOperationResult().getOldData() != null
-                ? response.getDbOperationResult().getOldData().containsKey("streams")
-                ? response.getDbOperationResult().getOldData().get("streams")
-                : null : null : null;
+                    ? response.getDbOperationResult().getOldData() != null
+                    ? response.getDbOperationResult().getOldData().containsKey("streams")
+                    ? response.getDbOperationResult().getOldData().get("streams")
+                    : null : null : null;
 
             var newStreams = response.getDbOperationResult() != null
-                ? response.getDbOperationResult().getNewData() != null
-                ? response.getDbOperationResult().getNewData().containsKey("streams")
-                ? response.getDbOperationResult().getNewData().get("streams")
-                : null : null : null;
+                    ? response.getDbOperationResult().getNewData() != null
+                    ? response.getDbOperationResult().getNewData().containsKey("streams")
+                    ? response.getDbOperationResult().getNewData().get("streams")
+                    : null : null : null;
 
             if ((oldStreams == null && newStreams != null)
-            || (oldStreams != null && newStreams == null)
-            || (oldStreams != null && newStreams != null
+                    || (oldStreams != null && newStreams == null)
+                    || (oldStreams != null && newStreams != null
                     && !oldStreams.equals(newStreams))) { // <- NEED TO CHECK THIS EQUALS
                 closeAllOnCollection(request.getDBName(), request.getCollectionName());
             }
@@ -71,8 +71,8 @@ public class ObsoleteChangeStreamRemover implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return (request.isDelete() && request.isCollection())
-        || (request.isPut() && request.isCollection())
-        || (request.isPatch() && request.isCollection())
-        || (request.isDelete() && request.isDb());
+                || (request.isPut() && request.isCollection())
+                || (request.isPatch() && request.isCollection())
+                || (request.isDelete() && request.isDb());
     }
 }

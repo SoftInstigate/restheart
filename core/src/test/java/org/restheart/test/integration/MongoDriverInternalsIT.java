@@ -101,7 +101,7 @@ public class MongoDriverInternalsIT {
                     .getCollection(TEST_COLLECTION, BsonDocument.class);
 
             List<BsonDocument> docs = new ArrayList<>();
-            for (int i = 0; i < TEST_DOC_COUNT; i++) {
+            for (int i = 0;i < TEST_DOC_COUNT;i++) {
                 BsonDocument doc = new BsonDocument();
                 doc.put("_id", new BsonInt32(i));
                 doc.put("value", new BsonString("test-" + i));
@@ -168,8 +168,8 @@ public class MongoDriverInternalsIT {
             // After exhaustion, curBatch may be null
             List<BsonDocument> cursorDocs = cursorDocs(cursor);
             LOGGER.info("Exhausted cursor batch state: {}", cursorDocs == null
-                ? "null"
-                : cursorDocs.size() + " docs");
+                    ? "null"
+                    : cursorDocs.size() + " docs");
 
             // We don't assert anything here because null is valid for exhausted cursors
             // This test just documents the behavior

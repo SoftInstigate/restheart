@@ -50,9 +50,9 @@ package org.restheart.exchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class InvalidMetadataException extends Exception {
-	private static final long serialVersionUID = -4824392874427008468L;
+    private static final long serialVersionUID = -4824392874427008468L;
 
-	/**
+    /**
      * Constructs a new InvalidMetadataException with no detail message.
      * <p>
      * This constructor creates an exception without a specific error message.

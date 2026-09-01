@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
-@RegisterPlugin(name="graphAppDefinitionPatchChecker",
+@RegisterPlugin(name = "graphAppDefinitionPatchChecker",
         description = "checks GraphQL application definitions on PATCH requests",
         interceptPoint = RESPONSE,
         enabledByDefault = true
@@ -76,7 +76,7 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             } else {
                 this.enabled = isGQLSrvEnabled();
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -97,25 +97,25 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
      * @return true if there is a collision, false otherwise
      */
     private boolean hasUriCollision(String db, String currentDocId, String targetUri) {
-		var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
+        var collection = mclient.getDatabase(db).getCollection(coll, org.bson.BsonDocument.class);
 
         // Search for apps that would be accessible at the same URI
         // Exclude the current document from the search
         var orConditions = org.restheart.utils.BsonUtils.array()
-            // Another app explicitly sets descriptor.uri to our target URI
-            .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", targetUri))
-            // Another app has _id that would default to our target URI
-            .add(org.restheart.utils.BsonUtils.document()
-                .put("_id", targetUri)
-                .put("$or", org.restheart.utils.BsonUtils.array()
-                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", org.restheart.utils.BsonUtils.document().put("$exists", false)))
-                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", (String) null))
-                )
-            );
+                // Another app explicitly sets descriptor.uri to our target URI
+                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", targetUri))
+                // Another app has _id that would default to our target URI
+                .add(org.restheart.utils.BsonUtils.document()
+                        .put("_id", targetUri)
+                        .put("$or", org.restheart.utils.BsonUtils.array()
+                                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", org.restheart.utils.BsonUtils.document().put("$exists", false)))
+                                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", (String) null))
+                        )
+                );
 
         var query = org.restheart.utils.BsonUtils.document()
-            .put("_id", org.restheart.utils.BsonUtils.document().put("$ne", currentDocId))
-            .put("$or", orConditions);
+                .put("_id", org.restheart.utils.BsonUtils.document().put("$ne", currentDocId))
+                .put("$or", orConditions);
 
         var conflictingApp = collection.find(query.get()).first();
         return conflictingApp != null;
@@ -128,8 +128,8 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             return;
         }
 
-		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         var appDef = response.getDbOperationResult().getNewData();
 
@@ -138,8 +138,8 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             var app = AppBuilder.build(appDef, db, false);
             // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
             var appUri = app.getDescriptor().getUri() != null
-                ? app.getDescriptor().getUri()
-                : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
+                    ? app.getDescriptor().getUri()
+                    : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
 
             // Check for URI collision
             var docId = appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "";
@@ -150,7 +150,7 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             }
 
             AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
-        } catch(GraphQLIllegalAppDefinitionException e) {
+        } catch (GraphQLIllegalAppDefinitionException e) {
             LOGGER.debug("Wrong GraphQL App definition", e);
             response.rollback(this.mclient);
             response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
@@ -159,16 +159,16 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest req, MongoResponse res) {
-		String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         return enabled
-            && db.equals(req.getDBName())
-            && this.coll.equals(req.getCollectionName())
-            && (req.isBulkDocuments()
-            || (req.isDocument()
-            && req.isPatch()
-            && res.getDbOperationResult() != null
-            && res.getDbOperationResult().getNewData() != null));
+                && db.equals(req.getDBName())
+                && this.coll.equals(req.getCollectionName())
+                && (req.isBulkDocuments()
+                || (req.isDocument()
+                && req.isPatch()
+                && res.getDbOperationResult() != null
+                && res.getDbOperationResult().getNewData() != null));
     }
 }

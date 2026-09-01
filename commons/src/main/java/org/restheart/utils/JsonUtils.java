@@ -33,4 +33,5 @@ package org.restheart.utils;
  * @deprecated Use {@link BsonUtils} instead for all JSON and BSON operations
  */
 @Deprecated
-public class JsonUtils extends BsonUtils {}
+public class JsonUtils extends BsonUtils {
+}

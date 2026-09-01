@@ -47,7 +47,7 @@ public class EchoResponseInterceptor implements ByteArrayInterceptor {
         response.getHeaders()
                 .add(HttpString.tryFromString("header"),
                         "added by echoResponseInterceptor "
-                        + request.getPath());
+                                + request.getPath());
 
         if (response.getContent() != null && response.isContentTypeJson()) {
             var _content = JsonParser.parseString(

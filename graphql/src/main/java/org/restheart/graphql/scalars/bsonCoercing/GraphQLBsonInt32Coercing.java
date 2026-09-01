@@ -37,14 +37,14 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
     @Override
     public Integer serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if(input instanceof BsonInt32 bsonInt32) {
+        } else if (input instanceof BsonInt32 bsonInt32) {
             return bsonInt32.getValue();
         } else if (input instanceof Integer integer) {
             return integer;
         } else {
-            throw new CoercingSerializeException("Expected types 'Integer' or 'BsonInt32' but was '" + typeName(input) +"'.");
+            throw new CoercingSerializeException("Expected types 'Integer' or 'BsonInt32' but was '" + typeName(input) + "'.");
         }
     }
 

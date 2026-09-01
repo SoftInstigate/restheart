@@ -27,14 +27,14 @@ public class DataLoaderSettings {
     private final boolean caching;
     private final long queryTimeLimit;
 
-    private DataLoaderSettings(Boolean batching, Boolean caching, Integer maxBatchSize, long queryTimeLimit){
+    private DataLoaderSettings(Boolean batching, Boolean caching, Integer maxBatchSize, long queryTimeLimit) {
         this.batching = batching;
         this.caching = caching;
         this.maxBatchSize = maxBatchSize;
         this.queryTimeLimit = queryTimeLimit;
     }
 
-    public static Builder builder(){
+    public static Builder builder() {
         return new Builder();
     }
 
@@ -42,7 +42,9 @@ public class DataLoaderSettings {
         return batching;
     }
 
-    public boolean getCaching(){ return  caching;}
+    public boolean getCaching() {
+        return caching;
+    }
 
     public int getMaxBatchSize() {
         return maxBatchSize;
@@ -52,50 +54,51 @@ public class DataLoaderSettings {
         return this.queryTimeLimit;
     }
 
-    public static class Builder{
+    public static class Builder {
 
         private Boolean batching;
         private Boolean caching;
         private Integer max_batch_size;
         private Long queryTimeLimit;
 
-        private Builder(){}
+        private Builder() {
+        }
 
-        public Builder batching(Boolean enable){
+        public Builder batching(Boolean enable) {
             this.batching = enable;
             return this;
         }
 
-        public Builder caching(Boolean enable){
+        public Builder caching(Boolean enable) {
             this.caching = enable;
             return this;
         }
 
-        public Builder max_batch_size(Integer size){
+        public Builder max_batch_size(Integer size) {
             this.max_batch_size = size;
             return this;
         }
 
-        public Builder queryTimeLimit(Long queryTimeLimit){
+        public Builder queryTimeLimit(Long queryTimeLimit) {
             this.queryTimeLimit = queryTimeLimit;
             return this;
         }
 
-        public DataLoaderSettings build(){
+        public DataLoaderSettings build() {
 
-            if (this.batching == null){
+            if (this.batching == null) {
                 this.batching = false;
             }
 
-            if (this.caching == null){
+            if (this.caching == null) {
                 this.caching = false;
             }
 
-            if (this.max_batch_size == null){
+            if (this.max_batch_size == null) {
                 this.max_batch_size = 0;
             }
 
-            if (this.queryTimeLimit == null){
+            if (this.queryTimeLimit == null) {
                 this.queryTimeLimit = 0l;
             }
 

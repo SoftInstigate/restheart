@@ -50,8 +50,8 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
     public AuthenticationConstraintHandler(PipelinedHandler next, Set<PluginRecord<Authorizer>> authorizers) {
         super(next);
         this.allowers = authorizers == null
-            ? Sets.newHashSet()
-            : authorizers.stream()
+                ? Sets.newHashSet()
+                : authorizers.stream()
                 .filter(a -> a.isEnabled())
                 .filter(a -> a.getInstance() != null)
                 .map(a -> a.getInstance())

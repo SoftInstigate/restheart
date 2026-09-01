@@ -20,13 +20,13 @@
 package org.restheart.security;
 
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.jayway.jsonpath.JsonPath;
 
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
@@ -311,195 +310,99 @@ public class AclVarsInterpolator {
             } else {
                 return new BsonArray();
             }
-        } else if ("%NOW".equals(value) || "@now".equals(value)) {
+        } else if ("%NOW".equals(value)) {
             return new BsonDateTime(Instant.now().getEpochSecond() * 1000);
-        } else if (value.equals("@user")) {
-            if (request == null || request.getAuthenticatedAccount() == null) {
-                return BsonNull.VALUE;
-            }
-
-            return switch (request.getAuthenticatedAccount()) {
-                case MongoRealmAccount maccount -> maccount.properties();
-                case FileRealmAccount faccount -> toBson(faccount.properties());
-                case JwtAccount jwtAccount -> {
-                    var jwt = jwtAccount.propertiesAsMap();
-                    // remove jwt specific fields, only using user properties
-                    jwt.remove("exp");
-                    jwt.remove("iss");
-                    jwt.remove("sub");
-                    yield toBson(jwt);
-                }
-                default -> BsonNull.VALUE;
-            };
-        } else if (value.equals("@filter")) {
-            return request.getFiltersDocument();
-        } else if (value.equals("@request")) {
-            return getRequestObject(request);
-        } else if (value.startsWith("@request.") && value.length() > 8) {
-            var requestObject = getRequestObject(request);
-            var prop = value.substring(9);
-
-            LOGGER.debug("request doc: {}", requestObject.toJson());
-
-            if (prop.contains(".")) {
-                try {
-                    var v = JsonPath.read(requestObject.toJson(), "$.".concat(prop));
-
-                    return BsonUtils.parse(v.toString());
-                } catch (Throwable pnfe) {
-                    return BsonNull.VALUE;
-                }
-            } else {
-                if (requestObject.containsKey(prop)) {
-                    return requestObject.get(prop);
-                } else {
-                    return BsonNull.VALUE;
-                }
-            }
-        } else if (value.equals("@request.body")) {
-            final BsonValue content;
-            try {
-              content = request.getContent();
-            } catch (Throwable t) {
-              LOGGER.debug("Error getting request content", t);
-              return BsonNull.VALUE;
-            }
-
-            if (content == null) {
-                return BsonNull.VALUE;
-            }
-            return content;
-        } else if (value.startsWith("@request.body.") && value.length() > 13) {
-            final BsonValue content;
-            try {
-              content = request.getContent();
-            } catch (Throwable t) {
-              LOGGER.debug("Error getting request content", t);
-              return BsonNull.VALUE;
-            }
-
-            if (content == null) {
-                return BsonNull.VALUE;
-            }
-
-            if (!(content instanceof BsonDocument contentDoc)) {
-                LOGGER.warn("@request.body variable used but request content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
-                return BsonNull.VALUE;
-            }
-
-            var prop = value.substring(14);
-
-            LOGGER.debug("request body doc: {}", contentDoc.toJson());
-
-            if (prop.contains(".")) {
-                // Use BsonUtils.get() for dot notation support
-                var _value = BsonUtils.get(contentDoc, prop);
-                return _value.orElse(BsonNull.VALUE);
-            } else {
-                if (contentDoc.containsKey(prop)) {
-                    return contentDoc.get(prop);
-                } else {
-                    return BsonNull.VALUE;
-                }
-            }
-        } else if (value.equals("@mongoPermissions")) {
-            if (MongoPermissions.of(request) != null) {
-                return MongoPermissions.of(request).asBson();
-            } else {
-                return BsonNull.VALUE;
-            }
-        } else if (value.startsWith("@mongoPermissions.") && value.length() > 17) {
-            if (MongoPermissions.of(request) != null) {
-                var doc = MongoPermissions.of(request).asBson();
-                var prop = value.substring(18);
-
-                LOGGER.debug("permission doc: {}", doc);
-
-                if (prop.contains(".")) {
-                    try {
-                        JsonElement v = JsonPath.read(doc.toJson(), "$.".concat(prop));
-
-                        return BsonUtils.parse(v.toString());
-                    } catch (Throwable pnfe) {
-                        return BsonNull.VALUE;
-                    }
-                } else {
-                    if (doc.containsKey(prop)) {
-                        return doc.get(prop);
-                    } else {
-                        return BsonNull.VALUE;
-                    }
-                }
-            } else {
-                return BsonNull.VALUE;
-            }
-        } else if (value.startsWith("@user.") && value.length() > 5) {
-            if (request.getAuthenticatedAccount() instanceof WithProperties<?> accountWithProperties) {
-                return fromProperties(accountWithProperties.propertiesAsMap(), value.substring(6));
-            } else {
-                return BsonNull.VALUE;
-            }
-        } else if (value.startsWith("@rnd(") && value.endsWith(")")) {
-            try {
-                var bitsStr = value.substring(5, value.length() - 1);
-                var bits = Integer.parseInt(bitsStr);
-                
-                if (bits <= 0 || bits > 4096) {
-                    LOGGER.warn("@rnd() bit length must be between 1 and 4096, got: {}", bits);
-                    return BsonNull.VALUE;
-                }
-                
-                var bytes = new byte[(bits + 7) / 8]; // Convert bits to bytes
-                new SecureRandom().nextBytes(bytes);
-                var hex = new BigInteger(1, bytes).toString(16);
-                
-                // Pad with leading zeros if necessary
-                while (hex.length() < bytes.length * 2) {
-                    hex = "0" + hex;
-                }
-                
-                return new BsonString(hex);
-            } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid @rnd() syntax: {}", value);
-                return BsonNull.VALUE;
-            }
-        } else if (value.startsWith("@qparams['") && value.endsWith("']")) {
-            var paramName = value.substring(10, value.length() - 2);
-            var exchange = request.getExchange();
-            
-            if (exchange != null) {
-                var queryParams = exchange.getQueryParameters();
-                
-                if (queryParams != null && queryParams.containsKey(paramName)) {
-                    var values = queryParams.get(paramName);
-                    if (values != null && !values.isEmpty()) {
-                        // Return first value if multiple exist
-                        return new BsonString(values.getFirst());
-                    }
-                }
-            }
-            
-            return BsonNull.VALUE;
-        } else if (value.startsWith("@qparams[\"") && value.endsWith("\"]")) {
-            var paramName = value.substring(10, value.length() - 2);
-            var exchange = request.getExchange();
-            
-            if (exchange != null) {
-                var queryParams = exchange.getQueryParameters();
-                
-                if (queryParams != null && queryParams.containsKey(paramName)) {
-                    var values = queryParams.get(paramName);
-                    if (values != null && !values.isEmpty()) {
-                        // Return first value if multiple exist
-                        return new BsonString(values.getFirst());
-                    }
-                }
-            }
-            
-            return BsonNull.VALUE;
+        } else if (value.startsWith("@")) {
+            // @user, @request(.body), @filter, @now, @mongoPermissions, @rnd(...), @qparams[...],
+            // and any custom variable registered via a VarResolver — see resolveVar().
+            return resolveVar(request, value);
         } else {
             return new BsonString(value);
         }
+    }
+
+    /**
+     * Dispatches a {@code @}-prefixed expression to its registered {@link VarResolver}.
+     *
+     * <p>Falls back to treating {@code value} as a literal string when no resolver is registered
+     * for the leading variable name — the same behavior an unrecognized {@code @foo} variable had
+     * before this SPI existed.
+     */
+    static BsonValue resolveVar(Request<?> request, String value) {
+        var resolverOpt = AclVarsRegistryImpl.getInstance().resolver(varName(value));
+
+        return resolverOpt.isEmpty()
+                ? new BsonString(value)
+                : resolveWithCache(request, resolverOpt.get(), value);
+    }
+
+    /**
+     * Extracts the resolver name from a {@code @name...} expression (without the leading
+     * {@code @}) — up to the first {@code .}, {@code (}, {@code [}, or end-of-string.
+     */
+    private static String varName(String value) {
+        var rest = value.substring(1);
+
+        for (var i = 0;i < rest.length();i++) {
+            var c = rest.charAt(i);
+            if (c == '.' || c == '(' || c == '[') {
+                return rest.substring(0, i);
+            }
+        }
+
+        return rest;
+    }
+
+    /**
+     * Resolves {@code var} via {@code resolver}, memoizing the result for the rest of the request
+     * when {@link VarResolver#cacheable()} is {@code true} — keyed by the full expression string,
+     * not just the resolver name, so e.g. {@code @user.a} and {@code @user.b} (same resolver,
+     * different expressions) don't collide. A resolver wanting to cache work shared across several
+     * of its own expressions (e.g. one expensive lookup behind many sub-properties) must do so
+     * itself — see {@link VarResolver}'s resolver contract.
+     */
+    private static BsonValue resolveWithCache(Request<?> request, VarResolver resolver, String var) {
+        if (request == null || !resolver.cacheable()) {
+            return safeResolve(resolver, request, var);
+        }
+
+        var cache = varsCache(request);
+        if (cache.containsKey(var)) {
+            return cache.get(var);
+        }
+
+        var resolved = safeResolve(resolver, request, var);
+        cache.put(var, resolved);
+        return resolved;
+    }
+
+    /**
+     * Invokes {@code resolver}, treating both a {@code null}/{@code BsonNull} return value and any
+     * thrown exception as "unresolved" ({@link BsonNull#VALUE}) — see {@link VarResolver}'s failure
+     * semantics: a broken resolver denies access, it never widens it.
+     */
+    private static BsonValue safeResolve(VarResolver resolver, Request<?> request, String var) {
+        try {
+            var resolved = resolver.resolve(request, var);
+            return resolved == null ? BsonNull.VALUE : resolved;
+        } catch (Throwable t) {
+            LOGGER.warn("VarResolver '{}' failed resolving '{}': {}", resolver.name(), var, t.toString());
+            return BsonNull.VALUE;
+        }
+    }
+
+    private static final String VARS_CACHE_ATTACHMENT = "org.restheart.security.aclVarsCache";
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, BsonValue> varsCache(Request<?> request) {
+        Map<String, BsonValue> cache = request.attachedParam(VARS_CACHE_ATTACHMENT);
+
+        if (cache == null) {
+            cache = new HashMap<>();
+            request.attachParam(VARS_CACHE_ATTACHMENT, cache);
+        }
+
+        return cache;
     }
 
     /**
@@ -527,20 +430,92 @@ public class AclVarsInterpolator {
             }
 
             // Interpolate @request.body variables
-			BsonDocument requestBody = null;
-			try {
-				requestBody = getRequestBodyDocument(request);
-			} catch(BadRequestException bre) {
-				// nothing to do
-			}
+            BsonDocument requestBody = null;
+            try {
+                requestBody = getRequestBodyDocument(request);
+            } catch (BadRequestException bre) {
+                // nothing to do
+            }
 
             if (requestBody != null && !requestBody.isEmpty()) {
                 interpolatedPredicate = interpolatePredicate(interpolatedPredicate, "@request.body.", requestBody);
             }
 
+            // Any other registered VarResolver — built-in ones beyond @user/@request.body
+            // (@request's metadata form, @filter, @now, @mongoPermissions, @rnd, @qparams) and any
+            // custom one a plugin registered. @user is fully handled above; @request is handled
+            // above for its .body form and completed here for everything else (bare @request,
+            // metadata properties).
+            interpolatedPredicate = interpolateOtherVars(request, interpolatedPredicate);
+
             return PredicateParser.parse(interpolatedPredicate, classLoader);
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + predicate, t);
+        }
+    }
+
+    /**
+     * Interpolates every registered {@link VarResolver} other than {@code user} — which
+     * {@link #interpolatePredicate(Request, String, ClassLoader)} already fully handles via the
+     * flatten-based {@code @user.} substitution above — directly against {@link #resolveVar},
+     * one full expression at a time. This is what makes built-ins beyond {@code @user}/
+     * {@code @request.body} (bare {@code @request}, {@code @filter}, {@code @now},
+     * {@code @mongoPermissions}, {@code @rnd}, {@code @qparams}) and any custom resolver usable in
+     * an ACL {@code predicate} string, not just in {@code readFilter}/{@code mergeRequest}.
+     */
+    private static String interpolateOtherVars(Request<?> request, String predicate) {
+        var result = predicate;
+
+        for (var name : AclVarsRegistryImpl.getInstance().names()) {
+            if ("user".equals(name)) {
+                continue;
+            }
+            result = interpolateResolverExpr(request, result, name);
+        }
+
+        return result;
+    }
+
+    /**
+     * Substitutes every occurrence of {@code @<resolverName>...} in {@code predicate} — as a
+     * bare variable, a dotted property path, or a {@code (...)}/{@code [...]} argument — with its
+     * resolved value formatted as a predicate literal, ignoring occurrences inside quoted strings.
+     * Unresolved occurrences (see {@link VarResolver} failure semantics) are replaced with a random
+     * token via {@link #nextToken()}, exactly like {@link #removeUnboundVariables(String, String)}
+     * does for {@code @user.}/{@code @request.body.}.
+     */
+    private static String interpolateResolverExpr(Request<?> request, String predicate, String resolverName) {
+        var regex = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|'(?:\\\\'|[^'])*'|(@" + Pattern.quote(resolverName)
+                + "(?![A-Za-z0-9_])(?:\\.[A-Za-z0-9_.]+|\\([^)]*\\)|\\[[^\\]]*\\])?)";
+
+        var m = Pattern.compile(regex).matcher(predicate);
+        var sb = new StringBuilder();
+
+        while (m.find()) {
+            if (!m.group().startsWith("\"") && !m.group().startsWith("'")) {
+                var resolved = resolveVar(request, m.group());
+                var replacement = resolved.isNull() ? nextToken() : formatForPredicate(resolved);
+                m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+            }
+        }
+
+        m.appendTail(sb);
+
+        return sb.toString();
+    }
+
+    /**
+     * Formats a resolved {@link BsonValue} as an Undertow predicate literal. A document (or any
+     * other non-primitive, non-array value) has no valid predicate literal representation — it is
+     * treated as unresolved rather than injecting invalid syntax into the predicate.
+     */
+    private static String formatForPredicate(BsonValue value) {
+        if (isJsonPrimitive(value)) {
+            return quote(jsonPrimitiveValue(value));
+        } else if (isJsonArray(value)) {
+            return jsonArrayValue(value.asArray());
+        } else {
+            return nextToken();
         }
     }
 
@@ -568,47 +543,47 @@ public class AclVarsInterpolator {
      * @param request The request to extract the body from
      * @return A BsonDocument containing the request body, or null if no body is available or not supported
      */
-    private static BsonDocument getRequestBodyDocument(Request<?> request) throws BadRequestException {
-  		return switch (request) {
-  			case null -> null;
-  			case BsonRequest bsonRequest -> {
-  			  final BsonValue content;
-          try {
-            content = bsonRequest.getContent();
-          } catch (Throwable t) {
-            LOGGER.debug("Error getting request content", t);
-            yield null;
-          }
-  				if (content == null) {
-  					yield null;
-  				}
-  				if (content instanceof BsonDocument doc) {
-  					yield doc;
-  				} else {
-  					LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
-  					yield null;
-  				}
-  			}
-  			case JsonRequest jsonRequest -> {
-          final JsonElement content;
-          try {
-            content = jsonRequest.getContent();
-          } catch (Throwable t) {
-            LOGGER.debug("Error getting request content", t);
-            yield null;
-          }
-  				if (content == null) {
-  					yield null;
-  				}
-  				if (content.isJsonObject()) {
-  					yield jsonObjectToBsonDocument(content.getAsJsonObject());
-  				} else {
-  					LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", content.getClass().getSimpleName());
-  					yield null;
-  				}
-  			}
-  			default -> null;
-  		};
+    static BsonDocument getRequestBodyDocument(Request<?> request) throws BadRequestException {
+        return switch (request) {
+            case null -> null;
+            case BsonRequest bsonRequest -> {
+                final BsonValue content;
+                try {
+                    content = bsonRequest.getContent();
+                } catch (Throwable t) {
+                    LOGGER.debug("Error getting request content", t);
+                    yield null;
+                }
+                if (content == null) {
+                    yield null;
+                }
+                if (content instanceof BsonDocument doc) {
+                    yield doc;
+                } else {
+                    LOGGER.debug("BsonRequest content is not a BsonDocument, it is {}", content.getClass().getSimpleName());
+                    yield null;
+                }
+            }
+            case JsonRequest jsonRequest -> {
+                final JsonElement content;
+                try {
+                    content = jsonRequest.getContent();
+                } catch (Throwable t) {
+                    LOGGER.debug("Error getting request content", t);
+                    yield null;
+                }
+                if (content == null) {
+                    yield null;
+                }
+                if (content.isJsonObject()) {
+                    yield jsonObjectToBsonDocument(content.getAsJsonObject());
+                } else {
+                    LOGGER.debug("JsonRequest content is not a JsonObject, it is {}", content.getClass().getSimpleName());
+                    yield null;
+                }
+            }
+            default -> null;
+        };
     }
 
     /**
@@ -775,7 +750,7 @@ public class AclVarsInterpolator {
 
         var flatten = BsonUtils.flatten(variableValues, true);
 
-        String[] ret = { predicate };
+        String[] ret = {predicate};
 
         // Sort keys by length in descending order to replace longer paths first
         // This prevents @user._id from becoming 'user'._id when @user is replaced first
@@ -826,7 +801,9 @@ public class AclVarsInterpolator {
     private static String jsonPrimitiveValue(BsonValue value) {
         return switch (value.getBsonType()) {
             case NULL -> "null";
-            case BOOLEAN -> value.asBoolean().toString();
+            // BsonBoolean.toString() returns "BsonBoolean{value=false}", not "false" — use the
+            // primitive boolean's own toString().
+            case BOOLEAN -> "" + value.asBoolean().getValue();
             case INT32 -> "" + value.asInt32().getValue();
             case INT64 -> "" + value.asInt64().getValue();
             case DOUBLE -> "" + value.asDouble().getValue();
@@ -879,7 +856,7 @@ public class AclVarsInterpolator {
         var inSingleQuotes = false;
         var currentString = new StringBuilder();
 
-        for (int i = 0; i < predicate.length(); i++) {
+        for (int i = 0;i < predicate.length();i++) {
             char c = predicate.charAt(i);
             char prevChar = i > 0 ? predicate.charAt(i - 1) : '\0';
 
@@ -890,8 +867,8 @@ public class AclVarsInterpolator {
                 if (inDoubleQuotes) {
                     // End of double-quoted string - convert to single quotes with placeholders
                     var escaped = currentString.toString()
-                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
-                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                            .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                            .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
                     result.append('\'').append(escaped).append('\'');
                     currentString.setLength(0);
                     inDoubleQuotes = false;
@@ -903,8 +880,8 @@ public class AclVarsInterpolator {
                 if (inSingleQuotes) {
                     // End of single-quoted string - replace internal quotes with placeholders
                     var escaped = currentString.toString()
-                        .replace("'", SINGLE_QUOTE_PLACEHOLDER)
-                        .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
+                            .replace("'", SINGLE_QUOTE_PLACEHOLDER)
+                            .replace("\"", DOUBLE_QUOTE_PLACEHOLDER);
                     result.append('\'').append(escaped).append('\'');
                     currentString.setLength(0);
                     inSingleQuotes = false;
@@ -1001,7 +978,7 @@ public class AclVarsInterpolator {
     }
 
     @SuppressWarnings("unchecked")
-    private static BsonValue fromProperties(Map<String, ? super Object> properties, String key) {
+    static BsonValue fromProperties(Map<String, ? super Object> properties, String key) {
         if (key.contains(".")) {
             var first = key.substring(0, key.indexOf("."));
             var last = key.substring(key.indexOf(".") + 1);
@@ -1053,7 +1030,7 @@ public class AclVarsInterpolator {
         }
     }
 
-    private static BsonValue toBson(Object obj) {
+    static BsonValue toBson(Object obj) {
         if (obj == null) {
             return BsonNull.VALUE;
         }
@@ -1084,25 +1061,25 @@ public class AclVarsInterpolator {
         };
     }
 
-    private static BsonDocument getRequestObject(final MongoRequest request) {
+    static BsonDocument getRequestObject(final MongoRequest request) {
         var exchange = request.getExchange();
 
         var properties = new BsonDocument();
 
         // the name of the db
         properties.put("db", request.getDBName() == null
-            ? BsonNull.VALUE
-            : new BsonString(request.getDBName()));
+                ? BsonNull.VALUE
+                : new BsonString(request.getDBName()));
 
         // the name of the collection
         properties.put("collection", request.getDBName() == null
-            ? BsonNull.VALUE
-            : new BsonString(request.getCollectionName()));
+                ? BsonNull.VALUE
+                : new BsonString(request.getCollectionName()));
 
         // the _id of the document
         properties.put("_id", request.getDocumentId() == null
-            ? BsonNull.VALUE
-            : request.getDocumentId());
+                ? BsonNull.VALUE
+                : request.getDocumentId());
 
         // the TYPE of the resource:
         // - INVALID, ROOT, ROOT_SIZE, DB, DB_SIZE, DB_META, CHANGE_STREAM, COLLECTION,
@@ -1115,8 +1092,8 @@ public class AclVarsInterpolator {
         var _userName = ExchangeAttributes.remoteUser().readAttribute(exchange);
 
         var userName = _userName != null
-            ? new BsonString(_userName)
-            : BsonNull.VALUE;
+                ? new BsonString(_userName)
+                : BsonNull.VALUE;
 
         // remote user
         properties.put("userName", userName);

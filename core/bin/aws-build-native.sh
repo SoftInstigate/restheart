@@ -9,7 +9,7 @@ REGION="${REGION:-eu-west-1}"
 S3_BUCKET="${S3_BUCKET:-softinstigate-restheart-builds/native}"
 BRANCH="${BRANCH:-9.x}"
 IAM_PROFILE="${IAM_PROFILE:-restheart-build-role}"
-GRAALVM_VERSION="${GRAALVM_VERSION:-25.0.2-graalce}"
+GRAALVM_VERSION="${GRAALVM_VERSION:-25.1.3-graalce}"
 WITH_TEST_PLUGINS=false
 POLL_INTERVAL=15
 

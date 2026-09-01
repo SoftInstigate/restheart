@@ -40,8 +40,8 @@ public class ACLRegistryAllower implements Authorizer {
     @Override
     public boolean isAllowed(Request<?> request) {
         var allowed = registry.allowPredicates()
-            .stream()
-            .anyMatch(predicate -> predicate.test(request));
+                .stream()
+                .anyMatch(predicate -> predicate.test(request));
 
         if (LOGGER.isDebugEnabled() && allowed) {
             LOGGER.debug("Request allowed by ACLRegistryAllower due to an allow predicate");
@@ -53,8 +53,8 @@ public class ACLRegistryAllower implements Authorizer {
     @Override
     public boolean isAuthenticationRequired(Request<?> request) {
         return registry.authenticationRequirements().isEmpty() ||
-            registry.authenticationRequirements()
-                .stream()
-                .allMatch(predicate -> predicate.test(request));
+                registry.authenticationRequirements()
+                        .stream()
+                        .allMatch(predicate -> predicate.test(request));
     }
 }

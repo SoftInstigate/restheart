@@ -61,10 +61,10 @@ import java.util.Map;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "oauthService",
-        description      = "Core OAuth 2.0 service for restheart-accounts",
+        name = "oauthService",
+        description = "Core OAuth 2.0 service for restheart-accounts",
         enabledByDefault = false,
-        priority         = 30)  // after mclient (11), accountsConfig (20), accountsService (25)
+        priority = 30)  // after mclient (11), accountsConfig (20), accountsService (25)
 public class OAuthService implements Provider<OAuthService>, OAuthProviderRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthService.class);
@@ -98,7 +98,7 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
 
     private MongoCollection<BsonDocument> oauthCodes(String db) {
         return mclient.getDatabase(db)
-                      .getCollection("oauth_codes", BsonDocument.class);
+                .getCollection("oauth_codes", BsonDocument.class);
     }
 
     @OnInit
@@ -107,7 +107,9 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     }
 
     @Override
-    public OAuthService get(PluginRecord<?> caller) { return this; }
+    public OAuthService get(PluginRecord<?> caller) {
+        return this;
+    }
 
     // ── Provider registration ─────────────────────────────────────────────────
 
@@ -135,13 +137,13 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @throws OAuthException if the provider is not configured or not registered
      */
     public AuthResult getAuthorizationUrl(String providerName, ServiceRequest<?> req) throws OAuthException {
-        var cfg                = resolveProviderConfig(providerName, req);
-        var provider            = resolveProvider(providerName);
-        var teamDb              = RequestOverrides.db(req, accountsConf);
-        var apiBaseUrl          = RequestOverrides.oauthApiBaseUrl(req, config);
-        var state               = generateState(teamDb);
-        var pendingInviteToken  = queryParam(req, "pendingInviteToken");
-        var consentsAccepted    = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
+        var cfg = resolveProviderConfig(providerName, req);
+        var provider = resolveProvider(providerName);
+        var teamDb = RequestOverrides.db(req, accountsConf);
+        var apiBaseUrl = RequestOverrides.oauthApiBaseUrl(req, config);
+        var state = generateState(teamDb);
+        var pendingInviteToken = queryParam(req, "pendingInviteToken");
+        var consentsAccepted = "true".equalsIgnoreCase(queryParam(req, "consentsAccepted"));
 
         storeStateToken(state, providerName, teamDb, pendingInviteToken, consentsAccepted);
 
@@ -189,9 +191,9 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
         // per-team override changes both clientId/clientSecret and, via apiBaseUrl below,
         // the callbackUrl passed to the provider; the provider validates that the callback
         // token exchange uses the exact same callbackUrl/credentials as the authorize step.
-        var cfg         = resolveProviderConfig(providerName, req);
-        var provider    = resolveProvider(providerName);
-        var apiBaseUrl  = RequestOverrides.oauthApiBaseUrl(req, config);
+        var cfg = resolveProviderConfig(providerName, req);
+        var provider = resolveProvider(providerName);
+        var apiBaseUrl = RequestOverrides.oauthApiBaseUrl(req, config);
 
         try {
             var profile = provider.fetchUserProfile(cfg.clientId(), cfg.clientSecret(),
@@ -209,9 +211,9 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
     private void storeStateToken(String state, String providerName, String teamDb,
                                  String pendingInviteToken, boolean consentsAccepted) {
         var doc = new BsonDocument()
-                .append("code",             new BsonString(state))
-                .append("providerName",     new BsonString(providerName))
-                .append("created_at",       new BsonDateTime(System.currentTimeMillis()))
+                .append("code", new BsonString(state))
+                .append("providerName", new BsonString(providerName))
+                .append("created_at", new BsonDateTime(System.currentTimeMillis()))
                 .append("consentsAccepted", new BsonBoolean(consentsAccepted));
         if (pendingInviteToken != null) {
             doc.append("pendingInviteToken", new BsonString(pendingInviteToken));
@@ -339,10 +341,10 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * <br>The {@code .} separator is safe because it is not part of the base64url alphabet.
      */
     private String generateState(String teamDb) {
-        var dbB64  = Base64.getUrlEncoder().withoutPadding()
-                          .encodeToString(teamDb.getBytes(StandardCharsets.UTF_8));
+        var dbB64 = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(teamDb.getBytes(StandardCharsets.UTF_8));
         var rndB64 = Base64.getUrlEncoder().withoutPadding()
-                          .encodeToString(randomBytes(32));
+                .encodeToString(randomBytes(32));
         return dbB64 + "." + rndB64;
     }
 
@@ -375,7 +377,8 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      * @param url   the full authorization URL to redirect the user to
      * @param state the CSRF state token (also embedded in the URL)
      */
-    public record AuthResult(String url, String state) {}
+    public record AuthResult(String url, String state) {
+    }
 
     /**
      * Carries the provider profile and the invite context stored in the state
@@ -387,14 +390,21 @@ public class OAuthService implements Provider<OAuthService>, OAuthProviderRegist
      */
     public record CallbackResult(org.bson.BsonDocument profile,
                                  String pendingInviteToken,
-                                 boolean consentsAccepted) {}
+                                 boolean consentsAccepted) {
+    }
 
     private record StateToken(String providerName,
-                               String pendingInviteToken,
-                               boolean consentsAccepted) {}
+                              String pendingInviteToken,
+                              boolean consentsAccepted) {
+    }
 
     public static class OAuthException extends Exception {
-        public OAuthException(String msg)                   { super(msg); }
-        public OAuthException(String msg, Throwable cause) { super(msg, cause); }
+        public OAuthException(String msg) {
+            super(msg);
+        }
+
+        public OAuthException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
     }
 }

@@ -175,7 +175,7 @@ public class ByteArrayResponse extends ServiceResponse<byte[]> {
         if (content != null) {
             setContent(content.getBytes());
         } else {
-            setContent((byte[])null);
+            setContent((byte[]) null);
         }
     }
 }

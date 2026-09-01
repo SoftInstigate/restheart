@@ -43,8 +43,8 @@ import io.undertow.server.handlers.Cookie;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "authCookieHandler",
-                description = "sets the Authorization header from the auth cookie",
-                interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
+        description = "sets the Authorization header from the auth cookie",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
 public class AuthCookieHandler implements WildcardInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(AuthCookieHandler.class);
 
@@ -102,7 +102,7 @@ public class AuthCookieHandler implements WildcardInterceptor {
         final Cookie accessToken;
         try {
             accessToken = req.getCookie(this.authCookieName);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             LOGGER.error("wrong cookie", t);
             return;
         }
@@ -114,7 +114,7 @@ public class AuthCookieHandler implements WildcardInterceptor {
             // Replace underscore with space for standard Authorization header format
             var cookieValue = accessToken.getValue();
             var authorizationHeader = cookieValue.replaceFirst("Bearer_", "Bearer ")
-                                                  .replaceFirst("Basic_", "Basic ");
+                    .replaceFirst("Basic_", "Basic ");
             req.setHeader("Authorization", authorizationHeader);
             LOGGER.debug("set header Authorization: \"{}\"", authorizationHeader);
         }

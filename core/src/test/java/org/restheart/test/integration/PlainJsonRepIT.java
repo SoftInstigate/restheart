@@ -76,7 +76,7 @@ public class PlainJsonRepIT extends AbstactIT {
         assertEquals(HttpStatus.SC_CREATED, resp.getStatus(), "create schema child.json");
 
         // create 10 test docs
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0;i < 10;i++) {
             resp = Unirest.put(url(DB, COLL, "" + i))
                     .basicAuth(ADMIN_ID, ADMIN_PWD)
                     .queryString("wm", "upsert")

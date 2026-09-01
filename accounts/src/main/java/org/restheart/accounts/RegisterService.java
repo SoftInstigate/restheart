@@ -3,15 +3,20 @@ package org.restheart.accounts;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonNull;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.plugins.accounts.MembershipProvider;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
 
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
@@ -23,6 +28,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -52,16 +58,81 @@ import java.nio.charset.StandardCharsets;
  * <ul>
  *   <li>201 — user created, verification email sent (email errors are logged but do not
  *       block the signup response)</li>
- *   <li>400 — missing or invalid body / fields</li>
+ *   <li>400 — missing or invalid body / fields, or the user document violates the
+ *       collection's JSON Schema</li>
  *   <li>409 — email address already registered</li>
+ *   <li>500 — a JSON Schema is configured on the users collection but cannot be
+ *       applied (see below)</li>
  * </ul>
+ *
+ * <h2>JSON Schema validation</h2>
+ *
+ * <p>If the users collection carries the {@code jsonSchema} metadata, the user
+ * <em>document</em> is validated against that schema before being inserted. Validation is
+ * opt-in: no metadata means no validation.
+ *
+ * <p>The schema speaks the vocabulary of the stored document, not of the request body.
+ * The two are mapped as follows:
+ *
+ * <table>
+ *   <caption>request body to user document mapping</caption>
+ *   <tr><th>request body</th><th>user document</th></tr>
+ *   <tr><td>{@code firstName}</td><td>{@code profile.name}</td></tr>
+ *   <tr><td>{@code lastName}</td><td>{@code profile.surname}</td></tr>
+ *   <tr><td>{@code email}</td><td>{@code _id}</td></tr>
+ *   <tr><td>{@code password}</td><td>{@code password} (hashed)</td></tr>
+ *   <tr><td>{@code teamName}</td><td>not stored on the user document — a team document
+ *       is created by {@code createInitialTeam}</td></tr>
+ * </table>
+ *
+ * <p>So a schema requiring {@code name} produces {@code #/profile/name: required key
+ * [name] not found} for a body that omits {@code firstName}. Violation messages are
+ * returned as-is, in the schema's vocabulary.
+ *
+ * <p>When no {@code jsonSchema} metadata is configured on the users collection,
+ * fields of the request body that are not in the mapping table are dropped before
+ * the document is built, so the schema never sees them and cannot reject them.
+ *
+ * <p>When a {@code jsonSchema} <em>is</em> configured, the remaining body properties
+ * are carried into the user document as-is before validation.  The schema becomes the
+ * contract: {@code additionalProperties: false} rejects extensions,
+ * {@code required: [...]} mandates them.  Service-managed fields
+ * ({@code _id}, {@code password}, {@code roles}, {@code profile.name},
+ * {@code profile.surname}, {@code emailVerificationToken},
+ * {@code emailVerificationCreatedAt}) are never overwritten by the body, and the
+ * body fields of the mapping table above ({@code firstName}, {@code lastName},
+ * {@code email}, {@code teamName}) are not carried over either — they already
+ * reach the document, or the team, through that mapping.
+ *
+ * <p><strong>The document is validated as it is inserted, which is not its final shape.</strong>
+ * {@code createInitialTeam} runs after the insert and adds {@code teams} and {@code team}
+ * to the user document. A schema with {@code required: ["team"]} therefore always fails,
+ * and one with {@code additionalProperties: false} passes here but does not describe the
+ * document as it is stored a moment later. Schemas meant for the registration path should
+ * declare {@code teams} and {@code team} as optional.
+ *
+ * <p>Documents created via OAuth carry additional fields ({@code socialAuths},
+ * {@code profile.avatarUrl}) that are not produced by this endpoint.  Schemas
+ * should declare these as optional so that OAuth-created documents pass
+ * validation on subsequent updates.
+ *
+ * <p>Application-level fields such as {@code consents} should be declared
+ * optional in the schema — their absence is enforced by guard rules, not by the
+ * schema.  The schema validates the <em>format</em> when the field is present.
+ *
+ * <p>A {@code jsonSchema} property that is not a document — including a value explicitly
+ * set to {@code null}, e.g. by {@code PATCH} with {@code {"jsonSchema": null}} — means
+ * validation is not configured, matching the MongoService pipeline's own checker. Once it
+ * is a document, though, validation fails closed: a {@code schemaId} that cannot be
+ * resolved from the schema store, or {@code restheart-mongodb} not being deployed, rejects
+ * the request with 500 and creates no user, rather than silently skipping validation.
  *
  * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
-        name             = "registerService",
-        description      = "POST /auth/register — public user signup with email verification",
-        defaultURI       = "/auth/register",
+        name = "registerService",
+        description = "POST /auth/register — public user signup with email verification",
+        defaultURI = "/auth/register",
         enabledByDefault = false)
 public class RegisterService implements JsonService {
 
@@ -82,14 +153,22 @@ public class RegisterService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject(value = "json-schemas", required = false)
+    private JsonSchemas jsonSchemas;
+
     @OnInit
     public void onInit() {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/register") && (r.isPost() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/register"));
+
+        if (this.jsonSchemas == null) {
+            LOGGER.info("Provider 'json-schemas' not available: a jsonSchema on the users collection "
+                    + "cannot be applied and registration would fail with 500");
+        }
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     private MembershipProvider membership(JsonRequest req) {
@@ -98,8 +177,14 @@ public class RegisterService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
-        if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
+        if (!req.isPost()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         // ── 1. Parse body ────────────────────────────────────────────────────
         JsonObject body;
@@ -117,10 +202,10 @@ public class RegisterService implements JsonService {
 
         // ── 2. Validate required fields ──────────────────────────────────────
         var firstName = extractString(body, "firstName");
-        var lastName  = extractString(body, "lastName");
-        var teamName  = extractString(body, "teamName");
-        var email     = extractString(body, "email");
-        var password  = extractString(body, "password");
+        var lastName = extractString(body, "lastName");
+        var teamName = extractString(body, "teamName");
+        var email = extractString(body, "email");
+        var password = extractString(body, "password");
 
         if (firstName == null) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST, "Missing required field: firstName");
@@ -151,7 +236,7 @@ public class RegisterService implements JsonService {
 
         // ── 4. Generate email verification token ─────────────────────────────
         var verificationToken = TokenUtils.generateToken();
-        var now               = new BsonDateTime(System.currentTimeMillis());
+        var now = new BsonDateTime(System.currentTimeMillis());
 
         // ── 5. Create and insert user (without tenant — MembershipProvider sets it) ──
         // New users start with $unauthenticated role — they can only access
@@ -161,42 +246,61 @@ public class RegisterService implements JsonService {
         rolesArray.add(new BsonString("$unauthenticated"));
 
         var profile = new BsonDocument()
-                .append("name",    new BsonString(firstName))
+                .append("name", new BsonString(firstName))
                 .append("surname", new BsonString(lastName));
 
         var userDoc = new BsonDocument()
-                .append("_id",                        new BsonString(email))
-                .append("password",                   new BsonString(TokenUtils.hashPassword(password)))
-                .append("roles",                      rolesArray)
-                .append("profile",                    profile)
-                .append("emailVerificationToken",     new BsonString(verificationToken))
+                .append("_id", new BsonString(email))
+                .append("password", new BsonString(TokenUtils.hashPassword(password)))
+                .append("roles", rolesArray)
+                .append("profile", profile)
+                .append("emailVerificationToken", new BsonString(verificationToken))
                 .append("emailVerificationCreatedAt", now);
 
-        if (!db(req).insertUser(userDoc)) {
-            // Concurrent registration or race between findUser and insertUser
-            Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+        // ── 5b. Merge extra body properties when a JSON Schema is configured ──
+        // Without a schema there is nothing to constrain additional properties,
+        // so they are dropped (preserving existing behaviour).  With a schema the
+        // remaining body fields are carried into the document as-is; the schema
+        // becomes the contract — additionalProperties:false rejects extensions,
+        // required:[...] mandates them.
+        // Service-managed fields are never overwritten, and the mapped body fields
+        // (firstName, lastName, email, teamName) are not carried over as extras.
+        if (db(req).hasSchema()) {
+            mergeExtraBodyProperties(body, userDoc);
+        }
+
+        try {
+            if (!db(req).insertUser(userDoc)) {
+                // Concurrent registration or race between findUser and insertUser
+                Errors.error(res, HttpStatus.SC_CONFLICT, "Email already registered");
+                return;
+            }
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
             return;
         }
 
-        // ── 6. Delegate team creation + membership linking to the provider ────
+        // ── 7. Delegate team creation + membership linking to the provider ────
+        // note: this adds 'teams' and 'team' to the user document, after it has
+        // been validated against the collection's JSON Schema
         var teamRef = membership(req).createInitialTeam(email, teamName);
-        var teamId    = teamRef.id().isString()
+        var teamId = teamRef.id().isString()
                 ? teamRef.id().asString().getValue()
                 : teamRef.id().asObjectId().getValue().toHexString();
 
         LOGGER.info("User registered: <{}>, team={}", email, teamId);
 
-        // ── 7. Send verification email (best-effort) ─────────────────────────
+        // ── 8. Send verification email (best-effort) ─────────────────────────
         try {
             // Check X-Skip-Email header for integration tests
             if ("true".equalsIgnoreCase(req.getHeader("X-Skip-Email"))) {
                 LOGGER.debug("Skipping verification email to <{}> (X-Skip-Email header)", email);
             } else {
                 var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-                var verifyLink   = RequestOverrides.frontendUrl(req, conf)
-                                   + "/auth/verify"
-                                   + "?email=" + encodedEmail
-                                   + "&token=" + verificationToken;
+                var verifyLink = RequestOverrides.frontendUrl(req, conf)
+                        + "/auth/verify"
+                        + "?email=" + encodedEmail
+                        + "&token=" + verificationToken;
 
                 var tmpl = EmailTemplateLoader.loadWithFallback(
                         RequestOverrides.templateVerification(req), conf.verificationTemplatePath(), "verification.html");
@@ -208,14 +312,14 @@ public class RegisterService implements JsonService {
                         "frontend-url", RequestOverrides.frontendUrl(req, conf),
                         "verification-url", verifyLink);
                 var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+                emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
             }
         } catch (Exception e) {
             // Log and continue — the user was created; they can request a resend later
             LOGGER.warn("Failed to send verification email to <{}>: {}", email, e.getMessage());
         }
 
-        // ── 8. Respond 201 ───────────────────────────────────────────────────
+        // ── 9. Respond 201 ───────────────────────────────────────────────────
         res.setStatusCode(HttpStatus.SC_CREATED);
     }
 
@@ -234,5 +338,99 @@ public class RegisterService implements JsonService {
         }
         var value = obj.get(key).getAsString().strip();
         return value.isEmpty() ? null : value;
+    }
+
+    /**
+     * Body keys that must not be carried into the user document as additional
+     * properties.
+     *
+     * <p>Two groups: the document fields the service owns ({@code _id},
+     * {@code password}, {@code roles}, {@code profile},
+     * {@code emailVerificationToken}, {@code emailVerificationCreatedAt}), and the
+     * body fields the mapping table sends somewhere else ({@code firstName} and
+     * {@code lastName} to {@code profile.name}/{@code profile.surname},
+     * {@code email} to {@code _id}, {@code teamName} to the team document). Without
+     * the second group the stored document would duplicate its own mapped fields
+     * and carry the team name, and a schema with {@code additionalProperties: false}
+     * would reject every registration over properties the client never sent as
+     * extras.
+     */
+    private static final java.util.Set<String> SERVICE_MANAGED_FIELDS = java.util.Set.of(
+            "_id", "password", "roles", "profile",
+            "emailVerificationToken", "emailVerificationCreatedAt",
+            "firstName", "lastName", "email", "teamName");
+
+    /**
+     * Fields inside {@code profile} managed by the registration service.
+     * A body property {@code "profile": {"name": "..."}} cannot override these,
+     * but {@code "profile": {"avatarUrl": "..."}} is merged in.
+     */
+    private static final java.util.Set<String> SERVICE_MANAGED_PROFILE_FIELDS = java.util.Set.of(
+            "name", "surname");
+
+    /**
+     * Carries extra body properties into the user document.  Top-level keys
+     * that collide with service-managed fields are silently ignored.  For the
+     * {@code profile} sub-document, only the service-managed sub-keys
+     * ({@code name}, {@code surname}) are protected; other sub-keys are merged.
+     */
+    private static void mergeExtraBodyProperties(JsonObject body, BsonDocument userDoc) {
+        for (var entry : body.entrySet()) {
+            var key = entry.getKey();
+            if (SERVICE_MANAGED_FIELDS.contains(key)) {
+                continue;
+            }
+            if ("profile".equals(key) && entry.getValue().isJsonObject()) {
+                var bodyProfile = entry.getValue().getAsJsonObject();
+                var docProfile = userDoc.getDocument("profile");
+                for (var pe : bodyProfile.entrySet()) {
+                    if (!SERVICE_MANAGED_PROFILE_FIELDS.contains(pe.getKey())) {
+                        docProfile.put(pe.getKey(), toBson(pe.getValue()));
+                    }
+                }
+            } else {
+                userDoc.put(key, toBson(entry.getValue()));
+            }
+        }
+    }
+
+    /**
+     * Converts a {@link com.google.gson.JsonElement} to a {@link BsonValue}.
+     */
+    private static BsonValue toBson(com.google.gson.JsonElement elem) {
+        if (elem == null || elem.isJsonNull()) {
+            return BsonNull.VALUE;
+        }
+        if (elem.isJsonPrimitive()) {
+            var p = elem.getAsJsonPrimitive();
+            if (p.isBoolean()) {
+                return new BsonBoolean(p.getAsBoolean());
+            }
+            if (p.isNumber()) {
+                var n = p.getAsNumber();
+                // integers that fit in int32
+                if (n.longValue() == n.intValue()) {
+                    return new BsonInt32(n.intValue());
+                }
+                return new BsonInt64(n.longValue());
+            }
+            return new BsonString(p.getAsString());
+        }
+        if (elem.isJsonObject()) {
+            var obj = elem.getAsJsonObject();
+            var doc = new BsonDocument();
+            for (var e : obj.entrySet()) {
+                doc.put(e.getKey(), toBson(e.getValue()));
+            }
+            return doc;
+        }
+        if (elem.isJsonArray()) {
+            var arr = new BsonArray();
+            for (var e : elem.getAsJsonArray()) {
+                arr.add(toBson(e));
+            }
+            return arr;
+        }
+        return BsonNull.VALUE;
     }
 }

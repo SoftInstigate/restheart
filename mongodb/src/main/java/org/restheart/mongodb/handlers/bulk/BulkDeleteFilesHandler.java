@@ -56,10 +56,10 @@ public class BulkDeleteFilesHandler extends PipelinedHandler {
         }
 
         long deleted = gridFs.bulkDeleteFiles(
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getFiltersDocument());
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getFiltersDocument());
 
         response.setStatusCode(HttpStatus.SC_OK);
         response.setContent(new BsonDocument("deleted", new BsonInt64(deleted)));

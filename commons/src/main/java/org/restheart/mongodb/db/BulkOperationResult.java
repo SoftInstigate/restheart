@@ -62,7 +62,7 @@ public class BulkOperationResult extends OperationResult {
      *                   bulk operation, including counts of inserted, updated, and deleted documents
      */
     public BulkOperationResult(int httpCode, Object etag,
-            BulkWriteResult bulkResult) {
+                               BulkWriteResult bulkResult) {
         super(httpCode, etag);
 
         this.bulkResult = bulkResult;

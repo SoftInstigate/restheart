@@ -119,9 +119,9 @@ public class GetCollectionCache {
         if (cache == null) return null;
 
         // return the first entry with all available documents
-		var _bestKey = cache.asMap().keySet().stream()
-            .filter(cacheKeyFilter(key))
-            .findFirst();
+        var _bestKey = cache.asMap().keySet().stream()
+                .filter(cacheKeyFilter(key))
+                .findFirst();
 
         if (_bestKey.isPresent()) {
             var _cached = remove ? cache.remove(_bestKey.get()) : cache.get(_bestKey.get());
@@ -134,7 +134,7 @@ public class GetCollectionCache {
                 return null;
             }
         } else {
-            LOGGER.debug(ansi().fg(RED).bold().a("missed").reset().toString() + " get collection cache.");
+            LOGGER.debug("{} get collection cache.", ansi().fg(RED).bold().a("missed").reset().toString());
             return null;
         }
     }
@@ -149,17 +149,17 @@ public class GetCollectionCache {
         if (cache == null) return;
 
         cache.asMap().keySet().stream()
-            .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
-            .filter(k -> k.collection().getNamespace().getCollectionName().equals(coll))
-            .forEach(k -> cache.invalidate(k));
+                .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
+                .filter(k -> k.collection().getNamespace().getCollectionName().equals(coll))
+                .forEach(k -> cache.invalidate(k));
     }
 
     public void invalidateAll(String db) {
         if (cache == null) return;
 
         cache.asMap().keySet().stream()
-            .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
-            .forEach(k -> cache.invalidate(k));
+                .filter(k -> k.collection().getNamespace().getDatabaseName().equals(db))
+                .forEach(k -> cache.invalidate(k));
     }
 
 
@@ -167,35 +167,35 @@ public class GetCollectionCache {
         if (cache == null) return;
 
         cache.asMap().keySet().stream()
-            .filter(k -> k.collection().getNamespace().equals(coll.getNamespace()))
-            .forEach(cache::invalidate);
+                .filter(k -> k.collection().getNamespace().equals(coll.getNamespace()))
+                .forEach(cache::invalidate);
     }
 
     private Predicate<? super GetCollectionCacheKey> cacheKeyFilter(GetCollectionCacheKey requested) {
         if (cache == null) return null;
 
         return cached
-            -> Objects.equals(cached.collection().getNamespace(), requested.collection().getNamespace())
-            && Objects.equals(cached.filter(), requested.filter())
-            && Objects.equals(cached.sort(), requested.sort())
-            && Objects.equals(cached.keys(), requested.keys())
-            && Objects.equals(cached.hints(), requested.hints())
-            && ((cached.from() <= requested.from() && cached.to() >= requested.to())
-                || (cached.exhausted() && cached.from() <= requested.from()))
-            && sessionEquals(cached.session(), requested.session());
+                -> Objects.equals(cached.collection().getNamespace(), requested.collection().getNamespace())
+                        && Objects.equals(cached.filter(), requested.filter())
+                        && Objects.equals(cached.sort(), requested.sort())
+                        && Objects.equals(cached.keys(), requested.keys())
+                        && Objects.equals(cached.hints(), requested.hints())
+                        && ((cached.from() <= requested.from() && cached.to() >= requested.to())
+                        || (cached.exhausted() && cached.from() <= requested.from()))
+                        && sessionEquals(cached.session(), requested.session());
     }
-    
+
     private boolean sessionEquals(Optional<ClientSession> s1, Optional<ClientSession> s2) {
         // Both empty
         if (s1.isEmpty() && s2.isEmpty()) {
             return true;
         }
-        
+
         // One empty, one present
         if (s1.isEmpty() || s2.isEmpty()) {
             return false;
         }
-        
+
         // Both present - compare by identity since ClientSession doesn't have meaningful equals
         return s1.get() == s2.get();
     }
@@ -204,9 +204,9 @@ public class GetCollectionCache {
         if (cache == null) return null;
 
         return new TreeMap<>(cache.asMap()
-            .keySet()
-            .stream()
-            .collect(Collectors.groupingBy(GetCollectionCacheKey::getCacheStatsGroup, Collectors.counting())));
+                .keySet()
+                .stream()
+                .collect(Collectors.groupingBy(GetCollectionCacheKey::getCacheStatsGroup, Collectors.counting())));
     }
 
     private static class SingletonHolder {

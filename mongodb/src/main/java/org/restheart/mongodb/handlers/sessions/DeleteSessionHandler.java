@@ -72,7 +72,7 @@ public class DeleteSessionHandler extends PipelinedHandler {
         try {
             var killCmd = document().put("killSessions", array().add(document().put("id", new BsonBinary(sid)))).get();
             mclient.getDatabase("admin").runCommand(killCmd);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error killing session");
             next(exchange);
             return;

@@ -1,5 +1,6 @@
 package org.restheart.accounts.util;
 
+import com.mongodb.MongoException;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -9,9 +10,18 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDateTime;
 import org.bson.BsonInt32;
+import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+
+import org.restheart.exchange.BadRequestException;
+import org.restheart.plugins.schema.JsonSchemaNotFoundException;
+import org.restheart.plugins.schema.JsonSchemas;
+import org.restheart.plugins.schema.SchemaValidationException;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 
 /**
  * Low-level MongoDB helper for the restheart-accounts plugin.
@@ -27,19 +38,38 @@ import static com.mongodb.client.model.Filters.eq;
  */
 public class DbHelper {
 
-    private static final String USERS_COLLECTION = "users";
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbHelper.class);
+
+    private static final String DEFAULT_USERS_COLLECTION = "users";
     private static final String TEAMS_COLLECTION = "teams";
     private static final String INVITATIONS_COLLECTION = "auth_invitations";
 
     /** Duplicate-key error code returned by MongoDB. */
     private static final int DUPLICATE_KEY_CODE = 11000;
 
+    /** keys of the 'jsonSchema' collection metadata; mirror restheart-mongodb's checker */
+    private static final String JSON_SCHEMA_PROPERTY = "jsonSchema";
+    private static final String SCHEMA_ID_PROPERTY = "schemaId";
+    private static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
+
     private final MongoClient mclient;
     private final String db;
+    private final String usersCollection;
+    private final JsonSchemas jsonSchemas;
 
     public DbHelper(MongoClient mclient, String db) {
+        this(mclient, db, DEFAULT_USERS_COLLECTION, null);
+    }
+
+    public DbHelper(MongoClient mclient, String db, String usersCollection) {
+        this(mclient, db, usersCollection, null);
+    }
+
+    public DbHelper(MongoClient mclient, String db, String usersCollection, JsonSchemas jsonSchemas) {
         this.mclient = mclient;
         this.db = db;
+        this.usersCollection = usersCollection != null ? usersCollection : DEFAULT_USERS_COLLECTION;
+        this.jsonSchemas = jsonSchemas;
     }
 
     // -------------------------------------------------------------------------
@@ -54,9 +84,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findUser(String email) {
         return Optional.ofNullable(
-            users()
-                .find(eq("_id", new BsonString(email)))
-                .first()
+                users()
+                        .find(eq("_id", new BsonString(email)))
+                        .first()
         );
     }
 
@@ -71,9 +101,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findUserByToken(String tokenField, String token) {
         return Optional.ofNullable(
-            users()
-                .find(Filters.eq(tokenField, token))
-                .first()
+                users()
+                        .find(Filters.eq(tokenField, token))
+                        .first()
         );
     }
 
@@ -91,18 +121,24 @@ public class DbHelper {
         var idsFilter = new java.util.ArrayList<BsonString>();
         emails.forEach(e -> idsFilter.add(new BsonString(e)));
         users().find(Filters.in("_id", idsFilter))
-               .forEach(u -> result.put(u.getString("_id").getValue(), u));
+                .forEach(u -> result.put(u.getString("_id").getValue(), u));
         return result;
     }
 
     /**
      * Inserts a new user document.
+     * If a JSON Schema is configured on the users collection, the document
+     * is validated before inserting.
      *
      * @param user the document to insert (must have {@code _id} = email)
      * @return {@code true} on success, {@code false} if the email already exists
      *         (duplicate-key error)
      */
     public boolean insertUser(BsonDocument user) {
+        var schemaMeta = resolveSchemaMeta();
+        if (schemaMeta != null) {
+            validateOrThrow(user, schemaMeta);
+        }
         try {
             users().insertOne(user);
             return true;
@@ -116,39 +152,97 @@ public class DbHelper {
 
     /**
      * Applies a {@code $set} patch to the user identified by {@code email}.
+     * If a JSON Schema is configured on the users collection, the candidate
+     * document is validated before writing, and the write is made conditional
+     * on the touched fields being unchanged since validation (see
+     * {@link #touchedFieldsFilter}) — a concurrent write past the read is
+     * turned into a failed update rather than a lost one.
      *
      * @param email   the user's email (_id)
      * @param updates a document whose fields will be {@code $set} on the user
      * @return {@code true} if a document was matched and modified
+     * @throws BadRequestException if the candidate document violates the schema,
+     *         or if another writer raced the touched fields between read and write
      */
     public boolean updateUser(String email, BsonDocument updates) {
+        var schemaMeta = resolveSchemaMeta();
+        if (schemaMeta == null) {
+            var result = users().updateOne(
+                    eq("_id", new BsonString(email)),
+                    new BsonDocument("$set", updates)
+            );
+            return result.getMatchedCount() > 0;
+        }
+
+        var current = findUser(email);
+        if (current.isEmpty()) {
+            return false;
+        }
+        var stored = current.get();
+        validateOrThrow(applyUpdates(stored, updates), schemaMeta);
+
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            new BsonDocument("$set", updates)
+                touchedFieldsFilter(email, stored, updates.keySet()),
+                new BsonDocument("$set", updates)
         );
-        return result.getMatchedCount() > 0;
+        if (result.getMatchedCount() == 0) {
+            throw new BadRequestException(
+                    "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
+        }
+        return true;
     }
 
     /**
      * Removes the specified fields from the user document using {@code $unset}.
+     * If a JSON Schema is configured on the users collection, the candidate
+     * document is validated before writing, and the write is made conditional
+     * on the touched fields being unchanged since validation (see
+     * {@link #touchedFieldsFilter}).
      *
      * @param email  the user's email (_id)
      * @param fields list of field names to remove
      * @return {@code true} if a document was matched
+     * @throws BadRequestException if the candidate document violates the schema,
+     *         or if another writer raced the touched fields between read and write
      */
     public boolean unsetUserFields(String email, List<String> fields) {
         if (fields == null || fields.isEmpty()) {
             return false;
         }
+
         // Build $unset document: { field1: "", field2: "", ... }
         var unsetDoc = new BsonDocument();
         fields.forEach(f -> unsetDoc.put(f, new BsonString("")));
 
+        var schemaMeta = resolveSchemaMeta();
+        if (schemaMeta == null) {
+            var result = users().updateOne(
+                    eq("_id", new BsonString(email)),
+                    new BsonDocument("$unset", unsetDoc)
+            );
+            return result.getMatchedCount() > 0;
+        }
+
+        var current = findUser(email);
+        if (current.isEmpty()) {
+            return false;
+        }
+        var stored = current.get();
+        var candidate = stored.clone();
+        for (var field : fields) {
+            removeField(candidate, field);
+        }
+        validateOrThrow(candidate, schemaMeta);
+
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            new BsonDocument("$unset", unsetDoc)
+                touchedFieldsFilter(email, stored, fields),
+                new BsonDocument("$unset", unsetDoc)
         );
-        return result.getMatchedCount() > 0;
+        if (result.getMatchedCount() == 0) {
+            throw new BadRequestException(
+                    "Concurrent update of the user document, please retry", HttpStatus.SC_CONFLICT);
+        }
+        return true;
     }
 
     /**
@@ -160,8 +254,8 @@ public class DbHelper {
      */
     public boolean addTeamMembership(String email, BsonDocument membership) {
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            new BsonDocument("$addToSet", new BsonDocument("teams", membership))
+                eq("_id", new BsonString(email)),
+                new BsonDocument("$addToSet", new BsonDocument("teams", membership))
         );
         return result.getMatchedCount() > 0;
     }
@@ -175,8 +269,8 @@ public class DbHelper {
      */
     public boolean removeTeamMembership(String email, BsonValue teamId) {
         var result = users().updateOne(
-            eq("_id", new BsonString(email)),
-            Updates.pull("teams", new BsonDocument("id", teamId))
+                eq("_id", new BsonString(email)),
+                Updates.pull("teams", new BsonDocument("id", teamId))
         );
         return result.getMatchedCount() > 0;
     }
@@ -191,11 +285,11 @@ public class DbHelper {
      */
     public boolean updateTeamRole(String email, BsonValue teamId, String newRole) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.eq("teams.id", teamId)
-            ),
-            Updates.set("teams.$.role", new BsonString(newRole))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.eq("teams.id", teamId)
+                ),
+                Updates.set("teams.$.role", new BsonString(newRole))
         );
         return result.getModifiedCount() > 0;
     }
@@ -227,14 +321,14 @@ public class DbHelper {
      */
     public boolean setActiveTeamIfAbsent(String email, BsonValue teamId, String role) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.or(
-                    Filters.exists("team", false),
-                    Filters.eq("team", null)
-                )
-            ),
-            Updates.set("team", activeTeamDoc(teamId, role))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.or(
+                                Filters.exists("team", false),
+                                Filters.eq("team", null)
+                        )
+                ),
+                Updates.set("team", activeTeamDoc(teamId, role))
         );
         return result.getModifiedCount() > 0;
     }
@@ -252,11 +346,11 @@ public class DbHelper {
      */
     public boolean setActiveTeamRoleIfActive(String email, BsonValue teamId, String role) {
         var result = users().updateOne(
-            Filters.and(
-                eq("_id", new BsonString(email)),
-                Filters.eq("team._id", teamId)
-            ),
-            Updates.set("team.role", new BsonString(role))
+                Filters.and(
+                        eq("_id", new BsonString(email)),
+                        Filters.eq("team._id", teamId)
+                ),
+                Updates.set("team.role", new BsonString(role))
         );
         return result.getModifiedCount() > 0;
     }
@@ -292,9 +386,9 @@ public class DbHelper {
      */
     public Optional<BsonDocument> findTeam(BsonValue teamId) {
         return Optional.ofNullable(
-            teams()
-                .find(eq("_id", teamId))
-                .first()
+                teams()
+                        .find(eq("_id", teamId))
+                        .first()
         );
     }
 
@@ -311,15 +405,15 @@ public class DbHelper {
      */
     public boolean addMemberToTeam(BsonValue teamId, String userId, String role) {
         var memberDoc = new BsonDocument()
-            .append("userId",   new BsonString(userId))
-            .append("role",     new BsonString(role))
-            .append("joinedAt", new BsonDateTime(System.currentTimeMillis()));
+                .append("userId", new BsonString(userId))
+                .append("role", new BsonString(role))
+                .append("joinedAt", new BsonDateTime(System.currentTimeMillis()));
         var result = teams().updateOne(
-            Filters.and(
-                eq("_id", teamId),
-                Filters.not(Filters.eq("members.userId", new BsonString(userId)))
-            ),
-            Updates.push("members", memberDoc)
+                Filters.and(
+                        eq("_id", teamId),
+                        Filters.not(Filters.eq("members.userId", new BsonString(userId)))
+                ),
+                Updates.push("members", memberDoc)
         );
         return result.getModifiedCount() > 0;
     }
@@ -333,8 +427,8 @@ public class DbHelper {
      */
     public boolean updateTeam(BsonValue teamId, BsonDocument updates) {
         var result = teams().updateOne(
-            eq("_id", teamId),
-            new BsonDocument("$set", updates)
+                eq("_id", teamId),
+                new BsonDocument("$set", updates)
         );
         return result.getMatchedCount() > 0;
     }
@@ -351,10 +445,10 @@ public class DbHelper {
      */
     public boolean deleteTeamIfEmpty(BsonValue teamId) {
         var sizeExpr = List.<BsonValue>of(
-            new BsonDocument("$size", new BsonString("$members")),
-            new BsonInt32(1));
+                new BsonDocument("$size", new BsonString("$members")),
+                new BsonInt32(1));
         var filter = new BsonDocument("_id", teamId)
-            .append("$expr", new BsonDocument("$lte", new BsonArray(sizeExpr)));
+                .append("$expr", new BsonDocument("$lte", new BsonArray(sizeExpr)));
         return teams().findOneAndDelete(filter) != null;
     }
 
@@ -367,8 +461,8 @@ public class DbHelper {
      */
     public boolean removeMemberFromTeam(BsonValue teamId, String userId) {
         var result = teams().updateOne(
-            eq("_id", teamId),
-            Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
+                eq("_id", teamId),
+                Updates.pull("members", new BsonDocument("userId", new BsonString(userId)))
         );
         return result.getMatchedCount() > 0;
     }
@@ -383,11 +477,11 @@ public class DbHelper {
      */
     public boolean updateMemberRoleInTeam(BsonValue teamId, String userId, String newRole) {
         var result = teams().updateOne(
-            Filters.and(
-                eq("_id", teamId),
-                Filters.eq("members.userId", new BsonString(userId))
-            ),
-            Updates.set("members.$.role", new BsonString(newRole))
+                Filters.and(
+                        eq("_id", teamId),
+                        Filters.eq("members.userId", new BsonString(userId))
+                ),
+                Updates.set("members.$.role", new BsonString(newRole))
         );
         return result.getModifiedCount() > 0;
     }
@@ -398,17 +492,190 @@ public class DbHelper {
 
     private MongoCollection<BsonDocument> users() {
         return mclient.getDatabase(db)
-                      .getCollection(USERS_COLLECTION, BsonDocument.class);
+                .getCollection(usersCollection, BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> teams() {
         return mclient.getDatabase(db)
-                      .getCollection(TEAMS_COLLECTION, BsonDocument.class);
+                .getCollection(TEAMS_COLLECTION, BsonDocument.class);
     }
 
     private MongoCollection<BsonDocument> invitations() {
         return mclient.getDatabase(db)
-                      .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
+                .getCollection(INVITATIONS_COLLECTION, BsonDocument.class);
+    }
+
+    /**
+     * Applies a {@code $set} update document to a base document, handling
+     * dotted paths (e.g. {@code "profile.name"} → nested merge).
+     */
+    private static BsonDocument applyUpdates(BsonDocument base, BsonDocument updates) {
+        var candidate = base.clone();
+        for (var entry : updates.entrySet()) {
+            setDotted(candidate, entry.getKey(), entry.getValue());
+        }
+        return candidate;
+    }
+
+    /**
+     * Sets a value on a document using a dotted path key.
+     * {@code "profile.name"} → {@code candidate.profile.name = value}.
+     */
+    private static void setDotted(BsonDocument doc, String path, BsonValue value) {
+        var parts = path.split("\\.");
+        BsonDocument current = doc;
+        for (int i = 0;i < parts.length - 1;i++) {
+            var next = current.containsKey(parts[i]) && current.get(parts[i]).isDocument()
+                    ? current.getDocument(parts[i])
+                    : new BsonDocument();
+            current.put(parts[i], next);
+            current = next;
+        }
+        current.put(parts[parts.length - 1], value);
+    }
+
+    /**
+     * Removes a field from a document using a dotted path.
+     */
+    private static void removeField(BsonDocument doc, String path) {
+        var parts = path.split("\\.");
+        BsonDocument current = doc;
+        for (int i = 0;i < parts.length - 1;i++) {
+            if (!current.containsKey(parts[i]) || !current.get(parts[i]).isDocument()) {
+                return;
+            }
+            current = current.getDocument(parts[i]);
+        }
+        current.remove(parts[parts.length - 1]);
+    }
+
+    /**
+     * Reads a value from a document using a dotted path.
+     *
+     * @return the value at {@code path}, or {@code null} if any segment is absent
+     */
+    private static BsonValue getDotted(BsonDocument doc, String path) {
+        BsonValue current = doc;
+        for (var part : path.split("\\.")) {
+            if (current == null || !current.isDocument() || !current.asDocument().containsKey(part)) {
+                return null;
+            }
+            current = current.asDocument().get(part);
+        }
+        return current;
+    }
+
+    /**
+     * Builds a filter that matches the user only if the fields the caller is about
+     * to write still have the values they had in {@code stored} — the values the
+     * candidate document was validated against. Used to turn a lost update (another
+     * writer changes a validated field between read and write) into a failed one,
+     * since a manual rollback outside a transaction would not be safe (see #658).
+     */
+    private static BsonDocument touchedFieldsFilter(String email, BsonDocument stored, Iterable<String> paths) {
+        var filter = new BsonDocument("_id", new BsonString(email));
+        for (var path : paths) {
+            var original = getDotted(stored, path);
+            filter.append(path, original != null ? original : BsonNull.VALUE);
+        }
+        return filter;
+    }
+
+    /**
+     * Reads the {@code jsonSchema} metadata of the users collection, if configured.
+     * Mirrors {@code JsonSchemaBeforeWriteChecker.resolve()}: a {@code jsonSchema}
+     * property that isn't a document — including a PATCH-ed {@code { "jsonSchema": null } }
+     * — means validation is not configured, not that the configuration is broken.
+     *
+     * @return the {@code jsonSchema} metadata document, or {@code null} if not configured
+     * @throws BadRequestException if the collection metadata cannot be read
+     */
+    private BsonDocument resolveSchemaMeta() {
+        var collProps = META_COLLNAME + "." + usersCollection;
+        BsonDocument propsDoc;
+        try {
+            propsDoc = mclient.getDatabase(db)
+                    .getCollection(META_COLLNAME, BsonDocument.class)
+                    .find(Filters.eq("_id", collProps))
+                    .first();
+        } catch (MongoException me) {
+            LOGGER.error("Cannot read {}/{} to check for a jsonSchema", db, collProps, me);
+            throw new BadRequestException(
+                    "Cannot check the users collection for a JSON Schema",
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR, me);
+        }
+
+        if (propsDoc == null
+                || !propsDoc.containsKey(JSON_SCHEMA_PROPERTY)
+                || !propsDoc.get(JSON_SCHEMA_PROPERTY).isDocument()) {
+            return null;
+        }
+
+        return propsDoc.getDocument(JSON_SCHEMA_PROPERTY);
+    }
+
+    /**
+     * Returns {@code true} if the users collection carries a {@code jsonSchema}
+     * metadata document. Used by {@code RegisterService} to decide whether
+     * additional body properties should be carried into the user document.
+     */
+    public boolean hasSchema() {
+        return resolveSchemaMeta() != null;
+    }
+
+    /**
+     * Validates a user document against the JSON Schema declared by {@code schemaMeta}.
+     *
+     * <p>Validation is opt-in — call sites only reach this method once
+     * {@link #resolveSchemaMeta()} has confirmed a schema is configured. Once
+     * configured, though, it is honoured or the write fails: an unresolvable
+     * schema is an error, never a reason to write an unvalidated document.
+     *
+     * @throws BadRequestException if the document does not validate, or if the
+     *         schema configuration/store cannot be resolved
+     */
+    private void validateOrThrow(BsonDocument doc, BsonDocument schemaMeta) {
+        if (jsonSchemas == null) {
+            LOGGER.error("{}/{} declares a jsonSchema but the JSON Schema store provider is not available: "
+                    + "is restheart-mongodb deployed?", db, META_COLLNAME + "." + usersCollection);
+            throw new BadRequestException(
+                    "Cannot validate the user document: the JSON Schema store is not available",
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+
+        var schemaId = schemaMeta.get(SCHEMA_ID_PROPERTY);
+        if (schemaId == null) {
+            throw new BadRequestException(
+                    "Invalid 'jsonSchema' metadata on the users collection: '"
+                            + SCHEMA_ID_PROPERTY + "' is missing",
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+
+        String schemaStoreDb;
+        if (!schemaMeta.containsKey(SCHEMA_STORE_DB_PROPERTY)) {
+            schemaStoreDb = db;
+        } else if (schemaMeta.get(SCHEMA_STORE_DB_PROPERTY).isString()) {
+            schemaStoreDb = schemaMeta.getString(SCHEMA_STORE_DB_PROPERTY).getValue();
+        } else {
+            throw new BadRequestException(
+                    "Invalid 'jsonSchema' metadata on the users collection: '"
+                            + SCHEMA_STORE_DB_PROPERTY + "' is not a string",
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+
+        try {
+            jsonSchemas.validate(doc, schemaStoreDb, schemaId);
+        } catch (SchemaValidationException e) {
+            throw new BadRequestException(
+                    "User document violates schema: " + String.join(", ", e.getViolations()));
+        } catch (JsonSchemaNotFoundException e) {
+            LOGGER.error("{}/{} declares schema {}/{}, which is not in the schema store",
+                    db, META_COLLNAME + "." + usersCollection, schemaStoreDb, schemaId);
+            throw new BadRequestException(
+                    "Cannot validate the user document: the JSON Schema declared by the "
+                            + "users collection was not found in the schema store",
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**

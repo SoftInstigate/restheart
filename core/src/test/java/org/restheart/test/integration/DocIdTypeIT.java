@@ -82,7 +82,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY,
                                 DOC_ID_TYPE.NUMBER.name())
                 });
@@ -134,7 +134,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         check("check put mytmpdb.tmpcoll", resp2, HttpStatus.SC_CREATED);
 
         URI collectionTmpUriInt = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair(DOC_ID_TYPE_QPARAM_KEY,
                                 DOC_ID_TYPE.STRING.name())
                 });
@@ -169,7 +169,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
         // *** filter - case 1 - with string id should not find it
         URI collectionTmpUriSearch = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("filter", "{'_id':'54c965cbc2e64568e235b711'}")
                 });
 
@@ -181,7 +181,7 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
         // *** filter - case 1 - with oid id should find it
         collectionTmpUriSearch = buildURI("/" + dbTmpName + "/" + collectionTmpName,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("filter",
                                 "{'_id':{'$oid':'54c965cbc2e64568e235b711'}}")
                 });

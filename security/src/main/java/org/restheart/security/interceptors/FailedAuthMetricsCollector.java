@@ -62,11 +62,11 @@ import static org.restheart.metrics.Metrics.failedAuthHistogramName;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "failedAuthMetricsCollector",
-    description = "Collects metrics for failed authentication attempts in a sliding time window",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_FAILED_AUTH,
-    enabledByDefault = true,
-    priority = Integer.MAX_VALUE // Run first to ensure metrics are available for other interceptors
+        name = "failedAuthMetricsCollector",
+        description = "Collects metrics for failed authentication attempts in a sliding time window",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_FAILED_AUTH,
+        enabledByDefault = true,
+        priority = Integer.MAX_VALUE // Run first to ensure metrics are available for other interceptors
 )
 public class FailedAuthMetricsCollector implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FailedAuthMetricsCollector.class);
@@ -77,15 +77,15 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
     static {
         if (LOGGER.isTraceEnabled()) {
             Slf4jReporter
-                .forRegistry(AUTH_METRIC_REGISTRY)
-                .outputTo(LOGGER)
-                .filter((name, metric) ->
-                    name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX))
-                    && metric instanceof Histogram hist
-                    && hist.getSnapshot().getMax() > 0)
-                .withLoggingLevel(LoggingLevel.TRACE)
-                .build()
-                .start(5, TimeUnit.SECONDS);
+                    .forRegistry(AUTH_METRIC_REGISTRY)
+                    .outputTo(LOGGER)
+                    .filter((name, metric) ->
+                            name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX))
+                                    && metric instanceof Histogram hist
+                                    && hist.getSnapshot().getMax() > 0)
+                    .withLoggingLevel(LoggingLevel.TRACE)
+                    .build()
+                    .start(5, TimeUnit.SECONDS);
         }
     }
 
@@ -124,8 +124,8 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
         // update the histogram
         var histo = AUTH_METRIC_REGISTRY.histogram(
-            failedAuthHistogramName(exchange),
-            () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))
+                failedAuthHistogramName(exchange),
+                () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))
         );
         histo.update(histo.getSnapshot().getMax() + 1);
 
@@ -145,7 +145,7 @@ public class FailedAuthMetricsCollector implements WildcardInterceptor {
             total.dec(total.getCount());
             LOGGER.trace("Pruning auth metrics");
             AUTH_METRIC_REGISTRY.removeMatching((name, metric) ->
-                name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX)));
+                    name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX)));
         }
     }
 }

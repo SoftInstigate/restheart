@@ -14,7 +14,6 @@ import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -36,10 +35,10 @@ import org.restheart.utils.HttpStatus;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "listInvitationsService",
-        description      = "GET /auth/invitations — list pending invitations for the caller's active team",
-        defaultURI       = "/auth/invitations",
-        secure           = true,
+        name = "listInvitationsService",
+        description = "GET /auth/invitations — list pending invitations for the caller's active team",
+        defaultURI = "/auth/invitations",
+        secure = true,
         enabledByDefault = false)
 public class ListInvitationsService implements JsonService {
 
@@ -63,12 +62,15 @@ public class ListInvitationsService implements JsonService {
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
     }
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");

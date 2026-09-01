@@ -40,9 +40,9 @@ import java.util.stream.StreamSupport;
 
 import static org.restheart.utils.BsonUtils.document;
 
-@RegisterPlugin(name="createIndexesOnGqlApps",
-                description = "initializes the index on the gql-apps collection to speedup fetching of graphql app definitions",
-                enabledByDefault = false
+@RegisterPlugin(name = "createIndexesOnGqlApps",
+        description = "initializes the index on the gql-apps collection to speedup fetching of graphql app definitions",
+        enabledByDefault = false
 )
 public class CreateIndexesOnGqlApps implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateIndexesOnGqlApps.class);
@@ -68,11 +68,11 @@ public class CreateIndexesOnGqlApps implements Initializer {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled =  isGQLSrvEnabled();
+                this.enabled = isGQLSrvEnabled();
             } else {
                 this.enabled = false;
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -93,12 +93,12 @@ public class CreateIndexesOnGqlApps implements Initializer {
                 var indexes = gqlApps.listIndexes(BsonDocument.class);
 
                 var uriId = StreamSupport.stream(indexes.spliterator(), false)
-                    .map(index -> exists(index, "descriptor.uri", new BsonInt32(1)))
-										.filter(id -> !BsonNull.VALUE.equals(id))
-										.findFirst()
-										.orElse(BsonNull.VALUE);
+                        .map(index -> exists(index, "descriptor.uri", new BsonInt32(1)))
+                        .filter(id -> !BsonNull.VALUE.equals(id))
+                        .findFirst()
+                        .orElse(BsonNull.VALUE);
 
-								var uriExists = !BsonNull.VALUE.equals(uriId);
+                var uriExists = !BsonNull.VALUE.equals(uriId);
 
                 if (uriExists) {
                     LOGGER.debug("Index {'descriptor.uri':1} exists on {}.{}", this.db, this.coll);
@@ -108,12 +108,12 @@ public class CreateIndexesOnGqlApps implements Initializer {
                 }
 
                 var nameId = StreamSupport.stream(indexes.spliterator(), false)
-                    .map(index -> exists(index, "descriptor.name", new BsonInt32(1)))
-										.filter(id -> !BsonNull.VALUE.equals(id))
-										.findFirst()
-										.orElse(BsonNull.VALUE);
+                        .map(index -> exists(index, "descriptor.name", new BsonInt32(1)))
+                        .filter(id -> !BsonNull.VALUE.equals(id))
+                        .findFirst()
+                        .orElse(BsonNull.VALUE);
 
-								var nameExists = !BsonNull.VALUE.equals(nameId);
+                var nameExists = !BsonNull.VALUE.equals(nameId);
 
                 if (nameExists) {
                     LOGGER.info("Deleting obsolete index {'descriptor.name':1}' on {}.{}", this.db, this.coll);
@@ -139,10 +139,10 @@ public class CreateIndexesOnGqlApps implements Initializer {
             } else {
                 var key$ = key$$.asDocument();
                 if (key$.containsKey(key) && key$.get(key).equals(value)) {
-									return BsonUtils.get(index, "name").orElse(BsonNull.VALUE);
-								} else {
-									return BsonNull.VALUE;
-								}
+                    return BsonUtils.get(index, "name").orElse(BsonNull.VALUE);
+                } else {
+                    return BsonNull.VALUE;
+                }
             }
         }
     }

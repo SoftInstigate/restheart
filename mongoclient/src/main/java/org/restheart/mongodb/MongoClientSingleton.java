@@ -196,8 +196,8 @@ public class MongoClientSingleton {
     public boolean equals(final Object obj) {
         // it is a singleton!
         return obj == null
-            ? false
-            : getClass().getName().equals(obj.getClass().getName());
+                ? false
+                : getClass().getName().equals(obj.getClass().getName());
     }
 
     private static class MongoClientSingletonHolder {

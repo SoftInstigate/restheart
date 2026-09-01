@@ -41,7 +41,7 @@ import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(name="graphAppsUpdater",
+@RegisterPlugin(name = "graphAppsUpdater",
         description = "periodically revalidates entries in GQL Apps cache",
         enabledByDefault = true
 )
@@ -81,8 +81,8 @@ public class GraphAppsUpdater implements Initializer {
     public void init() {
         if (this.enabled) {
             Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(() -> ThreadsUtils.virtualThreadsExecutor()
-                    .execute(this::revalidateCacheEntries), TTR, TTR, TimeUnit.MILLISECONDS);
+                    .scheduleAtFixedRate(() -> ThreadsUtils.virtualThreadsExecutor()
+                            .execute(this::revalidateCacheEntries), TTR, TTR, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -91,25 +91,25 @@ public class GraphAppsUpdater implements Initializer {
         final var _cacheMap = new HashMap<>(this.gqlAppDefCache.asMap());
 
         _cacheMap.entrySet().stream()
-            .filter(entry -> entry.getValue().isPresent())
-            // filter out not updated documents (same etag than cached entry)
-            .filter(entry -> AppDefinitionLoader.isUpdated(entry.getKey(), entry.getValue().get().getEtag()))
-            .map(Map.Entry::getKey)
-            .forEach(appUri -> {
-                try {
-                    var appDef = AppDefinitionLoader.load(appUri);
-                    this.gqlAppDefCache.put(appUri, appDef);
-                    LOGGER.debug("gql cache entry {} updated", appUri);
-                } catch (GraphQLAppDefNotFoundException e) {
-                    this.gqlAppDefCache.invalidate(appUri);
-                    LOGGER.debug("gql cache entry {} removed", appUri);
-                } catch (GraphQLIllegalAppDefinitionException e) {
-                    this.gqlAppDefCache.invalidate(appUri);
-                    LOGGER.warn("gql cache entry {} removed due to illegal definition", appUri, e);
-                } catch (Throwable e) {
-                    this.gqlAppDefCache.invalidate(appUri);
-                    LOGGER.warn("error updating gql cache entry {}", appUri, e);
-                }
-        });
+                .filter(entry -> entry.getValue().isPresent())
+                // filter out not updated documents (same etag than cached entry)
+                .filter(entry -> AppDefinitionLoader.isUpdated(entry.getKey(), entry.getValue().get().getEtag()))
+                .map(Map.Entry::getKey)
+                .forEach(appUri -> {
+                    try {
+                        var appDef = AppDefinitionLoader.load(appUri);
+                        this.gqlAppDefCache.put(appUri, appDef);
+                        LOGGER.debug("gql cache entry {} updated", appUri);
+                    } catch (GraphQLAppDefNotFoundException e) {
+                        this.gqlAppDefCache.invalidate(appUri);
+                        LOGGER.debug("gql cache entry {} removed", appUri);
+                    } catch (GraphQLIllegalAppDefinitionException e) {
+                        this.gqlAppDefCache.invalidate(appUri);
+                        LOGGER.warn("gql cache entry {} removed due to illegal definition", appUri, e);
+                    } catch (Throwable e) {
+                        this.gqlAppDefCache.invalidate(appUri);
+                        LOGGER.warn("error updating gql cache entry {}", appUri, e);
+                    }
+                });
     }
 }

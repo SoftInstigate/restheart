@@ -22,7 +22,8 @@ package org.restheart.mongodb;
 
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
-import static io.undertow.util.Headers.*;
+import static io.undertow.util.Headers.ETAG_STRING;
+import static io.undertow.util.Headers.LOCATION_STRING;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 
@@ -70,12 +71,12 @@ import io.undertow.util.PathTemplateMatcher;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "mongo",
-    description = "handles requests to mongodb resources",
-    secure = true,
-    enabledByDefault = true,
-    defaultURI = "/",
-    priority = Integer.MIN_VALUE)
+        name = "mongo",
+        description = "handles requests to mongodb resources",
+        secure = true,
+        enabledByDefault = true,
+        defaultURI = "/",
+        priority = Integer.MIN_VALUE)
 public class MongoService implements Service<MongoRequest, MongoResponse> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoService.class);
 
@@ -235,14 +236,14 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if (mongoMounts != null) {
             var mm = mongoMounts.match(path);
             return mm != null
-                ? mm.getValue()
-                : null;
+                    ? mm.getValue()
+                    : null;
         } else if (templateMongoMounts != null) {
             var tmm = templateMongoMounts.match(path);
             exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, tmm);
             return tmm != null
-                ? tmm.getValue()
-                : null;
+                    ? tmm.getValue()
+                    : null;
         } else {
             return null;
         }
@@ -364,91 +365,91 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         request.getExchange().setRelativePath(request.getPath());
     }
 
-	private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
+    private final static String LOCATION_ETAG = LOCATION_STRING + ", " + ETAG_STRING;
 
-	// Optimized: only non-CORS-safelisted headers
-	// Note: Content-Type is safelisted only for form values, not for application/json
-	private final static String ALLOW_HEADERS_BASE = "Authorization, Content-Type, X-Requested-With, No-Auth-Challenge";
-	private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
-	private final static String ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH = ALLOW_HEADERS_BASE + ", If-Match, If-None-Match";
+    // Optimized: only non-CORS-safelisted headers
+    // Note: Content-Type is safelisted only for form values, not for application/json
+    private final static String ALLOW_HEADERS_BASE = "Authorization, Content-Type, X-Requested-With, No-Auth-Challenge";
+    private final static String ALLOW_HEADERS_WITH_IF_MATCH = ALLOW_HEADERS_BASE + ", If-Match";
+    private final static String ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH = ALLOW_HEADERS_BASE + ", If-Match, If-None-Match";
 
-	@Override
-	public String accessControlAllowHeaders(Request<?> r) {
-		var defaultHeaders = Service.super.accessControlAllowHeaders(r);
+    @Override
+    public String accessControlAllowHeaders(Request<?> r) {
+        var defaultHeaders = Service.super.accessControlAllowHeaders(r);
 
-		if (r instanceof MongoRequest mr) {
-			return switch (mr.getType()) {
-				case INVALID -> "";
+        if (r instanceof MongoRequest mr) {
+            return switch (mr.getType()) {
+                case INVALID -> "";
 
-				case ROOT, ROOT_SIZE, AGGREGATION, COLLECTION_INDEXES, FILE_BINARY, CHANGE_STREAM -> ALLOW_HEADERS_BASE;
+                case ROOT, ROOT_SIZE, AGGREGATION, COLLECTION_INDEXES, FILE_BINARY, CHANGE_STREAM -> ALLOW_HEADERS_BASE;
 
-				case DOCUMENT, FILE, SCHEMA -> ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH;
+                case DOCUMENT, FILE, SCHEMA -> ALLOW_HEADERS_WITH_IF_MATCH_AND_IF_NONE_MATCH;
 
-				default -> ALLOW_HEADERS_WITH_IF_MATCH;
-			};
-		} else {
-			return defaultHeaders;
-		}
-	}
+                default -> ALLOW_HEADERS_WITH_IF_MATCH;
+            };
+        } else {
+            return defaultHeaders;
+        }
+    }
 
-	@Override
-	public String accessControlExposeHeaders(Request<?> r) {
-		// Only return expose headers for MongoRequest, not for other services
-		if (!(r instanceof MongoRequest mr)) {
-			return "";
-		}
+    @Override
+    public String accessControlExposeHeaders(Request<?> r) {
+        // Only return expose headers for MongoRequest, not for other services
+        if (!(r instanceof MongoRequest mr)) {
+            return "";
+        }
 
-		return switch (mr.getType()) {
-			case ROOT -> "";
+        return switch (mr.getType()) {
+            case ROOT -> "";
 
-			case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS ->
-				mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
+            case COLLECTION, FILES_BUCKET, SCHEMA_STORE, SESSIONS, TRANSACTIONS ->
+                mr.isPost() ? LOCATION_ETAG : ETAG_STRING;
 
-			default -> ETAG_STRING;
-		};
-	}
+            default -> ETAG_STRING;
+        };
+    }
 
-	private final static String GET = "GET";
-	private final static String POST = "POST";
-	private final static String DELETE = "DELETE";
-	private final static String GET_POST = "GET, POST";
-	private final static String PUT_DELETE = "PUT, DELETE";
-	private final static String PATCH_DELETE = "PATCH, DELETE";
-	private final static String GET_PUT_DELETE = "GET, PUT, DELETE";
-	private final static String GET_PUT_PATCH_DELETE = "GET, PUT, PATCH, DELETE";
-	private final static String GET_PUT_PATCH_POST_DELETE = "GET, PUT, PATCH, POST, DELETE";
+    private final static String GET = "GET";
+    private final static String POST = "POST";
+    private final static String DELETE = "DELETE";
+    private final static String GET_POST = "GET, POST";
+    private final static String PUT_DELETE = "PUT, DELETE";
+    private final static String PATCH_DELETE = "PATCH, DELETE";
+    private final static String GET_PUT_DELETE = "GET, PUT, DELETE";
+    private final static String GET_PUT_PATCH_DELETE = "GET, PUT, PATCH, DELETE";
+    private final static String GET_PUT_PATCH_POST_DELETE = "GET, PUT, PATCH, POST, DELETE";
 
-	@Override
-	public String accessControlAllowMethods(Request<?> r) {
-		if (r instanceof MongoRequest mr) {
-			return switch (mr.getType()) {
-				case INVALID -> "";
+    @Override
+    public String accessControlAllowMethods(Request<?> r) {
+        if (r instanceof MongoRequest mr) {
+            return switch (mr.getType()) {
+                case INVALID -> "";
 
-				case ROOT, ROOT_SIZE, DB_SIZE, DB_META, COLLECTION_META, COLLECTION_SIZE, CHANGE_STREAM,
-					 COLLECTION_INDEXES, FILES_BUCKET_SIZE, FILES_BUCKET_META, FILE_BINARY, AGGREGATION,
-					 SCHEMA_STORE_SIZE, SCHEMA_STORE_META -> GET;
+                case ROOT, ROOT_SIZE, DB_SIZE, DB_META, COLLECTION_META, COLLECTION_SIZE, CHANGE_STREAM,
+                    COLLECTION_INDEXES, FILES_BUCKET_SIZE, FILES_BUCKET_META, FILE_BINARY, AGGREGATION,
+                    SCHEMA_STORE_SIZE, SCHEMA_STORE_META -> GET;
 
-				case DB, DOCUMENT, FILE -> GET_PUT_PATCH_DELETE;
+                case DB, DOCUMENT, FILE -> GET_PUT_PATCH_DELETE;
 
-				case SCHEMA -> GET_PUT_DELETE;
+                case SCHEMA -> GET_PUT_DELETE;
 
-				case COLLECTION, FILES_BUCKET, SCHEMA_STORE -> GET_PUT_PATCH_POST_DELETE;
+                case COLLECTION, FILES_BUCKET, SCHEMA_STORE -> GET_PUT_PATCH_POST_DELETE;
 
-				case BULK_DOCUMENTS, TRANSACTION -> PATCH_DELETE;
+                case BULK_DOCUMENTS, TRANSACTION -> PATCH_DELETE;
 
-			case BULK_FILES -> DELETE;
+                case BULK_FILES -> DELETE;
 
-				case INDEX -> PUT_DELETE;
+                case INDEX -> PUT_DELETE;
 
-				case SESSION -> DELETE;
+                case SESSION -> DELETE;
 
-				case SESSIONS -> POST;
+                case SESSIONS -> POST;
 
-				case TRANSACTIONS -> GET_POST;
-			};
+                case TRANSACTIONS -> GET_POST;
+            };
 
-		} else {
-			return Service.super.accessControlAllowMethods(r);
-		}
-	}
+        } else {
+            return Service.super.accessControlAllowMethods(r);
+        }
+    }
 }

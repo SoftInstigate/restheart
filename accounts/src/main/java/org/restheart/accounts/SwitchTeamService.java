@@ -12,11 +12,13 @@ import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
@@ -46,10 +48,10 @@ import java.util.Set;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "switchTeamService",
-        description      = "POST /auth/switch-team \u2014 switch active team and reissue JWT cookie",
-        defaultURI       = "/auth/switch-team",
-        secure           = true,
+        name = "switchTeamService",
+        description = "POST /auth/switch-team \u2014 switch active team and reissue JWT cookie",
+        defaultURI = "/auth/switch-team",
+        secure = true,
         enabledByDefault = false)
 public class SwitchTeamService implements JsonService {
 
@@ -65,11 +67,14 @@ public class SwitchTeamService implements JsonService {
     @Inject("mclient")
     private com.mongodb.client.MongoClient mclient;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r -> r.getPath().equals("/auth/switch-team") && (r.isPost() || r.isOptions()));
         }
@@ -77,14 +82,20 @@ public class SwitchTeamService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (!req.isPost())   { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isPost()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
 
@@ -111,7 +122,7 @@ public class SwitchTeamService implements JsonService {
             return;
         }
 
-        var email      = account.getPrincipal().getName();
+        var email = account.getPrincipal().getName();
         var membership = accountsService.getMembershipProvider(req);
 
         // Find the target membership via the SPI
@@ -135,16 +146,19 @@ public class SwitchTeamService implements JsonService {
         } catch (IllegalArgumentException e) {
             Errors.error(res, HttpStatus.SC_FORBIDDEN, e.getMessage());
             return;
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
         }
 
         // Read system roles from DB — do NOT use matched.role() (membership role)
-        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf)).findUser(email);
+        var userDoc = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf)).findUser(email);
         var dbRoles = userDoc
                 .map(u -> u.containsKey("roles") && u.get("roles").isArray()
                         ? u.getArray("roles").stream()
-                            .filter(BsonValue::isString)
-                            .map(v -> v.asString().getValue())
-                            .collect(java.util.stream.Collectors.toSet())
+                        .filter(BsonValue::isString)
+                        .map(v -> v.asString().getValue())
+                        .collect(java.util.stream.Collectors.toSet())
                         : Set.<String>of())
                 .orElse(Set.of());
 
@@ -156,7 +170,8 @@ public class SwitchTeamService implements JsonService {
                 req.attachedParams(),
                 java.util.Map.<String, Object>of(conf.teamClaimName(),
                         TeamClaim.of(matched.teamId(), matched.role())),
-                null);
+                null,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         // Deliver the reissued token per the `delivery` query parameter
         // (cookie by default, body for bearer SPAs).

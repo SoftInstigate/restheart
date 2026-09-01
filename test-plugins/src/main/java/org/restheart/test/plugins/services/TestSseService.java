@@ -37,11 +37,11 @@ import org.restheart.plugins.SseService;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name            = "testSse",
-    description     = "Open SSE service for integration tests",
-    defaultURI      = "/test-sse",
-    secure          = false,
-    enabledByDefault = true
+        name = "testSse",
+        description = "Open SSE service for integration tests",
+        defaultURI = "/test-sse",
+        secure = false,
+        enabledByDefault = true
 )
 public class TestSseService implements SseService {
 
@@ -66,6 +66,7 @@ public class TestSseService implements SseService {
             }
         });
 
-        conn.addCloseTask(c -> { /* close task registered for testing */ });
+        conn.addCloseTask(c -> { /* close task registered for testing */
+        });
     }
 }

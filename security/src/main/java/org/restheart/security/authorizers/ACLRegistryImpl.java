@@ -35,7 +35,7 @@ public class ACLRegistryImpl implements ACLRegistry {
     private final Set<Predicate<Request<?>>> authenticationRequirements;
 
     private ACLRegistryImpl() {
-        vetoPredicates  = new LinkedHashSet<>();
+        vetoPredicates = new LinkedHashSet<>();
         allowPredicates = new LinkedHashSet<>();
         authenticationRequirements = new LinkedHashSet<>();
     }

@@ -59,8 +59,8 @@ import kong.unirest.Unirest;
  */
 public class ChangeStreamSseIT extends AbstactIT {
 
-    private static final String BASE     = "http://localhost:8080";
-    private static final String TEST_DB  = BASE + "/test-cs-sse";
+    private static final String BASE = "http://localhost:8080";
+    private static final String TEST_DB = BASE + "/test-cs-sse";
     private static final String TEST_COLL = TEST_DB + "/coll";
     private static final String STREAM_URI = TEST_COLL + "/_streams/cs";
 
@@ -75,20 +75,20 @@ public class ChangeStreamSseIT extends AbstactIT {
     void setupCollection() throws Exception {
         // create the test database
         Unirest.put(TEST_DB)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{}")
+                .asEmpty();
 
         // create the collection with a change stream definition
         var resp = Unirest.put(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"streams\": [{\"stages\": [], \"uri\": \"cs\"}]}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"streams\": [{\"stages\": [], \"uri\": \"cs\"}]}")
+                .asEmpty();
 
         assertTrue(resp.getStatus() == 200 || resp.getStatus() == 201,
-            "Collection setup failed with status " + resp.getStatus());
+                "Collection setup failed with status " + resp.getStatus());
     }
 
     // -----------------------------------------------------------------------
@@ -132,7 +132,10 @@ public class ChangeStreamSseIT extends AbstactIT {
         } catch (TimeoutException e) {
             return new ArrayList<>(lines); // return whatever arrived before the deadline
         } finally {
-            try { is.close(); } catch (Exception ignored) {} // NOSONAR
+            try {
+                is.close();
+            } catch (Exception ignored) {
+            } // NOSONAR
         }
     }
 
@@ -150,7 +153,7 @@ public class ChangeStreamSseIT extends AbstactIT {
 
         var resp = SSE_CLIENT.send(req, BodyHandlers.discarding());
         assertEquals(400, resp.statusCode(),
-            "Plain GET to a change stream endpoint must return 400");
+                "Plain GET to a change stream endpoint must return 400");
     }
 
     @Test
@@ -176,17 +179,17 @@ public class ChangeStreamSseIT extends AbstactIT {
 
         // insert a document to trigger a change event
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"sse\": true, \"value\": 42}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"sse\": true, \"value\": 42}")
+                .asEmpty();
 
         var lines = linesFuture.get(12, TimeUnit.SECONDS);
 
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("data:")),
-            "SSE connection must receive a 'data:' line after document insert; got: " + lines);
+                "SSE connection must receive a 'data:' line after document insert; got: " + lines);
         assertTrue(lines.stream().anyMatch(l -> l.contains("insert")),
-            "Received event must contain operationType 'insert'; got: " + lines);
+                "Received event must contain operationType 'insert'; got: " + lines);
     }
 
     @Test
@@ -200,10 +203,10 @@ public class ChangeStreamSseIT extends AbstactIT {
         var resp = SSE_CLIENT.send(req, BodyHandlers.ofInputStream());
         try {
             assertEquals(200, resp.statusCode(),
-                "SSE upgrade to change stream must return 200");
+                    "SSE upgrade to change stream must return 200");
             assertTrue(
-                resp.headers().firstValue("content-type").orElse("").contains("text/event-stream"),
-                "Content-Type must contain text/event-stream");
+                    resp.headers().firstValue("content-type").orElse("").contains("text/event-stream"),
+                    "Content-Type must contain text/event-stream");
         } finally {
             resp.body().close();
         }
@@ -229,18 +232,23 @@ public class ChangeStreamSseIT extends AbstactIT {
     void websocketAndSseClientsBothReceiveEvent() throws Exception {
         // SSE client in background
         var sseFuture = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(sseRequest(), 3, 12); }
-            catch (Exception e) { return List.<String>of(); }
+            try {
+                return readSseLines(sseRequest(), 3, 12);
+            }
+            catch (Exception e) {
+                return List.<String>of();
+            }
         });
 
         // WebSocket client
         var wsMessages = Collections.synchronizedList(new ArrayList<String>());
-        var wsLatch    = new CountDownLatch(1);
+        var wsLatch = new CountDownLatch(1);
         var ws = SSE_CLIENT.newWebSocketBuilder()
                 .header("Authorization", ADMIN_BASIC)
                 .buildAsync(URI.create(STREAM_URI.replace("http://", "ws://")),
                         new WebSocket.Listener() {
                             private final StringBuilder buf = new StringBuilder();
+
                             @Override
                             public CompletionStage<?> onText(WebSocket w, CharSequence data, boolean last) {
                                 buf.append(data);
@@ -257,10 +265,10 @@ public class ChangeStreamSseIT extends AbstactIT {
         Thread.sleep(1_500); // let both connections and the shared worker settle
 
         Unirest.post(TEST_COLL)
-               .basicAuth("admin", "secret")
-               .contentType("application/json")
-               .body("{\"both\": true}")
-               .asEmpty();
+                .basicAuth("admin", "secret")
+                .contentType("application/json")
+                .body("{\"both\": true}")
+                .asEmpty();
 
         var sseLines = sseFuture.get(12, TimeUnit.SECONDS);
         assertTrue(sseLines.stream().anyMatch(l -> l.contains("insert")),
@@ -282,7 +290,7 @@ public class ChangeStreamSseIT extends AbstactIT {
 
         Thread.sleep(1_000);
         Unirest.post(TEST_COLL).basicAuth("admin", "secret")
-               .contentType("application/json").body("{\"v\":1}").asEmpty();
+                .contentType("application/json").body("{\"v\":1}").asEmpty();
         Thread.sleep(500);
 
         // 2. Close the only session — the worker should self-terminate
@@ -294,12 +302,16 @@ public class ChangeStreamSseIT extends AbstactIT {
         // 4. A fresh SSE connection must succeed and serve new events,
         //    which proves the old worker was removed and a new one was created.
         var secondLines = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(sseRequest(), 3, 10); }
-            catch (Exception e) { return List.<String>of(); }
+            try {
+                return readSseLines(sseRequest(), 3, 10);
+            }
+            catch (Exception e) {
+                return List.<String>of();
+            }
         });
         Thread.sleep(1_000);
         Unirest.post(TEST_COLL).basicAuth("admin", "secret")
-               .contentType("application/json").body("{\"v\":2}").asEmpty();
+                .contentType("application/json").body("{\"v\":2}").asEmpty();
 
         var lines = secondLines.get(12, TimeUnit.SECONDS);
         assertTrue(lines.stream().anyMatch(l -> l.contains("insert")),
@@ -310,13 +322,17 @@ public class ChangeStreamSseIT extends AbstactIT {
     void lastEventIdResumesContinuesFromToken() throws Exception {
         // 1. First connection: receive one event and capture its resume token (the SSE id: field)
         var firstLines = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(sseRequest(), 3, 12); } // event: + data: + id:
-            catch (Exception e) { return List.<String>of(); }
+            try {
+                return readSseLines(sseRequest(), 3, 12);
+            } // event: + data: + id:
+            catch (Exception e) {
+                return List.<String>of();
+            }
         });
 
         Thread.sleep(1_000);
         Unirest.post(TEST_COLL).basicAuth("admin", "secret")
-               .contentType("application/json").body("{\"seq\":1}").asEmpty();
+                .contentType("application/json").body("{\"seq\":1}").asEmpty();
 
         var lines1 = firstLines.get(15, TimeUnit.SECONDS);
         var resumeToken = lines1.stream()
@@ -339,13 +355,17 @@ public class ChangeStreamSseIT extends AbstactIT {
                 .build();
 
         var secondLines = CompletableFuture.supplyAsync(() -> {
-            try { return readSseLines(resumeReq, 3, 12); }
-            catch (Exception e) { return List.<String>of(); }
+            try {
+                return readSseLines(resumeReq, 3, 12);
+            }
+            catch (Exception e) {
+                return List.<String>of();
+            }
         });
 
         Thread.sleep(1_000);
         Unirest.post(TEST_COLL).basicAuth("admin", "secret")
-               .contentType("application/json").body("{\"seq\":2}").asEmpty();
+                .contentType("application/json").body("{\"seq\":2}").asEmpty();
 
         var lines2 = secondLines.get(15, TimeUnit.SECONDS);
         assertTrue(lines2.stream().anyMatch(l -> l.contains("insert")),

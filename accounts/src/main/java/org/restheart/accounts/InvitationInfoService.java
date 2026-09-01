@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "invitationInfoService",
-        description      = "GET /auth/invitation — returns invitation metadata for the acceptance UI",
-        defaultURI       = "/auth/invitation",
+        name = "invitationInfoService",
+        description = "GET /auth/invitation — returns invitation metadata for the acceptance UI",
+        defaultURI = "/auth/invitation",
         enabledByDefault = false)
 public class InvitationInfoService implements JsonService {
 
@@ -89,7 +89,7 @@ public class InvitationInfoService implements JsonService {
         var email = emailParam.getFirst().trim().toLowerCase();
         var token = tokenParam.getFirst().trim();
 
-        var db = new DbHelper(mclient, RequestOverrides.db(req, conf));
+        var db = new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
         var inviteOpt = db.findInvitationByEmailAndToken(email, token);
 
         if (inviteOpt.isEmpty()) {
@@ -97,9 +97,9 @@ public class InvitationInfoService implements JsonService {
             return;
         }
 
-        var invite   = inviteOpt.get();
-        var teamId    = invite.get("teamId");
-        var role     = invite.getString("role").getValue();
+        var invite = inviteOpt.get();
+        var teamId = invite.get("teamId");
+        var role = invite.getString("role").getValue();
         var isNewUser = invite.containsKey("isNewUser") && invite.getBoolean("isNewUser").getValue();
         var expiresAt = invite.containsKey("expiresAt") ? invite.getDateTime("expiresAt").getValue() : 0L;
 
@@ -120,9 +120,9 @@ public class InvitationInfoService implements JsonService {
         }
 
         var body = new JsonObject();
-        body.addProperty("email",     email);
-        body.addProperty("teamName",   teamName);
-        body.addProperty("role",      role);
+        body.addProperty("email", email);
+        body.addProperty("teamName", teamName);
+        body.addProperty("role", role);
         body.addProperty("isNewUser", isNewUser);
         body.addProperty("expiresAt", java.time.Instant.ofEpochMilli(expiresAt).toString());
 

@@ -41,11 +41,11 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BootstrapLogger {
-    
+
     private BootstrapLogger() {
         // Utility class, no instantiation
     }
-    
+
     /**
      * Start a bootstrap phase
      * 
@@ -57,7 +57,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.PHASE_START);
         logger.info(message, args);
     }
-    
+
     /**
      * End a bootstrap phase
      * 
@@ -70,7 +70,7 @@ public class BootstrapLogger {
         logger.info(message, args);
         RequestPhaseContext.reset();
     }
-    
+
     /**
      * Log an item within a phase (not the last item)
      * 
@@ -82,7 +82,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.ITEM);
         logger.info(message, args);
     }
-    
+
     /**
      * Log the last item within a phase
      * 
@@ -94,7 +94,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.ITEM_LAST);
         logger.info(message, args);
     }
-    
+
     /**
      * Log a sub-item (e.g., success/failure under an item)
      * 
@@ -106,7 +106,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.SUBITEM);
         logger.info(message, args);
     }
-    
+
     /**
      * Log the last sub-item
      * 
@@ -119,7 +119,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setLast(true);
         logger.info(message, args);
     }
-    
+
     /**
      * Log informational message within a phase (no structural markers)
      * 
@@ -131,7 +131,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.INFO);
         logger.info(message, args);
     }
-    
+
     /**
      * Log a debug message with item prefix
      * 
@@ -143,7 +143,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.ITEM);
         logger.debug(message, args);
     }
-    
+
     /**
      * Log a debug message with sub-item prefix
      * 
@@ -155,7 +155,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.SUBITEM);
         logger.debug(message, args);
     }
-    
+
     /**
      * Log a debug message with info prefix
      * 
@@ -167,7 +167,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.INFO);
         logger.debug(message, args);
     }
-    
+
     /**
      * Log an error with item prefix
      * 
@@ -179,7 +179,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.ITEM);
         logger.error(message, args);
     }
-    
+
     /**
      * Log an error with sub-item prefix
      * 
@@ -191,7 +191,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.SUBITEM);
         logger.error(message, args);
     }
-    
+
     /**
      * Log a warning with item prefix
      * 
@@ -203,7 +203,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.ITEM);
         logger.warn(message, args);
     }
-    
+
     /**
      * Log a warning with sub-item prefix
      * 
@@ -215,7 +215,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.SUBITEM);
         logger.warn(message, args);
     }
-    
+
     /**
      * Log a standalone info message (not part of a group)
      * 
@@ -227,7 +227,7 @@ public class BootstrapLogger {
         RequestPhaseContext.setPhase(Phase.STANDALONE);
         logger.info(message, args);
     }
-    
+
     /**
      * Log a standalone warning message (not part of a group)
      * 

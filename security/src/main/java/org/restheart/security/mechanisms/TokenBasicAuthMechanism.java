@@ -55,9 +55,9 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  *
  */
 @RegisterPlugin(name = "tokenBasicAuthMechanism",
-                description = "authenticates the requests using the configured Token Manager",
-                enabledByDefault = false,
-                priority = Integer.MIN_VALUE)
+        description = "authenticates the requests using the configured Token Manager",
+        enabledByDefault = false,
+        priority = Integer.MIN_VALUE)
 public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implements AuthMechanism {
     static final Logger LOGGER = LoggerFactory.getLogger(TokenBasicAuthMechanism.class);
 
@@ -75,7 +75,7 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
     private boolean enabled = true;
 
     private static void clear(final char[] array) {
-        for (int i = 0; i < array.length; i++) {
+        for (int i = 0;i < array.length;i++) {
             array[i] = 0x00;
         }
     }
@@ -100,7 +100,7 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     @Override
     public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext) {
-         if (!this.enabled) {
+        if (!this.enabled) {
             return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
         }
 

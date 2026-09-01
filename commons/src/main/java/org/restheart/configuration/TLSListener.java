@@ -72,32 +72,32 @@ public record TLSListener(boolean enabled, String host, int port, String keystor
      * Configuration key for the HTTPS listener section.
      */
     public static final String HTTPS_LISTENER_KEY = "https-listener";
-    
+
     /**
      * Configuration key for enabling/disabling the listener.
      */
     public static final String ENABLED_KEY = "enabled";
-    
+
     /**
      * Configuration key for the host/IP binding.
      */
     public static final String HOST_KEY = "host";
-    
+
     /**
      * Configuration key for the port number.
      */
     public static final String PORT_KEY = "port";
-    
+
     /**
      * Configuration key for the keystore file path.
      */
     public static final String KEYSTORE_PATH_KEY = "keystore-path";
-    
+
     /**
      * Configuration key for the keystore password.
      */
     public static final String KEYSTOPRE_PWD_KEY = "keystore-password";
-    
+
     /**
      * Configuration key for the certificate password.
      */
@@ -117,11 +117,11 @@ public record TLSListener(boolean enabled, String host, int port, String keystor
      */
     public TLSListener(Map<String, Object> conf, String listenerKey, TLSListener defaultValue, boolean silent) {
         this(findOrDefault(conf, "/" + listenerKey + "/" + ENABLED_KEY, defaultValue.enabled(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" +  HOST_KEY, defaultValue.host(), silent),
-            findOrDefault(conf,"/" + listenerKey + "/" +  PORT_KEY, defaultValue.port(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTORE_PATH_KEY, defaultValue.keystorePath(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + KEYSTOPRE_PWD_KEY, defaultValue.keystorePwd(), silent),
-            findOrDefault(conf, "/" + listenerKey + "/" + CERT_PWD_KEY, defaultValue.certificatePwd(), silent));
+                findOrDefault(conf, "/" + listenerKey + "/" + HOST_KEY, defaultValue.host(), silent),
+                findOrDefault(conf, "/" + listenerKey + "/" + PORT_KEY, defaultValue.port(), silent),
+                findOrDefault(conf, "/" + listenerKey + "/" + KEYSTORE_PATH_KEY, defaultValue.keystorePath(), silent),
+                findOrDefault(conf, "/" + listenerKey + "/" + KEYSTOPRE_PWD_KEY, defaultValue.keystorePwd(), silent),
+                findOrDefault(conf, "/" + listenerKey + "/" + CERT_PWD_KEY, defaultValue.certificatePwd(), silent));
     }
 
     /**
@@ -139,7 +139,7 @@ public record TLSListener(boolean enabled, String host, int port, String keystor
                 "host: " + host + ", " +
                 "port: " + port + ", " +
                 "keystorePath: " + keystorePath + ", " +
-                "keystorePwd: "  + (keystorePwd == null ? "null" : "******") + ", " +
-                "certificatePwd:"  + (certificatePwd == null ? "null" : "******") + "}";
+                "keystorePwd: " + (keystorePwd == null ? "null" : "******") + ", " +
+                "certificatePwd:" + (certificatePwd == null ? "null" : "******") + "}";
     }
 }

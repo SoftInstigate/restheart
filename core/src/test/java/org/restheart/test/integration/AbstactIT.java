@@ -89,7 +89,7 @@ public abstract class AbstactIT {
             if (mongoConnectionString != null) {
                 MONGO_URI = new ConnectionString(mongoConnectionString);
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             LOG.warn("wrong property test-connection-string, using default value");
         }
 

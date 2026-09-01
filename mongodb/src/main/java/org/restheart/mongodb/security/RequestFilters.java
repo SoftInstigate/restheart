@@ -51,7 +51,7 @@ public class RequestFilters implements MongoInterceptor {
         var __maa = registry.getAuthorizers()
                 .stream()
                 .filter(a -> "mongoAclAuthorizer".equals(a.getName())
-                    || "fileAclAuthorizer".equals(a.getName()))
+                        || "fileAclAuthorizer".equals(a.getName()))
                 .findFirst();
 
         if (__maa == null || !__maa.isPresent()) {

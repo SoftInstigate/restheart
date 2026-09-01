@@ -20,7 +20,7 @@
  */
 package karate;
 
-import static java.nio.file.StandardCopyOption.*;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 public class CopyFolderRecursively {
 
     // cp -r polyglot/src/test/resources/test-js-plugins core/target/plugins
-    public  void copyFolder() throws IOException, InterruptedException {
+    public void copyFolder() throws IOException, InterruptedException {
 
         String workingDir = System.getProperty("user.dir");
         String projectRoot = workingDir.substring(0, workingDir.lastIndexOf("/"));
@@ -46,16 +46,16 @@ public class CopyFolderRecursively {
         Path jsPluginDir = Paths.get(projectRoot, "/core/target/plugins/test-js-plugins/");
 
         // delete test-js-plugins directory and files within
-        if(Files.exists(jsPluginDir)) {
+        if (Files.exists(jsPluginDir)) {
 
             Files.walk(jsPluginDir)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
         }
 
         try (Stream<Path> stream = Files.walk(src)) {
-            stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))) );
+            stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))));
         }
         // file set last modified
         setLastModified(jsPluginDir.toFile(), System.currentTimeMillis());

@@ -238,9 +238,9 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
             LOGGER.error("*** cannot find the file {} " + "specified in the configuration.", extractConfigFilePath(arguments));
 
             LOGGER.error("*** note that the path must be either "
-              + "absolute "
-              + "or relative to the restheart configuration file (if specified) "
-              + "or relative to the plugins directory (if using the default configuration)");
+                    + "absolute "
+                    + "or relative to the restheart configuration file (if specified) "
+                    + "or relative to the plugins directory (if using the default configuration)");
             throw ex;
         } catch (UnsupportedEncodingException uee) {
             throw new RuntimeException(uee);

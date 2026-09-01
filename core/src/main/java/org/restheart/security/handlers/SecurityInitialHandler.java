@@ -45,9 +45,9 @@ public class SecurityInitialHandler extends PipelinedHandler {
     private final SecurityContextFactoryImpl contextFactory;
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final String programaticMechName,
-            final SecurityContextFactoryImpl contextFactory,
-            final PipelinedHandler next) {
+                                  final String programaticMechName,
+                                  final SecurityContextFactoryImpl contextFactory,
+                                  final PipelinedHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
         this.programaticMechName = programaticMechName;
@@ -55,9 +55,9 @@ public class SecurityInitialHandler extends PipelinedHandler {
     }
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final IdentityManager identityManager,
-            final String programaticMechName,
-            final PipelinedHandler next) {
+                                  final IdentityManager identityManager,
+                                  final String programaticMechName,
+                                  final PipelinedHandler next) {
         this(authenticationMode,
                 programaticMechName,
                 (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,

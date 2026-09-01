@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 public class SseIT {
 
     private static final String BASE = "http://localhost:8080";
-    private static final String OPEN_URI   = BASE + "/test-sse";
+    private static final String OPEN_URI = BASE + "/test-sse";
     private static final String SECURE_URI = BASE + "/test-sse-secure";
 
     private static final HttpClient CLIENT = HttpClient.newBuilder()
@@ -72,7 +72,7 @@ public class SseIT {
      */
     private List<String> readLines(HttpRequest req, int count, int timeoutSec) throws Exception {
         var resp = CLIENT.send(req, BodyHandlers.ofInputStream());
-        var is   = resp.body();
+        var is = resp.body();
 
         var future = new CompletableFuture<List<String>>();
         Thread.ofVirtual().start(() -> {
@@ -91,7 +91,10 @@ public class SseIT {
         try {
             return future.get(timeoutSec, TimeUnit.SECONDS);
         } finally {
-            try { is.close(); } catch (Exception ignored) {}
+            try {
+                is.close();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -110,8 +113,8 @@ public class SseIT {
         try {
             assertEquals(200, resp.statusCode(), "SSE endpoint must return 200");
             assertTrue(
-                resp.headers().firstValue("content-type").orElse("").contains("text/event-stream"),
-                "Content-Type must contain text/event-stream"
+                    resp.headers().firstValue("content-type").orElse("").contains("text/event-stream"),
+                    "Content-Type must contain text/event-stream"
             );
         } finally {
             resp.body().close();

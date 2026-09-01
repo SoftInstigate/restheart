@@ -40,15 +40,15 @@ class UnionsMappings extends Mappings {
      * @return the unions mappings
      * @throws GraphQLIllegalAppDefinitionException
      */
-     static Map<String, Map<String, io.undertow.predicate.Predicate>> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
+    static Map<String, Map<String, io.undertow.predicate.Predicate>> get(BsonDocument doc, TypeDefinitionRegistry typeDefinitionRegistry) throws GraphQLIllegalAppDefinitionException {
         var ret = new HashMap<String, Map<String, io.undertow.predicate.Predicate>>();
 
         // check that all union have a mapping with a $typeResolver
-         // check that the $typeResolver object, maps all the members of the union
+        // check that the $typeResolver object, maps all the members of the union
         var _unionWithMissingMapping = typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
-            .filter(e -> !doc.containsKey(e.getKey()) || !doc.get(e.getKey()).isDocument())
-            .findFirst();
+                .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+                .filter(e -> !doc.containsKey(e.getKey()) || !doc.get(e.getKey()).isDocument())
+                .findFirst();
 
         if (_unionWithMissingMapping.isPresent()) {
             var unionWithMissingMapping = _unionWithMissingMapping.get().getKey();
@@ -56,9 +56,9 @@ class UnionsMappings extends Mappings {
         }
 
         var _unionWithMissingTypeResolver = typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
-            .filter(e -> !doc.get(e.getKey()).asDocument().containsKey("_$typeResolver"))
-            .findFirst();
+                .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+                .filter(e -> !doc.get(e.getKey()).asDocument().containsKey("_$typeResolver"))
+                .findFirst();
 
         if (_unionWithMissingTypeResolver.isPresent()) {
             var unionWithMissingTypeResolver = _unionWithMissingTypeResolver.get().getKey();
@@ -68,9 +68,9 @@ class UnionsMappings extends Mappings {
 
         // check that all union mappings are documents
         var _wrongMappingNoDoc = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
-            .filter(key -> !doc.get(key).isDocument())
-            .findFirst();
+                .filter(key -> isUnion(key, typeDefinitionRegistry))
+                .filter(key -> !doc.get(key).isDocument())
+                .findFirst();
 
         if (_wrongMappingNoDoc.isPresent()) {
             var wrongMapping = _wrongMappingNoDoc.get();
@@ -79,9 +79,9 @@ class UnionsMappings extends Mappings {
 
         // check that all union mappings have a $typeResolver field
         var _wrongMappingMissingTypeResolver = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
-            .filter(key -> !doc.get(key).asDocument().containsKey("_$typeResolver"))
-            .findFirst();
+                .filter(key -> isUnion(key, typeDefinitionRegistry))
+                .filter(key -> !doc.get(key).asDocument().containsKey("_$typeResolver"))
+                .findFirst();
 
         if (_wrongMappingMissingTypeResolver.isPresent()) {
             var wrongMapping = _wrongMappingMissingTypeResolver.get();
@@ -90,9 +90,9 @@ class UnionsMappings extends Mappings {
 
         // check that all union mappings have a valid $typeResolver predicate
         var _wrongMappingTypeResolverNotDoc = doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
-            .filter(key -> !doc.get(key).asDocument().get("_$typeResolver").isDocument())
-            .findFirst();
+                .filter(key -> isUnion(key, typeDefinitionRegistry))
+                .filter(key -> !doc.get(key).asDocument().get("_$typeResolver").isDocument())
+                .findFirst();
 
         if (_wrongMappingTypeResolverNotDoc.isPresent()) {
             var wrongMapping = _wrongMappingTypeResolverNotDoc.get();
@@ -101,55 +101,55 @@ class UnionsMappings extends Mappings {
 
         // check the predicates of all unions
         doc.keySet().stream()
-            .filter(type -> isUnion(type, typeDefinitionRegistry))
-            .flatMap(type -> doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream())
-            .forEach(e -> {
-                try {
-                    typeResolverPredicate(e.getValue());
-                } catch(Throwable t) {
-                    LambdaUtils.throwsSneakyException(t);
-                }
-            });
+                .filter(type -> isUnion(type, typeDefinitionRegistry))
+                .flatMap(type -> doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream())
+                .forEach(e -> {
+                    try {
+                        typeResolverPredicate(e.getValue());
+                    } catch (Throwable t) {
+                        LambdaUtils.throwsSneakyException(t);
+                    }
+                });
 
         // check that the $typeResolver object, maps all the members of the union
         typeDefinitionRegistry.types().entrySet().stream()
-            .filter(e -> e.getValue() instanceof UnionTypeDefinition)
-            .forEach(e -> {
-                var unionName = e.getKey();
-                var unionTypeDef = (UnionTypeDefinition) e.getValue();
+                .filter(e -> e.getValue() instanceof UnionTypeDefinition)
+                .forEach(e -> {
+                    var unionName = e.getKey();
+                    var unionTypeDef = (UnionTypeDefinition) e.getValue();
 
-                var memberNames = unionTypeDef.getMemberTypes().stream()
-                    //Note that members of a union type need to be concrete object type
-                    .filter(type -> type instanceof TypeName)
-                    .map(type -> (TypeName) type)
-                    .map(m -> m.getName()).collect(Collectors.toList());
+                    var memberNames = unionTypeDef.getMemberTypes().stream()
+                            //Note that members of a union type need to be concrete object type
+                            .filter(type -> type instanceof TypeName)
+                            .map(type -> (TypeName) type)
+                            .map(m -> m.getName()).collect(Collectors.toList());
 
-                var mappedMemberNames = doc.get(unionName).asDocument().get("_$typeResolver").asDocument().keySet();
+                    var mappedMemberNames = doc.get(unionName).asDocument().get("_$typeResolver").asDocument().keySet();
 
-                if (!mappedMemberNames.containsAll(memberNames)) {
-                    LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("$typeResolver for union " + unionName + " does not map all union members"));
-                }
-            });
+                    if (!mappedMemberNames.containsAll(memberNames)) {
+                        LambdaUtils.throwsSneakyException(new GraphQLIllegalAppDefinitionException("$typeResolver for union " + unionName + " does not map all union members"));
+                    }
+                });
 
 
         // all checks done, create the ret
         doc.keySet().stream()
-            .filter(key -> isUnion(key, typeDefinitionRegistry))
-            .forEach(type -> {
-                var trm = new HashMap<String, io.undertow.predicate.Predicate>();
+                .filter(key -> isUnion(key, typeDefinitionRegistry))
+                .forEach(type -> {
+                    var trm = new HashMap<String, io.undertow.predicate.Predicate>();
 
-                doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream()
-                    .forEach(e -> {
-                        try {
-                            trm.put(e.getKey(), typeResolverPredicate(e.getValue()));
-                        } catch(Throwable t) {
-                            // should never happen, already checked
-                            LambdaUtils.throwsSneakyException(t);
-                        }
-                    });
+                    doc.get(type).asDocument().get("_$typeResolver").asDocument().entrySet().stream()
+                            .forEach(e -> {
+                                try {
+                                    trm.put(e.getKey(), typeResolverPredicate(e.getValue()));
+                                } catch (Throwable t) {
+                                    // should never happen, already checked
+                                    LambdaUtils.throwsSneakyException(t);
+                                }
+                            });
 
-                ret.put(type, trm);
-            });
+                    ret.put(type, trm);
+                });
 
         return ret;
     }

@@ -79,10 +79,10 @@ public class QueryMapping extends FieldMapping implements Batchable {
     public DataLoader<BsonValue, BsonValue> getDataloader() {
         if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()) {
             var optionsBuilder = DataLoaderOptions.newOptions()
-                .setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()))
-                .setBatchingEnabled(this.dataLoaderSettings.getBatching())
-                .setCachingEnabled(this.dataLoaderSettings.getCaching())
-                .setStatisticsCollector(SimpleStatisticsCollector::new);
+                    .setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()))
+                    .setBatchingEnabled(this.dataLoaderSettings.getBatching())
+                    .setCachingEnabled(this.dataLoaderSettings.getCaching())
+                    .setStatisticsCollector(SimpleStatisticsCollector::new);
 
             if (this.dataLoaderSettings.getMaxBatchSize() > 0) {
                 optionsBuilder.setMaxBatchSize(this.dataLoaderSettings.getMaxBatchSize());
@@ -128,10 +128,10 @@ public class QueryMapping extends FieldMapping implements Batchable {
         var result = new BsonDocument();
 
         var fields = (QueryMapping.class).getDeclaredFields();
-        for (var field: fields) {
+        for (var field : fields) {
             var value = field.get(this);
 
-            if(value instanceof BsonDocument bsonDoc) {
+            if (value instanceof BsonDocument bsonDoc) {
                 var values = BsonUtils.toBsonDocument(env.getArguments());
 
                 // add the rootDoc arg see https://restheart.org/docs/mongodb-graphql/#the-rootdoc-argument
@@ -155,7 +155,7 @@ public class QueryMapping extends FieldMapping implements Batchable {
                     }
 
                     result.put(field.getName(), argAndFkIntepolated);
-                } catch(InvalidMetadataException ime) {
+                } catch (InvalidMetadataException ime) {
                     throw new GraphQLIllegalAppDefinitionException("invalid app definition", ime);
                 }
             } else if (value instanceof BsonValue bsonVal && !bsonVal.isNull()) {
@@ -176,7 +176,8 @@ public class QueryMapping extends FieldMapping implements Batchable {
         private BsonValue skip;
         private DataLoaderSettings dataLoaderSettings;
 
-        private Builder() { }
+        private Builder() {
+        }
 
         public Builder fieldName(String fieldName) {
             this.fieldName = fieldName;

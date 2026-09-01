@@ -84,7 +84,7 @@ public class BsonRequestPropEqualsPredicate implements Predicate {
                     return false;
                 }
             } else {
-                LOGGER.warn("bson-request-prop-equals predicate invoked on a BsonRequest with content {}, it requires a BsonDocument",  bsonRequest.getContent().getClass().getSimpleName());
+                LOGGER.warn("bson-request-prop-equals predicate invoked on a BsonRequest with content {}, it requires a BsonDocument", bsonRequest.getContent().getClass().getSimpleName());
                 return false;
             }
 

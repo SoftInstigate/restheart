@@ -184,9 +184,10 @@ public class CacheFactory {
      * @param ttl Time To Live in milliseconds; if <= 0, entries won't expire based on time
      * @return a new {@link Cache} instance with the specified configuration
      */
-    public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl) {
+    public static <K, V> Cache<K, V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl) {
         return new CaffeineCache<>(size, expirePolicy, ttl);
     }
+
     /**
      * Creates a local cache with size limits, expiration policies, and a custom removal listener.
      * 
@@ -230,7 +231,7 @@ public class CacheFactory {
      * @return a new {@link Cache} instance with the specified configuration and removal listener
      * @throws NullPointerException if remover is null
      */
-    public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
+    public static <K, V> Cache<K, V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
         return new CaffeineCache<>(size, expirePolicy, ttl, remover);
     }
 

@@ -72,8 +72,8 @@ public class CaffeineCacheTest {
         String key = "B";
         Integer value = 1;
 
-        String removedKey[] = { "" };
-        Integer removedValue[] = { -1 };
+        String removedKey[] = {""};
+        Integer removedValue[] = {-1};
 
         CaffeineCache<String, Integer> instance = new CaffeineCache<>(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000,
                 entry -> {

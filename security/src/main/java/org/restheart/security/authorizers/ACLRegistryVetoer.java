@@ -40,8 +40,8 @@ public class ACLRegistryVetoer implements Authorizer {
     @Override
     public boolean isAllowed(Request<?> request) {
         var vetoed = registry.vetoPredicates()
-            .stream()
-            .anyMatch(predicate -> predicate.test(request));
+                .stream()
+                .anyMatch(predicate -> predicate.test(request));
 
         if (LOGGER.isDebugEnabled() && vetoed) {
             LOGGER.debug("Request vetoed by ACLRegistryVetoer due to a veto predicate");

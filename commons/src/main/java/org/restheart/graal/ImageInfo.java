@@ -52,7 +52,7 @@ public class ImageInfo {
     static {
         try {
             imageInfoClass = Class.forName("org.graalvm.nativeimage.ImageInfo");
-        } catch(ClassNotFoundException cfe) {
+        } catch (ClassNotFoundException cfe) {
             imageInfoClass = null;
         }
     }
@@ -80,7 +80,7 @@ public class ImageInfo {
         } else {
             try {
                 return (boolean) imageInfoClass.getDeclaredMethod("inImageBuildtimeCode").invoke(null);
-            } catch(Throwable ite) {
+            } catch (Throwable ite) {
                 return false;
             }
         }
@@ -110,7 +110,7 @@ public class ImageInfo {
         } else {
             try {
                 return (boolean) imageInfoClass.getDeclaredMethod("inImageCode").invoke(null);
-            } catch(Throwable ite) {
+            } catch (Throwable ite) {
                 return false;
             }
         }
@@ -140,7 +140,7 @@ public class ImageInfo {
         } else {
             try {
                 return (boolean) imageInfoClass.getDeclaredMethod("inImageRuntimeCode").invoke(null);
-            } catch(Throwable ite) {
+            } catch (Throwable ite) {
                 return false;
             }
         }
@@ -166,7 +166,7 @@ public class ImageInfo {
         } else {
             try {
                 return (boolean) imageInfoClass.getDeclaredMethod("isExecutable").invoke(null);
-            } catch(Throwable ite) {
+            } catch (Throwable ite) {
                 return false;
             }
         }
@@ -193,7 +193,7 @@ public class ImageInfo {
         } else {
             try {
                 return (boolean) imageInfoClass.getDeclaredMethod("isSharedLibrary").invoke(null);
-            } catch(Throwable ite) {
+            } catch (Throwable ite) {
                 return false;
             }
         }

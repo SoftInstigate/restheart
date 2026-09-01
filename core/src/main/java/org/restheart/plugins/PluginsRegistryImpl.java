@@ -21,14 +21,15 @@
 package org.restheart.plugins;
 
 import java.net.URL;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.restheart.cache.CacheFactory;
@@ -70,7 +71,6 @@ import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.utils.PluginUtils;
 import org.restheart.utils.BootstrapLogger;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import static io.undertow.Handlers.path;
@@ -144,6 +144,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private boolean sseServicesInitialized = false;
 
     private final Set<PluginRecord<Service<?, ?>>> services = new LinkedHashSet<>();
+    // O(1) lookup by name, kept in sync with `services` at every mutation point
+    // (getServices() lazy init, plugService(), unplug()) instead of scanning it linearly.
+    private final Map<String, PluginRecord<Service<?, ?>>> servicesByName = new ConcurrentHashMap<>();
     // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
     private boolean servicesInitialized = false;
@@ -177,22 +180,22 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.sseServices();
 
         factory.injectDependencies();
-        
+
         // log interceptors after instantiation
         logInterceptors();
     }
-    
+
     /**
      * Logs all instantiated interceptors with their configuration details
      */
     private void logInterceptors() {
         var logger = org.slf4j.LoggerFactory.getLogger(PluginsRegistryImpl.class);
-        
+
         var interceptors = getInterceptors()
-            .stream()
-            .filter(PluginRecord::isEnabled)
-            .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
-            .toList();
+                .stream()
+                .filter(PluginRecord::isEnabled)
+                .sorted((a, b) -> Integer.compare(getPluginPriority(a.getInstance()), getPluginPriority(b.getInstance())))
+                .toList();
 
         if (interceptors.isEmpty()) {
             BootstrapLogger.startPhase(logger, "INTERCEPTORS");
@@ -209,13 +212,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 var interceptPoint = PluginUtils.interceptPoint(interceptor.getInstance());
 
                 BootstrapLogger.item(logger, "{} ({}) - Priority: {}, Intercept Point: {}",
-                    interceptorName, interceptorClass, interceptorPriority, interceptPoint);
+                        interceptorName, interceptorClass, interceptorPriority, interceptPoint);
             });
 
             BootstrapLogger.endPhase(logger, "INTERCEPTORS LOGGED");
         }
     }
-    
+
     /**
      * Gets the priority of a plugin from its @RegisterPlugin annotation
      */
@@ -336,7 +339,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return Collections.unmodifiableSet(this.interceptors);
     }
 
-     /**
+    /**
      * @return the authenticators
      */
     @Override
@@ -366,11 +369,15 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return this.interceptors.removeIf(filter);
     }
 
-    private final LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
-        .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
+    /** Cache key for SRV_INTERCEPTORS_CACHE - cheaper and more readable than a SimpleEntry. */
+    private record InterceptorCacheKey(String service, InterceptPoint point) {
+    }
+
+    private final LoadingCache<InterceptorCacheKey, List<Interceptor<?, ?>>> SRV_INTERCEPTORS_CACHE = CacheFactory
+            .createHashMapLoadingCache((key) -> __interceptors(key.service(), key.point()));
 
     private List<Interceptor<?, ?>> __interceptors(String serviceName, InterceptPoint interceptPoint) {
-        Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
+        Optional<PluginRecord<Service<?, ?>>> _service = serviceName == null ? Optional.empty() : Optional.ofNullable(getService(serviceName));
 
         var _interceptors = getInterceptors();
 
@@ -379,32 +386,32 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             // at this interceptPoint, appy only required interceptor
             // var vip = PluginUtils.dontIntercept(PluginsRegistryImpl.getInstance(), exchange);
             var vip = PluginUtils.dontIntercept(_service.get().getInstance());
-            if (Arrays.stream(vip).anyMatch(interceptPoint::equals) || Arrays.stream(vip).anyMatch(InterceptPoint.ANY::equals) ) {
-                _interceptors = _interceptors.stream().filter(i ->  PluginUtils.requiredinterceptor(i.getInstance())).collect(Collectors.toSet());
+            if (Arrays.stream(vip).anyMatch(interceptPoint::equals) || Arrays.stream(vip).anyMatch(InterceptPoint.ANY::equals)) {
+                _interceptors = _interceptors.stream().filter(i -> PluginUtils.requiredinterceptor(i.getInstance())).collect(Collectors.toSet());
             }
         }
 
         return _interceptors
-            .stream()
-            .filter(ri -> ri.isEnabled())
-            .map(ri -> ri.getInstance())
-            // IMPORTANT: An interceptor can intercept:
-            // - service requests handled by a Service when its request and response
-            //   types are equal to the ones declared by the Service
-            // - request handled by a Service when its request and response
-            //   are WildcardRequest and WildcardResponse
-            // - request handled by a Proxy when its request and response
-            //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-            .filter(ri
-                -> (_service.isPresent()
-                    && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(_service.get().getInstance()))
-                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(_service.get().getInstance())))
-                || (_service.isPresent() && ri instanceof WildcardInterceptor)
-                || (_service.isEmpty()
-                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type())))
-            .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
-            .collect(Collectors.toList());
+                .stream()
+                .filter(ri -> ri.isEnabled())
+                .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept:
+                // - service requests handled by a Service when its request and response
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Service when its request and response
+                //   are WildcardRequest and WildcardResponse
+                // - request handled by a Proxy when its request and response
+                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+                .filter(ri
+                        -> (_service.isPresent()
+                                && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(_service.get().getInstance()))
+                                && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(_service.get().getInstance())))
+                                || (_service.isPresent() && ri instanceof WildcardInterceptor)
+                                || (_service.isEmpty()
+                                && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                                && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type())))
+                .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -420,9 +427,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         var serviceName = PluginUtils.name(srv);
 
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(serviceName, interceptPoint));
+        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new InterceptorCacheKey(serviceName, interceptPoint));
 
-        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
+        return _ret.isPresent() ? _ret.get() : List.of();
     }
 
     /**
@@ -432,9 +439,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      */
     @Override
     public List<Interceptor<?, ?>> getProxyInterceptors(InterceptPoint interceptPoint) {
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<>(null, interceptPoint));
+        var _ret = SRV_INTERCEPTORS_CACHE.getLoading(new InterceptorCacheKey(null, interceptPoint));
 
-        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
+        return _ret.isPresent() ? _ret.get() : List.of();
     }
 
     /**
@@ -456,11 +463,21 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<PluginRecord<Service<?, ?>>> getServices() {
         if (!servicesInitialized) {
-            this.services.addAll(PluginsFactory.getInstance().services());
+            var scanned = PluginsFactory.getInstance().services();
+            this.services.addAll(scanned);
+            scanned.forEach(srv -> this.servicesByName.put(srv.getName(), srv));
             this.servicesInitialized = true;
         }
 
         return Collections.unmodifiableSet(this.services);
+    }
+
+    @Override
+    public PluginRecord<Service<?, ?>> getService(String name) {
+        // covers services added by an Initializer before the lazy scan above has run
+        // (e.g. PolyglotDeployer) — same call, so it also performs that scan if needed
+        getServices();
+        return name == null ? null : this.servicesByName.get(name);
     }
 
     @Override
@@ -500,13 +517,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
             var _fauthorizer = new PluginRecord<Authorizer>(
-                "fullAuthorizer",
-                "authorize any operation to any user",
-                false, // secure, only applies to services
-                true,
-                FullAuthorizer.class.getName(),
-                new FullAuthorizer(false),
-                null
+                    "fullAuthorizer",
+                    "authorize any operation to any user",
+                    false, // secure, only applies to services
+                    true,
+                    FullAuthorizer.class.getName(),
+                    new FullAuthorizer(false),
+                    null
             );
 
             _fauthorizers.add(_fauthorizer);
@@ -514,8 +531,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             // VETOERs still apply: "secure = false" means "no authentication required",
             // not "exempt from every deny rule" (e.g. originVetoer)
             _authorizers.stream()
-                .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
-                .forEach(_fauthorizers::add);
+                    .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                    .forEach(_fauthorizers::add);
 
             securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
         }
@@ -523,29 +540,30 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         var blockingSrv = PluginUtils.blocking(srv.getInstance());
 
         var _srv = pipe(
-            // if service is blocking (i.e. @RegisterPlugin(blocking=true))
-            // add WorkingThreadsPoolDispatcher to the pipe
-            blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
-            new ErrorHandler(),
-            new PipelineInfoInjector(),
-            new TracingInstrumentationHandler(),
-            new RequestLogger(),
-            new BeforeExchangeInitInterceptorsExecutor(),
-            new ServiceExchangeInitializer(),
-            new CORSHandler(),
-            new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-            new QueryStringRebuilder(),
-            securityHandler,
-            new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-            new QueryStringRebuilder(),
-            PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
-            new ResponseInterceptorsExecutor(),
-            new ResponseSender()
+                // if service is blocking (i.e. @RegisterPlugin(blocking=true))
+                // add WorkingThreadsPoolDispatcher to the pipe
+                blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
+                new ErrorHandler(),
+                new PipelineInfoInjector(),
+                new TracingInstrumentationHandler(),
+                new RequestLogger(),
+                new BeforeExchangeInitInterceptorsExecutor(),
+                new ServiceExchangeInitializer(),
+                new CORSHandler(),
+                new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+                new QueryStringRebuilder(),
+                securityHandler,
+                new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+                new QueryStringRebuilder(),
+                PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
+                new ResponseInterceptorsExecutor(),
+                new ResponseSender()
         );
 
         plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
 
         this.services.add(srv);
+        this.servicesByName.put(srv.getName(), srv);
 
         // service list changed, invalidate cache
         this.SRV_INTERCEPTORS_CACHE.invalidateAll();
@@ -576,36 +594,36 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         } else {
             var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
             _fauthorizers.add(new PluginRecord<Authorizer>(
-                "fullAuthorizer",
-                "authorize any operation to any user",
-                false,
-                true,
-                FullAuthorizer.class.getName(),
-                new FullAuthorizer(false),
-                null
+                    "fullAuthorizer",
+                    "authorize any operation to any user",
+                    false,
+                    true,
+                    FullAuthorizer.class.getName(),
+                    new FullAuthorizer(false),
+                    null
             ));
 
             // VETOERs still apply: "secure = false" means "no authentication required",
             // not "exempt from every deny rule" (e.g. originVetoer)
             _authorizers.stream()
-                .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
-                .forEach(_fauthorizers::add);
+                    .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                    .forEach(_fauthorizers::add);
 
             securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
         }
 
         var sseService = srv.getInstance();
         var sseHandler = new ServerSentEventHandler(
-            (connection, lastEventId) -> sseService.onConnect(connection, lastEventId)
+                (connection, lastEventId) -> sseService.onConnect(connection, lastEventId)
         );
 
         var _handler = pipe(
-            new ErrorHandler(),
-            new PipelineInfoInjector(),
-            new TracingInstrumentationHandler(),
-            new RequestLogger(),
-            securityHandler,
-            PipelinedWrappingHandler.wrap(sseHandler)
+                new ErrorHandler(),
+                new PipelineInfoInjector(),
+                new TracingInstrumentationHandler(),
+                new RequestLogger(),
+                securityHandler,
+                PipelinedWrappingHandler.wrap(sseHandler)
         );
 
         plugPipeline(uri, _handler, new PipelineInfo(PROXY, uri, MATCH_POLICY.PREFIX, srv.getName()));
@@ -622,6 +640,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         var pi = getPipelineInfo(uri);
 
         this.services.removeIf(s -> s.getName().equals(pi.getName()));
+        this.servicesByName.remove(pi.getName());
 
         if (mp == MATCH_POLICY.PREFIX) {
             ROOT_PATH_HANDLER.removePrefixPath(uri);
@@ -643,7 +662,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         // https://stackoverflow.com/a/47445573/4481670
         static {
             // There should be just one system class loader object in the whole JVM.
-            synchronized(ClassLoader.getSystemClassLoader()) {
+            synchronized (ClassLoader.getSystemClassLoader()) {
                 var sysProps = System.getProperties();
                 // The key is a String, because the .class object would be different across classloaders.
                 var singleton = (PluginsRegistryImpl) sysProps.get(PluginsRegistryImpl.class.getName());
@@ -651,8 +670,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 // Some other class loader loaded PluginsRegistryImpl earlier.
                 if (singleton != null) {
                     INSTANCE = singleton;
-                }
-                else {
+                } else {
                     // Otherwise this classloader is the first one, let's create a singleton.
                     // Make sure not to do any locking within this.
                     INSTANCE = new PluginsRegistryImpl();

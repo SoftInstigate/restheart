@@ -78,10 +78,10 @@ class Indexes {
      * @return
      */
     List<BsonDocument> getCollectionIndexes(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName) {
         var ret = new ArrayList<BsonDocument>();
 
         var indexes = cs.isPresent()
@@ -108,12 +108,12 @@ class Indexes {
      * @param options
      */
     void createIndex(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collection,
-        final BsonDocument keys,
-        final Optional<BsonDocument> options) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collection,
+            final BsonDocument keys,
+            final Optional<BsonDocument> options) {
         if (options.isPresent()) {
             if (cs.isPresent()) {
                 collections.collection(rsOps, dbName, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
@@ -139,11 +139,11 @@ class Indexes {
      * @return the HTTP status code
      */
     int deleteIndex(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collection,
-        final String indexId) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collection,
+            final String indexId) {
         if (cs.isPresent()) {
             collections.collection(rsOps, dbName, collection).dropIndex(cs.get(), indexId);
         } else {
@@ -204,12 +204,12 @@ class Indexes {
         }
 
         //language_override	string
-        if (options.containsKey("language_override")&& options.get("language_override").isString()) {
+        if (options.containsKey("language_override") && options.get("language_override").isString()) {
             ret.languageOverride(options.get("language_override").asString().getValue());
         }
 
         //textIndexVersion	integer
-        if (options.containsKey("textIndexVersion")&& options.get("textIndexVersion").isInt32()) {
+        if (options.containsKey("textIndexVersion") && options.get("textIndexVersion").isInt32()) {
             ret.textVersion(options.get("textIndexVersion").asInt32().getValue());
         }
 
@@ -221,7 +221,7 @@ class Indexes {
 
         //***Options for 2d Indexes
         //bits	integer
-        if (options.containsKey("bits")&& options.get("bits").isInt32()) {
+        if (options.containsKey("bits") && options.get("bits").isInt32()) {
             ret.bits(options.get("bits").asInt32().getValue());
         }
 
@@ -237,7 +237,7 @@ class Indexes {
 
         //***Options for collation
         //collation	document
-        if (options.containsKey("collation")&& options.get("collation").isDocument()) {
+        if (options.containsKey("collation") && options.get("collation").isDocument()) {
             ret.collation(collation(options.get("collation").asDocument()));
         }
 
@@ -271,7 +271,7 @@ class Indexes {
             if (specs.containsKey("collationAlternate") && specs.get("collationAlternate").isString()) {
                 builder.collationAlternate(CollationAlternate.fromString(specs.get("collationAlternate").asString().getValue()));
             }
-        } catch(IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             // nothing to do
         }
 
@@ -279,7 +279,7 @@ class Indexes {
             if (specs.containsKey("collationCaseFirst") && specs.get("collationCaseFirst").isString()) {
                 builder.collationCaseFirst(CollationCaseFirst.fromString(specs.get("collationCaseFirst").asString().getValue()));
             }
-        } catch(IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             // nothing to do
         }
 
@@ -287,7 +287,7 @@ class Indexes {
             if (specs.containsKey("collationCaseFirst") && specs.get("collationCaseFirst").isString()) {
                 builder.collationCaseFirst(CollationCaseFirst.fromString(specs.get("collationCaseFirst").asString().getValue()));
             }
-        } catch(IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             // nothing to do
         }
 
@@ -295,7 +295,7 @@ class Indexes {
             if (specs.containsKey("collationMaxVariable") && specs.get("collationMaxVariable").isString()) {
                 builder.collationMaxVariable(CollationMaxVariable.fromString(specs.get("collationMaxVariable").asString().getValue()));
             }
-        } catch(IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             // nothing to do
         }
 
@@ -303,7 +303,7 @@ class Indexes {
             if (specs.containsKey("collationStrength") && specs.get("collationStrength").isInt32()) {
                 builder.collationStrength(CollationStrength.fromInt(specs.get("collationStrength").asInt32().getValue()));
             }
-        } catch(IllegalArgumentException iae) {
+        } catch (IllegalArgumentException iae) {
             // nothing to do
         }
 

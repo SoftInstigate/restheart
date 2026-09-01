@@ -60,10 +60,10 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "failedAuthLogger",
-    description = "Logs details about failed authentication and authorization attempts for security monitoring",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_FAILED_AUTH,
-    enabledByDefault = false
+        name = "failedAuthLogger",
+        description = "Logs details about failed authentication and authorization attempts for security monitoring",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_FAILED_AUTH,
+        enabledByDefault = false
 )
 public class FailedAuthLogger implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(FailedAuthLogger.class);
@@ -78,24 +78,24 @@ public class FailedAuthLogger implements WildcardInterceptor {
         var userAgent = getHeaderValue(exchange, HttpHeaders.USER_AGENT);
         var requestMethod = ExchangeAttributes.requestMethod().readAttribute(exchange);
         var requestUrl = ExchangeAttributes.requestURL().readAttribute(exchange);
-        
+
         // Determine if this is an authentication failure or authorization failure
         var isAuthenticated = request.isAuthenticated();
-        
+
         if (isAuthenticated) {
             // Authorization failure - user is authenticated but not authorized
             var username = request.getAuthenticatedAccount().getPrincipal().getName();
             LOGGER.warn("Failed authorization attempt - User: {}, Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
-                username, remoteIp, xff, requestMethod, requestUrl, userAgent);
+                    username, remoteIp, xff, requestMethod, requestUrl, userAgent);
         } else {
             // Authentication failure - user failed to authenticate
             var attemptedUsername = extractUsername(exchange);
             if (attemptedUsername != null) {
                 LOGGER.warn("Failed authentication attempt - User: {}, Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
-                    attemptedUsername, remoteIp, xff, requestMethod, requestUrl, userAgent);
+                        attemptedUsername, remoteIp, xff, requestMethod, requestUrl, userAgent);
             } else {
                 LOGGER.warn("Failed authentication attempt - Remote IP: {}, X-Forwarded-For: {}, Method: {}, URL: {}, User-Agent: {}",
-                    remoteIp, xff, requestMethod, requestUrl, userAgent);
+                        remoteIp, xff, requestMethod, requestUrl, userAgent);
             }
         }
     }
@@ -111,7 +111,7 @@ public class FailedAuthLogger implements WildcardInterceptor {
      */
     private String getHeaderValue(HttpServerExchange exchange, String headerName) {
         var value = ExchangeAttributes.requestHeader(HttpString.tryFromString(headerName))
-            .readAttribute(exchange);
+                .readAttribute(exchange);
         return value != null ? value : "N/A";
     }
 
@@ -125,7 +125,7 @@ public class FailedAuthLogger implements WildcardInterceptor {
      */
     private String extractUsername(HttpServerExchange exchange) {
         var authHeader = ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.AUTHORIZATION))
-            .readAttribute(exchange);
+                .readAttribute(exchange);
 
         if (authHeader == null) {
             return null;

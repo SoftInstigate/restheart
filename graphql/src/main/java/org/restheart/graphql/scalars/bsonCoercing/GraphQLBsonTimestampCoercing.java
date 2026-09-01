@@ -39,24 +39,24 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, BsonTimestamp> {
     @Override
     public BsonTimestamp serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if (input instanceof BsonTimestamp bsonTimestamp){
+        } else if (input instanceof BsonTimestamp bsonTimestamp) {
             return bsonTimestamp;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonTimestamp' but was '" + typeName(input) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonTimestamp' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
     public BsonTimestamp parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input, graphQLContext, locale);
+        var timestamp = (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input, graphQLContext, locale);
         return new BsonTimestamp(timestamp);
     }
 
     @Override
     public BsonTimestamp parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input, variables, graphQLContext, locale);
+        var timestamp = (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(input, variables, graphQLContext, locale);
         return new BsonTimestamp(timestamp);
     }
 

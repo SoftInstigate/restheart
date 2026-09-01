@@ -2,7 +2,6 @@ package org.restheart.accounts;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonDocument;
@@ -15,12 +14,15 @@ import org.restheart.accounts.util.JwtHelper;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -49,9 +51,9 @@ import com.mongodb.client.MongoClient;
  * and email-mismatch conditions to prevent oracle attacks.
  */
 @RegisterPlugin(
-        name             = "resetPasswordService",
-        description      = "PATCH /auth/reset-password — validates token and sets new password",
-        defaultURI       = "/auth/reset-password",
+        name = "resetPasswordService",
+        description = "PATCH /auth/reset-password — validates token and sets new password",
+        defaultURI = "/auth/reset-password",
         enabledByDefault = false)
 public class ResetPasswordService implements JsonService {
 
@@ -70,19 +72,27 @@ public class ResetPasswordService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
 
-    private JwtHelper  jwt;
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/reset-password") && (r.isPatch() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/reset-password"));
     }
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isPatch()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -95,9 +105,9 @@ public class ResetPasswordService implements JsonService {
             Errors.error(res, 400, "Invalid request body");
             return;
         }
-        var obj      = body.getAsJsonObject();
-        var email    = obj.has("email")    ? obj.get("email").getAsString()    : null;
-        var token    = obj.has("token")    ? obj.get("token").getAsString()    : null;
+        var obj = body.getAsJsonObject();
+        var email = obj.has("email") ? obj.get("email").getAsString() : null;
+        var token = obj.has("token") ? obj.get("token").getAsString() : null;
         var password = obj.has("password") ? obj.get("password").getAsString() : null;
 
         if (email == null || email.isBlank()) {
@@ -155,12 +165,17 @@ public class ResetPasswordService implements JsonService {
         }
 
         // 6a. Persist the new hashed password
-        var hashed  = TokenUtils.hashPassword(password);
+        var hashed = TokenUtils.hashPassword(password);
         var updates = new BsonDocument("password", new BsonString(hashed));
-        db(req).updateUser(storedEmail, updates);
+        try {
+            db(req).updateUser(storedEmail, updates);
 
-        // 6b. One-shot: remove the token fields immediately
-        db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
+            // 6b. One-shot: remove the token fields immediately
+            db(req).unsetUserFields(storedEmail, List.of("passwordResetToken", "passwordResetCreatedAt"));
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         // 7. Auto-login: issue a fresh JWT and set the auth cookie
         var activeMembership = accountsService.getMembershipProvider(req)
@@ -168,11 +183,12 @@ public class ResetPasswordService implements JsonService {
         var extraClaims = new java.util.HashMap<String, Object>();
         activeMembership.ifPresent(m ->
                 extraClaims.put(conf.teamClaimName(), TeamClaim.of(m.teamId(), m.role())));
-        var jwtToken  = jwt.issueToken(storedEmail, roles,
+        var jwtToken = jwt.issueToken(storedEmail, roles,
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,
-                user);
+                user,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         // 7b. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).
@@ -198,7 +214,7 @@ public class ResetPasswordService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     /** Extracts the {@code roles} array from a user document as a {@link Set}. */

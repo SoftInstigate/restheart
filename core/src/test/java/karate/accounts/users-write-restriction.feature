@@ -3,8 +3,11 @@ Feature: /users self-service write restriction (accountsInitializer veto)
   # accountsInitializer registers a veto that unconditionally restricts what the generic
   # MongoDB REST resource at /users can be used for, regardless of any ACL permission:
   #   - PUT/POST are always rejected.
-  #   - PATCH is only allowed if every touched field is under profile.* (dot notation and
-  #     update operators like $set/$push count too).
+  #   - PATCH is rejected only if it touches a denylisted field (password, roles, team,
+  #     teams, sub, socialAuths, providerId, emailVerificationToken/CreatedAt,
+  #     passwordResetToken/CreatedAt, inviteToken, _id) — dot notation and update
+  #     operators like $set/$push count too. Every other field (profile.*, consents, and
+  #     any app-level field the tenant adds) is left to the tenant's own ACL.
   #   - Roles listed in accountsConfig.users-unrestricted-roles bypass the restriction
   #     entirely — 'admin' is configured as exempt for this test env (conf-overrides.yml).
   #
@@ -78,6 +81,15 @@ Feature: /users self-service write restriction (accountsInitializer veto)
     Given path '/users/' + memberEmail
     And header Authorization = 'Bearer ' + memberJwt
     And request { "profile.name": "Updated Name" }
+    When method PATCH
+    Then status 200
+
+  # ---------------------------------------------------------------------------
+  Scenario: PATCH consents (a non-denylisted, non-profile field) is allowed
+  # ---------------------------------------------------------------------------
+    Given path '/users/' + memberEmail
+    And header Authorization = 'Bearer ' + memberJwt
+    And request { "consents": { "terms": { "accepted": true } } }
     When method PATCH
     Then status 200
 

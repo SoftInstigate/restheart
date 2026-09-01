@@ -184,6 +184,6 @@ public class GetDocumentIT extends HttpClientAbstactIT {
     // URI.create() also requires '{' and '}' to be encoded to build a valid URI instance.
     private static String encodeQueryForUri(String query) {
         return query.replace("{", "%7B").replace("}", "%7D")
-                    .replace("[", "%5B").replace("]", "%5D");
+                .replace("[", "%5B").replace("]", "%5D");
     }
 }

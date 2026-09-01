@@ -32,7 +32,7 @@ import org.restheart.plugins.RegisterPlugin;
 /**
  * functional style, test service
  */
-@RegisterPlugin(name="test",description = "foo")
+@RegisterPlugin(name = "test", description = "foo")
 public class FunctionalService implements JsonService {
     @Override
     public BiConsumer<JsonRequest, JsonResponse> handle() {

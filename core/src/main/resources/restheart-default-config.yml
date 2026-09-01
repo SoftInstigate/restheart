@@ -49,6 +49,17 @@ jwtConfigProvider:
   issuer: restheart.org
   audience: null   # null or array of audience strings
 
+# API Key Authentication
+# Authenticates long-lived, revocable keys sent as `Authorization: Bearer <prefix>...`.
+# Shares the Bearer scheme with jwtAuthenticationMechanism: it runs first (priority) and
+# declines, with NOT_ATTEMPTED, any Bearer value that does not carry `prefix` — the same way
+# tokenBasicAuthMechanism shares Basic with basicAuthMechanism. So the prefix is required:
+# it is what tells a key from a JWT.
+apiKeyAuthMechanism:
+  enabled: false
+  authenticator: mongoApiKeyAuthenticator
+  prefix: rhak_
+
 # JSON Web Token Authentication
 # See https://restheart.org/docs/security/authentication#jwt-authentication
 jwtAuthenticationMechanism:
@@ -86,6 +97,26 @@ fileRealmAuthenticator:
     - userid: admin
       password: null
       roles: [admin]
+
+# mongoApiKeyAuthenticator verifies API keys stored in a MongoDB collection.
+# The account it builds carries the roles named on the *key* document, never the user's:
+# a key is deny-by-default, so it reaches only what has been granted to it deliberately.
+# Keys are hashed with SHA-256 rather than bcrypt — a key is high-entropy, and bcrypt's
+# slowness would be paid on every request instead of once per login.
+# Expiry wants a TTL index on `expiresAt`; revocation takes effect within cache-ttl.
+mongoApiKeyAuthenticator:
+  enabled: false
+  keys-db: restheart
+  keys-collection: apiKeys
+  prop-hash: hash
+  prop-principal: user
+  prop-roles: roles
+  prop-expires: expiresAt
+  track-last-used: true
+  cache-enabled: true
+  cache-size: 1000
+  cache-ttl: 60000
+  cache-expire-policy: AFTER_WRITE
 
 # mongoRealmAuthenticator authenticates users defined in a MongoDB collection.
 # See https://restheart.org/docs/security/authentication#mongo-realm-authenticator
@@ -325,9 +356,12 @@ oauthClientRegistrationService:
 # See https://restheart.org/docs/plugins/emails
 accountsConfig:
   enabled: false
-  # MongoDB database where users and teams are stored.
-  # Must match mongoRealmAuthenticator.users-db.
-  db: restheart
+  # The MongoDB database and collection holding users, teams, invitations and
+  # oauth_codes are sourced from mongoRealmAuthenticator (users-db and
+  # users-collection), so that accounts writes users where the authenticator
+  # reads them.
+  # If the users collection carries the 'jsonSchema' metadata, the user document
+  # is validated against that schema on POST /auth/register.
   app-name: "My App"
   # JWT access token TTL in minutes. Key and issuer are sourced from jwtConfigProvider.
   jwt-ttl: 15
@@ -480,6 +514,145 @@ emails:
   smtp-port: 465
   smtp-username: null
   smtp-password: null
+
+# Stripe SaaS billing: Customer lifecycle, Checkout, Customer Portal, webhook
+# ingestion, plan catalog and seat licensing.
+# See https://restheart.org/docs/stripe
+stripeConfig:
+  enabled: false
+  # sk_test_... in development, sk_live_... in production. Never commit to
+  # version control - inject via environment variable substitution.
+  secret-key: $(STRIPE_SECRET_KEY)
+  # From the Stripe Dashboard -> Developers -> Webhooks -> signing secret.
+  webhook-secret: $(STRIPE_WEBHOOK_SECRET)
+
+  # The MongoDB database containing the teams collection is sourced from
+  # mongoRealmAuthenticator (users-db), the same way accountsConfig sources
+  # it, so this module always reads and writes team documents where
+  # restheart-accounts writes them.
+  teams-collection: teams
+
+  subscriptions:
+    enabled: true
+    # Plan id assigned to an entity with no subscription. Must name a key
+    # declared under 'plans' below.
+    default-plan: free
+    # Trial days used when a plan does not declare its own trial-period-days.
+    default-trial-period-days: 0
+
+    success-url: "https://app.example.com/billing?success=true"
+    cancel-url: "https://app.example.com/billing?canceled=true"
+    portal-return-url: "https://app.example.com/billing"
+
+    # The plan catalog. Display data (name, description, price) is not
+    # configured here - it is read from the Stripe Product/Price the price
+    # ids point at (GET /stripe/plans). Configuration carries only what this
+    # module must enforce.
+    plans:
+      free:
+        seats:
+          mode: capped
+          max: 1
+      # gold:
+      #   price-id-monthly: price_xxx
+      #   price-id-annual:  price_yyy
+      #   trial-period-days: 30
+      #   seats:
+      #     mode: capped   # capped | per-seat | unlimited
+      #     max: 10
+      #   limits:
+      #     max-projects: 50
+
+    # payment-failed and trial-will-end default to disabled: Stripe can send
+    # its own equivalent email from the Dashboard ("Subscriptions and
+    # emails"), and duplication cannot be detected at runtime. Enabling one
+    # here means turning the matching Stripe dashboard email off.
+    # notifications:
+    #   payment-failed:        { enabled: false }
+    #   trial-will-end:        { enabled: false }
+    #   subscription-canceled: { enabled: true }
+    #   over-limit:            { enabled: true }
+
+    # Custom email template paths (null = use built-in templates)
+    # templates:
+    #   payment-failed:        etc/email-templates/stripe/payment-failed.html
+    #   trial-will-end:        etc/email-templates/stripe/trial-will-end.html
+    #   subscription-canceled: etc/email-templates/stripe/subscription-canceled.html
+    #   over-limit:            etc/email-templates/stripe/over-limit.html
+
+  products:
+    enabled: false
+    # Set to false to skip automatic init; use StripeInitService on demand.
+    init-enabled: true
+
+    catalog-collection: catalog
+    orders-collection: orders
+    transactions-collection: transactions
+
+    default-currency: eur
+    # User-document field holding the buyer's email; omit if users have none.
+    # Guests always supply it in the request body.
+    buyer-email-field: _id
+    # Stripe-issued invoices for team-paid orders; guests always get a receipt.
+    invoice-team-orders: true
+    collect-tax-id: true
+
+    success-url: "https://shop.example.com/done?session={CHECKOUT_SESSION_ID}"
+    cancel-url: "https://shop.example.com/cart"
+
+    session-expires-minutes: 60
+    max-line-items: 50
+    max-quantity-per-line: 100
+
+    # Stripe Tax. false => amounts are taken as final and tax is the deployment's problem.
+    automatic-tax: true
+
+    # Offered for carts containing a physical product.
+    # shipping-options:
+    #   - display-name: Standard
+    #     amount: 500
+    #     delivery-estimate-days: { minimum: 3, maximum: 5 }
+    #   - display-name: Express
+    #     amount: 1500
+    #     delivery-estimate-days: { minimum: 1, maximum: 2 }
+
+    # notifications:
+    #   order-confirmed: { enabled: true }
+    #   order-refunded:  { enabled: true }
+
+stripeService:
+  enabled: false
+
+stripeInitializer:
+  enabled: false
+
+stripeCheckoutService:
+  enabled: false
+
+stripePortalService:
+  enabled: false
+
+stripeSubscriptionService:
+  enabled: false
+
+# Verifies the Stripe-Signature header and processes billing events. The only
+# public endpoint in the module - security is the signing secret, not authentication.
+stripeWebhookService:
+  enabled: false
+
+# Grants, revokes, and lists seat licences.
+stripeLicensesService:
+  enabled: false
+
+# GET /stripe/plans. Registers no ACL rule of its own - follows the deployment's
+# ACL like any other endpoint except stripeWebhookService.
+stripePlansService:
+  enabled: false
+
+# Shared cache for the plan catalog's Stripe display data (name, description, price),
+# invalidated by stripeWebhookService on product.updated / price.updated.
+stripeCatalogCache:
+  enabled: false
 
 # Provider the MongoClient via @Inject('mclient')
 mclient:

@@ -78,7 +78,9 @@ public class VarsInterpolator {
      *   <li>{@code $arg} - Used for GraphQL argument interpolation in mappings</li>
      * </ul>
      */
-    public enum VAR_OPERATOR { $var, $arg };
+    public enum VAR_OPERATOR {$var, $arg}
+    ;
+
     /**
      * Interpolates variables in a BSON structure by replacing variable placeholders with actual values.
      * <p>

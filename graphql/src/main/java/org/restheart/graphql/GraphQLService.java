@@ -108,18 +108,18 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
     private long queryTimeLimit = DEFAULT_QUERY_TIME_LIMIT;
-    
+
     @Inject("mclient")
     private MongoClient mclient;
 
     @Inject("config")
     private Map<String, Object> config;
 
-	@Inject("rh-config")
-	private Configuration rhConfig;
+    @Inject("rh-config")
+    private Configuration rhConfig;
 
     @OnInit
-    public void init()throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
+    public void init() throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
 
         this.defaultAppDefDb = argOrDefault(config, "db", DEFAULT_APP_DEF_DB);
@@ -130,20 +130,20 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         var defaultLimit = argOrDefault(config, "default-limit", DEFAULT_DEFAULT_LIMIT);
         var maxLimit = argOrDefault(config, "max-limit", DEFAULT_MAX_LIMIT);
 
-        this.queryTimeLimit = ((Number)argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
+        this.queryTimeLimit = ((Number) argOrDefault(config, "query-time-limit", DEFAULT_QUERY_TIME_LIMIT)).longValue();
         var restrictMappingDb = argOrDefault(config, "restrict-mapping-db", DEFAULT_RESTRICT_MAPPING_DB);
 
         QueryBatchLoader.setMongoClient(mclient);
         AggregationBatchLoader.setMongoClient(mclient);
         GraphQLDataFetcher.setMongoClient(mclient);
-        
+
         // Initialize aggregation security checker for GraphQL
 
-	  	Map<String, Object> securityConfig = rhConfig.getOrDefault("aggregationSecurity", new HashMap<>());
+        Map<String, Object> securityConfig = rhConfig.getOrDefault("aggregationSecurity", new HashMap<>());
         var securityChecker = new AggregationPipelineSecurityChecker(securityConfig);
         AggregationBatchLoader.setSecurityChecker(securityChecker);
         GraphQLDataFetcher.setSecurityChecker(securityChecker);
-        
+
         AppDefinitionLoader.setup(mclient, restrictMappingDb);
         AppBuilder.setDefaultLimit(defaultLimit);
         AppBuilder.setMaxLimit(maxLimit);
@@ -183,7 +183,7 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 // add metric label
                 Metrics.attachMetricLabel(req, new MetricLabel("query", queryNames));
                 LOGGER.debug("Executing GraphQL query: {}", queryNames);
-            } catch(InvalidSyntaxException ise) {
+            } catch (InvalidSyntaxException ise) {
                 // invalid syntax -> 400
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
                 // If the GraphQL response does not contain the {data} entry then
@@ -199,10 +199,10 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         // add authenticated account properties to local context
         // used by AggregationMapping to interpolate args as @user and @user._id
         switch (req.getAuthenticatedAccount()) {
-			case MongoRealmAccount ma -> localContext.put("@user", ma.properties());
+            case MongoRealmAccount ma -> localContext.put("@user", ma.properties());
             case WithProperties<?> awp -> localContext.put("@user", BsonUtils.toBsonDocument(awp.propertiesAsMap()));
-			case null, default -> localContext.put("@user", BsonUtils.document());
-		}
+            case null, default -> localContext.put("@user", BsonUtils.document());
+        }
 
         // add the query-time-limit to the local context
         if (this.queryTimeLimit > 0) {
@@ -210,9 +210,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
 
         var inputBuilder = ExecutionInput.newExecutionInput()
-            .query(req.getQuery())
-            .localContext(localContext.get())
-            .dataLoaderRegistry(dataLoaderRegistry);
+                .query(req.getQuery())
+                .localContext(localContext.get())
+                .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(req.getOperationName());
 
@@ -224,9 +224,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         chainedInstrumentations.add(new MaxQueryTimeInstrumentation(this.queryTimeLimit));
 
         gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
-            .valueUnboxer((Object object) -> object instanceof BsonNull ? null : ValueUnboxer.DEFAULT.unbox(object))
-            .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
-            .build();
+                .valueUnboxer((Object object) -> object instanceof BsonNull ? null : ValueUnboxer.DEFAULT.unbox(object))
+                .instrumentation(new ChainedInstrumentation(chainedInstrumentations))
+                .build();
 
         try {
             var result = gql.execute(inputBuilder.build());
@@ -237,11 +237,11 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             if (result.getErrors() != null && !result.getErrors().isEmpty()) {
 
                 var graphQLQueryTimeoutException = result.getErrors().stream()
-                    .filter(ExceptionWhileDataFetching.class::isInstance)
-                    .map(e -> (ExceptionWhileDataFetching) e)
-                    .map(e -> containsGraphQLQueryTimeoutException(e))
-                    .filter(e -> e != null)
-                    .findFirst();
+                        .filter(ExceptionWhileDataFetching.class::isInstance)
+                        .map(e -> (ExceptionWhileDataFetching) e)
+                        .map(e -> containsGraphQLQueryTimeoutException(e))
+                        .filter(e -> e != null)
+                        .findFirst();
 
                 if (graphQLQueryTimeoutException.isPresent()) {
                     // timeout during a mongodb query -> 408
@@ -268,12 +268,12 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
             if (Boolean.TRUE.equals(this.verbose)) {
                 logDataLoadersStatistics(dataLoaderRegistry);
             }
-        } catch(GraphQLQueryTimeoutException t) {
+        } catch (GraphQLQueryTimeoutException t) {
             // this exception can be thrown by MaxQueryTimeInstrumentation
             res.setStatusCode(HttpStatus.SC_REQUEST_TIMEOUT);
             var errorResult = new ExecutionResultImpl.Builder<>().addError(t).build();
             res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             if (containsMongoTimeoutException(t)) {
                 // db down -> 500
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
@@ -281,9 +281,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 // the server MUST reply with a 4xx or 5xx status code as appropriate.
                 LOGGER.error("Unable to establish a connection to the database", t);
                 var errorResult = new ExecutionResultImpl.Builder<>()
-                    .addError(GraphQLError.newError()
-                        .errorType(ErrorType.ExecutionAborted)
-                        .message("Unable to establish a connection to the database: " + t.getCause().getMessage()).build()).build();
+                        .addError(GraphQLError.newError()
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("Unable to establish a connection to the database: " + t.getCause().getMessage()).build()).build();
 
                 res.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
@@ -299,8 +299,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 } else {
                     var errorResult = new ExecutionResultImpl.Builder<>()
                             .addError(GraphQLError.newError()
-                                .errorType(ErrorType.ExecutionAborted)
-                                .message("Runtime Error: " + t.getMessage()).build()).build();
+                                    .errorType(ErrorType.ExecutionAborted)
+                                    .message("Runtime Error: " + t.getMessage()).build()).build();
 
                     res.setContent(BsonUtils.toBsonDocument(errorResult.toSpecification()));
                 }
@@ -383,20 +383,20 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 if (e.getRequestMethod().equalToString(ExchangeKeys.METHOD.POST.name()) || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())) {
                     var appURI = appURI(e);
                     gqlApp(e); 					  // throws GraphQLAppDefNotFoundException when uri is not bound to an app definition
-                                    			  // throws GraphQLIllegalAppDefinitionException is app def is invalid
+                    // throws GraphQLIllegalAppDefinitionException is app def is invalid
                     GraphQLRequest.init(e, appURI); // throws BadRequestException when content type is not valid or query field is missing
-                                                    // throws JsonSyntaxException when content is not valid JSON
+                    // throws JsonSyntaxException when content is not valid JSON
                 } else {
                     // wrong method -> 405
                     throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 }
-            } catch(BadRequestException brex) {
+            } catch (BadRequestException brex) {
                 if (brex.getStatusCode() == HttpStatus.SC_METHOD_NOT_ALLOWED) {
                     // wrong method -> 405
                     var errorResult = new ExecutionResultImpl.Builder<>()
                             .addError(GraphQLError.newError()
-                                .errorType(ErrorType.ExecutionAborted)
-                                .message("Method Not Allowed").build()).build();
+                                    .errorType(ErrorType.ExecutionAborted)
+                                    .message("Method Not Allowed").build()).build();
 
                     throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_METHOD_NOT_ALLOWED, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
                 } else {
@@ -405,20 +405,20 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                     // Requests that the server cannot interpret SHOULD result in status code 400 (Bad Request).
                     var errorResult = new ExecutionResultImpl.Builder<>()
                             .addError(GraphQLError.newError()
-                                .errorType(ErrorType.ValidationError)
-                                .message(brex.getMessage()).build()).build();
+                                    .errorType(ErrorType.ValidationError)
+                                    .message(brex.getMessage()).build()).build();
 
                     throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
                 }
-            } catch(JsonSyntaxException jse) {
+            } catch (JsonSyntaxException jse) {
                 // invalid json -> 400
                 // GraphQL over HTTP specs https://github.com/graphql/graphql-over-http/blob/main/spec/GraphQLOverHTTP.md
                 // Requests that the server cannot interpret SHOULD result in status code 400 (Bad Request).
 
                 var errorResult = new ExecutionResultImpl.Builder<>()
                         .addError(GraphQLError.newError()
-                            .errorType(ErrorType.ValidationError)
-                            .message(jseCleanMessage(jse)).build()).build();
+                                .errorType(ErrorType.ValidationError)
+                                .message(jseCleanMessage(jse)).build()).build();
 
                 throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             } catch (GraphQLAppDefNotFoundException nfe) {
@@ -428,8 +428,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 // the server MUST reply with a 4xx or 5xx status code as appropriate.
                 var errorResult = new ExecutionResultImpl.Builder<>()
                         .addError(GraphQLError.newError()
-                            .errorType(ErrorType.ExecutionAborted)
-                            .message("GraphQL app not found").build()).build();
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("GraphQL app not found").build()).build();
                 throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_NOT_FOUND, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             } catch (GraphQLIllegalAppDefinitionException ie) {
                 if (containsMongoTimeoutException(ie)) {
@@ -439,9 +439,9 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                     // the server MUST reply with a 4xx or 5xx status code as appropriate.
                     LOGGER.error("Unable to establish a connection to the database", ie);
                     var errorResult = new ExecutionResultImpl.Builder<>()
-                        .addError(GraphQLError.newError()
-                            .errorType(ErrorType.ExecutionAborted)
-                            .message("Unable to establish a connection to the database: " + ie.getCause().getMessage()).build()).build();
+                            .addError(GraphQLError.newError()
+                                    .errorType(ErrorType.ExecutionAborted)
+                                    .message("Unable to establish a connection to the database: " + ie.getCause().getMessage()).build()).build();
 
                     throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_INTERNAL_SERVER_ERROR, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
                 } else {
@@ -453,8 +453,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                     LOGGER.error("Illegal GraphQL App definition", ie);
                     var errorResult = new ExecutionResultImpl.Builder<>()
                             .addError(GraphQLError.newError()
-                                .errorType(ErrorType.ExecutionAborted)
-                                .message("Invalid GraphQL app definition: " + ie.getMessage()).build()).build();
+                                    .errorType(ErrorType.ExecutionAborted)
+                                    .message("Invalid GraphQL app definition: " + ie.getMessage()).build()).build();
                     throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
                 }
             } catch (IOException ioe) {
@@ -464,8 +464,8 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
                 // the server MUST reply with a 4xx or 5xx status code as appropriate.
                 var errorResult = new ExecutionResultImpl.Builder<>()
                         .addError(GraphQLError.newError()
-                            .errorType(ErrorType.ExecutionAborted)
-                            .message("Network error: " + ioe.getMessage()).build()).build();
+                                .errorType(ErrorType.ExecutionAborted)
+                                .message("Network error: " + ioe.getMessage()).build()).build();
                 throw new BadRequestException(BsonUtils.toBsonDocument(errorResult.toSpecification()).toJson(), HttpStatus.SC_BAD_REQUEST, true, GRAPHQL_RESPONSE_CONTENT_TYPE);
             }
         };
@@ -486,20 +486,20 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
         }
     }
 
-	private String appURI(HttpServerExchange e) {
-		var splitPath = e.getRequestPath().split("/");
-		return String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
-	}
+    private String appURI(HttpServerExchange e) {
+        var splitPath = e.getRequestPath().split("/");
+        return String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
+    }
 
-	private GraphQLApp gqlApp(HttpServerExchange e) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
-		var appURI = appURI(e);
+    private GraphQLApp gqlApp(HttpServerExchange e) throws GraphQLAppDefNotFoundException, GraphQLIllegalAppDefinitionException {
+        var appURI = appURI(e);
 
-		Map<String, Object> attachedParams = e.getAttachment(Request.ATTACHED_PARAMS_KEY);
-		var overrideGQLAppsDb = (String) attachedParams.get("override-gql-apps-db");
+        Map<String, Object> attachedParams = e.getAttachment(Request.ATTACHED_PARAMS_KEY);
+        var overrideGQLAppsDb = (String) attachedParams.get("override-gql-apps-db");
 
         return overrideGQLAppsDb == null
-			? AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(this.defaultAppDefDb, this.collection, appURI))
-			: AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(overrideGQLAppsDb, this.collection, appURI));
+                ? AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(this.defaultAppDefDb, this.collection, appURI))
+                : AppDefinitionLoadingCache.getLoading(new AppDefinitionRef(overrideGQLAppsDb, this.collection, appURI));
     }
 
     @Override
@@ -525,17 +525,17 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse> 
     static String queryNames(Document doc) {
         // collect query root fields
         var rootFields = doc.getDefinitionsOfType(OperationDefinition.class).stream()
-            .filter(d -> d.getOperation() == Operation.QUERY)
-            .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class)
-            .stream()
-                .filter(f -> f.getSelectionSet() != null)
-                .collect(Collectors.toList())).findFirst().orElse(new ArrayList<>());
+                .filter(d -> d.getOperation() == Operation.QUERY)
+                .map(d -> d.getSelectionSet().getSelectionsOfType(Field.class)
+                        .stream()
+                        .filter(f -> f.getSelectionSet() != null)
+                        .collect(Collectors.toList())).findFirst().orElse(new ArrayList<>());
 
         // add metric label with queries names
         return rootFields.stream()
-            .filter(f -> f.getName() != null)
-            .map(Field::getName)
-            .collect(Collectors.joining(","));
+                .filter(f -> f.getName() != null)
+                .map(Field::getName)
+                .collect(Collectors.joining(","));
     }
 
     public static final String GQL_ACCESS_CONTROL_ALLOW_METHODS = "POST";

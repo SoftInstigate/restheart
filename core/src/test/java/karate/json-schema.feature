@@ -1,4 +1,5 @@
 # note, more tests are defined on org.restheart.test.integration.JsonSchemaCheckerIT
+@schema
 Feature: Test json schema validation
 
 Background:
@@ -75,7 +76,7 @@ Scenario: Create test data
 
     * header Authorization = authHeader
     Given path coll
-    And request { "n": 1, "s": "foo", "timestamp": 1568295769260 } }
+    And request { "n": 1, "s": "foo", "timestamp": 1568295769260 }
     When method POST
     Then assert responseStatus == 400
 

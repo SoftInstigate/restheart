@@ -195,9 +195,9 @@ class CollectionRepresentationFactory
                         rep.addLink(
                                 new Link(uri,
                                         requestPath
-                                        + "/"
-                                        + _AGGREGATIONS + "/"
-                                        + uri));
+                                                + "/"
+                                                + _AGGREGATIONS + "/"
+                                                + uri));
                     }
                 }
             });
@@ -225,9 +225,9 @@ class CollectionRepresentationFactory
                         rep.addLink(
                                 new Link(uri,
                                         requestPath
-                                        + "/"
-                                        + _STREAMS + "/"
-                                        + uri));
+                                                + "/"
+                                                + _STREAMS + "/"
+                                                + uri));
                     }
                 }
             });
@@ -248,8 +248,8 @@ class CollectionRepresentationFactory
             rep.addLink(new Link(
                     RHBUCKET,
                     MongoURLUtils.getParentPath(requestPath)
-                    + "/{bucketname}"
-                    + FS_FILES_SUFFIX,
+                            + "/{bucketname}"
+                            + FS_FILES_SUFFIX,
                     true));
             rep.addLink(new Link(
                     RHFILE,
@@ -269,10 +269,10 @@ class CollectionRepresentationFactory
 
         rep.addLink(new Link(RHINDEXES,
                 requestPath
-                + "/"
-                + request.getDBName()
-                + "/" + request.getCollectionName()
-                + "/_indexes"));
+                        + "/"
+                        + request.getDBName()
+                        + "/" + request.getCollectionName()
+                        + "/_indexes"));
 
         rep.addLink(new Link(RHFILTER, requestPath + "{?filter}", true));
         rep.addLink(new Link(RHSORT, requestPath + "{?sort_by}", true));

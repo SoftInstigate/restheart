@@ -28,12 +28,10 @@ import java.util.Set;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 
-import org.fusesource.jansi.Ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.utils.BootstrapLogger;
 
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
@@ -51,9 +49,9 @@ public class BootstrapperUtils {
 
     public static String getInstanceName(Configuration configuration) {
         return configuration == null ? UNDEFINED
-            : configuration.coreModule().name() == null
-            ? UNDEFINED
-            : configuration.coreModule().name();
+                : configuration.coreModule().name() == null
+                ? UNDEFINED
+                : configuration.coreModule().name();
     }
 
     /**
@@ -133,7 +131,7 @@ public class BootstrapperUtils {
 
     public static void logStartMessages(Configuration configuration) {
         var instanceName = getInstanceName(configuration);
-	    BootstrapLogger.standalone(LOGGER, STARTING + "{}" + INSTANCE + "{}", ansi().fg(RED).bold().a(RESTHEART).reset().toString(), ansi().fg(RED).bold().a(instanceName).reset().toString());
+        BootstrapLogger.standalone(LOGGER, STARTING + "{}" + INSTANCE + "{}", ansi().fg(RED).bold().a(RESTHEART).reset().toString(), ansi().fg(RED).bold().a(instanceName).reset().toString());
         BootstrapLogger.standalone(LOGGER, VERSION, Configuration.VERSION);
         LOGGER.debug("Configuration:\n{}", configuration.toString());
     }

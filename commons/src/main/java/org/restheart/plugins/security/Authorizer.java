@@ -120,11 +120,11 @@ public interface Authorizer extends ConfigurablePlugin {
      * policies (via ALLOWERs) and restrictive policies (via VETOERs) in the same system.
      * </p>
      */
-    public enum TYPE { 
+    public enum TYPE {
         /** Authorizer can grant access - at least one ALLOWER must allow the request */
-        ALLOWER, 
+        ALLOWER,
         /** Authorizer can deny access - any VETOER can reject the request */
-        VETOER 
+        VETOER
     }
 
     /**

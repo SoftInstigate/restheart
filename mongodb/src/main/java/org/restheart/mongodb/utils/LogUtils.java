@@ -146,7 +146,7 @@ public class LogUtils {
         var first = true;
         for (var row : rows) {
             msg.a(sr(firstRowColor))
-                    .fg(first ? firstRowColor: rowsColor)
+                    .fg(first ? firstRowColor : rowsColor)
                     .a(pad(row, 66))
                     .a(er(firstRowColor))
                     .reset();
@@ -156,7 +156,7 @@ public class LogUtils {
 
         msg.a(footer(firstRowColor));
 
-        LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
+        LogUtils.log(LOGGER, level, msg.toString(), (Object[]) null);
     }
 
     private static Ansi sr(Color color) {
@@ -170,14 +170,14 @@ public class LogUtils {
     private static Ansi header(Color color) {
         return ansi().a("\n").fg(color).a(
                 "*-------------------------------------------------------------------*\n"
-                + "|                                                                   |\n")
+                        + "|                                                                   |\n")
                 .reset();
     }
 
     private static Ansi footer(Color color) {
         return ansi().fg(color).a(
                 "|                                                                   |\n"
-                + "*-------------------------------------------------------------------*\n")
+                        + "*-------------------------------------------------------------------*\n")
                 .reset();
 
     }

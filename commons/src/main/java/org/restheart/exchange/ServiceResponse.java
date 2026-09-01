@@ -65,7 +65,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
 
     /** The content of the response. */
     protected T content;
-    
+
     /** Optional custom sender for specialized response delivery. */
     private Runnable customSender = null;
 
@@ -114,7 +114,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
             }
 
             exchange.putAttachment(RESPONSE_KEY, this);
-     }
+        }
     }
 
     /**

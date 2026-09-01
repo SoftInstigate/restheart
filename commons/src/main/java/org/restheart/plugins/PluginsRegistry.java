@@ -184,6 +184,21 @@ public interface PluginsRegistry {
     public Set<PluginRecord<Service<?, ?>>> getServices();
 
     /**
+     * Retrieves the registered service with the given name.
+     *
+     * <p>The default implementation is a linear scan over {@link #getServices()};
+     * implementations backed by an indexed lookup (see {@code PluginsRegistryImpl})
+     * should override this for O(1) access.
+     *
+     * @param name the service name
+     * @return the plugin record of the service named {@code name}, or {@code null} if
+     *         no such service is registered
+     */
+    public default PluginRecord<Service<?, ?>> getService(String name) {
+        return name == null ? null : getServices().stream().filter(s -> name.equals(s.getName())).findAny().orElse(null);
+    }
+
+    /**
      * Retrieves all registered interceptors.
      * 
      * Interceptors provide cross-cutting functionality that can be applied

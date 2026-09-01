@@ -32,5 +32,5 @@ public interface PredicateOverBsonValue extends Predicate {
         return resolve(ExchangeWithBsonValue.value(exchage));
     }
 
-   boolean resolve(BsonValue doc);
+    boolean resolve(BsonValue doc);
 }

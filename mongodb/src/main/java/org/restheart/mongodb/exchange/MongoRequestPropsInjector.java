@@ -281,7 +281,7 @@ public class MongoRequestPropsInjector {
 
         // filter qparam is mandatory for bulk DELETE and PATCH
         if (request.getType() == TYPE.BULK_DOCUMENTS && (request.isDelete() || request.isPatch()) && (filters == null || filters.isEmpty())) {
-            response.setInError( HttpStatus.SC_BAD_REQUEST, "filter parameter is mandatory for bulk write requests");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "filter parameter is mandatory for bulk write requests");
             return;
         }
 

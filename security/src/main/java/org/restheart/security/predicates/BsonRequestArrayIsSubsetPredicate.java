@@ -53,10 +53,10 @@ public class BsonRequestArrayIsSubsetPredicate implements Predicate {
         this.key = key;
         this.values = new BsonArray();
 
-        for (var value: values) {
+        for (var value : values) {
             try {
                 this.values.add(BsonUtils.parse(value));
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 throw new IllegalArgumentException(value + " is not a valid bson value");
             }
         }
@@ -92,7 +92,7 @@ public class BsonRequestArrayIsSubsetPredicate implements Predicate {
                     return false;
                 }
             } else {
-                LOGGER.warn("bson-request-array-is-subset predicate invoked on a BsonRequest with content {}, it requires a BsonDocument",  bsonRequest.getContent().getClass().getSimpleName());
+                LOGGER.warn("bson-request-array-is-subset predicate invoked on a BsonRequest with content {}, it requires a BsonDocument", bsonRequest.getContent().getClass().getSimpleName());
                 return false;
             }
 

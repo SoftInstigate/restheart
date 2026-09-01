@@ -27,7 +27,7 @@ public class FieldRenaming extends FieldMapping {
 
     private String alias;
 
-    public FieldRenaming(String fieldName, String alias){
+    public FieldRenaming(String fieldName, String alias) {
         super(fieldName);
         this.alias = alias;
     }

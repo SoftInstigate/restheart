@@ -74,7 +74,7 @@ import com.google.common.collect.Maps;
  */
 public class HashMapLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
     private final HashMap<K, Optional<V>> wrapped;
-    private final Function<K, V> loader ;
+    private final Function<K, V> loader;
 
     /**
      * Creates a new HashMapLoadingCache with the specified loader function.
@@ -144,7 +144,7 @@ public class HashMapLoadingCache<K, V> implements org.restheart.cache.LoadingCac
     public Optional<V> getLoading(K key) {
         var cachedValue = get(key);
 
-        if(cachedValue != null) {
+        if (cachedValue != null) {
             return cachedValue;
         } else {
             var value = Optional.ofNullable(loader.apply(key));

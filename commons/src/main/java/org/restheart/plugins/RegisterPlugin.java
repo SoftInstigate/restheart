@@ -204,10 +204,11 @@ public @interface RegisterPlugin {
      */
     public enum MATCH_POLICY {
         /** Requires exact URI match between request and service URI */
-        EXACT, 
+        EXACT,
         /** Matches if request URI starts with service URI */
         PREFIX
-    };
+    }
+    ;
 
     /**
      * Specifies when the interceptor should be executed in the request processing pipeline.

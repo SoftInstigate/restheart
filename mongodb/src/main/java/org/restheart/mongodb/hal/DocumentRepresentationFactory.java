@@ -54,8 +54,8 @@ class DocumentRepresentationFactory {
      * @param data
      */
     public static void addSpecialProperties(final Resource rep,
-            TYPE type,
-            BsonDocument data) {
+                                            TYPE type,
+                                            BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
         if (data != null) {
@@ -81,8 +81,8 @@ class DocumentRepresentationFactory {
     }
 
     private static void addRelationshipsLinks(Resource rep,
-            HttpServerExchange exchange,
-            BsonDocument data) {
+                                              HttpServerExchange exchange,
+                                              BsonDocument data) {
         var request = MongoRequest.of(exchange);
 
         List<Relationship> rels = null;
@@ -130,17 +130,17 @@ class DocumentRepresentationFactory {
      * @throws IllegalQueryParameterException
      */
     public Resource getRepresentation(String href,
-            HttpServerExchange exchange,
-            BsonDocument data)
+                                      HttpServerExchange exchange,
+                                      BsonDocument data)
             throws IllegalQueryParameterException {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
         var rep = request.isFullHalMode() && data != null
                 ? new Resource(RepresentationUtils
-                        .getReferenceLink(response,
-                                MongoURLUtils.getParentPath(href),
-                                data.get("_id")))
+                .getReferenceLink(response,
+                        MongoURLUtils.getParentPath(href),
+                        data.get("_id")))
                 : new Resource();
 
         if (data != null) {

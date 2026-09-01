@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@RegisterPlugin(name="graphAppDefinitionPutPostChecker",
+@RegisterPlugin(name = "graphAppDefinitionPutPostChecker",
         description = "checks GraphQL application definitions on PUT and POST requests",
         interceptPoint = REQUEST_AFTER_AUTH,
         enabledByDefault = true
@@ -76,7 +76,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             } else {
                 this.enabled = false;
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -102,20 +102,20 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
         // Search for apps that would be accessible at the same URI
         // Exclude the current document from the search
         var orConditions = org.restheart.utils.BsonUtils.array()
-            // Another app explicitly sets descriptor.uri to our target URI
-            .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", targetUri))
-            // Another app has _id that would default to our target URI
-            .add(org.restheart.utils.BsonUtils.document()
-                .put("_id", targetUri)
-                .put("$or", org.restheart.utils.BsonUtils.array()
-                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", org.restheart.utils.BsonUtils.document().put("$exists", false)))
-                    .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", (String) null))
-                )
-            );
+                // Another app explicitly sets descriptor.uri to our target URI
+                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", targetUri))
+                // Another app has _id that would default to our target URI
+                .add(org.restheart.utils.BsonUtils.document()
+                        .put("_id", targetUri)
+                        .put("$or", org.restheart.utils.BsonUtils.array()
+                                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", org.restheart.utils.BsonUtils.document().put("$exists", false)))
+                                .add(org.restheart.utils.BsonUtils.document().put("descriptor.uri", (String) null))
+                        )
+                );
 
         var query = org.restheart.utils.BsonUtils.document()
-            .put("_id", org.restheart.utils.BsonUtils.document().put("$ne", currentDocId))
-            .put("$or", orConditions);
+                .put("_id", org.restheart.utils.BsonUtils.document().put("$ne", currentDocId))
+                .put("$or", orConditions);
 
         var conflictingApp = collection.find(query.get()).first();
         return conflictingApp != null;
@@ -125,8 +125,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var content = request.getContent();
 
-		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         if (content.isDocument()) {
             var appDef = content.asDocument();
@@ -137,8 +137,8 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
                 var app = AppBuilder.build(unflattened, db, false);
                 // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
                 var appUri = app.getDescriptor().getUri() != null
-                    ? app.getDescriptor().getUri()
-                    : (unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "");
+                        ? app.getDescriptor().getUri()
+                        : (unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "");
 
                 // Check for URI collision
                 var docId = unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "";
@@ -148,22 +148,22 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
                 }
 
                 AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
-            } catch(GraphQLIllegalAppDefinitionException e) {
+            } catch (GraphQLIllegalAppDefinitionException e) {
                 LOGGER.debug("Wrong GraphQL App definition", e);
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition: " + e.getMessage(), e);
             }
         } else {
             var index = 0;
 
-            for (var appDef: content.asArray()) {
+            for (var appDef : content.asArray()) {
                 try {
                     var unflattened = BsonUtils.unflatten(appDef).asDocument();
                     // Note: restrictMappingDb validation happens at runtime via AppDefinitionLoader
                     var app = AppBuilder.build(unflattened, db, false);
                     // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
                     var appUri = app.getDescriptor().getUri() != null
-                        ? app.getDescriptor().getUri()
-                        : (unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "");
+                            ? app.getDescriptor().getUri()
+                            : (unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "");
 
                     // Check for URI collision
                     var docId = unflattened.containsKey("_id") ? unflattened.get("_id").asString().getValue() : "";
@@ -173,7 +173,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
                     }
 
                     AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(db, this.coll, appUri), app);
-                } catch(GraphQLIllegalAppDefinitionException e) {
+                } catch (GraphQLIllegalAppDefinitionException e) {
                     LOGGER.debug("Wrong GraphQL App definition", e);
                     response.setInError(HttpStatus.SC_BAD_REQUEST, "Wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
                     break;
@@ -186,14 +186,14 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         return enabled
-            && db.equals(request.getDBName())
-            && this.coll.equals(request.getCollectionName())
-            && request.getContent() != null
-            && ((request.isCollection() && request.isPost())
-            || (request.isDocument() && request.isPut()));
+                && db.equals(request.getDBName())
+                && this.coll.equals(request.getCollectionName())
+                && request.getContent() != null
+                && ((request.isCollection() && request.isPost())
+                || (request.isDocument() && request.isPut()));
     }
 }

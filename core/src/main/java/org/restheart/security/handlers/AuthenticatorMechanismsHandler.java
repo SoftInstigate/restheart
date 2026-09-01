@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthenticatorMechanismsHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticatorMechanismsHandler.class);
-    
+
     private final Set<AuthenticatorMechanismWrapper> wrappedAuthenticatorMechanisms;
 
     public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
@@ -58,15 +58,15 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
 
     public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms, boolean logInitialization) {
         this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream()
-            .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+                .map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         if (logInitialization) {
             LOGGER.debug("AuthenticatorMechanismsHandler: {} mechanisms ({})",
-                authenticatorMechanisms.size(),
-                authenticatorMechanisms.stream()
-                    .map(m -> PluginUtils.name(m.getInstance()))
-                    .collect(Collectors.joining(", ")));
+                    authenticatorMechanisms.size(),
+                    authenticatorMechanisms.stream()
+                            .map(m -> PluginUtils.name(m.getInstance()))
+                            .collect(Collectors.joining(", ")));
         }
     }
 
@@ -99,7 +99,7 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
             next(exchange);
         } else {
             LOGGER.error("The SecurityContext does not support authentication mechanisms for {} {} - Context type: {}",
-                requestMethod, requestPath, sc != null ? sc.getClass().getSimpleName() : "null");
+                    requestMethod, requestPath, sc != null ? sc.getClass().getSimpleName() : "null");
             throw new IllegalStateException("The SecurityContext does not support authentication mechanisms!");
         }
     }

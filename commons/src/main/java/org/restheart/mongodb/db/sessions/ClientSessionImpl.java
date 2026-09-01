@@ -89,7 +89,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * default transaction options, and other session configuration
      */
     public ClientSessionImpl(final ServerSessionPool serverSessionPool, final Object originator,
-            final ClientSessionOptions options) {
+                             final ClientSessionOptions options) {
         super(serverSessionPool, originator, options);
     }
 

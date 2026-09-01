@@ -45,9 +45,9 @@ import io.undertow.util.Headers;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "authCookieSetter",
-                description = "sets the auth cookie for /token/cookie endpoint (or legacy ?set-auth-cookie)",
-                interceptPoint = InterceptPoint.RESPONSE,
-                enabledByDefault = true)
+        description = "sets the auth cookie for /token/cookie endpoint (or legacy ?set-auth-cookie)",
+        interceptPoint = InterceptPoint.RESPONSE,
+        enabledByDefault = true)
 public class AuthCookieSetter implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
@@ -96,39 +96,39 @@ public class AuthCookieSetter implements WildcardInterceptor {
         // use JWT authentication (i.e. Bearer_...) - underscore instead of space for RFC 6265 compliance
         // otherwise rely on tokenBasicAuthMechanism (i.e. Basic_...)
         var authToken = jwtAuthWithJwtAuthMechanism
-            ? AuthCookie.bearerValue(authTokenHeader)
-            : AuthCookie.BASIC_PREFIX.concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
+                ? AuthCookie.bearerValue(authTokenHeader)
+                : AuthCookie.BASIC_PREFIX.concat(Base64.getEncoder().encodeToString((req.getAuthenticatedAccount().getPrincipal().getName() + ":" + authTokenHeader).getBytes()));
 
         // Emit the auth cookie through the shared canonical builder so that the
         // format (Bearer_/Basic_ value, attributes) stays identical to the cookie
         // issued by restheart-accounts and expected by authCookieHandler.
         var setCookie = AuthCookie.header(this.name, authToken, domain(req), this.path,
-            this.secure, this.httpOnly, this.sameSite, this.sameSiteMode, this.secondsUntilExpiration);
+                this.secure, this.httpOnly, this.sameSite, this.sameSiteMode, this.secondsUntilExpiration);
 
         res.getHeaders().add(Headers.SET_COOKIE, setCookie);
     }
 
-	private String domain(ServiceRequest<?> req) {
-		String overrideCookieDomain = req.attachedParam("override-cookie-domain");
-		return overrideCookieDomain != null ? overrideCookieDomain : this.domain;
-	}
+    private String domain(ServiceRequest<?> req) {
+        String overrideCookieDomain = req.attachedParam("override-cookie-domain");
+        return overrideCookieDomain != null ? overrideCookieDomain : this.domain;
+    }
 
     @Override
     public boolean resolve(ServiceRequest<?> req, ServiceResponse<?> res) {
         if (!this.enabled || req.isOptions() || !req.isAuthenticated() || res.getHeader("Auth-Token") == null) {
             return false;
         }
-        
+
         // Primary: /token/cookie endpoint
         if (TOKEN_COOKIE_ENDPOINT.equals(req.getPath())) {
             return true;
         }
-        
+
         // Legacy: ?set-auth-cookie query parameter (if enabled)
         if (this.allowLegacy && req.getQueryParameters().containsKey("set-auth-cookie")) {
             return true;
         }
-        
+
         return false;
     }
 }

@@ -105,7 +105,7 @@ public class UserPwdRemover implements MongoInterceptor {
             // GET collection as array of documents (rep=PJ + 'np' qparam)
             try {
                 dc.delete("$.[*].".concat(this.propNamePassword));
-            } catch(PathNotFoundException pnfe) {
+            } catch (PathNotFoundException pnfe) {
                 //nothing to do
             }
         } else if (content.isJsonObject() && content.getAsJsonObject().keySet().contains("_embedded")) {
@@ -113,7 +113,7 @@ public class UserPwdRemover implements MongoInterceptor {
                 //  GET collection as a compact HAL document
                 try {
                     dc.delete("$._embedded.*.".concat(this.propNamePassword));
-                } catch(PathNotFoundException pnfe) {
+                } catch (PathNotFoundException pnfe) {
                     //nothing to do
                 }
             } else if (content.getAsJsonObject().get("_embedded").isJsonObject()
@@ -122,7 +122,7 @@ public class UserPwdRemover implements MongoInterceptor {
                 //  GET collection as a full HAL document
                 try {
                     dc.delete("$._embedded.['rh:doc'].*.".concat(this.propNamePassword));
-                } catch(PathNotFoundException pnfe) {
+                } catch (PathNotFoundException pnfe) {
                     //nothing to do
                 }
             }
@@ -130,7 +130,7 @@ public class UserPwdRemover implements MongoInterceptor {
             // GET document
             try {
                 dc.delete("$.".concat(this.propNamePassword));
-            } catch(PathNotFoundException pnfe) {
+            } catch (PathNotFoundException pnfe) {
                 //nothing to do
             }
         }
@@ -141,11 +141,11 @@ public class UserPwdRemover implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-            && request.isGet()
-            && (request.attachedParam("override-users-db")  != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
-            && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-            && !request.isCollectionSize()
-            && !request.isCollectionMeta()
-            && response.getContent() != null;
+                && request.isGet()
+                && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+                && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
+                && !request.isCollectionSize()
+                && !request.isCollectionMeta()
+                && response.getContent() != null;
     }
 }

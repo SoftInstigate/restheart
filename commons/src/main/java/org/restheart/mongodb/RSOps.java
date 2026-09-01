@@ -55,151 +55,151 @@ import com.mongodb.client.MongoDatabase;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public record RSOps(
-    /**
-     * The read preference that determines which members of a replica set to read from.
-     * <p>
-     * Read preference can be specified in connection strings using the {@code readPreference} parameter,
-     * e.g., {@code ?readPreference=primary}
-     * </p>
-     * 
-     * <p>Allowed values (case insensitive):</p>
-     * <ul>
-     *   <li>{@code PRIMARY} - Read from the primary node only</li>
-     *   <li>{@code SECONDARY} - Read from secondary nodes only</li>
-     *   <li>{@code SECONDARY_PREFERRED} - Read from secondary nodes if available, otherwise from primary</li>
-     *   <li>{@code PRIMARY_PREFERRED} - Read from primary if available, otherwise from secondary</li>
-     *   <li>{@code NEAREST} - Read from the nearest node (lowest latency)</li>
-     * </ul>
-     * 
-     * @see ReadPreference
-     */
-    ReadPreference readPreference,
-
-    /**
-     * The read concern level that controls the consistency and isolation properties of read operations.
-     * <p>
-     * Read concern can be specified in connection strings using the {@code readConcern} parameter,
-     * e.g., {@code ?readConcern=majority}
-     * </p>
-     * 
-     * <p>Allowed values (case insensitive):</p>
-     * <ul>
-     *   <li>{@code DEFAULT} - Use the server's default read concern</li>
-     *   <li>{@code LOCAL} - Return the most recent data available on the queried node</li>
-     *   <li>{@code MAJORITY} - Return data that has been acknowledged by a majority of replica set members</li>
-     *   <li>{@code LINEARIZABLE} - Return data that reflects all successful writes prior to the read operation.
-     *       This read concern is only compatible with {@link ReadPreference#primary()}</li>
-     *   <li>{@code SNAPSHOT} - Return data from a specific point in time (requires transactions)</li>
-     *   <li>{@code AVAILABLE} - Return data with no guarantee that it has been written to a majority of nodes</li>
-     * </ul>
-     * 
-     * @see ReadConcern
-     * @see ReadConcernLevel
-     */
-    ReadConcern readConcern,
-
-    /**
-     * The write concern that controls the acknowledgment of write operations.
-     * <p>
-     * Write concern can be specified in connection strings using the {@code writeConcern} parameter,
-     * e.g., {@code ?writeConcern=majority}
-     * </p>
-     * 
-     * <p>Allowed values (case insensitive):</p>
-     * <ul>
-     *   <li>{@code ACKNOWLEDGED} - Wait for acknowledgement using the server's default write concern.
-     *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#write-concern-acknowledged">MongoDB Manual</a></li>
-     *   <li>{@code W1} - Wait for acknowledgement from a single member.
-     *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
-     *   <li>{@code W2} - Wait for acknowledgement from two members.
-     *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
-     *   <li>{@code W3} - Wait for acknowledgement from three members.
-     *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
-     *   <li>{@code UNACKNOWLEDGED} - Return immediately after sending the write to the socket.
-     *       Network issues raise exceptions, but not server errors.
-     *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#unacknowledged">Unacknowledged</a></li>
-     *   <li>{@code JOURNALED} - Wait for the server to commit the write to the journal file on disk.
-     *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#journaled">Journaled</a></li>
-     *   <li>{@code MAJORITY} - Wait for acknowledgement from a majority of replica set members.
-     *       Raises exceptions for both network issues and server errors</li>
-     * </ul>
-     * 
-     * @see WriteConcern
-     */
-    WriteConcern writeConcern) {
         /**
-         * Creates a new RSOps instance with all options set to null.
+         * The read preference that determines which members of a replica set to read from.
          * <p>
-         * When applied to a database, null options will not modify the database's
-         * existing configuration for that particular option.
+         * Read preference can be specified in connection strings using the {@code readPreference} parameter,
+         * e.g., {@code ?readPreference=primary}
          * </p>
+         * 
+         * <p>Allowed values (case insensitive):</p>
+         * <ul>
+         *   <li>{@code PRIMARY} - Read from the primary node only</li>
+         *   <li>{@code SECONDARY} - Read from secondary nodes only</li>
+         *   <li>{@code SECONDARY_PREFERRED} - Read from secondary nodes if available, otherwise from primary</li>
+         *   <li>{@code PRIMARY_PREFERRED} - Read from primary if available, otherwise from secondary</li>
+         *   <li>{@code NEAREST} - Read from the nearest node (lowest latency)</li>
+         * </ul>
+         * 
+         * @see ReadPreference
          */
-        public RSOps() {
-            this(null, null, null);
-        }
+        ReadPreference readPreference,
 
         /**
-         * Creates a new RSOps instance with the specified read preference.
+         * The read concern level that controls the consistency and isolation properties of read operations.
+         * <p>
+         * Read concern can be specified in connection strings using the {@code readConcern} parameter,
+         * e.g., {@code ?readConcern=majority}
+         * </p>
          * 
-         * @param readPreference the read preference to set
-         * @return a new RSOps instance with the updated read preference
+         * <p>Allowed values (case insensitive):</p>
+         * <ul>
+         *   <li>{@code DEFAULT} - Use the server's default read concern</li>
+         *   <li>{@code LOCAL} - Return the most recent data available on the queried node</li>
+         *   <li>{@code MAJORITY} - Return data that has been acknowledged by a majority of replica set members</li>
+         *   <li>{@code LINEARIZABLE} - Return data that reflects all successful writes prior to the read operation.
+         *       This read concern is only compatible with {@link ReadPreference#primary()}</li>
+         *   <li>{@code SNAPSHOT} - Return data from a specific point in time (requires transactions)</li>
+         *   <li>{@code AVAILABLE} - Return data with no guarantee that it has been written to a majority of nodes</li>
+         * </ul>
+         * 
+         * @see ReadConcern
+         * @see ReadConcernLevel
          */
-        public RSOps withReadPreference(ReadPreference readPreference) {
-            return new RSOps(readPreference, readConcern, writeConcern);
-        }
+        ReadConcern readConcern,
 
         /**
-         * Creates a new RSOps instance with the specified read preference.
+         * The write concern that controls the acknowledgment of write operations.
+         * <p>
+         * Write concern can be specified in connection strings using the {@code writeConcern} parameter,
+         * e.g., {@code ?writeConcern=majority}
+         * </p>
          * 
-         * @param readPreference the read preference name (e.g., "PRIMARY", "SECONDARY")
-         * @return a new RSOps instance with the updated read preference
-         * @throws IllegalArgumentException if the read preference name is not valid
+         * <p>Allowed values (case insensitive):</p>
+         * <ul>
+         *   <li>{@code ACKNOWLEDGED} - Wait for acknowledgement using the server's default write concern.
+         *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#write-concern-acknowledged">MongoDB Manual</a></li>
+         *   <li>{@code W1} - Wait for acknowledgement from a single member.
+         *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
+         *   <li>{@code W2} - Wait for acknowledgement from two members.
+         *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
+         *   <li>{@code W3} - Wait for acknowledgement from three members.
+         *       See <a href="https://docs.mongodb.com/manual/reference/write-concern/#w-option">w option</a></li>
+         *   <li>{@code UNACKNOWLEDGED} - Return immediately after sending the write to the socket.
+         *       Network issues raise exceptions, but not server errors.
+         *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#unacknowledged">Unacknowledged</a></li>
+         *   <li>{@code JOURNALED} - Wait for the server to commit the write to the journal file on disk.
+         *       See <a href="https://docs.mongodb.com/manual/core/write-concern/#journaled">Journaled</a></li>
+         *   <li>{@code MAJORITY} - Wait for acknowledgement from a majority of replica set members.
+         *       Raises exceptions for both network issues and server errors</li>
+         * </ul>
+         * 
+         * @see WriteConcern
          */
-        public RSOps withReadPreference(String readPreference) throws IllegalArgumentException {
-            return withReadPreference(ReadPreference.valueOf(readPreference));
-        }
+        WriteConcern writeConcern) {
+    /**
+     * Creates a new RSOps instance with all options set to null.
+     * <p>
+     * When applied to a database, null options will not modify the database's
+     * existing configuration for that particular option.
+     * </p>
+     */
+    public RSOps() {
+        this(null, null, null);
+    }
 
-        /**
-         * Creates a new RSOps instance with the specified read concern.
-         * 
-         * @param readConcern the read concern to set
-         * @return a new RSOps instance with the updated read concern
-         */
-        public RSOps withReadConcern(ReadConcern readConcern) {
-            return new RSOps(readPreference, readConcern, writeConcern);
-        }
+    /**
+     * Creates a new RSOps instance with the specified read preference.
+     * 
+     * @param readPreference the read preference to set
+     * @return a new RSOps instance with the updated read preference
+     */
+    public RSOps withReadPreference(ReadPreference readPreference) {
+        return new RSOps(readPreference, readConcern, writeConcern);
+    }
 
-        /**
-         * Creates a new RSOps instance with the specified read concern level.
-         * 
-         * @param readConcern the read concern level name (e.g., "LOCAL", "MAJORITY")
-         * @return a new RSOps instance with the updated read concern
-         * @throws IllegalArgumentException if the read concern level name is not valid
-         */
-        public RSOps withReadConcern(String readConcern) throws IllegalArgumentException {
-            return withReadConcern(new ReadConcern(ReadConcernLevel.fromString(readConcern)));
-        }
+    /**
+     * Creates a new RSOps instance with the specified read preference.
+     * 
+     * @param readPreference the read preference name (e.g., "PRIMARY", "SECONDARY")
+     * @return a new RSOps instance with the updated read preference
+     * @throws IllegalArgumentException if the read preference name is not valid
+     */
+    public RSOps withReadPreference(String readPreference) throws IllegalArgumentException {
+        return withReadPreference(ReadPreference.valueOf(readPreference));
+    }
 
-        /**
-         * Creates a new RSOps instance with the specified write concern.
-         * 
-         * @param writeConcern the write concern to set
-         * @return a new RSOps instance with the updated write concern
-         */
-        public RSOps withWriteConcern(WriteConcern writeConcern) {
-            return new RSOps(readPreference, readConcern, writeConcern);
-        }
+    /**
+     * Creates a new RSOps instance with the specified read concern.
+     * 
+     * @param readConcern the read concern to set
+     * @return a new RSOps instance with the updated read concern
+     */
+    public RSOps withReadConcern(ReadConcern readConcern) {
+        return new RSOps(readPreference, readConcern, writeConcern);
+    }
 
-        /**
-         * Creates a new RSOps instance with the specified write concern.
-         * 
-         * @param writeConcern the write concern name (e.g., "ACKNOWLEDGED", "MAJORITY")
-         * @return a new RSOps instance with the updated write concern
-         * @throws IllegalArgumentException if the write concern name is not valid
-         */
-        public RSOps withWriteConcern(String writeConcern) {
-            return withWriteConcern(WriteConcern.valueOf(writeConcern));
-        }
+    /**
+     * Creates a new RSOps instance with the specified read concern level.
+     * 
+     * @param readConcern the read concern level name (e.g., "LOCAL", "MAJORITY")
+     * @return a new RSOps instance with the updated read concern
+     * @throws IllegalArgumentException if the read concern level name is not valid
+     */
+    public RSOps withReadConcern(String readConcern) throws IllegalArgumentException {
+        return withReadConcern(new ReadConcern(ReadConcernLevel.fromString(readConcern)));
+    }
+
+    /**
+     * Creates a new RSOps instance with the specified write concern.
+     * 
+     * @param writeConcern the write concern to set
+     * @return a new RSOps instance with the updated write concern
+     */
+    public RSOps withWriteConcern(WriteConcern writeConcern) {
+        return new RSOps(readPreference, readConcern, writeConcern);
+    }
+
+    /**
+     * Creates a new RSOps instance with the specified write concern.
+     * 
+     * @param writeConcern the write concern name (e.g., "ACKNOWLEDGED", "MAJORITY")
+     * @return a new RSOps instance with the updated write concern
+     * @throws IllegalArgumentException if the write concern name is not valid
+     */
+    public RSOps withWriteConcern(String writeConcern) {
+        return withWriteConcern(WriteConcern.valueOf(writeConcern));
+    }
 
     /**
      * Applies all configured options (read preference, read concern, and write concern) to the given database.

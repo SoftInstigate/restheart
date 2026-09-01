@@ -3535,6 +3535,12 @@
     },
     {
       "glob": "email-templates/password-reset.html"
+    },
+    {
+      "glob": "static/metrics"
+    },
+    {
+      "glob": "static/metrics/**"
     }
   ],
   "bundles": [

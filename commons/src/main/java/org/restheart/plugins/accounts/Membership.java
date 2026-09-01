@@ -11,4 +11,5 @@ import org.bson.BsonValue;
  *                    or the configured member role)
  * @param active      {@code true} if this is the user's currently active team
  */
-public record Membership(BsonValue teamId, String displayName, String description, String role, boolean active) {}
+public record Membership(BsonValue teamId, String displayName, String description, String role, boolean active) {
+}

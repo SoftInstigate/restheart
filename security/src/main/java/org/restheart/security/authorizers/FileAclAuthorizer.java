@@ -105,6 +105,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
     }
 
     private boolean permissionsTransformed = false;
+
     private void transformPermissions() {
         this.permissions.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));
     }
@@ -145,10 +146,10 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role
                     -> {
-                ArrayList<FileAclPermission> matched = Lists.newArrayListWithCapacity(1);
+                        ArrayList<FileAclPermission> matched = Lists.newArrayListWithCapacity(1);
 
-                rolePermissions(role)
-                        .stream().anyMatch(permission -> {
+                        rolePermissions(role)
+                                .stream().anyMatch(permission -> {
                             var resolved = permission.allow(request);
 
                             String marker;
@@ -170,7 +171,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
                             return false;
                         });
-            });
+                    });
         }
 
         // the applicable permission is the ones that

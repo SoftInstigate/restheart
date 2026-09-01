@@ -130,37 +130,37 @@ class RootRepresentationFactory extends AbstractRepresentationFactory {
                 .filter(d -> d.isDocument())
                 .map(d -> d.asDocument())
                 .forEach((d) -> {
-            BsonValue _id = d.get("_id");
+                    BsonValue _id = d.get("_id");
 
-            if (_id != null
-                    && _id.isString()) {
-                final Resource nrep;
+                    if (_id != null
+                            && _id.isString()) {
+                        final Resource nrep;
 
-                if (request.isFullHalMode()) {
-                    if (trailingSlash) {
-                        nrep = new Resource(requestPath
-                                + _id.asString().getValue());
+                        if (request.isFullHalMode()) {
+                            if (trailingSlash) {
+                                nrep = new Resource(requestPath
+                                        + _id.asString().getValue());
+                            } else {
+                                nrep = new Resource(requestPath
+                                        + "/"
+                                        + _id.asString().getValue());
+                            }
+
+                            DBRepresentationFactory.addSpecialProperties(
+                                    nrep,
+                                    TYPE.DB,
+                                    d);
+                        } else {
+                            nrep = new Resource();
+                        }
+
+                        nrep.addProperties(d);
+
+                        rep.addChild("rh:db", nrep);
                     } else {
-                        nrep = new Resource(requestPath
-                                + "/"
-                                + _id.asString().getValue());
+                        // this shoudn't be possible
+                        LOGGER.error("db missing string _id field", d);
                     }
-
-                    DBRepresentationFactory.addSpecialProperties(
-                            nrep,
-                            TYPE.DB,
-                            d);
-                } else {
-                    nrep = new Resource();
-                }
-
-                nrep.addProperties(d);
-
-                rep.addChild("rh:db", nrep);
-            } else {
-                // this shoudn't be possible
-                LOGGER.error("db missing string _id field", d);
-            }
-        });
+                });
     }
 }

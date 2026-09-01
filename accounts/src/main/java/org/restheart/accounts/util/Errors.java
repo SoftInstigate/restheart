@@ -1,6 +1,7 @@
 package org.restheart.accounts.util;
 
 import com.google.gson.JsonObject;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonResponse;
 
 /**
@@ -49,5 +50,19 @@ public final class Errors {
         var body = new JsonObject();
         body.addProperty("message", message);
         res.setContent(body);
+    }
+
+    /**
+     * Sets the HTTP status code and message carried by a {@link BadRequestException}
+     * (e.g. thrown by {@link DbHelper} on a JSON Schema violation) as a JSON error
+     * body in the {@code { "message": "..." } } shape used throughout restheart-accounts —
+     * the generic framework {@code ErrorHandler} would otherwise render it as
+     * {@code { "msg": "..." } }, inconsistent with every other accounts error response.
+     *
+     * @param res the outgoing {@link JsonResponse}
+     * @param e   the caught exception
+     */
+    public static void error(JsonResponse res, BadRequestException e) {
+        error(res, e.getStatusCode(), e.getMessage());
     }
 }

@@ -38,14 +38,14 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.ACLRegistry;
+import org.restheart.security.WithProperties;
 import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
 import org.restheart.security.tokens.JwtConfigProvider;
-import org.restheart.security.tokens.JwtTokenManager;
+import org.restheart.security.tokens.JwtIssuer;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
 import io.undertow.util.Headers;
@@ -73,34 +73,39 @@ import io.undertow.util.HttpString;
  * <p>The code JWT carries the following claims:
  * <ul>
  *   <li>{@code sub} — username</li>
+ *   <li>{@code iss} — issuer (from jwtConfigProvider)</li>
+ *   <li>{@code aud} — audience (from jwtConfigProvider, when configured)</li>
+ *   <li>{@code jti} — unique JWT identifier</li>
+ *   <li>{@code iat} — issued-at timestamp</li>
+ *   <li>{@code exp} — expiry ({@value #CODE_TTL_MINUTES} minutes)</li>
  *   <li>{@code roles} — array of roles</li>
  *   <li>{@code cc} — code_challenge (PKCE)</li>
  *   <li>{@code ccm} — code_challenge_method</li>
  *   <li>{@code ruri} — redirect_uri</li>
  *   <li>{@code cid} — client_id</li>
- *   <li>{@code exp} — expiry ({@value #CODE_TTL_MINUTES} minutes)</li>
+ *   <li>account-properties-claims (from {@link JwtIssuer})</li>
  * </ul>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc7636">RFC 7636 – PKCE</a>
  */
 @RegisterPlugin(
-    name = "oauthAuthorizationService",
-    description = "OAuth 2.1 Authorization Code + PKCE endpoint (/authorize)",
-    secure = false,
-    enabledByDefault = false,
-    defaultURI = "/authorize"
+        name = "oauthAuthorizationService",
+        description = "OAuth 2.1 Authorization Code + PKCE endpoint (/authorize)",
+        secure = false,
+        enabledByDefault = false,
+        defaultURI = "/authorize"
 )
 public class OAuthAuthorizationService implements ByteArrayService {
 
     static final int CODE_TTL_MINUTES = 5;
 
     // Claims used inside the authorization-code JWT
-    static final String CLAIM_CODE_CHALLENGE        = "cc";
+    static final String CLAIM_CODE_CHALLENGE = "cc";
     static final String CLAIM_CODE_CHALLENGE_METHOD = "ccm";
-    static final String CLAIM_REDIRECT_URI          = "ruri";
-    static final String CLAIM_CLIENT_ID             = "cid";
-    static final String CLAIM_ROLES                 = "roles";
+    static final String CLAIM_REDIRECT_URI = "ruri";
+    static final String CLAIM_CLIENT_ID = "cid";
+    static final String CLAIM_ROLES = "roles";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthAuthorizationService.class);
 
@@ -118,25 +123,65 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
-    private Algorithm signingAlgo;
+    private volatile JwtIssuer jwtIssuer;
 
     @OnInit
     public void init() {
-        this.loginUrl            = argOrDefault(config, "login-url", null);
+        this.loginUrl = argOrDefault(config, "login-url", null);
         this.allowedRedirectUris = argOrDefault(config, "allowed-redirect-uris", List.of());
-        this.signingAlgo         = buildAlgorithm(jwtConfig);
 
         // allow unauthenticated GET (redirect to login) and authenticated POST (issue code)
         aclRegistry.registerAllow(req -> "/authorize".equals(req.getPath()));
     }
 
+    /**
+     * The shared JWT issuance policy. Built lazily: resolving the password property name
+     * needs {@code mongoRealmAuthenticator}, which may not be initialized when this plugin's
+     * {@code @OnInit} runs.
+     */
+    private JwtIssuer issuer() {
+        var local = this.jwtIssuer;
+
+        if (local == null) {
+            synchronized (this) {
+                local = this.jwtIssuer;
+                if (local == null) {
+                    var algo = buildAlgorithm(jwtConfig);
+                    local = new JwtIssuer(algo, jwtConfig.issuer(), jwtConfig.audience(),
+                            jwtConfig.accountPropertiesClaims(),
+                            jwtConfig.requiredAccountPropertiesClaims(), resolvePasswordPropertyName());
+                    this.jwtIssuer = local;
+                }
+            }
+        }
+
+        return local;
+    }
+
+    private String resolvePasswordPropertyName() {
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+            if (pr != null && pr.isEnabled()
+                    && pr.getInstance() instanceof org.restheart.security.authenticators.MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+                if (prop != null && !prop.isBlank()) {
+                    return prop;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
+        }
+
+        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
+    }
+
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         switch (request.getMethod()) {
-            case GET     -> handleGet(request, response);
-            case POST    -> handlePost(request, response);
+            case GET -> handleGet(request, response);
+            case POST -> handlePost(request, response);
             case OPTIONS -> handleOptions(request);
-            default      -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 
@@ -153,7 +198,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
     private void handleGet(ByteArrayRequest request, ByteArrayResponse response) {
         if (loginUrl == null || loginUrl.isBlank()) {
             sendError(response, HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                "server_error", "login-url is not configured");
+                    "server_error", "login-url is not configured");
             return;
         }
 
@@ -161,40 +206,40 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
         if (!"code".equals(firstParam(params, "response_type"))) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "unsupported_response_type", "response_type must be 'code'");
+                    "unsupported_response_type", "response_type must be 'code'");
             return;
         }
 
         var redirectUri = firstParam(params, "redirect_uri");
         if (redirectUri == null || redirectUri.isBlank()) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "redirect_uri is required");
+                    "invalid_request", "redirect_uri is required");
             return;
         }
         if (!isAllowedRedirectUri(redirectUri)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "redirect_uri is not in the allowed list");
+                    "invalid_request", "redirect_uri is not in the allowed list");
             return;
         }
 
         var codeChallenge = firstParam(params, "code_challenge");
         if (codeChallenge == null || codeChallenge.isBlank()) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "code_challenge is required (PKCE S256)");
+                    "invalid_request", "code_challenge is required (PKCE S256)");
             return;
         }
         if (!"S256".equals(firstParam(params, "code_challenge_method"))) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "code_challenge_method must be 'S256'");
+                    "invalid_request", "code_challenge_method must be 'S256'");
             return;
         }
 
         // redirect to login UI forwarding the original query string
         var queryString = request.getExchange().getQueryString();
-        var separator   = loginUrl.contains("?") ? "&" : "?";
-        var location    = (queryString != null && !queryString.isBlank())
-            ? loginUrl + separator + queryString
-            : loginUrl;
+        var separator = loginUrl.contains("?") ? "&" : "?";
+        var location = (queryString != null && !queryString.isBlank())
+                ? loginUrl + separator + queryString
+                : loginUrl;
 
         response.getHeaders().put(Headers.LOCATION, location);
         response.setStatusCode(HttpStatus.SC_MOVED_TEMPORARILY);
@@ -215,10 +260,10 @@ public class OAuthAuthorizationService implements ByteArrayService {
         if (request.getAuthenticatedAccount() == null) {
             // If credentials came from form body (browser login UI), redirect back to login with error
             var fromForm = request.getExchange()
-                .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
+                    .getAttachment(FormDataToBasicAuthInterceptor.FORM_CREDENTIALS_FOR_AUTHORIZE);
             if (Boolean.TRUE.equals(fromForm) && loginUrl != null && !loginUrl.isBlank()) {
                 var queryString = request.getExchange().getQueryString();
-                var separator   = loginUrl.contains("?") ? "&" : "?";
+                var separator = loginUrl.contains("?") ? "&" : "?";
                 var sb = new StringBuilder(loginUrl).append(separator).append("error=invalid_credentials");
                 if (queryString != null && !queryString.isBlank()) {
                     sb.append("&").append(queryString);
@@ -230,63 +275,65 @@ public class OAuthAuthorizationService implements ByteArrayService {
             if (!request.getExchange().getRequestHeaders().contains("No-Auth-Challenge")
                     && !request.getExchange().getQueryParameters().containsKey("noauthchallenge")) {
                 response.getHeaders().put(
-                    HttpString.tryFromString("WWW-Authenticate"),
-                    "Basic realm=\"RESTHeart\"");
+                        HttpString.tryFromString("WWW-Authenticate"),
+                        "Basic realm=\"RESTHeart\"");
             }
             response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }
 
         var account = request.getAuthenticatedAccount();
-        var params  = request.getExchange().getQueryParameters();
+        var params = request.getExchange().getQueryParameters();
 
-        var redirectUri         = firstParam(params, "redirect_uri");
-        var codeChallenge       = firstParam(params, "code_challenge");
+        var redirectUri = firstParam(params, "redirect_uri");
+        var codeChallenge = firstParam(params, "code_challenge");
         var codeChallengeMethod = firstParam(params, "code_challenge_method");
-        var state               = firstParam(params, "state");
-        var clientId            = firstParam(params, "client_id");
+        var state = firstParam(params, "state");
+        var clientId = firstParam(params, "client_id");
 
         if (redirectUri == null || redirectUri.isBlank()) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "redirect_uri is required");
+                    "invalid_request", "redirect_uri is required");
             return;
         }
         if (!isAllowedRedirectUri(redirectUri)) {
             sendError(response, HttpStatus.SC_BAD_REQUEST,
-                "invalid_request", "redirect_uri is not in the allowed list");
+                    "invalid_request", "redirect_uri is not in the allowed list");
             return;
         }
         if (codeChallenge == null || codeChallenge.isBlank()) {
             redirectWithError(response, redirectUri, state,
-                "invalid_request", "code_challenge is required");
+                    "invalid_request", "code_challenge is required");
             return;
         }
         if (!"S256".equals(codeChallengeMethod)) {
             redirectWithError(response, redirectUri, state,
-                "invalid_request", "code_challenge_method must be 'S256'");
+                    "invalid_request", "code_challenge_method must be 'S256'");
             return;
         }
 
         // Issue authorization code as a short-lived signed JWT.
         // Stateless: any node sharing the same JWT key can later verify it.
-        var roles = account.getRoles().toArray(String[]::new);
-        var codeBuilder = JWT.create()
-            .withIssuer(jwtConfig.issuer())
-            .withSubject(account.getPrincipal().getName())
-            .withExpiresAt(Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
-            .withArrayClaim(CLAIM_ROLES, roles)
-            .withClaim(CLAIM_CODE_CHALLENGE,        codeChallenge)
-            .withClaim(CLAIM_CODE_CHALLENGE_METHOD, codeChallengeMethod)
-            .withClaim(CLAIM_REDIRECT_URI,          redirectUri)
-            .withClaim(CLAIM_CLIENT_ID,             clientId);
+        var jwtIssuer = issuer();
+        var codeBuilder = jwtIssuer.newBuilder(
+                account.getPrincipal().getName(),
+                account.getRoles(),
+                Date.from(Instant.now().plus(CODE_TTL_MINUTES, ChronoUnit.MINUTES)))
+                .withIssuedAt(Instant.now())
+                .withClaim(CLAIM_CODE_CHALLENGE, codeChallenge)
+                .withClaim(CLAIM_CODE_CHALLENGE_METHOD, codeChallengeMethod)
+                .withClaim(CLAIM_REDIRECT_URI, redirectUri)
+                .withClaim(CLAIM_CLIENT_ID, clientId);
 
-        // Propagate account-properties-claims via JwtTokenManager so the logic stays in one place.
-        var tokenMgr = registry.getTokenManager();
-        if (tokenMgr != null && tokenMgr.getInstance() instanceof JwtTokenManager jtm) {
-            codeBuilder = jtm.withAccountPropertiesClaims(codeBuilder, account);
+        // Propagate account-properties-claims so the access token (later built from this
+        // code's payload) carries the same claims. The request carries the effective claim
+        // list on a multi-tenant deployment.
+        if (account instanceof WithProperties<?> awp) {
+            codeBuilder = jwtIssuer.applyAccountClaims(codeBuilder, awp.propertiesAsMap(),
+                    JwtIssuer.claimsOverride(request));
         }
 
-        var code = codeBuilder.sign(signingAlgo);
+        var code = jwtIssuer.sign(codeBuilder);
 
         var sb = new StringBuilder(redirectUri);
         sb.append(redirectUri.contains("?") ? "&" : "?");
@@ -299,7 +346,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
         response.setStatusCode(HttpStatus.SC_MOVED_TEMPORARILY);
 
         LOGGER.debug("Authorization code issued for user '{}', client '{}'",
-            account.getPrincipal().getName(), clientId);
+                account.getPrincipal().getName(), clientId);
     }
 
     // -------------------------------------------------------------------------
@@ -320,8 +367,8 @@ public class OAuthAuthorizationService implements ByteArrayService {
     private boolean matchesPattern(String pattern, String uri) {
         if (!pattern.contains("*")) {
             return uri.equals(pattern)
-                || uri.startsWith(pattern + "/")
-                || uri.startsWith(pattern + "?");
+                    || uri.startsWith(pattern + "/")
+                    || uri.startsWith(pattern + "?");
         }
         var regex = "\\Q" + pattern.replace("*", "\\E.*\\Q") + "\\E";
         return Pattern.matches(regex, uri);
@@ -363,7 +410,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
             case "HMAC384", "HS384" -> Algorithm.HMAC384(key);
             case "HMAC512", "HS512" -> Algorithm.HMAC512(key);
             default -> throw new IllegalArgumentException(
-                "Unsupported JWT algorithm for authorization code: " + cfg.algorithm());
+                    "Unsupported JWT algorithm for authorization code: " + cfg.algorithm());
         };
     }
 }

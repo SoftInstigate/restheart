@@ -83,7 +83,7 @@ public class ModifiableContentSinkConduit extends AbstractStreamSinkConduit<Stre
         var oldBuffers = exchange.getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY);
         // close the current buffer pool
         if (oldBuffers != null) {
-            for (var oldBuffer: oldBuffers) {
+            for (var oldBuffer : oldBuffers) {
                 if (oldBuffer != null) {
                     oldBuffer.close();
                 }
@@ -99,7 +99,7 @@ public class ModifiableContentSinkConduit extends AbstractStreamSinkConduit<Stre
 
     @Override
     public long write(ByteBuffer[] dsts, int offs, int len) throws IOException {
-        for (int i = offs; i < len; ++i) {
+        for (int i = offs;i < len;++i) {
             if (dsts[i].hasRemaining()) {
                 return write(dsts[i]);
             }

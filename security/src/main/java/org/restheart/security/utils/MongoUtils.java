@@ -63,18 +63,18 @@ public class MongoUtils {
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
         pc.insertOne(document()
-            .put("_id", new BsonString("_properties"))
-            .put("_etag", new BsonObjectId())
-            .get());
+                .put("_id", new BsonString("_properties"))
+                .put("_etag", new BsonObjectId())
+                .get());
     }
 
     public void createCollection(final String dbName, final String collName) {
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
         pc.insertOne(document()
-            .put("_id", new BsonString("_properties.".concat(collName)))
-            .put("_etag", new BsonObjectId())
-            .get());
+                .put("_id", new BsonString("_properties.".concat(collName)))
+                .put("_etag", new BsonObjectId())
+                .get());
 
         client.getDatabase(dbName).createCollection(collName);
     }

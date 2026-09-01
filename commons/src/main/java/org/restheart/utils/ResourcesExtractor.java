@@ -32,10 +32,13 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.restheart.graal.ImageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +58,33 @@ public class ResourcesExtractor {
 
     /** Logger instance for this class. */
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesExtractor.class);
+
+    private static final String INDEX_RESOURCE = "META-INF/native-image-resources.properties";
+    private static Map<String, String[]> nativeImageDirectoryIndex;
+
+    /**
+     * Returns the directory index for native image resources, loading it lazily
+     * from the properties file generated at build time by ResourcesScannerFeature.
+     */
+    private static Map<String, String[]> getNativeImageDirectoryIndex() {
+        if (nativeImageDirectoryIndex == null) {
+            nativeImageDirectoryIndex = new HashMap<>();
+            try (var is = ResourcesExtractor.class.getClassLoader().getResourceAsStream(INDEX_RESOURCE)) {
+                if (is != null) {
+                    var props = new java.util.Properties();
+                    props.load(is);
+                    for (var entry : props.entrySet()) {
+                        String dir = (String) entry.getKey();
+                        String[] files = ((String) entry.getValue()).split(",");
+                        nativeImageDirectoryIndex.put(dir, files);
+                    }
+                }
+            } catch (IOException e) {
+                // ignore — no index available
+            }
+        }
+        return nativeImageDirectoryIndex;
+    }
 
     /**
      * Optional fallback class loader used when the class-based class loader
@@ -135,6 +165,11 @@ public class ResourcesExtractor {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
         if (findResource(clazz, resourcePath) == null) {
+            // In GraalVM native images, directory resources are not available.
+            // Try to find the welcome file and extract it.
+            if (ImageInfo.inImageCode()) {
+                return extractNativeImageResource(clazz, resourcePath);
+            }
             LOG.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
@@ -147,7 +182,7 @@ public class ResourcesExtractor {
 
             try {
                 // used when run as a JAR file
-                Path destinationDir = Files.createTempDirectory("restheart-");
+                Path destinationDir = Files.createTempDirectory("restheart-", ownerOnly());
 
                 ret = destinationDir.toFile();
 
@@ -187,6 +222,11 @@ public class ResourcesExtractor {
             }
 
             return ret;
+        } else if (ImageInfo.inImageCode()) {
+            // In GraalVM native images resources are bundled into the image
+            // and exposed with the "resource:" scheme instead of file:// URLs,
+            // so they must be extracted via the build-time directory index.
+            return extractNativeImageResource(clazz, resourcePath);
         } else {
             // used when run from an expanded folder
             return new File(uri);
@@ -268,9 +308,63 @@ public class ResourcesExtractor {
     @SuppressWarnings("rawtypes")
     private static java.net.URL findResource(Class clazz, String resourcePath) {
         var url = getClassLoader(clazz).getResource(resourcePath);
+
+        // In GraalVM native images, directory resources are not available.
+        // Try common variations: trailing slash, or the welcome file.
+        if (url == null) {
+            url = getClassLoader(clazz).getResource(resourcePath + "/");
+        }
+
         if (url == null && fallbackClassLoader != null) {
             url = fallbackClassLoader.getResource(resourcePath);
         }
         return url;
+    }
+
+    /**
+     * Extracts resources from a native image where directory resources are not available.
+     * Uses the resource map populated at build time by the GraalVM Feature.
+     */
+    @SuppressWarnings("rawtypes")
+    private static File extractNativeImageResource(Class clazz, String resourcePath) throws IOException {
+        Path destinationDir = Files.createTempDirectory("restheart-", ownerOnly());
+
+        var index = getNativeImageDirectoryIndex();
+        var filesCsv = index.get(resourcePath);
+        if (filesCsv != null) {
+            for (String fileName : filesCsv) {
+                if (fileName.isEmpty()) continue;
+                var url = getClassLoader(clazz).getResource(resourcePath + "/" + fileName);
+                if (url != null) {
+                    try (var is = url.openStream()) {
+                        Path dest = destinationDir.resolve(fileName);
+                        Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        }
+
+        if (destinationDir.toFile().list().length == 0) {
+            LOG.warn("no resource found under {} in native image", resourcePath);
+        }
+
+        return destinationDir.toFile();
+    }
+
+    /**
+     * Owner-only permissions for a temporary directory.
+     *
+     * <p>{@code createTempDirectory} without attributes falls back to the
+     * filesystem default, which in a shared temp directory means anything the
+     * umask allows. Extracted resources are readable by whoever can reach them,
+     * so the permissions are stated rather than inherited.
+     *
+     * <p>Empty on filesystems with no POSIX view — Windows — where asking for
+     * POSIX permissions would throw rather than protect anything.
+     */
+    private static FileAttribute<?>[] ownerOnly() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
+                ? new FileAttribute<?>[]{PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))}
+                : new FileAttribute<?>[0];
     }
 }

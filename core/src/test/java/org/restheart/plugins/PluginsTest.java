@@ -170,6 +170,21 @@ public class PluginsTest {
     }
 
     /**
+     * Tests that a provider with an optional missing dependency is validated correctly.
+     * 
+     * This test verifies that ProviderOptional, which depends on a non-existent
+     * provider "notExisting" with required=false, is correctly identified as valid
+     * because the dependency is optional.
+     */
+    @Test
+    public void optionalDependency() {
+        var pdOptional = descriptors.stream().filter(d -> d.clazz().equals(ProviderOptional.class.getName())).findAny().get();
+        var vps = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
+        assertTrue(vps.contains(pdOptional), "provider with optional missing dependency should be valid");
+        assertTrue(ProvidersChecker.checkDependencies(LOGGER, vps, pdOptional), "check provider with optional dependency is fine");
+    }
+
+    /**
      * Creates a mocked PluginsScanner with the provided descriptors.
      * 
      * @param providerDescriptors the list of provider descriptors to return from the mock
@@ -215,6 +230,7 @@ public class PluginsTest {
         providersTypes.put("self", new ProviderSelf().rawType());
         providersTypes.put("c1", new ProviderC1().rawType());
         providersTypes.put("c2", new ProviderC2().rawType());
+        providersTypes.put("optional", new ProviderOptional().rawType());
 
         var pluginsFactory = mockStatic(PluginsFactory.class);
         pluginsFactory.when(PluginsFactory::providersTypes).thenReturn(providersTypes);
@@ -249,42 +265,47 @@ public class PluginsTest {
         var iC_A = new ArrayList<InjectionDescriptor>();
         var apC_A = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apC_A.add(new AbstractMap.SimpleEntry<>("value", "a"));
-        iC_A.add(new FieldInjectionDescriptor("s", String.class, apC_A, 1));
+        iC_A.add(new FieldInjectionDescriptor("s", String.class, apC_A, 1, true));
 
         var iD_C = new ArrayList<InjectionDescriptor>();
         var apD_C = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apD_C.add(new AbstractMap.SimpleEntry<>("value", "c_a"));
-        iD_C.add(new FieldInjectionDescriptor("s", String.class, apD_C, 2));
+        iD_C.add(new FieldInjectionDescriptor("s", String.class, apD_C, 2, true));
 
         var iB = new ArrayList<InjectionDescriptor>();
         var apB = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apB.add(new AbstractMap.SimpleEntry<>("value", "notExisting"));
-        iB.add(new FieldInjectionDescriptor("s", String.class, apB, 3));
+        iB.add(new FieldInjectionDescriptor("s", String.class, apB, 3, true));
 
         var iE_B = new ArrayList<InjectionDescriptor>();
         var apE_B = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apE_B.add(new AbstractMap.SimpleEntry<>("value", "b"));
-        iE_B.add(new FieldInjectionDescriptor("s", String.class, apE_B, 4));
+        iE_B.add(new FieldInjectionDescriptor("s", String.class, apE_B, 4, true));
 
         var iWT = new ArrayList<InjectionDescriptor>();
         var apWT = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apWT.add(new AbstractMap.SimpleEntry<>("value", "a"));
-        iWT.add(new FieldInjectionDescriptor("s", Integer.class, apWT, 5));
+        iWT.add(new FieldInjectionDescriptor("s", Integer.class, apWT, 5, true));
 
         var iSelf = new ArrayList<InjectionDescriptor>();
         var apSelf = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apSelf.add(new AbstractMap.SimpleEntry<>("value", "self"));
-        iSelf.add(new FieldInjectionDescriptor("s", String.class, apSelf, 6));
+        iSelf.add(new FieldInjectionDescriptor("s", String.class, apSelf, 6, true));
 
         var iC1 = new ArrayList<InjectionDescriptor>();
         var apC1 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apC1.add(new AbstractMap.SimpleEntry<>("value", "c2"));
-        iC1.add(new FieldInjectionDescriptor("s", String.class, apC1, 7));
+        iC1.add(new FieldInjectionDescriptor("s", String.class, apC1, 7, true));
 
         var iC2 = new ArrayList<InjectionDescriptor>();
         var apC2 = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
         apC2.add(new AbstractMap.SimpleEntry<>("value", "c1"));
-        iC2.add(new FieldInjectionDescriptor("s", String.class, apC2, 8));
+        iC2.add(new FieldInjectionDescriptor("s", String.class, apC2, 8, true));
+
+        var iOptional = new ArrayList<InjectionDescriptor>();
+        var apOptional = new ArrayList<AbstractMap.SimpleEntry<String, Object>>();
+        apOptional.add(new AbstractMap.SimpleEntry<>("value", "notExisting"));
+        iOptional.add(new FieldInjectionDescriptor("s", String.class, apOptional, 9, false));
 
         var providerDescriptors = new ArrayList<PluginDescriptor>();
 
@@ -299,6 +320,7 @@ public class PluginsTest {
         providerDescriptors.add(new PluginDescriptor("self", ProviderSelf.class.getName(), true, iSelf));
         providerDescriptors.add(new PluginDescriptor("c1", ProviderC1.class.getName(), true, iC1));
         providerDescriptors.add(new PluginDescriptor("c2", ProviderC2.class.getName(), true, iC2));
+        providerDescriptors.add(new PluginDescriptor("optional", ProviderOptional.class.getName(), true, iOptional));
 
         return providerDescriptors;
     }
@@ -434,5 +456,20 @@ class ProviderC2 implements Provider<String> {
     @Override
     public String get(PluginRecord<?> caller) {
         return s;
+    }
+}
+
+/**
+ * Test provider with an optional dependency on a non-existent provider.
+ * This provider should remain valid because required=false.
+ */
+// name=optional
+class ProviderOptional implements Provider<String> {
+    @Inject(value = "notExisting", required = false)
+    String s;
+
+    @Override
+    public String get(PluginRecord<?> caller) {
+        return s != null ? s : "default";
     }
 }

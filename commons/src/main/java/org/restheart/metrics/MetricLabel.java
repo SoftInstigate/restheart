@@ -140,7 +140,7 @@ public record MetricLabel(String name, String value) {
      */
     public static MetricLabel from(String raw) {
         var sepIdx = raw.indexOf(SEPARATOR);
-        return new MetricLabel(raw.substring(0, sepIdx), raw.substring(sepIdx+1));
+        return new MetricLabel(raw.substring(0, sepIdx), raw.substring(sepIdx + 1));
     }
 
     /**
@@ -165,7 +165,7 @@ public record MetricLabel(String name, String value) {
      */
     public static List<MetricLabel> collect(MetricLabel... labels) {
         var ret = new ArrayList<MetricLabel>();
-        for (var label: labels) {
+        for (var label : labels) {
             ret.add(label);
         }
         return ret;

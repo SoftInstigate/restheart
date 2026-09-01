@@ -50,13 +50,13 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher {
         var int_args = queryMapping.interpolateArgs(env);
 
         return dataLoader.load(int_args, env).thenApply(
-            results -> {
-                if (isList(env.getFieldDefinition().getType())) {
-                    return results;
-                } else {
-                    return !results.asArray().isEmpty() ? results.asArray().get(0) : null;
+                results -> {
+                    if (isList(env.getFieldDefinition().getType())) {
+                        return results;
+                    } else {
+                        return !results.asArray().isEmpty() ? results.asArray().get(0) : null;
+                    }
                 }
-            }
         );
     }
 }

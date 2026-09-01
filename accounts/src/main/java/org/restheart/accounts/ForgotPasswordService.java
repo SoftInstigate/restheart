@@ -11,8 +11,9 @@ import org.bson.BsonArray;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.accounts.util.TokenUtils;
@@ -50,9 +51,9 @@ import com.mongodb.client.MongoClient;
  * <p>Expected body: {@code { "email": "user@example.com" }}
  */
 @RegisterPlugin(
-        name             = "forgotPasswordService",
-        description      = "POST /auth/forgot-password — initiates password reset (always 202)",
-        defaultURI       = "/auth/forgot-password",
+        name = "forgotPasswordService",
+        description = "POST /auth/forgot-password — initiates password reset (always 202)",
+        defaultURI = "/auth/forgot-password",
         enabledByDefault = false)
 public class ForgotPasswordService implements JsonService {
 
@@ -70,6 +71,9 @@ public class ForgotPasswordService implements JsonService {
     @Inject("emails")
     private EmailSender emails;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
 
     @OnInit
     public void onInit() {
@@ -79,7 +83,10 @@ public class ForgotPasswordService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isPost()) {
             res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
@@ -92,7 +99,7 @@ public class ForgotPasswordService implements JsonService {
             Errors.error(res, 400, "Invalid request body");
             return;
         }
-        var obj   = body.getAsJsonObject();
+        var obj = body.getAsJsonObject();
         var email = obj.has("email") ? obj.get("email").getAsString() : null;
         if (email == null || email.isBlank()) {
             Errors.error(res, 400, "email is required");
@@ -104,8 +111,9 @@ public class ForgotPasswordService implements JsonService {
 
         // 3. Async logic on the same thread; any exception is swallowed after logging
         var dbName = RequestOverrides.db(req, conf);
+        var usersColl = RequestOverrides.usersCollection(req, conf);
         try {
-            processResetRequest(req, email, dbName);
+            processResetRequest(req, email, dbName, usersColl);
         } catch (Exception e) {
             LOGGER.warn("forgotPassword: unexpected error during reset processing", e);
         }
@@ -121,9 +129,9 @@ public class ForgotPasswordService implements JsonService {
      * Exceptions bubble up to {@link #handle} where they are caught and logged,
      * leaving the already-set 202 response intact.
      */
-    private void processResetRequest(JsonRequest req, String email, String dbName) throws java.io.IOException {
+    private void processResetRequest(JsonRequest req, String email, String dbName, String usersColl) throws java.io.IOException {
         // a. Locate user
-        var userOpt = new DbHelper(mclient, dbName).findUser(email);
+        var userOpt = new DbHelper(mclient, dbName, usersColl, jsonSchemas).findUser(email);
         if (userOpt.isEmpty()) {
             LOGGER.debug("forgotPassword: no account found for the requested email address");
             return;
@@ -138,9 +146,9 @@ public class ForgotPasswordService implements JsonService {
                 && !(userRoles.size() == 1 && "$unauthenticated".equals(userRoles.get(0).asString().getValue()));
 
         if (isVerified) {
-            sendPasswordReset(req, email, dbName, user);
+            sendPasswordReset(req, email, dbName, usersColl, user);
         } else {
-            resendVerificationEmail(req, email, dbName, user);
+            resendVerificationEmail(req, email, dbName, usersColl, user);
         }
     }
 
@@ -148,24 +156,24 @@ public class ForgotPasswordService implements JsonService {
      * Account has a password to reset: generate a one-shot {@code passwordResetToken}
      * and email the reset link.
      */
-    private void sendPasswordReset(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+    private void sendPasswordReset(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate one-shot reset token and record its creation time
         var token = TokenUtils.generateToken();
-        var now   = new BsonDateTime(Instant.now().toEpochMilli());
+        var now = new BsonDateTime(Instant.now().toEpochMilli());
 
         // b. Persist token on the user document
         var updates = new BsonDocument();
-        updates.put("passwordResetToken",   new BsonString(token));
+        updates.put("passwordResetToken", new BsonString(token));
         updates.put("passwordResetCreatedAt", now);
-        new DbHelper(mclient, dbName).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
         // c. Build reset link and send email
-        var firstName  = user.containsKey("profile") && user.get("profile").isDocument()
+        var firstName = user.containsKey("profile") && user.get("profile").isDocument()
                 && user.getDocument("profile").containsKey("name")
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var resetLink    = RequestOverrides.frontendUrl(req, conf)
+        var resetLink = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/reset-password?email=" + encodedEmail
                 + "&token=" + token;
 
@@ -183,7 +191,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "reset-url", resetLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // d. Audit log — no PII at INFO level
@@ -196,16 +204,16 @@ public class ForgotPasswordService implements JsonService {
      * expired or lost original) and re-send the activation email — mirrors the email
      * sent by {@link RegisterService} at signup time.
      */
-    private void resendVerificationEmail(JsonRequest req, String email, String dbName, BsonDocument user) throws java.io.IOException {
+    private void resendVerificationEmail(JsonRequest req, String email, String dbName, String usersColl, BsonDocument user) throws java.io.IOException {
         // a. Generate new verification token and record its creation time
         var token = TokenUtils.generateToken();
-        var now   = new BsonDateTime(Instant.now().toEpochMilli());
+        var now = new BsonDateTime(Instant.now().toEpochMilli());
 
         // b. Persist token on the user document
         var updates = new BsonDocument();
-        updates.put("emailVerificationToken",     new BsonString(token));
+        updates.put("emailVerificationToken", new BsonString(token));
         updates.put("emailVerificationCreatedAt", now);
-        new DbHelper(mclient, dbName).updateUser(email, updates);
+        new DbHelper(mclient, dbName, usersColl, jsonSchemas).updateUser(email, updates);
 
         // c. Build verification link and send email
         var firstName = user.containsKey("profile") && user.get("profile").isDocument()
@@ -213,7 +221,7 @@ public class ForgotPasswordService implements JsonService {
                 ? user.getDocument("profile").getString("name").getValue()
                 : email;
         var encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        var verifyLink    = RequestOverrides.frontendUrl(req, conf)
+        var verifyLink = RequestOverrides.frontendUrl(req, conf)
                 + "/auth/verify?email=" + encodedEmail
                 + "&token=" + token;
 
@@ -231,7 +239,7 @@ public class ForgotPasswordService implements JsonService {
                     "frontend-url", RequestOverrides.frontendUrl(req, conf),
                     "verification-url", verifyLink);
             var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-            emails.sendEmail(email, firstName, rendered.subject(), rendered.htmlBody());
+            emails.sendEmailAsync(email, firstName, rendered.subject(), rendered.htmlBody());
         }
 
         // d. Audit log — no PII at INFO level

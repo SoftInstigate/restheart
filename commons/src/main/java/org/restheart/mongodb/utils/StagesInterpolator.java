@@ -101,7 +101,8 @@ public class StagesInterpolator {
      *   <li>{@code $ifarg} - Used in GraphQL mappings</li>
      * </ul>
      */
-    public enum STAGE_OPERATOR { $ifvar, $ifarg };
+    public enum STAGE_OPERATOR {$ifvar, $ifarg}
+    ;
 
     /**
      * @param varOperator the var operator, $var for queries and aggregations, $arg for GraphQL mappings
@@ -117,20 +118,20 @@ public class StagesInterpolator {
 
         // check optional stages
         stagesWithUnescapedOperators.stream()
-            .map(BsonValue::asDocument)
-            .filter(stage -> optional(stageOperator, stage)).forEach(optionalStage -> {
-                try {
-                    checkIfVar(stageOperator, optionalStage);
-                } catch(InvalidMetadataException ime) {
-                    LambdaUtils.throwsSneakyException(ime);
-                }
-            });
+                .map(BsonValue::asDocument)
+                .filter(stage -> optional(stageOperator, stage)).forEach(optionalStage -> {
+            try {
+                checkIfVar(stageOperator, optionalStage);
+            } catch (InvalidMetadataException ime) {
+                LambdaUtils.throwsSneakyException(ime);
+            }
+        });
 
         var stagesWithoutUnboundOptionalStages = stagesWithUnescapedOperators.stream()
-            .map(BsonValue::asDocument)
-            .map(stage -> _stage(stageOperator, stage, values))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toCollection(BsonArray::new));
+                .map(BsonValue::asDocument)
+                .map(stage -> _stage(stageOperator, stage, values))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(BsonArray::new));
 
         var resolvedStages = VarsInterpolator.interpolate(varOperator, stagesWithoutUnboundOptionalStages, values).asArray();
 
@@ -174,10 +175,11 @@ public class StagesInterpolator {
             });
         } else if (values.isArray()) {
             values.asArray().getValues().stream()
-                .filter(el -> (el.isDocument() || el.isArray()))
-                .forEachOrdered(StagesInterpolator::shouldNotContainOperators);
+                    .filter(el -> (el.isDocument() || el.isArray()))
+                    .forEachOrdered(StagesInterpolator::shouldNotContainOperators);
         }
     }
+
     /**
      * Checks if a stage is optional (conditional).
      * <p>
@@ -218,11 +220,11 @@ public class StagesInterpolator {
             var ifvar = stage.get(stageOperator.name());
 
             if (!(ifvar.isArray() && (ifvar.asArray().size() == 2 || ifvar.asArray().size() == 3) &&
-                (ifvar.asArray().get(0).isString() ||
-                (ifvar.asArray().get(0).isArray() && ifvar.asArray().get(0).asArray().stream().allMatch(BsonValue::isString)) ||
-                (ifvar.asArray().get(1).isDocument()) ||
-                (ifvar.asArray().size() > 2 && ifvar.asArray().get(2).isDocument())))) {
-                    throw new InvalidMetadataException("Invalid optional stage: " + BsonUtils.toJson(stage));
+                    (ifvar.asArray().get(0).isString() ||
+                            (ifvar.asArray().get(0).isArray() && ifvar.asArray().get(0).asArray().stream().allMatch(BsonValue::isString)) ||
+                            (ifvar.asArray().get(1).isDocument()) ||
+                            (ifvar.asArray().size() > 2 && ifvar.asArray().get(2).isDocument())))) {
+                throw new InvalidMetadataException("Invalid optional stage: " + BsonUtils.toJson(stage));
             }
         }
     }
@@ -271,8 +273,8 @@ public class StagesInterpolator {
      */
     private static BsonDocument elseStage(STAGE_OPERATOR stageOperator, BsonDocument stage) {
         return stage.get(stageOperator.name()).asArray().size() > 2
-            ? stage.get(stageOperator.name()).asArray().get(2).asDocument()
-            : null;
+                ? stage.get(stageOperator.name()).asArray().get(2).asDocument()
+                : null;
     }
 
 
@@ -295,7 +297,7 @@ public class StagesInterpolator {
     private static BsonDocument _stage(STAGE_OPERATOR stageOperator, BsonDocument stage, BsonDocument avars) {
         if (!optional(stageOperator, stage)) {
             return stage;
-        } else if (stageApplies(stageOperator, stage, avars)){
+        } else if (stageApplies(stageOperator, stage, avars)) {
             return stage.get(stageOperator.name()).asArray().get(1).asDocument();
         } else {
             return elseStage(stageOperator, stage); // null, if no else stage specified
@@ -345,20 +347,20 @@ public class StagesInterpolator {
             avars.put("@mongoPermissions", mongoPermissions.asBson());
 
             avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
-                ? BsonNull.VALUE
-                : mongoPermissions.getProjectResponse());
+                    ? BsonNull.VALUE
+                    : mongoPermissions.getProjectResponse());
 
             avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
-                ? BsonNull.VALUE
-                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
 
             avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
-                ? BsonNull.VALUE
-                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
 
             avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
-                ? BsonNull.VALUE
-                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
         } else {
             avars.put("@mongoPermissions", new MongoPermissions().asBson());
             avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);

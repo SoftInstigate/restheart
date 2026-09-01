@@ -35,9 +35,9 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 
 @RegisterPlugin(name = "mongoPermissionProjectResponse",
-    description = "Hides properties from the response according to the mongo.projectResponse ACL permission",
-    interceptPoint = InterceptPoint.RESPONSE,
-    enabledByDefault = true)
+        description = "Hides properties from the response according to the mongo.projectResponse ACL permission",
+        interceptPoint = InterceptPoint.RESPONSE,
+        enabledByDefault = true)
 public class ProjectResponse implements MongoInterceptor {
 
     @Override
@@ -57,8 +57,8 @@ public class ProjectResponse implements MongoInterceptor {
             var array = new BsonArray();
             if (inclusions) {
                 response.getContent().asArray().forEach(doc ->
-                    array.add(projectInclusions(doc.asDocument(), projection)));
-                    response.setContent(array);
+                        array.add(projectInclusions(doc.asDocument(), projection)));
+                response.setContent(array);
             } else {
                 response.getContent().asArray().forEach(doc -> projectExclusions(doc.asDocument(), projection));
             }
@@ -66,14 +66,14 @@ public class ProjectResponse implements MongoInterceptor {
     }
 
     private void projectExclusions(BsonDocument doc, BsonDocument projection) {
-        projection.keySet().stream().forEachOrdered(projectedProp ->  projectExlcusions(doc, projectedProp));
+        projection.keySet().stream().forEachOrdered(projectedProp -> projectExlcusions(doc, projectedProp));
     }
 
     private void projectExlcusions(BsonDocument doc, String projectedProperty) {
         if (projectedProperty.contains(".")) {
             var first = projectedProperty.substring(0, projectedProperty.indexOf("."));
             if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
-                projectExlcusions(doc.get(first).asDocument(), projectedProperty.substring(projectedProperty.indexOf(".")+1));
+                projectExlcusions(doc.get(first).asDocument(), projectedProperty.substring(projectedProperty.indexOf(".") + 1));
             }
         } else if (projectedProperty.length() > 0) {
             doc.remove(projectedProperty);
@@ -91,7 +91,7 @@ public class ProjectResponse implements MongoInterceptor {
         includedKeys.stream().forEachOrdered(includedKey -> {
             if (includedKey.contains(".")) {
                 var first = includedKey.substring(0, includedKey.indexOf("."));
-                var remaining = includedKey.substring(includedKey.indexOf(".")+1);
+                var remaining = includedKey.substring(includedKey.indexOf(".") + 1);
                 if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
                     var partial = projectInclusions(doc.get(first).asDocument(), Sets.newHashSet(remaining));
 
@@ -102,7 +102,8 @@ public class ProjectResponse implements MongoInterceptor {
             } else if (includedKey.length() > 0) {
                 if (doc.containsKey(includedKey)) {
                     ret.put(includedKey, doc.get(includedKey));
-                };
+                }
+                ;
             }
         });
 
@@ -120,7 +121,7 @@ public class ProjectResponse implements MongoInterceptor {
 
         if (mongoPermission != null) {
             return mongoPermission.getProjectResponse() != null
-                && !mongoPermission.getProjectResponse().isEmpty();
+                    && !mongoPermission.getProjectResponse().isEmpty();
         } else {
             return false;
         }

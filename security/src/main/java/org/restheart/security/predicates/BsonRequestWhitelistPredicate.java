@@ -57,21 +57,21 @@ public class BsonRequestWhitelistPredicate implements Predicate {
         var _request = Request.of(exchange);
 
         if (_request == null || !(_request instanceof BsonRequest)) {
-            LOGGER.warn("bson-request-whitelist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
+            LOGGER.warn("bson-request-whitelist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request : _request.getClass().getSimpleName());
             return false;
         } else {
-            return areAllKeysWhitelisted(this.whitelist, ((BsonRequest)_request).getContent());
+            return areAllKeysWhitelisted(this.whitelist, ((BsonRequest) _request).getContent());
         }
     }
 
     private boolean areAllKeysWhitelisted(Set<String> whitelist, BsonValue docArArrayOfDocs) {
-        if (docArArrayOfDocs == null ) {
+        if (docArArrayOfDocs == null) {
             return true;
         } else if (docArArrayOfDocs.isDocument()) {
             return areAllKeysWhitelisted(whitelist, docArArrayOfDocs.asDocument());
-        } else if (docArArrayOfDocs.isArray()){
+        } else if (docArArrayOfDocs.isArray()) {
             return docArArrayOfDocs.asArray().stream().filter(BsonValue::isDocument).map(BsonValue::asDocument)
-                .allMatch(doc -> areAllKeysWhitelisted(whitelist, doc));
+                    .allMatch(doc -> areAllKeysWhitelisted(whitelist, doc));
         } else {
             throw new IllegalArgumentException("bson-request-whitelist predicate cannot be invoked on JSON type " + docArArrayOfDocs.getBsonType().toString());
         }
@@ -80,7 +80,8 @@ public class BsonRequestWhitelistPredicate implements Predicate {
     private boolean areAllKeysWhitelisted(Set<String> whitelist, BsonDocument doc) {
         if (doc == null || doc.isEmpty()) {
             return true;
-        } if (whitelist == null || whitelist.isEmpty() ) {
+        }
+        if (whitelist == null || whitelist.isEmpty()) {
             return false;
         } else {
             return getLeafsKeys(doc).stream().allMatch(key -> isWhitelisted(whitelist, key));
@@ -89,7 +90,7 @@ public class BsonRequestWhitelistPredicate implements Predicate {
 
     private boolean isWhitelisted(Set<String> whitelist, String leafKey) {
         return whitelist.stream().anyMatch(whitelistedKey ->
-        leafKey.equals(whitelistedKey) || leafKey.startsWith(whitelistedKey.concat(".")));
+                leafKey.equals(whitelistedKey) || leafKey.startsWith(whitelistedKey.concat(".")));
     }
 
     private Set<String> getLeafsKeys(BsonDocument d) {
@@ -99,11 +100,11 @@ public class BsonRequestWhitelistPredicate implements Predicate {
         leafsKeys.addAll(flatten.keySet());
 
         d.keySet().stream().filter(BsonUtils::isUpdateOperator)
-            .map(uo -> d.get(uo))
-            .filter(doc -> doc.isDocument())
-            .map(doc -> doc.asDocument())
-            .map(doc -> doc.keySet())
-            .forEach(leafsKeys::addAll);
+                .map(uo -> d.get(uo))
+                .filter(doc -> doc.isDocument())
+                .map(doc -> doc.asDocument())
+                .map(doc -> doc.keySet())
+                .forEach(leafsKeys::addAll);
 
         d.keySet().stream().filter(BsonUtils::isUpdateOperator).forEach(leafsKeys::remove);
 

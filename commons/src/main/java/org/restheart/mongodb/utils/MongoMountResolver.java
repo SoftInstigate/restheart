@@ -122,8 +122,8 @@ public interface MongoMountResolver {
         // Get "where" of first mount
         final Object where = mounts.get(0).get("where");
         return where != null
-            ? where.toString()
-            : "/";
+                ? where.toString()
+                : "/";
     }
 
     /**
@@ -154,8 +154,8 @@ public interface MongoMountResolver {
 
         final Map<String, String> params = request.getPathTemplateParameters();
         final String tenantId = params != null
-            ? params.get("host[0]")
-            : null;
+                ? params.get("host[0]")
+                : null;
 
         if (isValidTenantId(tenantId)) {
             return Optional.of(tenantId);

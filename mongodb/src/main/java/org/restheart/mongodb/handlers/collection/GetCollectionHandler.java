@@ -87,12 +87,12 @@ public class GetCollectionHandler extends PipelinedHandler {
             var filters = request.getFiltersDocument();
             var estimate = request.isEstimatedCount();
             size = dbs.getCollectionSize(
-                Optional.ofNullable(request.getClientSession()),
-                request.rsOps(),
-                request.getDBName(),
-                request.getCollectionName(),
-                filters,
-                estimate);
+                    Optional.ofNullable(request.getClientSession()),
+                    request.rsOps(),
+                    request.getDBName(),
+                    request.getCollectionName(),
+                    filters,
+                    estimate);
 
             var actualStrategy = estimate && (filters == null || filters.isEmpty()) ? "estimated" : "exact";
             exchange.getResponseHeaders().put(new HttpString("X-Count-Strategy"), actualStrategy);
@@ -125,17 +125,17 @@ public class GetCollectionHandler extends PipelinedHandler {
             }
 
             data = dbs.getCollectionData(
-                Optional.ofNullable(request.getClientSession()),
-                request.rsOps(),
-                request.getDBName(),
-                request.getCollectionName(),
-                request.getPage(),
-                request.getPagesize(),
-                sort,
-                filter,
-                request.getHintValue(),
-                request.getProjectionDocument(),
-                request.isCache() && isGetCollectionCacheEnabled);
+                    Optional.ofNullable(request.getClientSession()),
+                    request.rsOps(),
+                    request.getDBName(),
+                    request.getCollectionName(),
+                    request.getPage(),
+                    request.getPagesize(),
+                    sort,
+                    filter,
+                    request.getHintValue(),
+                    request.getProjectionDocument(),
+                    request.isCache() && isGetCollectionCacheEnabled);
         }
 
         if (exchange.isComplete()) {

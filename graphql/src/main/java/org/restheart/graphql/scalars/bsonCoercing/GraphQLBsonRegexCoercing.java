@@ -39,27 +39,27 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override
     public BsonRegularExpression serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if (input instanceof BsonRegularExpression bsonRegularExpression){
+        } else if (input instanceof BsonRegularExpression bsonRegularExpression) {
             return bsonRegularExpression;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(input) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
     public BsonRegularExpression parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
-        if (input instanceof String string){
+        if (input instanceof String string) {
             return new BsonRegularExpression(string);
         } else {
-            throw new CoercingParseValueException("Expected type 'BsonRegularExpression' but was '" + typeName(input) +"'.");
+            throw new CoercingParseValueException("Expected type 'BsonRegularExpression' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
     public BsonRegularExpression parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        if (input instanceof StringValue stringValue){
+        if (input instanceof StringValue stringValue) {
             return new BsonRegularExpression(stringValue.getValue());
         } else {
             throw new CoercingParseLiteralException("Expected input type 'StringValue' but was '" + typeName(input) + "'.");

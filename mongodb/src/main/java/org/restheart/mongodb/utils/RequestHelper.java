@@ -129,7 +129,7 @@ public class RequestHelper {
             return true;
         }
         // can only proceed with an object or an array
-        if (!content.isDocument() && !content.isArray() ) {
+        if (!content.isDocument() && !content.isArray()) {
             MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "data must be a json object or array");
             return true;
         }

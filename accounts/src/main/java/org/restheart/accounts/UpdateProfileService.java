@@ -8,12 +8,14 @@ import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -39,10 +41,10 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "updateProfileService",
-        description      = "PATCH /auth/profile — self-service profile update",
-        defaultURI       = "/auth/profile",
-        secure           = true,
+        name = "updateProfileService",
+        description = "PATCH /auth/profile — self-service profile update",
+        defaultURI = "/auth/profile",
+        secure = true,
         enabledByDefault = false)
 public class UpdateProfileService implements JsonService {
 
@@ -57,20 +59,29 @@ public class UpdateProfileService implements JsonService {
     @Inject("accountsConfig")
     private AccountsConfigData conf;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
     @OnInit
     public void onInit() {
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/profile") && (r.isPatch() || r.isOptions()));
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
-        if (!req.isPatch()) { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (!req.isPatch()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         var account = req.getAuthenticatedAccount();
         var email = account.getPrincipal().getName();
@@ -105,7 +116,12 @@ public class UpdateProfileService implements JsonService {
             return;
         }
 
-        db(req).updateUser(email, updates);
+        try {
+            db(req).updateUser(email, updates);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         LOGGER.info("Profile updated for <{}>", email);
 

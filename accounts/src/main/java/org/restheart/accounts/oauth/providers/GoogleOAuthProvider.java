@@ -32,14 +32,14 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @RegisterPlugin(
-        name             = "googleOAuthProvider",
-        description      = "Google OAuth 2.0 provider for restheart-accounts",
+        name = "googleOAuthProvider",
+        description = "Google OAuth 2.0 provider for restheart-accounts",
         enabledByDefault = false)
 public class GoogleOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuthProvider.class);
     private static final String PROVIDER_NAME = "google";
-    private static final String USERINFO_URL  = "https://www.googleapis.com/oauth2/v2/userinfo";
+    private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
     @Inject("oauthService")
     private OAuthProviderRegistry oauthService;
@@ -55,7 +55,9 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
     }
 
     @Override
-    public String getProviderName() { return PROVIDER_NAME; }
+    public String getProviderName() {
+        return PROVIDER_NAME;
+    }
 
     @Override
     public String getAuthorizationUrl(String clientId, String clientSecret,
@@ -67,7 +69,7 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
     public BsonDocument fetchUserProfile(String clientId, String clientSecret,
                                          String callbackUrl, String scope, String code)
             throws Exception {
-        var service     = buildService(clientId, clientSecret, callbackUrl, scope);
+        var service = buildService(clientId, clientSecret, callbackUrl, scope);
         var accessToken = service.getAccessToken(code).getAccessToken();
 
         var request = new OAuthRequest(Verb.GET, USERINFO_URL);
@@ -89,18 +91,18 @@ public class GoogleOAuthProvider implements OAuthProvider, Initializer {
                 throw new Exception("Google account has no email address");
             }
 
-            var providerId = json.has("id")   ? json.get("id").getAsString()   : "";
-            var name       = json.has("name") ? json.get("name").getAsString() : email.split("@")[0];
-            var avatarUrl  = json.has("picture") && !json.get("picture").isJsonNull()
+            var providerId = json.has("id") ? json.get("id").getAsString() : "";
+            var name = json.has("name") ? json.get("name").getAsString() : email.split("@")[0];
+            var avatarUrl = json.has("picture") && !json.get("picture").isJsonNull()
                     ? json.get("picture").getAsString() : null;
 
             LOGGER.debug("Google profile: id={}, email={}, name={}", providerId, email, name);
 
             return new BsonDocument()
-                    .append("email",      new BsonString(email))
-                    .append("name",       new BsonString(name))
+                    .append("email", new BsonString(email))
+                    .append("name", new BsonString(name))
                     .append("providerId", new BsonString(providerId))
-                    .append("avatarUrl",  avatarUrl != null ? new BsonString(avatarUrl) : BsonNull.VALUE);
+                    .append("avatarUrl", avatarUrl != null ? new BsonString(avatarUrl) : BsonNull.VALUE);
         }
     }
 

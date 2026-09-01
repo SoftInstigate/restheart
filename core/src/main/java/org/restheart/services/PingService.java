@@ -44,10 +44,10 @@ import io.undertow.server.HttpServerExchange;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "ping",
-    description = "Ping service returning a greeting message along with RESTHeart version and build time.",
-    secure = false,
-    blocking = false)
+        name = "ping",
+        description = "Ping service returning a greeting message along with RESTHeart version and build time.",
+        secure = false,
+        blocking = false)
 public class PingService implements ByteArrayService {
     private static final String VERSION = Version.getInstance().getVersionNumber().orElse("unknown");
     private static final String BUILD_TIME = Version.getInstance().getBuildTime().toString();

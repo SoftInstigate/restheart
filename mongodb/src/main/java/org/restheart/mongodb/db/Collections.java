@@ -70,8 +70,8 @@ import static com.mongodb.client.model.Filters.eq;
 class Collections {
 
     private static final int GET_COLLECTION_CACHE_BATCH_SIZE = MongoServiceConfiguration.get() != null
-        ? MongoServiceConfiguration.get().getGetCollectionCacheDocs()
-        : DEFAULT_CURSOR_BATCH_SIZE;
+            ? MongoServiceConfiguration.get().getGetCollectionCacheDocs()
+            : DEFAULT_CURSOR_BATCH_SIZE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Collections.class);
     private static final BsonDocument FIELDS_TO_RETURN;
@@ -203,21 +203,21 @@ class Collections {
      * @throws JsonParseException
      */
     FindIterable<BsonDocument> findIterable(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final BsonDocument sortBy,
-        final BsonDocument filters,
-        final BsonArray hints,
-        final BsonDocument keys,
-        final int batchSize) throws JsonParseException {
+            final Optional<ClientSession> cs,
+            final MongoCollection<BsonDocument> coll,
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonArray hints,
+            final BsonDocument keys,
+            final int batchSize) throws JsonParseException {
         var ret = cs.isPresent()
-            ? coll.find(cs.get(), filters)
-            : coll.find(filters);
+                ? coll.find(cs.get(), filters)
+                : coll.find(filters);
 
         var find = ret.projection(keys)
-            .sort(sortBy)
-            .batchSize(batchSize)
-            .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+                .sort(sortBy)
+                .batchSize(batchSize)
+                .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
 
         if (hints != null) {
             for (var hint : hints) {
@@ -247,18 +247,18 @@ class Collections {
      * @return the documents in the collection as a BsonArray
      */
     BsonArray getCollectionData(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final int page,
-        final int pagesize,
-        final BsonDocument sortBy,
-        final BsonDocument filters,
-        final BsonArray hints,
-        final BsonDocument keys,
-        final boolean useCache)
-        throws JsonParseException {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final int page,
+            final int pagesize,
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonArray hints,
+            final BsonDocument keys,
+            final boolean useCache)
+            throws JsonParseException {
         var coll = collection(rsOps, dbName, collName);
         var ret = new BsonArray();
 
@@ -294,35 +294,35 @@ class Collections {
             var _batchCursor = MongoBatchCursorAdapter.class.getDeclaredField("curBatch");
             _batchCursor.setAccessible(true);
             var curBatch = (List<BsonDocument>) _batchCursor.get(cursor);
-            
+
             // Make an immediate defensive copy - the driver's internal list may use weak references
             // or be cleared/reused after the cursor advances
             if (curBatch != null) {
                 // Create a new List with copies of non-null documents
                 // This ensures the documents are not garbage collected if the driver uses weak refs
                 return curBatch.stream()
-					.filter(Objects::nonNull).collect(Collectors.toList());
+                        .filter(Objects::nonNull).collect(Collectors.toList());
             }
-            
+
             return null;
-        } catch(NoSuchFieldException | IllegalAccessException ex) {
+        } catch (NoSuchFieldException | IllegalAccessException ex) {
             LOGGER.warn("cannot access field Cursor.curBatch ", ex);
             return Lists.newArrayList();
         }
     }
 
     private BsonArray getCollectionDataFromDb(final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final int page,
-        final int pagesize,
-        final BsonDocument sortBy,
-        final BsonDocument filters,
-        final BsonArray hints,
-        final BsonDocument keys,
-        final boolean useCache) {
+                                              final MongoCollection<BsonDocument> coll,
+                                              final Optional<RSOps> rsOps,
+                                              final String dbName,
+                                              final String collName,
+                                              final int page,
+                                              final int pagesize,
+                                              final BsonDocument sortBy,
+                                              final BsonDocument filters,
+                                              final BsonArray hints,
+                                              final BsonDocument keys,
+                                              final boolean useCache) {
         var ret = new BsonArray();
         int from = pagesize * (page - 1);
 
@@ -330,7 +330,7 @@ class Collections {
 
         try (var cursor = findIterable(cs, coll, sortBy, filters, hints, keys, batchSize).skip(from).cursor()) {
             int added = 0;
-            while(added < pagesize) {
+            while (added < pagesize) {
                 var next = cursor.tryNext();
                 if (next == null) {
                     break;
@@ -356,7 +356,7 @@ class Collections {
                     var _cursorDocs = ret.getValues().stream().map(v -> (BsonDocument) v).collect(Collectors.toList());
                     // add to _cursorDocs all remaining documents in the batch
                     cursor.forEachRemaining(_cursorDocs::add);
-                    
+
                     var actualTo = from + _cursorDocs.size();
                     var newkey = new GetCollectionCacheKey(cs, coll, sortBy, filters, keys, hints, from, actualTo, System.nanoTime(), exhausted);
                     LOGGER.debug("{} entry in collection cache: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
@@ -386,9 +386,9 @@ class Collections {
      * @return the collection properties document
      */
     public BsonDocument getCollectionProps(final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName) {
+                                           final Optional<RSOps> rsOps,
+                                           final String dbName,
+                                           final String collName) {
         var propsColl = collection(rsOps, dbName, META_COLLNAME);
 
         var query = new BsonDocument("_id", new BsonString("_properties.".concat(collName)));
@@ -416,15 +416,15 @@ class Collections {
      * @return true if the collection exists
      */
     public boolean doesCollectionExist(final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName) {
+                                       final Optional<RSOps> rsOps,
+                                       final String dbName,
+                                       final String collName) {
         var db = db(rsOps, dbName);
         var dbCollections = cs.isPresent()
-            ? db.listCollectionNames(cs.get())
-            : db.listCollectionNames();
+                ? db.listCollectionNames(cs.get())
+                : db.listCollectionNames();
 
-        return StreamSupport.stream(dbCollections.spliterator(),false).anyMatch(dbCollection -> collName.equals(dbCollection));
+        return StreamSupport.stream(dbCollections.spliterator(), false).anyMatch(dbCollection -> collName.equals(dbCollection));
     }
 
     /**
@@ -442,15 +442,15 @@ class Collections {
      * @return the HttpStatus code to set in the http response
      */
     OperationResult upsertCollection(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final METHOD method,
-        final boolean updating,
-        final BsonDocument properties,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final METHOD method,
+            final boolean updating,
+            final BsonDocument properties,
+            final String requestEtag,
+            final boolean checkEtag) {
         var db = db(rsOps, dbName);
         var _updating = updating;
 
@@ -460,7 +460,7 @@ class Collections {
 
         if (!updating) {
             try {
-                if(cs.isPresent()) {
+                if (cs.isPresent()) {
                     db.createCollection(cs.get(), collName);
                 } else {
                     db.createCollection(collName);
@@ -493,8 +493,8 @@ class Collections {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
             var oldProperties = cs.isPresent()
-                ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
-                : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
+                    ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
+                    : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
                 var oldEtag = oldProperties.get("_etag");
@@ -529,16 +529,16 @@ class Collections {
     }
 
     private OperationResult doCollPropsUpdate(
-        final Optional<ClientSession> cs,
-        final METHOD method,
-        final boolean updating,
-        final String collName,
-        final MongoCollection<BsonDocument> mcoll,
-        final BsonDocument dcontent,
-        final ObjectId newEtag) {
-           return switch(method) {
-                case PATCH -> {
-                    var ret = DbUtils.writeDocument(
+            final Optional<ClientSession> cs,
+            final METHOD method,
+            final boolean updating,
+            final String collName,
+            final MongoCollection<BsonDocument> mcoll,
+            final BsonDocument dcontent,
+            final ObjectId newEtag) {
+        return switch(method) {
+            case PATCH -> {
+                var ret = DbUtils.writeDocument(
                         cs,
                         METHOD.PATCH,
                         WRITE_MODE.UPSERT,
@@ -548,11 +548,11 @@ class Collections {
                         Optional.empty(),
                         dcontent);
 
-                    yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
-                }
+                yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
+            }
 
-                case PUT -> {
-                    var ret = DbUtils.writeDocument(
+            case PUT -> {
+                var ret = DbUtils.writeDocument(
                         cs,
                         METHOD.PUT,
                         WRITE_MODE.UPSERT,
@@ -561,11 +561,11 @@ class Collections {
                         Optional.empty(),
                         Optional.empty(),
                         dcontent);
-                    yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : updating ? HttpStatus.SC_OK : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
-                }
+                yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : updating ? HttpStatus.SC_OK : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
+            }
 
-                default -> throw new UnsupportedOperationException("unsupported method: " + method);
-            };
+            default -> throw new UnsupportedOperationException("unsupported method: " + method);
+        };
     }
 
     /**
@@ -580,19 +580,19 @@ class Collections {
      * @return the HttpStatus code to set in the http response
      */
     OperationResult deleteCollection(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonObjectId requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonObjectId requestEtag,
+            final boolean checkEtag) {
         var mcoll = collection(rsOps, dbName, META_COLLNAME);
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
         var properties = cs.isPresent()
-            ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
-            : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
+                ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
+                : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
 
         if (checkEtag) {
             if (properties != null) {

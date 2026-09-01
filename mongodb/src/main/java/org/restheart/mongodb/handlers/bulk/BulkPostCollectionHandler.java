@@ -88,13 +88,13 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
         }
 
         var result = this.documents.bulkPostDocuments(Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            content,
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            request.getWriteMode());
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                content,
+                Optional.ofNullable(request.getFiltersDocument()),
+                Optional.ofNullable(request.getShardKey()),
+                request.getWriteMode());
 
         response.setDbOperationResult(result);
 

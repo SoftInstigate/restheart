@@ -70,13 +70,13 @@ public class DeleteFileHandler extends PipelinedHandler {
         }
 
         var result = this.gridFs.deleteFile(
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getDocumentId(),
-            request.getFiltersDocument(),
-            request.getETag(),
-            request.isETagCheckRequired());
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getDocumentId(),
+                request.getFiltersDocument(),
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

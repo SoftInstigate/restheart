@@ -59,7 +59,7 @@ import io.undertow.util.AttachmentKey;
  */
 public class RequestContentInjector extends PipelinedHandler {
 
-    private static final Logger LOGGER = LoggerFactory .getLogger(RequestContentInjector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestContentInjector.class);
     private static final AttachmentKey<Boolean> INJECTED_KEY = AttachmentKey.create(Boolean.class);
 
     private final Policy policy;
@@ -128,7 +128,7 @@ public class RequestContentInjector extends PipelinedHandler {
                 || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
-    @SuppressWarnings({"rawtypes","unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private boolean isContentRequired(HttpServerExchange exchange, InterceptPoint interceptPoint) {
         Request<?> request;
         Response<?> response;
@@ -148,17 +148,17 @@ public class RequestContentInjector extends PipelinedHandler {
         }
 
         return interceptors.stream()
-            .filter(ri -> ri instanceof Interceptor)
-            .map(ri -> (Interceptor) ri)
-            .filter(ri -> {
-                try {
-                    return ri.resolve(request, response);
-                } catch (Exception e) {
-                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {} to check if the content is required; assuming requiresContent=false", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
-                    return false;
-                }
-            })
-            .anyMatch(ri -> requiresContent(ri));
+                .filter(ri -> ri instanceof Interceptor)
+                .map(ri -> (Interceptor) ri)
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(request, response);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {} to check if the content is required; assuming requiresContent=false", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
+                        return false;
+                    }
+                })
+                .anyMatch(ri -> requiresContent(ri));
     }
 
     private void markInjected(HttpServerExchange exchange) {

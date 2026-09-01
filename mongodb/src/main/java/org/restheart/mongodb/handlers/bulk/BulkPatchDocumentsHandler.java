@@ -68,13 +68,13 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
         }
 
         var result = this.documents.bulkPatchDocuments(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getFiltersDocument(),
-            Optional.ofNullable(request.getShardKey()),
-            request.getContent().asDocument());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getFiltersDocument(),
+                Optional.ofNullable(request.getShardKey()),
+                request.getContent().asDocument());
 
         response.setDbOperationResult(result);
 

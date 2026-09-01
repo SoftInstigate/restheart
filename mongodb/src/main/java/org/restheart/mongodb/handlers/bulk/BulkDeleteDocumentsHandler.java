@@ -69,12 +69,12 @@ public class BulkDeleteDocumentsHandler extends PipelinedHandler {
         }
 
         var result = this.documents.bulkDeleteDocuments(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getFiltersDocument(),
-            Optional.ofNullable(request.getShardKey()));
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getFiltersDocument(),
+                Optional.ofNullable(request.getShardKey()));
 
         response.setDbOperationResult(result);
 

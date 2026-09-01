@@ -29,7 +29,7 @@ public abstract class TypeMapping {
     protected final String typeName;
     protected final Map<String, FieldMapping> fieldMappingMap;
 
-    public TypeMapping(String typeName, Map<String, FieldMapping> fieldMappingMap){
+    public TypeMapping(String typeName, Map<String, FieldMapping> fieldMappingMap) {
         this.typeName = typeName;
         this.fieldMappingMap = fieldMappingMap;
     }

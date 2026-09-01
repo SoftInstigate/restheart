@@ -31,13 +31,13 @@ import io.undertow.util.AttachmentKey;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestPhaseContext {
-    
+
     private static final ScopedValue<HttpServerExchange> CURRENT_EXCHANGE = ScopedValue.newInstance();
     private static final AttachmentKey<PhaseInfo> PHASE_INFO_KEY = AttachmentKey.create(PhaseInfo.class);
-    
+
     // Fallback for bootstrap logging (when no exchange is bound)
     private static final ThreadLocal<PhaseInfo> BOOTSTRAP_PHASE = ThreadLocal.withInitial(PhaseInfo::new);
-    
+
     /**
      * Phase types for request processing
      */
@@ -59,7 +59,7 @@ public class RequestPhaseContext {
         /** No prefix (default) */
         NONE
     }
-    
+
     /**
      * Run a task with the exchange set in the ScopedValue context.
      * This should be called at the entry point of request handling.
@@ -74,7 +74,7 @@ public class RequestPhaseContext {
             return null;
         });
     }
-    
+
     /**
      * Call a task with the exchange set in the ScopedValue context.
      * This is a convenience method for async operations that need to propagate the exchange.
@@ -89,7 +89,7 @@ public class RequestPhaseContext {
             task.run();
         }
     }
-    
+
     /**
      * Set the current phase
      * 
@@ -116,7 +116,7 @@ public class RequestPhaseContext {
             BOOTSTRAP_PHASE.set(new PhaseInfo(phase, current.isLast));
         }
     }
-    
+
     /**
      * Set whether this is the last item (affects prefix generation)
      * 
@@ -143,7 +143,7 @@ public class RequestPhaseContext {
             BOOTSTRAP_PHASE.set(new PhaseInfo(current.phase, isLast));
         }
     }
-    
+
     /**
      * Get the current phase
      * 
@@ -168,7 +168,7 @@ public class RequestPhaseContext {
         }
         return Phase.NONE;
     }
-    
+
     /**
      * Check if this is the last item
      * 
@@ -193,7 +193,7 @@ public class RequestPhaseContext {
         }
         return false;
     }
-    
+
     /**
      * Clear the phase context
      */
@@ -210,7 +210,7 @@ public class RequestPhaseContext {
             BOOTSTRAP_PHASE.remove();
         }
     }
-    
+
     /**
      * Reset to default values
      */
@@ -227,7 +227,7 @@ public class RequestPhaseContext {
             BOOTSTRAP_PHASE.set(new PhaseInfo());
         }
     }
-    
+
     /**
      * Functional interface for tasks that can throw exceptions
      */
@@ -235,18 +235,18 @@ public class RequestPhaseContext {
     public interface ThrowingRunnable {
         void run() throws Exception;
     }
-    
+
     /**
      * Internal class to hold phase information (immutable)
      */
     private static class PhaseInfo {
         final Phase phase;
         final boolean isLast;
-        
+
         PhaseInfo() {
             this(Phase.NONE, false);
         }
-        
+
         PhaseInfo(Phase phase, boolean isLast) {
             this.phase = phase;
             this.isLast = isLast;

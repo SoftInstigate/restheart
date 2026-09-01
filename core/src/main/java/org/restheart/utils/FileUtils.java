@@ -98,9 +98,9 @@ public class FileUtils {
 
             return opt < 0
                     ? null
-                    : _args.size() <= opt+1
+                    : _args.size() <= opt + 1
                     ? null
-                    : getFileAbsolutePath(_args.get(opt+1));
+                    : getFileAbsolutePath(_args.get(opt + 1));
         }
 
         return null;

@@ -34,11 +34,11 @@ import org.restheart.plugins.SseService;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
-    name            = "testSseSecure",
-    description     = "Secured SSE service for integration tests",
-    defaultURI      = "/test-sse-secure",
-    secure          = true,
-    enabledByDefault = true
+        name = "testSseSecure",
+        description = "Secured SSE service for integration tests",
+        defaultURI = "/test-sse-secure",
+        secure = true,
+        enabledByDefault = true
 )
 public class TestSseSecureService implements SseService {
 

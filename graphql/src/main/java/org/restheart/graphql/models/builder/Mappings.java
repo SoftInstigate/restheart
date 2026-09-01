@@ -59,26 +59,26 @@ abstract class Mappings {
 
     protected static boolean isInterface(String key, TypeDefinitionRegistry typeDefinitionRegistry) {
         return typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> e.getKey().equals(key))
-                    .anyMatch(e -> e.getValue() instanceof InterfaceTypeDefinition);
+                .filter(e -> e.getKey().equals(key))
+                .anyMatch(e -> e.getValue() instanceof InterfaceTypeDefinition);
     }
 
     protected static boolean isObject(String key, TypeDefinitionRegistry typeDefinitionRegistry) {
         return typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> e.getKey().equals(key))
-                    .anyMatch(e -> e.getValue() instanceof ObjectTypeDefinition);
+                .filter(e -> e.getKey().equals(key))
+                .anyMatch(e -> e.getValue() instanceof ObjectTypeDefinition);
     }
 
     protected static boolean isEnum(String key, TypeDefinitionRegistry typeDefinitionRegistry) {
         return typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> e.getKey().equals(key))
-                    .anyMatch(e -> e.getValue() instanceof EnumTypeDefinition);
+                .filter(e -> e.getKey().equals(key))
+                .anyMatch(e -> e.getValue() instanceof EnumTypeDefinition);
     }
 
     protected static boolean isUnion(String key, TypeDefinitionRegistry typeDefinitionRegistry) {
         return typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> e.getKey().equals(key))
-                    .anyMatch(e -> e.getValue() instanceof UnionTypeDefinition);
+                .filter(e -> e.getKey().equals(key))
+                .anyMatch(e -> e.getValue() instanceof UnionTypeDefinition);
     }
 
     protected static io.undertow.predicate.Predicate typeResolverPredicate(BsonValue predicate) throws GraphQLIllegalAppDefinitionException {
@@ -94,7 +94,7 @@ abstract class Mappings {
 
         try {
             return PredicateParser.parse(p, AppBuilder.class.getClassLoader());
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new GraphQLIllegalAppDefinitionException("error parsing $typeResolver predicate: " + p, t);
         }
     }

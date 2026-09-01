@@ -83,11 +83,11 @@ public class PostBucketHandler extends PipelinedHandler {
 
         if (request.getFileInputStream() != null) {
             result = gridFs.createFile(
-                request.rsOps(),
-                request.getDBName(),
-                request.getCollectionName(),
-                metadata,
-                request.getFileInputStream());
+                    request.rsOps(),
+                    request.getDBName(),
+                    request.getCollectionName(),
+                    metadata,
+                    request.getFileInputStream());
         } else {
             response.setInError(HttpStatus.SC_BAD_REQUEST, "POST file request is in a bad format");
             next(exchange);
@@ -98,7 +98,7 @@ public class PostBucketHandler extends PipelinedHandler {
 
         // insert the Location handler
         response.getHeaders().add(HttpString.tryFromString("Location"),
-            RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewId()));
+                RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewId()));
 
         response.setStatusCode(result.getHttpCode());
 

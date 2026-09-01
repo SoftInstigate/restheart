@@ -42,7 +42,7 @@ public class AppDefinitionLoader {
     private static MongoClient mongoClient;
     private static Boolean restrictMappingDb = false;
 
-    public static void setup(MongoClient mclient, Boolean _restrictMappingDb){
+    public static void setup(MongoClient mclient, Boolean _restrictMappingDb) {
         mongoClient = mclient;
         restrictMappingDb = _restrictMappingDb;
     }
@@ -54,12 +54,12 @@ public class AppDefinitionLoader {
      */
     public static boolean isUpdated(AppDefinitionRef appRef, BsonValue etag) {
         var uriOrIdCond = array()
-            .add(document().put(APP_URI_FIELD, appRef.id()))
-            .add(document().put("_id", appRef.id()));
+                .add(document().put(APP_URI_FIELD, appRef.id()))
+                .add(document().put("_id", appRef.id()));
 
         var conditions = array()
-            .add(document().put("$or", uriOrIdCond))
-            .add(document().put(APP_ENABLED_FIELD, true));
+                .add(document().put("$or", uriOrIdCond))
+                .add(document().put(APP_ENABLED_FIELD, true));
 
         var findArg = document().put("$and", conditions);
 
@@ -78,12 +78,12 @@ public class AppDefinitionLoader {
         LOGGER.trace("Loading GQL App Definition {} from db", appRef);
 
         var uriOrIdCond = array()
-            .add(document().put(APP_URI_FIELD, appRef.id()))
-            .add(document().put("_id", appRef.id()));
+                .add(document().put(APP_URI_FIELD, appRef.id()))
+                .add(document().put("_id", appRef.id()));
 
         var conditions = array()
-            .add(document().put("$or", uriOrIdCond))
-            .add(document().put(APP_ENABLED_FIELD, true));
+                .add(document().put("$or", uriOrIdCond))
+                .add(document().put(APP_ENABLED_FIELD, true));
 
         var findArg = document().put("$and", conditions);
 

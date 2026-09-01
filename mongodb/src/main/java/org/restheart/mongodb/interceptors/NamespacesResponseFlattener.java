@@ -62,8 +62,8 @@ public class NamespacesResponseFlattener implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
-                && (request.getRepresentationFormat()== REPRESENTATION_FORMAT.STANDARD
-                || request.getRepresentationFormat()== REPRESENTATION_FORMAT.S)
+                && (request.getRepresentationFormat() == REPRESENTATION_FORMAT.STANDARD
+                || request.getRepresentationFormat() == REPRESENTATION_FORMAT.S)
                 && request.isGet()
                 && (request.isRoot() || request.isDb())
                 && response.getContent() != null

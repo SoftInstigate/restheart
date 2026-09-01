@@ -93,7 +93,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
             return;
         }
 
-        LOGGER.trace("GET " + exchange.getRequestURL());
+        LOGGER.trace("GET {}", exchange.getRequestURL());
         final var bucket = GridFs.extractBucketName(request.getCollectionName());
 
         var gridFSBucket = GridFSBuckets.create(RHMongoClients.mclient().getDatabase(request.getDBName()), bucket);
@@ -177,7 +177,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         response.getHeaders().put(Headers.CONTENT_DISPOSITION, String.format("inline; filename=\"%s\"", extractFilename(file)));
 
-        response.getHeaders().put(Headers.CONTENT_TRANSFER_ENCODING,CONTENT_TRANSFER_ENCODING_BINARY);
+        response.getHeaders().put(Headers.CONTENT_TRANSFER_ENCODING, CONTENT_TRANSFER_ENCODING_BINARY);
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 

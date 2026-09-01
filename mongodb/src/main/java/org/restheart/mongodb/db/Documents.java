@@ -74,17 +74,17 @@ public class Documents {
      * @return
      */
     public BsonDocument getDocumentEtag(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final Object documentId) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final Object documentId) {
         var mcoll = collections.collection(rsOps, dbName, collName);
 
         var query = eq("_id", documentId);
         var documents = cs.isPresent()
-            ? mcoll.find(cs.get(), query).projection(new BsonDocument("_etag", new BsonInt32(1)))
-            : mcoll.find(query).projection(new BsonDocument("_etag", new BsonInt32(1)));
+                ? mcoll.find(cs.get(), query).projection(new BsonDocument("_etag", new BsonInt32(1)))
+                : mcoll.find(query).projection(new BsonDocument("_etag", new BsonInt32(1)));
 
         return documents.iterator().tryNext();
     }
@@ -105,18 +105,18 @@ public class Documents {
      * @return the OperationResult
      */
     public OperationResult writeDocument(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final METHOD method,
-        final WRITE_MODE writeMode,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonValue newContent,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final METHOD method,
+            final WRITE_MODE writeMode,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
+            final BsonValue newContent,
+            final String requestEtag,
+            final boolean checkEtag) {
         var mcoll = collections.collection(rsOps, dbName, collName);
 
         // genereate new etag
@@ -133,14 +133,14 @@ public class Documents {
             content.put("_etag", newEtag);
 
             writeResult = DbUtils.writeDocument(
-                cs,
-                method,
-                writeMode,
-                mcoll,
-                documentId,
-                filter,
-                shardKeys,
-                content);
+                    cs,
+                    method,
+                    writeMode,
+                    mcoll,
+                    documentId,
+                    filter,
+                    shardKeys,
+                    content);
         } else {
             // the content is an aggregation update array
             var newContentPipeline = newContent.asArray();
@@ -148,14 +148,14 @@ public class Documents {
             newContentPipeline.add(document().put("$set", document().put("_etag", newEtag)).get());
 
             writeResult = DbUtils.writeDocument(
-                cs,
-                method,
-                writeMode,
-                mcoll,
-                documentId,
-                filter,
-                shardKeys,
-                newContentPipeline);
+                    cs,
+                    method,
+                    writeMode,
+                    mcoll,
+                    documentId,
+                    filter,
+                    shardKeys,
+                    newContentPipeline);
         }
 
         var oldDocument = writeResult.getOldData();
@@ -164,14 +164,14 @@ public class Documents {
         if (oldDocument != null && checkEtag) {
             // check the old etag (if not match then restore the old document version)
             return optimisticCheckEtag(
-                cs,
-                mcoll,
-                shardKeys,
-                oldDocument,
-                newEtag,
-                requestEtag,
-                HttpStatus.SC_OK,
-                false);
+                    cs,
+                    mcoll,
+                    shardKeys,
+                    oldDocument,
+                    newEtag,
+                    requestEtag,
+                    HttpStatus.SC_OK,
+                    false);
         } else {
             var httpCode = writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : oldDocument == null ? HttpStatus.SC_CREATED : HttpStatus.SC_OK;
 
@@ -193,14 +193,14 @@ public class Documents {
      * @return the BulkOperationResult
      */
     public BulkOperationResult bulkPostDocuments(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonArray documents,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final WRITE_MODE writeMode) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonArray documents,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
+            final WRITE_MODE writeMode) {
         Objects.requireNonNull(documents);
 
         var mcoll = collections.collection(rsOps, dbName, collName);
@@ -208,17 +208,17 @@ public class Documents {
         var newEtag = new BsonObjectId(new ObjectId());
 
         documents
-            .stream()
-            .filter(d -> d != null && d.isDocument())
-            .forEachOrdered(document -> document.asDocument().put("_etag", newEtag));
+                .stream()
+                .filter(d -> d != null && d.isDocument())
+                .forEachOrdered(document -> document.asDocument().put("_etag", newEtag));
 
         var ret = DbUtils.bulkWriteDocuments(
-            cs,
-            mcoll,
-            documents,
-            filter,
-            shardKeys,
-            writeMode);
+                cs,
+                mcoll,
+                documents,
+                filter,
+                shardKeys,
+                writeMode);
 
         // invalidate the cache entris of this collection
         GetCollectionCache.getInstance().invalidateAll(dbName, collName);
@@ -237,13 +237,13 @@ public class Documents {
      * @return the BulkOperationResult
      */
     public BulkOperationResult bulkPatchDocuments(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonDocument filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument data) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonDocument filter,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument data) {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
@@ -290,15 +290,15 @@ public class Documents {
      * @return the OperationResult
      */
     public OperationResult deleteDocument(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
+            final String requestEtag,
+            final boolean checkEtag) {
         var mcoll = collections.collection(rsOps, dbName, collName);
 
         var oldDocument = cs.isPresent()
@@ -310,13 +310,13 @@ public class Documents {
         } else if (checkEtag) {
             // check the old etag (in not match restore the old document version)
             return optimisticCheckEtag(
-                cs,
-                mcoll,
-                Optional.empty(),
-                oldDocument,
-                null,
-                requestEtag,
-                HttpStatus.SC_NO_CONTENT, true);
+                    cs,
+                    mcoll,
+                    Optional.empty(),
+                    oldDocument,
+                    null,
+                    requestEtag,
+                    HttpStatus.SC_NO_CONTENT, true);
         } else {
             // invalidate the cache entris of this collection
             GetCollectionCache.getInstance().invalidateAll(dbName, collName);
@@ -325,9 +325,9 @@ public class Documents {
     }
 
     private Bson idFilter(
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardedKeys) {
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardedKeys) {
         Assertions.assertTrue(documentId.isPresent() || filter.isPresent());
 
         Bson q = null;
@@ -361,12 +361,12 @@ public class Documents {
      * @return the BulkOperationResult
      */
     public BulkOperationResult bulkDeleteDocuments(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonDocument filter,
-        final Optional<BsonDocument> shardedKeys) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonDocument filter,
+            final Optional<BsonDocument> shardedKeys) {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
@@ -393,14 +393,14 @@ public class Documents {
     }
 
     private OperationResult optimisticCheckEtag(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument oldDocument,
-        final BsonObjectId newEtag,
-        final String requestEtag,
-        final int httpStatusIfOk,
-        final boolean deleting
+            final Optional<ClientSession> cs,
+            final MongoCollection<BsonDocument> coll,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument oldDocument,
+            final BsonObjectId newEtag,
+            final String requestEtag,
+            final int httpStatusIfOk,
+            final boolean deleting
     ) {
         var oldEtag = oldDocument.get("_etag");
 
@@ -409,23 +409,23 @@ public class Documents {
             // they call it optimistic lock strategy
             if (deleting) {
                 DbUtils.writeDocument(
-                    cs,
-                    METHOD.PUT,
-                    WRITE_MODE.UPSERT,
-                    coll,
-                    Optional.of(oldDocument.get("_id")),
-                    Optional.empty(),
-                    shardKeys,
-                    oldDocument);
+                        cs,
+                        METHOD.PUT,
+                        WRITE_MODE.UPSERT,
+                        coll,
+                        Optional.of(oldDocument.get("_id")),
+                        Optional.empty(),
+                        shardKeys,
+                        oldDocument);
             } else {
                 DbUtils.restoreDocument(
-                    cs,
-                    coll,
-                    oldDocument.get("_id"),
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    "_etag");
+                        cs,
+                        coll,
+                        oldDocument.get("_id"),
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        "_etag");
             }
 
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
@@ -455,30 +455,30 @@ public class Documents {
             // they call it optimistic lock strategy
             if (deleting) {
                 DbUtils.writeDocument(
-                    cs,
-                    METHOD.PUT,
-                    WRITE_MODE.UPSERT,
-                    coll,
-                    Optional.of(oldDocument.get("_id")),
-                    shardKeys,
-                    Optional.empty(),
-                    oldDocument);
+                        cs,
+                        METHOD.PUT,
+                        WRITE_MODE.UPSERT,
+                        coll,
+                        Optional.of(oldDocument.get("_id")),
+                        shardKeys,
+                        Optional.empty(),
+                        oldDocument);
             } else {
                 DbUtils.restoreDocument(
-                    cs,
-                    coll,
-                    oldDocument.get("_id"),
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    "_etag");
+                        cs,
+                        coll,
+                        oldDocument.get("_id"),
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        "_etag");
             }
 
             return new OperationResult(
-                HttpStatus.SC_PRECONDITION_FAILED,
-                oldEtag,
-                oldDocument,
-                null);
+                    HttpStatus.SC_PRECONDITION_FAILED,
+                    oldEtag,
+                    oldDocument,
+                    null);
         }
     }
 }

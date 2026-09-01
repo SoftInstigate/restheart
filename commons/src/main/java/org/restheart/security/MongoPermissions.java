@@ -182,17 +182,17 @@ public class MongoPermissions {
     }
 
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
-            boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
-            BsonDocument mergeRequest, BsonDocument projectResponse) {
+                     boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
+                     BsonDocument mergeRequest, BsonDocument projectResponse) {
         this.readFilter = readFilter == null
-            ? null
-            : readFilter.isNull()
+                ? null
+                : readFilter.isNull()
                 ? null
                 : BsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
 
         this.writeFilter = writeFilter == null
-            ? null
-            : writeFilter.isNull()
+                ? null
+                : writeFilter.isNull()
                 ? null
                 : BsonUtils.escapeKeys(writeFilter.asDocument(), true).asDocument();
 
@@ -260,13 +260,13 @@ public class MongoPermissions {
      */
     @SuppressWarnings("unchecked")
     public static MongoPermissions from(Object raw) throws ConfigurationException, IllegalArgumentException {
-	  return switch (raw) {
-		case null -> new MongoPermissions();
-		case BsonDocument bsonDocument -> from(bsonDocument);
-		case Map map -> from((Map<String, Object>) raw);
-		default -> throw new IllegalArgumentException(
-			"MongoPemissions cannot be built from " + raw.getClass().getSimpleName());
-	  };
+        return switch (raw) {
+            case null -> new MongoPermissions();
+            case BsonDocument bsonDocument -> from(bsonDocument);
+            case Map map -> from((Map<String, Object>) raw);
+            default -> throw new IllegalArgumentException(
+                    "MongoPemissions cannot be built from " + raw.getClass().getSimpleName());
+        };
     }
 
     /**
@@ -317,8 +317,8 @@ public class MongoPermissions {
             }
 
             var readFilter = _readFilter == null
-                ? null
-                : _readFilter.isNull()
+                    ? null
+                    : _readFilter.isNull()
                     ? null
                     : BsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
 
@@ -329,8 +329,8 @@ public class MongoPermissions {
             }
 
             var writeFilter = _writeFilter == null
-                ? null
-                : _writeFilter.isNull()
+                    ? null
+                    : _writeFilter.isNull()
                     ? null
                     : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
 
@@ -341,8 +341,8 @@ public class MongoPermissions {
             }
 
             var mergeRequest = _mergeRequest == null
-                ? null
-                : _mergeRequest.isNull()
+                    ? null
+                    : _mergeRequest.isNull()
                     ? null
                     : _mergeRequest.asDocument();
 
@@ -353,8 +353,8 @@ public class MongoPermissions {
             }
 
             var projectResponse = _projectResponse == null
-                ? null
-                : _projectResponse.isNull()
+                    ? null
+                    : _projectResponse.isNull()
                     ? null
                     : _projectResponse.asDocument();
 
@@ -508,7 +508,7 @@ public class MongoPermissions {
             var mongoValue = args.get("mongo");
 
             // If mongo value is null or empty, return default permissions
-            if (mongoValue == null || (mongoValue instanceof Map && ((Map<?, ?>)mongoValue).isEmpty())) {
+            if (mongoValue == null || (mongoValue instanceof Map && ((Map<?, ?>) mongoValue).isEmpty())) {
                 LOGGER.debug("MongoPermissions.from() called with empty or null mongo section, returning defaults");
                 return new MongoPermissions();
             }
@@ -533,8 +533,8 @@ public class MongoPermissions {
                         }
 
                         readFilter = _readFilter == null
-                            ? null
-                            : _readFilter.isNull()
+                                ? null
+                                : _readFilter.isNull()
                                 ? null
                                 : BsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
                     }
@@ -560,8 +560,8 @@ public class MongoPermissions {
                         }
 
                         writeFilter = _writeFilter == null
-                            ? null
-                            : _writeFilter.isNull()
+                                ? null
+                                : _writeFilter.isNull()
                                 ? null
                                 : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
                     }
@@ -589,8 +589,8 @@ public class MongoPermissions {
                         }
 
                         mergeRequest = _mergeRequest == null
-                            ? null
-                            : _mergeRequest.isNull()
+                                ? null
+                                : _mergeRequest.isNull()
                                 ? null
                                 : _mergeRequest.asDocument();
                     }
@@ -613,46 +613,46 @@ public class MongoPermissions {
                     } else {
                         var _projectResponse = BsonDocument.parse(__projectResponse);
 
-                    if (!(_projectResponse == null || _projectResponse.isNull()) && !_projectResponse.isDocument()) {
-                        throw new ConfigurationException("projectResponse must be a JSON object or null");
-                    }
+                        if (!(_projectResponse == null || _projectResponse.isNull()) && !_projectResponse.isDocument()) {
+                            throw new ConfigurationException("projectResponse must be a JSON object or null");
+                        }
 
-                    _projectResponse = _projectResponse == null
-                        ? null
-                        : _projectResponse.isNull()
-                            ? null
-                            : _projectResponse.asDocument();
+                        _projectResponse = _projectResponse == null
+                                ? null
+                                : _projectResponse.isNull()
+                                ? null
+                                : _projectResponse.asDocument();
 
-                    if (_projectResponse != null && _projectResponse.isDocument()) {
-                        var zeros = false;
-                        var ones = false;
+                        if (_projectResponse != null && _projectResponse.isDocument()) {
+                            var zeros = false;
+                            var ones = false;
 
-                        for (var key : _projectResponse.keySet()) {
-                            if (_projectResponse.get(key).isInt32()) {
-                                if (_projectResponse.get(key).asInt32().getValue() == 0) {
-                                    if (ones) {
+                            for (var key : _projectResponse.keySet()) {
+                                if (_projectResponse.get(key).isInt32()) {
+                                    if (_projectResponse.get(key).asInt32().getValue() == 0) {
+                                        if (ones) {
+                                            throw new ConfigurationException(
+                                                    "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                                        }
+                                        zeros = true;
+                                    } else if (_projectResponse.get(key).asInt32().getValue() == 1) {
+                                        if (zeros) {
+                                            throw new ConfigurationException(
+                                                    "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                                        }
+                                        ones = true;
+                                    } else {
                                         throw new ConfigurationException(
-                                                "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                                                "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
                                     }
-                                    zeros = true;
-                                } else if (_projectResponse.get(key).asInt32().getValue() == 1) {
-                                    if (zeros) {
-                                        throw new ConfigurationException(
-                                                "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
-                                    }
-                                    ones = true;
                                 } else {
                                     throw new ConfigurationException(
                                             "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
                                 }
-                            } else {
-                                throw new ConfigurationException(
-                                        "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
                             }
-                        }
 
-                        projectResponse = _projectResponse.asDocument();
-                    }
+                            projectResponse = _projectResponse.asDocument();
+                        }
                     }
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
@@ -744,8 +744,8 @@ public class MongoPermissions {
      */
     public BsonDocument getReadFilter() {
         return readFilter == null || readFilter.isNull()
-            ? null
-            : BsonUtils.unescapeKeys(readFilter).asDocument();
+                ? null
+                : BsonUtils.unescapeKeys(readFilter).asDocument();
     }
 
     /**
@@ -761,8 +761,8 @@ public class MongoPermissions {
      */
     public BsonDocument getWriteFilter() {
         return writeFilter == null || writeFilter.isNull()
-            ? writeFilter
-            : BsonUtils.unescapeKeys(writeFilter).asDocument();
+                ? writeFilter
+                : BsonUtils.unescapeKeys(writeFilter).asDocument();
     }
 
     /**

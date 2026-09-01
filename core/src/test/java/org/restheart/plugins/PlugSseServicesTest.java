@@ -47,22 +47,30 @@ public class PlugSseServicesTest {
 
     @RegisterPlugin(name = "withExplicitUri", description = "has explicit defaultURI", defaultURI = "/sse/explicit")
     static class ExplicitUriSse implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     @RegisterPlugin(name = "withoutUri", description = "defaultURI left empty, falls back to /name")
     static class NoUriSse implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     @RegisterPlugin(name = "secureSse", description = "secured SSE service", defaultURI = "/sse/secure", secure = true)
     static class SecureSse implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     @RegisterPlugin(name = "unsecureSse", description = "unsecured SSE service", defaultURI = "/sse/open", secure = false)
     static class UnsecureSse implements SseService {
-        @Override public void onConnect(ServerSentEventConnection c, String id) {}
+        @Override
+        public void onConnect(ServerSentEventConnection c, String id) {
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -101,10 +109,12 @@ public class PlugSseServicesTest {
     public void nullAnnotationYieldsNullUri() {
         // a class without @RegisterPlugin should return null
         var plain = new SseService() {
-            @Override public void onConnect(ServerSentEventConnection c, String id) {}
+            @Override
+            public void onConnect(ServerSentEventConnection c, String id) {
+            }
         };
         assertNull(plain.getClass().getDeclaredAnnotation(RegisterPlugin.class),
-            "anonymous class must not carry @RegisterPlugin");
+                "anonymous class must not carry @RegisterPlugin");
     }
 
     @Test
@@ -122,6 +132,6 @@ public class PlugSseServicesTest {
     @Test
     public void sseServiceIsNotARegularService() {
         assertFalse(new ExplicitUriSse() instanceof Service,
-            "SseService must NOT extend Service");
+                "SseService must NOT extend Service");
     }
 }

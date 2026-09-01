@@ -26,7 +26,7 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
 
 public class ObjectMapping extends TypeMapping {
-    public ObjectMapping(String typeName, Map<String, FieldMapping> fieldMappingMap){
+    public ObjectMapping(String typeName, Map<String, FieldMapping> fieldMappingMap) {
         super(typeName, fieldMappingMap);
     }
 

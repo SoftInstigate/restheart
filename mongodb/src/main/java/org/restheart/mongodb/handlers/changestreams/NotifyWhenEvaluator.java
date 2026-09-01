@@ -75,18 +75,18 @@ public class NotifyWhenEvaluator {
 
         var entry = notifyWhen.entrySet().iterator().next();
         var fieldSpec = entry.getKey();   // "fullDocument::tenantId"
-        var varSpec   = entry.getValue(); // { "$var": "tid" }
+        var varSpec = entry.getValue(); // { "$var": "tid" }
 
         if (!varSpec.isDocument() || !varSpec.asDocument().containsKey("$var")) {
             throw new IllegalArgumentException(
-                "notify_when value must be { \"$var\": \"<varName>\" }; got: " + varSpec);
+                    "notify_when value must be { \"$var\": \"<varName>\" }; got: " + varSpec);
         }
         var varName = varSpec.asDocument().getString("$var").getValue();
 
         var parts = fieldSpec.split("::", 2);
         if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
             throw new IllegalArgumentException(
-                "notify_when field must use '::' separator, e.g. 'fullDocument::tenantId'; got: " + fieldSpec);
+                    "notify_when field must use '::' separator, e.g. 'fullDocument::tenantId'; got: " + fieldSpec);
         }
 
         return new NotifyWhenEvaluator(parts[0].strip(), parts[1].strip(), varName);

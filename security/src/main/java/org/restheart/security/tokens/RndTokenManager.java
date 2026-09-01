@@ -51,8 +51,8 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 
 @RegisterPlugin(name = "rndTokenManager",
-                description = "generates random auth tokens",
-                enabledByDefault = false)
+        description = "generates random auth tokens",
+        enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
     private static final SecureRandom RND_GENERATOR = new SecureRandom();
 

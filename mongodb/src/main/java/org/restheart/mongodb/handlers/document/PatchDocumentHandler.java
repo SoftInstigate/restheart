@@ -49,6 +49,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
     public PatchDocumentHandler(PipelinedHandler next) {
         super(next);
     }
+
     /**
      *
      * @param exchange
@@ -85,18 +86,18 @@ public class PatchDocumentHandler extends PipelinedHandler {
         }
 
         var result = documents.writeDocument(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getMethod(),
-            request.getWriteMode(),
-            Optional.of(request.getDocumentId()),
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            _content,
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getMethod(),
+                request.getWriteMode(),
+                Optional.of(request.getDocumentId()),
+                Optional.ofNullable(request.getFiltersDocument()),
+                Optional.ofNullable(request.getShardKey()),
+                _content,
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

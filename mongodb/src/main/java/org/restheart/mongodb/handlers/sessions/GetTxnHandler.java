@@ -81,8 +81,8 @@ public class GetTxnHandler extends PipelinedHandler {
 
             currentTxn.append("id",
                     txn.getTxnId() > Integer.MAX_VALUE
-                    ? new BsonInt64(txn.getTxnId())
-                    : new BsonInt32((int) txn.getTxnId()));
+                            ? new BsonInt64(txn.getTxnId())
+                            : new BsonInt32((int) txn.getTxnId()));
 
             currentTxn.append("status", new BsonString(txn.getStatus().name()));
 

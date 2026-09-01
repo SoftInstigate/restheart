@@ -92,7 +92,8 @@ public class HttpServerExchange extends AbstractAttachable {
         return this;
     }
 
-    void addExchangeCompleteListener(ExchangeCompletionListener listener) {}
+    void addExchangeCompleteListener(ExchangeCompletionListener listener) {
+    }
 
     /**
      * @return the statusCode

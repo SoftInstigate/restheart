@@ -135,7 +135,7 @@ public class JsonRequest extends ServiceRequest<JsonElement> implements RawBodyA
             try {
                 rawBody = ChannelReader.readString(wrapped);
                 return JsonParser.parseString(rawBody);
-            } catch(JsonSyntaxException jse) {
+            } catch (JsonSyntaxException jse) {
                 throw new BadRequestException(jse.getMessage(), jse);
             }
         } else {

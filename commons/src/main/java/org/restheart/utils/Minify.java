@@ -85,19 +85,19 @@ public class Minify {
 
     /** Input stream for reading characters to be minified. */
     private PushbackInputStream in;
-    
+
     /** Output stream for writing minified content. */
     private OutputStream out;
-    
+
     /** Current character being processed. */
     private int currChar;
-    
+
     /** Next character to be processed. */
     private int nextChar;
-    
+
     /** Current line number in the input. */
     private int line;
-    
+
     /** Current column number in the input. */
     private int column;
 
@@ -163,7 +163,7 @@ public class Minify {
          */
         @Override
         public void write(int ch) throws IOException {
-            this.sb.append((char)ch);
+            this.sb.append((char) ch);
         }
     }
 

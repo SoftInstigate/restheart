@@ -37,13 +37,13 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonInt64Coercing implements Coercing<Long, Long> {
     @Override
     public Long serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
         } else if (input instanceof BsonInt64 bsonInt64) {
             return bsonInt64.getValue();
         } else if (input instanceof Long value) {
             return value;
-        }else {
+        } else {
             throw new CoercingParseValueException("Expected types 'Long' or 'BsonInt64' but was '" + typeName(input) + ".");
         }
     }

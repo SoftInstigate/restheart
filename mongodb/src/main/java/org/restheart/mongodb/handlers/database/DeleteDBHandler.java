@@ -74,17 +74,17 @@ public class DeleteDBHandler extends PipelinedHandler {
         }
 
         var etag = request.getETag() == null
-            ? null
-            : ObjectId.isValid(request.getETag())
-            ? new BsonObjectId(new ObjectId(request.getETag()))
-            : new BsonObjectId();
+                ? null
+                : ObjectId.isValid(request.getETag())
+                ? new BsonObjectId(new ObjectId(request.getETag()))
+                : new BsonObjectId();
 
         var result = dbs.deleteDatabase(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            etag,
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                etag,
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

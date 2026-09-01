@@ -220,11 +220,11 @@ public class MongoRequest extends BsonRequest {
         this.whereUri = removeTrailingSlashes(whereUri == null
                 ? null
                 : whereUri.startsWith("/") ? whereUri
-                        : "/" + whereUri);
+                : "/" + whereUri);
 
         this.whatUri = removeTrailingSlashes(whatUri == null ? null
                 : whatUri.startsWith("/") || "*".equals(whatUri) ? whatUri
-                        : "/" + whatUri);
+                : "/" + whatUri);
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
             this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
@@ -285,8 +285,8 @@ public class MongoRequest extends BsonRequest {
         var _writeMode = exchange.getQueryParameters().containsKey(WRITE_MODE_QPARAM_KEY)
                 ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
                 : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
-                        ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
-                        : defaultWriteMode();
+                ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
+                : defaultWriteMode();
 
         WRITE_MODE mode;
 
@@ -385,10 +385,10 @@ public class MongoRequest extends BsonRequest {
         return dbName == null
                 ? false
                 : dbName.isEmpty()
-                    || dbName.equalsIgnoreCase(ADMIN)
-                    || dbName.equalsIgnoreCase(CONFIG)
-                    || dbName.equalsIgnoreCase(LOCAL)
-                    || dbName.startsWith(SYSTEM);
+                || dbName.equalsIgnoreCase(ADMIN)
+                || dbName.equalsIgnoreCase(CONFIG)
+                || dbName.equalsIgnoreCase(LOCAL)
+                || dbName.startsWith(SYSTEM);
     }
 
     /**
@@ -400,9 +400,9 @@ public class MongoRequest extends BsonRequest {
         return collectionName == null
                 ? false
                 : collectionName.isEmpty()
-                    || collectionName.startsWith(SYSTEM)
-                    || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                    || collectionName.equals(META_COLLNAME);
+                || collectionName.startsWith(SYSTEM)
+                || collectionName.endsWith(FS_CHUNKS_SUFFIX)
+                || collectionName.equals(META_COLLNAME);
     }
 
     /**
@@ -419,13 +419,13 @@ public class MongoRequest extends BsonRequest {
         var sdi = documentId.asString().getValue();
 
         if ((type == TYPE.COLLECTION_META && sdi.startsWith(COLL_META_DOCID_PREFIX))
-            || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
-            || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
-            || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
-            || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
-            || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
-            || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
-            || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
+                || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
+                || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
+                || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
+                || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
+                || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
             return false;
         } else {
             return DB_META_DOCID.equalsIgnoreCase(sdi) || sdi.startsWith(COLL_META_DOCID_PREFIX);
@@ -622,7 +622,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             requestPath = removeTrailingSlashes(
-                requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
+                    requestPath.replaceFirst("^" + Pattern.quote(this.whatUri), this.whereUri));
         }
 
         if (requestPath.isEmpty()) {
@@ -646,7 +646,7 @@ public class MongoRequest extends BsonRequest {
             }
         } else {
             requestPath = removeTrailingSlashes(
-                requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
+                    requestPath.replaceFirst("^" + Pattern.quote(resolvedWhat), resolvedWhere));
         }
 
         return requestPath.isEmpty() ? SLASH : requestPath;
@@ -661,7 +661,7 @@ public class MongoRequest extends BsonRequest {
         // eg _whatUri: /{prefix}_db, _whereUri: /{prefix}/*
         for (var key : this.pathTemplateMatch.getParameters().keySet()) {
             resolvedTemplate = resolvedTemplate.replace("{".concat(key).concat("}"),
-                this.pathTemplateMatch.getParameters().get(key));
+                    this.pathTemplateMatch.getParameters().get(key));
         }
         return removeTrailingSlashes(resolvedTemplate);
     }
@@ -679,8 +679,8 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isParentAccessible() {
         return getType() == TYPE.DB
-            ? getExchange().getRequestPath().split(SLASH).length > 1
-            : getExchange().getRequestPath().split(SLASH).length > 2;
+                ? getExchange().getRequestPath().split(SLASH).length > 1
+                : getExchange().getRequestPath().split(SLASH).length > 2;
     }
 
     /**
@@ -1319,7 +1319,7 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isCollectionNameInvalid(String collectionName) {
         // collection starting with system. will return FORBIDDEN
-        return (collectionName == null  || collectionName.contains(NUL)  || collectionName.contains("$"));
+        return (collectionName == null || collectionName.contains(NUL) || collectionName.contains("$"));
     }
 
     /**
@@ -1600,9 +1600,9 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isWriteDocument() {
         return (((isPut() || isPatch())
-                  && (isFile() || isDocument() || isSchema()))
+                && (isFile() || isDocument() || isSchema()))
                 || isPost()
-                  && (isCollection() || isFilesBucket() || isSchemaStore()));
+                && (isCollection() || isFilesBucket() || isSchemaStore()));
     }
 
     /**

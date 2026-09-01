@@ -43,7 +43,7 @@ public class QParamsSizePredicate implements Predicate {
         var qparamsInExchange = exchange.getQueryParameters();
 
         return (qparamsInExchange == null && this.size == 0) ||
-            (qparamsInExchange != null && qparamsInExchange.keySet().size() == this.size);
+                (qparamsInExchange != null && qparamsInExchange.keySet().size() == this.size);
     }
 
     public static class Builder implements PredicateBuilder {

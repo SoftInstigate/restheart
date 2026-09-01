@@ -96,14 +96,14 @@ public class AuthenticationCallHandler extends PipelinedHandler {
 
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
-            
+
             // set status code to 401 Unauthorized if not already set by an interceptor
             // (e.g., an interceptor might set 429 Too Many Requests for rate limiting)
             var response = Response.of(exchange);
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             }
-            
+
             fastEndExchange(exchange);
         }
     }
@@ -130,7 +130,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             if (requestChannel != null) {
                 try {
                     requestChannel.shutdownReads();
-                } catch(IOException ie) {
+                } catch (IOException ie) {
                     LOGGER.debug("ingoring error shutting down reads", ie);
                 }
             }

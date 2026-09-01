@@ -84,7 +84,7 @@ public class Databases {
 
     private Databases() {
         this.collections = Collections.get();
-        this.indexes  = Indexes.get();
+        this.indexes = Indexes.get();
     }
 
     private static final Databases INSTANCE = new Databases();
@@ -116,8 +116,8 @@ public class Databases {
         var db = db(rsOps, dbName);
         // at least one collection exists for an existing db
         return cs.isPresent()
-            ? db.listCollectionNames(cs.get()).first() != null
-            : db.listCollectionNames().first() != null;
+                ? db.listCollectionNames(cs.get()).first() != null
+                : db.listCollectionNames().first() != null;
     }
 
     /**
@@ -140,9 +140,9 @@ public class Databases {
 
         // filter out reserved collections
         return _colls.stream()
-            .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
-            .sorted()
-            .collect(Collectors.toList());
+                .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     /**
@@ -153,9 +153,9 @@ public class Databases {
     public long getDBSize(final List<String> colls) {
         // filter out reserved resources
         var _colls = colls.stream()
-            .filter(coll -> !MongoRequest
-            .isReservedCollectionName(coll))
-            .collect(Collectors.toList());
+                .filter(coll -> !MongoRequest
+                        .isReservedCollectionName(coll))
+                .collect(Collectors.toList());
 
         return _colls.size();
     }
@@ -172,8 +172,8 @@ public class Databases {
         var propsColl = collections.collection(rsOps, dbName, META_COLLNAME);
 
         var props = cs.isPresent()
-            ? propsColl.find(cs.get(), PROPS_QUERY).limit(1).first()
-            : propsColl.find(PROPS_QUERY).limit(1).first();
+                ? propsColl.find(cs.get(), PROPS_QUERY).limit(1).first()
+                : propsColl.find(PROPS_QUERY).limit(1).first();
 
         if (props != null) {
             props.append("_id", new BsonString(dbName));
@@ -198,17 +198,17 @@ public class Databases {
      *
      */
     public BsonArray getDatabaseData(
-        final Optional<ClientSession> cs,
-        Optional<RSOps> rsOps,
-        final String dbName,
-        final List<String> colls,
-        final int page,
-        final int pagesize,
-        boolean noCache) throws IllegalQueryParameterException {
+            final Optional<ClientSession> cs,
+            Optional<RSOps> rsOps,
+            final String dbName,
+            final List<String> colls,
+            final int page,
+            final int pagesize,
+            boolean noCache) throws IllegalQueryParameterException {
         // filter out reserved resources
         var _colls = colls.stream()
-            .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
-            .collect(Collectors.toList());
+                .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
+                .collect(Collectors.toList());
 
         int size = _colls.size();
 
@@ -232,22 +232,22 @@ public class Databases {
         var data = new BsonArray();
 
         _colls.stream().map((collName) -> {
-            var properties= new BsonDocument("_id", new BsonString(collName));
+                    var properties = new BsonDocument("_id", new BsonString(collName));
 
-            BsonDocument collProperties;
+                    BsonDocument collProperties;
 
-            if (MetadataCachesSingleton.isEnabled() && !noCache) {
-                collProperties = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
-            } else {
-                collProperties = collections.getCollectionProps(cs, rsOps, dbName, collName);
-            }
+                    if (MetadataCachesSingleton.isEnabled() && !noCache) {
+                        collProperties = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
+                    } else {
+                        collProperties = collections.getCollectionProps(cs, rsOps, dbName, collName);
+                    }
 
-            if (collProperties != null) {
-                properties.putAll(collProperties);
-            }
+                    if (collProperties != null) {
+                        properties.putAll(collProperties);
+                    }
 
-            return properties;
-        }
+                    return properties;
+                }
         ).forEach((item) -> {
             data.add(item);
         });
@@ -268,14 +268,14 @@ public class Databases {
      * @return the OperationResult
      */
     public OperationResult upsertDB(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final METHOD method,
-        final boolean updating,
-        final BsonDocument newContent,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final METHOD method,
+            final boolean updating,
+            final BsonDocument newContent,
+            final String requestEtag,
+            final boolean checkEtag) {
         var newEtag = new ObjectId();
 
         final BsonDocument content = DbUtils.validContent(newContent);
@@ -287,8 +287,8 @@ public class Databases {
 
         if (checkEtag && updating) {
             var oldProperties = cs.isPresent()
-                ? mcoll.find(cs.get(), eq("_id", DB_META_DOCID)).projection(FIELDS_TO_RETURN).first()
-                : mcoll.find(eq("_id", DB_META_DOCID)).projection(FIELDS_TO_RETURN).first();
+                    ? mcoll.find(cs.get(), eq("_id", DB_META_DOCID)).projection(FIELDS_TO_RETURN).first()
+                    : mcoll.find(eq("_id", DB_META_DOCID)).projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
                 var oldEtag = oldProperties.get("_etag");
@@ -309,13 +309,13 @@ public class Databases {
 
                 if (Objects.equals(_requestEtag, oldEtag)) {
                     return doDbPropsUpdate(
-                        cs,
-                        rsOps,
-                        method,
-                        updating,
-                        mcoll,
-                        content,
-                        newEtag);
+                            cs,
+                            rsOps,
+                            method,
+                            updating,
+                            mcoll,
+                            content,
+                            newEtag);
                 } else {
                     return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
@@ -323,6 +323,16 @@ public class Databases {
                 // this is the case when the db does not have properties
                 // e.g. it has not been created by restheart
                 return doDbPropsUpdate(
+                        cs,
+                        rsOps,
+                        method,
+                        updating,
+                        mcoll,
+                        content,
+                        newEtag);
+            }
+        } else {
+            return doDbPropsUpdate(
                     cs,
                     rsOps,
                     method,
@@ -330,36 +340,26 @@ public class Databases {
                     mcoll,
                     content,
                     newEtag);
-            }
-        } else {
-            return doDbPropsUpdate(
-                cs,
-                rsOps,
-                method,
-                updating,
-                mcoll,
-                content,
-                newEtag);
         }
     }
 
     private OperationResult doDbPropsUpdate(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final METHOD method,
-        final boolean updating,
-        final MongoCollection<BsonDocument> mcoll,
-        final BsonDocument dcontent,
-        final ObjectId newEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final METHOD method,
+            final boolean updating,
+            final MongoCollection<BsonDocument> mcoll,
+            final BsonDocument dcontent,
+            final ObjectId newEtag) {
         var ret = DbUtils.writeDocument(
-            cs,
-            method,
-            WRITE_MODE.UPSERT,
-            mcoll,
-            Optional.of(new BsonString(DB_META_DOCID)),
-            Optional.empty(),
-            Optional.empty(),
-            dcontent);
+                cs,
+                method,
+                WRITE_MODE.UPSERT,
+                mcoll,
+                Optional.of(new BsonString(DB_META_DOCID)),
+                Optional.empty(),
+                Optional.empty(),
+                dcontent);
         return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : updating ? HttpStatus.SC_OK : HttpStatus.SC_CREATED, newEtag);
     }
 
@@ -373,19 +373,19 @@ public class Databases {
      * @return the OperationResult
      */
     public OperationResult deleteDatabase(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final BsonObjectId requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final BsonObjectId requestEtag,
+            final boolean checkEtag) {
         var db = db(rsOps, dbName);
         var mcoll = collections.collection(rsOps, dbName, META_COLLNAME);
 
         if (checkEtag) {
             var query = eq("_id", DB_META_DOCID);
             var properties = cs.isPresent()
-                ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
-                : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
+                    ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
+                    : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {
                 var oldEtag = properties.get("_etag");
@@ -502,18 +502,18 @@ public class Databases {
      * @return the documents in the collection as a BsonArray
      */
     public BsonArray getCollectionData(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final int page,
-        final int pagesize,
-        final BsonDocument sortBy,
-        final BsonDocument filters,
-        final BsonArray hints,
-        final BsonDocument keys,
-        final boolean useCache)
-        throws JsonParseException {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final int page,
+            final int pagesize,
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonArray hints,
+            final BsonDocument keys,
+            final boolean useCache)
+            throws JsonParseException {
         return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hints, keys, useCache);
     }
 
@@ -528,19 +528,19 @@ public class Databases {
      * @return the OperationResult
      */
     public OperationResult deleteCollection(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonObjectId requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonObjectId requestEtag,
+            final boolean checkEtag) {
         return collections.deleteCollection(
-            cs,
-            rsOps,
-            dbName,
-            collName,
-            requestEtag,
-            checkEtag);
+                cs,
+                rsOps,
+                dbName,
+                collName,
+                requestEtag,
+                checkEtag);
     }
 
     /**
@@ -557,25 +557,25 @@ public class Databases {
      * @return the OperationResult
      */
     public OperationResult upsertCollection(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final METHOD method,
-        final boolean updating,
-        final BsonDocument content,
-        final String requestEtag,
-        final boolean checkEtag) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final METHOD method,
+            final boolean updating,
+            final BsonDocument content,
+            final String requestEtag,
+            final boolean checkEtag) {
         return collections.upsertCollection(
-            cs,
-            rsOps,
-            dbName,
-            collName,
-            method,
-            updating,
-            content,
-            requestEtag,
-            checkEtag);
+                cs,
+                rsOps,
+                dbName,
+                collName,
+                method,
+                updating,
+                content,
+                requestEtag,
+                checkEtag);
     }
 
     /**
@@ -588,11 +588,11 @@ public class Databases {
      * @return the HTTP status code
      */
     public int deleteIndex(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collection,
-        final String indexId) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collection,
+            final String indexId) {
         return indexes.deleteIndex(cs, rsOps, dbName, collection, indexId);
     }
 
@@ -605,10 +605,10 @@ public class Databases {
      * @return an ordered list of the indexes
      */
     public List<BsonDocument> getCollectionIndexes(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collectionName) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collectionName) {
         return indexes.getCollectionIndexes(cs, rsOps, dbName, collectionName);
     }
 
@@ -626,23 +626,23 @@ public class Databases {
      * @return the FindIterable
      */
     public FindIterable<BsonDocument> findIterable(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonDocument sortBy,
-        final BsonDocument filters,
-        final BsonArray hints,
-        final BsonDocument keys,
-        final int batchSize) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonDocument sortBy,
+            final BsonDocument filters,
+            final BsonArray hints,
+            final BsonDocument keys,
+            final int batchSize) {
         return collections.findIterable(
-            cs,
-            collections.collection(rsOps, dbName, collName),
-            sortBy,
-            filters,
-            hints,
-            keys,
-            batchSize);
+                cs,
+                collections.collection(rsOps, dbName, collName),
+                sortBy,
+                filters,
+                hints,
+                keys,
+                batchSize);
     }
 
     /**
@@ -655,12 +655,12 @@ public class Databases {
      * @param options
      */
     public void createIndex(
-        final Optional<ClientSession> cs,
-        final Optional<RSOps> rsOps,
-        final String dbName,
-        final String collName,
-        final BsonDocument keys,
-        final Optional<BsonDocument> options) {
+            final Optional<ClientSession> cs,
+            final Optional<RSOps> rsOps,
+            final String dbName,
+            final String collName,
+            final BsonDocument keys,
+            final Optional<BsonDocument> options) {
         indexes.createIndex(cs, rsOps, dbName, collName, keys, options);
     }
 }

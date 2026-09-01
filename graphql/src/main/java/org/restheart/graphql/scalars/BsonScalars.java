@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars;
+
 import graphql.schema.GraphQLScalarType;
 import org.restheart.graphql.scalars.bsonCoercing.*;
 
@@ -53,27 +54,27 @@ public class BsonScalars {
             .name("Long").description("BSON Int64 scalar (Long)").coercing(new GraphQLBsonInt64Coercing()).build();
 
     public static final Set<GraphQLScalarType> BSON_SCALARS = Sets.newHashSet(
-        GraphQLBsonDocument,
-        GraphQLBsonObjectId,
-        GraphQLBsonDecimal128,
-        GraphQLBsonTimestamp,
-        GraphQLBsonDate,
-        GraphQLBsonRegularExpression,
-        GraphQLBsonInt64
+            GraphQLBsonDocument,
+            GraphQLBsonObjectId,
+            GraphQLBsonDecimal128,
+            GraphQLBsonTimestamp,
+            GraphQLBsonDate,
+            GraphQLBsonRegularExpression,
+            GraphQLBsonInt64
     );
 
-    public static Map<String, GraphQLScalarType> getBsonScalars(){
-        var bsonScalars = new HashMap<String, GraphQLScalarType> ();
-        for(var scalar: BSON_SCALARS){
+    public static Map<String, GraphQLScalarType> getBsonScalars() {
+        var bsonScalars = new HashMap<String, GraphQLScalarType>();
+        for (var scalar : BSON_SCALARS) {
             bsonScalars.put(scalar.getName(), scalar);
         }
         return bsonScalars;
     }
 
-    public static String getBsonScalarHeader(){
+    public static String getBsonScalarHeader() {
         var header = "";
-        for (var scalar: BSON_SCALARS){
-            header += "scalar " + scalar.getName() +" ";
+        for (var scalar : BSON_SCALARS) {
+            header += "scalar " + scalar.getName() + " ";
         }
         return header;
     }

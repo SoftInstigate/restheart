@@ -82,7 +82,7 @@ class MongoMountResolverNoRegressionTest {
             assertEquals("orders", context.collection());
             // FIXED: mongoResourcePath now returns canonical path /database/collection
             assertEquals("/restheart/orders", context.mongoResourcePath(),
-                "mongoResourcePath should be canonical, not mount-relative");
+                    "mongoResourcePath should be canonical, not mount-relative");
         }
 
         @Test
@@ -98,7 +98,7 @@ class MongoMountResolverNoRegressionTest {
             assertEquals("users", context.collection());
             // FIXED: mongoResourcePath now returns canonical path /database/collection
             assertEquals("/mydb/users", context.mongoResourcePath(),
-                "mongoResourcePath should be canonical, not mount-relative");
+                    "mongoResourcePath should be canonical, not mount-relative");
         }
 
         @Test
@@ -414,7 +414,7 @@ class MongoMountResolverNoRegressionTest {
         @DisplayName("REGRESSION: Many mounts should resolve correctly (first match wins)")
         void testManyMountsPerformance() {
             List<Map<String, String>> mounts = new ArrayList<>();
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0;i < 100;i++) {
                 mounts.add(Map.of(
                         "what", "db" + i,
                         WHERE, "/api/v" + i));

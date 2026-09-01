@@ -88,17 +88,17 @@ public class AggregationTransformer extends PipelinedHandler {
 
             if (request.isPut() || request.isPatch()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                    BsonUtils.escapeKeys(aggrs, true));
+                        BsonUtils.escapeKeys(aggrs, true));
             } else if (request.isGet()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                    BsonUtils.unescapeKeys(aggrs));
+                        BsonUtils.unescapeKeys(aggrs));
             }
         }
     }
 
     private BsonArray getAggregationMetadata(BsonDocument contentToTransform) {
         List<Optional<BsonValue>> ___aggrs = BsonUtils.getPropsFromPath(contentToTransform,
-                        "$." + AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
+                "$." + AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
         if (___aggrs == null || ___aggrs.isEmpty()) {
             return null;

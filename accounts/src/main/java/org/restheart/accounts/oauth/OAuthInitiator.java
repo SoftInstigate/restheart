@@ -32,9 +32,9 @@ import static java.util.function.Predicate.not;
  * The endpoint is public (no session required).
  */
 @RegisterPlugin(
-        name             = "oauthInitiator",
-        description      = "GET /auth/oauth/authorize/{provider} — starts the OAuth flow",
-        defaultURI       = "/auth/oauth/authorize",
+        name = "oauthInitiator",
+        description = "GET /auth/oauth/authorize/{provider} — starts the OAuth flow",
+        defaultURI = "/auth/oauth/authorize",
         enabledByDefault = false)
 public class OAuthInitiator implements StringService {
 
@@ -53,7 +53,7 @@ public class OAuthInitiator implements StringService {
     public void onInit() {
         Predicate<Request<?>> isOAuthInitiate = r ->
                 r.getMethod() == METHOD.GET &&
-                r.getPath().matches("/auth/oauth/authorize/[^/]+");
+                        r.getPath().matches("/auth/oauth/authorize/[^/]+");
 
         aclRegistry.registerAuthenticationRequirement(not(isOAuthInitiate));
         aclRegistry.registerAllow(isOAuthInitiate);
@@ -63,7 +63,10 @@ public class OAuthInitiator implements StringService {
 
     @Override
     public void handle(StringRequest req, StringResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isGet()) {
             res.setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "Use GET");

@@ -61,9 +61,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "jwtConfigProvider",
-    description = "Provides consistent JWT configuration (key, algorithm, issuer, audience) for token generation and verification",
-    enabledByDefault = true
+        name = "jwtConfigProvider",
+        description = "Provides consistent JWT configuration (key, algorithm, issuer, audience) for token generation and verification",
+        enabledByDefault = true
 )
 public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtConfigProvider.class);
@@ -77,7 +77,7 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     @OnInit
     public void init() throws ConfigurationException {
         BootstrapLogger.startPhase(LOGGER, "JWT CONFIGURATION");
-        
+
         String configuredKey = argOrDefault(config, "key", null);
         String key;
 
@@ -89,7 +89,7 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
             BootstrapLogger.warnSubItem(LOGGER, "Configure 'key' in jwtConfigProvider to ensure consistent token verification across nodes.");
         } else {
             key = configuredKey;
-            
+
             if ("secret".equals(configuredKey)) {
                 // Warn about insecure default key
                 BootstrapLogger.warnItem(LOGGER, "Using configured JWT key");
@@ -108,29 +108,42 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
 
         String algorithm = argOrDefault(config, "algorithm", "HS256");
         String issuer = argOrDefault(config, "issuer", "restheart.org");
-        
+
         // Handle audience - can be null, String, or Array
         var _audience = argOrDefault(config, "audience", null);
         List<String> audience = new ArrayList<>();
-        
+
         if (_audience == null) {
             // null is valid - no audience validation
         } else if (_audience instanceof String audienceStr) {
             audience.add(audienceStr);
         } else if (_audience instanceof List<?> audienceList) {
             audienceList.stream()
-                .filter(String.class::isInstance)
-                .map(e -> (String) e)
-                .forEach(audience::add);
+                    .filter(String.class::isInstance)
+                    .map(e -> (String) e)
+                    .forEach(audience::add);
         } else {
             throw new ConfigurationException("Wrong audience, must be a String or an Array of Strings");
         }
 
-        this.jwtConfig = new JwtConfig(key, algorithm, issuer, audience.isEmpty() ? null : audience.toArray(String[]::new));
-        
-        BootstrapLogger.info(LOGGER, "Algorithm: {}, Issuer: {}, Audience: {}", 
-            algorithm, issuer, audience.isEmpty() ? "null" : String.join(", ", audience));
-        
+        // Account properties copied into issued tokens. Shared here so that every issuer —
+        // jwtTokenManager on /token, restheart-accounts at login — puts the same claims in the
+        // token: they are the same JWT, issued at different moments.
+        var accountPropertiesClaims = claimList(config, "account-properties-claims");
+        var requiredAccountPropertiesClaims = claimList(config, "required-account-properties-claims");
+
+        this.jwtConfig = new JwtConfig(key, algorithm, issuer,
+                audience.isEmpty() ? null : audience.toArray(String[]::new),
+                accountPropertiesClaims, requiredAccountPropertiesClaims);
+
+        BootstrapLogger.info(LOGGER, "Algorithm: {}, Issuer: {}, Audience: {}",
+                algorithm, issuer, audience.isEmpty() ? "null" : String.join(", ", audience));
+
+        if (accountPropertiesClaims != null) {
+            BootstrapLogger.info(LOGGER, "Account properties claims: {}",
+                    String.join(", ", accountPropertiesClaims));
+        }
+
         BootstrapLogger.endPhase(LOGGER, "JWT CONFIGURATION COMPLETED");
     }
 
@@ -138,6 +151,27 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     public JwtConfig get(PluginRecord<?> caller) {
         LOGGER.debug("Providing JWT config to: {}", caller.getName());
         return this.jwtConfig;
+    }
+
+    /**
+     * Reads {@code account-properties-claims}, accepting a single String or a List of Strings.
+     *
+     * @return the configured names, or {@code null} when not set here — issuers then fall back to
+     *         their own deprecated per-plugin setting
+     */
+    private List<String> claimList(Map<String, Object> config, String key) throws ConfigurationException {
+        var configured = argOrDefault(config, key, null);
+
+        return switch (configured) {
+            case null -> null;
+            case String s -> List.of(s);
+            case List<?> l -> l.stream()
+                    .filter(String.class::isInstance)
+                    .map(e -> (String) e)
+                    .toList();
+            default -> throw new ConfigurationException(
+                    "Wrong " + key + ", must be a String or an Array of Strings");
+        };
     }
 
     /**
@@ -153,9 +187,20 @@ public class JwtConfigProvider implements Provider<JwtConfigProvider.JwtConfig> 
     }
 
     /**
-     * JWT configuration record containing all shared JWT settings
+     * JWT configuration record containing all shared JWT settings.
+     *
+     * @param accountPropertiesClaims account properties copied into issued tokens. Shared for the
+     *        same reason {@code key} and {@code issuer} are: a JWT issued by this deployment is one
+     *        thing regardless of which component issues it. {@code null} means "not set here",
+     *        in which case issuers fall back to their own deprecated setting.
+     * @param requiredAccountPropertiesClaims account properties always copied into issued tokens,
+     *        even when a per-request override supplies its own list. For claims the deployment
+     *        cannot work without — on a multi-tenant node, the claim naming the issuing node is
+     *        verified on every later request, so a tenant able to drop it would lock itself out.
      */
-    public record JwtConfig(String key, String algorithm, String issuer, String[] audience) {
+    public record JwtConfig(String key, String algorithm, String issuer, String[] audience,
+                            List<String> accountPropertiesClaims,
+                            List<String> requiredAccountPropertiesClaims) {
         public boolean hasAudience() {
             return audience != null && audience.length > 0;
         }

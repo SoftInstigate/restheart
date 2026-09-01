@@ -1,6 +1,7 @@
 package org.restheart.emails;
 
 import org.restheart.exchange.Request;
+import org.restheart.utils.ThreadsUtils;
 
 /**
  * Service Provider Interface for sending emails.
@@ -45,6 +46,47 @@ public interface EmailSender {
      * @param htmlBody      full HTML body
      */
     void sendEmail(Request<?> request, String to, String recipientName, String subject, String htmlBody);
+
+    /**
+     * Dispatches {@link #sendEmail(String, String, String, String)} on the
+     * shared virtual threads executor and returns immediately.
+     *
+     * <p>Use this on the request path, where the SMTP round trip (TCP connect,
+     * TLS handshake, AUTH, DATA) would otherwise be added to the response
+     * latency. Delivery is best effort: failures are logged by the
+     * implementation and never surface to the caller.
+     *
+     * @param to            recipient email address
+     * @param recipientName display name for the recipient
+     * @param subject       email subject line
+     * @param htmlBody      full HTML body
+     */
+    default void sendEmailAsync(String to, String recipientName, String subject, String htmlBody) {
+        ThreadsUtils.virtualThreadsExecutor()
+                .execute(() -> sendEmail(to, recipientName, subject, htmlBody));
+    }
+
+    /**
+     * Dispatches {@link #sendEmail(Request, String, String, String, String)} on
+     * the shared virtual threads executor and returns immediately.
+     *
+     * <p>Implementations that read state from {@code request} must resolve it on
+     * the calling thread before dispatching: by the time the virtual thread
+     * runs, the underlying exchange may already have been completed and
+     * recycled. This default implementation is therefore only safe for
+     * implementations that ignore {@code request}; {@code SmtpEmailSender}
+     * overrides it to resolve the SMTP overrides up front.
+     *
+     * @param request       the current request (used to read attached override parameters)
+     * @param to            recipient email address
+     * @param recipientName display name for the recipient
+     * @param subject       email subject line
+     * @param htmlBody      full HTML body
+     */
+    default void sendEmailAsync(Request<?> request, String to, String recipientName, String subject, String htmlBody) {
+        ThreadsUtils.virtualThreadsExecutor()
+                .execute(() -> sendEmail(request, to, recipientName, subject, htmlBody));
+    }
 
     /**
      * @return {@code true} if the sender was successfully initialised and will

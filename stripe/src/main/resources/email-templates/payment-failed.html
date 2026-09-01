@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <span lang="en">Payment failed — {{app-name}}</span>
+    <span lang="it">Pagamento non riuscito — {{app-name}}</span>
+  </title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr><td align="center" style="padding:0 16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+
+        <tr>
+          <td style="background:#1e293b;padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#ffffff;">{{app-name}}</span>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:40px;color:#111827;">
+            <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#b91c1c;">
+              <span lang="en">We couldn't process your payment</span>
+              <span lang="it">Non siamo riusciti a elaborare il tuo pagamento</span>
+            </p>
+
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
+              <span lang="en">Hi,<br>the most recent payment for {{team-name}}'s {{plan}} subscription did not go through. Please update your payment method to avoid an interruption in service.</span>
+              <span lang="it">Ciao,<br>l'ultimo pagamento per l'abbonamento {{plan}} di {{team-name}} non è andato a buon fine. Aggiorna il tuo metodo di pagamento per evitare un'interruzione del servizio.</span>
+            </p>
+
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
+              <tr>
+                <td style="background:#1e293b;border-radius:6px;">
+                  <a href="{{billing-url}}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
+                    <span lang="en">Update payment method</span>
+                    <span lang="it">Aggiorna metodo di pagamento</span>
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.5;">
+              <span lang="en">Stripe will automatically retry the charge over the next few days.</span>
+              <span lang="it">Stripe riproverà automaticamente l'addebito nei prossimi giorni.</span>
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid #f3f4f6;background:#f9fafb;">
+            <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">© {{year}} {{app-name}}</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

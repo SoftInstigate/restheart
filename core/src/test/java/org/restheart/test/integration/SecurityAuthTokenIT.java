@@ -177,7 +177,7 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
         assertNotNull(entity.getContentType(), "content type not null");
         assertTrue(entity.getContentType().getValue().startsWith(Exchange.HAL_JSON_MEDIA_TYPE)
-            || entity.getContentType().getValue().startsWith(Exchange.JSON_MEDIA_TYPE), "check content type");
+                || entity.getContentType().getValue().startsWith(Exchange.JSON_MEDIA_TYPE), "check content type");
 
         String content = EntityUtils.toString(entity);
 

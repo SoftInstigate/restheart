@@ -146,15 +146,15 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-            .builder()
-            .causallyConsistent(options.isCausallyConsistent())
-            .build();
+                .builder()
+                .causallyConsistent(options.isCausallyConsistent())
+                .build();
 
         var cs = createClientSession(
-            sid,
-            cso,
-            rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
-            null);
+                sid,
+                cso,
+                rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
+                null);
 
         if (txnServerStatus != null) {
             cs.setTxnServerStatus(txnServerStatus);
@@ -169,34 +169,34 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
 
     TxnClientSessionImpl createClientSession(UUID sid, Optional<RSOps> rsOps, final ClientSessionOptions options) {
         return createClientSession(
-            sid,
-            options,
-            rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
-            null);
+                sid,
+                options,
+                rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
+                null);
     }
 
     TxnClientSessionImpl createClientSession(
-        UUID sid,
-        final ClientSessionOptions options,
-        final RSOps rsOps,
-        final Txn txnServerStatus) {
+            UUID sid,
+            final ClientSessionOptions options,
+            final RSOps rsOps,
+            final Txn txnServerStatus) {
         var mergedOptions = ClientSessionOptions
-            .builder(options)
-            .causallyConsistent(true)
-            .defaultTransactionOptions(TransactionOptions.merge(
-                options.getDefaultTransactionOptions(),
-                TransactionOptions.builder()
-                    .readPreference(rsOps.readPreference() != null ? rsOps.readPreference() : ReadPreference.primary())
-                    .readConcern(rsOps.readConcern() != null ? rsOps.readConcern() : ReadConcern.DEFAULT)
-                    .writeConcern(rsOps.writeConcern() != null ? rsOps.writeConcern() : WriteConcern.MAJORITY)
-                    .build()))
-            .build();
+                .builder(options)
+                .causallyConsistent(true)
+                .defaultTransactionOptions(TransactionOptions.merge(
+                        options.getDefaultTransactionOptions(),
+                        TransactionOptions.builder()
+                                .readPreference(rsOps.readPreference() != null ? rsOps.readPreference() : ReadPreference.primary())
+                                .readConcern(rsOps.readConcern() != null ? rsOps.readConcern() : ReadConcern.DEFAULT)
+                                .writeConcern(rsOps.writeConcern() != null ? rsOps.writeConcern() : WriteConcern.MAJORITY)
+                                .build()))
+                .build();
 
         return new TxnClientSessionImpl(
-            new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-            RHMongoClients.mclient(),
-            mergedOptions,
-            SessionsUtils.getOperationExecutor(),
-            txnServerStatus);
+                new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
+                RHMongoClients.mclient(),
+                mergedOptions,
+                SessionsUtils.getOperationExecutor(),
+                txnServerStatus);
     }
 }

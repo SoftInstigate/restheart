@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
@@ -499,7 +498,7 @@ public class Configuration {
          * @throws ConfigurationException if configuration files cannot be read or are invalid
          */
         public static Configuration build(final Path confFilePath, final Path confOverridesFilePath,
-                final boolean standaloneConfiguration, final boolean silent) throws ConfigurationException {
+                                          final boolean standaloneConfiguration, final boolean silent) throws ConfigurationException {
             if (confFilePath == null) {
                 final var defaultConfFilePath = standaloneConfiguration ? "/restheart-default-config-no-mongodb.yml"
                         : "/restheart-default-config.yml";
@@ -539,7 +538,7 @@ public class Configuration {
          * @throws ConfigurationException if configuration is invalid or cannot be parsed
          */
         private static Configuration build(final Reader confReader, final Path confFilePath, final Path confOverridesFilePath,
-                final boolean silent) throws ConfigurationException {
+                                           final boolean silent) throws ConfigurationException {
             Map<String, Object> confMap = new Yaml(new SafeConstructor(new LoaderOptions())).load(confReader);
 
             if (confOverridesFilePath != null) {
@@ -696,7 +695,7 @@ public class Configuration {
      * @return the modified configuration map with overrides applied
      */
     private static Map<String, Object> overrideConfiguration(final Map<String, Object> confMap, final List<RhOverride> overrides,
-            final boolean silent) {
+                                                             final boolean silent) {
         final var ctx = JXPathContext.newContext(confMap);
         ctx.setLenient(true);
 

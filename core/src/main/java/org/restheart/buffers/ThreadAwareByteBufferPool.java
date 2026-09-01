@@ -65,15 +65,15 @@ public class ThreadAwareByteBufferPool implements ByteBufferPool {
     @Override
     public PooledByteBuffer allocate() {
         return !enablePooling || Thread.currentThread().isVirtual()
-            ? this.notPoolingByteBufferPool.allocate()
-            : this.undertowDefaultByteBufferPool.allocate();
+                ? this.notPoolingByteBufferPool.allocate()
+                : this.undertowDefaultByteBufferPool.allocate();
     }
 
     @Override
     public ByteBufferPool getArrayBackedPool() {
         return !enablePooling || Thread.currentThread().isVirtual()
-            ? this.notPoolingByteBufferPool.getArrayBackedPool()
-            : this.undertowDefaultByteBufferPool.getArrayBackedPool();
+                ? this.notPoolingByteBufferPool.getArrayBackedPool()
+                : this.undertowDefaultByteBufferPool.getArrayBackedPool();
     }
 
     @Override

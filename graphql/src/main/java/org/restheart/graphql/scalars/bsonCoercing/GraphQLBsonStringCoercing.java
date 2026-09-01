@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
+
 import java.util.Locale;
 
 import org.bson.BsonNull;
@@ -36,14 +37,14 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonStringCoercing implements Coercing<String, String> {
     @Override
     public String serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if(input instanceof BsonString bsonString) {
+        } else if (input instanceof BsonString bsonString) {
             return bsonString.getValue();
         } else if (input instanceof String string) {
             return string;
         } else {
-            throw new CoercingSerializeException("Expected types 'String' or 'BsonString' but was '" + typeName(input) +"'.");
+            throw new CoercingSerializeException("Expected types 'String' or 'BsonString' but was '" + typeName(input) + "'.");
         }
     }
 

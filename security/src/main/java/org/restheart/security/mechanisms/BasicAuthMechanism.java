@@ -55,8 +55,8 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "basicAuthMechanism",
-                description = "handles the basic authentication scheme",
-                enabledByDefault = false)
+        description = "handles the basic authentication scheme",
+        enabledByDefault = false)
 public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthenticationMechanism implements AuthMechanism {
     private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthMechanism.class);
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
@@ -78,7 +78,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public void init() throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
         String authenticatorName = arg(config, "authenticator");
-        
+
         LOGGER.trace("Initializing BasicAuthMechanism with authenticator: {}", authenticatorName);
 
         try {
@@ -89,23 +89,23 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                 var authenticatorClass = this.authenticator.getClass().getSimpleName();
 
                 LOGGER.trace("Found authenticator: {} ({}) - Setting as identity manager",
-                    authenticatorName, authenticatorClass);
+                        authenticatorName, authenticatorClass);
 
                 setIdentityManager(this.authenticator);
 
                 LOGGER.trace("BasicAuthMechanism initialization completed with authenticator: {} ({})",
-                    authenticatorName, authenticatorClass);
+                        authenticatorName, authenticatorClass);
             } else {
                 var availableAuthenticators = registry.getAuthenticators().stream()
-                    .map(a -> a.getName())
-                    .collect(java.util.stream.Collectors.toList());
-                    
-                LOGGER.error("Authenticator '{}' not found. Available authenticators: {}", 
-                    authenticatorName, availableAuthenticators);
-                    
+                        .map(a -> a.getName())
+                        .collect(java.util.stream.Collectors.toList());
+
+                LOGGER.error("Authenticator '{}' not found. Available authenticators: {}",
+                        authenticatorName, availableAuthenticators);
+
                 throw new ConfigurationException("authenticator " + authenticatorName + " is not available");
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             LOGGER.error("Configuration error loading authenticator '{}': {}", authenticatorName, ce.getMessage());
             throw new ConfigurationException("authenticator " + authenticatorName + " is not available. check configuration option /basicAuthMechanism/authenticator");
         }
@@ -172,7 +172,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                         try {
                             var authenticatorStartTime = System.currentTimeMillis();
                             var authenticatorName = PluginUtils.name(this.authenticator);
-                            
+
                             final AuthenticationMechanismOutcome result;
                             final Account account;
                             if (authenticator instanceof MongoRealmAuthenticator mauth) {
@@ -180,29 +180,29 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                             } else {
                                 account = this.authenticator.verify(userName, credential);
                             }
-                            
+
                             var authenticatorDuration = System.currentTimeMillis() - authenticatorStartTime;
-                            
+
                             if (account != null) {
                                 var accountPrincipal = account.getPrincipal().getName();
                                 var accountRoles = account.getRoles().stream().collect(java.util.stream.Collectors.toSet());
                                 LOGGER.debug("Authenticator {} verified user '{}' ({}ms) - Roles: {}",
-                                    authenticatorName, userName, authenticatorDuration, accountRoles);
+                                        authenticatorName, userName, authenticatorDuration, accountRoles);
 
                                 securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;
                             } else {
                                 LOGGER.debug("Authenticator {} failed to verify user '{}' ({}ms)",
-                                    authenticatorName, userName, authenticatorDuration);
+                                        authenticatorName, userName, authenticatorDuration);
 
                                 securityContext.authenticationFailed(MESSAGES.authenticationFailed(userName), getMechanismName());
                                 result = AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                             }
                             return result;
                         } catch (Exception ex) {
-                            LOGGER.error("Error in authenticator {} ({}) for user '{}' - {} {}", 
-                                PluginUtils.name(this.authenticator), this.authenticator.getClass().getSimpleName(), 
-                                userName, exchange.getRequestMethod().toString(), exchange.getRequestPath(), ex);
+                            LOGGER.error("Error in authenticator {} ({}) for user '{}' - {} {}",
+                                    PluginUtils.name(this.authenticator), this.authenticator.getClass().getSimpleName(),
+                                    userName, exchange.getRequestMethod().toString(), exchange.getRequestPath(), ex);
                             throw ex;
                         } finally {
                             clear(password);
@@ -221,7 +221,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     }
 
     private static void clear(final char[] array) {
-        for (int i = 0; i < array.length; i++) {
+        for (int i = 0;i < array.length;i++) {
             array[i] = 0x00;
         }
     }

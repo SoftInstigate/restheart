@@ -3,6 +3,7 @@ package org.restheart.accounts;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
@@ -41,10 +42,10 @@ import org.slf4j.LoggerFactory;
  * <p>These endpoints can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "teamService",
-        description      = "PATCH/DELETE /auth/team — edit or delete the caller's active team",
-        defaultURI       = "/auth/team",
-        secure           = true,
+        name = "teamService",
+        description = "PATCH/DELETE /auth/team — edit or delete the caller's active team",
+        defaultURI = "/auth/team",
+        secure = true,
         enabledByDefault = false)
 public class TeamService implements JsonService {
 
@@ -69,15 +70,24 @@ public class TeamService implements JsonService {
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!conf.membershipEndpointsEnabled()) {
             Errors.error(res, HttpStatus.SC_NOT_FOUND, "Endpoint not available");
             return;
         }
 
-        if (req.isPatch())  { handleUpdate(req, res); return; }
-        if (req.isDelete()) { handleDelete(req, res); return; }
+        if (req.isPatch()) {
+            handleUpdate(req, res);
+            return;
+        }
+        if (req.isDelete()) {
+            handleDelete(req, res);
+            return;
+        }
 
         res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
     }
@@ -159,7 +169,13 @@ public class TeamService implements JsonService {
             return;
         }
 
-        var deleted = membershipProvider.deleteTeam(callerEmail, callerTeam);
+        boolean deleted;
+        try {
+            deleted = membershipProvider.deleteTeam(callerEmail, callerTeam);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
         if (!deleted) {
             if (!membershipProvider.isMember(callerEmail, callerTeam)) {
                 // Already deleted by a concurrent/duplicate request — since "no other members"

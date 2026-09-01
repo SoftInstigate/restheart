@@ -57,8 +57,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
     @SuppressWarnings("unchecked")
     MongoMountResolverImpl(final Map<String, Object> mongoConfig) {
         this(mongoConfig != null
-            ? (List<Map<String, Object>>) mongoConfig.get("mongo-mounts")
-            : null);
+                ? (List<Map<String, Object>>) mongoConfig.get("mongo-mounts")
+                : null);
     }
 
     /**
@@ -219,8 +219,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
         return wherePrefix.equals(ROOTPATH)
                 || path.equals(wherePrefix)
                 || path.startsWith(wherePrefix + (wherePrefix.endsWith(ROOTPATH)
-                    ? ""
-                    : ROOTPATH));
+                ? ""
+                : ROOTPATH));
     }
 
     /**
@@ -232,8 +232,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
             relativePath = path.substring(1);
         } else {
             relativePath = path.equals(wherePrefix)
-                ? ""
-                : path.substring(wherePrefix.length());
+                    ? ""
+                    : path.substring(wherePrefix.length());
             if (relativePath.startsWith(ROOTPATH)) {
                 relativePath = relativePath.substring(1);
             }
@@ -246,8 +246,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      */
     private String ensureLeadingSlash(final String requestPath) {
         String path = requestPath == null
-            ? ROOTPATH
-            : requestPath;
+                ? ROOTPATH
+                : requestPath;
         if (!path.startsWith(ROOTPATH)) {
             path = ROOTPATH + path;
         }
@@ -270,8 +270,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
 
         // Normalize resource for analysis
         final String normalizedResource = resource.startsWith(ROOTPATH)
-            ? resource.substring(1)
-            : resource;
+                ? resource.substring(1)
+                : resource;
 
         // Special case: resource ends with "/*" or "/{*}" -> database mount with wildcard collections
         if (normalizedResource.endsWith("/{*}")) {
@@ -300,11 +300,11 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
 
         final String database = normalizedResource.substring(0, normalizedResource.length() - 4); // strip "/{*}"
         final String[] parts = relativePath.isEmpty()
-            ? new String[0]
-            : relativePath.split(ROOTPATH, 2);
+                ? new String[0]
+                : relativePath.split(ROOTPATH, 2);
         final String collection = parts.length > 0 && !parts[0].isEmpty()
-            ? parts[0]
-            : null;
+                ? parts[0]
+                : null;
 
         // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
         final StringBuilder mongoPath = new StringBuilder();
@@ -343,11 +343,11 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
         // Mount: resource="/db/coll", uri="/api"
         final String[] parts = normalizedResource.split(ROOTPATH, 2);
         final String database = parts.length > 0
-            ? parts[0]
-            : null;
+                ? parts[0]
+                : null;
         final String collection = parts.length > 1
-            ? parts[1]
-            : null;
+                ? parts[1]
+                : null;
 
         // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
         final StringBuilder mongoPath = new StringBuilder();
@@ -387,11 +387,11 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
         // Mount: resource="/db" or resource="db", uri="/" or other
         final String database = normalizedResource;
         final String[] parts = relativePath.isEmpty()
-            ? new String[0]
-            : relativePath.split(ROOTPATH, 2);
+                ? new String[0]
+                : relativePath.split(ROOTPATH, 2);
         final String collection = parts.length > 0 && !parts[0].isEmpty()
-            ? parts[0]
-            : null;
+                ? parts[0]
+                : null;
 
         // Build mongoResourcePath as canonical MongoDB path: /database/collection/documentId
         // This ensures template resolution works correctly regardless of mount configuration
@@ -422,14 +422,14 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
      * database/collection from the path
      */
     private ResolvedContext resolveWildcardAtRoot(final String path, final boolean hasParametricMounts,
-            final boolean hasExtraPathSegments) {
+                                                  final boolean hasExtraPathSegments) {
         final String[] parts = path.substring(1).split(ROOTPATH, 3); // Remove leading / and split
         final String database = parts.length > 0 && !parts[0].isEmpty()
-            ? parts[0]
-            : null;
+                ? parts[0]
+                : null;
         final String collection = parts.length > 1 && !parts[1].isEmpty()
-            ? parts[1]
-            : null;
+                ? parts[1]
+                : null;
 
         return new ResolvedContext(
                 database,
@@ -452,14 +452,14 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
         if ("*".equals(resource)) {
             // For wildcard mounts, extra segments are anything beyond /db/collection/docid
             final String[] parts = relativePath.isEmpty()
-                ? new String[0]
-                : relativePath.split(ROOTPATH);
+                    ? new String[0]
+                    : relativePath.split(ROOTPATH);
             // parts[0] = database, parts[1] = collection, parts[2] = docid, parts[3]+ = INVALID
             return parts.length > 3;
         } else {
             final String normalizedResource = resource.startsWith(ROOTPATH)
-                ? resource.substring(1)
-                : resource;
+                    ? resource.substring(1)
+                    : resource;
 
             final String[] parts = getParts(relativePath);
             if (normalizedResource.contains(ROOTPATH)) {
@@ -476,8 +476,8 @@ public final class MongoMountResolverImpl implements MongoMountResolver {
 
     private String[] getParts(final String relativePath) {
         return relativePath.isEmpty()
-            ? new String[0]
-            : relativePath.split(ROOTPATH);
+                ? new String[0]
+                : relativePath.split(ROOTPATH);
     }
 
     /**

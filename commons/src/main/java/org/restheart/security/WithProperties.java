@@ -20,6 +20,7 @@
 package org.restheart.security;
 
 import java.util.Map;
+
 /**
  * Utility interface for handling additional account properties in a type-safe manner.
  * 

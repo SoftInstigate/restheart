@@ -76,8 +76,8 @@ public class GridFsTest {
     }
 
     /**
-    *
-    */
+     *
+     */
     @Test
     public void testExtractBucketWithDots() {
         assertEquals(GridFs.extractBucketName("mybucket.foo.files"), "mybucket.foo");

@@ -21,6 +21,7 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
@@ -35,11 +36,11 @@ import org.slf4j.LoggerFactory;
  */
 public class TokenInjector extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenInjector.class);
-    
+
     private static final String TOKEN_ENDPOINT = "/token";
     private static final String TOKEN_COOKIE_ENDPOINT = "/token/cookie";
     private static final String TOKEN_REDIRECT_ENDPOINT = "/token/redirect";
-    
+
     private final TokenManager tokenManager;
     private final boolean injectOnAllEndpoints;
     private final boolean allowLegacy;
@@ -80,16 +81,16 @@ public class TokenInjector extends PipelinedHandler {
         var requestMethod = exchange.getRequestMethod().toString();
         var securityContext = exchange.getSecurityContext();
         var isAuthenticated = securityContext != null && securityContext.isAuthenticated();
-        
+
         if (this.tokenManager == null) {
-            LOGGER.debug("No token manager configured for {} {} - Skipping token injection", 
-                requestMethod, requestPath);
+            LOGGER.debug("No token manager configured for {} {} - Skipping token injection",
+                    requestMethod, requestPath);
         } else if (securityContext == null) {
-            LOGGER.debug("No security context for {} {} - Skipping token injection", 
-                requestMethod, requestPath);
+            LOGGER.debug("No security context for {} {} - Skipping token injection",
+                    requestMethod, requestPath);
         } else if (!isAuthenticated) {
-            LOGGER.debug("Request not authenticated for {} {} - Skipping token injection", 
-                requestMethod, requestPath);
+            LOGGER.debug("Request not authenticated for {} {} - Skipping token injection",
+                    requestMethod, requestPath);
         } else if (!shouldInjectToken(requestPath, exchange)) {
             LOGGER.debug("Endpoint {} not configured for token injection - Skipping", requestPath);
         } else {
@@ -101,11 +102,13 @@ public class TokenInjector extends PipelinedHandler {
 
             RequestPhaseContext.setPhase(Phase.PHASE_START);
             LOGGER.debug("TOKEN INJECTION: {} ({}) for user '{}'",
-                tokenManagerName, tokenManagerClass, userPrincipal);
+                    tokenManagerName, tokenManagerClass, userPrincipal);
 
             try {
                 var tokenGenStartTime = System.currentTimeMillis();
-                var token = tokenManager.get(authenticatedAccount);
+                // pass the request: a token manager may resolve per-request state (e.g. the
+                // per-tenant account-properties-claims list) that get(Account) cannot see
+                var token = tokenManager.get(authenticatedAccount, Request.of(exchange));
                 var tokenGenDuration = System.currentTimeMillis() - tokenGenStartTime;
 
                 RequestPhaseContext.setPhase(Phase.INFO);
@@ -156,8 +159,8 @@ public class TokenInjector extends PipelinedHandler {
 
         // Legacy: honor ?renew-auth-token query parameter on any endpoint (if enabled)
         if (allowLegacy && exchange.getQueryParameters().containsKey("renew-auth-token")) {
-            LOGGER.warn("Using legacy ?renew-auth-token query parameter on {} - Consider migrating to POST /token?renew=true", 
-                requestPath);
+            LOGGER.warn("Using legacy ?renew-auth-token query parameter on {} - Consider migrating to POST /token?renew=true",
+                    requestPath);
             return true;
         }
 

@@ -31,7 +31,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 
-@RegisterPlugin(name="jvmMetricsCollector", description = "registers the JVM metrics", enabledByDefault = false)
+@RegisterPlugin(name = "jvmMetricsCollector", description = "registers the JVM metrics", enabledByDefault = false)
 public class JvmMetricsCollector implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(JvmMetricsCollector.class);
 

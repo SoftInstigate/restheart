@@ -40,6 +40,7 @@ import io.undertow.util.Headers;
  */
 public class PutCollectionHandler extends PipelinedHandler {
     private Databases dbs = Databases.get();
+
     /**
      * Creates a new instance of PutCollectionHandler
      */
@@ -87,15 +88,15 @@ public class PutCollectionHandler extends PipelinedHandler {
         final BsonDocument content = _content.asDocument();
 
         var result = dbs.upsertCollection(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getMethod(),
-            request.getCollectionProps() != null, // true if updating
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getMethod(),
+                request.getCollectionProps() != null, // true if updating
+                content,
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

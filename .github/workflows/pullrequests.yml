@@ -5,7 +5,7 @@ name: Build Pull Request
 on:
   pull_request:
     branches:
-      - "**"
+      - "**" # All branches for snapshot builds
     types: [opened, synchronize, reopened]
 
 jobs:

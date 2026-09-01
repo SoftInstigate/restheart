@@ -37,9 +37,9 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Inject;
 
 @RegisterPlugin(name = "mongoPermissionAllowWriteMode",
-    description = "Allow clients to specify the write mode according to the mongo.allowWriteMode ACL permission",
-    initPoint = InitPoint.BEFORE_STARTUP,
-    enabledByDefault = true)
+        description = "Allow clients to specify the write mode according to the mongo.allowWriteMode ACL permission",
+        initPoint = InitPoint.BEFORE_STARTUP,
+        enabledByDefault = true)
 public class AllowWriteMode extends BaseAllowInitializer implements Initializer {
     @Inject("registry")
     private PluginsRegistry registry;
@@ -47,14 +47,14 @@ public class AllowWriteMode extends BaseAllowInitializer implements Initializer 
     @Override
     public void init() {
         this.registry.getPermissionTransformers()
-            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
+                .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
 
     // apply the transformation if the permission does not allow write mode
     private Predicate<BaseAclPermission> resolve = p -> {
         try {
-            return ! MongoPermissions.from(p.getRaw()).isAllowWriteMode();
-        } catch(IllegalArgumentException e) {
+            return !MongoPermissions.from(p.getRaw()).isAllowWriteMode();
+        } catch (IllegalArgumentException e) {
             return false;
         }
     };
@@ -67,7 +67,7 @@ public class AllowWriteMode extends BaseAllowInitializer implements Initializer 
         var mr = (MongoRequest) _request;
 
         return !mr.isWriteDocument()
-        || (mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_QPARAM_KEY, null) == null
-            && mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY, null) == null);
+                || (mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_QPARAM_KEY, null) == null
+                && mr.getQueryParameterOrDefault(ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY, null) == null);
     };
 }

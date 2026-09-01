@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mongodb.client.MongoClient;
 
-@RegisterPlugin(name="graphAppsInitializer",
+@RegisterPlugin(name = "graphAppsInitializer",
         description = "initializes and caches all GQL Apps at boot time",
         enabledByDefault = true
 )
@@ -69,11 +69,11 @@ public class GraphAppsInitializer implements Initializer {
             if (graphqlArgs != null) {
                 this.db = arg(graphqlArgs, "db");
                 this.coll = arg(graphqlArgs, "collection");
-                this.enabled =  isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);
+                this.enabled = isGQLSrvEnabled() && argOrDefault(graphqlArgs, "app-cache-enabled", true);
             } else {
                 this.enabled = false;
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -87,26 +87,26 @@ public class GraphAppsInitializer implements Initializer {
     public void init() {
         if (this.enabled) {
             this.mclient
-                .getDatabase(this.db)
-                .getCollection(this.coll)
-                .withDocumentClass(BsonDocument.class)
-                .find()
-                .forEach(appDef -> {
-                    ThreadsUtils.virtualThreadsExecutor().execute(() -> {
-                        try {
-                            // Note: restrictMappingDb is false here because validation happens at runtime via AppDefinitionLoader
-                            var app = AppBuilder.build(appDef, this.db, false);
-                            // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
-                            var appUri = app.getDescriptor().getUri() != null
-                                ? app.getDescriptor().getUri()
-                                : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
-                            AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
-                            LOGGER.debug("GQL App Definition {} initialized", appUri);
-                        } catch (GraphQLIllegalAppDefinitionException e) {
-                            LOGGER.warn("GQL App Definition {} is invalid", appDef.get("_id"), e);
-                        }
+                    .getDatabase(this.db)
+                    .getCollection(this.coll)
+                    .withDocumentClass(BsonDocument.class)
+                    .find()
+                    .forEach(appDef -> {
+                        ThreadsUtils.virtualThreadsExecutor().execute(() -> {
+                            try {
+                                // Note: restrictMappingDb is false here because validation happens at runtime via AppDefinitionLoader
+                                var app = AppBuilder.build(appDef, this.db, false);
+                                // Use descriptor.uri if present, otherwise use _id (without leading slash for cache key)
+                                var appUri = app.getDescriptor().getUri() != null
+                                        ? app.getDescriptor().getUri()
+                                        : (appDef.containsKey("_id") ? appDef.get("_id").asString().getValue() : "");
+                                AppDefinitionLoadingCache.getCache().put(new AppDefinitionRef(this.db, this.coll, appUri), app);
+                                LOGGER.debug("GQL App Definition {} initialized", appUri);
+                            } catch (GraphQLIllegalAppDefinitionException e) {
+                                LOGGER.warn("GQL App Definition {} is invalid", appDef.get("_id"), e);
+                            }
+                        });
                     });
-                });
         }
     }
 }

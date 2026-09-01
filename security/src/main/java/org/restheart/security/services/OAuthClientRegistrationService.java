@@ -53,11 +53,11 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc7591">RFC 7591</a>
  */
 @RegisterPlugin(
-    name             = "oauthClientRegistrationService",
-    description      = "OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591)",
-    defaultURI       = "/register",
-    secure           = false,
-    enabledByDefault = false)
+        name = "oauthClientRegistrationService",
+        description = "OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591)",
+        defaultURI = "/register",
+        secure = false,
+        enabledByDefault = false)
 public class OAuthClientRegistrationService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthClientRegistrationService.class);
@@ -68,15 +68,15 @@ public class OAuthClientRegistrationService implements JsonService {
     @OnInit
     public void init() {
         aclRegistry.registerAllow(req ->
-            req.getPath().equals("/register") && req.getMethod() == METHOD.POST);
+                req.getPath().equals("/register") && req.getMethod() == METHOD.POST);
     }
 
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         switch (request.getMethod()) {
-            case POST    -> handlePost(request, response);
+            case POST -> handlePost(request, response);
             case OPTIONS -> handleOptions(request);
-            default      -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            default -> response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 
@@ -87,28 +87,28 @@ public class OAuthClientRegistrationService implements JsonService {
             // redirect_uris is required by RFC 7591
             if (body == null || !body.isJsonObject() || !body.getAsJsonObject().has("redirect_uris")) {
                 response.setContent(object()
-                    .put("error", "invalid_client_metadata")
-                    .put("error_description", "redirect_uris is required"));
+                        .put("error", "invalid_client_metadata")
+                        .put("error_description", "redirect_uris is required"));
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
                 return;
             }
 
-            var bodyObj      = body.getAsJsonObject();
+            var bodyObj = body.getAsJsonObject();
             var redirectUris = bodyObj.get("redirect_uris").getAsJsonArray();
-            var clientId     = UUID.randomUUID().toString();
-            var issuedAt     = Instant.now().getEpochSecond();
+            var clientId = UUID.randomUUID().toString();
+            var issuedAt = Instant.now().getEpochSecond();
 
             var authMethod = bodyObj.has("token_endpoint_auth_method")
-                ? bodyObj.get("token_endpoint_auth_method").getAsString()
-                : "none";
+                    ? bodyObj.get("token_endpoint_auth_method").getAsString()
+                    : "none";
 
             var resp = object()
-                .put("client_id", clientId)
-                .put("client_id_issued_at", issuedAt)
-                .put("redirect_uris", redirectUris)
-                .put("token_endpoint_auth_method", authMethod)
-                .put("grant_types",    array().add("authorization_code"))
-                .put("response_types", array().add("code"));
+                    .put("client_id", clientId)
+                    .put("client_id_issued_at", issuedAt)
+                    .put("redirect_uris", redirectUris)
+                    .put("token_endpoint_auth_method", authMethod)
+                    .put("grant_types", array().add("authorization_code"))
+                    .put("response_types", array().add("code"));
 
             if (bodyObj.has("client_name")) {
                 resp.put("client_name", bodyObj.get("client_name").getAsString());

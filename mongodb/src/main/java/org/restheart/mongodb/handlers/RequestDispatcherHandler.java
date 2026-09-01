@@ -152,8 +152,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     public PipelinedHandler getPipedHttpHandler(final TYPE type, final METHOD method) {
         final Map<METHOD, PipelinedHandler> methodsMap = handlersMultimap.get(type);
         return methodsMap != null
-            ? methodsMap.get(method)
-            : null;
+                ? methodsMap.get(method)
+                : null;
     }
 
     /**

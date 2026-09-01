@@ -26,8 +26,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Optional;
 
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
+import org.restheart.polyglot.PolyglotThreadUtils;
 import org.graalvm.polyglot.Value;
 import org.restheart.configuration.Configuration;
 import org.restheart.exchange.StringRequest;
@@ -45,36 +45,36 @@ import com.mongodb.client.MongoClient;
 public class JSStringService extends JSService implements StringService {
 
     private static final String HANDLE_HINT = """
-    the plugin module must export the function 'handle', example:
-    export function handle(request, response) {
-        LOGGER.debug('request {}', request.getContent());
-        const rc = JSON.parse(request.getContent() || '{}');
-
-        let body = {
-            msg: `Hello ${rc.name || 'Cruel World'}`
-        }
-
-        response.setContent(JSON.stringify(body));
-        response.setContentTypeAsJson();
-    }
-    """;
+            the plugin module must export the function 'handle', example:
+            export function handle(request, response) {
+                LOGGER.debug('request {}', request.getContent());
+                const rc = JSON.parse(request.getContent() || '{}');
+            
+                let body = {
+                    msg: `Hello ${rc.name || 'Cruel World'}`
+                }
+            
+                response.setContent(JSON.stringify(body));
+                response.setContentTypeAsJson();
+            }
+            """;
 
     private static final String PACKAGE_HINT = """
-    the plugin module must export the object 'options', example:
-    export const options = {
-        name: "hello"
-        description: "a fancy description"
-        uri: "/hello"
-        secured: false
-        matchPolicy: "PREFIX"
-    }
-    """;
+            the plugin module must export the object 'options', example:
+            export const options = {
+                name: "hello"
+                description: "a fancy description"
+                uri: "/hello"
+                secured: false
+                matchPolicy: "PREFIX"
+            }
+            """;
 
     public JSStringService(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException, InterruptedException {
         super(args(pluginPath, mclient, config));
     }
 
-    private static JSServiceArgs args(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException {
+    private static JSServiceArgs args(Path pluginPath, Optional<MongoClient> mclient, Configuration config) throws IOException, InterruptedException {
         // find plugin root, i.e the parent dir that contains package.json
         var contextOptions = new HashMap<String, String>();
         var pluginRoot = pluginPath.getParent();
@@ -95,68 +95,81 @@ public class JSStringService extends JSService implements StringService {
             LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
-        try (Context ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions)) {
-            // check that the plugin script is js
-            var language = Source.findLanguage(pluginPath.toFile());
+        // All Context lifecycle must run on the dedicated platform thread.
+        // Source.findLanguage() is NOT called here: it corrupts Truffle's
+        // DefaultContextThreadLocal (oracle/graal#7520).
+        var language = "js";
 
-            if (!"js".equals(language)) {
-                throw new IllegalArgumentException("wrong js plugin, not javascript");
-            }
+        try {
+            return PolyglotThreadUtils.onPlatformThreadIO(() -> {
+                var ctx = ContextQueue.newContext(engine(), "foo", config, LOGGER, mclient, "", contextOptions);
+                ctx.enter();
+                try {
+                    var sindexPath = pluginPath.toUri().toString();
+                    LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
+                    var optionsScript = "import { options } from '" + sindexPath + "'; options;";
+                    var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
 
-            var sindexPath = pluginPath.toUri().toString();
-            LOGGER.debug("Resolved plugin path for import: {}", sindexPath);
-            var optionsScript = "import { options } from '" + sindexPath + "'; options;";
-            var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
+                    Value options;
 
-            Value options;
+                    try {
+                        options = ctx.eval(optionsSource);
+                    } catch (Throwable t) {
+                        if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                        } else {
+                            throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
+                        }
+                    }
 
-            try {
-                options = ctx.eval(optionsSource);
-            } catch (Throwable t) {
-                if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
-                } else {
-                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + PACKAGE_HINT);
+                    checkOptions(options, pluginPath);
+
+                    var name = options.getMember("name").asString();
+                    var description = options.getMember("description").asString();
+                    var uri = options.getMember("uri").asString();
+                    var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
+                    var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
+                    String modulesReplacements = null;
+
+                    if (options.getMemberKeys().contains("modulesReplacements")) {
+                        var sb = new StringBuilder();
+
+                        options.getMember("modulesReplacements").getMemberKeys().stream()
+                                .forEach(k -> sb.append(k).append(":")
+                                        .append(options.getMember("modulesReplacements").getMember(k))
+                                        .append(","));
+
+                        modulesReplacements = sb.toString();
+                    }
+
+                    // ******** evaluate and check handle
+                    var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+                    var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
+
+                    Value handle;
+
+                    try {
+                        handle = ctx.eval(handleSource);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
+                    }
+
+                    checkHandle(handle, pluginPath);
+
+                    return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
+                } finally {
+                    ctx.leave();
+                    ctx.close();
                 }
-            }
-
-            checkOptions(options, pluginPath);
-
-            var name = options.getMember("name").asString();
-            var description = options.getMember("description").asString();
-            var uri = options.getMember("uri").asString();
-            var secured = !options.getMemberKeys().contains("secured") ? false : options.getMember("secured").asBoolean();
-            var matchPolicy = !options.getMemberKeys().contains("matchPolicy") ? MATCH_POLICY.PREFIX : MATCH_POLICY.valueOf(options.getMember("matchPolicy").asString());
-            String modulesReplacements = null;
-
-            if (options.getMemberKeys().contains("modulesReplacements")) {
-                var sb = new StringBuilder();
-
-                options.getMember("modulesReplacements").getMemberKeys().stream()
-                        .forEach(k -> sb.append(k).append(":")
-                        .append(options.getMember("modulesReplacements").getMember(k))
-                        .append(","));
-
-                modulesReplacements = sb.toString();
-            }
-
-            // ******** evaluate and check handle
-            var _handleScript = "import { handle } from '" + sindexPath + "'; handle;";
-            var handleSource = Source.newBuilder(language, _handleScript, "handleScript").mimeType("application/javascript+module").build();
-
-            Value handle;
-
-            try {
-                handle = ctx.eval(handleSource);
-            } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
-            }
-
-            checkHandle(handle, pluginPath);
-
-            return new JSServiceArgs(name, description, uri, secured, modulesReplacements, matchPolicy, handleSource, config, mclient, contextOptions);
+            });
+        } catch (Throwable t) {
+            LOGGER.error("DIAGNOSTIC: full exception chain for {} [thread={}, class={}]:",
+                    pluginPath, Thread.currentThread().getName(), t.getClass().getName(), t);
+            if (t instanceof RuntimeException re) throw re;
+            if (t instanceof IOException ioe) throw ioe;
+            throw new IOException(t);
         }
     }
 

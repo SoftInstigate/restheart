@@ -49,7 +49,7 @@ public class QParamsWhitelistPredicate implements Predicate {
             return qparamsInExchange.isEmpty();
         } else {
             return qparamsInExchange == null
-                || qparamsInExchange.keySet().stream().allMatch(this.whitelist::contains);
+                    || qparamsInExchange.keySet().stream().allMatch(this.whitelist::contains);
         }
     }
 

@@ -50,7 +50,7 @@ import io.undertow.attribute.ExchangeAttributes;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="rootRoleGuard",
+@RegisterPlugin(name = "rootRoleGuard",
         description = "forbids creating or updating mongoRealmAuthenticator accounts with the root-role of the mongoAclAuthorizer",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         enabledByDefault = true,
@@ -70,18 +70,18 @@ public class RootRoleGuard implements MongoInterceptor {
     @OnInit
     public void init() {
         var _authenticator = registry.getAuthenticators().stream()
-            .filter(PluginRecord::isEnabled)
-            .map(PluginRecord::getInstance)
-            .filter(a -> a instanceof MongoRealmAuthenticator)
-            .map(a -> (MongoRealmAuthenticator) a)
-            .findFirst();
+                .filter(PluginRecord::isEnabled)
+                .map(PluginRecord::getInstance)
+                .filter(a -> a instanceof MongoRealmAuthenticator)
+                .map(a -> (MongoRealmAuthenticator) a)
+                .findFirst();
 
         var _authorizer = registry.getAuthorizers().stream()
-            .filter(PluginRecord::isEnabled)
-            .map(PluginRecord::getInstance)
-            .filter(a -> a instanceof MongoAclAuthorizer)
-            .map(a -> (MongoAclAuthorizer) a)
-            .findFirst();
+                .filter(PluginRecord::isEnabled)
+                .map(PluginRecord::getInstance)
+                .filter(a -> a instanceof MongoAclAuthorizer)
+                .map(a -> (MongoAclAuthorizer) a)
+                .findFirst();
 
         if (_authorizer.isPresent() && _authorizer.get().rootRole() != null && _authenticator.isPresent()) {
             var authorizer = _authorizer.get();
@@ -125,9 +125,9 @@ public class RootRoleGuard implements MongoInterceptor {
      */
     private boolean check(BsonArray array) {
         return array.stream()
-            .filter(el -> el.isDocument())
-            .map(el -> el.asDocument())
-            .anyMatch(doc -> check(doc));
+                .filter(el -> el.isDocument())
+                .map(el -> el.asDocument())
+                .anyMatch(doc -> check(doc));
     }
 
     /**
@@ -150,7 +150,7 @@ public class RootRoleGuard implements MongoInterceptor {
             account = JsonPath.read(doc.toJson(), "$");
             var element = JsonPath.read(account, this.jsonPathRoles);
 
-            return element instanceof JsonArray array ? array: new JsonArray();
+            return element instanceof JsonArray array ? array : new JsonArray();
         } catch (Throwable t) {
             return new JsonArray();
         }

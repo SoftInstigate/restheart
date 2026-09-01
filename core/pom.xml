@@ -12,6 +12,16 @@
     <native.gc>--gc=serial</native.gc>
     <native.march>-march=compatibility</native.march>
     <mongodb.port>27017</mongodb.port>
+    <!-- Which integration tests failsafe runs. The default matches every IT class, which is
+         what the previous (unconfigured) failsafe default did — all 33 IT classes in this
+         module end in 'IT'. Override to run a subset, e.g. only the Karate suite:
+             mvn verify -Pmongodb -Dit.includes=**/RunnerIT.java -->
+    <it.includes>**/*IT.java</it.includes>
+    <!-- Whether the integration-test phases start/stop the MongoDB container and the RESTHeart
+         server. Defaults to skipITs, i.e. they run whenever the ITs run. Set to true to reuse a
+         MongoDB and a RESTHeart that are already running, so the tests can be re-run without
+         rebuilding — see CONTRIBUTING.md. -->
+    <skipTestEnv>${skipITs}</skipTestEnv>
   </properties>
 
   <groupId>org.restheart</groupId>
@@ -70,6 +80,11 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-accounts</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-stripe</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -221,6 +236,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>${it.includes}</include>
+          </includes>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -423,7 +443,7 @@
             <groupId>io.fabric8</groupId>
             <artifactId>docker-maven-plugin</artifactId>
             <configuration>
-              <skip>${skipITs}</skip>
+              <skip>${skipTestEnv}</skip>
               <showLogs>false</showLogs>
               <removeVolumes>true</removeVolumes>
               <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
@@ -499,7 +519,7 @@
                 <id>start-server</id>
                 <phase>pre-integration-test</phase>
                 <configuration>
-                  <skip>${skipITs}</skip>
+                  <skip>${skipTestEnv}</skip>
                   <target>
                     <ant antfile="./build.xml" target="start-server" />
                   </target>
@@ -512,7 +532,7 @@
                 <id>stop-server</id>
                 <phase>post-integration-test</phase>
                 <configuration>
-                  <skip>${skipITs}</skip>
+                  <skip>${skipTestEnv}</skip>
                   <target>
                     <delete file="./target/plugins/restheart-test-plugins.jar" />
                     <echo level="info">***** Stopping RESTHeart process...</echo>
@@ -559,6 +579,14 @@
         <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-accounts</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-emails</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-stripe</artifactId>
         </dependency>
         <dependency>
           <groupId>org.graalvm.js</groupId> <!-- required to override test dependency declared to fix karate test hanging due to conflict in GraalVM releases -->

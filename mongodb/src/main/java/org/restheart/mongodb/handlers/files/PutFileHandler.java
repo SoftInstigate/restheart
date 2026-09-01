@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import com.mongodb.MongoWriteException;
 
 import io.undertow.server.HttpServerExchange;
+
 public class PutFileHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
@@ -92,14 +93,14 @@ public class PutFileHandler extends PipelinedHandler {
         try {
             if (request.getFileInputStream() != null) {
                 result = gridFs.upsertFile(
-                    request.rsOps(),
-                    request.getDBName(),
-                    request.getCollectionName(),
-                    metadata,
-                    request.getFileInputStream(),
-                    request.getFiltersDocument(),
-                    request.getETag(),
-                    request.isETagCheckRequired());
+                        request.rsOps(),
+                        request.getDBName(),
+                        request.getCollectionName(),
+                        metadata,
+                        request.getFileInputStream(),
+                        request.getFiltersDocument(),
+                        request.getETag(),
+                        request.isETagCheckRequired());
             } else {
                 // throw new RuntimeException("error. file data is null");
                 // try to pass to next handler in order to PUT new metadata on existing file.

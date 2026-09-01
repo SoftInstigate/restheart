@@ -26,7 +26,7 @@ import org.restheart.exchange.ServiceRequest;
 public class BaseAllowInitializer {
     protected boolean isHandledByMongoService(Request<?> request) {
         if (request instanceof ServiceRequest) {
-            return ((ServiceRequest<?>)request).isHandledBy("mongo");
+            return ((ServiceRequest<?>) request).isHandledBy("mongo");
         } else {
             return false;
         }

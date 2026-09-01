@@ -233,7 +233,7 @@ public class MongoRequestContentInjector {
             content = new BsonDocument();
         } else if (content.isArray()) {
             if (!(request.isCollection() && request.isPost()) &&
-                !(request.isDocument() && request.isPatch())) {
+                    !(request.isDocument() && request.isPatch())) {
                 throw new BadRequestException("request content must be a Json object");
             }
 
@@ -377,7 +377,7 @@ public class MongoRequestContentInjector {
         // form data requires exchange.startBlocking(); called by WorkingThreadsPoolDispatcher
 
         if (request.isWriteDocument() && (request.isFile() || request.isFilesBucket())) {
-             return injectMultipartForFiles(exchange, request, response);
+            return injectMultipartForFiles(exchange, request, response);
         }
 
         var parser = parser(exchange);
@@ -392,31 +392,31 @@ public class MongoRequestContentInjector {
         boolean[] errored = {false};
 
         StreamSupport.stream(formData.spliterator(), false)
-            .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
-            .filter(part -> !part.getValue().isEmpty())
-            .map(part -> new Pair<String, FormData.FormValue>(part.getKey(), part.getValue().getFirst()))
-            .filter(part -> !part.getValue().isFileItem())
-            .forEach(part -> {
-                try {
-                    var value = part.getValue().getValue();
+                .map(partName -> new Pair<String, Deque<FormData.FormValue>>(partName, formData.get(partName)))
+                .filter(part -> !part.getValue().isEmpty())
+                .map(part -> new Pair<String, FormData.FormValue>(part.getKey(), part.getValue().getFirst()))
+                .filter(part -> !part.getValue().isFileItem())
+                .forEach(part -> {
+                    try {
+                        var value = part.getValue().getValue();
 
-                    if (value == null) {
-                        ret.put(part.getKey(), BsonNull.VALUE);
-                    } else if (value.isBlank()) {
-                        ret.put(part.getKey(), new BsonString(value));
-                    } else {
-                        ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
+                        if (value == null) {
+                            ret.put(part.getKey(), BsonNull.VALUE);
+                        } else if (value.isBlank()) {
+                            ret.put(part.getKey(), new BsonString(value));
+                        } else {
+                            ret.put(part.getKey(), BsonUtils.parse(part.getValue().getValue()));
+                        }
+                    } catch (JsonParseException jpe) {
+                        var strippedValue = part.getValue().getValue().strip();
+                        if (strippedValue.startsWith("{") || strippedValue.startsWith("[")) {
+                            LambdaUtils.throwsSneakyException(new BadRequestException("Invalid JSON. " + jpe.getMessage(), jpe));
+                            errored[0] = true;
+                        } else {
+                            ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
+                        }
                     }
-                } catch(JsonParseException jpe) {
-                    var strippedValue = part.getValue().getValue().strip();
-                    if (strippedValue.startsWith("{") || strippedValue.startsWith("[")) {
-                        LambdaUtils.throwsSneakyException(new BadRequestException("Invalid JSON. " + jpe.getMessage(), jpe));
-                        errored[0] = true;
-                    } else {
-                        ret.put(part.getKey(), new BsonString(part.getValue().getValue()));
-                    }
-                }
-            });
+                });
 
         return errored[0] ? null : ret;
     }
@@ -445,7 +445,7 @@ public class MongoRequestContentInjector {
      * @throws BadRequestException if no form parser is available, metadata is invalid, or no file is present
      * @throws IOException if there is an error accessing the file input stream
      */
-    private static BsonValue injectMultipartForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response)  throws BadRequestException, IOException {
+    private static BsonValue injectMultipartForFiles(HttpServerExchange exchange, MongoRequest request, MongoResponse response) throws BadRequestException, IOException {
         BsonValue content;
 
         var parser = parser(exchange);
@@ -473,7 +473,7 @@ public class MongoRequestContentInjector {
         try {
             fileInputStream = formData.getFirst(fileField).getFileItem().getInputStream();
             request.setFileInputStream(fileInputStream);
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             response.addWarning("error getting binary field from request");
             LOGGER.warn("error getting binary field from request", ioe);
             throw ioe;

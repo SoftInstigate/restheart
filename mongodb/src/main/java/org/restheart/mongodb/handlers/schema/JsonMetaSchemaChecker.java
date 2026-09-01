@@ -111,7 +111,7 @@ public class JsonMetaSchemaChecker extends PipelinedHandler {
 
             response.setInError(HttpStatus.SC_BAD_REQUEST,
                     "Request content violates JSON Schema meta schema: "
-                    + errMsg);
+                            + errMsg);
         }
 
         next(exchange);

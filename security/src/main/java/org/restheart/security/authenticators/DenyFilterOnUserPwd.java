@@ -91,10 +91,10 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-            && request.isGet()
-            && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
-            && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
-            && hasFilterOnPassword(request.getFiltersDocument());
+                && request.isGet()
+                && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+                && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
+                && hasFilterOnPassword(request.getFiltersDocument());
     }
 
     @Override
@@ -107,10 +107,10 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
             return false;
         } else {
             return filters.keySet().contains(propNamePassword) || filters
-                .keySet().stream()
-                .filter(key -> filters.get(key).isDocument())
-                .map(key -> filters.get(key).asDocument())
-                .anyMatch(doc -> hasFilterOnPassword(doc));
+                    .keySet().stream()
+                    .filter(key -> filters.get(key).isDocument())
+                    .map(key -> filters.get(key).asDocument())
+                    .anyMatch(doc -> hasFilterOnPassword(doc));
         }
     }
 }

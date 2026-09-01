@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars.bsonCoercing;
+
 import java.util.Locale;
 
 import org.bson.BsonNull;
@@ -40,13 +41,13 @@ import graphql.schema.CoercingSerializeException;
 public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
     @Override
     public ObjectId serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
         }
 
         var possibleObjID = convertImpl(input);
-        if (possibleObjID == null){
-            throw new CoercingSerializeException("Expected type 'ObjectId' but was '" + typeName(input) +"'.");
+        if (possibleObjID == null) {
+            throw new CoercingSerializeException("Expected type 'ObjectId' but was '" + typeName(input) + "'.");
         } else {
             return possibleObjID;
         }
@@ -64,8 +65,8 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
 
     @Override
     public ObjectId parseLiteral(Value<?> input, CoercedVariables variables, GraphQLContext graphQLContext, Locale locale) throws CoercingParseLiteralException {
-        if (input instanceof StringValue stringValue){
-            if (!ObjectId.isValid(stringValue.getValue())){
+        if (input instanceof StringValue stringValue) {
+            if (!ObjectId.isValid(stringValue.getValue())) {
                 throw new CoercingParseLiteralException("Input string is not a valid ObjectId");
             } else {
                 return new ObjectId(stringValue.getValue());
@@ -75,16 +76,14 @@ public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId>
         }
     }
 
-    private ObjectId convertImpl(Object obj){
-        if (obj instanceof String){
+    private ObjectId convertImpl(Object obj) {
+        if (obj instanceof String) {
             String value = (String) obj;
             return ObjectId.isValid(value) ? new ObjectId(value) : null;
-        }
-        else if(obj instanceof BsonValue){
+        } else if (obj instanceof BsonValue) {
             BsonValue value = ((BsonValue) obj);
             return value.isObjectId() ? value.asObjectId().getValue() : null;
-        }
-        else return null;
+        } else return null;
     }
 
     @Override

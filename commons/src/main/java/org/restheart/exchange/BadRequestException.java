@@ -43,10 +43,10 @@ public class BadRequestException extends RuntimeException {
 
     /** The HTTP status code to be returned with this exception. */
     int statusCode = HttpStatus.SC_BAD_REQUEST;
-    
+
     /** Flag indicating whether the exception message is valid JSON. */
     private final boolean jsonMessage;
-    
+
     /** The content type to be used in the error response. */
     private final String contentType;
 

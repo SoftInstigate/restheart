@@ -55,9 +55,9 @@ public interface Cache<K, V> {
      */
     public enum EXPIRE_POLICY {
         /** Entries never expire automatically */
-        NEVER, 
+        NEVER,
         /** Entries expire after a fixed duration since their creation or last update */
-        AFTER_WRITE, 
+        AFTER_WRITE,
         /** Entries expire after a fixed duration since their last access */
         AFTER_READ
     }

@@ -35,7 +35,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 
-@RegisterPlugin(name="graphAppDefinitionGetUnescaper",
+@RegisterPlugin(name = "graphAppDefinitionGetUnescaper",
         description = "unescapes $ prefixed keys in GraphQL application definitions",
         interceptPoint = RESPONSE,
         enabledByDefault = true
@@ -63,7 +63,7 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
             } else {
                 this.enabled = false;
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -80,13 +80,13 @@ public class GraphAppDefinitionGetUnescaper implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-		String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = request.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         return enabled
-            && db.equals(request.getDBName())
-            && this.coll.equals(request.getCollectionName())
-            && request.isGet()
-            && response.getContent() != null;
+                && db.equals(request.getDBName())
+                && this.coll.equals(request.getCollectionName())
+                && request.isGet()
+                && response.getContent() != null;
     }
 }

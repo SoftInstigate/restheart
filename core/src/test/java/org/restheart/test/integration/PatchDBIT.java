@@ -41,62 +41,62 @@ import io.undertow.util.Headers;
  */
 public class PatchDBIT extends HttpClientAbstactIT {
 
-        /**
-         *
+    /**
+     *
+     */
+    public PatchDBIT() {
+    }
+
+    /**
+     *
+     * @throws Exception
          */
-        public PatchDBIT() {
-        }
+    @Test
+    public void testPatchDB() throws Exception {
+        Response resp;
 
-        /**
-         *
-         * @throws Exception
-         */
-        @Test
-        public void testPatchDB() throws Exception {
-                Response resp;
+        // *** PUT tmpdb
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        check("check put db", resp, HttpStatus.SC_CREATED);
 
-                // *** PUT tmpdb
-                resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT)
-                                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
-                check("check put db", resp, HttpStatus.SC_CREATED);
+        // try to patch without etag forcing checkEtag
+        resp = adminExecutor.execute(Request.Patch(addCheckEtag(dbTmpUri)).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        check("check patch tmp db without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
 
-                // try to patch without etag forcing checkEtag
-                resp = adminExecutor.execute(Request.Patch(addCheckEtag(dbTmpUri)).bodyString("{a:1}", halCT)
-                                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
-                check("check patch tmp db without etag forcing checkEtag", resp, HttpStatus.SC_CONFLICT);
+        // try to patch without etag
+        resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
+        check("check patch tmp db without etag", resp, HttpStatus.SC_OK);
 
-                // try to patch without etag
-                resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT)
-                                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
-                check("check patch tmp db without etag", resp, HttpStatus.SC_OK);
+        // try to patch with wrong etag
+        resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
+                .addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+        check("check patch tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
-                // try to patch with wrong etag
-                resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{a:1}", halCT)
-                                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
-                                .addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
-                check("check patch tmp db with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
+        resp = adminExecutor
+                .execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
+                        Exchange.HAL_JSON_MEDIA_TYPE));
 
-                resp = adminExecutor
-                                .execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
-                                                Exchange.HAL_JSON_MEDIA_TYPE));
+        JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
 
-                JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
+        String etag = content.get("_etag").asObject().get("$oid").asString();
 
-                String etag = content.get("_etag").asObject().get("$oid").asString();
+        // try to patch with correct etag
+        resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{b:2}", halCT)
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
+                .addHeader(Headers.IF_MATCH_STRING, etag));
+        check("check patch tmp db with correct etag", resp, HttpStatus.SC_OK);
 
-                // try to patch with correct etag
-                resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{b:2}", halCT)
-                                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE)
-                                .addHeader(Headers.IF_MATCH_STRING, etag));
-                check("check patch tmp db with correct etag", resp, HttpStatus.SC_OK);
+        resp = adminExecutor
+                .execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
+                        Exchange.HAL_JSON_MEDIA_TYPE));
 
-                resp = adminExecutor
-                                .execute(Request.Get(dbTmpUri).addHeader(Headers.CONTENT_TYPE_STRING,
-                                                Exchange.HAL_JSON_MEDIA_TYPE));
-
-                content = Json.parse(resp.returnContent().asString()).asObject();
-                assertNotNull(content.get("a"), "check patched content");
-                assertNotNull(content.get("b"), "check patched content");
-                assertTrue(content.get("a").asInt() == 1 && content.get("b").asInt() == 2, "check patched content");
-        }
+        content = Json.parse(resp.returnContent().asString()).asObject();
+        assertNotNull(content.get("a"), "check patched content");
+        assertNotNull(content.get("b"), "check patched content");
+        assertTrue(content.get("a").asInt() == 1 && content.get("b").asInt() == 2, "check patched content");
+    }
 }

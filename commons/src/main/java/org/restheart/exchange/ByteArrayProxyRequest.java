@@ -58,7 +58,7 @@ import io.undertow.util.Headers;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayProxyRequest extends ProxyRequest<byte[]>{
+public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
     /**
      * Constructs a new ByteArrayProxyRequest wrapping the given HTTP exchange.
      * <p>

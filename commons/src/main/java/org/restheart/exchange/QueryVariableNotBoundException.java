@@ -51,18 +51,18 @@ package org.restheart.exchange;
  */
 public class QueryVariableNotBoundException extends Exception {
 
-    	/** Serial version UID for serialization compatibility. */
-    	private static final long serialVersionUID = -8291349884609864832L;
+    /** Serial version UID for serialization compatibility. */
+    private static final long serialVersionUID = -8291349884609864832L;
 
-    	/**
-         * Constructs a new QueryVariableNotBoundException with no detail message.
-         * <p>
-         * This constructor creates an exception without a specific error message.
-         * While functional, it's generally better to use the constructors that
-         * accept a message parameter to provide more context about which variable
-         * was not bound and in what context.
-         * </p>
-         */
+    /**
+     * Constructs a new QueryVariableNotBoundException with no detail message.
+     * <p>
+     * This constructor creates an exception without a specific error message.
+     * While functional, it's generally better to use the constructors that
+     * accept a message parameter to provide more context about which variable
+     * was not bound and in what context.
+     * </p>
+     */
     public QueryVariableNotBoundException() {
         super();
     }

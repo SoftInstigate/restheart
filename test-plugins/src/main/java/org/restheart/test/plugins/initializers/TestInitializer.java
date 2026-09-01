@@ -59,11 +59,11 @@ public class TestInitializer implements Initializer {
 
         // add a global security predicate
         this.registry.registerVeto(req -> {
-                if (req instanceof ByteArrayRequest jreq) {
-                    return (jreq.isGet() && "/secho/foo".equals(removeTrailingSlashes(jreq.getPath())));
-                } else {
-                    return false; // don't veto
-                }
-            });
+            if (req instanceof ByteArrayRequest jreq) {
+                return (jreq.isGet() && "/secho/foo".equals(removeTrailingSlashes(jreq.getPath())));
+            } else {
+                return false; // don't veto
+            }
+        });
     }
 }

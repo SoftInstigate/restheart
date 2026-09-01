@@ -48,7 +48,7 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
 
         var content = response.readContent();
         if (content != null && response.isContentTypeJson()) {
-            var jsonContent = JsonParser.parseString(BuffersUtils.toString(content,Charset.forName("utf-8")));
+            var jsonContent = JsonParser.parseString(BuffersUtils.toString(content, Charset.forName("utf-8")));
 
             var jsonObjectContent = jsonContent.getAsJsonObject();
 

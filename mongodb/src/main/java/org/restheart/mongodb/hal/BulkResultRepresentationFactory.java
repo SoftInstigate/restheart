@@ -94,21 +94,21 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
 
         if (wr.wasAcknowledged()) {
             if (wr.getUpserts() != null || wr.getInserts() != null) {
-                    nrep.addProperty("inserted", new BsonInt32(
-                            (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
-                            (wr.getInserts() != null ? wr.getInserts().size() : 0)));
+                nrep.addProperty("inserted", new BsonInt32(
+                        (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
+                                (wr.getInserts() != null ? wr.getInserts().size() : 0)));
 
-                    // add links to new, upserted documents
-                    if (wr.getUpserts() != null) {
-                            wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
-                                            RepresentationUtils.getReferenceLink(response, requestPath, update.getId())), true));
-                    }
+                // add links to new, upserted documents
+                if (wr.getUpserts() != null) {
+                    wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
+                            RepresentationUtils.getReferenceLink(response, requestPath, update.getId())), true));
+                }
 
-                    // add links to new, inserted documents
-                    if (wr.getInserts() != null) {
-                            wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
-                                    RepresentationUtils.getReferenceLink(response, requestPath, insert.getId())), true));
-                    }
+                // add links to new, inserted documents
+                if (wr.getInserts() != null) {
+                    wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
+                            RepresentationUtils.getReferenceLink(response, requestPath, insert.getId())), true));
+                }
             }
 
             nrep.addProperty("deleted",
@@ -134,18 +134,18 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
             if (wr.getUpserts() != null || wr.getInserts() != null) {
                 nrep.addProperty("inserted", new BsonInt32(
                         (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
-                        (wr.getInserts() != null ? wr.getInserts().size() : 0)));
+                                (wr.getInserts() != null ? wr.getInserts().size() : 0)));
 
                 // add links to new, upserted documents
                 if (wr.getUpserts() != null) {
-                        wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
-                                    RepresentationUtils.getReferenceLink(requestPath, update.getId())), true));
+                    wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
+                            RepresentationUtils.getReferenceLink(requestPath, update.getId())), true));
                 }
 
                 // add links to new, inserted documents
                 if (wr.getInserts() != null) {
-                        wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
-                                RepresentationUtils.getReferenceLink(requestPath, insert.getId())), true));
+                    wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
+                            RepresentationUtils.getReferenceLink(requestPath, insert.getId())), true));
                 }
             }
 
@@ -190,8 +190,8 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
                         new BsonString(
                                 ResponseHelper.getMessageFromErrorCode(
                                         error.getCode())
-                                + ": "
-                                + error.getMessage()));
+                                        + ": "
+                                        + error.getMessage()));
             } else {
                 nrep.addProperty("index",
                         new BsonInt32(error.getIndex()));
@@ -219,7 +219,7 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
-            BsonArray embeddedData, long size)
+                                      BsonArray embeddedData, long size)
             throws IllegalQueryParameterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }

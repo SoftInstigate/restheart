@@ -67,7 +67,7 @@ import io.undertow.util.AttachmentKey;
  */
 public abstract class ServiceRequest<T> extends Request<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceRequest.class);
-    
+
     /** Attachment key for storing the service request instance in the HTTP exchange. */
     private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY = AttachmentKey.create(ServiceRequest.class);
 
@@ -113,10 +113,10 @@ public abstract class ServiceRequest<T> extends Request<T> {
         if (!dontAttach) {
             if (exchange.getAttachment(REQUEST_KEY) != null) {
                 throw new IllegalStateException("Error instantiating request object "
-                    + getClass().getSimpleName()
-                    + ", "
-                    + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
-                    + " already bound to the exchange");
+                        + getClass().getSimpleName()
+                        + ", "
+                        + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
+                        + " already bound to the exchange");
             }
 
             exchange.putAttachment(REQUEST_KEY, this);
@@ -172,9 +172,9 @@ public abstract class ServiceRequest<T> extends Request<T> {
             return (R) ret;
         } else {
             throw new IllegalStateException("Request bound to exchange is not "
-                + "of the specified type,"
-                + " expected " + type.getSimpleName()
-                + " got " + ret.getClass().getSimpleName());
+                    + "of the specified type,"
+                    + " expected " + type.getSimpleName()
+                    + " got " + ret.getClass().getSimpleName());
         }
     }
 
@@ -206,11 +206,11 @@ public abstract class ServiceRequest<T> extends Request<T> {
 
             try {
                 setContent(parseContent());
-            } catch(BadRequestException bre) {
+            } catch (BadRequestException bre) {
                 this.setInError(true);
                 Response.of(wrapped).setInError(bre.getStatusCode(), bre.getMessage(), bre);
                 throw bre;
-            } catch(IOException ioe) {
+            } catch (IOException ioe) {
                 if (!isInError()) { // parseContent() might have already marked the request as errored
                     this.setInError(true);
                     Response.of(wrapped).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error reading request content", ioe);
@@ -279,8 +279,8 @@ public abstract class ServiceRequest<T> extends Request<T> {
      */
     public boolean isHandledBy(String serviceName) {
         return serviceName == null
-            ? false
-            : serviceName.equals(getPipelineInfo().getName());
+                ? false
+                : serviceName.equals(getPipelineInfo().getName());
     }
 
     /**

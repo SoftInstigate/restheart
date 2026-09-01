@@ -90,7 +90,7 @@ public class RelationshipsIT extends AbstactIT {
                 "create collection ".concat(DB.concat("/").concat(COLL_CHILDREN)));
 
         // create 10 test children docs
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0;i < 10;i++) {
             resp = Unirest.post(url(DB, COLL_CHILDREN))
                     .basicAuth(ADMIN_ID, ADMIN_PWD)
                     .header("content-type", "application/json")
@@ -130,9 +130,9 @@ public class RelationshipsIT extends AbstactIT {
                 && rbody.asObject().get("_links").asObject().get("children") != null
                 && rbody.asObject().get("_links").asObject().get("children").isObject()
                 && rbody.asObject().get("_links").asObject().get("children").asObject()
-                        .get("href") != null
+                .get("href") != null
                 && rbody.asObject().get("_links").asObject().get("children").asObject()
-                        .get("href").isString(),
+                .get("href").isString(),
                 "check _links");
 
         String childrenUrl = rbody.asObject().get("_links").asObject().get("children").asObject().get("href")

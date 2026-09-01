@@ -49,15 +49,15 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "githubOAuthProvider",
-        description      = "GitHub OAuth 2.0 provider for restheart-accounts",
+        name = "githubOAuthProvider",
+        description = "GitHub OAuth 2.0 provider for restheart-accounts",
         enabledByDefault = false)
 public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitHubOAuthProvider.class);
     private static final String PROVIDER_NAME = "github";
-    private static final String USER_URL      = "https://api.github.com/user";
-    private static final String EMAILS_URL    = "https://api.github.com/user/emails";
+    private static final String USER_URL = "https://api.github.com/user";
+    private static final String EMAILS_URL = "https://api.github.com/user/emails";
 
     @Inject("oauthService")
     private OAuthProviderRegistry oauthService;
@@ -73,7 +73,9 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
     }
 
     @Override
-    public String getProviderName() { return PROVIDER_NAME; }
+    public String getProviderName() {
+        return PROVIDER_NAME;
+    }
 
     @Override
     public String getAuthorizationUrl(String clientId, String clientSecret,
@@ -85,7 +87,7 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
     public BsonDocument fetchUserProfile(String clientId, String clientSecret,
                                          String callbackUrl, String scope, String code)
             throws Exception {
-        var service     = buildService(clientId, clientSecret, callbackUrl, scope);
+        var service = buildService(clientId, clientSecret, callbackUrl, scope);
         var accessToken = service.getAccessToken(code).getAccessToken();
 
         var request = new OAuthRequest(Verb.GET, USER_URL);
@@ -98,12 +100,12 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
             var json = JsonParser.parseString(response.getBody()).getAsJsonObject();
 
-            var providerId = json.has("id")    ? String.valueOf(json.get("id").getAsLong()) : "";
-            var login      = json.has("login") ? json.get("login").getAsString()            : "";
-            var name       = json.has("name") && !json.get("name").isJsonNull()
+            var providerId = json.has("id") ? String.valueOf(json.get("id").getAsLong()) : "";
+            var login = json.has("login") ? json.get("login").getAsString() : "";
+            var name = json.has("name") && !json.get("name").isJsonNull()
                     ? json.get("name").getAsString()
                     : login;
-            var avatarUrl  = json.has("avatar_url") && !json.get("avatar_url").isJsonNull()
+            var avatarUrl = json.has("avatar_url") && !json.get("avatar_url").isJsonNull()
                     ? json.get("avatar_url").getAsString()
                     : null;
 
@@ -116,16 +118,16 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
             if (email == null || email.isBlank()) {
                 throw new Exception(
                         "GitHub account has no verified email address. "
-                        + "Ensure the 'user:email' scope is requested.");
+                                + "Ensure the 'user:email' scope is requested.");
             }
 
             LOGGER.debug("GitHub profile: id={}, email={}, name={}", providerId, email, name);
 
             return new BsonDocument()
-                    .append("email",      new BsonString(email))
-                    .append("name",       new BsonString(name))
+                    .append("email", new BsonString(email))
+                    .append("name", new BsonString(name))
                     .append("providerId", new BsonString(providerId))
-                    .append("avatarUrl",  avatarUrl != null ? new BsonString(avatarUrl) : BsonNull.VALUE);
+                    .append("avatarUrl", avatarUrl != null ? new BsonString(avatarUrl) : BsonNull.VALUE);
         }
     }
 
@@ -159,15 +161,15 @@ public class GitHubOAuthProvider implements OAuthProvider, Initializer {
 
                 // 1. Prefer primary + verified
                 for (var el : arr) {
-                    var obj      = el.getAsJsonObject();
-                    var primary  = obj.has("primary")  && obj.get("primary").getAsBoolean();
+                    var obj = el.getAsJsonObject();
+                    var primary = obj.has("primary") && obj.get("primary").getAsBoolean();
                     var verified = obj.has("verified") && obj.get("verified").getAsBoolean();
                     if (primary && verified) return obj.get("email").getAsString();
                 }
 
                 // 2. Fall back to any verified address
                 for (var el : arr) {
-                    var obj      = el.getAsJsonObject();
+                    var obj = el.getAsJsonObject();
                     var verified = obj.has("verified") && obj.get("verified").getAsBoolean();
                     if (verified) return obj.get("email").getAsString();
                 }

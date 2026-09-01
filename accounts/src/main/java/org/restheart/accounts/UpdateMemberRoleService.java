@@ -32,10 +32,10 @@ import org.slf4j.LoggerFactory;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "updateMemberRoleService",
-        description      = "PATCH /auth/member-role — updates a member's org-level role",
-        defaultURI       = "/auth/member-role",
-        secure           = true,
+        name = "updateMemberRoleService",
+        description = "PATCH /auth/member-role — updates a member's org-level role",
+        defaultURI = "/auth/member-role",
+        secure = true,
         enabledByDefault = false)
 public class UpdateMemberRoleService implements JsonService {
 
@@ -54,7 +54,7 @@ public class UpdateMemberRoleService implements JsonService {
     public void onInit() {
         if (conf.membershipEndpointsEnabled()) {
             aclRegistry.registerAllow(r ->
-                r.getPath().equals("/auth/member-role") && (r.isPatch() || r.isOptions()));
+                    r.getPath().equals("/auth/member-role") && (r.isPatch() || r.isOptions()));
         }
     }
 
@@ -117,7 +117,7 @@ public class UpdateMemberRoleService implements JsonService {
         var memberRoleName = conf.memberRoleName();
         if (!memberRoleName.equals(newRole) && !ownershipRole.equals(newRole)) {
             Errors.error(res, HttpStatus.SC_BAD_REQUEST,
-                "role must be '" + memberRoleName + "' or '" + ownershipRole + "'");
+                    "role must be '" + memberRoleName + "' or '" + ownershipRole + "'");
             return;
         }
 
@@ -131,7 +131,7 @@ public class UpdateMemberRoleService implements JsonService {
         membershipProvider.updateMemberRole(targetEmail, callerTeam, newRole);
 
         LOGGER.info("Role of <{}> in team {} updated to '{}' by <{}>",
-            targetEmail, callerTeam, newRole, callerEmail);
+                targetEmail, callerTeam, newRole, callerEmail);
         res.setStatusCode(HttpStatus.SC_OK);
     }
 }

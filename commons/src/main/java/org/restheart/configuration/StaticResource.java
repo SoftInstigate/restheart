@@ -80,22 +80,22 @@ public record StaticResource(String what, String where, String welcomeFile, bool
      * Configuration key for the static resources list in the main configuration.
      */
     public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources";
-    
+
     /**
      * Configuration key for the source path of static resources.
      */
     public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
-    
+
     /**
      * Configuration key for the URL path where resources are served.
      */
     public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
-    
+
     /**
      * Configuration key for the welcome file name.
      */
     public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
-    
+
     /**
      * Configuration key for embedded resource flag.
      */
@@ -113,10 +113,10 @@ public record StaticResource(String what, String where, String welcomeFile, bool
      */
     public StaticResource(Map<String, Object> conf, boolean silent) {
         this(getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHAT_KEY, null, silent),
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHERE_KEY, null, silent),
-            // following are optional parameter, so get them always in silent mode
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "index.html", true),
-            getOrDefault(conf, STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, false, true));
+                getOrDefault(conf, STATIC_RESOURCES_MOUNT_WHERE_KEY, null, silent),
+                // following are optional parameter, so get them always in silent mode
+                getOrDefault(conf, STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "index.html", true),
+                getOrDefault(conf, STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, false, true));
     }
 
     /**

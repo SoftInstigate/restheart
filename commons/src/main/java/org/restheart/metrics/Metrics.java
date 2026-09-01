@@ -93,21 +93,21 @@ public class Metrics {
      *       for deployments behind proxies or load balancers</li>
      * </ul>
      */
-    public enum FAILED_AUTH_KEY { REMOTE_IP, X_FORWARDED_FOR }
+    public enum FAILED_AUTH_KEY {REMOTE_IP, X_FORWARDED_FOR}
 
     /**
      * The current strategy for collecting failed authentication metrics.
      * Defaults to REMOTE_IP for backward compatibility.
      */
     private static FAILED_AUTH_KEY collectFailedAuthBy = FAILED_AUTH_KEY.REMOTE_IP;
-    
+
     /**
      * The reverse index to use when extracting values from X-Forwarded-For headers.
      * 0 means use the last value (most recent proxy), 1 means second-to-last, etc.
      */
     private static int xffReverseIndex = 0;
 
-     /**
+    /**
      * Generates a metric name for tracking failed authentication attempts.
      * 
      * <p>The generated name includes the authentication failure tracking strategy
@@ -134,8 +134,8 @@ public class Metrics {
             case X_FORWARDED_FOR -> {
                 var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
                 yield xff == null
-                    ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
-                    : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffReverseIndex));
+                        ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
+                        : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffReverseIndex));
             }
         };
     }
@@ -187,7 +187,7 @@ public class Metrics {
             }
 
             if (xff.endsWith("]")) {
-                xff = xff.substring(0, xff.length()-1);
+                xff = xff.substring(0, xff.length() - 1);
             }
 
             var elements = xff.split(",");
@@ -640,8 +640,8 @@ public class Metrics {
      */
     public static Histogram registerSlidingTimeWindowHistogram(MetricNameAndLabels nameAndLabels, long windowSize, TimeUnit windowUnit) {
         return getCustomRegistry(nameAndLabels.name()).histogram(
-            nameAndLabels.toString(),
-            () -> new Histogram(new com.codahale.metrics.SlidingTimeWindowArrayReservoir(windowSize, windowUnit))
+                nameAndLabels.toString(),
+                () -> new Histogram(new com.codahale.metrics.SlidingTimeWindowArrayReservoir(windowSize, windowUnit))
         );
     }
 

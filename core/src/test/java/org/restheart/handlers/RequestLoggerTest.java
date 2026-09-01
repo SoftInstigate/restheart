@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestLoggerTest {
-    
+
     private RequestLogger requestLogger;
     private Method matchesPatternMethod;
-    
+
     @BeforeEach
     void setUp() throws Exception {
         requestLogger = new RequestLogger();
@@ -45,47 +45,47 @@ public class RequestLoggerTest {
         matchesPatternMethod = RequestLogger.class.getDeclaredMethod("matchesPattern", String.class, String.class);
         matchesPatternMethod.setAccessible(true);
     }
-    
+
     @Test
     void testExactMatches() throws Exception {
         assertTrue(matchesPattern("/ping", "/ping"));
         assertTrue(matchesPattern("/health", "/health"));
         assertTrue(matchesPattern("/_ping", "/_ping"));
-        
+
         assertFalse(matchesPattern("/ping", "/health"));
         assertFalse(matchesPattern("/ping-test", "/ping"));
         assertFalse(matchesPattern("/test/ping", "/ping"));
     }
-    
+
     @Test
     void testWildcardMatches() throws Exception {
         // Simple wildcard at end
         assertTrue(matchesPattern("/monitoring/health", "/monitoring/*"));
         assertTrue(matchesPattern("/monitoring/status", "/monitoring/*"));
         assertTrue(matchesPattern("/monitoring/", "/monitoring/*"));
-        
+
         // Wildcard in middle
         assertTrue(matchesPattern("/api/v1/status", "/api/*/status"));
         assertTrue(matchesPattern("/api/v2/status", "/api/*/status"));
         assertTrue(matchesPattern("/api/beta/status", "/api/*/status"));
-        
+
         // Multiple wildcards
         assertTrue(matchesPattern("/api/v1/test/status", "/api/*/test/*"));
-        
+
         assertFalse(matchesPattern("/api/status", "/api/*/status")); // missing middle part
         assertFalse(matchesPattern("/api/v1/health", "/api/*/status")); // wrong ending
     }
-    
+
     @Test
     void testComplexPatterns() throws Exception {
         // Mixed patterns
         assertTrue(matchesPattern("/app/v1.0/health", "/app/v*/health"));
         assertTrue(matchesPattern("/app/v2.5/health", "/app/v*/health"));
-        
+
         assertFalse(matchesPattern("/app/beta/health", "/app/v*/health"));
         assertFalse(matchesPattern("/app/v1.0/status", "/app/v*/health"));
     }
-    
+
     private boolean matchesPattern(String requestPath, String pattern) throws Exception {
         return (Boolean) matchesPatternMethod.invoke(requestLogger, requestPath, pattern);
     }

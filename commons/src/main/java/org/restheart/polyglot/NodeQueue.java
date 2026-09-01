@@ -56,7 +56,7 @@ public class NodeQueue {
      * This queue can safely be accessed from multiple threads.
      */
     private final Queue<Object> queue;
-    
+
     /**
      * Flag indicating whether the current execution context is within a Node.js environment.
      * This is set to true when RESTHeart is running with Node.js polyglot support enabled.
@@ -68,7 +68,7 @@ public class NodeQueue {
      * Initializes the internal queue with a thread-safe {@link LinkedBlockingDeque}.
      */
     private NodeQueue() {
-      this.queue = new LinkedBlockingDeque<>();
+        this.queue = new LinkedBlockingDeque<>();
     }
 
     /**
@@ -134,4 +134,4 @@ public class NodeQueue {
     public void setAsRunningOnNode() {
         this.runningOnNode = true;
     }
-  }
+}
