@@ -20,10 +20,9 @@ Thank you for your interest in contributing to RESTHeart! This guide covers ever
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Java | 25 | Use [SDKMAN](https://sdkman.io/): `sdk install java 25-tem` |
+| Java | 25 (GraalVM) | Use [SDKMAN](https://sdkman.io/): `sdk install java 25-graalce`. RESTHeart's official Docker image runs on GraalVM, and a local GraalVM is what lets you build native images and run the polyglot/JS-plugin karate tests (`@requires-graalvm`) — a plain JDK 25 builds and tests fine otherwise, but silently skips those. |
 | Maven | via wrapper | No separate installation needed — use `./mvnw` |
 | Docker | any recent | Required only for integration tests, which start a MongoDB container |
-| GraalVM | 25-graal | Required only for native-image builds: `sdk install java 25-graalce` |
 
 The project uses the Maven Wrapper (`./mvnw` / `mvnw.cmd`), so you do **not** need a global Maven installation.
 
