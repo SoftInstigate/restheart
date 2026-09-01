@@ -119,27 +119,16 @@ Note that features are not fully independent: some rely on data created by other
 
 ### Run the live embedding-provider tests
 
-`karate/ai/embedding-provider.feature` makes real HTTP calls to a `Provider<EmbeddingModel>` (Voyage AI), so it needs a real API key and is skipped by default (`@requires-embedding-provider` tag). Wire the key in via the `RHO` configuration-override environment variable — never write it into any file — and opt in with `-Dkarate.embeddingProvider=true`:
+`karate/ai/embedding-provider.feature` makes real HTTP calls to a `Provider<EmbeddingModel>` (Voyage AI), so it needs a real API key and is skipped by default (`@requires-embedding-provider` tag). restheart-ai's embedding plugins (`voyageEmbeddingProvider`, `voyageContextualEmbeddingProvider`, `autoEmbeddingInterceptor`, `vectorizeOperator`) are already enabled in `conf-overrides.yml` with no static API key or default provider — each scenario activates the one it needs via a **per-request** override (`?_ai-embedding-override=<providerName>`), read by test-plugins' `aiEmbeddingProviderOverrideInterceptor`, which also attaches the API key from the `VOYAGE_API_KEY` environment variable — never written to any file. This keeps live API calls (tokens, rate-limit budget) scoped to exactly the requests that opt in; no other test in the suite is affected.
 
 ```bash
 export VOYAGE_API_KEY=<your-key>
-export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-key->\"$VOYAGE_API_KEY\";/documentChunkingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/autoEmbeddingInterceptor/enabled->true;/autoEmbeddingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/vectorizeOperator/enabled->true;/vectorizeOperator/embedding-provider->\"voyageEmbeddingProvider\""
-
 ./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
   -Dkarate.embeddingProvider=true
 ```
 
 CI's atlas-local matrix leg does the same automatically, but only when a `VOYAGE_API_KEY` repository secret is configured — otherwise the feature stays skipped and the build stays green.
-
-The feature's last scenario (`voyageContextualEmbeddingProvider`) needs neither the `RHO` string above nor enabling anything globally: that provider is already enabled in `conf-overrides.yml` with no static API key, and the `aiVoyageContextualOverrideInterceptor` test plugin attaches the override (provider name + API key from the same `VOYAGE_API_KEY` env var) only to the one request that carries `?_ai-voyage-contextual-override=1` — so it never affects any other test. Just:
-
-```bash
-export VOYAGE_API_KEY=<your-key>
-./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
-  -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
-  -Dkarate.embeddingProvider=true
-```
 
 Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
 

@@ -602,15 +602,23 @@
 /vectorSearchIndexDeleteInterceptor/enabled: true
 /documentChunkingInterceptor/enabled: true
 
-# voyageContextualEmbeddingProvider is enabled but given no static api-key: the key
-# comes entirely from the per-request override attached by
-# aiVoyageContextualOverrideInterceptor below, so it's never written to this file.
-# Requests that don't carry that override never resolve to this provider — see
+# voyageEmbeddingProvider / voyageContextualEmbeddingProvider / autoEmbeddingInterceptor /
+# vectorizeOperator are enabled but given NO static api-key or default embedding-provider:
+# every value comes entirely from the per-request override attached by
+# aiEmbeddingProviderOverrideInterceptor below (only when a request carries
+# ?_ai-embedding-override=<name>), so no secret is ever written to this file and no
+# other test is affected — documentChunkingInterceptor's own default embedding-provider
+# stays blank, autoEmbeddingInterceptor only fires on collections with vectorSearch.*
+# metadata (only karate/ai/embedding-provider.feature sets that), and vectorizeOperator
+# only fires on pipelines that actually use $vectorize (same). See
 # karate/ai/embedding-provider.feature.
+/voyageEmbeddingProvider/enabled: true
 /voyageContextualEmbeddingProvider/enabled: true
+/autoEmbeddingInterceptor/enabled: true
+/vectorizeOperator/enabled: true
 
-# Test interceptor: attaches override-ai-embedding-provider=voyageContextualEmbeddingProvider
-# (and the API key from the VOYAGE_API_KEY env var) when ?_ai-voyage-contextual-override=1
-# is present. Used by karate/ai/embedding-provider.feature to exercise
-# voyageContextualEmbeddingProvider without affecting any other test.
-/aiVoyageContextualOverrideInterceptor/enabled: true
+# Test interceptor: attaches override-ai-embedding-provider=<name> (and the API key
+# from the VOYAGE_API_KEY env var) when ?_ai-embedding-override=<name> is present.
+# Used by karate/ai/embedding-provider.feature to exercise restheart-ai's embedding
+# providers per-request without affecting any other test.
+/aiEmbeddingProviderOverrideInterceptor/enabled: true

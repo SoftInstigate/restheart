@@ -2,40 +2,48 @@
 Feature: restheart-ai — live embedding provider calls (Voyage AI)
 
 # Exercises real HTTP calls to a configured Provider<EmbeddingModel> (Voyage AI),
-# covering the three integration points that document-chunking.feature and
+# covering the integration points that document-chunking.feature and
 # vector-search-indexes.feature deliberately leave untested: DocumentChunkingInterceptor
-# actually attaching a `vector` field, AutoEmbeddingInterceptor embedding on write, and
-# the $vectorize custom aggregation operator resolving inline.
+# actually attaching a `vector` field (plain and contextualized), AutoEmbeddingInterceptor
+# embedding on write, and the $vectorize custom aggregation operator resolving inline.
 #
-# Requires a real Voyage AI API key wired in via the RHO environment variable (never
+# Requires a real Voyage AI API key in the VOYAGE_API_KEY environment variable (never
 # committed to any file) plus -Dkarate.embeddingProvider=true. CI's atlas-local leg
 # sets both automatically, but only when a VOYAGE_API_KEY secret is configured on the
 # repository (see .github/workflows/*.yml) — otherwise this whole feature is skipped
 # via the @requires-embedding-provider tag (see RunnerIT.java), same as any other run.
 #
+# Every scenario activates its provider via a PER-REQUEST override
+# (?_ai-embedding-override=<providerName>, read by test-plugins'
+# aiEmbeddingProviderOverrideInterceptor — see conf-overrides.yml), never via a
+# suite-wide config change: restheart-ai's embedding plugins are enabled but have no
+# static default provider/key, so only the one request carrying the query param ever
+# triggers a live call. This keeps document-chunking.feature (and everything else in
+# the suite) completely unaffected, and keeps live API usage — tokens and rate-limit
+# budget — scoped to exactly what this feature needs.
+#
 # To run locally:
 #   export VOYAGE_API_KEY=<your-key>
-#   export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-key->\"$VOYAGE_API_KEY\";/documentChunkingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/autoEmbeddingInterceptor/enabled->true;/autoEmbeddingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/vectorizeOperator/enabled->true;/vectorizeOperator/embedding-provider->\"voyageEmbeddingProvider\""
 #   mvn clean verify -Dkarate.embeddingProvider=true -Dkarate.path=classpath:karate/ai/embedding-provider.feature
 #
+# The chunking/contextual scenarios upload a small fixed paragraph (small-doc.txt,
+# ~125 characters) rather than the full RESTHeart.pdf used elsewhere, to keep the live
+# embedding call — and its real token cost — minimal. Tika's ability to extract text
+# from actual binary formats is already covered by document-chunking.feature; these
+# scenarios only need to prove the `vector` field gets attached. Keep small-doc.txt at
+# or under 200 characters (documentChunkingInterceptor's default chunk-overlap): with
+# splitIntoChunks' overlap-driven re-chunking, anything longer produces 2+ chunks (and
+# therefore 2+ times the embedded tokens) even though it still fits in one chunk-size.
+#
 # Assertions check "is a non-empty array of numbers", not an exact dimensionality —
-# voyage-3.5 supports configurable output dimensions, so pinning a specific length
-# would be an arbitrary coupling to Voyage's current default.
+# Voyage's embedding models support configurable output dimensions, so pinning a
+# specific length would be an arbitrary coupling to a provider's current default.
 #
 # The suite's default-representation-format is HAL (conf-overrides.yml): the chunks
 # collection GET passes ?rep=s (STANDARD) to get a plain array back; a single-document
 # GET (auto-embedding scenario) needs no such param, its fields are exposed directly
 # regardless of representation format; the aggregation GET ($vectorize scenario) keeps
 # the suite's usual _embedded['rh:result'] shape (see aggregations/var-operator.feature).
-#
-# The last scenario (voyageContextualEmbeddingProvider) does NOT need the RHO string
-# above: voyageContextualEmbeddingProvider is already enabled in conf-overrides.yml
-# with no static api-key, and aiVoyageContextualOverrideInterceptor
-# (test-plugins) attaches override-ai-embedding-provider + the API key (from the same
-# VOYAGE_API_KEY env var) per-request when the request carries
-# ?_ai-voyage-contextual-override=1 — so only that one request resolves to it. Just:
-#   export VOYAGE_API_KEY=<your-key>
-#   mvn clean verify -Dkarate.embeddingProvider=true -Dkarate.path=classpath:karate/ai/embedding-provider.feature
 
 Background:
     * url 'http://localhost:8080'
@@ -44,7 +52,7 @@ Background:
     # Location header (an ObjectId, i.e. its last 24 characters) — see write-mode.feature
     * def idFromLocation = function(url) { return url.substring(url.length-24); }
 
-Scenario: uploading a text-extractable file produces chunks with a real embedding vector
+Scenario: uploading a small text file produces a chunk with a real embedding vector
     * header Authorization = adminAuth
     Given path '/ai-test-embed-chunking'
     And request {}
@@ -58,9 +66,9 @@ Scenario: uploading a text-extractable file produces chunks with a real embeddin
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-chunking/docs.files'
-    And multipart file file = { read: '../RESTHeart.pdf', filename: 'RESTHeart.pdf' }
-    And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
+    Given path '/ai-test-embed-chunking/docs.files?_ai-embedding-override=voyageEmbeddingProvider'
+    And multipart file file = { read: 'small-doc.txt', filename: 'small-doc.txt' }
+    And multipart field metadata = '{ "filename": "small-doc.txt" }'
     When method POST
     Then status 201
     * def fileId = idFromLocation(responseHeaders['Location'][0])
@@ -89,7 +97,7 @@ Scenario: writing a document to a vectorSearch-enabled collection triggers auto-
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-auto/articles'
+    Given path '/ai-test-embed-auto/articles?_ai-embedding-override=voyageEmbeddingProvider'
     And request { "description": "RESTHeart is a low-code API server for MongoDB" }
     When method POST
     Then status 201
@@ -122,7 +130,7 @@ Scenario: $vectorize resolves inline to a real embedding vector inside an aggreg
     Then status 201
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-vectorize/docs/_aggrs/queryVector'
+    Given path '/ai-test-embed-vectorize/docs/_aggrs/queryVector?_ai-embedding-override=voyageEmbeddingProvider'
     When method GET
     Then status 200
     * def vec = response._embedded['rh:result'][0].queryVector
@@ -142,22 +150,17 @@ Scenario: documentChunkingInterceptor uses voyageContextualEmbeddingProvider via
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
-    # only this request carries the override — every other request in the suite
-    # (including the other scenarios above) never resolves to this provider. Inlined
-    # in the path rather than via a separate `param` step, matching how the other
-    # hyphenated-qparam test interceptors are called (see test-plugins' sibling
-    # *OverrideInterceptor classes and their karate usages).
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-contextual/docs.files?_ai-voyage-contextual-override=1'
-    And multipart file file = { read: '../RESTHeart.pdf', filename: 'RESTHeart.pdf' }
-    And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
+    Given path '/ai-test-embed-contextual/docs.files?_ai-embedding-override=voyageContextualEmbeddingProvider'
+    And multipart file file = { read: 'small-doc.txt', filename: 'small-doc.txt' }
+    And multipart field metadata = '{ "filename": "small-doc.txt" }'
     When method POST
     Then status 201
-    * def fileId = idFromLocation(responseHeaders['Location'][0])
+    * def contextualFileId = idFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-contextual/_chunks'
-    And param filter = '{"fileId": {"$oid": "' + fileId + '"}}'
+    And param filter = '{"fileId": {"$oid": "' + contextualFileId + '"}}'
     And param rep = 's'
     When method GET
     Then status 200
