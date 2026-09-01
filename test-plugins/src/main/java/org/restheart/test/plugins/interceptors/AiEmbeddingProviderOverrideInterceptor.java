@@ -29,7 +29,8 @@ import org.restheart.plugins.WildcardInterceptor;
  *
  * <p>Example Karate call:
  * <pre>
- *   Given path bucket + '?_ai-embedding-override=voyageContextualEmbeddingProvider'
+ *   Given path bucket
+ *   And param _ai-embedding-override = 'voyageContextualEmbeddingProvider'
  * </pre>
  */
 @RegisterPlugin(

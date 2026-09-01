@@ -14,7 +14,7 @@ Feature: restheart-ai — live embedding provider calls (Voyage AI)
 # via the @requires-embedding-provider tag (see RunnerIT.java), same as any other run.
 #
 # Every scenario activates its provider via a PER-REQUEST override
-# (?_ai-embedding-override=<providerName>, read by test-plugins'
+# (param _ai-embedding-override = '<providerName>', read by test-plugins'
 # aiEmbeddingProviderOverrideInterceptor — see conf-overrides.yml), never via a
 # suite-wide config change: restheart-ai's embedding plugins are enabled but have no
 # static default provider/key, so only the one request carrying the query param ever
@@ -66,7 +66,8 @@ Scenario: uploading a small text file produces a chunk with a real embedding vec
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-chunking/docs.files?_ai-embedding-override=voyageEmbeddingProvider'
+    Given path '/ai-test-embed-chunking/docs.files'
+    And param _ai-embedding-override = 'voyageEmbeddingProvider'
     And multipart file file = { read: 'small-doc.txt', filename: 'small-doc.txt' }
     And multipart field metadata = '{ "filename": "small-doc.txt" }'
     When method POST
@@ -97,7 +98,8 @@ Scenario: writing a document to a vectorSearch-enabled collection triggers auto-
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-auto/articles?_ai-embedding-override=voyageEmbeddingProvider'
+    Given path '/ai-test-embed-auto/articles'
+    And param _ai-embedding-override = 'voyageEmbeddingProvider'
     And request { "description": "RESTHeart is a low-code API server for MongoDB" }
     When method POST
     Then status 201
@@ -130,7 +132,8 @@ Scenario: $vectorize resolves inline to a real embedding vector inside an aggreg
     Then status 201
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-vectorize/docs/_aggrs/queryVector?_ai-embedding-override=voyageEmbeddingProvider'
+    Given path '/ai-test-embed-vectorize/docs/_aggrs/queryVector'
+    And param _ai-embedding-override = 'voyageEmbeddingProvider'
     When method GET
     Then status 200
     * def vec = response._embedded['rh:result'][0].queryVector
@@ -151,7 +154,8 @@ Scenario: documentChunkingInterceptor uses voyageContextualEmbeddingProvider via
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
-    Given path '/ai-test-embed-contextual/docs.files?_ai-embedding-override=voyageContextualEmbeddingProvider'
+    Given path '/ai-test-embed-contextual/docs.files'
+    And param _ai-embedding-override = 'voyageContextualEmbeddingProvider'
     And multipart file file = { read: 'small-doc.txt', filename: 'small-doc.txt' }
     And multipart field metadata = '{ "filename": "small-doc.txt" }'
     When method POST
