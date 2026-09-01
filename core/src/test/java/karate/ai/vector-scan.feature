@@ -7,7 +7,9 @@ Feature: restheart-ai — $vectorScan brute-force vector search
 # restheart/#712 and VectorScanInterceptor's javadoc for the full design.
 #
 # All documents are written with PUT and a fixed _id (not POST), so a rerun against a
-# non-fresh MongoDB overwrites them in place instead of accumulating duplicates.
+# non-fresh MongoDB overwrites them in place instead of accumulating duplicates. PUT on
+# a document that doesn't exist yet is a 404 with RESTHeart's default write mode, so
+# these also pass ?wm=upsert to create-or-replace.
 #
 # Query vector is always [1, 0]; document vectors are plain (non-unit) vectors chosen so
 # cosine similarity comes out to clean, strictly distinct values — cosine normalizes
@@ -42,24 +44,28 @@ Background:
 
     * header Authorization = adminAuth
     Given path coll + '/docA'
+    And param wm = 'upsert'
     And request { "vector": [10, 0], "category": "x" }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
     Given path coll + '/docB'
+    And param wm = 'upsert'
     And request { "vector": [8, 6], "category": "x" }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
     Given path coll + '/docC'
+    And param wm = 'upsert'
     And request { "vector": [0, 10], "category": "y" }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1
 
     * header Authorization = adminAuth
     Given path coll + '/docD'
+    And param wm = 'upsert'
     And request { "vector": [9, 4], "category": "y" }
     When method PUT
     Then assert [200, 201].indexOf(responseStatus) != -1

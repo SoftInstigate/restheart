@@ -39,6 +39,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -347,7 +348,13 @@ public class VectorScanInterceptor implements MongoInterceptor {
             var uriValue = doc.get("uri");
             if (uriValue != null && uriValue.isString() && uriValue.asString().getValue().equals(uri)) {
                 var stages = doc.get("stages");
-                return stages != null && stages.isArray() ? stages.asArray() : null;
+                // request.getCollectionProps() returns the raw stored metadata, where
+                // $-prefixed keys are escaped as _$xxx (MongoDB disallows storing keys
+                // starting with $) -- StagesInterpolator.interpolate() unescapes this
+                // internally as its first step, but that happens later, in handle();
+                // this lookup (also used by resolve(), before interpolation ever runs)
+                // must unescape itself to compare against the literal "$vectorScan" key.
+                return stages != null && stages.isArray() ? BsonUtils.unescapeKeys(stages).asArray() : null;
             }
         }
         return null;

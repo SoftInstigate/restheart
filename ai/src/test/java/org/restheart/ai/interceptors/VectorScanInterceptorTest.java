@@ -114,6 +114,27 @@ public class VectorScanInterceptorTest {
     }
 
     @Test
+    public void findStagesArray_unescapesUnderscoreDollarKeys() {
+        // request.getCollectionProps() returns the raw stored form: MongoDB disallows
+        // storing keys starting with $, so RESTHeart escapes them as _$xxx on write and
+        // only unescapes on the way out (StagesInterpolator.interpolate(), later, in
+        // handle()). This lookup runs before that -- and before resolve() -- so it must
+        // unescape itself, or it will never recognize a real "$vectorScan" stage.
+        var request = mock(MongoRequest.class);
+        var escapedStages = new BsonArray(List.of(stage("_$match", new BsonDocument()), stage("_$vectorScan", new BsonDocument())));
+        var aggrs = new BsonArray(List.of(
+            new BsonDocument("uri", new BsonString("semantic-search")).append("stages", escapedStages)));
+        var collProps = new BsonDocument("aggrs", aggrs);
+
+        when(request.getCollectionProps()).thenReturn(collProps);
+        when(request.getAggregationOperation()).thenReturn("semantic-search");
+
+        var found = VectorScanInterceptor.findStagesArray(request);
+        assertEquals(1, VectorScanInterceptor.indexOfVectorScanStage(found));
+        assertTrue(VectorScanInterceptor.containsVectorScanStage(found));
+    }
+
+    @Test
     public void findStagesArray_noMatchingUri_returnsNull() {
         var request = mock(MongoRequest.class);
         var aggrs = new BsonArray(List.of(

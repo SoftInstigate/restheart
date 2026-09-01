@@ -91,15 +91,21 @@ Scenario: write documents with a live embedding, index them, query with $vectorS
 
     * header Authorization = adminAuth
     Given path coll + '/_indexes/live_vectors'
-    * def indexBody = { type: 'vectorSearch', fields: [ { type: 'vector', path: 'embedding', numDimensions: dim, similarity: 'cosine' } ] }
+    * def indexBody = { type: 'vectorSearch', fields: [ { type: 'vector', path: 'embedding', numDimensions: '#(dim)', similarity: 'cosine' } ] }
     And request indexBody
     When method PUT
     Then status 201
 
     # a freshly created Atlas Search index needs a little time to build before it's
     # queryable — this only runs on one gated CI leg, so a generous fixed wait is a
-    # simpler and safer trade-off than a hand-rolled polling loop
-    * karate.sleep(10000)
+    # simpler and safer trade-off than a hand-rolled polling loop. karate.pause() is
+    # NOT a plain blocking sleep -- it's paired with proceed()/stop() for Karate's
+    # interactive debugger UI and is a no-op in a headless run (confirmed: index
+    # creation and the next request were ~10ms apart in a real run, not ~10s). Use
+    # direct GraalJS Java interop instead, same pattern already used elsewhere in this
+    # suite (Java.type('java.util.Base64') in aggregations/var-operator.feature) --
+    # java.lang.Thread.sleep is guaranteed to actually block.
+    * eval Java.type('java.lang.Thread').sleep(10000)
 
     # one live embedding call for the query text, one live rerank call for the results
     * header Authorization = adminAuth
