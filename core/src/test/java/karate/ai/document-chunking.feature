@@ -11,6 +11,11 @@ Feature: restheart-ai — document chunking on GridFS upload
 #
 # Scenarios filter _chunks by fileId (not just "collection is non-empty") so a rerun
 # against a db left over from a previous run doesn't produce a false pass/fail.
+#
+# The suite's default-representation-format is HAL (conf-overrides.yml), which wraps
+# a collection GET's documents under _embedded['rh:doc'] instead of a bare array — so
+# collection GETs here pass ?rep=s (STANDARD) to get the plain array these assertions
+# expect, same as karate/accounts/invitations.feature does.
 
 Background:
     * url 'http://localhost:8080'
@@ -34,7 +39,7 @@ Background:
 Scenario: uploading a text-extractable file triggers chunking into the target collection
     * header Authorization = adminAuth
     Given path bucket
-    And multipart file file = { read: 'RESTHeart.pdf', filename: 'RESTHeart.pdf' }
+    And multipart file file = { read: '../RESTHeart.pdf', filename: 'RESTHeart.pdf' }
     And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
     When method POST
     Then status 201
@@ -45,6 +50,7 @@ Scenario: uploading a text-extractable file triggers chunking into the target co
     * header Authorization = adminAuth
     Given path chunksColl
     And param filter = '{"fileId": {"$oid": "' + fileId + '"}}'
+    And param rep = 's'
     When method GET
     Then status 200
     And assert response.length > 0
@@ -64,6 +70,7 @@ Scenario: an upload with no extractable text does not create any chunks
     * header Authorization = adminAuth
     Given path chunksColl
     And param filter = '{"fileId": {"$oid": "' + emptyFileId + '"}}'
+    And param rep = 's'
     When method GET
     Then status 200
     And match response == '#[0]'

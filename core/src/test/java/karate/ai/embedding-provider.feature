@@ -21,6 +21,12 @@ Feature: restheart-ai — live embedding provider calls (Voyage AI)
 # Assertions check "is a non-empty array of numbers", not an exact dimensionality —
 # voyage-3.5 supports configurable output dimensions, so pinning a specific length
 # would be an arbitrary coupling to Voyage's current default.
+#
+# The suite's default-representation-format is HAL (conf-overrides.yml): the chunks
+# collection GET passes ?rep=s (STANDARD) to get a plain array back; a single-document
+# GET (auto-embedding scenario) needs no such param, its fields are exposed directly
+# regardless of representation format; the aggregation GET ($vectorize scenario) keeps
+# the suite's usual _embedded['rh:result'] shape (see aggregations/var-operator.feature).
 
 Background:
     * url 'http://localhost:8080'
@@ -41,7 +47,7 @@ Scenario: uploading a text-extractable file produces chunks with a real embeddin
 
     * header Authorization = adminAuth
     Given path '/ai-test-embed-chunking/docs.files'
-    And multipart file file = { read: 'RESTHeart.pdf', filename: 'RESTHeart.pdf' }
+    And multipart file file = { read: '../RESTHeart.pdf', filename: 'RESTHeart.pdf' }
     And multipart field metadata = '{ "filename": "RESTHeart.pdf" }'
     When method POST
     Then status 201
@@ -50,6 +56,7 @@ Scenario: uploading a text-extractable file produces chunks with a real embeddin
     * header Authorization = adminAuth
     Given path '/ai-test-embed-chunking/_chunks'
     And param filter = '{"fileId": {"$oid": "' + fileId + '"}}'
+    And param rep = 's'
     When method GET
     Then status 200
     And assert response.length > 0

@@ -20,6 +20,10 @@ Feature: restheart-ai — vector search index management via /_indexes
 # convention of fixed db/collection names with no teardown — a rerun against a
 # non-fresh MongoDB may fail the "create" scenarios on an index-already-exists error.
 # Use a fresh container (or drop the ai-test-vidx db) between local reruns.
+#
+# The suite's default-representation-format is HAL (conf-overrides.yml), which wraps
+# GET /_indexes' array under _embedded['rh:index'] — so those GETs here pass ?rep=s
+# (STANDARD) to get the plain array these assertions expect.
 
 Background:
     * url 'http://localhost:8080'
@@ -55,6 +59,7 @@ Scenario: a created index is listed with type=vectorSearch and its name as _id
 
     * header Authorization = adminAuth
     Given path coll + '/_indexes'
+    And param rep = 's'
     When method GET
     Then status 200
     * def vsIndex = karate.filter(response, function(x){ return x._id == 'list_test_index' })
@@ -74,6 +79,7 @@ Scenario: deleting a vector search index removes it and returns 204
 
     * header Authorization = adminAuth
     Given path coll + '/_indexes'
+    And param rep = 's'
     When method GET
     Then status 200
     * def stillThere = karate.filter(response, function(x){ return x._id == 'to_delete_index' })
