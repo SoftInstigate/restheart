@@ -39,6 +39,8 @@ import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.mongodb.utils.VarsInterpolator;
+import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
@@ -47,6 +49,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.ai.RankedResult;
 import org.restheart.plugins.ai.RerankModel;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +73,7 @@ import org.slf4j.LoggerFactory;
  *       ],
  *       "rerank": {
  *         "model": "voyage-rerank-2",
- *         "query": "$avars.q",
+ *         "query": {"$var": "q"},
  *         "topK":  10
  *       }
  *     }
@@ -78,19 +81,19 @@ import org.slf4j.LoggerFactory;
  * }
  * }</pre>
  *
- * <h2>Plugin configuration (plugins-args)</h2>
+ * <h2>Plugin configuration</h2>
  * <pre>{@code
- * plugins-args:
- *   rerankingInterceptor:
- *     enabled: false
- *     atlas-api-key:  <key>
- *     rerank-api-url: https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank
- *     rerank-provider: cohereRerankProvider   # optional; see "Pluggable rerank provider" below
+ * rerankingInterceptor:
+ *   enabled: false
+ *   atlas-api-key:  <key>
+ *   rerank-api-url: https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank
+ *   rerank-provider: cohereRerankProvider   # optional; see "Pluggable rerank provider" below
  * }</pre>
  *
- * <p>The {@code query} field in the {@code rerank} block supports a simple
- * {@code "$avars.<varName>"} expression resolved against the current aggregation
- * variables.
+ * <p>The {@code query} field in the {@code rerank} block accepts a literal string, or
+ * the same {@code {"$var": "name"}} / {@code {"$var": ["name", default]}} syntax used
+ * everywhere else in an aggregation definition, resolved against the current
+ * aggregation variables.
  *
  * <h2>Pluggable rerank provider (Phase 2)</h2>
  * <p>When {@code rerank-provider} names a configured {@code Provider<RerankModel>}
@@ -219,7 +222,7 @@ public class RerankingInterceptor implements MongoInterceptor {
 
     // -------------------------------------------------------------------------
 
-    private BsonDocument findRerankConfig(MongoRequest request) {
+    static BsonDocument findRerankConfig(MongoRequest request) {
         var collProps = request.getCollectionProps();
         if (collProps == null) return null;
 
@@ -232,26 +235,39 @@ public class RerankingInterceptor implements MongoInterceptor {
             var agg = item.asDocument();
             if (!uri.equals(agg.getString("uri", new BsonString("")).getValue())) continue;
             var rerank = agg.get(RERANK_ELEMENT_NAME);
-            if (rerank != null && rerank.isDocument()) return rerank.asDocument();
+            if (rerank != null && rerank.isDocument()) {
+                // request.getCollectionProps() returns the raw stored metadata, where
+                // $-prefixed keys (e.g. a "query": {"$var": "q"} inside this block) are
+                // escaped as _$xxx (MongoDB disallows storing keys starting with $) --
+                // unescape before resolveQuery() ever looks for the "$var" key, same fix
+                // as VectorScanInterceptor.findStagesArray.
+                return BsonUtils.unescapeKeys(rerank).asDocument();
+            }
         }
         return null;
     }
 
-    private String resolveQuery(BsonDocument rerankConfig, MongoRequest request) {
+    /**
+     * Resolves the {@code query} field of a {@code rerank} block: a literal string is
+     * used as-is, and {@code {"$var": "name"}} / {@code {"$var": ["name", default]}} are
+     * resolved against the current request's aggregation variables — the same
+     * {@code $var} syntax used everywhere else in an aggregation definition (stages,
+     * {@code $vectorize}), so a query doesn't need its own bespoke reference syntax.
+     * An unbound variable (no default given) is treated the same as no query at all:
+     * {@code handle()} skips reranking and leaves the original results untouched.
+     */
+    static String resolveQuery(BsonDocument rerankConfig, MongoRequest request) {
         var queryVal = rerankConfig.get("query");
-        if (queryVal == null || !queryVal.isString()) return null;
+        if (queryVal == null) return null;
 
-        var raw = queryVal.asString().getValue();
-        if (raw.startsWith("$avars.")) {
-            var varName = raw.substring("$avars.".length());
-            var avars = request.getAggregationVars();
-            if (avars != null) {
-                var v = avars.get(varName);
-                if (v != null && v.isString()) return v.asString().getValue();
-            }
+        BsonValue resolved;
+        try {
+            resolved = VarsInterpolator.interpolate(VAR_OPERATOR.$var, queryVal, request.getAggregationVars(), request);
+        } catch (Exception e) {
             return null;
         }
-        return raw;
+
+        return resolved != null && resolved.isString() ? resolved.asString().getValue() : null;
     }
 
     private List<String> extractTexts(BsonArray results) {

@@ -14,7 +14,7 @@
             ],
             "rerank": {
                 "model": "rerank-2.5",
-                "query": "$avars.q",
+                "query": { "$var": "q" },
                 "topK": 2
             }
         }

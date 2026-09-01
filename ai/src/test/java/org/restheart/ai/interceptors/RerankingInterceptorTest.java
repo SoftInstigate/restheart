@@ -21,17 +21,107 @@
 package org.restheart.ai.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.plugins.ai.RankedResult;
 
 public class RerankingInterceptorTest {
+
+    // -- resolveQuery: "$var" syntax, same as everywhere else in an aggregation ------
+
+    @Test
+    public void resolveQuery_literalString_returnedAsIs() {
+        var request = mock(MongoRequest.class);
+        var rerankConfig = new BsonDocument("query", new BsonString("electric cars"));
+
+        assertEquals("electric cars", RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_varReference_resolvesFromAggregationVars() {
+        var request = mock(MongoRequest.class);
+        when(request.getAggregationVars()).thenReturn(new BsonDocument("q", new BsonString("electric cars")));
+        var rerankConfig = new BsonDocument("query", new BsonDocument("$var", new BsonString("q")));
+
+        assertEquals("electric cars", RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_varWithDefault_usesDefaultWhenUnbound() {
+        var request = mock(MongoRequest.class);
+        when(request.getAggregationVars()).thenReturn(new BsonDocument());
+        var rerankConfig = new BsonDocument("query",
+            new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
+
+        assertEquals("fallback", RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_varWithDefault_usesBoundValueWhenPresent() {
+        var request = mock(MongoRequest.class);
+        when(request.getAggregationVars()).thenReturn(new BsonDocument("q", new BsonString("bound value")));
+        var rerankConfig = new BsonDocument("query",
+            new BsonDocument("$var", new BsonArray(List.of(new BsonString("q"), new BsonString("fallback")))));
+
+        assertEquals("bound value", RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_unboundVarWithNoDefault_returnsNull() {
+        var request = mock(MongoRequest.class);
+        when(request.getAggregationVars()).thenReturn(new BsonDocument());
+        var rerankConfig = new BsonDocument("query", new BsonDocument("$var", new BsonString("q")));
+
+        assertNull(RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_missingQueryField_returnsNull() {
+        var request = mock(MongoRequest.class);
+        assertNull(RerankingInterceptor.resolveQuery(new BsonDocument(), request));
+    }
+
+    @Test
+    public void findRerankConfig_unescapesDollarKeysInsideRerankBlock() {
+        // request.getCollectionProps() returns the raw stored form: MongoDB disallows
+        // storing keys starting with $, so a "query": {"$var": "q"} rerank block is
+        // actually stored (and returned here) as {"_$var": "q"} -- findRerankConfig
+        // must unescape it, or resolveQuery() would never recognize the "$var" key.
+        var request = mock(MongoRequest.class);
+        var escapedRerank = new BsonDocument("model", new BsonString("rerank-2.5"))
+            .append("query", new BsonDocument("_$var", new BsonString("q")))
+            .append("topK", new BsonInt32(3));
+        var aggrs = new BsonArray(List.of(
+            new BsonDocument("uri", new BsonString("semantic-search")).append("rerank", escapedRerank)));
+        var collProps = new BsonDocument("aggrs", aggrs);
+
+        when(request.getCollectionProps()).thenReturn(collProps);
+        when(request.getAggregationOperation()).thenReturn("semantic-search");
+        when(request.getAggregationVars()).thenReturn(new BsonDocument("q", new BsonString("electric cars")));
+
+        var rerankConfig = RerankingInterceptor.findRerankConfig(request);
+        assertEquals("electric cars", RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
+
+    @Test
+    public void resolveQuery_varResolvesToNonString_returnsNull() {
+        var request = mock(MongoRequest.class);
+        when(request.getAggregationVars()).thenReturn(new BsonDocument("q", new BsonInt32(42)));
+        var rerankConfig = new BsonDocument("query", new BsonDocument("$var", new BsonString("q")));
+
+        assertNull(RerankingInterceptor.resolveQuery(rerankConfig, request));
+    }
 
     private static BsonArray sampleResults() {
         var results = new BsonArray();
