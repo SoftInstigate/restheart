@@ -673,7 +673,9 @@ vectorSearchIndexDeleteInterceptor:
 # Extracts text (Apache Tika) from every file uploaded to any GridFS bucket, splits it
 # into overlapping chunks and stores them in target-collection. embedding-provider is
 # optional: leave blank to rely on MongoDB's own autoEmbed index type on the chunks
-# collection instead of restheart-ai embedding them itself.
+# collection instead of restheart-ai embedding them itself. A filename with a recognized
+# source code extension (.java, .py, .go, ...) is chunked at function/class boundaries
+# instead, with no overlap between chunks -- see CodeAwareSplitter.
 documentChunkingInterceptor:
   enabled: false
   chunk-size: 1000

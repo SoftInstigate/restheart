@@ -21,7 +21,6 @@
 package org.restheart.ai.interceptors;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +38,8 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.ai.chunking.CodeAwareSplitter;
+import org.restheart.ai.chunking.CodeLanguage;
 import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
@@ -68,16 +69,26 @@ import com.mongodb.client.model.InsertManyOptions;
  * stored chunks via an {@code autoEmbed} Vector Search index, making the
  * content immediately searchable with {@code $vectorSearch}.
  *
- * <h2>Configuration (plugins-args)</h2>
+ * <h2>Configuration</h2>
  * <pre>{@code
- * plugins-args:
- *   documentChunkingInterceptor:
- *     enabled: false             # must be explicitly enabled
- *     chunk-size: 1000           # target chunk size in characters (default: 1000)
- *     chunk-overlap: 200         # overlap between consecutive chunks (default: 200)
- *     target-collection: _chunks # collection where chunks are stored (default: _chunks)
- *     embedding-provider: ""     # optional; name of a configured Provider<EmbeddingModel>
+ * documentChunkingInterceptor:
+ *   enabled: false             # must be explicitly enabled
+ *   chunk-size: 1000           # target chunk size in characters (default: 1000)
+ *   chunk-overlap: 200         # overlap between consecutive chunks (default: 200)
+ *   target-collection: _chunks # collection where chunks are stored (default: _chunks)
+ *   embedding-provider: ""     # optional; name of a configured Provider<EmbeddingModel>
  * }</pre>
+ *
+ * <h2>Phase 1b: code-aware chunking</h2>
+ * <p>When the uploaded file's name (its GridFS {@code filename}) has a recognized source
+ * code extension ({@link org.restheart.ai.chunking.CodeLanguage}), chunking is delegated
+ * to {@link org.restheart.ai.chunking.CodeAwareSplitter} instead of the plain
+ * character-window {@link #splitIntoChunks}: chunks are cut at function/class boundaries
+ * (brace depth for C-family languages, {@code def}/{@code class} for Python), falling
+ * back to line-based splitting only when a single block still exceeds {@code chunk-size}.
+ * Code chunks always use zero overlap — a structural chunk is already a cohesive unit, so
+ * {@code chunk-overlap} is ignored for them. Everything else (prose, an unrecognized
+ * extension, a missing filename) keeps chunking on plain character windows as before.
  *
  * <h2>Phase 2: embedding chunks (optional)</h2>
  * <p>When {@code embedding-provider} names a configured {@code Provider<EmbeddingModel>}
@@ -173,13 +184,15 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
             return;
         }
 
-        // Download the file bytes from GridFS.
+        // Download the file bytes (and filename, used below to detect source code) from GridFS.
         byte[] fileBytes;
+        String filename;
         try {
             var bucket = GridFSBuckets.create(mclient.getDatabase(dbName), bucketName);
-            var out    = new ByteArrayOutputStream();
-            bucket.downloadToStream(fileId, out);
-            fileBytes = out.toByteArray();
+            try (var in = bucket.openDownloadStream(fileId)) {
+                filename  = in.getGridFSFile().getFilename();
+                fileBytes = in.readAllBytes();
+            }
         } catch (Exception e) {
             LOGGER.warn("documentChunkingInterceptor: could not download file {} from {}/{}: {}",
                 fileId, dbName, bucketName, e.getMessage());
@@ -210,7 +223,7 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         var chunkOverlap = RequestOverrides.intVal(request, RequestOverrides.CHUNK_OVERLAP, defaultChunkOverlap);
         var targetCollection = RequestOverrides.str(request, RequestOverrides.TARGET_COLLECTION, defaultTargetCollection);
 
-        var chunks = splitIntoChunks(text.strip(), chunkSize, chunkOverlap);
+        var chunks = chunkText(text.strip(), filename, chunkSize, chunkOverlap);
         if (chunks.isEmpty()) return;
 
         var sourceRef = dbName + "/" + collName + "/" + fileId;
@@ -295,6 +308,25 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
         }
         var opResult = response.getDbOperationResult();
         return opResult != null ? opResult.getNewId() : null;
+    }
+
+    /**
+     * Chunks {@code text}, using {@link CodeAwareSplitter} at function/class boundaries
+     * when {@code filename}'s extension identifies it as source code, and falling back
+     * to plain character-window {@link #splitIntoChunks} for everything else (prose,
+     * unrecognized extensions, or a missing filename).
+     *
+     * <p>Code chunking always uses zero overlap, regardless of the configured/overridden
+     * {@code chunk-overlap}: a structural chunk (a function, a method) is already a
+     * cohesive unit, so duplicating trailing text from the previous one adds noise
+     * without adding context, unlike prose chunked at arbitrary character counts.
+     */
+    static List<String> chunkText(String text, String filename, int size, int overlap) {
+        return switch (CodeLanguage.fromFilename(filename)) {
+            case BRACE_BASED  -> CodeAwareSplitter.splitBraceBased(text, size, 0);
+            case INDENT_BASED -> CodeAwareSplitter.splitIndentBased(text, size, 0);
+            case null         -> splitIntoChunks(text, size, overlap);
+        };
     }
 
     /**

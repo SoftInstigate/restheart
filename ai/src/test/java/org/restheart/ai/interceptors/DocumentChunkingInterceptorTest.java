@@ -136,6 +136,41 @@ public class DocumentChunkingInterceptorTest {
     }
 
     @Test
+    public void chunkText_codeFilename_usesCodeAwareSplitting() {
+        var code = "public class A {\n    void a() {}\n}\nclass B {\n    void b() {}\n}\n";
+        // splitIntoChunks (character-window) would never produce a chunk split exactly
+        // at the class boundary the way CodeAwareSplitter does; assert dispatch happened
+        // by checking the code-aware result directly matches chunkText's output.
+        assertEquals(
+            org.restheart.ai.chunking.CodeAwareSplitter.splitBraceBased(code, 1000, 200),
+            DocumentChunkingInterceptor.chunkText(code, "Foo.java", 1000, 200));
+    }
+
+    @Test
+    public void chunkText_pythonFilename_usesIndentBasedSplitting() {
+        var code = "def a():\n    pass\ndef b():\n    pass\n";
+        assertEquals(
+            org.restheart.ai.chunking.CodeAwareSplitter.splitIndentBased(code, 1000, 200),
+            DocumentChunkingInterceptor.chunkText(code, "script.py", 1000, 200));
+    }
+
+    @Test
+    public void chunkText_nonCodeFilename_fallsBackToPlainSplitting() {
+        var text = "aaaa bbbb cccc dddd";
+        assertEquals(
+            DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
+            DocumentChunkingInterceptor.chunkText(text, "notes.txt", 10, 3));
+    }
+
+    @Test
+    public void chunkText_nullFilename_fallsBackToPlainSplitting() {
+        var text = "aaaa bbbb cccc dddd";
+        assertEquals(
+            DocumentChunkingInterceptor.splitIntoChunks(text, 10, 3),
+            DocumentChunkingInterceptor.chunkText(text, null, 10, 3));
+    }
+
+    @Test
     public void nullText_returnsNoChunks() {
         assertEquals(List.of(), DocumentChunkingInterceptor.splitIntoChunks(null, 1000, 200));
     }
