@@ -589,3 +589,19 @@
 /stripeCatalogCache/enabled: true
 /ordersCheckoutInterceptor/enabled: true
 /ordersCheckoutResponseInterceptor/enabled: true
+
+# restheart-ai. Safe to leave enabled for the whole suite: vectorSearchIndexList/Delete
+# Interceptors catch-and-log when Atlas Search isn't available (any GET/DELETE
+# /_indexes elsewhere in the suite just no-ops), and documentChunkingInterceptor
+# catches Tika/GridFS errors the same way — neither affects tests that don't target
+# them. Only karate/ai/*.feature actually exercises these; those scenarios are tagged
+# @ignore (see RunnerIT's class javadoc, same mechanism as streams.feature) because
+# running them needs MongoDB swapped for one with $vectorSearch + createSearchIndexes
+# support, e.g.:
+#   docker run -p 27017:27017 -e DO_NOT_TRACK=1 mongodb/mongodb-atlas-local:preview
+# then, after temporarily removing @ignore from the karate/ai/*.feature files:
+#   mvn -pl core verify -Dit.test=RunnerIT -Dkarate.path=classpath:karate/ai
+/vectorSearchIndexCreateInterceptor/enabled: true
+/vectorSearchIndexListInterceptor/enabled: true
+/vectorSearchIndexDeleteInterceptor/enabled: true
+/documentChunkingInterceptor/enabled: true

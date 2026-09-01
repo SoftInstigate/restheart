@@ -34,6 +34,13 @@ import com.intuit.karate.Runner;
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove 'ignore' tag from streams.feature
  *
+ * karate/ai/*.feature are disabled by default for the same reason (the {@code @ignore}
+ * tag) — they need MongoDB with {@code $vectorSearch}/{@code createSearchIndexes}
+ * support (e.g. {@code mongodb/mongodb-atlas-local:preview}), not the plain MongoDB
+ * the rest of the suite runs against. To run them: point MongoDB at that image,
+ * temporarily remove their {@code @ignore} tag, then run with
+ * {@code -Dkarate.path=classpath:karate/ai}.
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RunnerIT extends AbstactIT {
