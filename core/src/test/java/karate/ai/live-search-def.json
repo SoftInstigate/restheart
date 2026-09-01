@@ -1,0 +1,22 @@
+{
+    "aggrs": [
+        {
+            "uri": "semantic-search",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorSearch": {
+                    "index": "live_vectors",
+                    "path": "embedding",
+                    "queryVector": { "$vectorize": { "$var": "q" } },
+                    "numCandidates": 10,
+                    "limit": 3
+                }}
+            ],
+            "rerank": {
+                "model": "rerank-2.5",
+                "query": "$avars.q",
+                "topK": 2
+            }
+        }
+    ]
+}

@@ -617,10 +617,21 @@
 /autoEmbeddingInterceptor/enabled: true
 /vectorizeOperator/enabled: true
 
-# Test interceptor: attaches override-ai-embedding-provider=<name> (and the API key
-# from the VOYAGE_API_KEY env var) when ?_ai-embedding-override=<name> is present.
-# Used by karate/ai/embedding-provider.feature to exercise restheart-ai's embedding
-# providers per-request without affecting any other test.
+# rerankingInterceptor / voyageRerankProvider: same story as the embedding plugins
+# above -- enabled, but with no static atlas-api-key/rerank-provider/api-key, so
+# reranking only ever happens on a request that explicitly overrides it (only
+# karate/ai/live-semantic-search.feature does). rerankingInterceptor itself only fires
+# when the queried aggregation declares a "rerank" attribute, so leaving it enabled
+# with no static config has no effect on any other test.
+/rerankingInterceptor/enabled: true
+/voyageRerankProvider/enabled: true
+
+# Test interceptor: attaches override-ai-embedding-provider=<name> and/or
+# override-ai-rerank-provider=<name> (plus the API key from the VOYAGE_API_KEY env var)
+# when ?_ai-embedding-override=<name> and/or ?_ai-rerank-override=<name> is present.
+# Used by karate/ai/embedding-provider.feature and karate/ai/live-semantic-search.
+# feature to exercise restheart-ai's providers per-request without affecting any other
+# test.
 /aiEmbeddingProviderOverrideInterceptor/enabled: true
 
 # vectorScanInterceptor: brute-force vector search, no mongot/index required (#712).
