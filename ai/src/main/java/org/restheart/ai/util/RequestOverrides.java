@@ -89,6 +89,13 @@ public final class RequestOverrides {
     // ── rerankingInterceptor overrides ───────────────────────────────────────
     public static final String ATLAS_API_KEY = "override-ai-atlas-api-key";
     public static final String RERANK_API_URL = "override-ai-rerank-api-url";
+    /**
+     * Overrides which {@code Provider<RerankModel>} plugin name to use for this request
+     * (e.g. {@code cohereRerankProvider}, {@code voyageRerankProvider}). When blank
+     * (no override, no static {@code rerank-provider} configured), reranking falls back
+     * to the Atlas Reranking API directly — Phase 1 behavior, unchanged.
+     */
+    public static final String RERANK_PROVIDER = "override-ai-rerank-provider";
 
     private RequestOverrides() {
     }

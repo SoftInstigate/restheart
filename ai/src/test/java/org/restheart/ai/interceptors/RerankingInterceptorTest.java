@@ -23,10 +23,13 @@ package org.restheart.ai.interceptors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
+import org.restheart.plugins.ai.RankedResult;
 
 public class RerankingInterceptorTest {
 
@@ -97,6 +100,54 @@ public class RerankingInterceptorTest {
     @Test
     public void emptyRankingArray_producesEmptyResult() {
         var reranked = RerankingInterceptor.applyRanking(sampleResults(), "[]");
+        assertTrue(reranked.isEmpty());
+    }
+
+    // -- applyRankedResults (Phase 2: Provider<RerankModel> path) --------------
+
+    @Test
+    public void applyRankedResults_reordersDocumentsAccordingToIndex() {
+        var original = sampleResults();
+        var ranked = List.of(new RankedResult(2, 0.9), new RankedResult(0, 0.5));
+
+        var reranked = RerankingInterceptor.applyRankedResults(original, ranked);
+
+        assertEquals(2, reranked.size());
+        assertEquals("third document", reranked.get(0).asDocument().getString("text").getValue());
+        assertEquals("first document", reranked.get(1).asDocument().getString("text").getValue());
+    }
+
+    @Test
+    public void applyRankedResults_appendsRerankScore() {
+        var original = sampleResults();
+        var ranked = List.of(new RankedResult(1, 0.75));
+
+        var reranked = RerankingInterceptor.applyRankedResults(original, ranked);
+
+        assertEquals(1, reranked.size());
+        assertEquals(0.75, reranked.get(0).asDocument().getDouble("_rerankScore").getValue(), 1e-9);
+    }
+
+    @Test
+    public void applyRankedResults_outOfRangeIndex_isSkipped() {
+        var original = sampleResults();
+        var ranked = List.of(new RankedResult(99, 0.9), new RankedResult(1, 0.5));
+
+        var reranked = RerankingInterceptor.applyRankedResults(original, ranked);
+
+        assertEquals(1, reranked.size());
+        assertEquals("second document", reranked.get(0).asDocument().getString("text").getValue());
+    }
+
+    @Test
+    public void applyRankedResults_negativeIndex_isSkipped() {
+        var reranked = RerankingInterceptor.applyRankedResults(sampleResults(), List.of(new RankedResult(-1, 0.9)));
+        assertTrue(reranked.isEmpty());
+    }
+
+    @Test
+    public void applyRankedResults_emptyList_producesEmptyResult() {
+        var reranked = RerankingInterceptor.applyRankedResults(sampleResults(), List.of());
         assertTrue(reranked.isEmpty());
     }
 

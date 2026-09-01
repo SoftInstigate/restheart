@@ -25,7 +25,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -40,7 +42,10 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.ai.RankedResult;
+import org.restheart.plugins.ai.RerankModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,16 +84,26 @@ import org.slf4j.LoggerFactory;
  *     enabled: false
  *     atlas-api-key:  <key>
  *     rerank-api-url: https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank
+ *     rerank-provider: cohereRerankProvider   # optional; see "Pluggable rerank provider" below
  * }</pre>
  *
  * <p>The {@code query} field in the {@code rerank} block supports a simple
  * {@code "$avars.<varName>"} expression resolved against the current aggregation
  * variables.
  *
+ * <h2>Pluggable rerank provider (Phase 2)</h2>
+ * <p>When {@code rerank-provider} names a configured {@code Provider<RerankModel>}
+ * (e.g. {@code cohereRerankProvider}, {@code voyageRerankProvider}), that provider is
+ * used instead of the Atlas Reranking API. When unset (no static config, no
+ * {@link RequestOverrides#RERANK_PROVIDER} override), behavior is unchanged from
+ * Phase 1: the Atlas API is called directly via {@code atlas-api-key}/{@code rerank-api-url}.
+ * The {@code rerank} metadata block's {@code model}/{@code query}/{@code topK} fields are
+ * used identically in both cases — only which backend executes the rerank changes.
+ *
  * <h2>Multi-tenant</h2>
  * <p>Per request, a deployment's tenant-config interceptor may attach
- * {@link RequestOverrides#ATLAS_API_KEY} / {@link RequestOverrides#RERANK_API_URL} to
- * use different values for that tenant.
+ * {@link RequestOverrides#ATLAS_API_KEY} / {@link RequestOverrides#RERANK_API_URL} /
+ * {@link RequestOverrides#RERANK_PROVIDER} to use different values for that tenant.
  */
 @RegisterPlugin(
     name = "rerankingInterceptor",
@@ -107,17 +122,26 @@ public class RerankingInterceptor implements MongoInterceptor {
     // static, single-tenant defaults; overridden per request via RequestOverrides
     private String defaultAtlasApiKey;
     private String defaultRerankApiUrl;
+    private String defaultRerankProviderName;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    // resolved lazily (once all plugins have finished @OnInit) and cached per provider
+    // name, since override-ai-rerank-provider can name a different provider per request
+    private final Map<String, RerankModel> resolvedRerankModels = new ConcurrentHashMap<>();
+
     @OnInit
     public void setup() {
         this.defaultAtlasApiKey  = argOrDefault(config, "atlas-api-key", "");
         this.defaultRerankApiUrl = argOrDefault(config, "rerank-api-url",
             "https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank");
+        this.defaultRerankProviderName = argOrDefault(config, "rerank-provider", "");
     }
 
     @Override
@@ -136,7 +160,7 @@ public class RerankingInterceptor implements MongoInterceptor {
         var content = response.getContent();
         if (content == null || !content.isArray() || content.asArray().isEmpty()) return;
 
-        var model = rerankConfig.getString("model", new BsonString("voyage-rerank-2")).getValue();
+        var modelName = rerankConfig.getString("model", new BsonString("voyage-rerank-2")).getValue();
         var topK  = rerankConfig.getInt32("topK", new BsonInt32(content.asArray().size())).getValue();
         var query = resolveQuery(rerankConfig, request);
 
@@ -149,20 +173,64 @@ public class RerankingInterceptor implements MongoInterceptor {
         var documents = extractTexts(content.asArray());
         if (documents.isEmpty()) return;
 
-        var atlasApiKey = RequestOverrides.str(request, RequestOverrides.ATLAS_API_KEY, defaultAtlasApiKey);
-        var rerankApiUrl = RequestOverrides.str(request, RequestOverrides.RERANK_API_URL, defaultRerankApiUrl);
+        var providerName = RequestOverrides.str(request, RequestOverrides.RERANK_PROVIDER, defaultRerankProviderName);
 
         BsonArray reranked;
         try {
-            reranked = callRerankApi(model, query, topK, content.asArray(), documents, atlasApiKey, rerankApiUrl);
+            if (providerName.isBlank()) {
+                // Phase 1 behavior: call the Atlas Reranking API directly.
+                var atlasApiKey = RequestOverrides.str(request, RequestOverrides.ATLAS_API_KEY, defaultAtlasApiKey);
+                var rerankApiUrl = RequestOverrides.str(request, RequestOverrides.RERANK_API_URL, defaultRerankApiUrl);
+                reranked = callRerankApi(modelName, query, topK, content.asArray(), documents, atlasApiKey, rerankApiUrl);
+            } else {
+                // Phase 2: dispatch to the configured Provider<RerankModel>.
+                var rerankModel = resolveRerankModel(providerName);
+                if (rerankModel == null) {
+                    return;
+                }
+                var ranked = rerankModel.rerank(query, documents, topK, request);
+                reranked = applyRankedResults(content.asArray(), ranked);
+            }
         } catch (Exception e) {
-            LOGGER.error("rerankingInterceptor: rerank API call failed: {}", e.getMessage(), e);
+            LOGGER.error("rerankingInterceptor: rerank call failed: {}", e.getMessage(), e);
             response.addWarning("reranking failed: " + e.getMessage());
             return;
         }
 
         response.setContent(reranked);
         response.setCount(reranked.size());
+    }
+
+    /**
+     * Resolved lazily (rather than in {@link #setup()}) so that this interceptor does
+     * not depend on plugin initialization order relative to the configured provider.
+     * Cached per provider name because {@link RequestOverrides#RERANK_PROVIDER} can
+     * name a different provider on a per-request basis.
+     */
+    private RerankModel resolveRerankModel(String providerName) {
+        var cached = resolvedRerankModels.get(providerName);
+        if (cached != null) {
+            return cached;
+        }
+
+        var providerRecord = registry.getProviders().stream()
+            .filter(p -> providerName.equals(p.getName()))
+            .findFirst()
+            .orElse(null);
+
+        if (providerRecord == null || !providerRecord.isEnabled()) {
+            LOGGER.warn("rerankingInterceptor: rerank provider '{}' not found or not enabled", providerName);
+            return null;
+        }
+
+        var provided = providerRecord.getInstance().get(null);
+        if (!(provided instanceof RerankModel model)) {
+            LOGGER.warn("rerankingInterceptor: provider '{}' does not supply a RerankModel", providerName);
+            return null;
+        }
+
+        resolvedRerankModels.put(providerName, model);
+        return model;
     }
 
     // -------------------------------------------------------------------------
@@ -202,7 +270,7 @@ public class RerankingInterceptor implements MongoInterceptor {
         return raw;
     }
 
-    private java.util.List<String> extractTexts(BsonArray results) {
+    private List<String> extractTexts(BsonArray results) {
         var texts = new ArrayList<String>(results.size());
         for (var item : results) {
             if (!item.isDocument()) { texts.add(""); continue; }
@@ -215,7 +283,7 @@ public class RerankingInterceptor implements MongoInterceptor {
 
     private BsonArray callRerankApi(
         String model, String query, int topK,
-        BsonArray originalResults, java.util.List<String> documents,
+        BsonArray originalResults, List<String> documents,
         String atlasApiKey, String rerankApiUrl) throws Exception {
 
         var docsJson = new StringBuilder("[");
@@ -267,6 +335,27 @@ public class RerankingInterceptor implements MongoInterceptor {
                 var enriched = doc.asDocument().clone();
                 enriched.append("_rerankScore",
                     r.asDocument().getOrDefault("score", new BsonDouble(0)));
+                reranked.add(enriched);
+            }
+        }
+        return reranked;
+    }
+
+    /**
+     * Reorders {@code originalResults} according to already-parsed {@link RankedResult}s
+     * from a {@code Provider<RerankModel>} (Phase 2 path — see {@link #applyRanking} for
+     * the Phase 1/Atlas-response-body equivalent). Same skip semantics as
+     * {@code applyRanking}: an out-of-range index, or an index that doesn't reference a
+     * document, is skipped rather than failing the whole rerank.
+     */
+    static BsonArray applyRankedResults(BsonArray originalResults, List<RankedResult> ranked) {
+        var reranked = new BsonArray();
+        for (var r : ranked) {
+            if (r.index() < 0 || r.index() >= originalResults.size()) continue;
+            var doc = originalResults.get(r.index());
+            if (doc.isDocument()) {
+                var enriched = doc.asDocument().clone();
+                enriched.append("_rerankScore", new BsonDouble(r.score()));
                 reranked.add(enriched);
             }
         }
