@@ -90,7 +90,7 @@ All integration tests live in the `core` module.
 Alternatively, select them by file pattern with `it.includes` (default `**/*IT.java`):
 
 ```bash
-./mvnw verify -Dit.includes=**/RunnerIT.java
+./mvnw verify -Dit.includes="**/RunnerIT.java"
 ```
 
 ### Run only the Karate suite
@@ -98,7 +98,7 @@ Alternatively, select them by file pattern with `it.includes` (default `**/*IT.j
 The BDD tests under `core/src/test/java/karate/` are all driven by a single JUnit class, `RunnerIT`. Excluding the other integration test classes cuts the cycle down considerably while working on a feature file:
 
 ```bash
-./mvnw clean verify -Dit.includes=**/RunnerIT.java
+./mvnw clean verify -Dit.includes="**/RunnerIT.java"
 ```
 
 ### Run specific Karate features
@@ -107,11 +107,11 @@ The BDD tests under `core/src/test/java/karate/` are all driven by a single JUni
 
 ```bash
 # a single feature
-./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
 
 # a whole directory, or several
-./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe,classpath:karate/accounts
 ```
 
@@ -125,7 +125,7 @@ Note that features are not fully independent: some rely on data created by other
 export VOYAGE_API_KEY=<your-key>
 export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-key->\"$VOYAGE_API_KEY\";/documentChunkingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/autoEmbeddingInterceptor/enabled->true;/autoEmbeddingInterceptor/embedding-provider->\"voyageEmbeddingProvider\";/vectorizeOperator/enabled->true;/vectorizeOperator/embedding-provider->\"voyageEmbeddingProvider\""
 
-./mvnw clean verify -Dit.includes=**/RunnerIT.java \
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
   -Dkarate.embeddingProvider=true
 ```
@@ -141,7 +141,7 @@ Each `verify` rebuilds, then starts MongoDB and RESTHeart, runs the tests, and s
 First, drop `clean` — the build is incremental, so unchanged sources are not recompiled:
 
 ```bash
-./mvnw verify -o -DskipUTs -DskipUpdateLicense=true -Dit.includes=**/RunnerIT.java
+./mvnw verify -o -DskipUTs -DskipUpdateLicense=true -Dit.includes="**/RunnerIT.java"
 ```
 
 To skip the rebuild entirely, keep MongoDB and RESTHeart running between runs and tell Maven not to manage them with `-DskipTestEnv=true`.
@@ -163,7 +163,7 @@ Then re-run the tests as many times as needed, invoking failsafe directly so not
 ```bash
 ./mvnw -pl core failsafe:integration-test failsafe:verify \
   -DskipTestEnv=true \
-  -Dit.includes=**/RunnerIT.java \
+  -Dit.includes="**/RunnerIT.java" \
   -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
 ```
 
