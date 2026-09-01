@@ -53,6 +53,7 @@ Scenario: uploading a text-extractable file triggers chunking into the target co
     * header Authorization = adminAuth
     Given path chunksColl
     And param filter = '{"fileId": {"$oid": "' + fileId + '"}}'
+    And param sort = '{"chunkIndex": 1}'
     And param rep = 's'
     When method GET
     Then status 200
