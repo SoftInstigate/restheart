@@ -43,9 +43,27 @@
             <arg value="--fork" />
         </exec>
         <echo level="info">***** Waiting RESTHeart process to start...</echo>
-        <waitfor maxwait="10" maxwaitunit="second" checkevery="500">
+        <!--
+            60s, not 10s: with restheart-ai's providers/interceptors now enabled by
+            default in conf-overrides.yml (voyageEmbeddingProvider,
+            voyageContextualEmbeddingProvider, autoEmbeddingInterceptor,
+            vectorizeOperator, aiEmbeddingProviderOverrideInterceptor — on top of the
+            plugin count every other test config already carries), startup got slow
+            enough to blow through the old 10s ceiling on CI, which <waitfor> doesn't
+            treat as fatal by itself — it silently gives up and lets the build carry on
+            straight into karate, producing a cascade of "Connection refused" scenario
+            failures with no clear signal that the server never actually came up. The
+            explicit <fail> below turns that into an immediate, readable error instead.
+        -->
+        <waitfor maxwait="60" maxwaitunit="second" checkevery="500">
             <http url="http://localhost:8080/ping" />
         </waitfor>
+        <condition property="restheart.not.responding">
+            <not>
+                <http url="http://localhost:8080/ping" />
+            </not>
+        </condition>
+        <fail if="restheart.not.responding">RESTHeart did not respond to /ping within 60 seconds — check core/restheart.log for the actual startup error.</fail>
         <echo level="info">***** RESTHeart process started</echo>
     </target>
 </project>
