@@ -14,16 +14,36 @@
 /jwtAuthenticationMechanism/rolesClaim: roles
 /jwtAuthenticationMechanism/base64Encoded: false
 
+# apiKeyAuthMechanism shares the Bearer scheme with jwtAuthenticationMechanism: it runs
+# first (priority) and declines, with NOT_ATTEMPTED, anything not carrying the prefix.
+# Both are enabled here so api-key-auth.feature can prove they actually compose in a
+# running instance — the one claim the unit tests structurally cannot reach.
+/apiKeyAuthMechanism/enabled: true
+/apiKeyAuthMechanism/authenticator: mongoApiKeyAuthenticator
+/apiKeyAuthMechanism/prefix: rhak_
+
+/mongoApiKeyAuthenticator/enabled: true
+/mongoApiKeyAuthenticator/keys-db: test-apikeys
+/mongoApiKeyAuthenticator/keys-collection: keys
+# Off so the feature seeds keys and uses them immediately, and so a revocation test
+# would not have to wait out a TTL.
+/mongoApiKeyAuthenticator/cache-enabled: false
+
 /jwtConfigProvider/enabled: true
 /jwtConfigProvider/key: secret
 /jwtConfigProvider/algorithm: HS256
 /jwtConfigProvider/issuer: restheart.org
 /jwtConfigProvider/audience: null
+# Claims that survive a per-request override — see the account-properties-claims-override
+# feature. "teams" stands in for the claim a real deployment cannot lose (on a multi-tenant
+# node, the one naming the issuing node, verified on every later request).
+/jwtConfigProvider/required-account-properties-claims:
+  - teams
 
 /jwtTokenManager/enabled: true
 /jwtTokenManager/ttl: 15
 /jwtTokenManager/account-properties-claims:
-  - tenants
+  - teams
 
 /authCookieSetter/enabled: true
 /authCookieSetter/ttl: 15
@@ -38,6 +58,13 @@
     - userid: test
       password: secret
       roles: [ test ]
+
+    - userid: claimsTest
+      password: ClaimsPass123!
+      roles: [ user ]
+      profile:
+        name: FileClaims
+      teams: [ acme ]
 
     - userid: testWithArray
       password: secret
@@ -300,6 +327,39 @@
       predicate: path-prefix[path="/test-no-permissions"]
       priority: 0
 
+    # restheart-stripe registers no ACL rule of its own for these (only /stripe/webhook
+    # is self-registered, since it has no authenticated caller) — a deployment must grant
+    # access itself. Exercised by karate/stripe/licenses-and-subscription.feature.
+    - role: user
+      predicate: >
+        (path-prefix(path="/stripe/checkout")
+        or path-prefix(path="/stripe/portal")
+        or path-prefix(path="/stripe/subscription")
+        or path-prefix(path="/stripe/licenses"))
+      priority: 100
+
+    # products mode: customers create orders and browse the catalog. The module registers
+    # no ACL rule for these collections — a deployment grants access itself.
+    # Exercised by karate/stripe/products-*.feature.
+    - role: user
+      predicate: >
+        path-prefix(path="/restheart-test/orders")
+        or path-prefix(path="/restheart-test/catalog")
+      priority: 100
+
+    # Exercises the @subscription ACL variable end to end (webhook/admin-driven MongoDB
+    # write -> SubscriptionVarResolver -> predicate). Exercised by
+    # karate/stripe/subscription-acl-variable.feature.
+    - role: user
+      predicate: >
+        path-prefix(path="/restheart-test/stripe-gated")
+        and equals(@subscription.plan, "gold")
+      priority: 100
+      mongo:
+        # the feature PUTs with ?wm=upsert; without this the mongoPermissionAllowWriteMode
+        # transformer ANDs a false predicate into the permission and it never matches
+        allowWriteMode: true
+
 /mongoAclAuthorizer/acl-db: restheart-test
 /mongoAclAuthorizer/cache-enabled: false
 
@@ -401,11 +461,13 @@
   enabled: true
 
 /logging/log-level: DEBUG
+/logging/no-colors: true
 /core/name: integration-test
 
 # restheart-accounts
 /accountsConfig/enabled: true
-/accountsConfig/db: restheart-test
+# db and users-collection are sourced from mongoRealmAuthenticator
+# (see /mongoRealmAuthenticator/users-db above)
 /accountsConfig/account-properties-claims:
   - teams
 /accountsConfig/app-name: TestApp
@@ -447,6 +509,12 @@
 # resolves the database per-request. Does not affect other tests.
 /dbOverrideInterceptor/enabled: true
 
+# Test interceptor: attaches override-accounts-account-properties-claims when
+# ?_claims-override=<a,b,c> is present. Used by
+# account-properties-claims-override.feature to verify the per-request override (#661)
+# and that JwtHelper's denylist cannot be bypassed by it. Does not affect other tests.
+/accountPropertiesClaimsOverrideInterceptor/enabled: true
+
 /emails/enabled: true
 # Dummy SMTP config — emails are not sent in tests (X-Skip-Email: true intercepts before sending)
 /emails/smtp-hostname: localhost
@@ -473,3 +541,51 @@
 # is present. Used by oauth-invite.feature to verify per-team OAuth overrides
 # are honored on both the authorize AND callback legs. Does not affect other tests.
 /oauthOverrideInterceptor/enabled: true
+
+# restheart-stripe — db/teams-collection are sourced from mongoRealmAuthenticator
+# (see /mongoRealmAuthenticator/users-db above), same "teams" collection accountsConfig
+# uses. secret-key is a fake sk_test_ value: the karate suite only exercises paths that
+# never call the real Stripe API (webhook signature verification against
+# webhook-secret, and the auth checks on checkout/portal/licenses).
+/stripeConfig/enabled: true
+/stripeConfig/secret-key: sk_test_fake_key_for_tests_only
+/stripeConfig/webhook-secret: whsec_test_secret_for_karate_tests
+/stripeConfig/subscriptions/enabled: true
+/stripeConfig/subscriptions/default-plan: free
+/stripeConfig/subscriptions/success-url: http://localhost:4200/billing?success=true
+/stripeConfig/subscriptions/cancel-url: http://localhost:4200/billing?canceled=true
+/stripeConfig/subscriptions/portal-return-url: http://localhost:4200/billing
+/stripeConfig/subscriptions/plans/free/seats/mode: capped
+/stripeConfig/subscriptions/plans/free/seats/max: 1
+/stripeConfig/subscriptions/plans/gold/price-id-monthly: price_test_gold_monthly
+/stripeConfig/subscriptions/plans/gold/price-id-annual: price_test_gold_annual
+/stripeConfig/subscriptions/plans/gold/seats/mode: capped
+/stripeConfig/subscriptions/plans/gold/seats/max: 10
+
+# products mode. The catalog/orders/transactions collections live in restheart-test
+# (sourced from mongoRealmAuthenticator/users-db, same as everything else here).
+/stripeConfig/products/enabled: true
+/stripeConfig/products/catalog-collection: catalog
+/stripeConfig/products/orders-collection: orders
+/stripeConfig/products/transactions-collection: transactions
+/stripeConfig/products/default-currency: eur
+/stripeConfig/products/buyer-email-field: sub
+/stripeConfig/products/success-url: http://localhost:4200/shop/done?session={CHECKOUT_SESSION_ID}
+/stripeConfig/products/cancel-url: http://localhost:4200/shop/cart
+/stripeConfig/products/session-expires-minutes: 60
+/stripeConfig/products/max-line-items: 5
+/stripeConfig/products/max-quantity-per-line: 10
+# off: Stripe Tax would require a live account, and these tests never reach Stripe
+/stripeConfig/products/automatic-tax: false
+
+/stripeService/enabled: true
+/stripeInitializer/enabled: true
+/stripeCheckoutService/enabled: true
+/stripePortalService/enabled: true
+/stripeSubscriptionService/enabled: true
+/stripeWebhookService/enabled: true
+/stripeLicensesService/enabled: true
+/stripePlansService/enabled: true
+/stripeCatalogCache/enabled: true
+/ordersCheckoutInterceptor/enabled: true
+/ordersCheckoutResponseInterceptor/enabled: true

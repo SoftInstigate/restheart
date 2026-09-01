@@ -36,8 +36,8 @@ import org.restheart.security.ACLRegistry;
  * Forbids all requests to Mongo API that use an blacklisted operator in the filter query paramter
  */
 @RegisterPlugin(name = "filterOperatorsBlacklist",
-    description = "forbids requests containing filter qparameter using operator in blacklist",
-    enabledByDefault = false)
+        description = "forbids requests containing filter qparameter using operator in blacklist",
+        enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
     @Inject("acl-registry")
     private ACLRegistry registry;
@@ -74,7 +74,7 @@ public class FilterOperatorsBlacklist implements Initializer {
      * @return true if doc contains any operator in blacklist
      */
     private boolean contains(BsonDocument doc, List<String> blacklist) {
-        if (doc  == null) {
+        if (doc == null) {
             return true;
         }
 
@@ -84,17 +84,17 @@ public class FilterOperatorsBlacklist implements Initializer {
             return true;
         } else {
             var foundInSubDocs = doc.keySet().stream()
-                .filter(key -> doc.get(key).isDocument())
-                .map(key -> doc.get(key).asDocument())
-                .anyMatch(sdoc -> contains(sdoc, blacklist));
+                    .filter(key -> doc.get(key).isDocument())
+                    .map(key -> doc.get(key).asDocument())
+                    .anyMatch(sdoc -> contains(sdoc, blacklist));
 
             if (foundInSubDocs) {
                 return true;
             } else {
                 return doc.keySet().stream()
-                    .filter(key -> doc.get(key).isArray())
-                    .map(key -> doc.get(key).asArray())
-                    .anyMatch(array -> contains(array, blacklist));
+                        .filter(key -> doc.get(key).isArray())
+                        .map(key -> doc.get(key).asArray())
+                        .anyMatch(array -> contains(array, blacklist));
             }
         }
     }
@@ -105,17 +105,17 @@ public class FilterOperatorsBlacklist implements Initializer {
         }
 
         var foundInDocs = array.stream()
-            .filter(el -> el.isDocument())
-            .map(el -> el.asDocument())
-            .anyMatch(doc -> contains(doc, blacklist));
+                .filter(el -> el.isDocument())
+                .map(el -> el.asDocument())
+                .anyMatch(doc -> contains(doc, blacklist));
 
         if (foundInDocs) {
             return true;
         } else {
             return array.stream()
-                .filter(el -> el.isArray())
-                .map(el -> el.asArray())
-                .anyMatch(subArray -> contains(subArray, blacklist));
+                    .filter(el -> el.isArray())
+                    .map(el -> el.asArray())
+                    .anyMatch(subArray -> contains(subArray, blacklist));
         }
     }
 }

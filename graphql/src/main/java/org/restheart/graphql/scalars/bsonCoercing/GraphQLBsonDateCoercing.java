@@ -39,23 +39,23 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 
-public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime>  {
+public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime> {
     @Override
     public BsonDateTime serialize(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingSerializeException {
-        if(input == null || input instanceof BsonNull) {
+        if (input == null || input instanceof BsonNull) {
             return null;
-        } else if (input instanceof BsonDateTime bsonDateTime){
+        } else if (input instanceof BsonDateTime bsonDateTime) {
             return bsonDateTime;
         } else {
-            throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(input) +"'.");
+            throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(input) + "'.");
         }
     }
 
     @Override
     public BsonDateTime parseValue(Object input, GraphQLContext graphQLContext, Locale locale) throws CoercingParseValueException {
         var possibleDate = convertImpl(input);
-        if (possibleDate == null){
-            throw new CoercingParseValueException("Expected type 'Long' or 'String' (with a valid OffsetDateTime) but was '" + typeName(input) +"'.");
+        if (possibleDate == null) {
+            throw new CoercingParseValueException("Expected type 'Long' or 'String' (with a valid OffsetDateTime) but was '" + typeName(input) + "'.");
         } else {
             return new BsonDateTime(possibleDate);
         }
@@ -71,7 +71,7 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
             } catch (DateTimeParseException dtpe) {
                 try {
                     return new BsonDateTime(Long.parseLong(possibleDate));
-                } catch (NumberFormatException e2){
+                } catch (NumberFormatException e2) {
                     throw new CoercingParseLiteralException("Input string is not a valid date.");
                 }
             }
@@ -80,21 +80,21 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateT
         }
     }
 
-    private Long convertImpl(Object input){
-        if (input instanceof Long _long){
+    private Long convertImpl(Object input) {
+        if (input instanceof Long _long) {
             return _long;
-        } else if (input instanceof String string){
+        } else if (input instanceof String string) {
             try {
                 var ofsDate = OffsetDateTime.parse(string, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
                 return ofsDate.toInstant().toEpochMilli();
-            } catch (DateTimeParseException dtpe){
+            } catch (DateTimeParseException dtpe) {
                 try {
                     return Long.valueOf(string);
                 } catch (NumberFormatException nfe) {
                     return null;
                 }
             }
-        } else if (input instanceof OffsetDateTime offsetDateTime){
+        } else if (input instanceof OffsetDateTime offsetDateTime) {
             return offsetDateTime.toInstant().toEpochMilli();
         }
 

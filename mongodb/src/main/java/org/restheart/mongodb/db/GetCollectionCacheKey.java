@@ -35,32 +35,32 @@ import com.mongodb.client.MongoCollection;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public record GetCollectionCacheKey(
-    Optional<ClientSession> session,
-    MongoCollection<BsonDocument> collection,
-    BsonDocument sort,
-    BsonDocument filter,
-    BsonDocument keys,
-    BsonArray hints,
-    int from,
-    int to,
-    long cursorId,
-    boolean exhausted) {
+        Optional<ClientSession> session,
+        MongoCollection<BsonDocument> collection,
+        BsonDocument sort,
+        BsonDocument filter,
+        BsonDocument keys,
+        BsonArray hints,
+        int from,
+        int to,
+        long cursorId,
+        boolean exhausted) {
 
     /**
      * @param key
      */
     public static GetCollectionCacheKey clone(GetCollectionCacheKey key) {
         return new GetCollectionCacheKey(
-            key.session,
-            key.collection,
-            key.sort,
-            key.filter,
-            key.keys,
-            key.hints,
-            key.from,
-            key.to,
-            key.cursorId,
-            key.exhausted);
+                key.session,
+                key.collection,
+                key.sort,
+                key.filter,
+                key.keys,
+                key.hints,
+                key.from,
+                key.to,
+                key.cursorId,
+                key.exhausted);
     }
 
     String getCacheStatsGroup() {
@@ -80,16 +80,16 @@ public record GetCollectionCacheKey(
     @Override
     public String toString() {
         return String.format(
-            "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hints=%s, from=%s, to=%s, cursorId=%s, exhausted=%s]",
-            session,
-            collection.getNamespace(),
-            sort,
-            filter,
-            keys,
-            hints,
-            from,
-            to,
-            cursorId,
-            exhausted);
+                "[session=%s, collection=%s, sort=%s, filter=%s, keys=%s, hints=%s, from=%s, to=%s, cursorId=%s, exhausted=%s]",
+                session,
+                collection.getNamespace(),
+                sort,
+                filter,
+                keys,
+                hints,
+                from,
+                to,
+                cursorId,
+                exhausted);
     }
 }

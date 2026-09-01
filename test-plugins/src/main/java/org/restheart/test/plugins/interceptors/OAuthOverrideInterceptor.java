@@ -28,19 +28,19 @@ import org.restheart.plugins.WildcardInterceptor;
  * {@code OAuthService#handleCallback}.
  */
 @RegisterPlugin(
-    name = "oauthOverrideInterceptor",
-    description = "Attaches override-accounts-oauth-* per-request when ?_oauth-override=1 is present",
-    interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
-    priority = 20,
-    enabledByDefault = false)
+        name = "oauthOverrideInterceptor",
+        description = "Attaches override-accounts-oauth-* per-request when ?_oauth-override=1 is present",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT,
+        priority = 20,
+        enabledByDefault = false)
 public class OAuthOverrideInterceptor implements WildcardInterceptor {
 
     private static final String QPARAM = "_oauth-override";
 
-    public static final String OVERRIDDEN_API_BASE_URL  = "http://localhost:8080/overridden";
-    public static final String OVERRIDDEN_CLIENT_ID     = "overridden-client-id";
+    public static final String OVERRIDDEN_API_BASE_URL = "http://localhost:8080/overridden";
+    public static final String OVERRIDDEN_CLIENT_ID = "overridden-client-id";
     public static final String OVERRIDDEN_CLIENT_SECRET = "overridden-client-secret";
-    public static final String OVERRIDDEN_SCOPE         = "overridden-scope";
+    public static final String OVERRIDDEN_SCOPE = "overridden-scope";
 
     @Override
     public void handle(ServiceRequest<?> req, ServiceResponse<?> res) throws Exception {

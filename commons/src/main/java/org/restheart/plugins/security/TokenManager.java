@@ -19,6 +19,8 @@
  */
 package org.restheart.plugins.security;
 
+import org.restheart.exchange.Request;
+
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
@@ -105,15 +107,16 @@ import io.undertow.util.HttpString;
 public interface TokenManager extends Authenticator {
     /** HTTP header name for transmitting authentication tokens to clients */
     public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-    
+
     /** HTTP header name for communicating token expiration time to clients */
     public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
-    
+
     /** HTTP header name for indicating where clients should send tokens for validation */
     public static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
-    
+
     /** HTTP header name for exposing token-related headers in CORS scenarios */
     public static final HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
+
     /**
      * Retrieves or generates a valid authentication token for the specified user account.
      * <p>
@@ -147,6 +150,25 @@ public interface TokenManager extends Authenticator {
      * @return a PasswordCredential containing the token as a char array, or null if token generation fails
      */
     public PasswordCredential get(final Account account);
+
+    /**
+     * Generates or retrieves a token for the given account, in the context of a request.
+     *
+     * <p>Same contract as {@link #get(Account)}, plus the request that triggered the issuance.
+     * A token manager whose content depends on per-request state — for instance a multi-tenant
+     * deployment where the set of account properties copied into the token is configured per
+     * tenant — needs the request to resolve that state; {@link #get(Account)} alone cannot.
+     *
+     * <p>The default implementation ignores the request and delegates to {@link #get(Account)},
+     * so existing token managers keep working unchanged.
+     *
+     * @param account the authenticated user account for which to generate/retrieve a token
+     * @param request the request being served; may be {@code null} when no request is in scope
+     * @return a PasswordCredential containing the token as a char array, or null if token generation fails
+     */
+    default PasswordCredential get(final Account account, final Request<?> request) {
+        return get(account);
+    }
 
     /**
      * Invalidates any tokens associated with the specified user account.

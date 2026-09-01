@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 public class SseServiceTest {
 
     @RegisterPlugin(
-        name        = "testSseService",
-        description = "SSE service used in unit tests",
-        defaultURI  = "/sse/test",
-        secure      = false
+            name = "testSseService",
+            description = "SSE service used in unit tests",
+            defaultURI = "/sse/test",
+            secure = false
     )
     static class TestSseService implements SseService {
         @Override
@@ -49,7 +49,7 @@ public class SseServiceTest {
     public void sseServiceIsAPlugin() {
         var svc = new TestSseService();
         assertTrue(svc instanceof Plugin,
-            "SseService must extend Plugin");
+                "SseService must extend Plugin");
     }
 
     @Test
@@ -57,8 +57,8 @@ public class SseServiceTest {
         var ann = TestSseService.class.getAnnotation(RegisterPlugin.class);
         assertNotNull(ann, "@RegisterPlugin must be present");
         assertEquals("testSseService", ann.name());
-        assertEquals("/sse/test",      ann.defaultURI());
-        assertEquals(false,            ann.secure());
+        assertEquals("/sse/test", ann.defaultURI());
+        assertEquals(false, ann.secure());
     }
 
 }

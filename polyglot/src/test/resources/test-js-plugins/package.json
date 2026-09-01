@@ -1,0 +1,4 @@
+{
+    "rh:services": ["hello.mjs"],
+    "rh:interceptors": ["hello-interceptor.mjs"]
+}

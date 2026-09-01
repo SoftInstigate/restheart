@@ -12,12 +12,15 @@ import org.restheart.accounts.util.JwtHelper;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -48,9 +51,9 @@ import java.util.HashSet;
  * }</pre>
  */
 @RegisterPlugin(
-        name             = "activateService",
-        description      = "PATCH /auth/activate — activates an invitation and sets password",
-        defaultURI       = "/auth/activate",
+        name = "activateService",
+        description = "PATCH /auth/activate — activates an invitation and sets password",
+        defaultURI = "/auth/activate",
         enabledByDefault = false)
 public class ActivateService implements JsonService {
 
@@ -68,11 +71,17 @@ public class ActivateService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/activate") && (r.isPatch() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/activate"));
     }
@@ -96,8 +105,8 @@ public class ActivateService implements JsonService {
         }
         var jo = body.getAsJsonObject();
 
-        var email    = stringField(jo, "email");
-        var token    = stringField(jo, "token");
+        var email = stringField(jo, "email");
+        var token = stringField(jo, "token");
         var password = stringField(jo, "password");
 
         if (email == null || email.isBlank()) {
@@ -147,11 +156,16 @@ public class ActivateService implements JsonService {
         rolesArray.add(new BsonString(effectiveRole));
         setDoc.put("roles", rolesArray);
 
-        db(req).updateUser(normalizedEmail, setDoc);
+        try {
+            db(req).updateUser(normalizedEmail, setDoc);
+        } catch (BadRequestException e) {
+            Errors.error(res, e);
+            return;
+        }
 
         // 9. Add org membership now that the user has activated (invitation accepted)
-        var teamId    = invite.get("teamId");
-        var orgRole  = invite.getString("role").getValue();
+        var teamId = invite.get("teamId");
+        var orgRole = invite.getString("role").getValue();
         accountsService.getMembershipProvider(req).addMember(normalizedEmail, teamId, orgRole);
 
         // 10. Delete the invitation from auth_invitations (one-shot token)
@@ -168,7 +182,8 @@ public class ActivateService implements JsonService {
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,
-                user);
+                user,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         // 11. Auto-login: deliver the token per the `delivery` query parameter.
         // fetch()-based endpoint → cookie (default) or body (bearer).
@@ -194,7 +209,7 @@ public class ActivateService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     /**

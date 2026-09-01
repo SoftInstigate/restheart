@@ -83,7 +83,10 @@ public class MongoRealmAuthenticator implements Authenticator {
     private BsonDocument createUserDocument = null;
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
     private List<String> attachedProps = null;
-    private record CacheKey(String id, String db) {};
+
+    private record CacheKey(String id, String db) {
+    }
+    ;
     private LoadingCache<CacheKey, MongoRealmAccount> USERS_CACHE = null;
     private static final transient Cache<CacheKey, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000);
 
@@ -110,7 +113,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.enforceMinimumPasswordStrength= argOrDefault(config, "enforce-minimum-password-strength", false);
+        this.enforceMinimumPasswordStrength = argOrDefault(config, "enforce-minimum-password-strength", false);
         this.minimumPasswordStrength = argOrDefault(config, "minimum-password-strength", 3);
 
         this.bcryptHashedPassword = arg(config, "bcrypt-hashed-password");
@@ -224,10 +227,10 @@ public class MongoRealmAuthenticator implements Authenticator {
         if (verified) {
             LOGGER.debug("User '{}' verified - Lookup: {}ms, Credential: {}ms, Total: {}ms", id, accountLookupDuration, credentialVerificationDuration, totalDuration);
 
-       			// Copy configured attached parameters to account properties
-       			if ( this.attachedProps != null && !this.attachedProps.isEmpty()) {
-        				copyAttachedParamsToAccount(attachedParams, ref);
-       			}
+            // Copy configured attached parameters to account properties
+            if (this.attachedProps != null && !this.attachedProps.isEmpty()) {
+                copyAttachedParamsToAccount(attachedParams, ref);
+            }
 
             updateAuthTokenCache(ref);
             return ref;
@@ -264,37 +267,37 @@ public class MongoRealmAuthenticator implements Authenticator {
         copyAttachedParamsToAccount(req.attachedParams(), account);
     }
 
-	private void copyAttachedParamsToAccount(Map<String, Object> props, final MongoRealmAccount account) {
-		if (account.properties() == null) {
-			LOGGER.debug("Cannot copy attached params: account properties is null");
-			return;
-		}
+    private void copyAttachedParamsToAccount(Map<String, Object> props, final MongoRealmAccount account) {
+        if (account.properties() == null) {
+            LOGGER.debug("Cannot copy attached params: account properties is null");
+            return;
+        }
 
-		for (String paramName : this.attachedProps) {
-			Object paramValue = props.get(paramName);
+        for (String paramName : this.attachedProps) {
+            Object paramValue = props.get(paramName);
 
-			if (paramValue != null) {
-				// Convert the parameter value to a BsonValue and add to account properties
-				try {
-					if (paramValue instanceof String) {
-						account.properties().put(paramName, new BsonString((String) paramValue));
-					} else if (paramValue instanceof BsonDocument) {
-						account.properties().put(paramName, (BsonDocument) paramValue);
-					} else if (paramValue instanceof org.bson.BsonValue) {
-						account.properties().put(paramName, (org.bson.BsonValue) paramValue);
-					} else {
-						// For other types, convert to string
-						account.properties().put(paramName, new BsonString(paramValue.toString()));
-					}
-					LOGGER.debug("Copied attached param '{}' to account properties for user '{}'", paramName, account.getPrincipal().getName());
-				} catch (Exception e) {
-					LOGGER.warn("Failed to copy attached param '{}' to account properties: {}", paramName, e.getMessage());
-				}
-			} else {
-				LOGGER.trace("Attached param '{}' not found in request, skipping", paramName);
-			}
-		}
-	}
+            if (paramValue != null) {
+                // Convert the parameter value to a BsonValue and add to account properties
+                try {
+                    if (paramValue instanceof String) {
+                        account.properties().put(paramName, new BsonString((String) paramValue));
+                    } else if (paramValue instanceof BsonDocument) {
+                        account.properties().put(paramName, (BsonDocument) paramValue);
+                    } else if (paramValue instanceof org.bson.BsonValue) {
+                        account.properties().put(paramName, (org.bson.BsonValue) paramValue);
+                    } else {
+                        // For other types, convert to string
+                        account.properties().put(paramName, new BsonString(paramValue.toString()));
+                    }
+                    LOGGER.debug("Copied attached param '{}' to account properties for user '{}'", paramName, account.getPrincipal().getName());
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to copy attached param '{}' to account properties: {}", paramName, e.getMessage());
+                }
+            } else {
+                LOGGER.trace("Attached param '{}' not found in request, skipping", paramName);
+            }
+        }
+    }
 
     /**
      * @return the bcryptComplexity
@@ -339,11 +342,11 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     private boolean verifyPasswordCredential(final String usersDb, final PwdCredentialAccount ref, final PasswordCredential credential) {
         if (ref == null
-            || ref.getPrincipal() == null
-            || ref.getPrincipal().getName() == null
-            || ref.getCredentials() == null
-            || ref.getCredentials().getPassword() == null
-            || credential == null || credential.getPassword() == null) {
+                || ref.getPrincipal() == null
+                || ref.getPrincipal().getName() == null
+                || ref.getCredentials() == null
+                || ref.getCredentials().getPassword() == null
+                || credential == null || credential.getPassword() == null) {
             return false;
         }
 
@@ -363,11 +366,11 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
 
         if (ref == null
-            || ref.getCredentials() == null
-            || ref.getCredentials().getPassword() == null
-            || ref.getPrincipal() == null
-            || ref.getPrincipal().getName() == null
-            || credential == null) {
+                || ref.getCredentials() == null
+                || ref.getCredentials().getPassword() == null
+                || ref.getPrincipal() == null
+                || ref.getPrincipal().getName() == null
+                || credential == null) {
             return false;
         }
 
@@ -387,7 +390,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.error(ne.getMessage(), ne);
             return false;
         }
-	}
+    }
 
     private boolean checkPassword(final String usersDb, final String username, final boolean hashed, final char[] password, final char[] expected) {
         if (hashed) {
@@ -426,6 +429,50 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
+    /**
+     * Re-reads an account from the users store, bypassing the account cache, without verifying
+     * any credential.
+     *
+     * <p>For callers that must see the account as it is <em>now</em> rather than as it was when
+     * the caller authenticated — token renewal being the case this exists for. The cache entry is
+     * invalidated first, so the guarantee is "re-read", not "re-read unless the cache happens to
+     * still hold it"; the reload repopulates it for the requests that follow.
+     *
+     * <p>The configured {@code attached-props} are copied onto the account exactly as
+     * {@link #verify(Request, String, Credential)} does. Skipping that step would hand back an
+     * account missing the properties a deployment attaches per-request — on a multi-tenant
+     * deployment those identify the node, and a token issued without them is a token its own
+     * verifier rejects.
+     *
+     * <p>This performs no authentication and no authorization: the caller has already established
+     * who the principal is and is responsible for deciding that re-reading it is legitimate — in
+     * particular that {@code id} belongs to the same realm the request resolves to.
+     *
+     * @param req the current request, which determines the users db (see {@link #getUsersDb(Request)})
+     * @param id  the principal name
+     * @return the account, or {@code null} if this deployment has no users store or the user is
+     *         not in it
+     */
+    public MongoRealmAccount reloadAccount(final Request<?> req, final String id) {
+        if (this.mclient == null || id == null) {
+            return null;
+        }
+
+        final var usersDb = getUsersDb(req);
+
+        if (USERS_CACHE != null) {
+            USERS_CACHE.invalidate(new CacheKey(id, usersDb));
+        }
+
+        final var account = getAccount(usersDb, id);
+
+        if (account != null && this.attachedProps != null && !this.attachedProps.isEmpty()) {
+            copyAttachedParamsToAccount(req, account);
+        }
+
+        return account;
+    }
+
     private MongoRealmAccount getAccount(final String usersDb, final String id) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
@@ -448,10 +495,13 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * if client authenticates passing the real credentials, update the account
-     * in the auth-token cache, otherwise the client authenticating with the
-     * auth-token will not see roles updates until the cache expires (by default
-     * TTL is 15 minutes after last request)
+     * When a client authenticates with real credentials (Basic Auth), invalidate the
+     * cached auth-token so that the next token generation picks up fresh roles and
+     * account-properties-claims from the request context. Simply removing the stale
+     * entry is better than regenerating it here: this method runs before
+     * {@code TokenInjector} attaches the per-request claim list, so any token built
+     * at this point would use the node-wide default instead of the tenant-specific
+     * override.
      *
      * @param account
      */
@@ -460,11 +510,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             final var _tm = registry.getTokenManager();
 
             if (_tm != null) {
-                final var tm = _tm.getInstance();
-
-                if (tm.get(account) != null) {
-                    tm.update(account);
-                }
+                _tm.getInstance().invalidate(account);
             }
         } catch (final ConfigurationException pce) {
             LOGGER.warn("error getting the token manager", pce);

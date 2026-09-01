@@ -10,8 +10,8 @@ import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -48,10 +48,10 @@ import java.nio.charset.StandardCharsets;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "inviteService",
-        description      = "POST /auth/invite \u2014 invites a user to the caller's team",
-        defaultURI       = "/auth/invite",
-        secure           = true,
+        name = "inviteService",
+        description = "POST /auth/invite \u2014 invites a user to the caller's team",
+        defaultURI = "/auth/invite",
+        secure = true,
         enabledByDefault = false)
 public class InviteService implements JsonService {
 
@@ -160,19 +160,19 @@ public class InviteService implements JsonService {
 
         // 6. Create invite token
         var inviteToken = TokenUtils.generateToken();
-        var isNewUser   = existing.isEmpty();
+        var isNewUser = existing.isEmpty();
 
         if (isNewUser) {
             // New user: create with $unauthenticated role (no inviteToken on user doc)
             var hashedPwd = TokenUtils.hashPassword(TokenUtils.generateToken());
-            var rolesArr  = new BsonArray();
+            var rolesArr = new BsonArray();
             rolesArr.add(new BsonString("$unauthenticated"));
 
             var userDoc = new BsonDocument();
-            userDoc.put("_id",      new BsonString(invitedEmail));
+            userDoc.put("_id", new BsonString(invitedEmail));
             userDoc.put("password", new BsonString(hashedPwd));
-            userDoc.put("roles",    rolesArr);
-            userDoc.put("profile",  new BsonDocument());
+            userDoc.put("roles", rolesArr);
+            userDoc.put("profile", new BsonDocument());
 
             if (!db(req).insertUser(userDoc)) {
                 Errors.error(res, HttpStatus.SC_CONFLICT, "User already registered");
@@ -220,7 +220,7 @@ public class InviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", roleDisplay);
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(invitedEmail, invitedEmail, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite sent to <{}> by {} (team={}, newUser={})", invitedEmail, inviterName, callerTeam, isNewUser);
@@ -240,7 +240,7 @@ public class InviteService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
     }
 
     /** Loads the team display name for the given teamId, falling back to its extended JSON form. */

@@ -48,11 +48,11 @@ import org.restheart.utils.HttpStatus;
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc9728">RFC 9728</a>
  */
 @RegisterPlugin(
-    name = "oauthProtectedResourceMetadataService",
-    description = "OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)",
-    secure = false,
-    enabledByDefault = true,
-    defaultURI = "/.well-known/oauth-protected-resource"
+        name = "oauthProtectedResourceMetadataService",
+        description = "OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)",
+        secure = false,
+        enabledByDefault = true,
+        defaultURI = "/.well-known/oauth-protected-resource"
 )
 public class OAuthProtectedResourceMetadataService implements JsonService {
 
@@ -72,7 +72,7 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
 
         // allow unauthenticated access to this discovery endpoint and all sub-paths
         aclRegistry.registerAllow(req -> req.getPath().equals(WELL_KNOWN_PREFIX)
-            || req.getPath().startsWith(WELL_KNOWN_PREFIX + "/"));
+                || req.getPath().startsWith(WELL_KNOWN_PREFIX + "/"));
     }
 
     @Override
@@ -84,8 +84,8 @@ public class OAuthProtectedResourceMetadataService implements JsonService {
                 var resourceUrl = resourcePath.isEmpty() ? base : base + resourcePath;
 
                 var metadata = object()
-                    .put("resource", resourceUrl)
-                    .put("authorization_servers", array().add(base));
+                        .put("resource", resourceUrl)
+                        .put("authorization_servers", array().add(base));
 
                 response.setContent(metadata);
                 response.setStatusCode(HttpStatus.SC_OK);

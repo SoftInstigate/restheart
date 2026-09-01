@@ -73,15 +73,15 @@ public class DeleteDocumentHandler extends PipelinedHandler {
         }
 
         var result = documents.deleteDocument(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            Optional.of(request.getDocumentId()),
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                Optional.of(request.getDocumentId()),
+                Optional.ofNullable(request.getFiltersDocument()),
+                Optional.ofNullable(request.getShardKey()),
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

@@ -2,14 +2,13 @@ package org.restheart.accounts;
 
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoClient;
-import org.bson.BsonValue;
 import org.restheart.plugins.accounts.AccountsConfigData;
 import org.restheart.emails.EmailSender;
 import org.restheart.accounts.util.DbHelper;
 import org.restheart.accounts.util.Errors;
 import org.restheart.accounts.util.RequestOverrides;
-import org.restheart.accounts.util.EmailRenderer;
-import org.restheart.accounts.util.EmailTemplateLoader;
+import org.restheart.emails.EmailRenderer;
+import org.restheart.emails.EmailTemplateLoader;
 import org.restheart.accounts.util.TokenUtils;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -41,10 +40,10 @@ import java.nio.charset.StandardCharsets;
  * <p>This endpoint can be disabled via {@code accountsConfig.membership-endpoints-enabled: false}.
  */
 @RegisterPlugin(
-        name             = "resendInviteService",
-        description      = "POST /auth/resend-invite \u2014 re-sends the activation email",
-        defaultURI       = "/auth/resend-invite",
-        secure           = true,
+        name = "resendInviteService",
+        description = "POST /auth/resend-invite \u2014 re-sends the activation email",
+        defaultURI = "/auth/resend-invite",
+        secure = true,
         enabledByDefault = false)
 public class ResendInviteService implements JsonService {
 
@@ -188,7 +187,7 @@ public class ResendInviteService implements JsonService {
                             "team-name", teamName != null ? teamName : "",
                             "role", inviteRole.substring(0, 1).toUpperCase() + inviteRole.substring(1));
                     var rendered = EmailRenderer.render(tmpl, vars, conf.defaultLocale());
-                    emails.sendEmail(email, email, rendered.subject(), rendered.htmlBody());
+                    emails.sendEmailAsync(email, email, rendered.subject(), rendered.htmlBody());
                 }
 
                 LOGGER.info("Invite email re-sent to <{}> by {} (team={})",
@@ -212,7 +211,7 @@ public class ResendInviteService implements JsonService {
     // -------------------------------------------------------------------------
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf));
     }
 
 }

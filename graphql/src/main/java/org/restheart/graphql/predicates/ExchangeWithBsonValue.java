@@ -36,7 +36,7 @@ import io.undertow.util.AttachmentKey;
  */
 public class ExchangeWithBsonValue {
     public static HttpServerExchange exchange(BsonValue value) {
-        var e = new HttpServerExchange((ServerConnection)null);
+        var e = new HttpServerExchange((ServerConnection) null);
         e.putAttachment(DOC_KEY, value);
         return e;
     }
@@ -54,7 +54,7 @@ public class ExchangeWithBsonValue {
      *
      * @param exchange The exchange containing the BsonValue from which the JXPathContext is constructed.
      * @return The JXPathContext built from the BsonValue attached to the exchange.
-    */
+     */
     public static JXPathContext jxPathCtx(HttpServerExchange exchange) {
         var ctx = exchange.getAttachment(JX_PATH_CTX_KEY);
 

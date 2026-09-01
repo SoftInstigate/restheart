@@ -83,9 +83,9 @@ public class PostSessionHandler extends PipelinedHandler {
             UUID sid = Sid.randomUUID(options(request));
 
             response.getHeaders().add(HttpString.tryFromString("Location"),
-                RepresentationUtils.getReferenceLink(
-                        MongoURLUtils.getRemappedRequestURL(exchange),
-                        new BsonString(sid.toString())));
+                    RepresentationUtils.getReferenceLink(
+                            MongoURLUtils.getRemappedRequestURL(exchange),
+                            new BsonString(sid.toString())));
 
             response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_CREATED);

@@ -54,7 +54,7 @@ import com.nulabinc.zxcvbn.Zxcvbn;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="userPwdStrengthEnforcer",
+@RegisterPlugin(name = "userPwdStrengthEnforcer",
         description = "enforce strong password for mongoRealmAuthenticator",
         interceptPoint = REQUEST_AFTER_AUTH,
         enabledByDefault = true,
@@ -128,19 +128,19 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
             int[] iarr = {0};
 
             StreamSupport.stream(Spliterators.spliteratorUnknownSize(passwords.iterator(), 0), false)
-                .takeWhile(p -> !response.isInError())
-                .forEach(plain -> {
-                if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
-                    var password = plain.getAsJsonPrimitive().getAsString();
-                    var measure = zxcvbn.measure(password);
+                    .takeWhile(p -> !response.isInError())
+                    .forEach(plain -> {
+                        if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
+                            var password = plain.getAsJsonPrimitive().getAsString();
+                            var measure = zxcvbn.measure(password);
 
-                    if (measure.getScore()  < this.minimumPasswordStrength) {
-                        reject(response, measure.getFeedback(), iarr[0]);
-                    }
-                }
+                            if (measure.getScore() < this.minimumPasswordStrength) {
+                                reject(response, measure.getFeedback(), iarr[0]);
+                            }
+                        }
 
-                iarr[0]++;
-            });
+                        iarr[0]++;
+                    });
         } else if (content.isDocument()) {
             // PUT/PATCH document or bulk PATCH
             try {
@@ -151,7 +151,7 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
                     var measure = zxcvbn.measure(password);
 
-                    if (measure.getScore()  < this.minimumPasswordStrength) {
+                    if (measure.getScore() < this.minimumPasswordStrength) {
                         reject(response, measure.getFeedback());
                     }
                 }
@@ -167,9 +167,9 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
 
     private void reject(MongoResponse response, Feedback feedback, Integer idx) {
         var error = document()
-            .put("message", idx == null ? "Password is too weak" : "Password is too weak in user document at index " + idx)
-            .put("http status code", HttpStatus.SC_BAD_REQUEST)
-            .put("http status description", HttpStatus.getStatusText(HttpStatus.SC_BAD_REQUEST));
+                .put("message", idx == null ? "Password is too weak" : "Password is too weak in user document at index " + idx)
+                .put("http status code", HttpStatus.SC_BAD_REQUEST)
+                .put("http status description", HttpStatus.getStatusText(HttpStatus.SC_BAD_REQUEST));
 
         var warning = feedback.getWarning();
 
@@ -193,10 +193,10 @@ public class UserPwdStrengthEnforcer implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
-            && request.isHandledBy("mongo")
-            && request.isWriteDocument()
-            && request.isContentTypeJson()
-            && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
-            && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
+                && request.isHandledBy("mongo")
+                && request.isWriteDocument()
+                && request.isContentTypeJson()
+                && (request.attachedParam("override-users-db") != null || this.mra.getUsersDb(request).equalsIgnoreCase(request.getDBName())) // if usersdb is overridden then any users collection in any db must be processed
+                && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
 }

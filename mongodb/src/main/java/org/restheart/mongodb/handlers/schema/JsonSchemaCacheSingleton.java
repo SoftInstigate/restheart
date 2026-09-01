@@ -36,6 +36,7 @@ import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class JsonSchemaCacheSingleton {
 
     private static final String SEPARATOR = "_@_@_";
@@ -50,7 +51,8 @@ public class JsonSchemaCacheSingleton {
         return CachesSingletonHolder.INSTANCE;
 
     }
-    private final Databases dbs = Databases.get();;
+    private final Databases dbs = Databases.get();
+    ;
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
@@ -128,8 +130,8 @@ public class JsonSchemaCacheSingleton {
 
     private BsonDocument loadRaw(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
         var document = dbs.collection(Optional.empty(), schemaStoreDb, _SCHEMAS)
-            .find(eq("_id", schemaId))
-            .first();
+                .find(eq("_id", schemaId))
+                .first();
 
         if (Objects.isNull(document)) {
             var sid = BsonUtils.getIdAsString(schemaId, false);

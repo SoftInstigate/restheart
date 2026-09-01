@@ -12,12 +12,15 @@ import org.restheart.accounts.util.RequestOverrides;
 import org.restheart.plugins.accounts.TeamClaim;
 import org.restheart.accounts.util.TokenDelivery;
 import org.restheart.accounts.util.TokenUtils;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.services.TokenRedirectHelper;
 import org.restheart.utils.HttpStatus;
@@ -26,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,9 +63,9 @@ import java.util.Set;
  * <p>The endpoint is public — access is granted via {@code aclRegistry} in {@link #onInit()}.
  */
 @RegisterPlugin(
-        name             = "emailVerificationService",
-        description      = "GET /auth/verify — validates email verification token and activates user",
-        defaultURI       = "/auth/verify",
+        name = "emailVerificationService",
+        description = "GET /auth/verify — validates email verification token and activates user",
+        defaultURI = "/auth/verify",
         enabledByDefault = false)
 public class EmailVerificationService implements JsonService {
 
@@ -84,30 +86,41 @@ public class EmailVerificationService implements JsonService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
 
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
         aclRegistry.registerAllow(r -> r.getPath().equals("/auth/verify") && (r.isGet() || r.isOptions()));
         aclRegistry.registerAuthenticationRequirement(r -> !r.getPath().equals("/auth/verify"));
     }
 
     private DbHelper db(JsonRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     @Override
     public void handle(JsonRequest req, JsonResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
-        if (!req.isGet())    { res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
+        if (!req.isGet()) {
+            res.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
 
         final var loginErrorBase = RequestOverrides.frontendUrl(req, conf) + "/auth/login";
 
         // ── 1. Read query parameters ─────────────────────────────────────────
-        var email    = req.getQueryParameterOrDefault("email", null);
-        var token    = req.getQueryParameterOrDefault("token", null);
+        var email = req.getQueryParameterOrDefault("email", null);
+        var token = req.getQueryParameterOrDefault("token", null);
         var delivery = req.getQueryParameterOrDefault("delivery", "cookie");
 
         if (email == null || email.isBlank() || token == null || token.isBlank()) {
@@ -147,16 +160,22 @@ public class EmailVerificationService implements JsonService {
         }
 
         // ── 5a. Remove verification token fields ─────────────────────────────
-        db(req).unsetUserFields(storedEmail,
-                List.of("emailVerificationToken", "emailVerificationCreatedAt"));
-
         // ── 5b. Assign system ACL role (user is now verified) ───────────────
         var effectiveRole = RequestOverrides.defaultRole(req, conf);
         var updateDoc = new BsonDocument();
         var rolesArray = new BsonArray();
         rolesArray.add(new BsonString(effectiveRole));
         updateDoc.put("roles", rolesArray);
-        db(req).updateUser(storedEmail, updateDoc);
+        try {
+            db(req).unsetUserFields(storedEmail,
+                    List.of("emailVerificationToken", "emailVerificationCreatedAt"));
+            db(req).updateUser(storedEmail, updateDoc);
+        } catch (BadRequestException e) {
+            LOGGER.error("Email verification: user document violates the collection's JSON Schema for <{}>: {}",
+                    storedEmail, e.getMessage());
+            redirect(res, loginErrorBase + "?error=invalid_token");
+            return;
+        }
 
         // ── 5c. Build roles set for JWT ───────────────────────────────────────
         Set<String> roles = new HashSet<>();
@@ -176,7 +195,8 @@ public class EmailVerificationService implements JsonService {
                 RequestOverrides.db(req, conf),
                 req.attachedParams(),
                 extraClaims,
-                user);
+                user,
+                RequestOverrides.accountPropertiesClaims(req, conf));
 
         LOGGER.info("Email verified — user activated: <{}>", storedEmail);
 
@@ -188,7 +208,7 @@ public class EmailVerificationService implements JsonService {
         // token verification (the token is single-use, unset from the DB in step 5a above).
         // Same query-param convention as OAuthCallback's `flow=signup`.
         var appUrl = RequestOverrides.frontendAppUrl(req, conf) + "?flow=signup";
-        var mode   = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
+        var mode = TokenDelivery.resolve(delivery, TokenDelivery.Mode.COOKIE);
 
         if (mode == TokenDelivery.Mode.FRAGMENT) {
             // Cross-origin SPAs (Bearer auth): hand the JWT via URL fragment,

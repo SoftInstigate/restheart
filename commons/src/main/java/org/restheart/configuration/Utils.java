@@ -381,7 +381,7 @@ public class Utils {
 
         if (o instanceof List<?> l) {
             try {
-                return l.stream().filter(i -> i instanceof Integer).mapToInt(i -> (Integer)i).toArray();
+                return l.stream().filter(i -> i instanceof Integer).mapToInt(i -> (Integer) i).toArray();
             } catch (Throwable t) {
                 if (!silent) {
                     LOGGER.warn("wrong configuration parameter {}, expecting a list of ints", key);
@@ -748,8 +748,8 @@ public class Utils {
      */
     private static final Pattern SPLIT_REGEX = Pattern.compile(
             "\\\\\"|\"(?:\\\\\"|[^\"])*\"" +
-            "|\\\\'|'(?:\\\\'|[^'])*'" +
-            "|(;)");
+                    "|\\\\'|'(?:\\\\'|[^'])*'" +
+                    "|(;)");
 
     /**
      * Splits a RHO format string into individual override assignments.
@@ -845,14 +845,14 @@ public class Utils {
 
                 try {
                     ctx.getPointer(path);
-                } catch(Exception e) {
+                } catch (Exception e) {
                     if (!silent) {
                         LOGGER.warn("invalid override, invalid path: {}, {}", assignment, e.getMessage());
                     }
                     return;
                 }
 
-                var _value = assignment.substring(operator+2, assignment.length()).strip();
+                var _value = assignment.substring(operator + 2, assignment.length()).strip();
                 var e = "{\"e\":".concat(_value).concat("}");
 
                 try {
@@ -861,10 +861,10 @@ public class Utils {
                     // turn Document into a Map<String, Object>
                     if (value instanceof Document dv) {
                         value = dv.entrySet().stream()
-                            .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
-                            // the following throws an exception due to a known bug
-                            // see https://stackoverflow.com/questions/24630963/nullpointerexception-in-collectors-tomap-with-null-entry-values
-                            // .collect(Collectors.toMap(_e -> _e.getKey(), _e -> _e.getValue()));
+                                .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
+                        // the following throws an exception due to a known bug
+                        // see https://stackoverflow.com/questions/24630963/nullpointerexception-in-collectors-tomap-with-null-entry-values
+                        // .collect(Collectors.toMap(_e -> _e.getKey(), _e -> _e.getValue()));
                     }
 
                     overrides.add(new RhOverride(path, value, assignment));

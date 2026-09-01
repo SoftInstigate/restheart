@@ -20,8 +20,10 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.schema.JsonSchemas;
 import org.restheart.plugins.accounts.ConsentRecord;
 import org.restheart.security.ACLRegistry;
 import org.restheart.security.services.TokenRedirectHelper;
@@ -67,9 +69,9 @@ import static java.util.function.Predicate.not;
  * {@link org.restheart.plugins.accounts.MembershipProvider} via {@link AccountsService}.
  */
 @RegisterPlugin(
-        name             = "oauthCallback",
-        description      = "GET /auth/oauth/callback/{provider} — handles the OAuth callback",
-        defaultURI       = "/auth/oauth/callback",
+        name = "oauthCallback",
+        description = "GET /auth/oauth/callback/{provider} — handles the OAuth callback",
+        defaultURI = "/auth/oauth/callback",
         enabledByDefault = false)
 public class OAuthCallback implements StringService {
 
@@ -93,15 +95,21 @@ public class OAuthCallback implements StringService {
     @Inject("accountsService")
     private AccountsService accountsService;
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private JwtHelper jwt;
 
     @OnInit
     public void onInit() {
-        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims());
+        this.jwt = new JwtHelper(conf.jwtKey(), conf.jwtIssuer(), conf.jwtTtl(), conf.accountPropertiesClaims(), registry);
 
         Predicate<Request<?>> isCallback = r ->
                 r.getMethod() == METHOD.GET &&
-                r.getPath().matches("/auth/oauth/callback/[^/]+");
+                        r.getPath().matches("/auth/oauth/callback/[^/]+");
 
         aclRegistry.registerAuthenticationRequirement(not(isCallback));
         aclRegistry.registerAllow(isCallback);
@@ -116,7 +124,10 @@ public class OAuthCallback implements StringService {
 
     @Override
     public void handle(StringRequest req, StringResponse res) throws Exception {
-        if (req.isOptions()) { handleOptions(req); return; }
+        if (req.isOptions()) {
+            handleOptions(req);
+            return;
+        }
 
         if (!req.isGet()) {
             res.setInError(HttpStatus.SC_METHOD_NOT_ALLOWED, "Use GET");
@@ -139,7 +150,7 @@ public class OAuthCallback implements StringService {
             return;
         }
 
-        var codeParam  = req.getQueryParameters().get("code");
+        var codeParam = req.getQueryParameters().get("code");
         var stateParam = req.getQueryParameters().get("state");
 
         if (codeParam == null || codeParam.isEmpty()) {
@@ -151,20 +162,20 @@ public class OAuthCallback implements StringService {
             return;
         }
 
-        var code  = codeParam.getFirst();
+        var code = codeParam.getFirst();
         var state = stateParam.getFirst();
 
         try {
             // 1. Exchange code + verify state → user profile + invite context
             var callbackResult = oauthService.handleCallback(provider, code, state, req);
-            var profile        = callbackResult.profile();
-            var email          = profile.getString("email").getValue();
+            var profile = callbackResult.profile();
+            var email = profile.getString("email").getValue();
 
             LOGGER.info("OAuth callback: authenticated {} via {}", email, provider);
 
             // 2. Find or create user (membership delegated to the provider)
-            var focr   = findOrCreateUser(req, profile, provider);
-            var user   = focr.user();
+            var focr = findOrCreateUser(req, profile, provider);
+            var user = focr.user();
 
             // Check if user is unverified (invited but not yet activated)
             var userRoles = user.containsKey("roles") && user.get("roles").isArray()
@@ -180,19 +191,19 @@ public class OAuthCallback implements StringService {
                 ConsentRecord consents = null;
                 if (callbackResult.consentsAccepted()) {
                     var ip = req.getExchange().getSourceAddress().getAddress().getHostAddress();
-                    consents = new ConsentRecord(conf.termsVersion(), conf.privacyVersion(),
-                            ip, Instant.now());
+                    consents = new ConsentRecord(RequestOverrides.termsVersion(req, conf),
+                            RequestOverrides.privacyVersion(req, conf), ip, Instant.now());
                 }
 
                 // If a pending invite token is present, add membership now so activateViaOAuth
                 // finds a team (membership is deferred until acceptance since the fix)
                 var inviteDb = hasPendingToken
-                        ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf))
+                        ? new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas)
                         : null;
                 if (inviteDb != null) {
                     inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite -> {
                         var teamId = invite.get("teamId");
-                        var role  = invite.getString("role").getValue();
+                        var role = invite.getString("role").getValue();
                         accountsService.getMembershipProvider(req).addMember(email, teamId, role);
                     });
                 }
@@ -204,7 +215,7 @@ public class OAuthCallback implements StringService {
                     LOGGER.info("Invited user <{}> activated via {} OAuth", email, provider);
                     if (inviteDb != null) {
                         inviteDb.findInvitationByEmailAndToken(email, pendingInviteToken).ifPresent(invite ->
-                            inviteDb.deleteInvitation(invite.getObjectId("_id")));
+                                inviteDb.deleteInvitation(invite.getObjectId("_id")));
                     }
                     var activatedRoles = extractRoles(user);
                     var jwtToken = jwt.issueToken(email, activatedRoles,
@@ -212,7 +223,8 @@ public class OAuthCallback implements StringService {
                             req.attachedParams(),
                             java.util.Map.<String, Object>of(conf.teamClaimName(),
                                     TeamClaim.of(membership.get().teamId(), membership.get().role())),
-                            null);
+                            null,
+                            RequestOverrides.accountPropertiesClaims(req, conf));
                     setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
                     return;
                 }
@@ -223,7 +235,7 @@ public class OAuthCallback implements StringService {
 
             // 3b. Existing user accepting an invitation via OAuth (pendingInviteToken present)
             if (hasPendingToken) {
-                var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf));
+                var db = new org.restheart.accounts.util.DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
                 var inviteOpt = db.findInvitationByEmailAndToken(email, pendingInviteToken);
                 if (inviteOpt.isEmpty()) {
                     LOGGER.warn("OAuth invite acceptance failed: no valid invitation for <{}> with the supplied token", email);
@@ -232,7 +244,7 @@ public class OAuthCallback implements StringService {
                 }
                 var invite = inviteOpt.get();
                 var teamId = invite.get("teamId");
-                var role   = invite.getString("role").getValue();
+                var role = invite.getString("role").getValue();
 
                 accountsService.getMembershipProvider(req).addMember(email, teamId, role);
                 db.deleteInvitation(invite.getObjectId("_id"));
@@ -248,13 +260,14 @@ public class OAuthCallback implements StringService {
                         RequestOverrides.db(req, conf),
                         req.attachedParams(),
                         java.util.Map.<String, Object>of(conf.teamClaimName(), teamClaim),
-                        null);
+                        null,
+                        RequestOverrides.accountPropertiesClaims(req, conf));
                 setAuthCookieAndRedirect(res, req, jwtToken, "signin");
                 return;
             }
 
             // 4. Issue JWT + set cookie for normal / non-activated users
-            var roles  = extractRoles(user);
+            var roles = extractRoles(user);
             var activeMembership = accountsService.getMembershipProvider(req).activeMembership(email);
             var extraClaims = new java.util.HashMap<String, Object>();
             activeMembership.ifPresent(m ->
@@ -263,7 +276,8 @@ public class OAuthCallback implements StringService {
                     RequestOverrides.db(req, conf),
                     req.attachedParams(),
                     extraClaims,
-                    null);
+                    null,
+                    RequestOverrides.accountPropertiesClaims(req, conf));
             setAuthCookieAndRedirect(res, req, jwtToken, focr.isNew() ? "signup" : "signin");
 
         } catch (OAuthService.OAuthException e) {
@@ -295,7 +309,7 @@ public class OAuthCallback implements StringService {
 
         // `flow=signup` doubles as the one-shot "welcome banner" marker also used by
         // EmailVerificationService, so both signup paths signal the frontend the same way.
-        var query   = flow != null ? "?flow=" + flow : "";
+        var query = flow != null ? "?flow=" + flow : "";
         var baseUrl = RequestOverrides.oauthFrontendSuccessUrl(req, oauthConfig) + query;
         var location = delivery == TokenDelivery.Mode.COOKIE
                 ? baseUrl
@@ -318,7 +332,8 @@ public class OAuthCallback implements StringService {
      * Team initialization is delegated to the active {@link AccountsService}
      * MembershipProvider via {@code createInitialTeam}.
      */
-    private record FindOrCreateResult(BsonDocument user, boolean isNew) {}
+    private record FindOrCreateResult(BsonDocument user, boolean isNew) {
+    }
 
     private FindOrCreateResult findOrCreateUser(StringRequest req, BsonDocument profile, String provider) {
         var email = profile.getString("email").getValue();
@@ -331,16 +346,16 @@ public class OAuthCallback implements StringService {
         }
 
         // ── New user ──────────────────────────────────────────────────────────
-        var now  = new BsonDateTime(System.currentTimeMillis());
+        var now = new BsonDateTime(System.currentTimeMillis());
         var name = profile.containsKey("name") ? profile.getString("name").getValue()
-                                                : email.split("@")[0];
+                : email.split("@")[0];
 
         // Build user document (team/membership fields will be set by the provider)
         var roles = new BsonArray();
         roles.add(new BsonString("user"));
 
         var profileDoc = new BsonDocument()
-                .append("name",    new BsonString(extractFirstName(name)))
+                .append("name", new BsonString(extractFirstName(name)))
                 .append("surname", new BsonString(extractLastName(name)));
 
         if (profile.containsKey("avatarUrl")) {
@@ -349,16 +364,16 @@ public class OAuthCallback implements StringService {
 
         var socialAuths = new BsonArray();
         socialAuths.add(new BsonDocument()
-                .append("provider",   new BsonString(provider))
+                .append("provider", new BsonString(provider))
                 .append("providerId", profile.containsKey("providerId")
                         ? profile.get("providerId") : new BsonString(""))
-                .append("linkedAt",   now));
+                .append("linkedAt", now));
 
         var userDoc = new BsonDocument()
-                .append("_id",         new BsonString(email))
-                .append("password",    new BsonString("")) // no password for OAuth users
-                .append("roles",       roles)
-                .append("profile",     profileDoc)
+                .append("_id", new BsonString(email))
+                .append("password", new BsonString("")) // no password for OAuth users
+                .append("roles", roles)
+                .append("profile", profileDoc)
                 .append("socialAuths", socialAuths);
 
         db(req).insertUser(userDoc);
@@ -378,7 +393,7 @@ public class OAuthCallback implements StringService {
 
         if (profile.containsKey("name")) {
             var name = profile.getString("name").getValue();
-            updates.append("profile.name",    new BsonString(extractFirstName(name)));
+            updates.append("profile.name", new BsonString(extractFirstName(name)));
             updates.append("profile.surname", new BsonString(extractLastName(name)));
         }
         if (profile.containsKey("avatarUrl")) {
@@ -393,7 +408,7 @@ public class OAuthCallback implements StringService {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private DbHelper db(StringRequest req) {
-        return new DbHelper(mclient, RequestOverrides.db(req, conf));
+        return new DbHelper(mclient, RequestOverrides.db(req, conf), RequestOverrides.usersCollection(req, conf), jsonSchemas);
     }
 
     private Set<String> extractRoles(BsonDocument user) {

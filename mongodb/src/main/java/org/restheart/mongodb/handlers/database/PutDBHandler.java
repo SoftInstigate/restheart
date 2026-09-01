@@ -94,14 +94,14 @@ public class PutDBHandler extends PipelinedHandler {
         var content = _content.asDocument();
 
         var result = dbs.upsertDB(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getMethod(),
-            request.getDbProps() != null, // true if updating
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getMethod(),
+                request.getDbProps() != null, // true if updating
+                content,
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

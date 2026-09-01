@@ -61,7 +61,7 @@ public final class TokenUtils {
      */
     public static boolean isExpired(BsonDateTime createdAt, int ttlHours) {
         Instant expiresAt = Instant.ofEpochMilli(createdAt.getValue())
-                                   .plusSeconds((long) ttlHours * 3600);
+                .plusSeconds((long) ttlHours * 3600);
         return Instant.now().isAfter(expiresAt);
     }
 

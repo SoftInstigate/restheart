@@ -68,10 +68,10 @@ public class AppBuilder extends Mappings {
         // check schema
         try {
             typeDefinitionRegistry = typeDefinitionRegistry(schema);
-        } catch(SchemaProblem schemaProblem) {
+        } catch (SchemaProblem schemaProblem) {
             var errorMSg = schemaProblem.getMessage() != null
-                ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
-                : "Invalid GraphQL schema";
+                    ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
+                    : "Invalid GraphQL schema";
 
             throw new GraphQLIllegalAppDefinitionException(errorMSg, schemaProblem);
         }
@@ -99,23 +99,23 @@ public class AppBuilder extends Mappings {
         // Provide a default field mappings for Objects that are not explicitly mapped.
         // see ObjectsMappings.defaultObjectFieldMappings() javadoc for more information.
         typeDefinitionRegistry.types().entrySet().stream()
-                    .filter(e -> !objectsMappings.containsKey(e.getKey()))
-                    .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
-                    .forEach(e -> {
-                        var objectFieldMappings = ObjectsMappings.defaultObjectFieldMappings(e.getKey(), typeDefinitionRegistry, new BsonDocument());
-                        var objectMapping = new ObjectMapping(e.getKey(), objectFieldMappings);
-                        objectsMappings.put(e.getKey(), objectMapping);
-                    });
+                .filter(e -> !objectsMappings.containsKey(e.getKey()))
+                .filter(e -> e.getValue() instanceof ObjectTypeDefinition)
+                .forEach(e -> {
+                    var objectFieldMappings = ObjectsMappings.defaultObjectFieldMappings(e.getKey(), typeDefinitionRegistry, new BsonDocument());
+                    var objectMapping = new ObjectMapping(e.getKey(), objectFieldMappings);
+                    objectsMappings.put(e.getKey(), objectMapping);
+                });
 
         try {
             return GraphQLApp.newBuilder().appDescriptor(descriptor)
-                .schema(schema)
-                .objectsMappings(objectsMappings)
-                .enumsMappings(enumsMappings)
-                .unionMappings(unionsMappings)
-                .interfacesMappings(interfacesMappings)
-                .etag(appDef.get("_etag", BsonNull.VALUE))
-                .build();
+                    .schema(schema)
+                    .objectsMappings(objectsMappings)
+                    .enumsMappings(enumsMappings)
+                    .unionMappings(unionsMappings)
+                    .interfacesMappings(interfacesMappings)
+                    .etag(appDef.get("_etag", BsonNull.VALUE))
+                    .build();
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
         }

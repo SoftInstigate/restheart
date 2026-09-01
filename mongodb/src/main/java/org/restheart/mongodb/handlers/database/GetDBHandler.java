@@ -72,13 +72,13 @@ public class GetDBHandler extends PipelinedHandler {
 
         if (request.getPagesize() > 0) {
             var data = dbs.getDatabaseData(
-                Optional.ofNullable(request.getClientSession()),
-                request.rsOps(),
-                request.getDBName(),
-                colls,
-                request.getPage(),
-                request.getPagesize(),
-                request.isNoCache());
+                    Optional.ofNullable(request.getClientSession()),
+                    request.rsOps(),
+                    request.getDBName(),
+                    colls,
+                    request.getPage(),
+                    request.getPagesize(),
+                    request.isNoCache());
             response.setContent(data);
         } else {
             response.setContent(new BsonArray());

@@ -22,22 +22,20 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
-import org.json.JSONObject;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
-import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
-import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.MongoURLUtils;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.schema.JsonSchemaNotFoundException;
+import org.restheart.plugins.schema.JsonSchemas;
+import org.restheart.plugins.schema.SchemaValidationException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
@@ -70,7 +68,7 @@ import org.slf4j.LoggerFactory;
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         // execute after any other request interceptor
-        priority=Integer.MAX_VALUE)
+        priority = Integer.MAX_VALUE)
 public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     /**
@@ -91,8 +89,35 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
     static final Logger LOGGER
             = LoggerFactory.getLogger(JsonSchemaBeforeWriteChecker.class);
 
+    @Inject("json-schemas")
+    private JsonSchemas jsonSchemas;
+
+    protected JsonSchemas jsonSchemas() {
+        return jsonSchemas;
+    }
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // Nothing to validate once the request has already been refused: the
+        // document is never going to be written, and checking it here replaces
+        // whatever the refusal said with a list of missing keys.
+        //
+        // This runs at Integer.MAX_VALUE, so it runs after every other request
+        // interceptor — including the ones that rewrite a request body into the
+        // document to store. When one of those rejects, the body is still what
+        // the client sent, and validating *that* against the collection's schema
+        // reports every required field as missing. A shopper told "this is out
+        // of stock" was instead shown twelve schema violations naming fields
+        // they had never heard of and could not have supplied.
+        //
+        // The check belongs here and not in `resolve`: the executor evaluates
+        // every `resolve` up front, in one pass, and only then runs the
+        // interceptors in order — so at resolve time the interceptor that
+        // refuses the request has not run yet and nothing is in error.
+        if (response.isInError()) {
+            return;
+        }
+
         var args = request.getCollectionProps()
                 .get("jsonSchema")
                 .asDocument();
@@ -110,7 +135,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             } else {
                 response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
                         "'jsonSchema' checker does not support bulk PATCH requests. "
-                        + "Set 'skipNotSupported:true' to allow them.");
+                                + "Set 'skipNotSupported:true' to allow them.");
                 return;
             }
         }
@@ -123,7 +148,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         if (schemaId == null) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': missing property "
-                    + SCHEMA_ID_PROPERTY);
+                            + SCHEMA_ID_PROPERTY);
             return;
         }
 
@@ -135,9 +160,9 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } else {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': "
-                    + "property "
-                    + SCHEMA_STORE_DB_PROPERTY
-                    + " must be a string");
+                            + "property "
+                            + SCHEMA_STORE_DB_PROPERTY
+                            + " must be a string");
             return;
         }
 
@@ -146,87 +171,41 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         } catch (UnsupportedDocumentIdException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': "
-                    + "schema 'id' is not valid", ex);
+                            + "schema 'id' is not valid", ex);
             return;
         }
 
-        Schema theschema;
-
         try {
-            theschema = JsonSchemaCacheSingleton
-                    .getInstance()
-                    .get(schemaStoreDb, schemaId);
+            jsonSchemas().validate(documentsToCheck(request, response), schemaStoreDb, schemaId);
         } catch (JsonSchemaNotFoundException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
-                    + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + BsonUtils.getIdAsString(schemaId, false)
-                    + " not found");
-            return;
+                            + schemaStoreDb + "/" + _SCHEMAS + "/"
+                            + BsonUtils.getIdAsString(schemaId, false)
+                            + " not found");
+        } catch (SchemaValidationException sve) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST,
+                    "Request content violates schema "
+                            + BsonUtils.getIdAsString(schemaId, true)
+                            + ": "
+                            + String.join(", ", sve.getViolations()));
         }
-
-        if (Objects.isNull(theschema)) {
-            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "wrong 'jsonSchema': schema "
-                    + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + BsonUtils.getIdAsString(schemaId, false)
-                    + " not found");
-            return;
-        }
-
-        documentsToCheck(request, response)
-                .stream()
-                .forEachOrdered(doc -> {
-
-                    try {
-                        theschema.validate(doc);
-                    } catch (ValidationException ve) {
-                        var errors = new ArrayList<String>();
-
-                        errors.add(ve.getMessage().replaceAll("#: ", ""));
-
-                        ve.getCausingExceptions().stream()
-                                .map(ValidationException::getMessage)
-                                .forEach(errors::add);
-
-                        var errMsgBuilder = new StringBuilder();
-
-                        errors.stream()
-                                .map(e -> e.replaceAll("#: ", ""))
-                                .forEachOrdered(e -> errMsgBuilder.append(e).append(", "));
-
-                        var errMsg = errMsgBuilder.toString();
-
-                        if (errMsg.length() > 2
-                                && ", ".equals(errMsg.substring(errMsg.length() - 2, errMsg.length()))) {
-                            errMsg = errMsg.substring(0, errMsg.length() - 2);
-
-                        }
-
-                        response.setInError(HttpStatus.SC_BAD_REQUEST,
-                                "Request content violates schema "
-                                + BsonUtils.getIdAsString(schemaId, true)
-                                + ": "
-                                + errMsg);
-                    }
-                });
     }
 
-    List<JSONObject> documentsToCheck(MongoRequest request, MongoResponse response) {
-        var ret = new ArrayList<JSONObject>();
+    List<BsonDocument> documentsToCheck(MongoRequest request, MongoResponse response) {
+        var ret = new ArrayList<BsonDocument>();
 
         var content = request.getContent() == null
                 ? new BsonDocument()
                 : request.getContent();
 
         if (content.isDocument()) {
-            ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
+            ret.add(content.asDocument());
         } else if (content.isArray()) {
             content.asArray()
                     .stream()
                     .filter(doc -> doc.isDocument())
-                    .map(doc -> BsonUtils.toJson(doc, request.getJsonMode()))
-                    .map(doc -> new JSONObject(doc))
+                    .map(doc -> doc.asDocument())
                     .forEachOrdered(ret::add);
         }
 

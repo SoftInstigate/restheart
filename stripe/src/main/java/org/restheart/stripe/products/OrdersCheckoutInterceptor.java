@@ -1,0 +1,867 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-stripe
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.restheart.stripe.products;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonNull;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.types.ObjectId;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.stripe.ProductsConfig;
+import org.restheart.plugins.stripe.StripeConfigData;
+import org.restheart.stripe.StripeService;
+import org.restheart.stripe.util.CustomerProvisioning;
+import org.restheart.stripe.util.RequestOverrides;
+import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongodb.client.MongoClient;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.RequestOptions;
+import com.stripe.param.checkout.SessionCreateParams;
+
+/**
+ * Intercepts {@code POST /{orders-collection}} to create an order from a cart.
+ *
+ * <p>Replaces the request content with a full order document. The MongoDB handler
+ * then inserts this document into the collection.
+ *
+ * <p>The client sends {@code {items: [{productId, quantity}]}} (and optionally
+ * {@code email} for guests). The interceptor:
+ * <ol>
+ *   <li>Validates the request (only {@code items} and {@code email} allowed)</li>
+ *   <li>Reads the catalog (one query)</li>
+ *   <li>Rejects unpurchasable, unknown, recurring, mixed-currency items</li>
+ *   <li>Computes totals</li>
+ *   <li>Creates a Stripe Checkout Session</li>
+ *   <li>Builds the full order document</li>
+ *   <li>Replaces the request content</li>
+ * </ol>
+ */
+@RegisterPlugin(
+        name = "ordersCheckoutInterceptor",
+        description = "Intercepts POST /orders to create an order from a cart",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+        // Must run *before* `jsonSchemaBeforeWrite`, which is registered at
+        // `Integer.MAX_VALUE` precisely so it is the last thing to see the
+        // content. This interceptor is what produces that content: the client
+        // sends `{items, email}` and the stored order is a different document
+        // altogether — `_id`, `stripe_session_id`, `secret`, `status`,
+        // `line_items`, the amounts.
+        //
+        // At MAX_VALUE the two tie, the order between them is whatever the sort
+        // happens to do, and when the checker wins it validates the cart against
+        // the schema of the order and answers 400 naming twelve fields that were
+        // about to be written. The Stripe session is created either way, so the
+        // failure arrives *after* the money side already happened.
+        //
+        // The default, 10, is the right value: this is an ordinary request
+        // transform, and nothing about it wants to be last.
+        priority = 10,
+        requiresContent = true,
+        enabledByDefault = false)
+public class OrdersCheckoutInterceptor implements MongoInterceptor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrdersCheckoutInterceptor.class);
+    private static final SecureRandom RNG = new SecureRandom();
+
+    @Inject("stripeConfig")
+    private StripeConfigData conf;
+
+    @Inject("mclient")
+    private MongoClient mclient;
+
+    @Inject("stripeService")
+    private StripeService stripeService;
+
+    @Override
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // Effective (possibly per-tenant) config — resolved once, threaded through this method
+        // instead of re-reading conf.products()/conf.db()/conf.secretKey() piecemeal, so a
+        // multi-tenant deployment cannot end up mixing one tenant's products config with
+        // another's db or key.
+        var products = RequestOverrides.products(request, conf);
+        if (products == null || !products.enabled()) {
+            return;
+        }
+        var db = RequestOverrides.db(request, conf);
+
+        // 1. Parse and validate request body
+        if (!(request.getContent() instanceof BsonDocument body)) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "request body must be a JSON object");
+            return;
+        }
+
+        // Reject any field other than 'items' (and 'email' for guests)
+        for (var key : body.keySet()) {
+            if (!"items".equals(key) && !"email".equals(key)) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "unexpected field '%s' — only 'items' (and 'email' for guests) are allowed".formatted(key));
+                return;
+            }
+        }
+
+        if (!body.containsKey("items") || !body.get("items").isArray()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "'items' must be an array");
+            return;
+        }
+
+        var itemsArray = body.getArray("items");
+        if (itemsArray.isEmpty()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, "'items' must not be empty");
+            return;
+        }
+
+        if (itemsArray.size() > products.maxLineItems()) {
+            reject(response, HttpStatus.SC_BAD_REQUEST,
+                    "too many items: %d (max %d)".formatted(itemsArray.size(), products.maxLineItems()));
+            return;
+        }
+
+        // 2. Parse and validate each item
+        var requestedItems = new ArrayList<RequestedItem>();
+        for (var item : itemsArray) {
+            if (!item.isDocument()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "each item must be an object");
+                return;
+            }
+            var itemDoc = item.asDocument();
+
+            var productId = stringField(itemDoc, "productId");
+            if (productId == null || productId.isBlank()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "each item must have a 'productId'");
+                return;
+            }
+
+            if (!itemDoc.containsKey("quantity") || !itemDoc.get("quantity").isNumber()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' must have a numeric 'quantity'".formatted(productId));
+                return;
+            }
+
+            var quantity = itemDoc.getNumber("quantity").intValue();
+            if (quantity < 1) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' quantity must be at least 1".formatted(productId));
+                return;
+            }
+
+            if (quantity > products.maxQuantityPerLine()) {
+                reject(response, HttpStatus.SC_BAD_REQUEST,
+                        "item '%s' quantity %d exceeds max %d".formatted(productId, quantity, products.maxQuantityPerLine()));
+                return;
+            }
+
+            BsonDocument itemMetadata;
+            try {
+                itemMetadata = metadataOf(itemDoc, "item '%s'".formatted(productId));
+            } catch (IllegalArgumentException e) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+                return;
+            }
+
+            requestedItems.add(new RequestedItem(productId, quantity, itemMetadata));
+        }
+
+        // The order's own metadata — the seller's, not the buyer's: a tracking code, a courier,
+        // whatever the application decides to keep beside an order. Validated here so a malformed
+        // one is a readable 400 rather than a Stripe rejection or a schema violation.
+        BsonDocument orderMetadata;
+        try {
+            orderMetadata = metadataOf(body, "order");
+        } catch (IllegalArgumentException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // 3. Read catalog (one query)
+        var catalogReader = new CatalogReader(mclient, db, products);
+        var productIds = requestedItems.stream().map(RequestedItem::productId).collect(java.util.stream.Collectors.toSet());
+
+        java.util.List<CatalogItem> catalogItems;
+        try {
+            catalogItems = catalogReader.readItems(productIds);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // Check all requested products were found
+        var foundIds = catalogItems.stream().map(CatalogItem::id).collect(java.util.stream.Collectors.toSet());
+        for (var requested : requestedItems) {
+            if (!foundIds.contains(requested.productId())) {
+                reject(response, HttpStatus.SC_BAD_REQUEST, "unknown product '%s'".formatted(requested.productId()));
+                return;
+            }
+        }
+
+        // Check purchasable
+        try {
+            catalogReader.checkPurchasable(catalogItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+            return;
+        }
+
+        // Check single currency
+        try {
+            catalogReader.checkSingleCurrency(catalogItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+
+        // 4. Refuse what is already sold out
+        try {
+            checkInventory(catalogItems, requestedItems);
+        } catch (CatalogReader.CatalogValidationException e) {
+            reject(response, HttpStatus.SC_CONFLICT, e.getMessage());
+            return;
+        }
+
+        // 5. Resolve currency and compute totals
+        var catalogMap = new LinkedHashMap<String, CatalogItem>();
+        for (var item : catalogItems) {
+            catalogMap.put(item.id(), item);
+        }
+
+        var currency = catalogItems.get(0).currency() != null
+                ? catalogItems.get(0).currency().toLowerCase()
+                : products.defaultCurrency().toLowerCase();
+
+        long amountSubtotal = 0;
+        boolean requiresShipping = false;
+        var lineItemsBson = new BsonArray();
+
+        for (var requested : requestedItems) {
+            var catalogItem = catalogMap.get(requested.productId());
+            var subtotal = catalogItem.unitAmount() * requested.quantity();
+            amountSubtotal += subtotal;
+
+            if (catalogItem.isPhysical()) {
+                requiresShipping = true;
+            }
+
+            lineItemsBson.add(new BsonDocument()
+                    .append("product_id", new BsonString(catalogItem.id()))
+                    .append("type", new BsonString(catalogItem.type()))
+                    .append("name", new BsonString(catalogItem.name()))
+                    .append("unit_amount", new BsonInt64(catalogItem.unitAmount()))
+                    .append("quantity", new BsonInt32(requested.quantity()))
+                    .append("subtotal", new BsonInt64(subtotal))
+                    .append("tax_code", catalogItem.taxCode() != null
+                            ? new BsonString(catalogItem.taxCode())
+                            : BsonNull.VALUE)
+                    // Verbatim, unread. What the buyer chose — a colour, a size — travels to
+                    // whoever packs the parcel, and the plugin never learns what it means.
+                    .append("metadata", requested.metadata()));
+        }
+
+        // 5. Resolve buyer info
+        var buyerId = resolveBuyerId(request);
+        var buyerEmail = resolveBuyerEmail(request, body, products);
+
+        // 5b. Mint the order identity up front.
+        //
+        // Both of these are generated locally — an ObjectId needs no round trip
+        // and the secret comes from an RNG — so nothing is gained by waiting.
+        // Minting them here instead of after Session.create is what lets the
+        // success URL carry them: see interpolateOrderRef.
+        var orderId = new ObjectId();
+        var secret = generateSecret();
+
+        // 6. Build Stripe Checkout Session
+        // Resolved before the session is built: attaching a Customer needs it too.
+        var apiKey = RequestOverrides.secretKey(request, conf);
+
+        var sessionBuilder = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(interpolateOrderRef(products.successUrl(), orderId, secret))
+                .setCancelUrl(products.cancelUrl())
+                .putMetadata("order_source", "restheart-products");
+
+        if (buyerId != null) {
+            sessionBuilder.setClientReferenceId(buyerId);
+            sessionBuilder.putMetadata("buyer_id", buyerId);
+        }
+
+        // The order's metadata reach Stripe's dashboard, receipt and invoice — where whoever
+        // fulfils the order tends to look before looking at us.
+        if (!orderMetadata.isEmpty()) {
+            sessionBuilder.putAllMetadata(asStringMap(orderMetadata));
+        }
+
+        // A Customer, so Stripe remembers.
+        //
+        // Without one every checkout creates a fresh anonymous Customer, and
+        // nothing survives it: the VAT number, the delivery address and the card
+        // are all typed again next time. With one, Stripe offers what it already
+        // has — and `stripePortalService`, which refuses anyone without a
+        // Customer id, starts working for this shop's buyers too.
+        //
+        // Per billing account rather than per user: the account is what an order
+        // is charged to and what the invoice is addressed to, and two colleagues
+        // sharing one should not each build their own history of it.
+        //
+        // Only for a signed-in buyer. A guest has no account to attach anything
+        // to, and creating a Customer per guest checkout would fill the Stripe
+        // dashboard with one-purchase strangers.
+        String customerId = null;
+        if (request.isAuthenticated()) {
+            customerId = ensureBillingCustomer(request, apiKey);
+        }
+
+        if (customerId != null) {
+            sessionBuilder.setCustomer(customerId);
+
+            // Save back what the buyer types at Checkout.
+            //
+            // Attaching a Customer is what makes this necessary: Stripe will not
+            // let a session collect a shipping address for a Customer it is not
+            // allowed to write it to while automatic tax is on — automatic tax
+            // reads the address off the Customer, so an address collected and
+            // discarded would be taxed against whatever was there before. The
+            // session is simply refused, which is what "12 schema violations"
+            // turned out to be: the checkout threw, the interceptor never
+            // transformed the body, and the raw {items, email} met the order
+            // schema.
+            //
+            // `auto` is also the whole point of having a Customer here — an
+            // address saved is an address offered back next time.
+            sessionBuilder.setCustomerUpdate(
+                    SessionCreateParams.CustomerUpdate.builder()
+                            .setShipping(SessionCreateParams.CustomerUpdate.Shipping.AUTO)
+                            .setAddress(SessionCreateParams.CustomerUpdate.Address.AUTO)
+                            .setName(SessionCreateParams.CustomerUpdate.Name.AUTO)
+                            .build());
+        } else if (buyerEmail != null) {
+            // Never both: Stripe rejects a session carrying `customer` and
+            // `customer_email` together.
+            sessionBuilder.setCustomerEmail(buyerEmail);
+        }
+
+        // Add line items
+        for (var requested : requestedItems) {
+            var catalogItem = catalogMap.get(requested.productId());
+
+            SessionCreateParams.LineItem.Builder lineItemBuilder;
+
+            if (catalogItem.stripePriceId() != null) {
+                // Escape hatch: use a real Stripe Price
+                lineItemBuilder = SessionCreateParams.LineItem.builder()
+                        .setPrice(catalogItem.stripePriceId())
+                        .setQuantity((long) requested.quantity());
+            } else {
+                // Normal case: ad-hoc price_data
+                var priceDataBuilder = SessionCreateParams.LineItem.PriceData.builder()
+                        .setCurrency(currency)
+                        .setUnitAmount(catalogItem.unitAmount())
+                        .setProductData(productData(catalogItem, requested, products));
+
+                lineItemBuilder = SessionCreateParams.LineItem.builder()
+                        .setPriceData(priceDataBuilder.build())
+                        .setQuantity((long) requested.quantity());
+            }
+
+            sessionBuilder.addLineItem(lineItemBuilder.build());
+        }
+
+        // Automatic tax
+        if (products.automaticTax()) {
+            sessionBuilder.setAutomaticTax(
+                    SessionCreateParams.AutomaticTax.builder().setEnabled(true).build());
+        }
+
+        // A VAT number, and an invoice to put it on.
+        //
+        // Both settings have existed on ProductsConfig since products mode was
+        // written, both default to true, and neither was ever read — so the
+        // console offered "collect tax id" and Checkout never asked, and no
+        // order ever produced an invoice. Two switches wired to nothing.
+        if (products.collectTaxId()) {
+            sessionBuilder.setTaxIdCollection(
+                    SessionCreateParams.TaxIdCollection.builder().setEnabled(true).build());
+        }
+
+        // Business buyers are the ones who need the document, and a signed-in
+        // buyer is the only one this shop knows to be one — a guest checkout has
+        // no team behind it. Which is what the setting has always been called.
+        if (products.invoiceTeamOrders() && request.isAuthenticated()) {
+            sessionBuilder.setInvoiceCreation(
+                    SessionCreateParams.InvoiceCreation.builder().setEnabled(true).build());
+        }
+
+        // Ask for somewhere to send it.
+        //
+        // Without this Stripe never shows the address form, so `shipping_address`
+        // on the order stays null for ever — and the shipping *rates* below were
+        // being offered all the same, which is a checkout that charges for
+        // delivery and never learns the destination.
+        //
+        // Stripe has no "anywhere": the allowed countries are an explicit list,
+        // so an empty one can only mean "do not ask". A cart that needs shipping
+        // and a service that never named a country is a misconfiguration rather
+        // than a preference, and says so once per order rather than silently.
+        if (requiresShipping) {
+            var countries = allowedCountries(products.shippingAddressCountries());
+            if (!countries.isEmpty()) {
+                sessionBuilder.setShippingAddressCollection(
+                        SessionCreateParams.ShippingAddressCollection.builder()
+                                .addAllAllowedCountry(countries)
+                                .build());
+            } else {
+                LOGGER.warn("[stripe] order {} needs shipping but products.shipping-address-countries "
+                        + "is empty: Stripe will not ask for an address and the order will have none",
+                        orderId);
+            }
+        }
+
+        // Shipping options (for physical products)
+        if (requiresShipping && products.shippingOptions() != null) {
+            for (var shippingOpt : products.shippingOptions()) {
+                sessionBuilder.addShippingOption(
+                        SessionCreateParams.ShippingOption.builder()
+                                .setShippingRateData(
+                                        SessionCreateParams.ShippingOption.ShippingRateData.builder()
+                                                .setDisplayName(shippingOpt.displayName())
+                                                .setFixedAmount(
+                                                        SessionCreateParams.ShippingOption.ShippingRateData.FixedAmount.builder()
+                                                                .setAmount(shippingOpt.amount())
+                                                                .setCurrency(currency)
+                                                                .build())
+                                                .build())
+                                .build());
+            }
+        }
+
+        // Session expiry (min 30 min, max 24 h)
+        var expiresMinutes = Math.max(30, Math.min(products.sessionExpiresMinutes(), 1440));
+
+        // Create the Stripe session
+        var opts = RequestOptions.builder()
+                .setApiKey(apiKey)
+                .setIdempotencyKey("order-" + buyerId + "-" + System.currentTimeMillis())
+                .build();
+
+        Session session;
+        try {
+            session = Session.create(sessionBuilder.build(), opts);
+        } catch (StripeException e) {
+            LOGGER.error("[stripe] failed to create Checkout session: {}", e.getMessage());
+            reject(response, HttpStatus.SC_BAD_GATEWAY, "unable to reach Stripe");
+            return;
+        }
+
+        // 7. Build order document (orderId and secret were minted at step 5b)
+        var now = System.currentTimeMillis();
+        var expiresAt = now + (expiresMinutes * 60L * 1000L);
+
+        var order = new BsonDocument()
+                .append("_id", new BsonObjectId(orderId))
+                .append("stripe_session_id", new BsonString(session.getId()))
+                .append("stripe_payment_intent", BsonNull.VALUE)
+                .append("secret", new BsonString(secret))
+                .append("checkout_url", new BsonString(session.getUrl()))
+                .append("buyer_id", buyerId != null ? new BsonString(buyerId) : BsonNull.VALUE)
+                .append("buyer_email", buyerEmail != null ? new BsonString(buyerEmail) : BsonNull.VALUE)
+                .append("payer", buildPayerDocument(request))
+                .append("metadata", orderMetadata)
+                .append("status", new BsonString("pending_payment"))
+                .append("requires_shipping", BsonBoolean.valueOf(requiresShipping))
+                .append("line_items", lineItemsBson)
+                .append("currency", new BsonString(currency))
+                .append("amount_subtotal", new BsonInt64(amountSubtotal))
+                .append("amount_tax", new BsonInt64(0))
+                .append("amount_shipping", new BsonInt64(0))
+                .append("amount_total", new BsonInt64(amountSubtotal))
+                .append("amount_refunded", new BsonInt64(0))
+                .append("shipping_address", BsonNull.VALUE)
+                .append("created_at", new org.bson.BsonDateTime(now))
+                .append("paid_at", BsonNull.VALUE)
+                .append("expires_at", new org.bson.BsonDateTime(expiresAt));
+
+        // 8. Replace request content with order document
+        request.setContent(order);
+
+        LOGGER.info("[stripe] order created — id={}, session={}, buyer={}", orderId, session.getId(), buyerId);
+    }
+
+    @Override
+    public boolean resolve(MongoRequest request, MongoResponse response) {
+        // Request-level disable (for RESTHeart Cloud multi-tenancy) — see RequestOverrides.
+        // Checked before resolving the effective config: a disabled tenant should never pay
+        // for reading a per-tenant products config it isn't entitled to.
+        if (RequestOverrides.productsDisabled(request)) {
+            return false;
+        }
+
+        var products = RequestOverrides.products(request, conf);
+        if (products == null || !products.enabled()) {
+            return false;
+        }
+
+        return request.isPost()
+                && request.isWriteDocument()
+                && products.ordersCollection().equals(request.getCollectionName());
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * The billing account's Stripe Customer, created on first purchase.
+     *
+     * Never fatal: if Stripe or the owner lookup fails the checkout goes ahead
+     * without a Customer — the buyer types their details again, which is a
+     * worse afternoon than a lost sale. `ensureCustomer` is idempotent under
+     * concurrency, so two tabs cannot produce two Customers for one account.
+     */
+    private String ensureBillingCustomer(MongoRequest request, String apiKey) {
+        try {
+            var provider = stripeService.getSubscriptionOwnerProvider();
+            var owner = provider.fromRequest(request, RequestOverrides.scope(request, conf));
+            if (owner.isEmpty()) {
+                return null;
+            }
+            return CustomerProvisioning.ensureCustomer(provider, owner.get(), apiKey);
+        } catch (Exception e) {
+            LOGGER.warn("[stripe] could not attach a Stripe Customer to this checkout — "
+                    + "the buyer will be asked for their details again: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String resolveBuyerId(MongoRequest request) {
+        var account = request.getAuthenticatedAccount();
+        if (account == null) {
+            return null;
+        }
+        // The principal name is the one identifier every account type carries. A JWT issued by
+        // restheart-accounts has no "_id" claim — the identity is in "sub" — so reading "_id"
+        // off the properties would silently make every authenticated buyer look like a guest.
+        if (account.getPrincipal() != null && account.getPrincipal().getName() != null) {
+            return account.getPrincipal().getName();
+        }
+        if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+            var props = withProperties.propertiesAsMap();
+            if (props != null && props.get("_id") != null) {
+                return props.get("_id").toString();
+            }
+        }
+        return null;
+    }
+
+    private String resolveBuyerEmail(MongoRequest request, BsonDocument body, ProductsConfig products) {
+        // Guest: email from body
+        if (!request.isAuthenticated()) {
+            return stringField(body, "email");
+        }
+
+        // Authenticated: from user document field
+        if (products.buyerEmailField() != null) {
+            var account = request.getAuthenticatedAccount();
+            if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+                var props = withProperties.propertiesAsMap();
+                if (props != null) {
+                    var emailValue = props.get(products.buyerEmailField());
+                    if (emailValue != null) {
+                        return emailValue.toString();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private BsonDocument buildPayerDocument(MongoRequest request) {
+        if (!request.isAuthenticated()) {
+            return new BsonDocument()
+                    .append("type", new BsonString("guest"))
+                    .append("id", BsonNull.VALUE)
+                    .append("stripe_customer_id", BsonNull.VALUE);
+        }
+
+        // Authenticated: resolve team
+        var account = request.getAuthenticatedAccount();
+        if (account instanceof org.restheart.security.WithProperties<?> withProperties) {
+            var props = withProperties.propertiesAsMap();
+            if (props != null && props.get("team") instanceof Map<?, ?> teamMap) {
+                // The claim carries {"$oid": "<hex>"}, which toString()s to "{$oid=<hex>}" —
+                // ObjectId would reject that, failing every authenticated order.
+                var teamId = org.restheart.stripe.util.StripeIds.fromClaim(
+                        teamMap.get("_id") != null ? teamMap.get("_id") : teamMap.get("id"));
+                var stripeCustomerId = teamMap.get("stripe_customer_id");
+
+                return new BsonDocument()
+                        .append("type", new BsonString("team"))
+                        .append("id", teamId != null ? new BsonObjectId(new ObjectId(teamId)) : BsonNull.VALUE)
+                        .append("stripe_customer_id", stripeCustomerId != null
+                                ? new BsonString(stripeCustomerId.toString())
+                                : BsonNull.VALUE);
+            }
+        }
+
+        // Fallback: guest (should not happen for authenticated users)
+        return new BsonDocument()
+                .append("type", new BsonString("guest"))
+                .append("id", BsonNull.VALUE)
+                .append("stripe_customer_id", BsonNull.VALUE);
+    }
+
+    private static String stringField(BsonDocument doc, String key) {
+        if (doc == null || !doc.containsKey(key) || !doc.get(key).isString()) {
+            return null;
+        }
+        return doc.getString(key).getValue();
+    }
+
+    /**
+     * Substitutes {@code {ORDER_ID}} and {@code {ORDER_SECRET}} in the configured
+     * success URL.
+     *
+     * <p>Without this the buyer comes back from Checkout holding nothing that
+     * identifies their order. Stripe substitutes only {@code {CHECKOUT_SESSION_ID}},
+     * and a guest has no session for the server to recognise them by — so every
+     * client had to invent its own way to carry the reference across the redirect
+     * (typically stashing it in {@code localStorage}, which does not survive a
+     * different browser, a cleared store, or a private window).
+     *
+     * <p>Substitution is opt-in: a URL without the placeholders is returned
+     * unchanged, so existing configurations keep working untouched.
+     *
+     * <p><b>Put {@code {ORDER_SECRET}} in the URL fragment, not the query
+     * string.</b> The secret is a bearer credential — it is the only thing
+     * standing between a stranger and a guest's order, with their email and
+     * shipping address in it. A fragment is never sent to the server, so it stays
+     * out of access logs, proxy logs and {@code Referer} headers, and the client
+     * can strip it from the address bar on arrival:
+     *
+     * <pre>
+     * success-url: https://shop.example.com/order#order={ORDER_ID}&amp;secret={ORDER_SECRET}
+     * </pre>
+     *
+     * <p>Both values are URL-encoded. An ObjectId is hex and a secret is hex, so
+     * in practice neither changes — the encoding is there so this stays correct
+     * if either representation ever does.
+     */
+    /**
+     * Configured country codes as Stripe's enum, dropping what it does not know.
+     *
+     * `AllowedCountry.valueOf` throws on anything that is not an ISO 3166-1
+     * alpha-2 code Stripe recognises, and a typo in a service's configuration
+     * must not take a checkout down with it: a customer cannot act on it, and
+     * the rest of the list is still good. So an unknown code is a warning and a
+     * skip — and if that empties the list, the caller falls through to not
+     * collecting an address at all, which it already knows how to report.
+     */
+    private static List<SessionCreateParams.ShippingAddressCollection.AllowedCountry> allowedCountries(
+            List<String> codes) {
+        var allowed = new ArrayList<SessionCreateParams.ShippingAddressCollection.AllowedCountry>();
+        if (codes == null) {
+            return allowed;
+        }
+        for (var code : codes) {
+            try {
+                allowed.add(SessionCreateParams.ShippingAddressCollection.AllowedCountry
+                        .valueOf(code.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("[stripe] products.shipping-address-countries: '{}' is not a country "
+                        + "code Stripe accepts — ignoring it", code);
+            }
+        }
+        return allowed;
+    }
+
+    static String interpolateOrderRef(String url, ObjectId orderId, String secret) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+        return url
+                .replace("{ORDER_ID}", URLEncoder.encode(orderId.toHexString(), StandardCharsets.UTF_8))
+                .replace("{ORDER_SECRET}", URLEncoder.encode(secret, StandardCharsets.UTF_8));
+    }
+
+    private static String generateSecret() {
+        var bytes = new byte[32];
+        RNG.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
+    private static void reject(MongoResponse response, int status, String message) {
+        response.setInError(status, message);
+        LOGGER.warn("[stripe] order creation rejected: {}", message);
+    }
+
+    /**
+     * Refuses a cart asking for more than the catalog says is there.
+     *
+     * <p>Read from the product document — from the variant, when the line names one — because that
+     * is the document the price came from and it was already fetched. There used to be a second
+     * collection for this, keyed by product id, and nothing in the pipeline ever wrote to it: the
+     * number it held could only ever be the one somebody typed by hand.
+     *
+     * <p>This closes the wide window, not the narrow one. Between this check and the payment
+     * arriving, another buyer can take the last unit — see the decrement in the webhook, which is
+     * what makes that case visible rather than preventing it.
+     */
+    private static void checkInventory(java.util.List<CatalogItem> catalogItems,
+                                       java.util.List<RequestedItem> requestedItems)
+            throws CatalogReader.CatalogValidationException {
+        var requestedMap = new java.util.LinkedHashMap<String, Integer>();
+        for (var item : requestedItems) {
+            requestedMap.merge(item.productId(), item.quantity(), Integer::sum);
+        }
+
+        for (var catalogItem : catalogItems) {
+            // Absent means the shop does not count this item.
+            if (catalogItem.inStock() == null) {
+                continue;
+            }
+
+            var requested = requestedMap.getOrDefault(catalogItem.id(), 0);
+            if (requested <= 0) {
+                continue;
+            }
+
+            if (catalogItem.inStock() < requested) {
+                throw new CatalogReader.CatalogValidationException(
+                        "product %s has %d available but %d requested"
+                                .formatted(catalogItem.id(), catalogItem.inStock(), requested));
+            }
+        }
+    }
+
+    /**
+     * The Stripe product for one line: name, description, tax code and metadata.
+     *
+     * <p>Built once. The previous version set {@code productData} three times — once with the
+     * name, again with the description, again with the tax code — and each call replaced the
+     * whole object rather than adding to it, so an item carrying both a description and a tax
+     * code reached Stripe with only the tax code. The receipt lost the description and nothing
+     * said so.
+     */
+    private static SessionCreateParams.LineItem.PriceData.ProductData productData(
+            CatalogItem catalogItem, RequestedItem requested, ProductsConfig products) {
+        var builder = SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                .setName(catalogItem.name());
+
+        if (catalogItem.description() != null) {
+            builder.setDescription(catalogItem.description());
+        }
+        if (catalogItem.taxCode() != null && products.automaticTax()) {
+            builder.setTaxCode(catalogItem.taxCode());
+        }
+        // Stripe shows these on its own checkout page, and takes at most eight. Until now the
+        // catalog's image was read and then dropped: the buyer left our shop and arrived at a
+        // page with no picture of what they were buying.
+        if (!catalogItem.images().isEmpty()) {
+            builder.addAllImage(catalogItem.images().stream().limit(8).toList());
+        }
+        // What the buyer chose, on Stripe's own copy of the line: it shows in the dashboard and
+        // on the invoice, which is where an order gets read before it gets packed.
+        if (!requested.metadata().isEmpty()) {
+            builder.putAllMetadata(asStringMap(requested.metadata()));
+        }
+
+        return builder.build();
+    }
+
+    /** Stripe's own limits, taken as they are — ours can only be stricter, never looser. */
+    private static final int METADATA_MAX_KEYS = 50;
+    private static final int METADATA_MAX_KEY_LENGTH = 40;
+    private static final int METADATA_MAX_VALUE_LENGTH = 500;
+
+    /**
+     * The {@code metadata} of a request document, validated in shape and never in meaning.
+     *
+     * <p>A map of strings, because that is what Stripe accepts and translating a vocabulary at the
+     * boundary is how the two drift apart. The plugin does not know what any key means and must
+     * not: they are the application's, and a colour or a size is not something a payment plugin
+     * has an opinion about.
+     *
+     * <p>Rejected here rather than only by the collection's schema. Both matter and they protect
+     * different things — the schema keeps the collection consistent, this keeps the buyer from
+     * reading a list of schema violations when the real answer is "that value is too long".
+     *
+     * @throws IllegalArgumentException with a message naming what is wrong and where
+     */
+    static BsonDocument metadataOf(BsonDocument doc, String what) {
+        if (!doc.containsKey("metadata")) {
+            return new BsonDocument();
+        }
+        if (!doc.get("metadata").isDocument()) {
+            throw new IllegalArgumentException("%s: 'metadata' must be an object".formatted(what));
+        }
+
+        var metadata = doc.getDocument("metadata");
+        if (metadata.size() > METADATA_MAX_KEYS) {
+            throw new IllegalArgumentException("%s: at most %d metadata keys, found %d"
+                    .formatted(what, METADATA_MAX_KEYS, metadata.size()));
+        }
+
+        for (var entry : metadata.entrySet()) {
+            if (entry.getKey().length() > METADATA_MAX_KEY_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata key '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_KEY_LENGTH));
+            }
+            if (!entry.getValue().isString()) {
+                throw new IllegalArgumentException("%s: metadata '%s' must be a string"
+                        .formatted(what, entry.getKey()));
+            }
+            if (entry.getValue().asString().getValue().length() > METADATA_MAX_VALUE_LENGTH) {
+                throw new IllegalArgumentException("%s: metadata '%s' is longer than %d characters"
+                        .formatted(what, entry.getKey(), METADATA_MAX_VALUE_LENGTH));
+            }
+        }
+
+        return metadata;
+    }
+
+    /** The same document as a plain map, which is what Stripe's builders take. */
+    private static Map<String, String> asStringMap(BsonDocument metadata) {
+        var map = new LinkedHashMap<String, String>();
+        metadata.forEach((k, v) -> map.put(k, v.asString().getValue()));
+        return map;
+    }
+
+    private record RequestedItem(String productId, int quantity, BsonDocument metadata) {
+    }
+}

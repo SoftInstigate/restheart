@@ -98,18 +98,18 @@ public class PutDocumentHandler extends PipelinedHandler {
         }
 
         var result = this.documents.writeDocument(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getMethod(),
-            request.getWriteMode(),
-            Optional.of(request.getDocumentId()),
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getMethod(),
+                request.getWriteMode(),
+                Optional.of(request.getDocumentId()),
+                Optional.ofNullable(request.getFiltersDocument()),
+                Optional.ofNullable(request.getShardKey()),
+                content,
+                request.getETag(),
+                request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 

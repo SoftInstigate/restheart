@@ -39,11 +39,11 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-    name = "roles",
-    description = "returns the roles of the authenticated client",
-    secure = true,
-    enabledByDefault = true,
-    defaultURI = "/roles")
+        name = "roles",
+        description = "returns the roles of the authenticated client",
+        secure = true,
+        enabledByDefault = true,
+        defaultURI = "/roles")
 public class GetRoleService implements JsonService {
     private String myURI = null;
 
@@ -65,7 +65,7 @@ public class GetRoleService implements JsonService {
         this.myURI = URLUtils.removeTrailingSlashes(argOrDefault(config, "uri", "/roles"));
 
         // authorize request if authenticated and path is /roles/{username}
-        aclRegistry.registerAllow(req -> req.isAuthenticated()&& req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName()));
+        aclRegistry.registerAllow(req -> req.isAuthenticated() && req.getPath().equals(myURI + "/" + req.getAuthenticatedAccount().getPrincipal().getName()));
 
         // if the request is authorized by any other authenticator (eg root role of MongoRealmAuthenticator), veto it anyway if not requesting own role
         // OPTIONS (CORS preflight) is always allowed — no credentials are sent with preflight requests
@@ -79,7 +79,7 @@ public class GetRoleService implements JsonService {
      */
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
-        switch(request.getMethod()){
+        switch (request.getMethod()) {
             case GET -> {
                 var roles = array();
                 request.getAuthenticatedAccount().getRoles().forEach(roles::add);

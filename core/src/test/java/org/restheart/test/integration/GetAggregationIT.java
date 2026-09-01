@@ -126,16 +126,16 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
 
-		// support of map reduce aggregations is removed since v9.0.0
-	  	var aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
-	  	var resp = adminExecutor.execute(Request.Get(aggrUri));
-		var httpResp = resp.returnResponse();
-		assertNotNull(httpResp);
-		var entity = httpResp.getEntity();
-		assertNotNull(entity);
-		var statusLine = httpResp.getStatusLine();
-		assertNotNull(statusLine);
-	  	assertEquals(HttpStatus.SC_UNPROCESSABLE_ENTITY, statusLine.getStatusCode(), "check status code");
+        // support of map reduce aggregations is removed since v9.0.0
+        var aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
+        var resp = adminExecutor.execute(Request.Get(aggrUri));
+        var httpResp = resp.returnResponse();
+        assertNotNull(httpResp);
+        var entity = httpResp.getEntity();
+        assertNotNull(entity);
+        var statusLine = httpResp.getStatusLine();
+        assertNotNull(statusLine);
+        assertEquals(HttpStatus.SC_UNPROCESSABLE_ENTITY, statusLine.getStatusCode(), "check status code");
     }
 
     /**
@@ -162,7 +162,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/"
                 + _AGGREGATIONS + "/" + uri,
-                new NameValuePair[] {
+                new NameValuePair[]{
                         new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
                 });
 
@@ -186,18 +186,18 @@ public class GetAggregationIT extends HttpClientAbstactIT {
     public void testUnboundVariable() throws Exception {
         String uri = "avg_ages";
 
-	  	String aggregationsMetadata = """
-			{ "aggrs": [
-				{
-				  "uri": "%s",
-				  "stages": [
-				  	{"$match": {"name": {"$var":"name"} }},
-					{"$group": {"_id": "$name", "value": {"$avg": "$age" }}}
-				  ]
-			  	}
-			  ]
-			}
-			""".formatted(uri);
+        String aggregationsMetadata = """
+                { "aggrs": [
+                	{
+                	  "uri": "%s",
+                	  "stages": [
+                	  	{"$match": {"name": {"$var":"name"} }},
+                		{"$group": {"_id": "$name", "value": {"$avg": "$age" }}}
+                	  ]
+                  	}
+                  ]
+                }
+                """.formatted(uri);
 
         createTmpCollection();
         createMetadataAndTestData(aggregationsMetadata);
@@ -237,7 +237,7 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         String etag = getEtag(collectionTmpUri);
 
         // post some data
-        String[] data = new String[] {
+        String[] data = new String[]{
                 "{\"name\":\"a\",\"age\":10}",
                 "{\"name\":\"a\",\"age\":20}",
                 "{\"name\":\"a\",\"age\":30}",

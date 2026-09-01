@@ -134,7 +134,7 @@ public interface ExchangeTypeResolver<R extends Request<?>, S extends Response<?
      */
     default Type requestType() {
         return new TypeToken<R>(getClass()) {
-			private static final long serialVersionUID = 8363463867743712134L;
+            private static final long serialVersionUID = 8363463867743712134L;
         }.getType();
     }
 

@@ -272,7 +272,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
 
             RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("Request/Response: {} → {}",
-                serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
+                    serviceRequest.getClass().getSimpleName(), serviceResponse.getClass().getSimpleName());
 
             service.handle(serviceRequest, serviceResponse);
 
@@ -287,7 +287,7 @@ class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> 
             var duration = System.currentTimeMillis() - startTime;
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.error("Service execution failed: {} for {} {} after {}ms, error: {}",
-                serviceName, method, path, duration, ex.getMessage());
+                    serviceName, method, path, duration, ex.getMessage());
             RequestPhaseContext.reset();
             throw ex;
         }

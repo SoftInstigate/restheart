@@ -1,4 +1,4 @@
-ARG GRAALVM_VERSION=25.0.2-graalce
+ARG GRAALVM_VERSION=25.1.3-graalce
 FROM softinstigate/graalvm:${GRAALVM_VERSION}
 
 LABEL org.opencontainers.image.title="RESTHeart"
@@ -23,7 +23,9 @@ COPY target/plugins/lib/*.jar plugins/lib/
 ENV RHO='/mclient/connection-string->"mongodb://host.docker.internal";/http-listener/host->"0.0.0.0"'
 
 # JDK 25 optimized for RESTHeart: low-latency REST API, 1-2 vCPU, 1-2GB container RAM
-# ZGC (generational) for predictable pause times with Virtual Threads and short-lived request objects
+# Default G1 GC is the best fit: MongoDB is the bottleneck, not the JVM.
+# ZGC would add CPU and memory overhead with no benefit when virtual threads
+# are mostly parked on I/O. G1 pause times are short enough at 1-2GB heaps.
 # NOTE: Graal JIT is enabled by default to support GraalVM polyglot plugin capabilities.
 # If you are not using polyglot plugins, adding -XX:-UseJVMCICompiler will reduce
 # compiler memory overhead significantly in constrained containers (recommended for <512Mi heap).
@@ -31,10 +33,8 @@ ENTRYPOINT [ "java", \
     "-Dfile.encoding=UTF-8", \
     "--enable-native-access=ALL-UNNAMED", \
     "--sun-misc-unsafe-memory-access=allow", \
-    "-XX:+UseZGC", \
-    "-XX:+ZGenerational", \
     "-XX:MaxRAMPercentage=70.0", \
-    "-XX:InitialRAMPercentage=25.0", \
+    "-XX:InitialRAMPercentage=60.0", \
     "-XX:+DisableExplicitGC", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-XX:+UseCompactObjectHeaders", \

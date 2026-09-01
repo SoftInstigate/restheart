@@ -79,7 +79,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange != null && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext()
-                        .getAuthenticatedAccount() != null) {
+                .getAuthenticatedAccount() != null) {
             Account a = exchange.getSecurityContext().getAuthenticatedAccount();
 
             // remove sensitive X-Forwarded headers from request
@@ -92,7 +92,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
             if (xfhs != null) {
                 xfhs.entrySet().stream()
                         .forEachOrdered(m -> exchange.getRequestHeaders()
-                        .remove(m.getKey()));
+                                .remove(m.getKey()));
             }
 
             // add X-Forwarded headers

@@ -128,7 +128,7 @@ public abstract class BaseAclPermission {
     public boolean allow(Request<?> request) {
         try {
             return this.predicate.test(request);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             LOGGER.error("Error testing predicate {}", t);
             return false;
         }

@@ -81,8 +81,8 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
         }
         if (metricName.startsWith("jvm mem.heap.")) {
             return metricName.endsWith(".usage")
-                ? "Heap memory utilization as a percentage of the maximum heap"
-                : "JVM heap memory in MB (used, committed, max, init)";
+                    ? "Heap memory utilization as a percentage of the maximum heap"
+                    : "JVM heap memory in MB (used, committed, max, init)";
         }
         if (metricName.startsWith("jvm mem.non-heap.")) {
             return "Aggregate non-heap memory in MB (sum of Metaspace, CodeHeap, Compressed Class Space, etc.)";
@@ -98,8 +98,8 @@ public class RHDropwizardExports extends io.prometheus.client.Collector implemen
         }
         if (metricName.startsWith("jvm garbage-collector.")) {
             return metricName.endsWith(".count")
-                ? "Number of garbage collections since JVM start"
-                : "Cumulative GC pause time in ms since JVM start";
+                    ? "Number of garbage collections since JVM start"
+                    : "Cumulative GC pause time in ms since JVM start";
         }
         return metricName;
     }

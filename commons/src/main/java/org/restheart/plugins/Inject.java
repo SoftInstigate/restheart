@@ -123,4 +123,20 @@ public @interface Inject {
      * @return the name of the dependency to inject into the annotated field
      */
     String value();
+
+    /**
+     * Specifies whether the dependency is required.
+     * <p>
+     * When {@code true} (the default), the plugin is disabled if the provider
+     * is not found or is disabled — the current behavior.
+     * </p>
+     * <p>
+     * When {@code false}, the field is set to {@code null} if the provider is
+     * not found or is disabled, and the plugin remains enabled. A DEBUG log
+     * is emitted in this case.
+     * </p>
+     *
+     * @return {@code true} if the dependency is required, {@code false} if optional
+     */
+    boolean required() default true;
 }

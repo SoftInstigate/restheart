@@ -11,6 +11,8 @@ services:
       # Uses semicolon-separated XPath expressions to modify config
       # Note: Arrays use XPath 1.0 indexing (1-based, not 0-based)
       # Uncomment the commented line below to override the default mount and expose all databases at root
+      # Let polyglot operations run on virtual threads once oracle/graal#7520 is fixed
+      # JAVA_TOOL_OPTIONS: "-Drestheart.polyglot.force-platform-threads=false"
       RHO: >
         /mclient/connection-string->"mongodb://mongodb";
         /http-listener/host->"0.0.0.0";

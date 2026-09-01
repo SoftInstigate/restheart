@@ -26,21 +26,13 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.util.FileSize;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import org.fusesource.jansi.AnsiConsole;
-import org.fusesource.jansi.io.AnsiOutputStream;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -172,7 +164,7 @@ public class LoggingInitializer {
             } else {
                 encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %trace%prefix%msg%n%throwable{full}");
             }
-        }  else {
+        } else {
             if (noColors) {
                 encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %trace%prefix%msg%n%throwable{short}");
             } else {

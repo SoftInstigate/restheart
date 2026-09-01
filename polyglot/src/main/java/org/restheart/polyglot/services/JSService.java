@@ -42,16 +42,16 @@ public abstract class JSService extends JSPlugin {
     private final MATCH_POLICY matchPolicy;
 
     public JSService(String name,
-        String pluginClass,
-        String description,
-        String uri,
-        boolean secured,
-        MATCH_POLICY matchPolicy,
-        Source handleSource,
-        String modulesReplacements,
-        Configuration config,
-        Optional<MongoClient> mclient,
-        Map<String, String> contextOptions) {
+                     String pluginClass,
+                     String description,
+                     String uri,
+                     boolean secured,
+                     MATCH_POLICY matchPolicy,
+                     Source handleSource,
+                     String modulesReplacements,
+                     Configuration config,
+                     Optional<MongoClient> mclient,
+                     Map<String, String> contextOptions) {
         super(name, description, handleSource, modulesReplacements, config, mclient, contextOptions);
         this.uri = uri;
         this.secured = secured;

@@ -59,18 +59,18 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
         int_args = queryMapping.interpolateArgs(env);
 
-        var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
+        var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument() : new BsonDocument();
         var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
         var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
         var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-        LOGGER.debug("Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(),  _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
+        LOGGER.debug("Executing query for field {}: {}.{}.find {}, sort {}, skip {}, limit {}, context vars {}", env.getField().getName(), queryMapping.getDb(), queryMapping.getCollection(), _find, _sort, _skip, _limit, BsonUtils.toJson(env.getLocalContext()));
 
         try {
             var query = mongoClient
-                .getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class)
-                .find(_find)
-                .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
+                    .getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class)
+                    .find(_find)
+                    .maxTime(maxTimeLeft(env), TimeUnit.MILLISECONDS);
 
             if (_sort != null) {
                 query = query.sort(_sort);
@@ -91,7 +91,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
             } else {
                 return query.first();
             }
-        } catch(MongoExecutionTimeoutException toe) {
+        } catch (MongoExecutionTimeoutException toe) {
             throw new GraphQLQueryTimeoutException("Maximum query time limit of " + maxTimeTotal(env) + "ms exceeded");
         }
     }

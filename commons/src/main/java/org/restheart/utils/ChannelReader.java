@@ -47,9 +47,9 @@ public class ChannelReader {
         final var ret = new String[1];
 
         receiver.receiveFullString(
-            (_exchange, data) -> ret[0] = data,
-            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe),
-            StandardCharsets.UTF_8);
+                (_exchange, data) -> ret[0] = data,
+                (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe),
+                StandardCharsets.UTF_8);
 
         return ret[0];
     }
@@ -68,8 +68,8 @@ public class ChannelReader {
         final var ret = new byte[1][];
 
         receiver.receiveFullBytes(
-            (_exchange, data) -> ret[0] = data,
-            (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe));
+                (_exchange, data) -> ret[0] = data,
+                (_exchange, ioe) -> LambdaUtils.throwsSneakyException(ioe));
 
         return ret[0];
     }

@@ -72,26 +72,26 @@ public class SecurityHandler extends PipelinedHandler {
 
             // Log authorizers info
             var vetoers = authorizers.stream()
-                .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
-                .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
-                .collect(java.util.stream.Collectors.toList());
-            
+                    .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
+                    .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
+                    .collect(java.util.stream.Collectors.toList());
+
             var allowers = authorizers.stream()
-                .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.ALLOWER)
-                .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
-                .collect(java.util.stream.Collectors.toList());
-            
-            BootstrapLogger.debugItem(SecurityHandler.LOGGER, "AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
-                authorizers.size(), vetoers, allowers);
-            
+                    .filter(a -> org.restheart.utils.PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.ALLOWER)
+                    .map(a -> org.restheart.utils.PluginUtils.name(a.getInstance()))
+                    .collect(java.util.stream.Collectors.toList());
+
+            BootstrapLogger.item(SecurityHandler.LOGGER, "AuthorizersHandler: {} authorizers (VETOERs: {}, ALLOWERs: {})",
+                    authorizers.size(), vetoers, allowers);
+
             // Log token manager info
             if (tokenManager != null) {
                 var tokenManagerName = org.restheart.utils.PluginUtils.name(tokenManager);
                 var tokenManagerClass = tokenManager.getClass().getSimpleName();
-                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: token manager {} ({})",
-                    tokenManagerName, tokenManagerClass);
+                BootstrapLogger.item(SecurityHandler.LOGGER, "TokenInjector: token manager {} ({})",
+                        tokenManagerName, tokenManagerClass);
             } else {
-                BootstrapLogger.debugItem(SecurityHandler.LOGGER, "TokenInjector: no token manager");
+                BootstrapLogger.item(SecurityHandler.LOGGER, "TokenInjector: no token manager");
             }
 
             var duration = System.currentTimeMillis() - startTime;
@@ -204,9 +204,9 @@ public class SecurityHandler extends PipelinedHandler {
                 synchronized (LOCK) {
                     if (cachedComponents == null) {
                         cachedComponents = new SecurityChainComponents(
-                            mechanisms,
-                            authorizers,
-                            tokenManager != null ? tokenManager.getInstance() : null
+                                mechanisms,
+                                authorizers,
+                                tokenManager != null ? tokenManager.getInstance() : null
                         );
                     }
                 }
@@ -232,9 +232,9 @@ public class SecurityHandler extends PipelinedHandler {
                 synchronized (LOCK) {
                     if (cachedComponents == null) {
                         cachedComponents = new SecurityChainComponents(
-                            mechanisms,
-                            authorizers,
-                            tokenManager != null ? tokenManager.getInstance() : null
+                                mechanisms,
+                                authorizers,
+                                tokenManager != null ? tokenManager.getInstance() : null
                         );
                     }
                 }

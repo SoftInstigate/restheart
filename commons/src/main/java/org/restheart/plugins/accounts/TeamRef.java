@@ -9,4 +9,5 @@ import org.bson.BsonValue;
  * @param id          the team's unique identifier (e.g. an ObjectId or a hex string)
  * @param displayName the human-readable team name
  */
-public record TeamRef(BsonValue id, String displayName) {}
+public record TeamRef(BsonValue id, String displayName) {
+}

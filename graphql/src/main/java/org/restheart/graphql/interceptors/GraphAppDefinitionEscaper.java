@@ -36,7 +36,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 
 
-@RegisterPlugin(name="graphAppDefinitionEscaper",
+@RegisterPlugin(name = "graphAppDefinitionEscaper",
         description = "escapes $ prefixed keys in GraphQL application definitions",
         interceptPoint = REQUEST_AFTER_AUTH,
         enabledByDefault = true
@@ -64,7 +64,7 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
             } else {
                 this.enabled = false;
             }
-        } catch(ConfigurationException ce) {
+        } catch (ConfigurationException ce) {
             // nothing to do, using default values
         }
     }
@@ -81,13 +81,13 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest req, MongoResponse res) {
-		String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
-		var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
+        String overrideGQLAppsDb = req.attachedParam("override-gql-apps-db");
+        var db = overrideGQLAppsDb == null ? this.defaultAppDefDb : overrideGQLAppsDb;
 
         return enabled
-            && db.equals(req.getDBName())
-            && this.coll.equals(req.getCollectionName())
-            && req.getContent() != null
-            && req.isWriteDocument();
+                && db.equals(req.getDBName())
+                && this.coll.equals(req.getCollectionName())
+                && req.getContent() != null
+                && req.isWriteDocument();
     }
 }

@@ -38,9 +38,9 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
-import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 /**
  * Factory class responsible for creating, configuring, and managing all RESTHeart plugins.
  * 
@@ -283,10 +283,10 @@ public class PluginsFactory {
             this.validProviders = ProvidersChecker.validProviders(LOGGER, PluginsScanner.providers());
             // only register valid plugins (from ProvidersChecker.validProviders())
             this.providersCache = validProviders.stream()
-                .map(pd -> providers.stream().filter(p -> p.getClassName().equals(pd.clazz())).findFirst())
-                .filter(p -> p.isPresent())
-                .map(p -> p.get())
-                .collect(Collectors.toSet());
+                    .map(pd -> providers.stream().filter(p -> p.getClassName().equals(pd.clazz())).findFirst())
+                    .filter(p -> p.isPresent())
+                    .map(p -> p.get())
+                    .collect(Collectors.toSet());
         }
 
         return providersCache;
@@ -408,7 +408,7 @@ public class PluginsFactory {
     private final HashMap<String, PluginRecord<?>> INSTANTIATED_PLUGINS_RECORDS = new HashMap<>();
 
     void injectDependencies() {
-        for (var ip: PLUGINS_TO_INJECT_DEPS) {
+        for (var ip : PLUGINS_TO_INJECT_DEPS) {
             try {
                 inject(ip);
             } catch (InvocationTargetException ite) {
@@ -421,7 +421,7 @@ public class PluginsFactory {
                 } else {
                     LOGGER.error("Error injecting dependency into {} {}: {}", ip.type, ip.name, getRootException(ite).getMessage(), ite);
                 }
-            } catch(NoProviderException npe) {
+            } catch (NoProviderException npe) {
                 LOGGER.error("Error injecting dependency into {} {}: {}", ip.type, ip.name, npe.getMessage());
             } catch (InstantiationException | IllegalAccessException ex) {
                 LOGGER.error("Error injecting dependency into {} {}: {}", ip.type, ip.name, getRootException(ex).getMessage(), ex);
@@ -438,7 +438,7 @@ public class PluginsFactory {
 
         var injectDuration = System.currentTimeMillis() - injectStartTime;
         LOGGER.trace("Completed dependency injection for {} ({}) in {}ms",
-            ip.name, ip.clazz.getSimpleName(), injectDuration);
+                ip.name, ip.clazz.getSimpleName(), injectDuration);
     }
 
     private void setInjectFields(InstatiatedPlugin ip) throws NoProviderException, InstantiationException, IllegalAccessException, InvocationTargetException {
@@ -449,12 +449,12 @@ public class PluginsFactory {
 
         var injections = new ArrayList<FieldInjectionDescriptor>();
         ip.descriptor.injections().stream()
-            .filter(i -> i instanceof FieldInjectionDescriptor)
-            .map(i -> (FieldInjectionDescriptor) i)
-            .forEach(injections::add);
-            
+                .filter(i -> i instanceof FieldInjectionDescriptor)
+                .map(i -> (FieldInjectionDescriptor) i)
+                .forEach(injections::add);
+
         LOGGER.trace("Processing {} field injections for {} ({})",
-            injections.size(), ip.name, ip.clazz.getSimpleName());
+                injections.size(), ip.name, ip.clazz.getSimpleName());
 
         for (var injection : injections) {
             // try to set @Inject field
@@ -466,7 +466,7 @@ public class PluginsFactory {
                 // find the provider
                 var providerName = injection.annotationParams().get(0).getValue();
                 LOGGER.trace("Looking up provider '{}' for field {} ({}) in {} ({})",
-                    providerName, injection.field(), fieldType, ip.name, ip.clazz.getSimpleName());
+                        providerName, injection.field(), fieldType, ip.name, ip.clazz.getSimpleName());
 
                 var _provider = providers().stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
@@ -476,7 +476,7 @@ public class PluginsFactory {
                     var callerRecord = this.INSTANTIATED_PLUGINS_RECORDS.get(ip.clazz.getName());
 
                     LOGGER.trace("Found provider '{}' ({}) - Calling get() for {} ({})",
-                        providerName, providerClass, ip.name, ip.clazz.getSimpleName());
+                            providerName, providerClass, ip.name, ip.clazz.getSimpleName());
 
                     var getStartTime = System.currentTimeMillis();
                     var value = providerInstance.get(callerRecord);
@@ -487,30 +487,35 @@ public class PluginsFactory {
 
                     var injectionDuration = System.currentTimeMillis() - injectionStartTime;
                     LOGGER.trace("Provider '{}' injected {} into field {} of {} ({}) - Provider call: {}ms, Total: {}ms",
-                        providerName, value != null ? value.getClass().getSimpleName() : "null",
-                        injection.field(), ip.name, ip.clazz.getSimpleName(), getDuration, injectionDuration);
+                            providerName, value != null ? value.getClass().getSimpleName() : "null",
+                            injection.field(), ip.name, ip.clazz.getSimpleName(), getDuration, injectionDuration);
+                } else if (!injection.required()) {
+                    field.setAccessible(true);
+                    field.set(ip.instance, null);
+                    LOGGER.debug("Optional provider '{}' not found for @Inject(required=false) field {} in {} ({}) - field set to null",
+                            providerName, injection.field(), ip.name, ip.clazz.getSimpleName());
                 } else {
                     var availableProviders = providers().stream().map(p -> p.getName()).toList();
-                    LOGGER.error("No provider found for @Inject(\"{}\") in {} ({}). Available providers: {}", 
-                        providerName, ip.name, ip.clazz.getSimpleName(), availableProviders);
+                    LOGGER.error("No provider found for @Inject(\"{}\") in {} ({}). Available providers: {}",
+                            providerName, ip.name, ip.clazz.getSimpleName(), availableProviders);
                     throw new NoProviderException("no provider found for @Inject(\"" + providerName + "\")");
                 }
-            } catch(NoSuchFieldException nsfe) {
+            } catch (NoSuchFieldException nsfe) {
                 var injectionDuration = System.currentTimeMillis() - injectionStartTime;
-                LOGGER.error("Field '{}' not found in {} ({}) after {}ms", 
-                    injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration);
+                LOGGER.error("Field '{}' not found in {} ({}) after {}ms",
+                        injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration);
                 // should not happen
                 throw new InvocationTargetException(nsfe);
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 var injectionDuration = System.currentTimeMillis() - injectionStartTime;
-                LOGGER.error("Error injecting provider into field '{}' of {} ({}) after {}ms", 
-                    injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration, ex);
+                LOGGER.error("Error injecting provider into field '{}' of {} ({}) after {}ms",
+                        injection.field(), ip.name, ip.clazz.getSimpleName(), injectionDuration, ex);
                 throw ex;
             }
         }
-        
+
         LOGGER.trace("Completed {} field injections for {} ({})",
-            injections.size(), ip.name, ip.clazz.getSimpleName());
+                injections.size(), ip.name, ip.clazz.getSimpleName());
     }
 
     private void invokeOnInitMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
@@ -521,9 +526,9 @@ public class PluginsFactory {
 
         var injections = new ArrayList<MethodInjectionDescriptor>();
         ip.descriptor.injections().stream()
-            .filter(i -> i instanceof MethodInjectionDescriptor)
-            .map(i -> (MethodInjectionDescriptor) i)
-            .forEach(injections::add);
+                .filter(i -> i instanceof MethodInjectionDescriptor)
+                .map(i -> (MethodInjectionDescriptor) i)
+                .forEach(injections::add);
 
         for (var injection : injections) {
             if (OnInit.class.equals(injection.clazz()) && ip.descriptor.injections().stream()

@@ -3,20 +3,18 @@ package org.restheart.emails;
 import com.softinstigate.ermes.mail.EmailModel;
 import com.softinstigate.ermes.mail.EmailService;
 import com.softinstigate.ermes.mail.SMTPConfig;
-import org.restheart.cache.Cache;
-import org.restheart.cache.CacheFactory;
-import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.ThreadsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * RESTHeart email sender plugin. Wraps the Ermes SMTP library.
@@ -26,32 +24,47 @@ import java.util.Optional;
  * override-emails-smtp-hostname, override-emails-smtp-port,
  * override-emails-smtp-username, override-emails-smtp-password.
  *
- * <p>Overridden EmailService instances are cached to avoid re-instantiation.
+ * <p>{@code sendEmail} is synchronous: it runs the SMTP transaction on the
+ * calling thread. {@code sendEmailAsync} dispatches it on the shared virtual
+ * threads executor and is what callers on the request path should use, so that
+ * the SMTP round trip is not added to the response latency.
+ *
+ * <p>{@link EmailService} is built with no internal thread pool, and holds no
+ * SMTP connection of its own — every send opens and closes its own connection —
+ * so overridden instances are built per request rather than cached.
  *
  * @since 9.6.0
  */
 @RegisterPlugin(
-        name             = "emails",
-        description      = "SMTP email sender (wraps ermes-mail)",
+        name = "emails",
+        description = "SMTP email sender (wraps ermes-mail)",
         enabledByDefault = false)
 public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmtpEmailSender.class);
     private static final String PREFIX = "override-emails-";
     private static final Object LOCK = new Object();
-    private static final long OVERRIDE_ENTRY_SHUTDOWN_TIMEOUT_SECONDS = 5;
+    /** Ermes creates no ExecutorService with this pool size; send() runs on the calling thread. */
+    private static final int NO_THREAD_POOL = 0;
     private static SmtpEmailSender initializedInstance;
+
+    /**
+     * Consulted before every send, when the deployment registered one.
+     *
+     * <p>{@code required = false} is what makes this safe to add: a single-tenant install has
+     * nobody to protect from anybody and registers no gate, and without it every such install
+     * would refuse to start. Null means send.
+     */
+    @Inject(value = "email-gate", required = false)
+    private EmailGate gate = null;
 
     @Inject("config")
     private Map<String, Object> conf;
 
     private EmailService emailSrv;
-    private String       senderEmail;
-    private String       appName;
-    private boolean      enabled = false;
-
-    /** Cache for overridden EmailService instances, keyed by override signature. */
-    private LoadingCache<String, OverrideEntry> overrideCache;
+    private String senderEmail;
+    private String appName;
+    private boolean enabled = false;
 
     @OnInit
     public void onInit() {
@@ -64,10 +77,8 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             }
             try {
                 this.emailSrv = buildEmailService(conf);
-                this.appName    = cfgOrDefault(conf, "app-name", "App");
+                this.appName = cfgOrDefault(conf, "app-name", "App");
                 this.senderEmail = cfgRequired(conf, "sender-email");
-                this.overrideCache = CacheFactory.createLocalLoadingCache(
-                        64, Cache.EXPIRE_POLICY.AFTER_READ, 600_000, this::buildOverrideEntry, this::onOverrideEntryRemoved);
                 initializedInstance = this;
                 LOGGER.info("Emails plugin initialized sender={} host={}", senderEmail,
                         cfgOrDefault(conf, "smtp-hostname", "?"));
@@ -90,29 +101,68 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
             LOGGER.warn("Emails plugin disabled, skipping email to <{}>", to);
             return;
         }
+        if (!permitted(request, to)) {
+            return;
+        }
+        send(resolve(request), to, recipientName, subject, htmlBody);
+    }
 
-        final EmailService srv;
-        final String from;
-        final String name;
-
-        if (request != null && hasOverride(request)) {
-            var signature = buildSignature(request);
-            var entry = overrideCache
-                    .getLoading(signature)
-                    .orElse(new OverrideEntry(this.emailSrv, this.senderEmail, this.appName));
-            srv  = entry.emailSrv;
-            from = entry.senderEmail;
-            name = entry.appName;
-        } else {
-            srv  = this.emailSrv;
-            from = this.senderEmail;
-            name = this.appName;
+    /**
+     * Asks the gate, if there is one.
+     *
+     * <p>The check happens here and not inside {@link #send}, so it costs nothing on a deployment
+     * that registered no gate, and so an asynchronous send is refused on the calling thread —
+     * where the request is still readable — rather than later, when the exchange may already have
+     * been recycled.
+     */
+    private boolean permitted(Request<?> request, String to) {
+        if (gate == null) {
+            return true;
         }
 
         try {
-            var model = new EmailModel(from, name, subject, htmlBody);
+            var decision = gate.check(request, to, request != null && hasOverride(request));
+            if (!decision.allowed()) {
+                LOGGER.warn("Email to <{}> not sent: {}", to, decision.reason());
+                return false;
+            }
+        } catch (Exception e) {
+            // A broken gate must not take the mail down with it: a deployment that cannot count
+            // is worse off refusing everything than sending it.
+            LOGGER.error("Email gate failed, sending anyway", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Resolves the per-request SMTP overrides on the calling thread, then runs
+     * the send on the shared virtual threads executor. Reading the request up
+     * front is required: by the time the task runs, the exchange may already
+     * have been completed and recycled.
+     */
+    @Override
+    public void sendEmailAsync(Request<?> request, String to, String recipientName, String subject, String htmlBody) {
+        if (!this.enabled) {
+            LOGGER.warn("Emails plugin disabled, skipping email to <{}>", to);
+            return;
+        }
+        if (!permitted(request, to)) {
+            return;
+        }
+        var settings = resolve(request);
+        ThreadsUtils.virtualThreadsExecutor()
+                .execute(() -> send(settings, to, recipientName, subject, htmlBody));
+    }
+
+    private void send(Settings settings, String to, String recipientName, String subject, String htmlBody) {
+        try {
+            var model = new EmailModel(settings.senderEmail(), settings.appName(), subject, htmlBody);
             model.addTo(to, recipientName != null ? recipientName : to);
-            srv.send(model);
+            var errors = settings.emailSrv().sendSynch(model);
+            if (!errors.isEmpty()) {
+                LOGGER.error("Errors sending email to <{}>: {}", to, errors);
+            }
         } catch (Exception e) {
             LOGGER.error("Error sending email to <{}>", to, e);
         }
@@ -132,77 +182,75 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     // --- Override support ---
 
-    private record OverrideEntry(EmailService emailSrv, String senderEmail, String appName) {}
+    /** The SMTP settings a single send runs with: either the static ones or a per-request override. */
+    private record Settings(EmailService emailSrv, String senderEmail, String appName) {
+    }
+
+    /**
+     * Returns the settings to send with, applying the request's override
+     * parameters when present and falling back to the static configuration
+     * when they are absent or invalid.
+     */
+    private Settings resolve(Request<?> request) {
+        if (request != null && hasOverride(request)) {
+            var override = buildOverride(request);
+            if (override != null) {
+                return override;
+            }
+        }
+        return new Settings(this.emailSrv, this.senderEmail, this.appName);
+    }
 
     private static boolean hasOverride(Request<?> req) {
         return req.attachedParam(PREFIX + "sender-email") != null
-            || req.attachedParam(PREFIX + "sender-name") != null
-            || req.attachedParam(PREFIX + "smtp-hostname") != null
-            || req.attachedParam(PREFIX + "smtp-port") != null
-            || req.attachedParam(PREFIX + "smtp-username") != null
-            || req.attachedParam(PREFIX + "smtp-password") != null;
+                || req.attachedParam(PREFIX + "sender-name") != null
+                || req.attachedParam(PREFIX + "smtp-hostname") != null
+                || req.attachedParam(PREFIX + "smtp-port") != null
+                || req.attachedParam(PREFIX + "smtp-username") != null
+                || req.attachedParam(PREFIX + "smtp-password") != null;
     }
 
-    private static String buildSignature(Request<?> req) {
-        return String.join("|",
-                str(req.attachedParam(PREFIX + "sender-email")),
-                str(req.attachedParam(PREFIX + "sender-name")),
-                str(req.attachedParam(PREFIX + "smtp-hostname")),
-                str(req.attachedParam(PREFIX + "smtp-port")),
-                str(req.attachedParam(PREFIX + "smtp-username")),
-                str(req.attachedParam(PREFIX + "smtp-password")));
+    /**
+     * Builds the SMTP settings for a request carrying override parameters.
+     * Starts with a full copy of the static YAML config (kebab-case keys),
+     * then overrides only the fields specified via attached parameters, so
+     * unspecified ones keep their static values.
+     *
+     * @return the overridden settings, or {@code null} if they are invalid, in
+     *         which case the caller falls back to the static configuration
+     */
+    private Settings buildOverride(Request<?> req) {
+        var m = new HashMap<String, Object>(conf != null ? conf : Map.of());
+        overrideIfPresent(m, "sender-email", str(req.attachedParam(PREFIX + "sender-email")));
+        overrideIfPresent(m, "app-name", str(req.attachedParam(PREFIX + "sender-name")));
+        overrideIfPresent(m, "smtp-hostname", str(req.attachedParam(PREFIX + "smtp-hostname")));
+        overrideIfPresent(m, "smtp-port", str(req.attachedParam(PREFIX + "smtp-port")));
+        overrideIfPresent(m, "smtp-username", str(req.attachedParam(PREFIX + "smtp-username")));
+        overrideIfPresent(m, "smtp-password", str(req.attachedParam(PREFIX + "smtp-password")));
+        try {
+            return new Settings(
+                    buildEmailService(m),
+                    cfgOrDefault(m, "sender-email", this.senderEmail),
+                    cfgOrDefault(m, "app-name", this.appName));
+        } catch (Exception e) {
+            LOGGER.error("Failed to build overridden SMTP config, using the static one", e);
+            return null;
+        }
     }
 
     private static String str(Object v) {
         return v != null ? v.toString() : "";
     }
 
-    /**
-     * Builds an OverrideEntry from the cache key (pipe-separated signature).
-     * Starts with a full copy of the static YAML config (kebab-case keys),
-     * then overrides only the fields specified via attached parameters.
-     * Empty parts in the signature are skipped, so static config values are preserved.
-     */
-    @SuppressWarnings("unchecked")
-    private OverrideEntry buildOverrideEntry(String signature) {
-        var parts = signature.split("\\|", -1);
-        var m = new java.util.HashMap<String, Object>(conf != null ? conf : Map.of());
-        overrideIfPresent(m, "sender-email",   parts[0]);
-        overrideIfPresent(m, "app-name",       parts[1]);
-        overrideIfPresent(m, "smtp-hostname",  parts[2]);
-        overrideIfPresent(m, "smtp-port",      parts[3]);
-        overrideIfPresent(m, "smtp-username",  parts[4]);
-        overrideIfPresent(m, "smtp-password",  parts[5]);
-        try {
-            var srv  = buildEmailService(m);
-            var from = cfgOrDefault(m, "sender-email", this.senderEmail);
-            var name = cfgOrDefault(m, "app-name", this.appName);
-            return new OverrideEntry(srv, from, name);
-        } catch (Exception e) {
-            LOGGER.error("Failed to build overridden SMTP config", e);
-            return new OverrideEntry(this.emailSrv, this.senderEmail, this.appName);
-        }
-    }
-
-    /**
-     * Shuts down the overridden EmailService's thread pool when its cache entry is
-     * removed (expiration, eviction, or explicit invalidation). Never shuts down the
-     * static {@link #emailSrv}, which {@link #buildOverrideEntry} falls back to when
-     * building an override fails, and which must stay alive for the plugin's lifetime.
-     */
-    private void onOverrideEntryRemoved(Map.Entry<String, Optional<OverrideEntry>> entry) {
-        entry.getValue().ifPresent(overrideEntry -> {
-            if (overrideEntry.emailSrv() != this.emailSrv) {
-                overrideEntry.emailSrv().shutdown(OVERRIDE_ENTRY_SHUTDOWN_TIMEOUT_SECONDS);
-            }
-        });
-    }
-
     private static void overrideIfPresent(Map<String, Object> m, String key, String value) {
         if (value != null && !value.isEmpty()) {
-            if ("smtp-port".equals(key) || "ssl-port".equals(key)) {
-                try { m.put(key, Integer.parseInt(value)); }
-                catch (NumberFormatException e) { m.put(key, value); }
+            if ("smtp-port".equals(key)) {
+                try {
+                    m.put(key, Integer.parseInt(value));
+                }
+                catch (NumberFormatException e) {
+                    m.put(key, value);
+                }
             } else {
                 m.put(key, value);
             }
@@ -213,13 +261,13 @@ public class SmtpEmailSender implements Provider<SmtpEmailSender>, EmailSender {
 
     private static EmailService buildEmailService(Map<String, Object> cfg) {
         final String smtpHostname = cfgRequired(cfg, "smtp-hostname");
-        final int    smtpPort     = cfgRequired(cfg, "smtp-port");
+        final int smtpPort = cfgRequired(cfg, "smtp-port");
         final String smtpUsername = cfgRequired(cfg, "smtp-username");
         final String smtpPassword = cfgRequired(cfg, "smtp-password");
-        final int    sslPort      = cfgOrDefault(cfg, "ssl-port", 465);
+        final int sslPort = cfgOrDefault(cfg, "ssl-port", 465);
         return new EmailService(
                 SMTPConfig.forSsl(smtpHostname, smtpPort, smtpUsername, smtpPassword, sslPort),
-                4);
+                NO_THREAD_POOL);
     }
 
     // --- Configuration helpers ---

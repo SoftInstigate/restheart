@@ -107,22 +107,22 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
         }
 
         wrapped = builder
-            .build(new CacheLoader<K, Optional<V>>() {
-            @Override
-            public Optional<V> load(K key) throws Exception {
-                return Optional.ofNullable(loader.apply(key));
-            }
+                .build(new CacheLoader<K, Optional<V>>() {
+                    @Override
+                    public Optional<V> load(K key) throws Exception {
+                        return Optional.ofNullable(loader.apply(key));
+                    }
 
-            @Override
-            public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
-                var ret = new HashMap<K, Optional<V>>();
-                keys.forEach(key -> {
-                    ret.put(key, Optional.ofNullable(loader.apply(key)));
+                    @Override
+                    public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
+                        var ret = new HashMap<K, Optional<V>>();
+                        keys.forEach(key -> {
+                            ret.put(key, Optional.ofNullable(loader.apply(key)));
+                        });
+
+                        return ret;
+                    }
                 });
-
-                return ret;
-            }
-        });
     }
 
     /**
@@ -157,24 +157,24 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
         }
 
         wrapped = builder
-            .removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) ->
-                remover.accept(new AbstractMap.SimpleEntry<>(k, v)))
-            .build(new CacheLoader<K, Optional<V>>() {
-            @Override
-            public Optional<V> load(K key) throws Exception {
-                return Optional.ofNullable(loader.apply(key));
-            }
+                .removalListener((@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) ->
+                        remover.accept(new AbstractMap.SimpleEntry<>(k, v)))
+                .build(new CacheLoader<K, Optional<V>>() {
+                    @Override
+                    public Optional<V> load(K key) throws Exception {
+                        return Optional.ofNullable(loader.apply(key));
+                    }
 
-            @Override
-            public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
-                var ret = new HashMap<K, Optional<V>>();
-                keys.forEach(key -> {
-                    ret.put(key, Optional.ofNullable(loader.apply(key)));
+                    @Override
+                    public Map<? extends K, ? extends @NonNull Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
+                        var ret = new HashMap<K, Optional<V>>();
+                        keys.forEach(key -> {
+                            ret.put(key, Optional.ofNullable(loader.apply(key)));
+                        });
+
+                        return ret;
+                    }
                 });
-
-                return ret;
-            }
-        });
     }
 
     /**

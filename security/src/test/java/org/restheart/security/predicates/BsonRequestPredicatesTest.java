@@ -311,8 +311,8 @@ public class BsonRequestPredicatesTest {
         final var predicateArray = PredicateParser.parse("bson-request-array-contains(key=sub.a, values={'\"bar\"', '\"foo\"'})", MongoUtils.class.getClassLoader());
 
         assertTrue(
-            predicateArray.resolve(exchangeBarAndFoo),
-            "check [ \"bar\", \"foo\" ] contains { bar, foo } using the dot notation");
+                predicateArray.resolve(exchangeBarAndFoo),
+                "check [ \"bar\", \"foo\" ] contains { bar, foo } using the dot notation");
 
         assertFalse(
                 predicateArray.resolve(exchangeFooAndBaz),

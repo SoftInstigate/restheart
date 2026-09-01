@@ -172,13 +172,11 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
 
                 // Extract JWT payload and check for authDb claim
                 final var jwtPayload = new String(Base64.getUrlDecoder().decode(verifiedJwt.getPayload()), StandardCharsets.UTF_8);
-                
+
                 // Parse payload to check for authDb claim
                 var payloadToStore = jwtPayload;
                 var authDbClaim = verifiedJwt.getClaim("authDb");
                 if (authDbClaim != null && !authDbClaim.isNull()) {
-                    // If authDb is present, we need to ensure it's in the payload for cache key matching
-                    // The payload already contains it, so just use it as-is
                     LOGGER.debug("JWT contains authDb claim: {}", authDbClaim.asString());
                 }
 

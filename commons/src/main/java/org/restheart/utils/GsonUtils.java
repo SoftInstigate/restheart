@@ -25,7 +25,7 @@ import java.util.Objects;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;;
+import com.google.gson.JsonObject;
 
 /**
  * Utility class providing builder patterns and helper methods for creating Gson JsonObjects and JsonArrays.

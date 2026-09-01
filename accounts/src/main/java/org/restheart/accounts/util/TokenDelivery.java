@@ -31,7 +31,7 @@ import org.restheart.security.services.TokenRedirectHelper;
 public final class TokenDelivery {
 
     /** Token delivery mechanism. */
-    public enum Mode { COOKIE, BODY, FRAGMENT }
+    public enum Mode {COOKIE, BODY, FRAGMENT}
 
     private static final HttpString SET_COOKIE = HttpString.tryFromString("Set-Cookie");
     private static final HttpString AUTH_TOKEN = HttpString.tryFromString("Auth-Token");
@@ -51,10 +51,10 @@ public final class TokenDelivery {
             return defaultMode;
         }
         return switch (raw.trim().toLowerCase()) {
-            case "cookie"                  -> Mode.COOKIE;
+            case "cookie" -> Mode.COOKIE;
             case "body", "bearer", "token" -> Mode.BODY;
-            case "fragment"                -> Mode.FRAGMENT;
-            default                        -> defaultMode;
+            case "fragment" -> Mode.FRAGMENT;
+            default -> defaultMode;
         };
     }
 

@@ -32,9 +32,9 @@ import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 
 @RegisterPlugin(
-    name = "mclient",
-    description = "provides the MongoClient",
-    priority = 11)
+        name = "mclient",
+        description = "provides the MongoClient",
+        priority = 11)
 public class MongoClientProvider implements Provider<MongoClient> {
     @Inject("config")
     private Map<String, Object> config;

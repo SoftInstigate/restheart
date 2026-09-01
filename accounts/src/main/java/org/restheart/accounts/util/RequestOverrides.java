@@ -96,6 +96,24 @@ import java.util.List;
  *         (see {@code AccountsInitializer})</td>
  *     <td>{@link AccountsConfigData#usersUnrestrictedRoles()}</td>
  *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-terms-version}</td>
+ *     <td>Terms of Service version recorded in the {@code ConsentRecord} on OAuth activation</td>
+ *     <td>{@link AccountsConfigData#termsVersion()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-privacy-version}</td>
+ *     <td>Privacy Policy version recorded in the {@code ConsentRecord} on OAuth activation</td>
+ *     <td>{@link AccountsConfigData#privacyVersion()}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>{@code override-accounts-account-properties-claims}</td>
+ *     <td>User-document fields copied into the issued JWT (see {@code JwtHelper}).
+ *         A fixed denylist — the configured password property and the one-shot
+ *         verification/reset token fields — is enforced at token issuance regardless
+ *         of this override</td>
+ *     <td>{@link AccountsConfigData#accountPropertiesClaims()}</td>
+ *   </tr>
  * </table>
  *
  * <h2>Multi-team usage (restheart-cloud)</h2>
@@ -109,6 +127,9 @@ import java.util.List;
  *     "app-name": "Customer App",
  *     "frontend-url": "https://app.customer.com",
  *     "frontend-app-url": "https://app.customer.com/app",
+ *     "terms-version": "2.0",
+ *     "privacy-version": "2.0",
+ *     "account-properties-claims": ["consents", "plan"],
  *     "templates": {
  *       "verification":   "<html>...</html>",
  *       "password-reset": "<html>...</html>",
@@ -141,7 +162,7 @@ public final class RequestOverrides {
     // ── Core DB / cookie ──────────────────────────────────────────────────────
 
     /** MongoDB database override (set by AuthDbResolver). */
-    public static final String USERS_DB      = "override-users-db";
+    public static final String USERS_DB = "override-users-db";
 
     /** Cookie domain override (set by AuthDbResolver). */
     public static final String COOKIE_DOMAIN = "override-cookie-domain";
@@ -151,16 +172,16 @@ public final class RequestOverrides {
 
     // ── Accounts-specific overrides (set by TeamConfigInterceptor) ──────────
 
-    public static final String APP_NAME          = "override-accounts-app-name";
-    public static final String FRONTEND_URL      = "override-accounts-frontend-url";
-    public static final String FRONTEND_APP_URL  = "override-accounts-frontend-app-url";
+    public static final String APP_NAME = "override-accounts-app-name";
+    public static final String FRONTEND_URL = "override-accounts-frontend-url";
+    public static final String FRONTEND_APP_URL = "override-accounts-frontend-app-url";
 
     /** Inline HTML for the email-verification template (from confs/{srvId}.accounts.templates.verification). */
-    public static final String TMPL_VERIFICATION  = "override-accounts-tmpl-verification";
+    public static final String TMPL_VERIFICATION = "override-accounts-tmpl-verification";
     /** Inline HTML for the password-reset template. */
     public static final String TMPL_PASSWORD_RESET = "override-accounts-tmpl-password-reset";
     /** Inline HTML for the invite template. */
-    public static final String TMPL_INVITE         = "override-accounts-tmpl-invite";
+    public static final String TMPL_INVITE = "override-accounts-tmpl-invite";
 
     // ── Per-team OAuth overrides ─────────────────────────────────────────────
 
@@ -179,10 +200,25 @@ public final class RequestOverrides {
     /** Team role for the user who creates a team (override for multi-team). */
     public static final String OWNERSHIP_ROLE = "override-accounts-ownership-role";
 
+    // ── Legal ─────────────────────────────────────────────────────────────
+
+    /** Terms of Service version override (recorded in {@code ConsentRecord} on OAuth activation). */
+    public static final String TERMS_VERSION = "override-accounts-terms-version";
+
+    /** Privacy Policy version override (recorded in {@code ConsentRecord} on OAuth activation). */
+    public static final String PRIVACY_VERSION = "override-accounts-privacy-version";
+
     // ── Users self-service write restriction override ───────────────────────
 
     /** Roles exempt from the {@code /users} self-service write restriction (override for multi-team). */
     public static final String USERS_UNRESTRICTED_ROLES = "override-accounts-users-unrestricted-roles";
+
+    /**
+     * User-document fields copied into the issued JWT (override for multi-team).
+     * A fixed denylist is enforced at token issuance by {@code JwtHelper} regardless of
+     * this override — see its class javadoc.
+     */
+    public static final String ACCOUNT_PROPERTIES_CLAIMS = "override-accounts-account-properties-claims";
 
     /**
      * Whether Sign-up Management is enabled for this tenant (override for multi-team).
@@ -194,13 +230,27 @@ public final class RequestOverrides {
      */
     public static final String SIGNUP_MGMT_ENABLED = "override-accounts-signup-mgmt-enabled";
 
-    private RequestOverrides() {}
+    private RequestOverrides() {
+    }
 
     // ── Accessor methods ──────────────────────────────────────────────────────
 
     /** Effective MongoDB database name. */
     public static String db(ServiceRequest<?> req, AccountsConfigData conf) {
         return str(req, USERS_DB, conf.db());
+    }
+
+    /**
+     * Effective MongoDB users collection name.
+     *
+     * <p>There is deliberately no per-request override: {@code MongoRealmAuthenticator}
+     * honours {@code override-users-db} but has no equivalent for the collection — it
+     * always authenticates against its configured {@code users-collection}. An accounts-side
+     * override would move where users are written without moving where they are read,
+     * so registrations would succeed and the subsequent logins would fail.
+     */
+    public static String usersCollection(ServiceRequest<?> req, AccountsConfigData conf) {
+        return conf.usersCollection();
     }
 
     /** Effective cookie domain. */
@@ -256,9 +306,31 @@ public final class RequestOverrides {
         return str(req, OWNERSHIP_ROLE, conf.ownershipRole());
     }
 
+    /** Effective Terms of Service version, recorded in {@code ConsentRecord} on OAuth activation. */
+    public static String termsVersion(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, TERMS_VERSION, conf.termsVersion());
+    }
+
+    /** Effective Privacy Policy version, recorded in {@code ConsentRecord} on OAuth activation. */
+    public static String privacyVersion(ServiceRequest<?> req, AccountsConfigData conf) {
+        return str(req, PRIVACY_VERSION, conf.privacyVersion());
+    }
+
     /** Effective roles exempt from the {@code /users} self-service write restriction. */
     public static List<String> usersUnrestrictedRoles(ServiceRequest<?> req, AccountsConfigData conf) {
         return list(req, USERS_UNRESTRICTED_ROLES, conf.usersUnrestrictedRoles());
+    }
+
+    /**
+     * Effective list of user-document fields to copy into the issued JWT.
+     *
+     * <p><b>Not authoritative for security</b>: {@code JwtHelper} enforces a fixed denylist
+     * (the configured password property and one-shot verification/reset token fields) at
+     * token issuance, so a tenant cannot use this override to exfiltrate credentials even
+     * if it lists them.
+     */
+    public static List<String> accountPropertiesClaims(ServiceRequest<?> req, AccountsConfigData conf) {
+        return list(req, ACCOUNT_PROPERTIES_CLAIMS, conf.accountPropertiesClaims());
     }
 
     /**
@@ -305,10 +377,10 @@ public final class RequestOverrides {
      * @param staticConfig the static {@link OAuthConfig}, consulted only for the {@code scope} fallback
      */
     public static OAuthConfig.ProviderConfig oauthProvider(ServiceRequest<?> req, String providerName,
-            OAuthConfig staticConfig) {
+                                                           OAuthConfig staticConfig) {
         var name = providerName.toLowerCase();
 
-        var clientId     = str(req, oauthProviderKey(name, "client-id"),     null);
+        var clientId = str(req, oauthProviderKey(name, "client-id"), null);
         var clientSecret = str(req, oauthProviderKey(name, "client-secret"), null);
         if (clientId == null || clientSecret == null) return null;
 
@@ -336,7 +408,7 @@ public final class RequestOverrides {
     private static boolean bool(ServiceRequest<?> req, String key, boolean defaultValue) {
         var v = req.attachedParam(key);
         if (v instanceof Boolean b) return b;
-        if (v instanceof String  s) return Boolean.parseBoolean(s);
+        if (v instanceof String s) return Boolean.parseBoolean(s);
         return defaultValue;
     }
 

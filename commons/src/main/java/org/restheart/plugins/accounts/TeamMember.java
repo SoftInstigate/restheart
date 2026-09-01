@@ -12,4 +12,5 @@ import java.time.Instant;
  *                 configured member role)
  * @param joinedAt the instant the member joined the team, or {@code null} if unknown
  */
-public record TeamMember(String email, String name, String role, Instant joinedAt) {}
+public record TeamMember(String email, String name, String role, Instant joinedAt) {
+}

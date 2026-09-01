@@ -20,7 +20,6 @@
  */
 package org.restheart;
 
-import java.io.IOException;
 import java.nio.file.Path;
 
 import org.restheart.configuration.Configuration;

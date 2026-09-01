@@ -59,7 +59,7 @@ import java.util.Optional;
  * @param <K> the class of the keys
  * @param <V> the class of the values
  */
-public interface LoadingCache<K,V> extends Cache<K,V> {
+public interface LoadingCache<K, V> extends Cache<K, V> {
     /**
      * Returns the value associated with the specified key, loading it if necessary.
      * 

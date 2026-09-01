@@ -37,15 +37,15 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
     protected FieldMapping fieldMapping;
     protected static AggregationPipelineSecurityChecker securityChecker;
 
-    public static void setMongoClient(MongoClient mClient){
+    public static void setMongoClient(MongoClient mClient) {
         mongoClient = mClient;
     }
-    
+
     public static void setSecurityChecker(AggregationPipelineSecurityChecker checker) {
         securityChecker = checker;
     }
 
-    public GraphQLDataFetcher(FieldMapping fieldMapping){
+    public GraphQLDataFetcher(FieldMapping fieldMapping) {
         this.fieldMapping = fieldMapping;
     }
 
@@ -79,7 +79,7 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
 
     protected long maxTimeTotal(DataFetchingEnvironment env) {
         BsonDocument ctx = env.getLocalContext();
-        return  ctx.containsKey("query-time-limit")
+        return ctx.containsKey("query-time-limit")
                 ? ctx.get("query-time-limit").asInt64().getValue()
                 : 0l;
     }
@@ -87,7 +87,7 @@ public abstract class GraphQLDataFetcher implements DataFetcher<Object> {
     protected long maxTimeLeft(DataFetchingEnvironment env) {
         BsonDocument ctx = env.getLocalContext();
         return ctx.containsKey("query-time-limit-left") ?
-            ctx.get("query-time-limit-left").asInt64().getValue()
-            : maxTimeTotal(env);
+                ctx.get("query-time-limit-left").asInt64().getValue()
+                : maxTimeTotal(env);
     }
 }

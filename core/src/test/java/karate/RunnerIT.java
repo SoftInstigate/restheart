@@ -22,6 +22,9 @@ package karate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.restheart.test.integration.AbstactIT;
 
@@ -36,10 +39,37 @@ import com.intuit.karate.Runner;
 public class RunnerIT extends AbstactIT {
     @Test
     public void run() {
-        var results = Runner.path("classpath:karate")
-                .tags("~@ignore", "~@helper")
+        List<String> tags = new ArrayList<>(List.of("~@ignore", "~@helper"));
+
+        if (!isGraalVM25_1_OrLater()) {
+            // Skip polyglot tests on non-GraalVM or GraalVM < 25.1 (JS plugins won't load)
+            tags.add("~@requires-graalvm");
+        }
+
+        // Defaults to the whole suite. Narrow it while debugging with a comma-separated list:
+        //   mvn verify -Dit.includes=**/RunnerIT.java \
+        //              -Dkarate.path=classpath:karate/stripe/subscription-acl-variable.feature
+        var paths = System.getProperty("karate.path", "classpath:karate").split(",");
+
+        var results = Runner.path(paths)
+                .tags(tags.toArray(new String[0]))
+                .hook(new ProgressHook())
                 .parallel(1);
 
         assertEquals(0, results.getFailCount());
+    }
+
+    private static boolean isGraalVM25_1_OrLater() {
+        try {
+            var versionClass = Class.forName("org.graalvm.home.Version");
+            var getCurrent = versionClass.getMethod("getCurrent");
+            var version = getCurrent.invoke(null);
+            var compareTo = versionClass.getMethod("compareTo", versionClass);
+            var v25_1 = versionClass.getMethod("create", int.class, int.class)
+                    .invoke(null, 25, 1);
+            return (int) compareTo.invoke(version, v25_1) >= 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -35,7 +35,7 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-@RegisterPlugin(name="xPoweredBy", description="Sets the X-Powered-By: restheart.org response header", enabledByDefault=true)
+@RegisterPlugin(name = "xPoweredBy", description = "Sets the X-Powered-By: restheart.org response header", enabledByDefault = true)
 public class XPoweredBy implements WildcardInterceptor {
     private static final HttpString X_POWERED_BY = HttpString.tryFromString(HttpHeaders.X_POWERED_BY);
     private static final String RESTHEART_ORG = "restheart.org";

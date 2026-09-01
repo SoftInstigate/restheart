@@ -79,8 +79,8 @@ public class GetRootHandler extends PipelinedHandler {
 
             // filter out reserved resources
             var __dbs = _dbs.stream()
-                .filter(db -> !MongoRequest.isReservedDbName(db))
-                .collect(Collectors.toList());
+                    .filter(db -> !MongoRequest.isReservedDbName(db))
+                    .collect(Collectors.toList());
 
             if (__dbs == null) {
                 __dbs = new ArrayList<>();
@@ -104,18 +104,19 @@ public class GetRootHandler extends PipelinedHandler {
                         // apply page and pagesize
                         __dbs = __dbs.subList((request.getPage() - 1) * pagesize,
                                 (request.getPage() - 1) * pagesize
-                                + pagesize > __dbs.size()
-                                ? __dbs.size()
-                                : (request.getPage() - 1) * pagesize
-                                + pagesize);
+                                        + pagesize > __dbs.size()
+                                        ? __dbs.size()
+                                        : (request.getPage() - 1) * pagesize
+                                        + pagesize);
 
                         __dbs.stream().map(db -> {
-                                if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
-                                    return MetadataCachesSingleton.getInstance().getDBProperties(db);
-                                } else {
-                                    return dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), request.rsOps(), db);
-                                }})
-                            .forEachOrdered(db -> data.add(db));
+                            if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
+                                return MetadataCachesSingleton.getInstance().getDBProperties(db);
+                            } else {
+                                return dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), request.rsOps(), db);
+                            }
+                        })
+                                .forEachOrdered(db -> data.add(db));
                     }
                 }
             }

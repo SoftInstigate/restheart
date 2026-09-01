@@ -124,7 +124,7 @@ public class HALRepresentation implements MongoInterceptor {
 
             try {
                 return factory.getRepresentation(request.getExchange(),
-                    (BulkOperationResult) response.getDbOperationResult()).asBsonDocument();
+                        (BulkOperationResult) response.getDbOperationResult()).asBsonDocument();
             } catch (IllegalQueryParameterException iqpe) {
                 // shoudn't happen
                 throw new IllegalStateException(iqpe);
@@ -170,7 +170,7 @@ public class HALRepresentation implements MongoInterceptor {
         if (request.isInError()) {
             var ret = new BsonDocument();
 
-            content.asDocument().keySet().stream().filter(key -> !"_embedded".equals(key)&& !"_links".equals(key)).forEach(key -> ret.append(key, content.asDocument().get(key)));
+            content.asDocument().keySet().stream().filter(key -> !"_embedded".equals(key) && !"_links".equals(key)).forEach(key -> ret.append(key, content.asDocument().get(key)));
 
             return ret;
         } else if (request.isGet()) {

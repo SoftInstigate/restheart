@@ -40,34 +40,34 @@ public class CoercingUtils {
             Map.entry("Boolean", GraphQLBoolean)
     );
 
-    private static final Map<String, Coercing<?,?>> replacements = Map.ofEntries(
+    private static final Map<String, Coercing<?, ?>> replacements = Map.ofEntries(
             Map.entry("String", new GraphQLBsonStringCoercing()),
             Map.entry("Int", new GraphQLBsonInt32Coercing()),
             Map.entry("Float", new GraphQLBsonDoubleCoerching()),
             Map.entry("Boolean", new GraphQLBsonBooleanCoercing())
     );
 
-    public static final Map<String, Coercing<?,?>> builtInCoercing = new HashMap<>();
+    public static final Map<String, Coercing<?, ?>> builtInCoercing = new HashMap<>();
 
     static String typeName(Object input) {
         return input == null ? "null" : input.getClass().getSimpleName();
     }
 
-    static void saveBuiltInCoercing(){
+    static void saveBuiltInCoercing() {
         builtInScalars.forEach(((s, graphQLScalarType) -> builtInCoercing.put(s, graphQLScalarType.getCoercing())));
     }
 
     public static void replaceBuiltInCoercing() throws NoSuchFieldException, IllegalAccessException {
-        var coercingField =  GraphQLScalarType.class.getDeclaredField("coercing");
+        var coercingField = GraphQLScalarType.class.getDeclaredField("coercing");
         coercingField.setAccessible(true);
         saveBuiltInCoercing();
         replacements.forEach(((s, coercing) -> {
-                try {
-                    coercingField.set(builtInScalars.get(s), coercing);
-                } catch (IllegalAccessException e) {
-                    LambdaUtils.throwsSneakyException(new RuntimeException("Error replacing built-in scalars", e));
-                }
-            }));
+            try {
+                coercingField.set(builtInScalars.get(s), coercing);
+            } catch (IllegalAccessException e) {
+                LambdaUtils.throwsSneakyException(new RuntimeException("Error replacing built-in scalars", e));
+            }
+        }));
         coercingField.setAccessible(false);
     }
 }

@@ -77,10 +77,10 @@ public final class JsonUnflattener {
 
     /** The separator character used in dot notation (period). */
     private static final Character separator = '.';
-    
+
     /** The left bracket character used for array index notation. */
     private static final Character leftBracket = '[';
-    
+
     /** The right bracket character used for array index notation. */
     private static final Character rightBracket = ']';
 
@@ -135,55 +135,55 @@ public final class JsonUnflattener {
 
         // add properties not using the dot notation
         flattened.keySet().stream()
-            .filter(key -> keyPartPattern.matcher(key).matches())
-            .forEach((key) -> unflattened.asDocument().put(key, flattened.get(key)));
+                .filter(key -> keyPartPattern.matcher(key).matches())
+                .forEach((key) -> unflattened.asDocument().put(key, flattened.get(key)));
 
         // add properties using the dot notation
         flattened.keySet().stream()
-            .filter(key -> !keyPartPattern.matcher(key).matches())
-            .forEach(key -> {
-                BsonValue currentVal = unflattened;
-                String objKey = null;
-                Integer aryIdx = null;
+                .filter(key -> !keyPartPattern.matcher(key).matches())
+                .forEach(key -> {
+                    BsonValue currentVal = unflattened;
+                    String objKey = null;
+                    Integer aryIdx = null;
 
-                var matcher = keyPartPattern.matcher(key);
-                while (matcher.find()) {
-                    var keyPart = matcher.group();
+                    var matcher = keyPartPattern.matcher(key);
+                    while (matcher.find()) {
+                        var keyPart = matcher.group();
 
-                    var firstKey = matcher.start() == 0;
+                        var firstKey = matcher.start() == 0;
 
-                    if (objKey != null ^ aryIdx != null) {
-                        if (isJsonArray(firstKey, keyPart)) {
-                            currentVal = findOrCreateJsonArray(currentVal, objKey, aryIdx);
-                            objKey = null;
-                            aryIdx = extractIndex(keyPart);
-                        } else { // JSON object
-                            if (flattened.get(key).isArray()) { // KEEP_ARRAYS mode
-                                flattened.put(key, unflattenArray(flattened.get(key).asArray()));
+                        if (objKey != null ^ aryIdx != null) {
+                            if (isJsonArray(firstKey, keyPart)) {
+                                currentVal = findOrCreateJsonArray(currentVal, objKey, aryIdx);
+                                objKey = null;
+                                aryIdx = extractIndex(keyPart);
+                            } else { // JSON object
+                                if (flattened.get(key).isArray()) { // KEEP_ARRAYS mode
+                                    flattened.put(key, unflattenArray(flattened.get(key).asArray()));
+                                }
+                                currentVal = findOrCreateJsonObject(currentVal, objKey, aryIdx);
+                                objKey = extractKey(keyPart);
+                                aryIdx = null;
                             }
-                            currentVal = findOrCreateJsonObject(currentVal, objKey, aryIdx);
-                            objKey = extractKey(keyPart);
-                            aryIdx = null;
+                        }
+
+                        if (objKey == null && aryIdx == null) {
+                            if (isJsonArray(firstKey, keyPart)) {
+                                aryIdx = extractIndex(keyPart);
+                                if (currentVal == null) {
+                                    currentVal = new BsonArray();
+                                }
+                            } else { // JSON object
+                                objKey = extractKey(keyPart);
+                                if (currentVal == null) {
+                                    currentVal = new BsonDocument();
+                                }
+                            }
                         }
                     }
 
-                    if (objKey == null && aryIdx == null) {
-                        if (isJsonArray(firstKey, keyPart)) {
-                            aryIdx = extractIndex(keyPart);
-                            if (currentVal == null) {
-                                currentVal = new BsonArray();
-                            }
-                        } else { // JSON object
-                            objKey = extractKey(keyPart);
-                            if (currentVal == null) {
-                                currentVal = new BsonDocument();
-                            }
-                        }
-                    }
-                }
-
-                setUnflattenedValue(flattened, key, currentVal, objKey, aryIdx);
-            });
+                    setUnflattenedValue(flattened, key, currentVal, objKey, aryIdx);
+                });
 
         return unflattened;
     }
@@ -250,9 +250,9 @@ public final class JsonUnflattener {
      */
     private boolean isJsonArray(boolean firstPart, String keyPart) {
         return // the first part key is always the key of an object (0.a.b -> 0 is an object)
-               !firstPart
-               // if a number key, it must be an array index
-               && keyPart.matches("\\d+");
+                !firstPart
+                        // if a number key, it must be an array index
+                        && keyPart.matches("\\d+");
     }
 
     /**
@@ -351,7 +351,7 @@ public final class JsonUnflattener {
         if (objKey != null) {
             if (val.isArray()) {
                 var jsonArray = new BsonArray();
-                val.asArray().forEach((arrayVal) ->  jsonArray.asArray().add(newJsonUnflattener(arrayVal).unflatten()));
+                val.asArray().forEach((arrayVal) -> jsonArray.asArray().add(newJsonUnflattener(arrayVal).unflatten()));
                 currentVal.asDocument().put(objKey, jsonArray);
             } else {
                 currentVal.asDocument().put(objKey, val);
