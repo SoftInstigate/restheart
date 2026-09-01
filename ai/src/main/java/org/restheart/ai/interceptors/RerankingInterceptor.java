@@ -35,6 +35,7 @@ import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -208,29 +209,12 @@ public class RerankingInterceptor implements MongoInterceptor {
      * name a different provider on a per-request basis.
      */
     private RerankModel resolveRerankModel(String providerName) {
-        var cached = resolvedRerankModels.get(providerName);
-        if (cached != null) {
-            return cached;
+        var model = PluginModelResolver.resolve(registry, resolvedRerankModels, providerName, RerankModel.class);
+        if (model.isEmpty()) {
+            LOGGER.warn("rerankingInterceptor: rerank provider '{}' not found, not enabled, "
+                + "or does not supply a RerankModel", providerName);
         }
-
-        var providerRecord = registry.getProviders().stream()
-            .filter(p -> providerName.equals(p.getName()))
-            .findFirst()
-            .orElse(null);
-
-        if (providerRecord == null || !providerRecord.isEnabled()) {
-            LOGGER.warn("rerankingInterceptor: rerank provider '{}' not found or not enabled", providerName);
-            return null;
-        }
-
-        var provided = providerRecord.getInstance().get(null);
-        if (!(provided instanceof RerankModel model)) {
-            LOGGER.warn("rerankingInterceptor: provider '{}' does not supply a RerankModel", providerName);
-            return null;
-        }
-
-        resolvedRerankModels.put(providerName, model);
-        return model;
+        return model.orElse(null);
     }
 
     // -------------------------------------------------------------------------

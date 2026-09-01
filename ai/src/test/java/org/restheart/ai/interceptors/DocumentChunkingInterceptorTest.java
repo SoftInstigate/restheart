@@ -21,13 +21,86 @@
 package org.restheart.ai.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Set;
 
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.junit.jupiter.api.Test;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.Provider;
+import org.restheart.plugins.ai.EmbeddingModel;
 
+@SuppressWarnings("unchecked")
 public class DocumentChunkingInterceptorTest {
+
+    private static DocumentChunkingInterceptor newInterceptor(PluginsRegistry registry) throws Exception {
+        var interceptor = new DocumentChunkingInterceptor();
+        var registryField = DocumentChunkingInterceptor.class.getDeclaredField("registry");
+        registryField.setAccessible(true);
+        registryField.set(interceptor, registry);
+        return interceptor;
+    }
+
+    private static PluginsRegistry registryWithProvider(String name, boolean enabled, EmbeddingModel model) {
+        var provider = mock(Provider.class);
+        when(provider.get(null)).thenReturn(model);
+
+        var record = mock(PluginRecord.class);
+        when(record.getName()).thenReturn(name);
+        when(record.isEnabled()).thenReturn(enabled);
+        when(record.getInstance()).thenReturn(provider);
+
+        var registry = mock(PluginsRegistry.class);
+        when(registry.getProviders()).thenReturn((Set) Set.of(record));
+        return registry;
+    }
+
+    private static BsonDocument chunkDoc(String text) {
+        return new BsonDocument("text", new BsonString(text));
+    }
+
+    @Test
+    public void embedChunks_appendsVectorToEachDocumentInOrder() throws Exception {
+        EmbeddingModel model = (texts, request) -> List.of(
+            new float[] {0.1f, 0.2f}, new float[] {0.3f, 0.4f});
+        var interceptor = newInterceptor(registryWithProvider("openAIEmbeddingProvider", true, model));
+
+        var docs = List.of(chunkDoc("first"), chunkDoc("second"));
+        interceptor.embedChunks(docs, List.of("first", "second"), "openAIEmbeddingProvider", null, new BsonString("f1"), "db");
+
+        assertEquals(0.1, docs.get(0).getArray("vector").get(0).asDouble().getValue(), 1e-6);
+        assertEquals(0.3, docs.get(1).getArray("vector").get(0).asDouble().getValue(), 1e-6);
+    }
+
+    @Test
+    public void embedChunks_missingProvider_leavesDocumentsWithoutVector() throws Exception {
+        var registry = mock(PluginsRegistry.class);
+        when(registry.getProviders()).thenReturn((Set) Set.of());
+        var interceptor = newInterceptor(registry);
+
+        var docs = List.of(chunkDoc("first"));
+        interceptor.embedChunks(docs, List.of("first"), "missingProvider", null, new BsonString("f1"), "db");
+
+        assertFalse(docs.get(0).containsKey("vector"));
+    }
+
+    @Test
+    public void embedChunks_embeddingCallThrows_leavesDocumentsWithoutVector() throws Exception {
+        EmbeddingModel model = (texts, request) -> { throw new RuntimeException("boom"); };
+        var interceptor = newInterceptor(registryWithProvider("p", true, model));
+
+        var docs = List.of(chunkDoc("first"));
+        interceptor.embedChunks(docs, List.of("first"), "p", null, new BsonString("f1"), "db");
+
+        assertFalse(docs.get(0).containsKey("vector"));
+    }
 
     @Test
     public void nullText_returnsNoChunks() {

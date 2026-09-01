@@ -29,6 +29,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonValue;
+import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -287,28 +288,11 @@ public class AutoEmbeddingInterceptor implements MongoInterceptor {
      * a per-request basis — different tenants may use different vendors.
      */
     private EmbeddingModel resolveEmbeddingModel(String providerName) {
-        var cached = resolvedModels.get(providerName);
-        if (cached != null) {
-            return cached;
+        var model = PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class);
+        if (model.isEmpty()) {
+            LOGGER.warn("autoEmbeddingInterceptor: embedding provider '{}' not found, not enabled, "
+                + "or does not supply an EmbeddingModel", providerName);
         }
-
-        var providerRecord = registry.getProviders().stream()
-            .filter(p -> providerName.equals(p.getName()))
-            .findFirst()
-            .orElse(null);
-
-        if (providerRecord == null || !providerRecord.isEnabled()) {
-            LOGGER.warn("autoEmbeddingInterceptor: embedding provider '{}' not found or not enabled", providerName);
-            return null;
-        }
-
-        var provided = providerRecord.getInstance().get(null);
-        if (!(provided instanceof EmbeddingModel model)) {
-            LOGGER.warn("autoEmbeddingInterceptor: provider '{}' does not supply an EmbeddingModel", providerName);
-            return null;
-        }
-
-        resolvedModels.put(providerName, model);
-        return model;
+        return model.orElse(null);
     }
 }

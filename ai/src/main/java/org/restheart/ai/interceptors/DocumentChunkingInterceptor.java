@@ -25,17 +25,21 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -43,7 +47,9 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.OnInit;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.ai.EmbeddingModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,12 +75,25 @@ import com.mongodb.client.model.InsertManyOptions;
  *     chunk-size: 1000           # target chunk size in characters (default: 1000)
  *     chunk-overlap: 200         # overlap between consecutive chunks (default: 200)
  *     target-collection: _chunks # collection where chunks are stored (default: _chunks)
+ *     embedding-provider: ""     # optional; name of a configured Provider<EmbeddingModel>
  * }</pre>
+ *
+ * <h2>Phase 2: embedding chunks (optional)</h2>
+ * <p>When {@code embedding-provider} names a configured {@code Provider<EmbeddingModel>}
+ * (the same one {@code autoEmbeddingInterceptor}/{@code $vectorize} use — shared
+ * {@link RequestOverrides#EMBEDDING_PROVIDER} override), each chunk's text is embedded
+ * (a single batched call for all of a file's chunks, not one call per chunk) and the
+ * result stored alongside it as {@code vector}. When unset — the default — behavior is
+ * unchanged from Phase 1: text-only segments, embeddings left to MongoDB's own
+ * {@code autoEmbed} index type. A failed embedding call does not lose the chunks — they
+ * are still stored, just without a {@code vector} field, exactly as if no provider were
+ * configured.
  *
  * <h2>Multi-tenant</h2>
  * <p>Per request, a deployment's tenant-config interceptor may attach
  * {@link RequestOverrides#CHUNK_SIZE}, {@link RequestOverrides#CHUNK_OVERLAP},
- * {@link RequestOverrides#TARGET_COLLECTION} to use different values for that tenant.
+ * {@link RequestOverrides#TARGET_COLLECTION}, {@link RequestOverrides#EMBEDDING_PROVIDER}
+ * to use different values for that tenant.
  *
  * <h2>Stored chunk document shape</h2>
  * <pre>{@code
@@ -83,7 +102,8 @@ import com.mongodb.client.model.InsertManyOptions;
  *   "source":     "db/bucket.files/fileId",
  *   "fileId":     <BsonValue>,
  *   "chunkIndex": 0,
- *   "text":       "…chunk text…"
+ *   "text":       "…chunk text…",
+ *   "vector":     [0.123, -0.456, ...]   // only when embedding-provider is configured
  * }
  * }</pre>
  */
@@ -102,6 +122,7 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     private int defaultChunkSize        = 1000;
     private int defaultChunkOverlap     = 200;
     private String defaultTargetCollection = "_chunks";
+    private String defaultEmbeddingProviderName = "";
 
     @Inject("mclient")
     private MongoClient mclient;
@@ -109,11 +130,18 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    // resolved lazily and cached per provider name, mirroring AutoEmbeddingInterceptor
+    private final Map<String, EmbeddingModel> resolvedModels = new ConcurrentHashMap<>();
+
     @OnInit
     public void setup() {
         this.defaultChunkSize        = argOrDefault(config, "chunk-size", 1000);
         this.defaultChunkOverlap     = argOrDefault(config, "chunk-overlap", 200);
         this.defaultTargetCollection = argOrDefault(config, "target-collection", "_chunks");
+        this.defaultEmbeddingProviderName = argOrDefault(config, "embedding-provider", "");
     }
 
     @Override
@@ -189,6 +217,11 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
                 .append("text",       new BsonString(chunks.get(i))));
         }
 
+        var embeddingProviderName = RequestOverrides.str(request, RequestOverrides.EMBEDDING_PROVIDER, defaultEmbeddingProviderName);
+        if (!embeddingProviderName.isBlank()) {
+            embedChunks(documents, chunks, embeddingProviderName, request, fileId, dbName);
+        }
+
         try {
             mclient.getDatabase(dbName)
                 .getCollection(targetCollection, BsonDocument.class)
@@ -203,6 +236,45 @@ public class DocumentChunkingInterceptor implements MongoInterceptor {
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Embeds all of {@code chunkTexts} in a single batched call and appends the result
+     * to the matching {@code documents} entry as {@code vector}. A missing/not-enabled
+     * provider, or a failed embedding call, is logged and otherwise ignored — the
+     * chunks are still stored (by the caller), just without a {@code vector} field,
+     * exactly as if no {@code embedding-provider} were configured.
+     */
+    void embedChunks(List<BsonDocument> documents, List<String> chunkTexts,
+            String providerName, MongoRequest request, BsonValue fileId, String dbName) {
+        var model = PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class);
+        if (model.isEmpty()) {
+            LOGGER.warn("documentChunkingInterceptor: embedding provider '{}' not found, not enabled, "
+                + "or does not supply an EmbeddingModel — storing chunks for file {} in {} without vectors",
+                providerName, fileId, dbName);
+            return;
+        }
+
+        List<float[]> vectors;
+        try {
+            vectors = model.get().embed(chunkTexts, request);
+        } catch (Exception e) {
+            LOGGER.error("documentChunkingInterceptor: embedding call to '{}' failed for file {} in {}: {} "
+                + "— storing chunks without vectors", providerName, fileId, dbName, e.getMessage(), e);
+            return;
+        }
+
+        for (int i = 0; i < documents.size() && i < vectors.size(); i++) {
+            var vector = vectors.get(i);
+            if (vector == null) {
+                continue;
+            }
+            var arr = new BsonArray();
+            for (var f : vector) {
+                arr.add(new BsonDouble(f));
+            }
+            documents.get(i).append("vector", arr);
+        }
+    }
 
     private BsonValue resolveFileId(MongoRequest request, MongoResponse response) {
         if (request.isPut()) {

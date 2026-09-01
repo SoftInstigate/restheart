@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bson.BsonArray;
 import org.bson.BsonDouble;
 import org.bson.BsonValue;
+import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.ai.util.RequestOverrides;
 import org.restheart.exchange.Request;
 import org.restheart.mongodb.utils.CustomOperator;
@@ -122,26 +123,9 @@ public class VectorizeOperator implements CustomOperator {
     }
 
     private EmbeddingModel resolveEmbeddingModel(String providerName) {
-        var cached = resolvedModels.get(providerName);
-        if (cached != null) {
-            return cached;
-        }
-
-        var providerRecord = registry.getProviders().stream()
-            .filter(p -> providerName.equals(p.getName()))
-            .findFirst()
-            .orElse(null);
-
-        if (providerRecord == null || !providerRecord.isEnabled()) {
-            throw new IllegalStateException("$vectorize: embedding provider '" + providerName + "' not found or not enabled");
-        }
-
-        var provided = providerRecord.getInstance().get(null);
-        if (!(provided instanceof EmbeddingModel model)) {
-            throw new IllegalStateException("$vectorize: provider '" + providerName + "' does not supply an EmbeddingModel");
-        }
-
-        resolvedModels.put(providerName, model);
-        return model;
+        return PluginModelResolver.resolve(registry, resolvedModels, providerName, EmbeddingModel.class)
+            .orElseThrow(() -> new IllegalStateException(
+                "$vectorize: embedding provider '" + providerName + "' not found, not enabled, "
+                + "or does not supply an EmbeddingModel"));
     }
 }
