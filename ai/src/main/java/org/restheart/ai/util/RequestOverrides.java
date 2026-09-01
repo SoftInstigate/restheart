@@ -65,6 +65,18 @@ public final class RequestOverrides {
     public static final String OLLAMA_BASE_URL = "override-ai-ollama-base-url";
     public static final String OLLAMA_MODEL = "override-ai-ollama-model";
 
+    // ── cohereRerankProvider overrides ───────────────────────────────────────
+    public static final String COHERE_API_KEY = "override-ai-cohere-api-key";
+    public static final String COHERE_MODEL = "override-ai-cohere-model";
+    public static final String COHERE_BASE_URL = "override-ai-cohere-base-url";
+
+    // ── voyageRerankProvider overrides ───────────────────────────────────────
+    // (kept distinct from VOYAGE_API_KEY etc. above — a tenant may use a different
+    // Voyage key/model for reranking than for embeddings)
+    public static final String VOYAGE_RERANK_API_KEY = "override-ai-voyage-rerank-api-key";
+    public static final String VOYAGE_RERANK_MODEL = "override-ai-voyage-rerank-model";
+    public static final String VOYAGE_RERANK_BASE_URL = "override-ai-voyage-rerank-base-url";
+
     // ── autoEmbeddingInterceptor overrides ───────────────────────────────────
     /** Overrides which {@code Provider<EmbeddingModel>} plugin name to use for this request. */
     public static final String EMBEDDING_PROVIDER = "override-ai-embedding-provider";
