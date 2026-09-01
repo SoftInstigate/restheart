@@ -622,3 +622,10 @@
 # Used by karate/ai/embedding-provider.feature to exercise restheart-ai's embedding
 # providers per-request without affecting any other test.
 /aiEmbeddingProviderOverrideInterceptor/enabled: true
+
+# vectorScanInterceptor: brute-force vector search, no mongot/index required (#712).
+# Safe to leave enabled for the whole suite -- it only ever fires on an aggregation
+# whose stored pipeline actually contains a $vectorScan stage (karate/ai/vector-scan.
+# feature is the only one that does), and needs no MongoDB capability the official-mongo
+# CI legs lack, unlike the rest of restheart-ai's *.feature files.
+/vectorScanInterceptor/enabled: true
