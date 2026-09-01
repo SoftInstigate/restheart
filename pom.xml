@@ -42,7 +42,7 @@
             mongo image on most legs instead (verifying compatibility across supported
             MongoDB releases, including versions with no atlas-local equivalent tag,
             e.g. 8.3) via core/pom.xml's "mongodb-classic" profile, which must be
-            explicitly selected (it needs its own --bind_ip_all --replSet rs0 command —
+            explicitly selected (it needs its own bind-ip-all/replSet command flags —
             the classic image doesn't self-initialize like atlas-local does):
                 mvn clean verify -P-mongodb,mongodb-classic \
                     -Dmongodb.image=mongo -Dmongodb.version="8.3" -Dkarate.vectorSearch=false

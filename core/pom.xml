@@ -455,9 +455,9 @@
                       $vectorSearch/createSearchIndexes-dependent karate tests
                       (karate/ai/*.feature) work out of the box. Deliberately NO <cmd>
                       here: this image's own ENTRYPOINT does the replica-set init and
-                      mongot wiring — a custom command (the old "--bind_ip_all
-                      --replSet rs0", needed for the plain mongo:X image) overrides
-                      that entrypoint and breaks the image.
+                      mongot wiring — a custom command (the old bind-ip-all/replSet
+                      flags, needed for the plain mongo:X image) overrides that
+                      entrypoint and breaks the image.
                   -->
                   <name>${mongodb.image}:${mongodb.version}</name>
                   <run>
@@ -513,7 +513,7 @@
     </profile>
     <!--
         Alternative to the "mongodb" profile above: starts the OFFICIAL mongo image
-        (needs its own --bind_ip_all --replSet rs0 command + a separate rs.initiate()
+        (needs its own bind-ip-all/replSet command flags plus a separate rs.initiate()
         step in build.xml — it does not self-initialize like mongodb-atlas-local does)
         instead of mongodb/mongodb-atlas-local. Used by CI's compatibility matrix to
         test against specific official MongoDB releases (including ones with no
