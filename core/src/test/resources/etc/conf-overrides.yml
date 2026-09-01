@@ -601,3 +601,16 @@
 /vectorSearchIndexListInterceptor/enabled: true
 /vectorSearchIndexDeleteInterceptor/enabled: true
 /documentChunkingInterceptor/enabled: true
+
+# voyageContextualEmbeddingProvider is enabled but given no static api-key: the key
+# comes entirely from the per-request override attached by
+# aiVoyageContextualOverrideInterceptor below, so it's never written to this file.
+# Requests that don't carry that override never resolve to this provider — see
+# karate/ai/embedding-provider.feature.
+/voyageContextualEmbeddingProvider/enabled: true
+
+# Test interceptor: attaches override-ai-embedding-provider=voyageContextualEmbeddingProvider
+# (and the API key from the VOYAGE_API_KEY env var) when ?_ai-voyage-contextual-override=1
+# is present. Used by karate/ai/embedding-provider.feature to exercise
+# voyageContextualEmbeddingProvider without affecting any other test.
+/aiVoyageContextualOverrideInterceptor/enabled: true

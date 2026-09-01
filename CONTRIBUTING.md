@@ -132,6 +132,15 @@ export RHO="/voyageEmbeddingProvider/enabled->true;/voyageEmbeddingProvider/api-
 
 CI's atlas-local matrix leg does the same automatically, but only when a `VOYAGE_API_KEY` repository secret is configured — otherwise the feature stays skipped and the build stays green.
 
+The feature's last scenario (`voyageContextualEmbeddingProvider`) needs neither the `RHO` string above nor enabling anything globally: that provider is already enabled in `conf-overrides.yml` with no static API key, and the `aiVoyageContextualOverrideInterceptor` test plugin attaches the override (provider name + API key from the same `VOYAGE_API_KEY` env var) only to the one request that carries `?_ai-voyage-contextual-override=1` — so it never affects any other test. Just:
+
+```bash
+export VOYAGE_API_KEY=<your-key>
+./mvnw clean verify -Dit.includes="**/RunnerIT.java" \
+  -Dkarate.path=classpath:karate/ai/embedding-provider.feature \
+  -Dkarate.embeddingProvider=true
+```
+
 Karate writes an HTML report to `core/target/karate-reports/karate-summary.html`, and the server log for the run is `core/restheart.log` (rotated at 5 MB into `core/restheart.log-N.log.zip`, so a long run's earlier output ends up in those archives).
 
 ### Re-run tests without rebuilding
