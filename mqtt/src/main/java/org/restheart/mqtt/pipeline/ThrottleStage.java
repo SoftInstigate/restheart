@@ -24,7 +24,7 @@ package org.restheart.mqtt.pipeline;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.restheart.mqtt.MqttMessage;
+import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mqtt;
+package org.restheart.mqtt.model;
 
 import java.time.Instant;
 

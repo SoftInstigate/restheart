@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.restheart.mqtt.MqttMessage;
+import org.restheart.mqtt.model.MqttMessage;
 
 /**
  * Immutable ordered pipeline of MQTT event processing stages.
