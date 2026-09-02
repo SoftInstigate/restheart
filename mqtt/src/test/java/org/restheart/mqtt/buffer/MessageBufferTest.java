@@ -60,7 +60,7 @@ public class MessageBufferTest {
     @DisplayName("Constructor rejects non-positive capacity")
     void testInvalidCapacity() {
         assertThrows(IllegalArgumentException.class, () -> new MessageBuffer(0, Strategy.RING));
-        assertThrows(IllegalArgumentException.class, () -> new MessageBuffer(-1, Strategy.BLOCKING));
+        assertThrows(IllegalArgumentException.class, () -> new MessageBuffer(-1, Strategy.NON_BLOCKING));
     }
 
     @Test
@@ -113,7 +113,7 @@ public class MessageBufferTest {
     @Test
     @DisplayName("BLOCKING: accepts messages up to capacity")
     void testBlockingAcceptsUpToCapacity() {
-        MessageBuffer buffer = new MessageBuffer(3, Strategy.BLOCKING);
+        MessageBuffer buffer = new MessageBuffer(3, Strategy.NON_BLOCKING);
 
         assertTrue(buffer.offer(msg("t", "1")));
         assertTrue(buffer.offer(msg("t", "2")));
@@ -124,7 +124,7 @@ public class MessageBufferTest {
     @Test
     @DisplayName("BLOCKING: rejects when full")
     void testBlockingRejectsWhenFull() {
-        MessageBuffer buffer = new MessageBuffer(2, Strategy.BLOCKING);
+        MessageBuffer buffer = new MessageBuffer(2, Strategy.NON_BLOCKING);
 
         assertTrue(buffer.offer(msg("t", "1")));
         assertTrue(buffer.offer(msg("t", "2")));
@@ -135,7 +135,7 @@ public class MessageBufferTest {
     @Test
     @DisplayName("BLOCKING: rejected message is not stored")
     void testBlockingRejectedNotStored() {
-        MessageBuffer buffer = new MessageBuffer(1, Strategy.BLOCKING);
+        MessageBuffer buffer = new MessageBuffer(1, Strategy.NON_BLOCKING);
 
         buffer.offer(msg("t", "kept"));
         buffer.offer(msg("t", "rejected"));
@@ -208,9 +208,9 @@ public class MessageBufferTest {
         assertEquals(42, ring.capacity());
         assertEquals(Strategy.RING, ring.strategy());
 
-        MessageBuffer blocking = new MessageBuffer(7, Strategy.BLOCKING);
+        MessageBuffer blocking = new MessageBuffer(7, Strategy.NON_BLOCKING);
         assertEquals(7, blocking.capacity());
-        assertEquals(Strategy.BLOCKING, blocking.strategy());
+        assertEquals(Strategy.NON_BLOCKING, blocking.strategy());
     }
 
     // --- Concurrent producers ---
@@ -260,7 +260,7 @@ public class MessageBufferTest {
         int capacity = 100;
         int producers = 4;
         int messagesPerProducer = 100;
-        MessageBuffer buffer = new MessageBuffer(capacity, Strategy.BLOCKING);
+        MessageBuffer buffer = new MessageBuffer(capacity, Strategy.NON_BLOCKING);
 
         ExecutorService executor = Executors.newFixedThreadPool(producers);
         CountDownLatch latch = new CountDownLatch(producers);
