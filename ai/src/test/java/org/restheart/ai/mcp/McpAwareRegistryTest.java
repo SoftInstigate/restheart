@@ -22,6 +22,7 @@ package org.restheart.ai.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,7 +84,10 @@ public class McpAwareRegistryTest {
     private static PluginRecord<Service<?, ?>> recordFor(String name, Service<?, ?> instance, boolean enabled, Map<String, Object> confArgs) {
         PluginRecord<Service<?, ?>> record = mock(PluginRecord.class);
         when(record.getName()).thenReturn(name);
-        when(record.getInstance()).thenReturn(instance);
+        // getInstance() returns Service<?, ?>; each occurrence captures a distinct
+        // wildcard type variable, so when(...).thenReturn(instance) doesn't unify.
+        // doReturn(...).when(...) sidesteps compile-time generic capture entirely.
+        doReturn(instance).when(record).getInstance();
         when(record.isEnabled()).thenReturn(enabled);
         when(record.getConfArgs()).thenReturn(confArgs);
         return record;
