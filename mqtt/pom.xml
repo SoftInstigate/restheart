@@ -17,10 +17,6 @@
   <url>http://www.restheart.org</url>
   <inceptionYear>2026</inceptionYear>
 
-  <properties>
-    <mongodb.port>27017</mongodb.port>
-  </properties>
-
   <licenses>
     <license>
       <name>GNU Affero General Public License (AGPL) version 3.0</name>
@@ -153,71 +149,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>mongodb</id>
-      <activation>
-        <property>
-          <name>!skipTests</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <configuration>
-              <skip>${skipTestEnv}</skip>
-              <showLogs>false</showLogs>
-              <removeVolumes>true</removeVolumes>
-              <executeStopOnVMShutdown>true</executeStopOnVMShutdown>
-              <images>
-                <image>
-                  <name>mongo:${mongodb.version}</name>
-                  <run>
-                    <cmd>--bind_ip_all</cmd>
-                    <ports>
-                      <port>${mongodb.port}:${mongodb.port}</port>
-                    </ports>
-                    <log>
-                      <prefix>[mongodb]</prefix>
-                      <enabled>true</enabled>
-                      <color>yellow</color>
-                    </log>
-                    <wait>
-                      <tcp>
-                        <mode>mapped</mode>
-                        <host>localhost</host>
-                        <ports>
-                          <port>${mongodb.port}</port>
-                        </ports>
-                      </tcp>
-                      <time>10000</time>
-                      <shutdown>1000</shutdown>
-                    </wait>
-                  </run>
-                </image>
-              </images>
-            </configuration>
-            <executions>
-              <execution>
-                <id>start</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>start</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>stop</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>stop</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
