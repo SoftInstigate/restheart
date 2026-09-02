@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.internal;
+package org.restheart.ai.mcp.transport;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
