@@ -47,6 +47,13 @@
             <artifactId>org.everit.json.schema</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- Official MCP Java SDK (restheart#615) – not otherwise present on RESTHeart's
+             runtime classpath, so default (compile) scope: bundled alongside restheart-ai.jar
+             by the copy-dependencies execution below, same as the Tika parsers. -->
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+        </dependency>
         <!-- Logging – provided by the core runtime -->
         <dependency>
             <groupId>org.slf4j</groupId>
