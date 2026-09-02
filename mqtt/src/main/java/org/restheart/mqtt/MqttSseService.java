@@ -168,7 +168,7 @@ public class MqttSseService implements SseService {
             Map<String, String> params = parseQueryString(queryString);
             String topic = params.get("topic");
             if (topic != null) {
-                return URLDecoder.decode(topic, StandardCharsets.UTF_8);
+                return topic; // Already decoded by parseQueryString
             }
         }
         return defaultTopic;
