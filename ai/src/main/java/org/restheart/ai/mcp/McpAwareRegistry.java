@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.restheart.ai.mcp.api.McpAware;
-import org.restheart.ai.mcp.api.McpContext;
+import org.restheart.plugins.mcp.McpAware;
+import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Service;

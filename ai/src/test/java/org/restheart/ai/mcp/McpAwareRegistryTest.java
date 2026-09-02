@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.ai.mcp.api.McpAware;
-import org.restheart.ai.mcp.api.McpContext;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpAware;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpResource;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.JsonService;

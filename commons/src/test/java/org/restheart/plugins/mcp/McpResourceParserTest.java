@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.internal;
+package org.restheart.plugins.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,9 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.ai.mcp.api.McpContext;
+import org.restheart.plugins.mcp.McpResource.Transport;
 
 public class McpResourceParserTest {
 
@@ -135,5 +136,16 @@ public class McpResourceParserTest {
         var ctxNoBaseSlash = new McpContext(null, "https://host.example.com", "p", "orders", Map.of());
         var resource = McpResourceParser.fromMerged(null, null).buildSingle(ctxNoBaseSlash);
         assertEquals("https://host.example.com/orders", resource.uri());
+    }
+
+    @Test
+    public void buildSingleWithTransports_declaresEachExplicitly() {
+        var defaults = Map.<String, Object>of("actions", Map.of("subscribe", Map.of("method", "GET")));
+        var resource = McpResourceParser.fromMerged(defaults, null).buildSingle(ctx(Map.of()), Set.of(Transport.SSE));
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) resource.toMap().get("transports");
+        assertEquals(1, transports.size());
+        assertEquals("sse", transports.get(0).get("name"));
     }
 }

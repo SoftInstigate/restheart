@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpResource;
 
 public class ParamValidatorTest {
 

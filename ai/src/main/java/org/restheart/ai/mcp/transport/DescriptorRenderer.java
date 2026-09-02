@@ -31,8 +31,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.restheart.ai.mcp.api.McpResource;
-import org.restheart.ai.mcp.api.McpResource.Transport;
+import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResource.Transport;
 import org.restheart.utils.BsonUtils;
 
 /**

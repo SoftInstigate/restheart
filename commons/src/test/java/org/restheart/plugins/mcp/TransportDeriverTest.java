@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.transport;
+package org.restheart.plugins.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.ai.mcp.api.McpResource.Transport;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.ByteArrayRequest;
@@ -40,6 +39,7 @@ import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.SseService;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.mcp.McpResource.Transport;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 

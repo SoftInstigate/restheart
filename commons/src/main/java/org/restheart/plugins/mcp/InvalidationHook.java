@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.api;
+package org.restheart.plugins.mcp;
 
 /**
  * Callback a {@link McpAware} implementation invokes to tell the MCP server

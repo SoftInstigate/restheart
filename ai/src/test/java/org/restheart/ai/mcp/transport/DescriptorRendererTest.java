@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpResource;
 
 public class DescriptorRendererTest {
 

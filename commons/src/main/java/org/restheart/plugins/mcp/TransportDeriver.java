@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,17 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.transport;
+package org.restheart.plugins.mcp;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.restheart.ai.mcp.api.McpResource.Transport;
 import org.restheart.plugins.BsonService;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.SseService;
 import org.restheart.plugins.StringService;
+import org.restheart.plugins.mcp.McpResource.Transport;
 
 /**
  * Derives the default {@code transports} a resource supports from the RESTHeart

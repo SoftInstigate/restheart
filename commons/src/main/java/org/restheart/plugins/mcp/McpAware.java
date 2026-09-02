@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,13 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.api;
+package org.restheart.plugins.mcp;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.restheart.ai.mcp.internal.McpResourceParser;
 
 /**
  * Implemented by a plugin that wants to be exposed to AI agents via MCP.
@@ -60,7 +58,8 @@ public interface McpAware {
     default List<McpResource> describeMcp(McpContext ctx) {
         var mcpConfig = ctx.pluginConfiguration().get("mcp-config");
         var operatorConfig = mcpConfig instanceof Map<?, ?> m ? castKeys(m) : null;
-        var resource = McpResourceParser.fromMerged(defaultMcpConfig(), operatorConfig).buildSingle(ctx);
+        var transports = TransportDeriver.derive(this);
+        var resource = McpResourceParser.fromMerged(defaultMcpConfig(), operatorConfig).buildSingle(ctx, transports);
         return List.of(resource);
     }
 

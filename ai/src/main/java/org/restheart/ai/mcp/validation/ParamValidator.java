@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpResource;
 
 /**
  * Checks {@code how_to_call} args against an action's {@code params} declarations:

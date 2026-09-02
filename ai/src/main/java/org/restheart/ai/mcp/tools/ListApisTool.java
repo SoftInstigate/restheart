@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAccount;
 
 /**

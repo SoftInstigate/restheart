@@ -30,9 +30,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.RegisteredMcpAware;
-import org.restheart.ai.mcp.api.McpAware;
-import org.restheart.ai.mcp.api.McpContext;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpAware;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpResource;
 
 public class HowToCallToolTest {
 

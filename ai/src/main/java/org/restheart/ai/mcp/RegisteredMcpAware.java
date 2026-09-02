@@ -22,7 +22,7 @@ package org.restheart.ai.mcp;
 
 import java.util.Map;
 
-import org.restheart.ai.mcp.api.McpAware;
+import org.restheart.plugins.mcp.McpAware;
 
 /**
  * An {@link McpAware} plugin found eligible for MCP exposure at boot, together with

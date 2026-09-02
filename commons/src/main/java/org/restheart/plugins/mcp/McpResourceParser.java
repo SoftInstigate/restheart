@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,15 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.internal;
+package org.restheart.plugins.mcp;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.restheart.ai.mcp.api.McpContext;
-import org.restheart.ai.mcp.api.McpResource;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -50,9 +49,20 @@ public final class McpResourceParser {
         return new McpResourceParser(ConfigDeepMerger.merge(codeDefaults, operatorConfig));
     }
 
-    /** Builds a single {@link McpResource}, using {@code ctx.baseUrl() + ctx.pluginUri()} for its URI. */
+    /**
+     * Builds a single {@link McpResource}, using {@code ctx.baseUrl() + ctx.pluginUri()} for its URI
+     * and {@link McpResource.Builder}'s own default (HTTP, once any action exists) for transports —
+     * equivalent to calling {@link #buildSingle(McpContext, Set)} with an empty set.
+     */
     public McpResource buildSingle(McpContext ctx) {
+        return buildSingle(ctx, Set.of());
+    }
+
+    /** Builds a single {@link McpResource}, declaring each of {@code transports} up front (see {@link TransportDeriver}). */
+    public McpResource buildSingle(McpContext ctx, Set<McpResource.Transport> transports) {
         var builder = McpResource.builder().uri(resolveUri(ctx));
+
+        transports.forEach(builder::transport);
 
         if (stringValue(merged, "kind") instanceof String kind) {
             builder.kind(kind);

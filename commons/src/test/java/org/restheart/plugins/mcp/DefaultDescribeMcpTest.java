@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-ai
+ * restheart-commons
  * %%
  * Copyright (C) 2024 - 2026 SoftInstigate
  * %%
@@ -18,15 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.ai.mcp.api;
+package org.restheart.plugins.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.exchange.JsonRequest;
+import org.restheart.exchange.JsonResponse;
+import org.restheart.plugins.JsonService;
+import org.restheart.plugins.SseService;
+
+import io.undertow.server.handlers.sse.ServerSentEventConnection;
 
 public class DefaultDescribeMcpTest {
 
@@ -42,6 +49,30 @@ public class DefaultDescribeMcpTest {
 
     /** Mode A, no code-baked default — plugin author leaves it entirely to the operator. */
     private static final class OperatorOnlyPlugin implements McpAware {
+    }
+
+    /** Mode A plugin that is also a JsonService — transport should auto-derive to http. */
+    private static final class JsonMcpPlugin implements JsonService, McpAware {
+        @Override
+        public Map<String, Object> defaultMcpConfig() {
+            return Map.of("description", "x", "actions", Map.of("get", Map.of("method", "GET")));
+        }
+
+        @Override
+        public void handle(JsonRequest request, JsonResponse response) {
+        }
+    }
+
+    /** Mode A plugin that is an SseService — transport should auto-derive to sse, not silently fall back to http. */
+    private static final class SseMcpPlugin implements SseService, McpAware {
+        @Override
+        public Map<String, Object> defaultMcpConfig() {
+            return Map.of("description", "x", "actions", Map.of("subscribe", Map.of("method", "GET")));
+        }
+
+        @Override
+        public void onConnect(ServerSentEventConnection connection, String lastEventId) {
+        }
     }
 
     private static McpContext ctx(Map<String, Object> pluginConfiguration) {
@@ -85,5 +116,25 @@ public class DefaultDescribeMcpTest {
         assertEquals(1, resources.size());
         assertNull(resources.get(0).description());
         assertTrue(resources.get(0).actions().isEmpty());
+    }
+
+    @Test
+    public void jsonServicePlugin_transportAutoDerivedAsHttp() {
+        var resource = new JsonMcpPlugin().describeMcp(ctx(Map.of())).get(0);
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) resource.toMap().get("transports");
+        assertEquals(1, transports.size());
+        assertEquals("http", transports.get(0).get("name"));
+    }
+
+    @Test
+    public void sseServicePlugin_transportAutoDerivedAsSse_notHttpFallback() {
+        var resource = new SseMcpPlugin().describeMcp(ctx(Map.of())).get(0);
+
+        @SuppressWarnings("unchecked")
+        var transports = (List<Map<String, Object>>) resource.toMap().get("transports");
+        assertEquals(1, transports.size());
+        assertEquals("sse", transports.get(0).get("name"));
     }
 }

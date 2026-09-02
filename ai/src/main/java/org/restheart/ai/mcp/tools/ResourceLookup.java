@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
-import org.restheart.ai.mcp.api.McpContext;
-import org.restheart.ai.mcp.api.McpResource;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAccount;
 
 /**
