@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
 import org.restheart.mqtt.pipeline.ThrottleStage;

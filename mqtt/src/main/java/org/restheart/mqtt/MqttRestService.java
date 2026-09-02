@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
+import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;

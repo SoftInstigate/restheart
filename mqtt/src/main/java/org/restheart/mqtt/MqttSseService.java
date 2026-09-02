@@ -30,6 +30,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MapStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;

@@ -25,7 +25,7 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Optional;
 
-import org.restheart.mqtt.MqttMessage;
+import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

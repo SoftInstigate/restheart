@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.restheart.mqtt.MqttMessage;
+import org.restheart.mqtt.model.MqttMessage;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
