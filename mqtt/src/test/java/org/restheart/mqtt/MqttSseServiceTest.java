@@ -39,7 +39,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
-import org.restheart.mqtt.pipeline.ThrottleStage;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 
