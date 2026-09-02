@@ -103,6 +103,23 @@ import org.restheart.plugins.ConfigurablePlugin;
  */
 public interface Authorizer extends ConfigurablePlugin {
     /**
+     * Key of the {@link Request#attachParam(String, Object) attached parameter} an authorizer
+     * can set to explain why it denied (VETOER) or did not grant (ALLOWER) a request.
+     * <p>
+     * When set, {@code AuthorizersHandler} includes its value as the {@code message} field of
+     * the JSON body of the {@code 403 Forbidden} response. This lets an authorizer surface a
+     * specific, actionable reason (e.g. {@code "Origin https://example.com not allowed"})
+     * without any change to this interface.
+     * <p>
+     * Example:
+     * <pre>
+     * request.attachParam(Authorizer.VETO_MESSAGE, "Origin " + origin + " not allowed");
+     * return false;
+     * </pre>
+     */
+    public static final String VETO_MESSAGE = "veto-message";
+
+    /**
      * Enumeration defining the two types of authorization behavior.
      * <p>
      * The authorization type determines how the authorizer participates in the

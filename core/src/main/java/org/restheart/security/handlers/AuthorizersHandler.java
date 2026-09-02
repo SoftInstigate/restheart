@@ -23,6 +23,9 @@ package org.restheart.security.handlers;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.bson.BsonDocument;
+import org.bson.BsonString;
+import org.restheart.exchange.Exchange;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
@@ -33,12 +36,14 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 
 /**
  * Executes isAllowed() on all enabled authorizer to check the request
@@ -102,6 +107,16 @@ public class AuthorizersHandler extends PipelinedHandler {
             CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
+
+            // an authorizer (e.g. a VETOER) can attach a specific denial reason via
+            // request.attachParam(Authorizer.VETO_MESSAGE, "..."); when present, return
+            // it as the response body instead of an empty 403
+            final String vetoMessage = (String) request.attachedParam(Authorizer.VETO_MESSAGE);
+            if (vetoMessage != null) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Exchange.JSON_MEDIA_TYPE);
+                exchange.getResponseSender().send(BsonUtils.toJson(new BsonDocument("message", new BsonString(vetoMessage))));
+            }
+
             exchange.endExchange();
         }
     }

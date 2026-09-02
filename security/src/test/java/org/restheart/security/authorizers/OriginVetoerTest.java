@@ -23,6 +23,7 @@ package org.restheart.security.authorizers;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.Request;
+import org.restheart.plugins.security.Authorizer;
 
 public class OriginVetoerTest {
 
@@ -179,6 +181,24 @@ public class OriginVetoerTest {
         // let through so the service can answer with the CORS headers, and the
         // actual request is vetoed instead
         assertTrue(vetoer.isAllowed(optionsRequestWith("https://not-allowed.example.com", "POST")));
+    }
+
+    @Test
+    void deniedOrigin_attachesVetoMessageWithOffendingOrigin() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"));
+        var request = requestWith("https://not-allowed.example.com", null);
+
+        assertFalse(vetoer.isAllowed(request));
+        verify(request).attachParam(Authorizer.VETO_MESSAGE, "Origin https://not-allowed.example.com not allowed");
+    }
+
+    @Test
+    void missingOrigin_attachesVetoMessage() throws Exception {
+        var vetoer = newVetoer(List.of("https://allowed.example.com"), false);
+        var request = requestWith(null, null);
+
+        assertFalse(vetoer.isAllowed(request));
+        verify(request).attachParam(Authorizer.VETO_MESSAGE, "Origin header is required");
     }
 
     @Test
