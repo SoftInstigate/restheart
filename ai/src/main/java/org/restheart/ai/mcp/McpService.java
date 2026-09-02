@@ -111,6 +111,19 @@ public class McpService implements ByteArrayService {
                 .toolCall(howToCallToolDefinition(), this::callHowToCall)
                 .build();
 
+        // Without this, a client's open GET/SSE stream (or an in-flight tool-call's SSE
+        // response) blocks its worker thread forever inside
+        // UndertowStreamableServerTransportProvider's queue.take() loop — nothing signals
+        // it to unblock on its own. RESTHeart's graceful shutdown then waits for that
+        // worker thread to finish and hangs. closeGracefully() closes every open session
+        // (and so every associated queue), which is what actually lets the pending
+        // request complete. Same fix Sophia's own MCP service applies for the same reason.
+        Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(() -> {
+            LOGGER.info("MCP shutdown: closing transport provider...");
+            provider.closeGracefully().block();
+            LOGGER.info("MCP shutdown: transport provider closed.");
+        }));
+
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
     }
 
