@@ -24,11 +24,7 @@ package org.restheart.mqtt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
@@ -36,8 +32,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +51,8 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttSseServiceTest {
+
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MqttSseServiceTest.class);
 
     private MqttSseService service;
     private Map<String, Object> config;
@@ -82,7 +78,7 @@ public class MqttSseServiceTest {
             cacheField.setAccessible(true);
             ((Map<?, ?>) cacheField.get(router)).clear();
         } catch (Exception e) {
-            // Ignore
+            LOGGER.debug("Failed to reset MqttMessageRouter: {}", e.getMessage());
         }
 
         router.init(5000, true, 1000);
@@ -95,7 +91,7 @@ public class MqttSseServiceTest {
             listenersField.setAccessible(true);
             ((Map<?, ?>) listenersField.get(router)).clear();
         } catch (Exception e) {
-            // Ignore
+            LOGGER.debug("Failed to clean MqttMessageRouter: {}", e.getMessage());
         }
     }
 
