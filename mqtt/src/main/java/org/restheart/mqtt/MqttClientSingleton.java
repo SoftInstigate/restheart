@@ -44,7 +44,7 @@ import com.hivemq.client.mqtt.mqtt5.lifecycle.Mqtt5ClientConnectedContext;
 import com.hivemq.client.util.TypeSwitch;
 
 /**
- * Thread-safe singleton that manages the lifecycle of a MQTT client  {@link MqttClient}.
+ * Thread-safe singleton that manages the lifecycle of a MQTT client {@link MqttClient}.
  * <p>
  * This singleton can be configured to use either MQTT v3 or MQTT v5 protocols.
  * It provides features such as automatic reconnection, authentication (username/password),
@@ -54,90 +54,41 @@ import com.hivemq.client.util.TypeSwitch;
  * The singleton instance is initialized via the {@link #init} method and can be retrieved
  * using {@link #getInstance()} or {@link #get()}.
  * </p>
- * 
+ * <p>
+ * Thread-safety: {@link #init} must be called before any other method. After initialization,
+ * the configuration is immutable. The {@code connected} flag is updated atomically via
+ * the connection callback and read via {@link #isConnected()}.
+ * </p>
+ *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  */
 public class MqttClientSingleton {
 
-    /** Indicates whether the singleton has been initialized with configuration parameters. */
-    private static boolean initialized = false;
-    /** The MQTT broker URL (e.g., "tcp://localhost:1883"). */
-    private static String brokerUrl;
-    /** The MQTT protocol version (3 or 5). */
-    private static int protocolVersion;
-    /** The unique client identifier for connection to the broker. */
-    private static String clientId;
-    /** The username for broker authentication (optional). */
-    private static String username;
-    /** The password for broker authentication (optional). */
-    private static String password;
-    /** Whether to start clean sessions or resume previous ones. */
-    private static boolean cleanSession;
-    /** The keep-alive interval in seconds. */
-    private static int keepAliveSeconds;
-    /** The session expiry interval in seconds (MQTT v5 only). */
-    private static long sessionExpirySeconds;
-    /** The connection timeout in seconds. */
-    private static int connectTimeoutSeconds;
-    /** Whether SSL/TLS is enabled for connections. */
-    private static boolean tlsEnabled;
-    /** Whether automatic reconnection is enabled. */
-    private static boolean reconnectEnabled;
-    /** The initial delay in milliseconds for reconnection attempts. */
-    private static long initialDelayMs;
-    /** The maximum delay in milliseconds for reconnection attempts. */
-    private static long maxDelayMs;
-    /** The will message topic (optional). */
-    private static String willTopic;
-    /** The will message payload (optional). */
-    private static String willPayload;
-    /** The will message QoS level (0, 1, or 2). */
-    private static int willQos;
-    /** Whether the will message should be retained. */
-    private static boolean willRetain;
-    /** The will delay interval in seconds (MQTT v5 only). */
-    private static long willDelaySeconds;
-    /** The will message expiry interval in seconds (MQTT v5 only, optional). */
-    private static Long willMessageExpirySeconds;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttClientSingleton.class);
 
+    /** Indicates whether the singleton has been initialized with configuration parameters. */
+    private static volatile boolean initialized = false;
+
+    /** Immutable configuration snapshot, set once during {@link #init}. */
+    private static volatile MqttConfig config;
+
     /** The underlying HiveMQ MQTT client instance. */
-    private MqttClient mqttClient; // Either Mqtt3AsyncClient or Mqtt5AsyncClient
+    private MqttClient mqttClient;
+
     /** Flag indicating whether the client is currently connected. */
-    private boolean connected = false;
+    private volatile boolean connected = false;
 
     /**
-     * Initializes the MQTT client singleton with the specified configuration parameters.
+     * Initializes the MQTT client singleton with the specified configuration.
+     * Must be called once before any other method.
      *
-     * @param config the MQTT configuration containing all connection parameters
+     * @param clientConfig the MQTT configuration containing all connection parameters
      */
     public static void init(MqttConfig clientConfig) {
-
-        MqttClientSingleton.brokerUrl = clientConfig.getBrokerUrl();
-        MqttClientSingleton.protocolVersion = clientConfig.getProtocolVersion();
-        MqttClientSingleton.clientId = clientConfig.getClientId();
-        MqttClientSingleton.username = clientConfig.getUsername();
-        MqttClientSingleton.password = clientConfig.getPassword();
-        MqttClientSingleton.cleanSession = clientConfig.isCleanSession();
-        MqttClientSingleton.keepAliveSeconds = clientConfig.getKeepAliveSeconds();
-        MqttClientSingleton.connectTimeoutSeconds = clientConfig.getConnectTimeoutSeconds();
-        MqttClientSingleton.tlsEnabled = clientConfig.isTlsEnabled();
-        MqttClientSingleton.sessionExpirySeconds = clientConfig.getSessionExpirySeconds();
-        
-        MqttConfig.ReconnectConfig reconnectConfig = clientConfig.getReconnectConfig();
-        MqttClientSingleton.reconnectEnabled = reconnectConfig.isEnabled();
-        MqttClientSingleton.initialDelayMs = reconnectConfig.getInitialDelayMs();
-        MqttClientSingleton.maxDelayMs = reconnectConfig.getMaxDelayMs();
-
-        MqttConfig.WillConfig willConfig = clientConfig.getWillConfig();
-        MqttClientSingleton.willTopic = willConfig.getWillTopic();
-        MqttClientSingleton.willPayload = willConfig.getWillPayload();
-        MqttClientSingleton.willQos = willConfig.getWillQos();
-        MqttClientSingleton.willRetain = willConfig.getWillRetain();
-        MqttClientSingleton.willDelaySeconds = willConfig.getWillDelaySeconds();
-        MqttClientSingleton.willMessageExpirySeconds = willConfig.getWillMessageExpirySeconds();
-
+        if (clientConfig == null) {
+            throw new IllegalArgumentException("clientConfig must not be null");
+        }
+        config = clientConfig;
         initialized = true;
     }
 
@@ -148,6 +99,15 @@ public class MqttClientSingleton {
      */
     public static boolean isInitialized() {
         return initialized;
+    }
+
+    /**
+     * Returns the configuration snapshot. Available only after {@link #init}.
+     *
+     * @return the immutable configuration, or {@code null} if not initialized
+     */
+    static MqttConfig getConfig() {
+        return config;
     }
 
     /**
@@ -187,7 +147,7 @@ public class MqttClientSingleton {
      * @throws IllegalStateException if the singleton is not initialized
      */
     public void connect() {
-        if (!initialized) {
+        if (!initialized || config == null) {
             throw new IllegalStateException("MqttClientSingleton is not initialized");
         }
 
@@ -196,61 +156,58 @@ public class MqttClientSingleton {
             return;
         }
 
-        BootstrapLogger.standalone(LOGGER, "Connecting to MQTT broker at {}...", brokerUrl);
+        BootstrapLogger.standalone(LOGGER, "Connecting to MQTT broker at {}...", config.getBrokerUrl());
 
         try {
-            //Parse broker URL
-            URI uri = new URI(brokerUrl);
+            URI uri = new URI(config.getBrokerUrl());
             String host = uri.getHost();
-            int port = uri.getPort() > 0 ? uri.getPort() : (tlsEnabled ? 8883 : 1883);
+            int port = uri.getPort() > 0 ? uri.getPort() : (config.isTlsEnabled() ? 8883 : 1883);
 
-            // Build client based on protocol version
-            if (protocolVersion == 5) {
+            if (config.getProtocolVersion() == 5) {
                 mqttClient = buildMqtt5Client(host, port);
             } else {
                 mqttClient = buildMqtt3Client(host, port);
             }
 
-            // Attempt connection
             CompletableFuture<Void> connectFuture;
-            if (mqttClient instanceof Mqtt5AsyncClient) {
-                connectFuture = ((Mqtt5AsyncClient) mqttClient).connectWith()
-                    .keepAlive(keepAliveSeconds)
-                    .cleanStart(cleanSession)
-                    .sessionExpiryInterval(sessionExpirySeconds)
+            if (mqttClient instanceof Mqtt5AsyncClient m5) {
+                connectFuture = m5.connectWith()
+                    .keepAlive(config.getKeepAliveSeconds())
+                    .cleanStart(config.isCleanSession())
+                    .sessionExpiryInterval(config.getSessionExpirySeconds())
                     .send()
                     .thenAccept(connAck -> {
-                    connected = true;
-                    BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)", 
-                        ansi().fg(GREEN).bold().a(brokerUrl).reset().toString());
-                });
+                        connected = true;
+                        BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)",
+                            ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
+                    });
+            } else if (mqttClient instanceof Mqtt3AsyncClient m3) {
+                connectFuture = m3.connectWith()
+                    .cleanSession(config.isCleanSession())
+                    .keepAlive(config.getKeepAliveSeconds())
+                    .send()
+                    .thenAccept(connAck -> {
+                        connected = true;
+                        BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 3.1.1)",
+                            ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
+                    });
             } else {
-                connectFuture = ((Mqtt3AsyncClient) mqttClient).connectWith()
-                    .cleanSession(cleanSession)
-                    .keepAlive(keepAliveSeconds)
-                    .send()
-                    .thenAccept(connAck -> {
-                    connected = true;
-                    BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)", ansi().fg(GREEN).bold().a(brokerUrl).reset().toString());
-                });
+                throw new IllegalStateException("Unknown MQTT client type: " + mqttClient.getClass());
             }
 
-            connectFuture.get(connectTimeoutSeconds, TimeUnit.SECONDS);
-            
-        } catch (InterruptedException ie) {
-            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString() 
-                    + "Connection interrupted, The application may be shutting down.", ie);
-                    connected = false;
-                    Thread.currentThread().interrupt();
-        }
-        catch (Exception e) {
-            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString() 
-                    + "Check that the broker is running and" 
-                    + "the configuration property '/mqtt-client/broker-url'" 
-                    + "is set properly", e);
-            connected = false;
-        }
+            connectFuture.get(config.getConnectTimeoutSeconds(), TimeUnit.SECONDS);
 
+        } catch (InterruptedException ie) {
+            connected = false;
+            Thread.currentThread().interrupt();
+            LOGGER.error("{} Connection interrupted, the application may be shutting down.",
+                ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), ie);
+        } catch (Exception e) {
+            connected = false;
+            LOGGER.error("{} Check that the broker is running and the configuration property "
+                + "'/mqtt-client/broker-url' is set properly",
+                ansi().fg(RED).bold().a("Cannot connect to MQTT broker.").reset().toString(), e);
+        }
     }
 
     /**
@@ -263,56 +220,53 @@ public class MqttClientSingleton {
     private Mqtt5AsyncClient buildMqtt5Client(String host, int port) {
         Mqtt5ClientBuilder builder = MqttClient.builder()
             .useMqttVersion5()
-            .identifier(clientId)
+            .identifier(config.getClientId())
             .serverHost(host)
             .serverPort(port);
-        
-        //Add authentication if provided
-        if (username != null && password != null) {
+
+        if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
-                .username(username)
-                .password(password.getBytes(StandardCharsets.UTF_8))
+                .username(config.getUsername())
+                .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
                 .applySimpleAuth();
         }
 
-        // Configure will message if provided
-        if (willTopic != null && willPayload != null) {
+        var willConfig = config.getWillConfig();
+        if (willConfig != null && willConfig.getWillTopic() != null && willConfig.getWillPayload() != null) {
             var willPublishBuilder = builder.willPublish()
-                .topic(willTopic)
-                .payload(willPayload.getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.fromCode(willQos))
-                .retain(willRetain)
-                .delayInterval(willDelaySeconds);
+                .topic(willConfig.getWillTopic())
+                .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
+                .qos(MqttQos.fromCode(willConfig.getWillQos()))
+                .retain(willConfig.getWillRetain())
+                .delayInterval(willConfig.getWillDelaySeconds());
 
-            // Add message expiry if provided
-            if (willMessageExpirySeconds != null) {
-                willPublishBuilder.messageExpiryInterval(willMessageExpirySeconds);
+            if (willConfig.getWillMessageExpirySeconds() != null) {
+                willPublishBuilder.messageExpiryInterval(willConfig.getWillMessageExpirySeconds());
             }
 
             willPublishBuilder.applyWillPublish();
         }
 
-        // Configure automatic reconnect
-        if (reconnectEnabled) {
+        var reconnectConfig = config.getReconnectConfig();
+        if (reconnectConfig != null && reconnectConfig.isEnabled()) {
             builder.automaticReconnect()
-                .initialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
-                .maxDelay(maxDelayMs, TimeUnit.MILLISECONDS)
+                .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
+                .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
-                .addConnectedListener(context -> {
-                    // Resubscribe to topic filters if session is not present
+                .addConnectedListener(context ->
                     TypeSwitch.when(context)
-                    .is(Mqtt5ClientConnectedContext.class, q -> {
-                        if (!q.getConnAck().isSessionPresent()) {
-                            LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                            MqttMessageRouter.getInstance().resubscribeAll();
-                        } else {
-                            LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                        }
-                    });
-                });
+                        .is(Mqtt5ClientConnectedContext.class, q -> {
+                            if (!q.getConnAck().isSessionPresent()) {
+                                LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                                MqttMessageRouter.getInstance().resubscribeAll();
+                            } else {
+                                LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                            }
+                        })
+                );
         }
 
-        if (tlsEnabled) {
+        if (config.isTlsEnabled()) {
             builder.sslWithDefaultConfig();
         }
 
@@ -329,50 +283,47 @@ public class MqttClientSingleton {
     private Mqtt3AsyncClient buildMqtt3Client(String host, int port) {
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
-            .identifier(clientId)
+            .identifier(config.getClientId())
             .serverHost(host)
             .serverPort(port);
-        
-        // Add authentication if provided
-        if (username != null && password != null) {
+
+        if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
-                .username(username)
-                .password(password.getBytes())
+                .username(config.getUsername())
+                .password(config.getPassword().getBytes(StandardCharsets.UTF_8))
                 .applySimpleAuth();
         }
 
-        // Configure will message if provided
-        if (willTopic != null && willPayload != null) {
+        var willConfig = config.getWillConfig();
+        if (willConfig != null && willConfig.getWillTopic() != null && willConfig.getWillPayload() != null) {
             builder.willPublish()
-                .topic(willTopic)
-                .payload(willPayload.getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.fromCode(willQos))
-                .retain(willRetain)
+                .topic(willConfig.getWillTopic())
+                .payload(willConfig.getWillPayload().getBytes(StandardCharsets.UTF_8))
+                .qos(MqttQos.fromCode(willConfig.getWillQos()))
+                .retain(willConfig.getWillRetain())
                 .applyWillPublish();
         }
 
-        // Configure automatic reconnect
-        if (reconnectEnabled) {
+        var reconnectConfig = config.getReconnectConfig();
+        if (reconnectConfig != null && reconnectConfig.isEnabled()) {
             builder.automaticReconnect()
-                .initialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
-                .maxDelay(maxDelayMs, TimeUnit.MILLISECONDS)
+                .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
+                .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
-                .addConnectedListener(context -> {
-                    // Resubscribe to topic filters if session is not present
+                .addConnectedListener(context ->
                     TypeSwitch.when(context)
-                    .is(Mqtt3ClientConnectedContext.class, q -> {
-                        if (!q.getConnAck().isSessionPresent()) {
-                            LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                            MqttMessageRouter.getInstance().resubscribeAll();
-                        } else {
-                            LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
-                        }
-                    });
-                });
+                        .is(Mqtt3ClientConnectedContext.class, q -> {
+                            if (!q.getConnAck().isSessionPresent()) {
+                                LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
+                                MqttMessageRouter.getInstance().resubscribeAll();
+                            } else {
+                                LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
+                            }
+                        })
+                );
         }
 
-        // Configure TLS if enabled
-        if (tlsEnabled) {
+        if (config.isTlsEnabled()) {
             builder.sslWithDefaultConfig();
         }
 
@@ -387,7 +338,7 @@ public class MqttClientSingleton {
      * @throws IllegalStateException if the singleton is not initialized
      */
     public MqttClient getClient() {
-        if (!initialized) {
+        if (!initialized || config == null) {
             throw new IllegalStateException("MqttClientSingleton is not initialized");
         }
 
@@ -396,6 +347,15 @@ public class MqttClientSingleton {
         }
 
         return mqttClient;
+    }
+
+    /**
+     * Returns whether the client is currently connected to the broker.
+     *
+     * @return {@code true} if connected, {@code false} otherwise
+     */
+    public boolean isConnected() {
+        return connected;
     }
 
     /**
@@ -408,7 +368,6 @@ public class MqttClientSingleton {
     private static class MqttClientSingletonHolder {
         private static final MqttClientSingleton INSTANCE;
 
-        // Make sure the Singleton is a Singleton even in a multi
         static {
             synchronized (ClassLoader.getSystemClassLoader()) {
                 final var sysProps = System.getProperties();
@@ -423,5 +382,4 @@ public class MqttClientSingleton {
             }
         }
     }
-    
 }

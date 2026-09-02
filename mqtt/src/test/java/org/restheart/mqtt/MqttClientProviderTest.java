@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongoclient-provider
+ * restheart-mqtt
  * %%
  * Copyright (C) 2014 - 2026 SoftInstigate
  * %%
@@ -38,14 +38,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
- * Unit tests for MqttClientProvider configuration parsing and initialization
+ * Unit tests for MqttClientProvider configuration parsing and initialization.
  * Tests verify that the provider correctly parses configuration and initializes
  * MqttClientSingleton with the expected values.
- * 
+ *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  */
 public class MqttClientProviderTest {
-    
+
     private MqttClientProvider provider;
     private Map<String, Object> config;
 
@@ -53,63 +53,47 @@ public class MqttClientProviderTest {
     public void setUp() {
         provider = new MqttClientProvider();
         config = new HashMap<>();
-        //Reset MqttClientSingleton state between tests
         resetMqttClientSingleton();
     }
 
     @AfterEach
     public void tearDown() {
-        // Clean up singleton state after each test
         resetMqttClientSingleton();
     }
 
-    /**
-     * Resets the MqttClientSingleton state using reflection
-     */
     private void resetMqttClientSingleton() {
         try {
             Field initializedField = MqttClientSingleton.class.getDeclaredField("initialized");
             initializedField.setAccessible(true);
             initializedField.setBoolean(null, false);
+
+            Field configField = MqttClientSingleton.class.getDeclaredField("config");
+            configField.setAccessible(true);
+            configField.set(null, null);
         } catch (Exception e) {
             // Ignore if field doesn't exist or can't be accessed
         }
     }
-    /**
-     * Injects the config map into the provider using reflection.
-     * @throws Exception
-     */
+
     private void injectConfig() throws Exception {
         Field configField = MqttClientProvider.class.getDeclaredField("config");
         configField.setAccessible(true);
         configField.set(provider, config);
     }
 
-    /**
-     * Gets a static field value from MqttClientSingleton using reflection
-     * @param fieldName
-     * @return
-     * @throws Exception
-     */
-    private Object getSingletonField(String fieldName) throws Exception {
-        Field field = MqttClientSingleton.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(null);
+    private MqttConfig getSingletonConfig() {
+        return MqttClientSingleton.getConfig();
     }
 
-    /**
-     * Calls init() without triggering actual MQTT connection by mocking getInstance()
-     * @throws Exception
-     */
     private void callInitWithoutConnection() throws Exception {
         injectConfig();
 
-        // Mock the singleton instance to prevent actual connection
         MqttClientSingleton mockSingleton = mock(MqttClientSingleton.class);
 
-        // Mock the static getInstance method to return the mocked object
         try (var mockedStatic = mockStatic(MqttClientSingleton.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(MqttClientSingleton::getInstance).thenReturn(mockSingleton);
+            mockedStatic.when(MqttClientSingleton::getConfig).thenCallRealMethod();
+            mockedStatic.when(MqttClientSingleton::isInitialized).thenCallRealMethod();
 
             provider.init();
         }
@@ -118,30 +102,29 @@ public class MqttClientProviderTest {
     @Test
     @DisplayName("Test default configuration values")
     public void testDefaultConfiguration() throws Exception {
-        // Empty config should use all defaults
         callInitWithoutConnection();
 
-        // Verify defaults were set in singleton
         assertTrue(MqttClientSingleton.isInitialized());
-        assertEquals("tcp://localhost:1883", getSingletonField("brokerUrl"));
-        assertEquals(3, getSingletonField("protocolVersion"));
-        assertTrue(((String) getSingletonField("clientId")).startsWith("restheart-"));
-        assertNull(getSingletonField("username"));
-        assertNull(getSingletonField("password"));
-        assertEquals(false, getSingletonField("cleanSession"));
-        assertEquals(60, getSingletonField("keepAliveSeconds"));
-        assertEquals(0xFFFFFFFFL, getSingletonField("sessionExpirySeconds"));
-        assertEquals(10, getSingletonField("connectTimeoutSeconds"));
-        assertEquals(false, getSingletonField("tlsEnabled"));
-        assertEquals(true, getSingletonField("reconnectEnabled"));
-        assertEquals(1000L, getSingletonField("initialDelayMs"));
-        assertEquals(30000L, getSingletonField("maxDelayMs"));
-        assertNull(getSingletonField("willTopic"));
-        assertNull(getSingletonField("willPayload"));
-        assertEquals(0, getSingletonField("willQos"));
-        assertEquals(false, getSingletonField("willRetain"));
-        assertEquals(0L, getSingletonField("willDelaySeconds"));
-        assertNull(getSingletonField("willMessageExpirySeconds"));
+        MqttConfig cfg = getSingletonConfig();
+        assertEquals("tcp://localhost:1883", cfg.getBrokerUrl());
+        assertEquals(3, cfg.getProtocolVersion());
+        assertTrue(cfg.getClientId().startsWith("restheart-"));
+        assertNull(cfg.getUsername());
+        assertNull(cfg.getPassword());
+        assertEquals(false, cfg.isCleanSession());
+        assertEquals(60, cfg.getKeepAliveSeconds());
+        assertEquals(0xFFFFFFFFL, cfg.getSessionExpirySeconds());
+        assertEquals(10, cfg.getConnectTimeoutSeconds());
+        assertEquals(false, cfg.isTlsEnabled());
+        assertEquals(true, cfg.getReconnectConfig().isEnabled());
+        assertEquals(1000L, cfg.getReconnectConfig().getInitialDelayMs());
+        assertEquals(30000L, cfg.getReconnectConfig().getMaxDelayMs());
+        assertNull(cfg.getWillConfig().getWillTopic());
+        assertNull(cfg.getWillConfig().getWillPayload());
+        assertEquals(0, cfg.getWillConfig().getWillQos());
+        assertEquals(false, cfg.getWillConfig().getWillRetain());
+        assertEquals(0L, cfg.getWillConfig().getWillDelaySeconds());
+        assertNull(cfg.getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
@@ -150,7 +133,7 @@ public class MqttClientProviderTest {
         config.put("broker-url", "ssl://mqtt.example.com:8883");
         callInitWithoutConnection();
 
-        assertEquals("ssl://mqtt.example.com:8883", getSingletonField("brokerUrl"));
+        assertEquals("ssl://mqtt.example.com:8883", getSingletonConfig().getBrokerUrl());
     }
 
     @Test
@@ -159,18 +142,18 @@ public class MqttClientProviderTest {
         config.put("protocol-version", 5);
         callInitWithoutConnection();
 
-        assertEquals(5, getSingletonField("protocolVersion"));
+        assertEquals(5, getSingletonConfig().getProtocolVersion());
     }
 
     @Test
     @DisplayName("Test authentication credentials are parsed correctly")
-    public void testAuthenticationConfiguration()throws Exception {
+    public void testAuthenticationConfiguration() throws Exception {
         config.put("username", "testuser");
         config.put("password", "testpass");
         callInitWithoutConnection();
 
-        assertEquals("testuser", getSingletonField("username"));
-        assertEquals("testpass", getSingletonField("password"));
+        assertEquals("testuser", getSingletonConfig().getUsername());
+        assertEquals("testpass", getSingletonConfig().getPassword());
     }
 
     @Test
@@ -181,9 +164,9 @@ public class MqttClientProviderTest {
         config.put("session-expiry-seconds", 3600L);
         callInitWithoutConnection();
 
-        assertEquals(true, getSingletonField("cleanSession"));
-        assertEquals(120, getSingletonField("keepAliveSeconds"));
-        assertEquals(3600L, getSingletonField("sessionExpirySeconds"));
+        assertEquals(true, getSingletonConfig().isCleanSession());
+        assertEquals(120, getSingletonConfig().getKeepAliveSeconds());
+        assertEquals(3600L, getSingletonConfig().getSessionExpirySeconds());
     }
 
     @Test
@@ -192,7 +175,7 @@ public class MqttClientProviderTest {
         config.put("tls", true);
         callInitWithoutConnection();
 
-        assertEquals(true, getSingletonField("tlsEnabled"));
+        assertEquals(true, getSingletonConfig().isTlsEnabled());
     }
 
     @Test
@@ -205,9 +188,9 @@ public class MqttClientProviderTest {
         config.put("reconnect", reconnect);
         callInitWithoutConnection();
 
-        assertEquals(false, getSingletonField("reconnectEnabled"));
-        assertEquals(2000L, getSingletonField("initialDelayMs"));
-        assertEquals(60000L, getSingletonField("maxDelayMs"));
+        assertEquals(false, getSingletonConfig().getReconnectConfig().isEnabled());
+        assertEquals(2000L, getSingletonConfig().getReconnectConfig().getInitialDelayMs());
+        assertEquals(60000L, getSingletonConfig().getReconnectConfig().getMaxDelayMs());
     }
 
     @Test
@@ -222,12 +205,12 @@ public class MqttClientProviderTest {
         config.put("protocol-version", 3);
         callInitWithoutConnection();
 
-        assertEquals("device/status", getSingletonField("willTopic"));
-        assertEquals("offline", getSingletonField("willPayload"));
-        assertEquals(1, getSingletonField("willQos"));
-        assertEquals(true, getSingletonField("willRetain"));
-        assertEquals(0L, getSingletonField("willDelaySeconds")); // Default
-        assertNull(getSingletonField("willMessageExpirySeconds")); // Default
+        assertEquals("device/status", getSingletonConfig().getWillConfig().getWillTopic());
+        assertEquals("offline", getSingletonConfig().getWillConfig().getWillPayload());
+        assertEquals(1, getSingletonConfig().getWillConfig().getWillQos());
+        assertEquals(true, getSingletonConfig().getWillConfig().getWillRetain());
+        assertEquals(0L, getSingletonConfig().getWillConfig().getWillDelaySeconds());
+        assertNull(getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
@@ -244,12 +227,12 @@ public class MqttClientProviderTest {
         config.put("protocol-version", 5);
         callInitWithoutConnection();
 
-        assertEquals("device/status", getSingletonField("willTopic"));
-        assertEquals("offline", getSingletonField("willPayload"));
-        assertEquals(2, getSingletonField("willQos"));
-        assertEquals(false, getSingletonField("willRetain"));
-        assertEquals(30L, getSingletonField("willDelaySeconds"));
-        assertEquals(3600L, getSingletonField("willMessageExpirySeconds"));
+        assertEquals("device/status", getSingletonConfig().getWillConfig().getWillTopic());
+        assertEquals("offline", getSingletonConfig().getWillConfig().getWillPayload());
+        assertEquals(2, getSingletonConfig().getWillConfig().getWillQos());
+        assertEquals(false, getSingletonConfig().getWillConfig().getWillRetain());
+        assertEquals(30L, getSingletonConfig().getWillConfig().getWillDelaySeconds());
+        assertEquals(3600L, getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
@@ -261,10 +244,10 @@ public class MqttClientProviderTest {
         config.put("will", will);
         callInitWithoutConnection();
 
-        assertNull(getSingletonField("willTopic"));
-        assertNull(getSingletonField("willPayload"));
-        assertEquals(0, getSingletonField("willQos")); // Default
-        assertEquals(false, getSingletonField("willRetain")); // Default
+        assertNull(getSingletonConfig().getWillConfig().getWillTopic());
+        assertNull(getSingletonConfig().getWillConfig().getWillPayload());
+        assertEquals(0, getSingletonConfig().getWillConfig().getWillQos());
+        assertEquals(false, getSingletonConfig().getWillConfig().getWillRetain());
     }
 
     @Test
@@ -277,25 +260,21 @@ public class MqttClientProviderTest {
         config.put("will", will);
         callInitWithoutConnection();
 
-        assertNull(getSingletonField("willMessageExpirySeconds"));
+        assertNull(getSingletonConfig().getWillConfig().getWillMessageExpirySeconds());
     }
 
     @Test
     @DisplayName("Test configuration with only required fields uses defaults for optional fields")
     public void testConfigurationWithMissingOptionalFields() throws Exception {
-        // Only set broker URL
         config.put("broker-url", "tcp://localhost:1883");
         callInitWithoutConnection();
 
-        // Verify required field is set
-        assertEquals("tcp://localhost:1883", getSingletonField("brokerUrl"));
-
-        // Verify optional fields use defaults
-        assertNull(getSingletonField("username"));
-        assertNull(getSingletonField("password"));
-        assertNull(getSingletonField("willTopic"));
-        assertNull(getSingletonField("willPayload"));
-        assertEquals(true, getSingletonField("reconnectEnabled")); // Default
+        assertEquals("tcp://localhost:1883", getSingletonConfig().getBrokerUrl());
+        assertNull(getSingletonConfig().getUsername());
+        assertNull(getSingletonConfig().getPassword());
+        assertNull(getSingletonConfig().getWillConfig().getWillTopic());
+        assertNull(getSingletonConfig().getWillConfig().getWillPayload());
+        assertEquals(true, getSingletonConfig().getReconnectConfig().isEnabled());
     }
 
     @Test
@@ -304,7 +283,7 @@ public class MqttClientProviderTest {
         config.put("client-id", "my-custom-client");
         callInitWithoutConnection();
 
-        assertEquals("my-custom-client", getSingletonField("clientId"));
+        assertEquals("my-custom-client", getSingletonConfig().getClientId());
     }
 
     @Test
@@ -313,6 +292,6 @@ public class MqttClientProviderTest {
         config.put("connect-timeout-seconds", 30);
         callInitWithoutConnection();
 
-        assertEquals(30, getSingletonField("connectTimeoutSeconds"));
+        assertEquals(30, getSingletonConfig().getConnectTimeoutSeconds());
     }
 }
