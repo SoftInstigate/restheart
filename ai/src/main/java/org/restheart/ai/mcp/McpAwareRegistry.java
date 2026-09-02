@@ -66,6 +66,11 @@ public final class McpAwareRegistry {
         return registered;
     }
 
+    /** Builds a registry directly from already-resolved entries — for tests, or for merging entries from multiple sources. */
+    public static McpAwareRegistry of(List<RegisteredMcpAware> registered) {
+        return new McpAwareRegistry(List.copyOf(registered));
+    }
+
     public static McpAwareRegistry discover(PluginsRegistry pluginsRegistry) {
         var result = new ArrayList<RegisteredMcpAware>();
 
