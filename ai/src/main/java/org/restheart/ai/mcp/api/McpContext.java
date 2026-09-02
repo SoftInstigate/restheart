@@ -20,17 +20,21 @@
  */
 package org.restheart.ai.mcp.api;
 
-import java.security.Principal;
 import java.util.Map;
+
+import org.restheart.security.BaseAccount;
 
 /**
  * Passed to {@link McpAware#describeMcp(McpContext)}. Carries everything a
  * plugin needs to build its {@link McpResource}s without depending on
  * {@code HttpServerExchange} or any other transport-level type.
  *
- * @param principal the authenticated principal of the MCP session, for
- *                  ACL-aware filtering (see {@link McpAware#describeMcp(McpContext)});
- *                  {@code null} for an unauthenticated call, if the deployment allows one
+ * @param principal the authenticated account of the MCP session — {@link BaseAccount}
+ *                  rather than the bare JDK {@code Principal}, since ACL-aware filtering
+ *                  (see {@link McpAware#describeMcp(McpContext)}) needs roles, not just a
+ *                  name; every RESTHeart account type ({@code MongoRealmAccount},
+ *                  {@code JwtAccount}, ...) extends it. {@code null} for an unauthenticated
+ *                  call, if the deployment allows one
  * @param baseUrl the public base URL of the RESTHeart instance (no trailing slash),
  *                used to build absolute resource URIs
  * @param pluginName the name the plugin registered with ({@code @RegisterPlugin(name = ...)})
@@ -41,7 +45,7 @@ import java.util.Map;
  *                            {@code describeMcp()} can also read {@code mcp-config} directly
  */
 public record McpContext(
-        Principal principal,
+        BaseAccount principal,
         String baseUrl,
         String pluginName,
         String pluginUri,
