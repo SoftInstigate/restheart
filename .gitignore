@@ -294,4 +294,7 @@ infer-out
 /commons/nbproject/
 /core/Dockerfile.jbr
 
+### Moquette (embedded MQTT broker test data) ###
+mqtt/data/
+
 .zed/
