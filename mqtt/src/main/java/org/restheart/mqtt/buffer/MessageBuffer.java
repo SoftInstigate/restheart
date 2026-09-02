@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Two overflow strategies are supported:
  * <ul>
  *   <li>{@link Strategy#RING} — drop oldest message when full (for high-frequency sensors)</li>
- *   <li>{@link Strategy#BLOCKING} — reject new messages when full (backpressure)</li>
+ *   <li>{@link Strategy#NON_BLOCKING} — reject new messages when full (backpressure)</li>
  * </ul>
  * </p>
  * <p>
@@ -68,7 +68,7 @@ public class MessageBuffer {
          * Reject new messages when the buffer is full (backpressure). Suitable for
          * loss-intolerant data where every message must be persisted.
          */
-        BLOCKING
+        NON_BLOCKING
     }
 
     private final ArrayBlockingQueue<MqttMessage> queue;
@@ -104,23 +104,25 @@ public class MessageBuffer {
      *
      * @param message the message to buffer
      * @return {@code true} if the message was accepted, {@code false} if rejected
-     *         (only possible with {@link Strategy#BLOCKING})
+     *         (only possible with {@link Strategy#NON_BLOCKING})
      */
     public boolean offer(MqttMessage message) {
         if (strategy == Strategy.RING) {
-            while (!queue.offer(message)) {
-                // Buffer full — drop oldest to make room
-                MqttMessage dropped = queue.poll();
-                if (dropped != null) {
-                    LOGGER.debug("Ring buffer full, dropped oldest message for topic {}", dropped.getTopic());
+            synchronized (queue) {
+                while (!queue.offer(message)) {
+                    // Buffer full — drop oldest to make room
+                    MqttMessage dropped = queue.poll();
+                    if (dropped != null) {
+                        LOGGER.debug("Ring buffer full, dropped oldest message for topic {}", dropped.getTopic());
+                    }
                 }
             }
             return true;
         } else {
-            // BLOCKING strategy — reject if full
+            // NON_BLOCKING strategy — reject if full
             boolean accepted = queue.offer(message);
             if (!accepted) {
-                LOGGER.debug("Blocking buffer full, rejected message for topic {}", message.getTopic());
+                LOGGER.debug("Buffer full, rejected message for topic {}", message.getTopic());
             }
             return accepted;
         }
