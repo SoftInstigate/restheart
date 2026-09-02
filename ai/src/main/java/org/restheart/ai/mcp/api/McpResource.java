@@ -74,6 +74,17 @@ public final class McpResource {
     public Map<String, Action> actions() { return actions; }
     public List<Example> examples() { return examples; }
 
+    /** Transports that carry the given action, in declaration order; empty if the action is unknown to every transport. */
+    public List<Transport> transportsFor(String actionName) {
+        var result = new ArrayList<Transport>();
+        for (var entry : transports) {
+            if (entry.getValue().contains(actionName)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+
     public static Builder builder() { return new Builder(); }
 
     /** Renders the exact JSON shape (as nested {@link Map}/{@link List}/scalars) sent to MCP clients. */

@@ -39,6 +39,14 @@
             <artifactId>mongodb-driver-sync</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- JSON Schema validation (used by MCP's BodyValidator, restheart#615) – same
+             library restheart-mongodb already depends on, so it is on the runtime
+             classpath of any standard RESTHeart+MongoDB deployment already. -->
+        <dependency>
+            <groupId>com.github.everit-org.json-schema</groupId>
+            <artifactId>org.everit.json.schema</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Logging – provided by the core runtime -->
         <dependency>
             <groupId>org.slf4j</groupId>
