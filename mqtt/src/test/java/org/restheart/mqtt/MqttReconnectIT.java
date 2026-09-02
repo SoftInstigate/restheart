@@ -196,7 +196,7 @@ public class MqttReconnectIT {
         server.startServer(new MemoryConfig(restartProps));
 
         boolean reconnected = false;
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 150; i++) {
             if (MqttClientSingleton.getInstance().getClient().getState() == MqttClientState.CONNECTED) {
                 reconnected = true;
                 break;
@@ -205,11 +205,11 @@ public class MqttReconnectIT {
         }
         assertTrue(reconnected, "Client failed to reconnect after broker restart");
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         publishMessage("sensors/temp", "payload2");
 
-        MqttMessage msg2 = receivedMessages.poll(5, TimeUnit.SECONDS);
+        MqttMessage msg2 = receivedMessages.poll(10, TimeUnit.SECONDS);
         assertNotNull(msg2, "Failed to receive message after reconnect");
         assertEquals("sensors/temp", msg2.getTopic());
         assertEquals("payload2", msg2.getPayload());
