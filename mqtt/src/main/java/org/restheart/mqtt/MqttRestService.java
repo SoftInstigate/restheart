@@ -29,8 +29,6 @@ import org.restheart.exchange.JsonResponse;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 
@@ -55,8 +53,6 @@ import com.google.gson.JsonObject;
     secure = false
 )
 public class MqttRestService implements JsonService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttRestService.class);
 
     @Override
     public void handle(JsonRequest request, JsonResponse response) {

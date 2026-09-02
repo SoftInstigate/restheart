@@ -23,7 +23,7 @@ package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
@@ -37,8 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonObject;
-
 /**
  * Unit tests for MqttRestService.
  * Tests last-value polling endpoint for MQTT topics.
@@ -49,12 +47,10 @@ public class MqttRestServiceTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttRestServiceTest.class);
 
-    private MqttRestService service;
     private MqttMessageRouter router;
 
     @BeforeEach
     void setUp() {
-        service = new MqttRestService();
         router = MqttMessageRouter.getInstance();
 
         // Reset router state
@@ -118,7 +114,7 @@ public class MqttRestServiceTest {
     @DisplayName("GET with non-existing topic returns null")
     void testGetNonExistingTopic() {
         MqttMessage result = router.getLastMessage("sensors/nonexistent");
-        assertEquals(null, result, "Non-existing topic should return null");
+        assertNull(result, "Non-existing topic should return null");
     }
 
     @Test
