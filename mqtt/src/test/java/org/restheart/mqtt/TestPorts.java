@@ -1,5 +1,7 @@
 package org.restheart.mqtt;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
@@ -18,6 +20,25 @@ import java.net.Socket;
 final class TestPorts {
 
     private TestPorts() {
+    }
+
+    /**
+     * Returns a currently free TCP port.
+     * <p>
+     * Prefer this over configuring the broker with port 0 and reading the port back:
+     * {@code Server.getPort()} reports 0 until the acceptor has bound, which happens
+     * after {@code startServer()} returns, so a test that starts a broker immediately
+     * after stopping another one can read 0 and then wait on the wrong port.
+     * </p>
+     *
+     * @return a port number that was free at the moment of the call
+     */
+    static int freePort() {
+        try (var socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new IllegalStateException("cannot allocate a free port for the test broker", e);
+        }
     }
 
     /**

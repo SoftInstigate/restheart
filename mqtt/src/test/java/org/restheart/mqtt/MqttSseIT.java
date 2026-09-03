@@ -75,8 +75,9 @@ public class MqttSseIT {
 
     @BeforeAll
     static void startBroker() throws Exception {
+        brokerPort = TestPorts.freePort();
         brokerProps = new Properties();
-        brokerProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, "0"); // random free port
+        brokerProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
         brokerProps.setProperty(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
         brokerProps.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
         brokerProps.setProperty(BrokerConstants.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
@@ -84,7 +85,6 @@ public class MqttSseIT {
 
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
-        brokerPort = server.getPort();
         // startServer() returns before the listener necessarily accepts connections
         TestPorts.waitUntilOpen(brokerPort, 10000);
     }
