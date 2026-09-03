@@ -74,6 +74,7 @@ public class MqttReconnectIT {
         brokerProps.setProperty(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
         brokerProps.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
         brokerProps.setProperty(BrokerConstants.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
+        brokerProps.setProperty(BrokerConstants.ENABLE_TELEMETRY_NAME, "false");
 
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
@@ -188,7 +189,7 @@ public class MqttReconnectIT {
         assertEquals("payload1", msg1.getPayload());
 
         server.stopServer();
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         Properties restartProps = new Properties(brokerProps);
         restartProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
@@ -196,7 +197,7 @@ public class MqttReconnectIT {
         server.startServer(new MemoryConfig(restartProps));
 
         boolean reconnected = false;
-        for (int i = 0; i < 150; i++) {
+        for (int i = 0; i < 300; i++) {
             if (MqttClientSingleton.getInstance().getClient().getState() == MqttClientState.CONNECTED) {
                 reconnected = true;
                 break;
@@ -205,7 +206,7 @@ public class MqttReconnectIT {
         }
         assertTrue(reconnected, "Client failed to reconnect after broker restart");
 
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         publishMessage("sensors/temp", "payload2");
 

@@ -1,0 +1,15 @@
+<configuration>
+    <!-- Suppress Moquette telemetry noise during tests -->
+    <logger name="io.moquette.broker.Server" level="WARN" />
+
+    <!-- Keep RESTHeart MQTT logs at DEBUG for test visibility -->
+    <logger name="org.restheart.mqtt" level="DEBUG" />
+
+    <root level="INFO">
+        <appender class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </root>
+</configuration>
