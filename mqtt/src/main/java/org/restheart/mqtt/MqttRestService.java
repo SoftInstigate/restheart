@@ -52,7 +52,7 @@ import com.google.gson.JsonObject;
     name = "mqtt-rest",
     description = "REST endpoint for polling last MQTT message per topic",
     defaultURI = "/mqtt",
-    secure = false
+    secure = true
 )
 public class MqttRestService implements JsonService {
 
