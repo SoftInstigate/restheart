@@ -208,8 +208,19 @@ public final class McpResource {
         }
     }
 
-    /** One parameter of an {@link Action}. */
-    public record Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue) {
+    /**
+     * One parameter of an {@link Action}. {@code properties} is optional and only meaningful for
+     * {@code type: "object"} — documents the shape of its value (e.g. an aggregation's
+     * {@code avars} bundle: one MongoDB {@code $var} reference per property) without requiring a
+     * full {@code body_schema}, which is for the request body, not a query/path param's value.
+     */
+    public record Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue,
+            Map<String, Param> properties) {
+
+        public Param(String type, String description, boolean required, List<Object> enumValues, Object defaultValue) {
+            this(type, description, required, enumValues, defaultValue, null);
+        }
+
         Map<String, Object> toMap() {
             var m = new LinkedHashMap<String, Object>();
             if (type != null) {
@@ -224,6 +235,11 @@ public final class McpResource {
             }
             if (defaultValue != null) {
                 m.put("default", defaultValue);
+            }
+            if (properties != null && !properties.isEmpty()) {
+                var propsJson = new LinkedHashMap<String, Object>();
+                properties.forEach((name, p) -> propsJson.put(name, p.toMap()));
+                m.put("properties", propsJson);
             }
             return m;
         }

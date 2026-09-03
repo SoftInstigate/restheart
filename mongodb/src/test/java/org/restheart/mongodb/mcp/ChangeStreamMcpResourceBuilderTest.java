@@ -66,7 +66,9 @@ public class ChangeStreamMcpResourceBuilderTest {
         assertEquals("change-stream", resource.kind());
         assertEquals("Notifies on order status changes", resource.description());
         assertEquals("GET", resource.actions().get("subscribe").method());
-        assertEquals("/_streams/byStatus", resource.actions().get("subscribe").pathTemplate());
+        // see AggregationMcpResourceBuilderTest: path_template is relative to the resource's own
+        // uri, which already is the full stream address, so it must be empty here
+        assertEquals("", resource.actions().get("subscribe").pathTemplate());
         assertEquals(List.of(McpResource.Transport.WEBSOCKET, McpResource.Transport.SSE), resource.transportsFor("subscribe"));
     }
 
@@ -103,13 +105,32 @@ public class ChangeStreamMcpResourceBuilderTest {
     }
 
     @Test
+    public void avarsParam_bundlesAllVariablesAsAnObjectParam() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+
+        var avars = resource.actions().get("subscribe").params().get("avars");
+        assertEquals("object", avars.type());
+    }
+
+    @Test
+    public void noVarsInPipeline_noAvarsParamDeclared() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var stagesWithNoVars = BsonArray.parse("[{\"$match\": {\"fullDocument.status\": \"A\"}}]");
+
+        var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp).orElseThrow();
+
+        assertTrue(resource.actions().get("subscribe").params().isEmpty());
+    }
+
+    @Test
     public void referencedVarWithDeclaredParam_usesDeclaredDefinition() {
         var mcp = BsonDocument.parse("""
                 {"description": "x", "params": {"status": {"type": "string", "enum": ["open", "closed"]}}}
                 """);
 
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("subscribe").params().get("status");
+        var param = resource.actions().get("subscribe").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
         assertEquals(List.of("open", "closed"), param.enumValues());
@@ -121,7 +142,7 @@ public class ChangeStreamMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("subscribe").params().get("status");
+        var param = resource.actions().get("subscribe").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
         assertFalse(param.required());

@@ -66,7 +66,10 @@ public class AggregationMcpResourceBuilderTest {
         assertEquals("aggregation", resource.kind());
         assertEquals("Orders grouped by status", resource.description());
         assertEquals("GET", resource.actions().get("execute").method());
-        assertEquals("/_aggrs/byStatus", resource.actions().get("execute").pathTemplate());
+        // path_template is relative to the resource's own uri (which already ends in
+        // "/_aggrs/byStatus") — how_to_call composes url = resource.uri() + path_template,
+        // so this must be empty or the rendered URL would double up the aggregation path
+        assertEquals("", resource.actions().get("execute").pathTemplate());
     }
 
     @Test
@@ -86,13 +89,33 @@ public class AggregationMcpResourceBuilderTest {
     }
 
     @Test
+    public void avarsParam_bundlesAllVariablesAsAnObjectParam() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+
+        var avars = resource.actions().get("execute").params().get("avars");
+        assertEquals("object", avars.type());
+        assertTrue(resource.actions().get("execute").params().containsKey("avars"));
+    }
+
+    @Test
+    public void noVarsInPipeline_noAvarsParamDeclared() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var stagesWithNoVars = BsonArray.parse("[{\"$match\": {\"status\": \"A\"}}]");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp).orElseThrow();
+
+        assertTrue(resource.actions().get("execute").params().isEmpty());
+    }
+
+    @Test
     public void referencedVarWithDeclaredParam_usesDeclaredDefinition() {
         var mcp = BsonDocument.parse("""
                 {"description": "x", "params": {"status": {"type": "string", "description": "Order status", "enum": ["open", "closed"]}}}
                 """);
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("execute").params().get("status");
+        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
         assertEquals("Order status", param.description());
@@ -105,7 +128,7 @@ public class AggregationMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
-        var param = resource.actions().get("execute").params().get("status");
+        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
         assertFalse(param.required());

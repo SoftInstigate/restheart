@@ -123,4 +123,23 @@ public class McpResourceTest {
         var resource = McpResource.builder().uri("https://host/x").build();
         assertTrue(resource.extra().isEmpty());
     }
+
+    @Test
+    public void paramWithoutProperties_omitsPropertiesKey() {
+        var param = new McpResource.Param("string", null, false, null, null);
+        assertNull(param.toMap().get("properties"));
+    }
+
+    @Test
+    public void paramWithProperties_nestedRecursivelyInJson() {
+        var param = new McpResource.Param("object", "avars bundle", false, null, null,
+                Map.of("status", new McpResource.Param("string", null, false, List.of("A", "D"), null)));
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) param.toMap().get("properties");
+        @SuppressWarnings("unchecked")
+        var status = (Map<String, Object>) properties.get("status");
+        assertEquals("string", status.get("type"));
+        assertEquals(List.of("A", "D"), status.get("enum"));
+    }
 }

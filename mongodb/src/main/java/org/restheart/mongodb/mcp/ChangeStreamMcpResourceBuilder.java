@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,10 @@ import org.restheart.plugins.mcp.McpResource;
  * the same {@code _streams/<uri>} endpoint over both WebSocket and SSE — so the resource
  * declares a single {@code subscribe} action over both the {@code WEBSOCKET} and {@code SSE}
  * transports rather than {@code execute} over {@code HTTP}.
+ *
+ * <p>As with {@link AggregationMcpResourceBuilder}, declared variable types surface as a single
+ * {@code avars} object param (one {@code properties} entry per variable), matching how RESTHeart
+ * actually binds {@code $var} references — {@code ?avars={"name":"value",...}}.
  */
 public final class ChangeStreamMcpResourceBuilder {
 
@@ -74,23 +79,33 @@ public final class ChangeStreamMcpResourceBuilder {
                 .transport(McpResource.Transport.WEBSOCKET, "subscribe")
                 .transport(McpResource.Transport.SSE, "subscribe");
 
+        var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
+        referencedNames.forEach(name -> {
+            if (declaredParams.get(name) instanceof BsonDocument paramDef) {
+                avarsProperties.put(name, toParam(paramDef));
+            } else {
+                avarsProperties.put(name, new McpResource.Param("string", null, false, null, null));
+                warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to an optional string");
+            }
+        });
+
+        declaredParams.keySet().stream()
+                .filter(name -> !referencedNames.contains(name))
+                .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
+
         builder.action("subscribe", a -> {
             a.method("GET");
-            a.pathTemplate(pathTemplate);
+            // see AggregationMcpResourceBuilder: the resource's own uri already is this stream's
+            // full address, so the action's path_template must be relative (empty)
+            a.pathTemplate("");
             a.description(description(mcp));
 
-            referencedNames.forEach(name -> {
-                if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                    a.param(name, toParam(paramDef));
-                } else {
-                    a.param(name, new McpResource.Param("string", null, false, null, null));
-                    warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to an optional string");
-                }
-            });
-
-            declaredParams.keySet().stream()
-                    .filter(name -> !referencedNames.contains(name))
-                    .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
+            // same avars convention as AggregationMcpResourceBuilder: RESTHeart's change-stream
+            // handler binds $var references via StagesInterpolator, identically to aggregations
+            if (!avarsProperties.isEmpty()) {
+                var required = avarsProperties.values().stream().anyMatch(McpResource.Param::required);
+                a.param("avars", new McpResource.Param("object", "MongoDB $var bindings for this pipeline.", required, null, null, avarsProperties));
+            }
         });
 
         examples(mcp).forEach(ex -> builder.example(

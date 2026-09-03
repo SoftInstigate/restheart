@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,11 @@ import org.restheart.plugins.mcp.McpResource;
  * {@code examples}, and {@code pipeline_summary} — an operator-supplied override for the
  * otherwise auto-generated {@link PipelineSummarizer} heuristic, which can't meaningfully
  * describe non-linear pipelines ({@code $lookup}/{@code $facet}/...).
+ *
+ * <p>The declared per-variable types surface as a single {@code avars} object param (with a
+ * {@code properties} entry per variable), not one param per variable name — RESTHeart binds
+ * {@code $var} references from one JSON query param, {@code ?avars={"name":"value",...}}, so
+ * that's the shape {@code how_to_call} must render.
  */
 public final class AggregationMcpResourceBuilder {
 
@@ -67,23 +73,37 @@ public final class AggregationMcpResourceBuilder {
                 .kind("aggregation")
                 .description(description(mcp));
 
+        var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
+        referencedNames.forEach(name -> {
+            if (declaredParams.get(name) instanceof BsonDocument paramDef) {
+                avarsProperties.put(name, toParam(paramDef));
+            } else {
+                avarsProperties.put(name, new McpResource.Param("string", null, false, null, null));
+                warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to an optional string");
+            }
+        });
+
+        declaredParams.keySet().stream()
+                .filter(name -> !referencedNames.contains(name))
+                .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
+
         builder.action("execute", a -> {
             a.method("GET");
-            a.pathTemplate(pathTemplate);
+            // the resource's own uri already IS this aggregation's full address (built just above
+            // as collectionUri + pathTemplate) — how_to_call composes url = resource.uri() +
+            // action.pathTemplate(), so the action's own path_template must be relative (empty),
+            // not repeat pathTemplate, or the rendered URL doubles up "/_aggrs/<uri>"
+            a.pathTemplate("");
             a.description(description(mcp));
 
-            referencedNames.forEach(name -> {
-                if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                    a.param(name, toParam(paramDef));
-                } else {
-                    a.param(name, new McpResource.Param("string", null, false, null, null));
-                    warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to an optional string");
-                }
-            });
-
-            declaredParams.keySet().stream()
-                    .filter(name -> !referencedNames.contains(name))
-                    .forEach(name -> warnings.add("mcp.params declares '" + name + "' but the pipeline does not reference it"));
+            // RESTHeart binds $var references from a single JSON query param named "avars"
+            // (e.g. ?avars={"status":"A"}), not one query param per variable name — declaring
+            // them individually here would make how_to_call render "?status=A", which RESTHeart
+            // rejects with QueryVariableNotBoundException
+            if (!avarsProperties.isEmpty()) {
+                var required = avarsProperties.values().stream().anyMatch(McpResource.Param::required);
+                a.param("avars", new McpResource.Param("object", "MongoDB $var bindings for this pipeline.", required, null, null, avarsProperties));
+            }
         });
 
         examples(mcp).forEach(ex -> builder.example(

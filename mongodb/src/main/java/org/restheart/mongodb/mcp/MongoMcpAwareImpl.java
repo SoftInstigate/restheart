@@ -26,11 +26,15 @@ import java.util.Optional;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
+import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.utils.BsonUtils;
 
 /**
  * The {@code McpAware} logic backing {@code MongoService.describeMcp(ctx)} (see #616): walks
@@ -57,6 +61,14 @@ public final class MongoMcpAwareImpl {
         BsonDocument databaseProperties(String dbName);
 
         BsonDocument collectionProperties(String dbName, String collName);
+
+        /**
+         * Resolves a collection's {@code jsonSchema} metadata field — a pointer,
+         * {@code {schemaId, schemaStoreDb?}}, not the schema body itself — into the actual schema
+         * document, or {@code null} if absent/unresolvable. {@code dbName} is the collection's own
+         * database, used when the pointer omits {@code schemaStoreDb}.
+         */
+        BsonDocument resolveJsonSchema(String dbName, BsonValue jsonSchemaPointer);
     }
 
     private final MetadataSource metadata;
@@ -84,12 +96,38 @@ public final class MongoMcpAwareImpl {
 
             @Override
             public BsonDocument databaseProperties(String dbName) {
-                return databases.getDatabaseProperties(Optional.empty(), Optional.empty(), dbName);
+                return unescape(databases.getDatabaseProperties(Optional.empty(), Optional.empty(), dbName));
             }
 
             @Override
             public BsonDocument collectionProperties(String dbName, String collName) {
-                return databases.getCollectionProperties(Optional.empty(), Optional.empty(), dbName, collName);
+                return unescape(databases.getCollectionProperties(Optional.empty(), Optional.empty(), dbName, collName));
+            }
+
+            @Override
+            public BsonDocument resolveJsonSchema(String dbName, BsonValue jsonSchemaPointer) {
+                if (!(jsonSchemaPointer instanceof BsonDocument pointer) || !pointer.containsKey("schemaId")) {
+                    return null;
+                }
+                var schemaStoreDb = pointer.get("schemaStoreDb") instanceof BsonString s ? s.getValue() : dbName;
+                try {
+                    return JsonSchemaCacheSingleton.getInstance().getRaw(schemaStoreDb, pointer.get("schemaId"));
+                } catch (JsonSchemaNotFoundException e) {
+                    return null;
+                }
+            }
+
+            /**
+             * RESTHeart stores {@code $}-prefixed keys (aggregation/change-stream {@code stages},
+             * their {@code $var} references) escaped with a leading {@code _} to satisfy MongoDB's
+             * restriction on literal {@code $} field names — see
+             * {@code org.restheart.mongodb.utils.StagesInterpolator}, which applies the same
+             * {@code BsonUtils.unescapeKeys} call before actually running a pipeline. Metadata read
+             * directly via {@link Databases} bypasses that, so it's done here once for the whole
+             * properties document (recursive — fixes nested {@code aggrs}/{@code streams} too).
+             */
+            private BsonDocument unescape(BsonDocument props) {
+                return props == null ? null : BsonUtils.unescapeKeys(props).asDocument();
             }
         };
         return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig());
@@ -114,7 +152,7 @@ public final class MongoMcpAwareImpl {
                     continue;
                 }
 
-                describeCollection(collUri, collProps, resources, enabledCollectionUris);
+                describeCollection(dbName, collUri, collProps, resources, enabledCollectionUris);
             }
 
             mountResolver.databasePath(dbName).ifPresent(dbPath -> {
@@ -128,9 +166,9 @@ public final class MongoMcpAwareImpl {
         return resources;
     }
 
-    private void describeCollection(String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {
+    private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {
         var mcp = asDocument(collProps.get("mcp"));
-        var jsonSchema = collProps.get("jsonSchema");
+        var jsonSchema = metadata.resolveJsonSchema(dbName, collProps.get("jsonSchema"));
         var aggrs = collProps.get("aggrs") instanceof BsonArray a ? a : null;
         var streams = collProps.get("streams") instanceof BsonArray s ? s : null;
 

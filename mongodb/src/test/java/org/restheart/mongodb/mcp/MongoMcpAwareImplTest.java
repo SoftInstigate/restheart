@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.junit.jupiter.api.Test;
 import org.restheart.mongodb.mcp.MongoMcpAwareImpl.MetadataSource;
 import org.restheart.mongodb.mcp.MountUriResolver.Mount;
@@ -41,6 +43,7 @@ public class MongoMcpAwareImplTest {
         private final Map<String, List<String>> collectionsByDb = new HashMap<>();
         private final Map<String, BsonDocument> dbProps = new HashMap<>();
         private final Map<String, BsonDocument> collProps = new HashMap<>();
+        private final Map<String, BsonDocument> schemasByPointer = new HashMap<>();
 
         FakeMetadataSource withCollections(String db, String... colls) {
             collectionsByDb.put(db, List.of(colls));
@@ -54,6 +57,12 @@ public class MongoMcpAwareImplTest {
 
         FakeMetadataSource withCollProps(String db, String coll, BsonDocument props) {
             collProps.put(db + "." + coll, props);
+            return this;
+        }
+
+        /** Registers the schema body returned for a given {@code schemaId} (as resolved via a {@code {schemaId: ...}} pointer). */
+        FakeMetadataSource withSchema(String schemaId, BsonDocument body) {
+            schemasByPointer.put(schemaId, body);
             return this;
         }
 
@@ -75,6 +84,14 @@ public class MongoMcpAwareImplTest {
         @Override
         public BsonDocument collectionProperties(String dbName, String collName) {
             return collProps.get(dbName + "." + collName);
+        }
+
+        @Override
+        public BsonDocument resolveJsonSchema(String dbName, BsonValue jsonSchemaPointer) {
+            if (!(jsonSchemaPointer instanceof BsonDocument pointer) || !pointer.containsKey("schemaId")) {
+                return null;
+            }
+            return schemasByPointer.get(pointer.get("schemaId").asString().getValue());
         }
     }
 
@@ -150,6 +167,42 @@ public class MongoMcpAwareImplTest {
 
         var database = resources.stream().filter(r -> "database".equals(r.kind())).findFirst().orElseThrow();
         assertEquals(List.of("https://host/warehouse/inventory"), database.extra().get("collections"));
+    }
+
+    @Test
+    public void jsonSchemaPointer_resolvedIntoActualBodySchema() {
+        var collProps = BsonDocument.parse("""
+                { "mcp": { "description": "x" }, "jsonSchema": { "schemaId": "orders" } }
+                """);
+        var schemaBody = BsonDocument.parse("""
+                { "type": "object", "properties": { "sku": { "type": "string" } } }
+                """);
+        var metadata = new FakeMetadataSource()
+                .withCollections("warehouse", "orders")
+                .withCollProps("warehouse", "orders", collProps)
+                .withSchema("orders", schemaBody);
+        var resolver = new MountUriResolver(List.of(new Mount("*", "/")));
+
+        var resources = new MongoMcpAwareImpl(metadata, resolver).describeMcp(CTX);
+
+        var collection = resources.stream().filter(r -> "collection".equals(r.kind())).findFirst().orElseThrow();
+        assertEquals("object", collection.actions().get("create").bodySchema().get("type"));
+    }
+
+    @Test
+    public void unresolvableJsonSchemaPointer_leavesBodySchemaAbsent() {
+        var collProps = BsonDocument.parse("""
+                { "mcp": { "description": "x" }, "jsonSchema": { "schemaId": "missing" } }
+                """);
+        var metadata = new FakeMetadataSource()
+                .withCollections("warehouse", "orders")
+                .withCollProps("warehouse", "orders", collProps);
+        var resolver = new MountUriResolver(List.of(new Mount("*", "/")));
+
+        var resources = new MongoMcpAwareImpl(metadata, resolver).describeMcp(CTX);
+
+        var collection = resources.stream().filter(r -> "collection".equals(r.kind())).findFirst().orElseThrow();
+        assertNull(collection.actions().get("create").bodySchema());
     }
 
     @Test
