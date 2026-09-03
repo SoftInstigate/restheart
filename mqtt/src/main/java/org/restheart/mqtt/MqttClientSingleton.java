@@ -146,6 +146,12 @@ public class MqttClientSingleton {
 
     /**
      * Retrieves the singleton {@link MqttClientSingleton} instance.
+     * <p>
+     * The instance is always returned, even before {@link #init} has been called: it simply
+     * has no configuration yet. Methods that require configuration, such as {@link #connect()}
+     * and {@link #getClient()}, throw {@link IllegalStateException} if called before
+     * {@link #init}.
+     * </p>
      *
      * @return the singleton {@link MqttClientSingleton} instance
      */
@@ -155,14 +161,16 @@ public class MqttClientSingleton {
 
     /**
      * Private constructor to enforce singleton pattern.
-     * Throws an exception if the singleton is not initialized yet.
-     *
-     * @throws IllegalStateException if called before initialization
+     * <p>
+     * Creating the instance never requires configuration to be present yet: the instance
+     * may legitimately be obtained via {@link #getInstance()} before {@link #init} has run
+     * (e.g. to register a listener via {@link #addOnNewSessionListener(Runnable)}). Methods
+     * that actually need configuration, such as {@link #connect()} and {@link #getClient()},
+     * check {@link #initialized} themselves and throw {@link IllegalStateException} if called
+     * too early.
+     * </p>
      */
     private MqttClientSingleton() {
-        if (!initialized) {
-            throw new IllegalStateException("MqttClientSingleton is not initialized");
-        }
     }
 
     /**

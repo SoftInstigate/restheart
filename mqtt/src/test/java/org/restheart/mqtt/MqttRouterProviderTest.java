@@ -50,9 +50,9 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
  * Unit tests for {@link MqttRouterProvider} configuration parsing and defaults.
  * <p>
  * Unlike {@link MqttMessageRouter} itself, this provider is the composition root that wires the
- * router into {@link MqttClientSingleton#addOnNewSessionListener(Runnable)}, so its tests
- * legitimately need {@code MqttClientSingleton}'s static state set up via reflection, mirroring
- * {@link MqttClientSingletonTest}.
+ * router into {@link MqttClientSingleton#addOnNewSessionListener(Runnable)}. That method neither
+ * requires nor reads {@code MqttClientSingleton}'s configuration, so these tests only need to
+ * isolate the shared singleton's {@code newSessionListeners} list between tests via reflection.
  * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
@@ -62,27 +62,6 @@ public class MqttRouterProviderTest {
     private MqttRouterProvider provider;
     private Map<String, Object> config;
     private Mqtt5AsyncClient mockClient;
-
-    private static MqttConfig minimalConfig() {
-        return new MqttConfig.Builder()
-            .brokerUrl("tcp://localhost:1883")
-            .protocolVersion(3)
-            .clientId("test-client")
-            .cleanSession(true)
-            .keepAliveSeconds(60)
-            .sessionExpirySeconds(0L)
-            .connectTimeoutSeconds(5)
-            .tlsEnabled(false)
-            .reconnectConfig(new MqttConfig.ReconnectConfig(false, 1000L, 30000L))
-            .willConfig(new MqttConfig.WillConfig(null, null, 0, false, 0L, null))
-            .build();
-    }
-
-    private static void setStatic(String fieldName, Object value) throws Exception {
-        Field field = MqttClientSingleton.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(null, value);
-    }
 
     @SuppressWarnings("unchecked")
     private static List<Runnable> newSessionListeners() throws Exception {
@@ -117,8 +96,6 @@ public class MqttRouterProviderTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        setStatic("initialized", true);
-        setStatic("config", minimalConfig());
         newSessionListeners().clear();
 
         provider = new MqttRouterProvider();
@@ -132,8 +109,6 @@ public class MqttRouterProviderTest {
     @AfterEach
     void tearDown() throws Exception {
         newSessionListeners().clear();
-        setStatic("initialized", false);
-        setStatic("config", null);
     }
 
     @Test

@@ -39,9 +39,14 @@ import org.junit.jupiter.api.Test;
  * <p>
  * {@code MqttClientSingleton} uses the initialization-on-demand holder idiom: the single
  * instance is created at most once per classloader and is shared by every test in the JVM.
- * These tests therefore reset both the static fields ({@code initialized}, {@code config})
- * and the singleton instance's own fields via reflection before and after each test, so that
- * state from one test (or from another test class) cannot leak into another.
+ * The private constructor never throws, so construction itself needs no setup; these tests
+ * still reset the static fields ({@code initialized}, {@code config}) and the singleton
+ * instance's own fields via reflection before and after each test, so that state from one
+ * test (or from another test class) cannot leak into another.
+ * </p>
+ * <p>
+ * See {@link MqttClientSingletonPoisoningRegressionTest} for the regression test covering
+ * the class-initialization poisoning defect this constructor used to be susceptible to.
  * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
@@ -84,9 +89,8 @@ public class MqttClientSingletonTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        // ensure the JVM-wide singleton can be constructed if this is the very first access
-        setStatic("initialized", true);
-        setStatic("config", minimalConfig());
+        // trigger holder construction if this is the very first access in the JVM; the
+        // constructor never throws, so no static state needs to be set up beforehand
         MqttClientSingleton.getInstance();
 
         resetInstanceState();
