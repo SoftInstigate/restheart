@@ -20,12 +20,17 @@
  */
 package io.undertow.server;
 
+import io.undertow.io.IoCallback;
+import io.undertow.io.Sender;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.util.AbstractAttachable;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -152,6 +157,92 @@ public class HttpServerExchange extends AbstractAttachable {
 
     public HeaderMap getRequestHeaders() {
         return null;
+    }
+
+    private HeaderMap responseHeaders;
+
+    /**
+     * @return the response headers, created lazily on first access
+     */
+    public HeaderMap getResponseHeaders() {
+        if (responseHeaders == null) {
+            responseHeaders = new HeaderMap();
+        }
+        return responseHeaders;
+    }
+
+    private final RecordingSender responseSender = new RecordingSender();
+
+    /**
+     * @return a {@link Sender} that records the last content passed to
+     *         {@code send(String)}, retrievable via {@link #getSentContent()}
+     */
+    public Sender getResponseSender() {
+        return responseSender;
+    }
+
+    /**
+     * @return the content last passed to {@code getResponseSender().send(String)},
+     *         or {@code null} if nothing was sent
+     */
+    public String getSentContent() {
+        return responseSender.sentContent;
+    }
+
+    /**
+     * Minimal {@link Sender} fake that only records String content sent via
+     * {@code send(String)}/{@code send(String, Charset)}; every other method is a no-op.
+     */
+    private static class RecordingSender implements Sender {
+        private String sentContent;
+
+        @Override
+        public void send(ByteBuffer buffer, IoCallback callback) {
+        }
+
+        @Override
+        public void send(ByteBuffer[] buffer, IoCallback callback) {
+        }
+
+        @Override
+        public void send(ByteBuffer buffer) {
+        }
+
+        @Override
+        public void send(ByteBuffer[] buffer) {
+        }
+
+        @Override
+        public void send(String data, IoCallback callback) {
+            this.sentContent = data;
+        }
+
+        @Override
+        public void send(String data, Charset charset, IoCallback callback) {
+            this.sentContent = data;
+        }
+
+        @Override
+        public void send(String data) {
+            this.sentContent = data;
+        }
+
+        @Override
+        public void send(String data, Charset charset) {
+            this.sentContent = data;
+        }
+
+        @Override
+        public void transferFrom(FileChannel channel, IoCallback callback) {
+        }
+
+        @Override
+        public void close(IoCallback callback) {
+        }
+
+        @Override
+        public void close() {
+        }
     }
 
     public SecurityContext getSecurityContext() {

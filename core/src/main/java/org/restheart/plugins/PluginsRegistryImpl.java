@@ -55,6 +55,7 @@ import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.ResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
 import org.restheart.handlers.ServiceExchangeInitializer;
+import org.restheart.handlers.SseWildcardInterceptorsExecutor;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
@@ -572,9 +573,22 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * Plugs an SSE service into the root handler binding it to the specified path.
      *
      * <p>Builds a lightweight pipeline: ErrorHandler → PipelineInfoInjector →
-     * TracingInstrumentationHandler → RequestLogger → SecurityHandler →
-     * ServerSentEventHandler. The SSE connection lifecycle (keep-alive, close tasks,
-     * event sending) is entirely managed by the plugin's {@code onConnect} method.
+     * TracingInstrumentationHandler → RequestLogger → SseWildcardInterceptorsExecutor
+     * (REQUEST_BEFORE_AUTH) → SecurityHandler → SseWildcardInterceptorsExecutor
+     * (REQUEST_AFTER_AUTH) → ServerSentEventHandler. The SSE connection lifecycle
+     * (keep-alive, close tasks, event sending) is entirely managed by the plugin's
+     * {@code onConnect} method.
+     *
+     * <p>{@code SseService} is a {@code Plugin}, not an {@code ExchangeTypeResolver}, so it
+     * declares no request/response types: only {@link WildcardInterceptor}s (not typed
+     * interceptors) can meaningfully run on this pipeline. See
+     * {@link SseWildcardInterceptorsExecutor} for why this is a dedicated executor rather
+     * than {@link RequestInterceptorsExecutor}, and why this pipeline does not include a
+     * {@code QueryStringRebuilder}: {@code WildcardInterceptor}s mutate query parameters via
+     * {@code Request#getQueryParameters()}, which is backed by the same live map that
+     * Undertow's {@code ServerSentEventConnection#getQueryParameters()} exposes to the SSE
+     * service, so any such mutation is visible downstream without rebuilding the raw query
+     * string.
      *
      * @param srv     the SSE service plugin record to plug
      * @param uri     the URI path to bind the service to
@@ -621,7 +635,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 new PipelineInfoInjector(),
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
+                new SseWildcardInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                 securityHandler,
+                new SseWildcardInterceptorsExecutor(REQUEST_AFTER_AUTH),
                 PipelinedWrappingHandler.wrap(sseHandler)
         );
 
