@@ -25,11 +25,6 @@ plugins-args:
       enabled: true
       initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
       max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
-    subscriptions:
-      - topic: "sensors/#"
-        qos: 1
-      - topic: "traffic/#"
-        qos: 0
 
   # MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages
   mqtt-router:
@@ -37,6 +32,14 @@ plugins-args:
     max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
     last-message-cache: true
     last-message-cache-size: 1000
+    subscriptions:                              # subscribed at startup with no listener, purely to
+                                                 # populate the last-message cache for mqtt-rest
+                                                 # polling with no SSE client connected; these
+                                                 # survive listener churn
+      - topic: "sensors/#"
+        qos: 1
+      - topic: "traffic/#"
+        qos: 0
 
   #MQTT SSE Service - Stream MQTT messages as Server-sent Events
   mqtt-sse:

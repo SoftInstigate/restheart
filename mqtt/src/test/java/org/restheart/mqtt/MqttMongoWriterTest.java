@@ -156,34 +156,39 @@ public class MqttMongoWriterTest {
         assertFalse(hash1.equals(hash2), "Different topics should produce different hashes");
     }
 
-    // --- topicMatches ---
+    // --- topic matching ---
+    //
+    // MqttMongoWriter no longer has its own topic-matching logic: it delegates to the shared
+    // MqttTopicMatcher (see MqttTopicMatcherTest for full coverage of the matching semantics).
+    // These tests only confirm that MqttMongoWriter.flush()'s sink routing exercises that shared
+    // matcher correctly for the sink-filter shapes used in this module's configuration.
 
     @Test
-    @DisplayName("topicMatches: exact match")
+    @DisplayName("topic matching: exact match")
     void testTopicMatchesExact() {
-        assertTrue(MqttMongoWriter.topicMatches("sensors/temp", "sensors/temp"));
-        assertFalse(MqttMongoWriter.topicMatches("sensors/humidity", "sensors/temp"));
+        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/temp"));
+        assertFalse(MqttTopicMatcher.matches("sensors/humidity", "sensors/temp"));
     }
 
     @Test
-    @DisplayName("topicMatches: # wildcard matches all")
+    @DisplayName("topic matching: # wildcard matches all")
     void testTopicMatchesHash() {
-        assertTrue(MqttMongoWriter.topicMatches("any/topic", "#"));
+        assertTrue(MqttTopicMatcher.matches("any/topic", "#"));
     }
 
     @Test
-    @DisplayName("topicMatches: prefix/# wildcard")
+    @DisplayName("topic matching: prefix/# wildcard")
     void testTopicMatchesPrefixHash() {
-        assertTrue(MqttMongoWriter.topicMatches("sensors/temp", "sensors/#"));
-        assertTrue(MqttMongoWriter.topicMatches("sensors/room1/temp", "sensors/#"));
-        assertFalse(MqttMongoWriter.topicMatches("traffic/flow", "sensors/#"));
+        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/#"));
+        assertTrue(MqttTopicMatcher.matches("sensors/room1/temp", "sensors/#"));
+        assertFalse(MqttTopicMatcher.matches("traffic/flow", "sensors/#"));
     }
 
     @Test
-    @DisplayName("topicMatches: prefix/+ wildcard")
+    @DisplayName("topic matching: prefix/+ wildcard")
     void testTopicMatchesPrefixPlus() {
-        assertTrue(MqttMongoWriter.topicMatches("sensors/temp", "sensors/+"));
-        assertFalse(MqttMongoWriter.topicMatches("sensors/room1/temp", "sensors/+"));
-        assertFalse(MqttMongoWriter.topicMatches("traffic/flow", "sensors/+"));
+        assertTrue(MqttTopicMatcher.matches("sensors/temp", "sensors/+"));
+        assertFalse(MqttTopicMatcher.matches("sensors/room1/temp", "sensors/+"));
+        assertFalse(MqttTopicMatcher.matches("traffic/flow", "sensors/+"));
     }
 }

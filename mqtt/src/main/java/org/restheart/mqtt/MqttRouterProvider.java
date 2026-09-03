@@ -20,6 +20,7 @@
  */
 package org.restheart.mqtt;
 
+import java.util.List;
 import java.util.Map;
 
 import org.restheart.plugins.Inject;
@@ -27,8 +28,11 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.Provider;
 import org.restheart.plugins.RegisterPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 
 /**
  * RESTHeart provider plugin that supplies the single {@link MqttMessageRouter} instance shared
@@ -51,6 +55,8 @@ import com.hivemq.client.mqtt.MqttClient;
     priority = 11
 )
 public class MqttRouterProvider implements Provider<MqttMessageRouter> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttRouterProvider.class);
 
     /**
      * The MQTT client injected from the {@code mqtt-client} provider, used to build the router.
@@ -79,6 +85,10 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
      *       cached for late-joining subscribers (default: true)</li>
      *   <li>{@code last-message-cache-size} - the maximum number of topics to retain in the
      *       last-message cache when caching is enabled (default: 1000)</li>
+     *   <li>{@code subscriptions} - a list of {@code {topic, qos}} entries subscribed at startup
+     *       with no associated listener, purely to populate the last-message cache so that
+     *       {@code mqtt-rest} polling works even with no SSE client connected; unlike
+     *       listener-driven subscriptions, these survive listener churn (default: none)</li>
      * </ul>
      * </p>
      * <p>
@@ -97,6 +107,32 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
         router = new MqttMessageRouter(mqttClient, maxMessagesPerSecond, cacheEnabled, maxCacheSize);
 
         MqttClientSingleton.getInstance().addOnNewSessionListener(router::resubscribeAll);
+
+        subscribeConfiguredTopics();
+    }
+
+    /**
+     * Establishes, with no associated listener, the broker subscriptions listed under the
+     * {@code subscriptions} configuration key, each shaped as {@code {topic: "...", qos: N}}.
+     * Entries missing a topic are skipped; a missing or non-numeric {@code qos} defaults to
+     * {@code 0}.
+     */
+    @SuppressWarnings("unchecked")
+    private void subscribeConfiguredTopics() {
+        final List<Map<String, Object>> subscriptions = argOrDefault(config, "subscriptions", List.of());
+
+        for (Map<String, Object> subscription : subscriptions) {
+            final Object topic = subscription.get("topic");
+            if (!(topic instanceof String topicFilter) || topicFilter.isBlank()) {
+                LOGGER.warn("Skipping invalid startup subscription entry, missing topic: {}", subscription);
+                continue;
+            }
+
+            final Object qosValue = subscription.get("qos");
+            final int qosCode = qosValue instanceof Number number ? number.intValue() : 0;
+
+            router.subscribeFromConfig(topicFilter, MqttQos.fromCode(qosCode));
+        }
     }
 
     /**

@@ -115,10 +115,9 @@ public class MqttSseService implements SseService {
         // Per-connection bounded queue
         ArrayBlockingQueue<MqttMessage> queue = new ArrayBlockingQueue<>(perConnectionQueueCapacity);
 
-        // Send cached message if available
+        // Send cached messages if available
         if (lastMessageCacheEnabled) {
-            MqttMessage cached = router.getLastMessage(topicFilter);
-            if (cached != null) {
+            for (MqttMessage cached : router.getLastMessages(topicFilter)) {
                 String payload = formatPayload(cached, true);
                 conn.send(payload, "mqtt-message", cached.getTopic() + "-" + cached.getReceivedAt().toEpochMilli(), null);
             }
