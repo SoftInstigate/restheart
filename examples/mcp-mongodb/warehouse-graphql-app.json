@@ -1,0 +1,25 @@
+{
+  "_id": "warehouse",
+  "descriptor": {
+    "description": "Warehouse inventory GraphQL app.",
+    "enabled": true,
+    "uri": "warehouse"
+  },
+  "schema": "type Item { sku: String, qty: Int, status: String } type Query { items(limit: Int = 10): [Item] }",
+  "mappings": {
+    "Query": {
+      "items": {
+        "db": "warehouse",
+        "collection": "inventory",
+        "limit": { "$arg": "limit" }
+      }
+    }
+  },
+  "mcp": {
+    "enabled": true,
+    "description": "Query the warehouse inventory via GraphQL.",
+    "examples": [
+      { "description": "List items", "args": { "body": { "query": "{ items(limit: 5) { sku qty status } }" } } }
+    ]
+  }
+}

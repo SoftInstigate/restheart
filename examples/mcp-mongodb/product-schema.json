@@ -1,0 +1,11 @@
+{
+  "_id": "product",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": ["sku"],
+  "properties": {
+    "sku": { "type": "string" },
+    "qty": { "type": "integer" },
+    "status": { "type": "string" }
+  }
+}

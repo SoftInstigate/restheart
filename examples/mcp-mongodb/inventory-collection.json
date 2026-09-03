@@ -1,0 +1,38 @@
+{
+  "jsonSchema": { "schemaId": "product" },
+  "mcp": {
+    "enabled": true,
+    "description": "Product inventory.",
+    "examples": [
+      { "description": "Find low-stock items", "action": "query", "args": { "filter": { "qty": { "$lt": 10 } } } }
+    ]
+  },
+  "aggrs": [
+    {
+      "uri": "byStatus",
+      "type": "pipeline",
+      "stages": [
+        { "$match": { "status": { "$var": "status" } } },
+        { "$group": { "_id": "$item", "total": { "$sum": "$qty" } } }
+      ],
+      "mcp": {
+        "enabled": true,
+        "description": "Total quantity by item, for a given status.",
+        "params": { "status": { "type": "string", "enum": ["A", "D"] } }
+      }
+    }
+  ],
+  "streams": [
+    {
+      "uri": "lowStock",
+      "stages": [
+        { "$match": { "fullDocument.qty": { "$lt": 10 } } }
+      ],
+      "mcp": {
+        "enabled": true,
+        "description": "Low-stock alerts.",
+        "event_type": "Insert/update events where qty < 10"
+      }
+    }
+  ]
+}
