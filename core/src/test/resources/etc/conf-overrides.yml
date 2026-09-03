@@ -390,6 +390,11 @@
 /graphql/db: test-graphql
 /graphql/verbose: true
 
+# MCP: catalog data is cached for this TTL (CachedResourceLookup, see #616) — production
+# default is 300s, far too long for ITs that create a resource and immediately expect
+# list_apis/how_to_call to see it. A 1s TTL keeps McpMongo*IT/McpGraphqlAppIT deterministic.
+/mcpService/catalog-ttl-seconds: 1
+
 /proxies:
  - location: /pecho
    proxy-pass: http://127.0.0.1:8080/echo
