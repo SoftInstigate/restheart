@@ -43,6 +43,7 @@ import com.hivemq.client.mqtt.MqttClient;
  * @see MqttClientSingleton
  * 
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "mqtt-client",

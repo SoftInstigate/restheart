@@ -41,6 +41,7 @@ import com.google.gson.JsonParser;
  * Covers each stage in isolation and combination.
  * 
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttEventPipelineTest {
 

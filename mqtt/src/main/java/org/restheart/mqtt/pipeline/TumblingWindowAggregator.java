@@ -43,6 +43,7 @@ import com.jayway.jsonpath.JsonPath;
  * </pre>
  *
  * @author SoftInstigate
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class TumblingWindowAggregator implements MqttEventStage {
 
