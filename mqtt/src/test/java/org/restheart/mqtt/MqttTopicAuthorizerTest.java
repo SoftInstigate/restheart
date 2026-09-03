@@ -280,44 +280,124 @@ public class MqttTopicAuthorizerTest {
         assertFalse(MqttTopicAuthorizer.isTopicAllowed("internal/debug", allowed));
     }
 
-    // --- topicMatchesPattern ---
+    // --- patternCovers ---
 
     @Test
-    @DisplayName("Pattern # matches everything")
+    @DisplayName("Pattern # covers everything")
     void testPatternHashMatchesAll() {
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("any/topic", "#"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("a", "#"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("#", "any/topic"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("#", "a"));
     }
 
     @Test
-    @DisplayName("Pattern sensors/# matches sensors prefix")
+    @DisplayName("Pattern sensors/# covers sensors prefix")
     void testPatternPrefixHash() {
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/temp", "sensors/#"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/room1/temp", "sensors/#"));
-        assertFalse(MqttTopicAuthorizer.topicMatchesPattern("traffic/flow", "sensors/#"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/room1/temp"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/#", "traffic/flow"));
     }
 
     @Test
-    @DisplayName("Pattern sensors/+/temp matches single level")
+    @DisplayName("Pattern sensors/+/temp covers single level")
     void testPatternSingleLevel() {
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/room1/temp", "sensors/+/temp"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/room2/temp", "sensors/+/temp"));
-        assertFalse(MqttTopicAuthorizer.topicMatchesPattern("sensors/room1/humidity", "sensors/+/temp"));
-        assertFalse(MqttTopicAuthorizer.topicMatchesPattern("sensors/a/b/temp", "sensors/+/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room1/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room2/temp"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/room1/humidity"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/a/b/temp"));
     }
 
     @Test
     @DisplayName("Exact pattern match")
     void testPatternExactMatch() {
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/temp", "sensors/temp"));
-        assertFalse(MqttTopicAuthorizer.topicMatchesPattern("sensors/humidity", "sensors/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/temp"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/humidity"));
     }
 
     @Test
     @DisplayName("Pattern with multiple wildcards")
     void testPatternMultipleWildcards() {
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/room1/temp", "sensors/+/+"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("a/b/c", "+/+/+"));
-        assertFalse(MqttTopicAuthorizer.topicMatchesPattern("a/b", "+/+/+"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/+", "sensors/room1/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("+/+/+", "a/b/c"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("+/+/+", "a/b"));
+    }
+
+    // --- patternCovers: privilege-escalation regression (the defect this class fixes) ---
+
+    @Test
+    @DisplayName("SECURITY: ACL sensors/+ does NOT cover a request for the broader filter sensors/#")
+    void testAclSingleLevelDoesNotCoverBroaderMultiLevelRequest() {
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/#"),
+            "granting sensors/+ must not let a client escalate to sensors/#, which reaches "
+                + "topics like sensors/a/b that sensors/+ never grants");
+    }
+
+    // --- patternCovers: '#' alone covers every request ---
+
+    @Test
+    @DisplayName("ACL # covers a request of # itself and of +/x")
+    void testAclHashCoversWildcardRequests() {
+        assertTrue(MqttTopicAuthorizer.patternCovers("#", "#"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("#", "+/x"));
+    }
+
+    // --- patternCovers: sensors/# covers broader and narrower requests alike ---
+
+    @Test
+    @DisplayName("ACL sensors/# covers sensors/#, sensors/+, sensors/temp, sensors/a/b, and sensors itself")
+    void testAclMultiLevelCoversEverythingUnderPrefix() {
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/#"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/+"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/a/b"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors"));
+    }
+
+    // --- patternCovers: sensors/+ covers only same-depth requests, never broader ones ---
+
+    @Test
+    @DisplayName("ACL sensors/+ covers sensors/temp and sensors/+, but not sensors/# nor sensors/a/b")
+    void testAclSingleLevelCoversOnlySameDepth() {
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/+"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/#"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/a/b"));
+    }
+
+    // --- patternCovers: a literal ACL level covers only the identical literal request ---
+
+    @Test
+    @DisplayName("ACL sensors/temp covers only sensors/temp, not sensors/+ nor sensors/#")
+    void testAclLiteralCoversOnlyIdenticalLiteral() {
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/temp"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/+"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/#"));
+    }
+
+    // --- patternCovers: a '+' nested between literal levels behaves the same way ---
+
+    @Test
+    @DisplayName("ACL sensors/+/temp covers sensors/a/temp and sensors/+/temp, but not sensors/#")
+    void testAclNestedSingleLevelWildcard() {
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/a/temp"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/+/temp"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+/temp", "sensors/#"));
+    }
+
+    // --- patternCovers: requested filter deeper or shallower than the ACL pattern ---
+
+    @Test
+    @DisplayName("A request deeper than the ACL pattern is denied unless the pattern ends in #")
+    void testRequestDeeperThanPattern() {
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors/temp/extra"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/a/b"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors/a/b/c/d"));
+    }
+
+    @Test
+    @DisplayName("A request shallower than the ACL pattern is denied unless the pattern's remaining level is #")
+    void testRequestShallowerThanPattern() {
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors"));
+        assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors"));
     }
 }
