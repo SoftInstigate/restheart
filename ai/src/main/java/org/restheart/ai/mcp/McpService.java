@@ -20,11 +20,13 @@
  */
 package org.restheart.ai.mcp;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.restheart.ai.mcp.tools.CachedResourceLookup;
 import org.restheart.ai.mcp.tools.HowToCallTool;
 import org.restheart.ai.mcp.tools.ListApisTool;
 import org.restheart.ai.mcp.tools.UnknownActionException;
@@ -83,8 +85,13 @@ public class McpService implements ByteArrayService {
     private static final String CTX_PRINCIPAL = "principal";
     private static final String CTX_BASE_URL = "baseUrl";
 
+    private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
+
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
+
+    @Inject("config")
+    private Map<String, Object> config;
 
     private UndertowStreamableServerTransportProvider provider;
     private ListApisTool listApisTool;
@@ -94,13 +101,20 @@ public class McpService implements ByteArrayService {
     @OnInit
     public void init() {
         var mcpAwareRegistry = McpAwareRegistry.discover(pluginsRegistry);
-        listApisTool = new ListApisTool(mcpAwareRegistry);
-        howToCallTool = new HowToCallTool(mcpAwareRegistry);
 
         jsonMapper = new JacksonMcpJsonMapperSupplier().get();
         var schemaValidator = new JacksonJsonSchemaValidatorSupplier().get();
 
         provider = new UndertowStreamableServerTransportProvider(jsonMapper);
+
+        // Catalog data is cached for this TTL rather than invalidated by watching every
+        // McpAware implementation's own data source (a MongoDB write, a config change, ...) —
+        // one uniform mechanism for all of them, trading instant consistency for a bounded
+        // staleness window. On expiry, connected agents are told to refetch.
+        var catalogTtlSeconds = argOrDefault(config, "catalog-ttl-seconds", DEFAULT_CATALOG_TTL_SECONDS);
+        var resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::notifyToolsListChanged);
+        listApisTool = new ListApisTool(resourceLookup);
+        howToCallTool = new HowToCallTool(resourceLookup);
 
         McpServer.sync(provider)
                 .serverInfo("restheart-mcp", "1.0.0")
@@ -125,6 +139,12 @@ public class McpService implements ByteArrayService {
         }));
 
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
+    }
+
+    /** Runs once per catalog cache entry that expires (see {@link CachedResourceLookup}); tells already-connected agents to refetch. */
+    private void notifyToolsListChanged() {
+        provider.notifyClients("notifications/tools/list_changed", null)
+                .subscribe(v -> {}, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
     }
 
     // -------------------------------------------------------------------------

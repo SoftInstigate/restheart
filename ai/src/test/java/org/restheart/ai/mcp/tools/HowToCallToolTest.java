@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -47,7 +48,8 @@ public class HowToCallToolTest {
 
     private static HowToCallTool toolFor(McpResource resource) {
         var registry = McpAwareRegistry.of(List.of(new RegisteredMcpAware(fixed(resource), "p1", "/x", Map.of())));
-        return new HowToCallTool(registry);
+        var lookup = new CachedResourceLookup(registry, Duration.ofMinutes(5), () -> {});
+        return new HowToCallTool(lookup);
     }
 
     @Test

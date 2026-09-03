@@ -25,33 +25,34 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAccount;
 
 /**
  * Handles the {@code list_apis} tool: with a {@code resource} URI, the full context for
- * that one resource; otherwise the (optionally filtered, paged) catalog. Both modes are
- * already ACL-filtered, since they only ever see what each plugin's {@code describeMcp(ctx)}
- * chooses to return for the calling principal.
+ * that one resource; otherwise the (optionally filtered, paged) catalog. Catalog data comes
+ * from {@link CachedResourceLookup} — at most its configured TTL stale, since none of the
+ * current {@code McpAware} implementations filter by principal (see #616's amended "ACL
+ * filtering" design: exposure is controlled by each resource's own {@code mcp.enabled}, not
+ * by the caller's identity).
  */
 public final class ListApisTool {
     static final int DEFAULT_PAGE_SIZE = 50;
 
-    private final McpAwareRegistry registry;
+    private final CachedResourceLookup lookup;
 
-    public ListApisTool(McpAwareRegistry registry) {
-        this.registry = registry;
+    public ListApisTool(CachedResourceLookup lookup) {
+        this.lookup = lookup;
     }
 
     /**
      * @param resourceUri optional; when given, {@code query}/{@code kind}/{@code limit}/{@code cursor} are ignored
-     * @throws UnknownResourceException if {@code resourceUri} matches no resource visible to {@code principal}
+     * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      */
     public Map<String, Object> list(BaseAccount principal, String baseUrl, String resourceUri,
             String query, String kind, Integer limit, String cursor) {
         if (resourceUri != null) {
-            return ResourceLookup.find(registry, principal, baseUrl, resourceUri)
+            return lookup.find(principal, baseUrl, resourceUri)
                     .map(McpResource::toMap)
                     .orElseThrow(() -> new UnknownResourceException(resourceUri));
         }
@@ -60,7 +61,7 @@ public final class ListApisTool {
     }
 
     private Map<String, Object> catalog(BaseAccount principal, String baseUrl, String query, String kind, Integer limit, String cursor) {
-        var resources = new ArrayList<>(ResourceLookup.all(registry, principal, baseUrl));
+        var resources = new ArrayList<>(lookup.all(principal, baseUrl));
         resources.sort(Comparator.comparing(McpResource::uri));
 
         var filtered = resources.stream()

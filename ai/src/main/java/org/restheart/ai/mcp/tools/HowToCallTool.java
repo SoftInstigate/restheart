@@ -23,7 +23,6 @@ package org.restheart.ai.mcp.tools;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.ai.mcp.validation.BodyValidator;
 import org.restheart.ai.mcp.validation.ParamValidator;
@@ -37,20 +36,20 @@ import org.restheart.security.BaseAccount;
  */
 public final class HowToCallTool {
 
-    private final McpAwareRegistry registry;
+    private final CachedResourceLookup lookup;
 
-    public HowToCallTool(McpAwareRegistry registry) {
-        this.registry = registry;
+    public HowToCallTool(CachedResourceLookup lookup) {
+        this.lookup = lookup;
     }
 
     /**
-     * @throws UnknownResourceException if {@code resourceUri} matches no resource visible to {@code principal}
+     * @throws UnknownResourceException if {@code resourceUri} matches no known resource
      * @throws UnknownActionException   if {@code actionName} is not declared by the resource
      * @throws ValidationFailedException if {@code args} fails param or body-schema validation
      */
     public Map<String, Object> call(BaseAccount principal, String baseUrl, String resourceUri, String actionName,
             Map<String, Object> args, String transportPreference, String token) {
-        var resource = ResourceLookup.find(registry, principal, baseUrl, resourceUri)
+        var resource = lookup.find(principal, baseUrl, resourceUri)
                 .orElseThrow(() -> new UnknownResourceException(resourceUri));
 
         var action = resource.actions().get(actionName);

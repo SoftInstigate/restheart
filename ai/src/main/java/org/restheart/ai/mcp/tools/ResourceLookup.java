@@ -22,7 +22,6 @@ package org.restheart.ai.mcp.tools;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.plugins.mcp.McpContext;
@@ -30,15 +29,13 @@ import org.restheart.plugins.mcp.McpResource;
 import org.restheart.security.BaseAccount;
 
 /**
- * Shared by {@link ListApisTool} and {@link HowToCallTool}: calls {@code describeMcp(ctx)}
+ * The uncached computation behind {@link CachedResourceLookup}: calls {@code describeMcp(ctx)}
  * on every plugin {@link McpAwareRegistry} found eligible at boot, building a fresh
  * per-plugin {@code McpContext} from the request's own {@code principal}/{@code baseUrl}
  * plus that plugin's boot-time-resolved name/uri/configuration.
  *
- * <p>Uncached — every call re-invokes {@code describeMcp()} on every registered plugin.
- * Caching (with TTL and invalidation-hook-driven refresh, per restheart#615's {@code discover}
- * config section) is deferred to whenever {@code InvalidationHook} wiring is built; doing it
- * here first would be optimizing before there is a real hit to measure.
+ * <p>{@link ListApisTool} and {@link HowToCallTool} never call this directly — they go through
+ * {@link CachedResourceLookup}, which memoizes {@link #all} per {@code baseUrl} for a fixed TTL.
  */
 final class ResourceLookup {
 
@@ -52,17 +49,5 @@ final class ResourceLookup {
             result.addAll(registered.instance().describeMcp(ctx));
         }
         return result;
-    }
-
-    static Optional<McpResource> find(McpAwareRegistry registry, BaseAccount principal, String baseUrl, String resourceUri) {
-        for (var registered : registry.registered()) {
-            var ctx = new McpContext(principal, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
-            for (var resource : registered.instance().describeMcp(ctx)) {
-                if (resource.uri().equals(resourceUri)) {
-                    return Optional.of(resource);
-                }
-            }
-        }
-        return Optional.empty();
     }
 }

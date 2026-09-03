@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,10 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 
 public class ListApisToolTest {
+
+    private static CachedResourceLookup lookup(RegisteredMcpAware... entries) {
+        return new CachedResourceLookup(McpAwareRegistry.of(List.of(entries)), Duration.ofMinutes(5), () -> {});
+    }
 
     private static McpAware fixed(McpResource... resources) {
         return new McpAware() {
@@ -50,7 +55,7 @@ public class ListApisToolTest {
     }
 
     private static ListApisTool toolWith(RegisteredMcpAware... entries) {
-        return new ListApisTool(McpAwareRegistry.of(List.of(entries)));
+        return new ListApisTool(lookup(entries));
     }
 
     @Test
@@ -139,7 +144,7 @@ public class ListApisToolTest {
 
     @Test
     public void emptyRegistry_emptyCatalog() {
-        var tool = new ListApisTool(McpAwareRegistry.of(List.of()));
+        var tool = new ListApisTool(lookup());
         var result = tool.list(null, "https://host", null, null, null, null, null);
 
         @SuppressWarnings("unchecked")
