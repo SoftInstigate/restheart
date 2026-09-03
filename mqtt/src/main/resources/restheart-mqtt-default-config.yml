@@ -68,9 +68,8 @@ plugins-args:
   mqtt-mongo-writer:
     enabled: false
     buffer:
-      strategy: "ring-buffer"                   # "ring-buffer" | "blocking-queue"
+      strategy: "ring-buffer"                   # "ring-buffer" | "drop-incoming" | "blocking-queue"
       capacity: 10000
-      overflow-action: "drop-oldest"            # "drop-oldest" | "drop-incoming" | "block"
     drain:
       batch-size: 200
       flush-interval-ms: 500

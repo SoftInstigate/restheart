@@ -128,9 +128,9 @@ public class MqttMongoWriter {
         // Buffer config
         @SuppressWarnings("unchecked")
         Map<String, Object> bufferConfig = (Map<String, Object>) config.getOrDefault("buffer", Map.of());
-        String strategyStr = argOrDefault(bufferConfig, "strategy", "ring");
+        String strategyStr = argOrDefault(bufferConfig, "strategy", "ring-buffer");
         int capacity = argOrDefault(bufferConfig, "capacity", 10000);
-        Strategy strategy = "non-blocking".equals(strategyStr) ? Strategy.NON_BLOCKING : Strategy.RING;
+        Strategy strategy = Strategy.fromConfigValue(strategyStr);
         buffer = new MessageBuffer(capacity, strategy);
 
         // Drain config
