@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -43,8 +42,8 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 
 /**
- * Singleton router that bridges an underlying MQTT broker connection (MQTT 3 or 5, via the
- * HiveMQ client) to in-process listeners.
+ * Router that bridges an underlying MQTT broker connection (MQTT 3 or 5, via the HiveMQ client)
+ * to in-process listeners.
  * <p>
  * Consumers register interest in a topic filter via {@link #subscribe(String, MqttQos, Consumer)};
  * the router lazily subscribes to the broker the first time a topic filter gains a listener, and
@@ -56,14 +55,20 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
  * exposes basic {@link RouterStats runtime statistics}.
  * <p>
  * This class is thread-safe: internal state is held in concurrent collections and atomic
- * counters, and it is accessed as a process-wide singleton via {@link #getInstance()}.
- * 
+ * counters. It is not a singleton and touches no statics: a single instance is built and owned
+ * by {@code MqttRouterProvider}, which also wires {@link #resubscribeAll()} into
+ * {@link MqttClientSingleton#addOnNewSessionListener(Runnable)} and injects the router into the
+ * plugins that need it.
+ *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttMessageRouter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttMessageRouter.class);
+
+    /** The underlying MQTT client used to (un)subscribe on the broker. */
+    private final MqttClient client;
 
     // Topic filter -> list of message consumers
     private final Map<String, List<Consumer<MqttMessage>>> listeners = new ConcurrentHashMap<>();
@@ -75,55 +80,37 @@ public class MqttMessageRouter {
     private final AtomicLong messageCount = new AtomicLong(0);
     private final AtomicLong droppedCount = new AtomicLong(0);
     private volatile long lastResetTime = System.currentTimeMillis();
-    private volatile int maxMessagePerSecond = 5000; // Default, configurable
+    private final int maxMessagePerSecond;
 
     // Configuration
-    private volatile boolean cacheEnabled = true;
-    private volatile int maxCacheSize = 1000;
-
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
+    private final boolean cacheEnabled;
+    private final int maxCacheSize;
 
     /**
-     * Returns the process-wide singleton instance of the router.
+     * Creates the router bound to the given MQTT client and configuration.
      * <p>
-     * The instance is created lazily and stashed in a system property keyed by the class name so
-     * that a single instance is shared even across multiple classloaders (see
-     * {@link MqttMessageRouterHolder}).
+     * The router itself has no knowledge of {@link MqttClientSingleton}: wiring
+     * {@link #resubscribeAll()} into {@link MqttClientSingleton#addOnNewSessionListener(Runnable)}
+     * is the responsibility of the caller (in production, {@code MqttRouterProvider}), so that a
+     * router can be constructed from its collaborators alone.
      *
-     * @return the singleton {@code MqttMessageRouter} instance
+     * @param client               the underlying MQTT client used to (un)subscribe on the broker
+     * @param maxMessagesPerSecond the maximum number of messages accepted per second before
+     *                             further messages are dropped; a value {@code <= 0} disables the
+     *                             rate limit
+     * @param cacheEnabled         whether the last message received per topic should be cached for
+     *                             late-joining subscribers
+     * @param maxCacheSize         the maximum number of topics to retain in the last-message cache
+     *                             when caching is enabled
      */
-    public static MqttMessageRouter getInstance() {
-        return MqttMessageRouterHolder.INSTANCE;
-    }
-
-    private MqttMessageRouter() {
-        // Private constructor for singleton
-    }
-
-    /**
-     * Initializes the router's configuration. This must be called once before the router is
-     * used; subsequent calls are ignored (and logged as a warning) so that configuration cannot
-     * be silently changed after startup.
-     *
-     * @param maxMessagePerSecond the maximum number of messages accepted per second before
-     *                            further messages are dropped; a value {@code <= 0} disables the
-     *                            rate limit
-     * @param cacheEnabled        whether the last message received per topic should be cached for
-     *                            late-joining subscribers
-     * @param maxCacheSize        the maximum number of topics to retain in the last-message cache
-     *                            when caching is enabled
-     */
-    public void init(int maxMessagePerSecond, boolean cacheEnabled, int maxCacheSize) {
-        if (!initialized.compareAndSet(false, true)) {
-            LOGGER.warn("MqttMessageRouter already initialized, ignoring duplicate init call");
-            return;
-        }
-        this.maxMessagePerSecond = maxMessagePerSecond;
-        this.maxCacheSize = maxCacheSize;
+    public MqttMessageRouter(MqttClient client, int maxMessagesPerSecond, boolean cacheEnabled, int maxCacheSize) {
+        this.client = client;
+        this.maxMessagePerSecond = maxMessagesPerSecond;
         this.cacheEnabled = cacheEnabled;
+        this.maxCacheSize = maxCacheSize;
 
-        LOGGER.info("MqttMessageRouter initialized: maxRate={}/s, cache={}, maxCacheSize={}", 
-        maxMessagePerSecond, cacheEnabled, maxCacheSize);
+        LOGGER.info("MqttMessageRouter initialized: maxRate={}/s, cache={}, maxCacheSize={}",
+            maxMessagesPerSecond, cacheEnabled, maxCacheSize);
     }
 
     /**
@@ -184,8 +171,6 @@ public class MqttMessageRouter {
      * @param qos         the QoS level to subscribe with
      */
     private void subscribeOnBroker(String topicFilter, MqttQos qos) {
-        MqttClient client = MqttClientSingleton.getInstance().getClient();
-
         if (client instanceof Mqtt5AsyncClient) {
             ((Mqtt5AsyncClient)client).subscribeWith()
                 .topicFilter(topicFilter)
@@ -222,8 +207,6 @@ public class MqttMessageRouter {
      * @param topicFilter the MQTT topic filter to unsubscribe from
      */
     private void unsubscribeFromBroker(String topicFilter) {
-        MqttClient client = MqttClientSingleton.getInstance().getClient();
-
         if (client instanceof Mqtt5AsyncClient) {
             ((Mqtt5AsyncClient) client).unsubscribeWith()
                 .topicFilter(topicFilter)
@@ -537,31 +520,5 @@ public class MqttMessageRouter {
          * @return the cumulative number of messages dropped due to rate limiting
          */
         public long getMessagesDropped() { return messagesDropped; }
-    }
-
-    /**
-     * Lazy holder that creates (or reuses) the {@link MqttMessageRouter} singleton.
-     * <p>
-     * The instance is stored in a system property keyed by the class name so that if this class
-     * is loaded by more than one classloader, all loads share the same underlying router
-     * instance rather than creating independent singletons.
-     */
-    private static class MqttMessageRouterHolder {
-        private static final MqttMessageRouter INSTANCE;
-
-        static {
-            synchronized (ClassLoader.getSystemClassLoader()) {
-                final var sysProps = System.getProperties();
-                final var singleton = (MqttMessageRouter) sysProps.get(MqttMessageRouter.class.getName());
-
-                if (singleton != null) {
-                    INSTANCE = singleton;
-                } else {
-                    INSTANCE = new MqttMessageRouter();
-                    System.getProperties().put(MqttMessageRouter.class.getName(), INSTANCE);
-                }
-            }
-        }
-        
     }
 }

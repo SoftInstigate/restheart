@@ -25,8 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 
 import org.bson.Document;
@@ -44,6 +47,19 @@ public class MqttMongoWriterTest {
 
     private MqttMessage msg(String topic, String payload, int qos) {
         return new MqttMessage(topic, payload, qos, Instant.parse("2026-01-01T00:00:00Z"));
+    }
+
+    // --- constructor injection ---
+
+    @Test
+    @DisplayName("Package-private constructor injects the given router")
+    void testConstructorInjectsRouter() throws Exception {
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        MqttMongoWriter writer = new MqttMongoWriter(mockRouter);
+
+        Field routerField = MqttMongoWriter.class.getDeclaredField("router");
+        routerField.setAccessible(true);
+        assertSame(mockRouter, routerField.get(writer));
     }
 
     // --- toDocument ---

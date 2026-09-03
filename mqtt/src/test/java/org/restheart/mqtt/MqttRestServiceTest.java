@@ -24,19 +24,18 @@ package org.restheart.mqtt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.restheart.mqtt.model.MqttMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.hivemq.client.mqtt.MqttClient;
 
 /**
  * Unit tests for MqttRestService.
@@ -46,43 +45,11 @@ import org.slf4j.LoggerFactory;
  */
 public class MqttRestServiceTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttRestServiceTest.class);
-
     private MqttMessageRouter router;
 
     @BeforeEach
     void setUp() {
-        router = MqttMessageRouter.getInstance();
-
-        // Reset router state
-        try {
-            Field initializedField = MqttMessageRouter.class.getDeclaredField("initialized");
-            initializedField.setAccessible(true);
-            ((AtomicBoolean) initializedField.get(router)).set(false);
-
-            Field listenersField = MqttMessageRouter.class.getDeclaredField("listeners");
-            listenersField.setAccessible(true);
-            ((Map<?, ?>) listenersField.get(router)).clear();
-
-            Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
-            cacheField.setAccessible(true);
-            ((Map<?, ?>) cacheField.get(router)).clear();
-        } catch (Exception e) {
-            LOGGER.debug("Failed to reset MqttMessageRouter: {}", e.getMessage());
-        }
-
-        router.init(5000, true, 1000);
-    }
-
-    @AfterEach
-    void tearDown() {
-        try {
-            Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
-            cacheField.setAccessible(true);
-            ((Map<?, ?>) cacheField.get(router)).clear();
-        } catch (Exception e) {
-            LOGGER.debug("Failed to clean MqttMessageRouter: {}", e.getMessage());
-        }
+        router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
     }
 
     private void cacheMessage(String topic, String payload, int qos) {

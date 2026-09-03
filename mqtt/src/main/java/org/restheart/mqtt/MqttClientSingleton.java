@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.TrustManagerFactory;
@@ -94,6 +95,13 @@ public class MqttClientSingleton {
 
     /** Set once {@link #close()} has completed, to make repeated calls a no-op. */
     private volatile boolean closed = false;
+
+    /**
+     * Listeners invoked when a (re)connect establishes a new (non-persisted) session, i.e. when
+     * the broker's CONNACK reports {@code sessionPresent=false}. Registered via
+     * {@link #addOnNewSessionListener(Runnable)}.
+     */
+    private final CopyOnWriteArrayList<Runnable> newSessionListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Initializes the MQTT client singleton with the specified configuration.
@@ -284,6 +292,35 @@ public class MqttClientSingleton {
     }
 
     /**
+     * Registers a listener to be invoked when a (re)connect establishes a new (non-persisted)
+     * session, i.e. when the broker's CONNACK reports {@code sessionPresent=false}.
+     * <p>
+     * Used by {@code MqttMessageRouter} to re-issue its broker subscriptions after a reconnect,
+     * since broker subscriptions do not survive a disconnect. A listener that throws does not
+     * prevent other registered listeners from running; see {@link #notifyNewSessionListeners()}.
+     * </p>
+     *
+     * @param listener the callback to invoke when a new session is established
+     */
+    public void addOnNewSessionListener(Runnable listener) {
+        newSessionListeners.add(listener);
+    }
+
+    /**
+     * Invokes every listener registered via {@link #addOnNewSessionListener(Runnable)}, catching
+     * and logging any exception so that a failing listener cannot prevent the others from running.
+     */
+    private void notifyNewSessionListeners() {
+        for (Runnable listener : newSessionListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                LOGGER.error("Error invoking MQTT new-session listener", e);
+            }
+        }
+    }
+
+    /**
      * Resolves the connection endpoint (host, port, TLS, WebSocket) from the configured
      * broker URL scheme.
      * <p>
@@ -419,7 +456,7 @@ public class MqttClientSingleton {
                         .is(Mqtt5ClientConnectedContext.class, q -> {
                             if (!q.getConnAck().isSessionPresent()) {
                                 LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                MqttMessageRouter.getInstance().resubscribeAll();
+                                notifyNewSessionListeners();
                             } else {
                                 LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
                             }
@@ -482,7 +519,7 @@ public class MqttClientSingleton {
                         .is(Mqtt3ClientConnectedContext.class, q -> {
                             if (!q.getConnAck().isSessionPresent()) {
                                 LOGGER.info("New session detected (sessionPresent=false), triggering resubscription");
-                                MqttMessageRouter.getInstance().resubscribeAll();
+                                notifyNewSessionListeners();
                             } else {
                                 LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
                             }

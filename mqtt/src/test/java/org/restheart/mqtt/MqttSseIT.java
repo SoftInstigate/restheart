@@ -36,7 +36,6 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -104,9 +103,6 @@ public class MqttSseIT {
     void setUp() throws Exception {
         resetSingletons();
 
-        router = MqttMessageRouter.getInstance();
-        router.init(5000, true, 1000);
-
         MqttConfig config = new MqttConfig.Builder()
                 .brokerUrl("tcp://localhost:" + brokerPort)
                 .protocolVersion(3)
@@ -118,7 +114,14 @@ public class MqttSseIT {
                 .build();
 
         MqttClientSingleton.init(config);
+        // getClient() no longer connects lazily: the connection must be established explicitly,
+        // as MqttClientProvider does at startup, before the router can be built with the client
         MqttClientSingleton.getInstance().connect();
+
+        router = new MqttMessageRouter(MqttClientSingleton.getInstance().getClient(), 5000, true, 1000);
+        // MqttMessageRouter no longer wires itself into the singleton: in production
+        // MqttRouterProvider does this; here it is done manually since the provider is not used
+        MqttClientSingleton.getInstance().addOnNewSessionListener(router::resubscribeAll);
     }
 
     @AfterEach
@@ -153,28 +156,13 @@ public class MqttSseIT {
                 Field connectedField = MqttClientSingleton.class.getDeclaredField("connected");
                 connectedField.setAccessible(true);
                 connectedField.setBoolean(clientInstance, false);
+
+                Field newSessionListenersField = MqttClientSingleton.class.getDeclaredField("newSessionListeners");
+                newSessionListenersField.setAccessible(true);
+                ((List<?>) newSessionListenersField.get(clientInstance)).clear();
             }
         } catch (Exception e) {
             LOGGER.debug("Failed to reset MqttClientSingleton: {}", e.getMessage());
-        }
-
-        try {
-            MqttMessageRouter routerInstance = (MqttMessageRouter) System.getProperties().get(MqttMessageRouter.class.getName());
-            if (routerInstance != null) {
-                Field routerInitializedField = MqttMessageRouter.class.getDeclaredField("initialized");
-                routerInitializedField.setAccessible(true);
-                ((AtomicBoolean) routerInitializedField.get(routerInstance)).set(false);
-
-                Field listenersField = MqttMessageRouter.class.getDeclaredField("listeners");
-                listenersField.setAccessible(true);
-                ((Map<?, ?>) listenersField.get(routerInstance)).clear();
-
-                Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
-                cacheField.setAccessible(true);
-                ((Map<?, ?>) cacheField.get(routerInstance)).clear();
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to reset MqttMessageRouter: {}", e.getMessage());
         }
     }
 
