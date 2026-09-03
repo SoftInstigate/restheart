@@ -205,7 +205,7 @@ public class MqttMongoWriter {
         for (MongoSink sink : sinks) {
             List<Document> documents = new ArrayList<>();
             for (MqttMessage msg : batch) {
-                if (topicMatches(msg.getTopic(), sink.topic)) {
+                if (MqttTopicMatcher.matches(msg.getTopic(), sink.topic)) {
                     documents.add(toDocument(msg));
                 }
             }
@@ -292,25 +292,6 @@ public class MqttMongoWriter {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Checks if a topic matches a topic filter (simple prefix match for sinks).
-     */
-    static boolean topicMatches(String topic, String topicFilter) {
-        if (topicFilter.equals("#")) {
-            return true;
-        }
-        if (topicFilter.endsWith("/#")) {
-            String prefix = topicFilter.substring(0, topicFilter.length() - 2);
-            return topic.equals(prefix) || topic.startsWith(prefix + "/");
-        }
-        if (topicFilter.endsWith("/+")) {
-            String prefix = topicFilter.substring(0, topicFilter.length() - 2);
-            // + matches exactly one level: topic must start with prefix/ and have no more slashes
-            return topic.startsWith(prefix + "/") && topic.indexOf('/', prefix.length() + 1) == -1;
-        }
-        return topic.equals(topicFilter);
     }
 
     /**
