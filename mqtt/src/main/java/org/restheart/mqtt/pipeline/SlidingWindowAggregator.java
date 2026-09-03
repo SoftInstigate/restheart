@@ -29,12 +29,6 @@ import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.jayway.jsonpath.JsonPath;
-
 /**
  * Pipeline stage that aggregates messages over a sliding window.
  *
@@ -66,8 +60,6 @@ import com.jayway.jsonpath.JsonPath;
 public class SlidingWindowAggregator implements MqttEventStage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SlidingWindowAggregator.class);
-    private static final Gson GSON = new Gson();
-    private static final String FAILED_TO_EXTRACT_FIELD_LOG = "Failed to extract field '{}' from message: {}";
 
     private final int windowSize;
     private final String function;
@@ -110,11 +102,15 @@ public class SlidingWindowAggregator implements MqttEventStage {
         // Emit aggregated result if window has enough messages
         if (window.size() >= windowSize) {
             try {
-                String aggregatedPayload = computeAggregation();
+                Optional<String> aggregatedPayload = WindowAggregation.aggregate(function, window, field, LOGGER);
+
+                if (aggregatedPayload.isEmpty()) {
+                    return Optional.empty();
+                }
 
                 MqttMessage aggregated = new MqttMessage(
                     message.getTopic(),
-                    aggregatedPayload,
+                    aggregatedPayload.get(),
                     message.getQos(),
                     Instant.now()
                 );
@@ -129,131 +125,6 @@ public class SlidingWindowAggregator implements MqttEventStage {
             // Window not full yet - don't emit
             return Optional.empty();
         }
-    }
-
-    /**
-     * Compute the aggregation based on the function
-     */
-    private String computeAggregation() {
-        switch (function) {
-            case "array":
-                return computeArray();
-            case "count":
-                return String.valueOf(window.size());
-            case "last":
-                return window.getLast().getPayload();
-            case "avg":
-                return String.valueOf(computeAverage());
-            case "min":
-                return String.valueOf(computeMin());
-            case "max":
-                return String.valueOf(computeMax());
-            case "sum":
-                return String.valueOf(computeSum());
-            default:
-                throw new IllegalArgumentException("Unknown aggregation function: " + function);
-        }
-    }
-
-    /**
-     * Collect all messages into a JSON array
-     */
-    private String computeArray() {
-        JsonArray array = new JsonArray();
-
-        for (MqttMessage msg : window) {
-            try {
-                JsonElement element = JsonParser.parseString(msg.getPayload());
-                array.add(element);
-            } catch (Exception e) {
-                // If not JSON, add as string
-                array.add(msg.getPayload());
-            }
-        }
-
-        return GSON.toJson(array);
-    }
-
-    /**
-     * Compute average of numeric field
-     */
-    private double computeAverage() {
-        double sum = 0;
-        int count = 0;
-
-        for (MqttMessage msg : window) {
-            try {
-                Object value = JsonPath.read(msg.getPayload(), field);
-                if (value instanceof Number) {
-                    sum += ((Number) value).doubleValue();
-                    count++;
-                }
-            } catch (Exception e) {
-                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
-            }
-        }
-
-        return count > 0 ? sum / count : 0.0;
-    }
-
-    /**
-     * Compute minimum of numeric field
-     */
-    private double computeMin() {
-        double min = Double.MAX_VALUE;
-
-        for (MqttMessage msg : window) {
-            try {
-                Object value = JsonPath.read(msg.getPayload(), field);
-                if (value instanceof Number) {
-                    min = Math.min(min, ((Number) value).doubleValue());
-                }
-            } catch (Exception e) {
-                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
-            }
-        }
-
-        return min == Double.MAX_VALUE ? 0.0 : min;
-    }
-
-    /**
-     * Compute maximum of numeric field
-     */
-    private double computeMax() {
-        double max = Double.MIN_VALUE;
-
-        for (MqttMessage msg : window) {
-            try {
-                Object value = JsonPath.read(msg.getPayload(), field);
-                if (value instanceof Number) {
-                    max = Math.max(max, ((Number) value).doubleValue());
-                }
-            } catch (Exception e) {
-                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
-            }
-        }
-
-        return max == Double.MIN_VALUE ? 0.0 : max;
-    }
-
-    /**
-     * Compute sum of numeric field
-     */
-    private double computeSum() {
-        double sum = 0;
-
-        for (MqttMessage msg : window) {
-            try {
-                Object value = JsonPath.read(msg.getPayload(), field);
-                if (value instanceof Number) {
-                    sum += ((Number) value).doubleValue();
-                }
-            } catch (Exception e) {
-                LOGGER.warn(FAILED_TO_EXTRACT_FIELD_LOG, field, e.getMessage());
-            }
-        }
-
-        return sum;
     }
 
     /**

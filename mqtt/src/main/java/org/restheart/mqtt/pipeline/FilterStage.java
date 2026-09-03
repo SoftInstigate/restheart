@@ -43,14 +43,18 @@ import com.jayway.jsonpath.JsonPath;
  * Examples:
  * <pre>
  * // Filter by JSONPath: keep only messages where temperature > 25
- * new FilterStage("$.temperature", "> 25")
+ * FilterStage.byJsonPath("$.temperature", "> 25")
  *
  * // Filter by topic regex: keep only sensor topics
- * new FilterStage("sensors/.*", null)
+ * FilterStage.byTopicRegex("sensors/.*")
  *
  * // Filter by QoS: keep only QoS 1 or 2
- * new FilterStage(null, null, 1)
+ * FilterStage.byMinQos(1)
  * </pre>
+ *
+ * Instances are created via the static factory methods below rather than
+ * constructors, since two- and four-argument overloads distinguished only by
+ * {@code String} types would be ambiguous at the call site.
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
@@ -64,47 +68,56 @@ public class FilterStage implements MqttEventStage {
     private final Pattern topicPattern;
     private final Integer minQos;
 
+    private FilterStage(String jsonPath, String condition, String topicRegex, Integer minQos) {
+        this.jsonPath = jsonPath;
+        this.jsonPathCondition = condition;
+        this.topicPattern = topicRegex != null ? Pattern.compile(topicRegex) : null;
+        this.minQos = minQos;
+    }
+
     /**
-     * Create a filter stage with JSONPath expression
+     * Create a filter stage that keeps only messages whose topic matches the given regex.
+     *
+     * @param topicRegex Regex pattern for topic matching
+     * @return A new filter stage
+     */
+    public static FilterStage byTopicRegex(String topicRegex) {
+        return new FilterStage(null, null, topicRegex, null);
+    }
+
+    /**
+     * Create a filter stage that keeps only messages satisfying a JSONPath condition.
      *
      * @param jsonPath JSONPath expression to evaluate (e.g., "$.temperature")
      * @param condition Condition to check (e.g., "> 25", "== 'active'")
+     * @return A new filter stage
      */
-    public FilterStage(String jsonPath, String condition) {
-        this(jsonPath, condition, null, null);
+    public static FilterStage byJsonPath(String jsonPath, String condition) {
+        return new FilterStage(jsonPath, condition, null, null);
     }
 
     /**
-     * Create a filter stage with topic regex
-     *
-     * @param topicRegex Regex pattern for topic matching
-     */
-    public FilterStage(String topicRegex) {
-        this(null, null, topicRegex, null);
-    }
-
-    /**
-     * Create a filter stage with minimum QoS
+     * Create a filter stage that keeps only messages with at least the given QoS.
      *
      * @param minQos Minimum QoS level (0, 1, or 2)
+     * @return A new filter stage
      */
-    public FilterStage(int minQos) {
-        this(null, null, null, minQos);
+    public static FilterStage byMinQos(int minQos) {
+        return new FilterStage(null, null, null, minQos);
     }
 
     /**
-     * Create a filter stage with all criteria
+     * Create a filter stage combining JSONPath, topic and QoS criteria. Any
+     * criterion left {@code null} is not evaluated.
      *
      * @param jsonPath JSONPath expression (optional)
      * @param condition Condition for JSONPath result (optional)
      * @param topicRegex Topic regex pattern (optional)
      * @param minQos Minimum QoS level (optional)
+     * @return A new filter stage
      */
-    public FilterStage(String jsonPath, String condition, String topicRegex, Integer minQos) {
-        this.jsonPath = jsonPath;
-        this.jsonPathCondition = condition;
-        this.topicPattern = topicRegex != null ? Pattern.compile(topicRegex) : null;
-        this.minQos = minQos;
+    public static FilterStage of(String jsonPath, String condition, String topicRegex, Integer minQos) {
+        return new FilterStage(jsonPath, condition, topicRegex, minQos);
     }
 
     @Override

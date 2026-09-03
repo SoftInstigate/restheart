@@ -208,7 +208,7 @@ public class MqttSseServiceTest {
 
         // Build a pipeline with a filter that drops everything
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(new FilterStage(99))  // min QoS 99 = drop all
+            .addStage(FilterStage.byMinQos(99))  // min QoS 99 = drop all
             .build();
         service.setPipeline(pipeline);
 

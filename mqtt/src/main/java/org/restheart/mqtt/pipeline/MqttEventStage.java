@@ -63,4 +63,20 @@ public interface MqttEventStage {
     default Optional<MqttMessage> close() {
         return Optional.empty();
     }
+
+    /**
+     * Poll this stage for time-driven emissions that no incoming message
+     * would otherwise trigger, e.g. a tumbling window whose duration has
+     * elapsed while no further message has arrived.
+     *
+     * Stages that only emit in response to {@link #process(MqttMessage)}
+     * (the default) never have anything to report here. This method must not
+     * start timers, executors, or threads; it is meant to be polled
+     * periodically by the caller, e.g. an SSE connection's drain loop.
+     *
+     * @return Optional containing the expired message, or empty
+     */
+    default Optional<MqttMessage> pollExpired() {
+        return Optional.empty();
+    }
 }

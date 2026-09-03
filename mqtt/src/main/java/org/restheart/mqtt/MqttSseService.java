@@ -281,13 +281,13 @@ public class MqttSseService implements SseService {
                     String jsonPath = (String) stageConfig.get("jsonpath");
                     String condition = (String) stageConfig.get("condition");
                     if (jsonPath != null) {
-                        builder.addStage(new FilterStage(jsonPath, condition));
+                        builder.addStage(FilterStage.byJsonPath(jsonPath, condition));
                     }
                 }
                 case "map" -> {
                     String extractField = (String) stageConfig.get("extract-field");
                     if (extractField != null) {
-                        builder.addStage(new MapStage(extractField));
+                        builder.addStage(MapStage.extract(extractField));
                     }
                 }
                 case "tumbling-window" -> {

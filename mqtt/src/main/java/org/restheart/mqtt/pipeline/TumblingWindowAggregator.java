@@ -9,12 +9,6 @@ import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.jayway.jsonpath.JsonPath;
-
 /**
  * Pipeline stage that aggregates messages over fixed time windows.
  *
@@ -48,7 +42,6 @@ import com.jayway.jsonpath.JsonPath;
 public class TumblingWindowAggregator implements MqttEventStage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TumblingWindowAggregator.class);
-    private static final Gson GSON = new Gson();
 
     private final long windowMs;
     private final String function;
@@ -105,7 +98,11 @@ public class TumblingWindowAggregator implements MqttEventStage {
     }
 
     /**
-     * Emit the aggregated message for the closed window
+     * Emit the aggregated message for the closed window.
+     *
+     * Aggregation arithmetic is delegated to {@link WindowAggregation} so this
+     * stage and {@link SlidingWindowAggregator} cannot diverge. If the
+     * aggregation function found no numeric values, nothing is emitted.
      */
     private Optional<MqttMessage> emitAggregatedMessage(String topic, int qos) {
         if (window.isEmpty()) {
@@ -113,11 +110,15 @@ public class TumblingWindowAggregator implements MqttEventStage {
         }
 
         try {
-            String aggregatedPayload = computeAggregation();
+            Optional<String> aggregatedPayload = WindowAggregation.aggregate(function, window, field, LOGGER);
+
+            if (aggregatedPayload.isEmpty()) {
+                return Optional.empty();
+            }
 
             MqttMessage aggregated = new MqttMessage(
                 topic,
-                aggregatedPayload,
+                aggregatedPayload.get(),
                 qos,
                 Instant.now()
             );
@@ -131,106 +132,6 @@ public class TumblingWindowAggregator implements MqttEventStage {
             LOGGER.error("Failed to compute aggregation: {}", e.getMessage(), e);
             return Optional.empty();
         }
-    }
-
-    /**
-     * Compute the aggregation based on the function
-     */
-    private String computeAggregation() {
-        switch (function) {
-            case "array":
-                return computeArray();
-            case "count":
-                return String.valueOf(window.size());
-            case "last":
-                return window.get(window.size() - 1).getPayload();
-            case "avg":
-                return String.valueOf(computeAverage());
-            case "min":
-                return String.valueOf(computeMin());
-            case "max":
-                return String.valueOf(computeMax());
-            case "sum":
-                return String.valueOf(computeSum());
-            default:
-                throw new IllegalArgumentException("Unknown aggregation function: " + function);
-        }
-    }
-
-    /**
-     * Collect all messages into a JSON array
-     */
-    private String computeArray() {
-        JsonArray array = new JsonArray();
-
-        for (MqttMessage msg : window) {
-            try {
-                JsonElement element = JsonParser.parseString(msg.getPayload());
-                array.add(element);
-            } catch (Exception e) {
-                // If not JSON, add as string
-                array.add(msg.getPayload());
-            }
-        }
-
-        return GSON.toJson(array);
-    }
-
-    /**
-     * Compute average of numeric field
-     */
-    private double computeAverage() {
-        return computeSum() / window.size();
-    }
-
-    /**
-     * Compute minimum of numeric field
-     */
-    private double computeMin() {
-        return extractNumericValues().stream()
-            .mapToDouble(Double::doubleValue)
-            .min()
-            .orElse(0.0);
-    }
-
-    /**
-     * Compute maximum of numeric field
-     */
-    private double computeMax() {
-        return extractNumericValues().stream()
-            .mapToDouble(Double::doubleValue)
-            .max()
-            .orElse(0.0);
-    }
-
-    /**
-     * Compute sum of numeric field
-     */
-    private double computeSum() {
-        return extractNumericValues().stream()
-            .mapToDouble(Double::doubleValue)
-            .sum();
-    }
-
-    /**
-     * Extract numeric values from all messages using JSONPath
-     */
-    private List<Double> extractNumericValues() {
-        List<Double> values = new ArrayList<>();
-
-        for (MqttMessage msg : window) {
-            try {
-                Object value = JsonPath.read(msg.getPayload(), field);
-
-                if (value instanceof Number) {
-                    values.add(((Number) value).doubleValue());
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to extract field '{}' from message: {}", field, e.getMessage());
-            }
-        }
-
-        return values;
     }
 
     /**
@@ -266,6 +167,37 @@ public class TumblingWindowAggregator implements MqttEventStage {
             window.get(window.size() - 1).getQos()
         );
         window.clear();
+        return result;
+    }
+
+    /**
+     * Emit the current window's aggregate if it has been open for at least
+     * {@code windowMs} with no new message arriving to trigger the emission.
+     *
+     * This is the time-driven counterpart to {@link #process(MqttMessage)}:
+     * without it, a tumbling window whose source goes quiet never emits its
+     * last, still-open window. Both routes share the same emission logic via
+     * {@link #emitAggregatedMessage(String, int)}.
+     *
+     * @return The aggregated message if the window has elapsed, otherwise empty
+     */
+    @Override
+    public synchronized Optional<MqttMessage> pollExpired() {
+        if (window.isEmpty()) {
+            return Optional.empty();
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - windowStartTime < windowMs) {
+            return Optional.empty();
+        }
+
+        Optional<MqttMessage> result = emitAggregatedMessage(
+            window.get(window.size() - 1).getTopic(),
+            window.get(window.size() - 1).getQos()
+        );
+        window.clear();
+        windowStartTime = now;
         return result;
     }
 }

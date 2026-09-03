@@ -77,51 +77,57 @@ public class ThrottleStage implements MqttEventStage {
     @Override
     public Optional<MqttMessage> process(MqttMessage message) {
         refillTokens();
-        
-        // Try to consume a token
-        long currentTokens = tokens.get();
-        
-        if (currentTokens > 0) {
-            // Token available - consume it
+
+        // Try to consume a token, retrying on concurrent CAS failure instead
+        // of recursing (a failed CAS here is expected under contention, not
+        // an error condition worth unwinding the stack for).
+        while (true) {
+            long currentTokens = tokens.get();
+
+            if (currentTokens <= 0) {
+                // No tokens available - drop message
+                long dropped = droppedCount.incrementAndGet();
+
+                if (dropped % 100 == 0) {
+                    LOGGER.warn("Throttle stage dropped {} messages (rate limit: {} msg/s)",
+                        dropped, maxEventsPerSecond);
+                }
+
+                return Optional.empty();
+            }
+
             if (tokens.compareAndSet(currentTokens, currentTokens - 1)) {
                 return Optional.of(message);
-            } else {
-                // CAS failed, retry
-                return process(message);
             }
-        } else {
-            // No tokens available - drop message
-            long dropped = droppedCount.incrementAndGet();
-            
-            if (dropped % 100 == 0) {
-                LOGGER.warn("Throttle stage dropped {} messages (rate limit: {} msg/s)", 
-                    dropped, maxEventsPerSecond);
-            }
-            
-            return Optional.empty();
+            // CAS failed due to concurrent consumption or refill - retry
         }
     }
-    
+
     /**
-     * Refill tokens based on elapsed time
+     * Refill tokens based on elapsed time.
+     *
+     * The token top-up itself is a compare-and-set loop, so a token consumed
+     * by {@link #process(MqttMessage)} concurrently with a refill is never
+     * silently overwritten, and the bucket never exceeds its capacity.
      */
     private void refillTokens() {
         long now = System.nanoTime();
         long lastRefill = lastRefillTime.get();
         long elapsedNanos = now - lastRefill;
-        
+
         // Calculate tokens to add based on elapsed time
         // tokens = (elapsed seconds) * (tokens per second)
         long tokensToAdd = (elapsedNanos * maxEventsPerSecond) / 1_000_000_000L;
-        
-        if (tokensToAdd > 0) {
-            // Try to update last refill time
-            if (lastRefillTime.compareAndSet(lastRefill, now)) {
-                // Add tokens up to capacity
-                long currentTokens = tokens.get();
-                long newTokens = Math.min(currentTokens + tokensToAdd, maxEventsPerSecond);
-                tokens.set(newTokens);
-            }
+
+        if (tokensToAdd > 0 && lastRefillTime.compareAndSet(lastRefill, now)) {
+            // Add tokens up to capacity, retrying if another thread
+            // concurrently consumed or added tokens in between
+            long currentTokens;
+            long newTokens;
+            do {
+                currentTokens = tokens.get();
+                newTokens = Math.min(currentTokens + tokensToAdd, maxEventsPerSecond);
+            } while (!tokens.compareAndSet(currentTokens, newTokens));
         }
     }
     

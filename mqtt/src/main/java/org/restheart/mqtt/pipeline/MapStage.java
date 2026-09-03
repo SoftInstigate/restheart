@@ -44,14 +44,18 @@ import com.jayway.jsonpath.JsonPath;
  * Examples:
  * <pre>
  * // Extract a field: {"temp": 25, "humidity": 60} -> "25"
- * new MapStage("$.temp")
+ * MapStage.extract("$.temp")
  *
  * // Apply template: wrap payload in envelope
- * new MapStage("{\"data\": ${payload}, \"timestamp\": \"${timestamp}\"}")
+ * MapStage.template("{\"data\": ${payload}, \"timestamp\": \"${timestamp}\"}")
  *
  * // Rename keys: {"temp": 25} -> {"temperature": 25}
- * new MapStage("temp", "temperature")
+ * MapStage.rename("temp", "temperature")
  * </pre>
+ *
+ * Instances are created via the static factory methods below rather than
+ * constructors, since overloads distinguished only by arity and {@code String}
+ * types would be ambiguous at the call site.
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
@@ -66,42 +70,42 @@ public class MapStage implements MqttEventStage {
     private final String renameFrom;
     private final String renameTo;
 
-    /**
-     * Create a map stage that extracts a JSON field
-     *
-     * @param extractField JSONPath expression to extract (e.g., "$.temperature")
-     */
-    public MapStage(String extractField) {
+    private MapStage(String extractField, String template, String renameFrom, String renameTo) {
         this.extractField = extractField;
-        this.template = null;
-        this.renameFrom = null;
-        this.renameTo = null;
-    }
-
-    /**
-     * Create a map stage that renames a JSON key
-     *
-     * @param renameFrom Original key name
-     * @param renameTo New key name
-     */
-    public MapStage(String renameFrom, String renameTo) {
-        this.extractField = null;
-        this.template = null;
+        this.template = template;
         this.renameFrom = renameFrom;
         this.renameTo = renameTo;
     }
 
     /**
-     * Create a map stage with a payload template
+     * Create a map stage that extracts a JSON field from the payload.
      *
-     * @param template Template string with ${payload} and ${timestamp} placeholders
-     * @param isTemplate Must be true to indicate this is a template
+     * @param jsonPath JSONPath expression to extract (e.g., "$.temperature")
+     * @return A new map stage
      */
-    public MapStage(String template, boolean isTemplate) {
-        this.extractField = null;
-        this.template = isTemplate ? template : null;
-        this.renameFrom = null;
-        this.renameTo = null;
+    public static MapStage extract(String jsonPath) {
+        return new MapStage(jsonPath, null, null, null);
+    }
+
+    /**
+     * Create a map stage that renames a JSON key.
+     *
+     * @param from Original key name
+     * @param to New key name
+     * @return A new map stage
+     */
+    public static MapStage rename(String from, String to) {
+        return new MapStage(null, null, from, to);
+    }
+
+    /**
+     * Create a map stage that applies a payload template.
+     *
+     * @param template Template string with ${payload}, ${timestamp}, ${topic} and ${qos} placeholders
+     * @return A new map stage
+     */
+    public static MapStage template(String template) {
+        return new MapStage(null, template, null, null);
     }
 
     @Override
