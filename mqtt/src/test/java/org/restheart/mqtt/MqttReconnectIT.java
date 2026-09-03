@@ -57,6 +57,7 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
  * and asserts that the connection is restored and subscriptions are active.
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttReconnectIT {
 

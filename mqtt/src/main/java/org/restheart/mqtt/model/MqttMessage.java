@@ -35,6 +35,7 @@ import java.time.Instant;
  * the broker and are distributed to registered listeners.
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttMessage {
     private final String topic;

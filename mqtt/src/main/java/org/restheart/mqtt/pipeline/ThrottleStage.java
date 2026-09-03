@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  * 
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class ThrottleStage implements MqttEventStage {
     

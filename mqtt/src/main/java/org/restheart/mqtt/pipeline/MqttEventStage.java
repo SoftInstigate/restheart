@@ -43,6 +43,7 @@ import org.restheart.mqtt.model.MqttMessage;
  * - AggregatorStage: Collect and aggregate messages over time windows
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @FunctionalInterface
 public interface MqttEventStage {

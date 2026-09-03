@@ -59,6 +59,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
  * counters, and it is accessed as a process-wide singleton via {@link #getInstance()}.
  * 
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttMessageRouter {
 

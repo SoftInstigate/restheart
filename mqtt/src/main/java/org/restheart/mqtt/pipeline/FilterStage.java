@@ -53,6 +53,7 @@ import com.jayway.jsonpath.JsonPath;
  * </pre>
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class FilterStage implements MqttEventStage {
 

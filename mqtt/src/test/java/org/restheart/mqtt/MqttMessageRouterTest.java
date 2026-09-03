@@ -54,6 +54,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
  * Tests verify that the router correctly handles subscription and unsubscription logic.
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
+ * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttMessageRouterTest {
 
