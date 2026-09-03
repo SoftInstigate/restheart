@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.restheart.mqtt.model.MqttMessage;
 
@@ -37,7 +38,7 @@ import org.restheart.mqtt.model.MqttMessage;
  * Example usage:
  * <pre>
  * MqttEventPipeline pipeline = MqttEventPipeline.builder()
- *     .addStage(new FilterStage("$.temperature", "> 25"))
+ *     .addStage(FilterStage.byJsonPath("$.temperature", "> 25"))
  *     .addStage(new ThrottleStage(10)) // max 10 msg/sec
  *     .addStage(new TumblingWindowAggregator(1000, "avg", "$.value"))
  *     .build();
@@ -106,25 +107,48 @@ public class MqttEventPipeline {
      * @return List of flushed messages that successfully completed the pipeline
      */
     public List<MqttMessage> close() {
-        List<MqttMessage> flushedMessages = new ArrayList<>();
+        return drain(MqttEventStage::close);
+    }
+
+    /**
+     * Poll all stages for time-driven emissions (see {@link MqttEventStage#pollExpired()}),
+     * e.g. a tumbling window whose duration elapsed with no further message
+     * arriving to trigger it. Any emitted message is routed through the
+     * remaining stages in the pipeline, exactly like {@link #close()} does.
+     *
+     * @return List of expired messages that successfully completed the pipeline
+     */
+    public List<MqttMessage> pollExpired() {
+        return drain(MqttEventStage::pollExpired);
+    }
+
+    /**
+     * Poll every stage in order via {@code emitter}, and for each message a
+     * stage emits, route it through the remaining stages before collecting it.
+     * A message discarded by any of the remaining stages is dropped.
+     *
+     * @param emitter Extracts an out-of-band message from a stage, e.g. close() or pollExpired()
+     * @return List of emitted messages that successfully completed the pipeline
+     */
+    private List<MqttMessage> drain(Function<MqttEventStage, Optional<MqttMessage>> emitter) {
+        List<MqttMessage> emitted = new ArrayList<>();
 
         for (int i = 0; i < stages.size(); i++) {
-            MqttEventStage stage = stages.get(i);
-            Optional<MqttMessage> current = stage.close();
+            Optional<MqttMessage> current = emitter.apply(stages.get(i));
 
             if (current.isPresent()) {
-                // Process the flushed message through the remaining stages
+                // Route the emitted message through the remaining stages
                 for (int j = i + 1; j < stages.size(); j++) {
                     if (current.isEmpty()) {
                         break;
                     }
                     current = stages.get(j).process(current.get());
                 }
-                current.ifPresent(flushedMessages::add);
+                current.ifPresent(emitted::add);
             }
         }
 
-        return flushedMessages;
+        return emitted;
     }
 
     /**

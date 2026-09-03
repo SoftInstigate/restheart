@@ -114,7 +114,7 @@ public class MqttPipelineIT {
     void testFilterStageDropsNonMatchingMessages() throws Exception {
         // Arrange
         MqttEventPipeline pipeline = MqttEventPipeline.builder()
-            .addStage(new FilterStage(99))  // min QoS 99 = drop all
+            .addStage(FilterStage.byMinQos(99))  // min QoS 99 = drop all
             .build();
 
         // Act
