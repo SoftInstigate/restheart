@@ -74,7 +74,12 @@ public final class DescriptorRenderer {
         var body = effectiveArgs.get("body");
         consumed.add("body");
 
-        var queryString = transport == Transport.HTTP ? buildQueryString(effectiveArgs, consumed) : "";
+        // an SSE/WebSocket subscription is still opened over a plain HTTP(S)/WS(S) URL that can
+        // carry a query string exactly like any GET — a change-stream's own $var bindings
+        // (avars) go through here identically to an aggregation's, so this must not be
+        // HTTP-only. Confirmed live: an aggregation's `avars` worked, a change-stream's did not,
+        // because this used to build the query string for HTTP only.
+        var queryString = buildQueryString(effectiveArgs, consumed);
         var url = baseUrl + path + queryString;
 
         return switch (transport) {

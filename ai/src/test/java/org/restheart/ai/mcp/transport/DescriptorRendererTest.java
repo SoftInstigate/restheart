@@ -136,6 +136,39 @@ public class DescriptorRendererTest {
     }
 
     @Test
+    public void sseAction_argsBecomeQueryString() {
+        // a change-stream's own $var bindings (avars) must reach the URL exactly like an
+        // aggregation's do — confirmed missing live (#616): the query string used to be built
+        // for HTTP only, so a composed SSE descriptor silently dropped avars
+        var resource = McpResource.builder()
+                .uri("https://host/db/coll/_streams/low-stock")
+                .transport(McpResource.Transport.SSE, "subscribe")
+                .action("subscribe", a -> a.method("GET"))
+                .build();
+
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null, null);
+
+        var url = (String) descriptor.get("url");
+        assertTrue(url.startsWith("https://host/db/coll/_streams/low-stock?avars="));
+        assertTrue(url.contains("minAmount"));
+    }
+
+    @Test
+    public void websocketAction_argsBecomeQueryString() {
+        var resource = McpResource.builder()
+                .uri("https://host/db/coll/_streams/low-stock")
+                .transport(McpResource.Transport.WEBSOCKET, "subscribe")
+                .action("subscribe", a -> a.method("GET"))
+                .build();
+
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null, null);
+
+        var url = (String) descriptor.get("url");
+        assertTrue(url.startsWith("wss://host/db/coll/_streams/low-stock?avars="));
+        assertTrue(url.contains("minAmount"));
+    }
+
+    @Test
     public void transportPreference_selectsAmongDeclaredTransports() {
         var resource = McpResource.builder()
                 .uri("https://host/db/coll/_streams/x")

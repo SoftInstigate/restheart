@@ -50,10 +50,23 @@ import org.restheart.mongodb.MongoServiceConfiguration;
  *       exposed exactly at {@code where}; no distinct database-level URL is implied.</li>
  * </ul>
  *
- * <p>Mounts are tried in configuration order, first match wins — the same precedence
- * {@code MongoMountResolverImpl} applies when matching an incoming request path. A
- * database/collection with no matching mount is not reachable over HTTP at all and resolves to
- * {@link Optional#empty()}; parametric (multi-tenant, {@code {host[0]}}) mounts are not
+ * <p>Mounts are tried in configuration order, first {@code what}-match wins. This is <b>not</b>
+ * a mirror of RESTHeart's actual request-routing precedence — real dispatch goes through
+ * {@code MongoService}'s own {@code PathMatcher}/{@code PathTemplateMatcher} (Undertow,
+ * longest-{@code where}-prefix wins; confirmed by reading {@code MongoService.init()}/{@code
+ * handle()} — {@code MongoMountResolverImpl}'s own first-match loop only populates supplementary
+ * per-request context such as {@code avars} for a mount PathMatcher already chose, it does not
+ * choose it). But that routing question ("which mount handles incoming path P") isn't the
+ * question this class answers ("what's THE URL for db/collection D/C") — when two mounts with
+ * different, non-overlapping {@code where} prefixes both genuinely expose the same D/C (as
+ * configured {@code where}s always are in practice; two mounts sharing one {@code where} would
+ * just clobber each other in {@code PathMatcher}'s own map), each is independently, correctly
+ * routable, so there is no real precedence to mirror — first-{@code what}-match is simply a
+ * deterministic, documented convention for picking one canonical URI to show an agent instead of
+ * listing every reachable path as a separate catalog entry.
+ *
+ * <p>A database/collection with no matching mount is not reachable over HTTP at all and resolves
+ * to {@link Optional#empty()}; parametric (multi-tenant, {@code {host[0]}}) mounts are not
  * supported here and are simply skipped.
  */
 final class MountUriResolver {
