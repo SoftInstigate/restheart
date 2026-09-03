@@ -1,14 +1,15 @@
 plugins-args:
   mqtt-client:
     enabled: true
-    broker-url: "tcp://localhost:1883"          # or ssl://, ws://, wss://
+    broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
     protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
-    client-id: "restheart"                      # auto-suffixed with UUID if blank
+    client-id: ~                                # ~ (null/blank) generates "restheart-" + random UUID;
+                                                 # leave unset so multiple instances don't collide on the same id
     username: ~
     password: ~
     clean-session: false
     keep-alive-seconds: 60
-    session-expiry-seconds: 0xFFFFFFFF          # MQTT 5 only (max = never expires)
+    session-expiry-seconds: 4294967295          # MQTT 5 only (0xFFFFFFFF = never expires)
     connect-timeout-seconds: 10
     tls: false
     tls-trust-store: ~                          # path to JKS/PKCS12

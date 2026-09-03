@@ -21,7 +21,7 @@
 package org.restheart.mqtt;
 
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
@@ -37,11 +37,16 @@ import com.hivemq.client.mqtt.MqttClient;
  * This provider extracts MQTT configuration options from RESTHeart configuration,
  * initializes the {@link MqttClientSingleton}, and triggers the initial connection to the MQTT broker.
  * </p>
+ * <p>
+ * RESTHeart has no plugin shutdown callback, so this provider registers a JVM shutdown hook
+ * (once) that closes the {@link MqttClientSingleton}, cancelling any pending automatic
+ * reconnect before disconnecting.
+ * </p>
  *
  * @see Provider
  * @see MqttClient
  * @see MqttClientSingleton
- * 
+ *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -51,7 +56,13 @@ import com.hivemq.client.mqtt.MqttClient;
     priority = 10
 )
 public class MqttClientProvider implements Provider<MqttClient>{
-    
+
+    /** Guards against registering the shutdown hook more than once per classloader. */
+    private static final AtomicBoolean SHUTDOWN_HOOK_REGISTERED = new AtomicBoolean(false);
+
+    /** Package-private, for test visibility only: the currently registered shutdown hook, if any. */
+    static volatile Thread mqttShutdownHookThread;
+
     /**
      * Configuration map containing properties for the MQTT client plugin,
      * injected automatically by RESTHeart.
@@ -67,14 +78,19 @@ public class MqttClientProvider implements Provider<MqttClient>{
      * <ul>
      *   <li>{@code broker-url} - The broker endpoint URL (default: "tcp://localhost:1883")</li>
      *   <li>{@code protocol-version} - MQTT version, 3 or 5 (default: 3)</li>
-     *   <li>{@code client-id} - Identifier for the MQTT client (default: "restheart-" + random UUID)</li>
+     *   <li>{@code client-id} - Identifier for the MQTT client; if null or blank, defaults to
+     *       "restheart-" + random UUID, otherwise used verbatim</li>
      *   <li>{@code username} - Username for broker authentication (default: null)</li>
      *   <li>{@code password} - Password for broker authentication (default: null)</li>
-     *   <li>{@code clean-session} - Whether to discard session state on connection (default: true)</li>
+     *   <li>{@code clean-session} - Whether to discard session state on connection (default: false)</li>
      *   <li>{@code keep-alive-seconds} - Keep-alive time interval (default: 60)</li>
      *   <li>{@code connect-timeout-seconds} - Timeout for establishing connection (default: 10)</li>
-     *   <li>{@code tls} - Enable SSL/TLS encryption (default: false)</li>
-     *   <li>{@code session-expiry-seconds} - Session expiry interval (default: 0)</li>
+     *   <li>{@code tls} - Force SSL/TLS encryption regardless of the broker-url scheme (default: false)</li>
+     *   <li>{@code tls-trust-store} - Path to a JKS/PKCS12 trust store for validating the broker's
+     *       certificate (default: null, uses the JVM default trust manager)</li>
+     *   <li>{@code tls-trust-store-password} - Password protecting {@code tls-trust-store} (default: null)</li>
+     *   <li>{@code session-expiry-seconds} - Session expiry interval, MQTT 5 only (default: 4294967295,
+     *       i.e. the session never expires)</li>
      *   <li>{@code reconnect/enabled} - Enable automatic reconnect (default: true)</li>
      *   <li>{@code reconnect/initial-delay-ms} - Reconnect initial delay in ms (default: 1000)</li>
      *   <li>{@code reconnect/max-delay-ms} - Reconnect max delay in ms (default: 30000)</li>
@@ -85,13 +101,15 @@ public class MqttClientProvider implements Provider<MqttClient>{
     public void init() {
         final String brokerUrl = argOrDefault(config, "broker-url", "tcp://localhost:1883");
         final int protocolVersion = argOrDefault(config, "protocol-version", 3);
-        final String clientId = argOrDefault(config, "client-id", "restheart-" + UUID.randomUUID().toString());
+        final String clientId = argOrDefault(config, "client-id", null);
         final String username = argOrDefault(config, "username", null);
         final String password = argOrDefault(config, "password", null);
         final boolean cleanSession = argOrDefault(config, "clean-session", false);
         final int keepAliveSeconds = argOrDefault(config, "keep-alive-seconds", 60);
         final int connectTimeoutSeconds = argOrDefault(config, "connect-timeout-seconds", 10);
         final boolean tlsEnabled = argOrDefault(config, "tls", false);
+        final String tlsTrustStore = argOrDefault(config, "tls-trust-store", null);
+        final String tlsTrustStorePassword = argOrDefault(config, "tls-trust-store-password", null);
 
         final long sessionExpirySeconds = argOrDefault(config, "session-expiry-seconds", 0xFFFFFFFFL);
 
@@ -131,6 +149,8 @@ public class MqttClientProvider implements Provider<MqttClient>{
             .sessionExpirySeconds(sessionExpirySeconds)
             .connectTimeoutSeconds(connectTimeoutSeconds)
             .tlsEnabled(tlsEnabled)
+            .tlsTrustStore(tlsTrustStore)
+            .tlsTrustStorePassword(tlsTrustStorePassword)
             .reconnectConfig(reconnectConfig)
             .willConfig(willConfig)
             .build();
@@ -140,6 +160,27 @@ public class MqttClientProvider implements Provider<MqttClient>{
 
         // Force first connection to MQTT broker
         MqttClientSingleton.getInstance().connect();
+
+        // RESTHeart has no plugin shutdown callback (Bootstrapper.stopServer does not notify
+        // plugins), so a JVM shutdown hook is the only way to release the MQTT client cleanly.
+        registerShutdownHookOnce();
+    }
+
+    /**
+     * Registers, at most once per classloader, a JVM shutdown hook that closes the
+     * {@link MqttClientSingleton}.
+     */
+    private static void registerShutdownHookOnce() {
+        if (SHUTDOWN_HOOK_REGISTERED.compareAndSet(false, true)) {
+            final Thread hook = new Thread(() -> {
+                if (MqttClientSingleton.isInitialized()) {
+                    MqttClientSingleton.getInstance().close();
+                }
+            }, "mqtt-client-shutdown");
+
+            Runtime.getRuntime().addShutdownHook(hook);
+            mqttShutdownHookThread = hook;
+        }
     }
 
     /**
@@ -152,5 +193,5 @@ public class MqttClientProvider implements Provider<MqttClient>{
     public MqttClient get(final PluginRecord<?> caller) {
         return MqttClientSingleton.get().getClient();
     }
-    
+
 }
