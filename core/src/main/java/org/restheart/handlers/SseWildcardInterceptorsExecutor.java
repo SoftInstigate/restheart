@@ -143,12 +143,6 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (this.wildcardInterceptors.isEmpty()) {
-            LOGGER.debug("{} SSE WILDCARD INTERCEPTORS: none registered", interceptPoint);
-            next(exchange);
-            return;
-        }
-
         var request = exchange.getAttachment(SSE_HANDSHAKE_REQUEST_KEY);
         if (request == null) {
             request = SseHandshakeRequest.of(exchange);
@@ -161,56 +155,67 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
             exchange.putAttachment(SSE_HANDSHAKE_RESPONSE_KEY, response);
         }
 
-        RequestPhaseContext.setPhase(Phase.PHASE_START);
-        LOGGER.debug("{} SSE WILDCARD INTERCEPTORS for {} {}", interceptPoint, exchange.getRequestMethod(), exchange.getRequestPath());
+        if (this.wildcardInterceptors.isEmpty()) {
+            // nothing of this executor's own to resolve/run, but a pending denial from the
+            // other invocation of this executor on the same exchange (see the shared
+            // request/response pair above) must still reach the terminal check below:
+            // an empty list here must never bypass it.
+            LOGGER.debug("{} SSE WILDCARD INTERCEPTORS: none registered", interceptPoint);
+        } else {
+            RequestPhaseContext.setPhase(Phase.PHASE_START);
+            LOGGER.debug("{} SSE WILDCARD INTERCEPTORS for {} {}", interceptPoint, exchange.getRequestMethod(), exchange.getRequestPath());
 
-        List<WildcardInterceptor> resolvedInterceptors = null;
-        for (var ri : this.wildcardInterceptors) {
-            try {
-                if (ri.resolve(request, response)) {
-                    if (resolvedInterceptors == null) {
-                        resolvedInterceptors = new ArrayList<>(this.wildcardInterceptors.size());
+            List<WildcardInterceptor> resolvedInterceptors = null;
+            for (var ri : this.wildcardInterceptors) {
+                try {
+                    if (ri.resolve(request, response)) {
+                        if (resolvedInterceptors == null) {
+                            resolvedInterceptors = new ArrayList<>(this.wildcardInterceptors.size());
+                        }
+                        resolvedInterceptors.add(ri);
                     }
-                    resolvedInterceptors.add(ri);
+                } catch (Exception ex) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
+
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
                 }
-            } catch (Exception ex) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
-
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + ri.getClass().getSimpleName(), ex));
             }
-        }
-        if (resolvedInterceptors == null) {
-            resolvedInterceptors = List.of();
-        }
+            if (resolvedInterceptors == null) {
+                resolvedInterceptors = List.of();
+            }
 
-        RequestPhaseContext.setPhase(Phase.INFO);
-        LOGGER.debug("Found {} SSE wildcard interceptors", resolvedInterceptors.size());
+            RequestPhaseContext.setPhase(Phase.INFO);
+            LOGGER.debug("Found {} SSE wildcard interceptors", resolvedInterceptors.size());
 
-        for (var ri : resolvedInterceptors) {
-            try {
-                RequestPhaseContext.setPhase(Phase.ITEM);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
+            for (var ri : resolvedInterceptors) {
+                try {
+                    RequestPhaseContext.setPhase(Phase.ITEM);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
+                    }
+
+                    ri.handle(request, response);
+                } catch (Exception ex) {
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
+                    LOGGER.error("✗ FAILED: {}", ex.getMessage());
+
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
                 }
-
-                ri.handle(request, response);
-            } catch (Exception ex) {
-                RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.error("✗ FAILED: {}", ex.getMessage());
-
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
             }
-        }
 
-        RequestPhaseContext.setPhase(Phase.PHASE_END);
-        LOGGER.debug("{} SSE WILDCARD INTERCEPTORS COMPLETED", interceptPoint);
-        RequestPhaseContext.reset();
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
+            LOGGER.debug("{} SSE WILDCARD INTERCEPTORS COMPLETED", interceptPoint);
+            RequestPhaseContext.reset();
+        }
 
         // Denial only takes effect after auth, mirroring RequestInterceptorsExecutor:
         // denying before auth would let an unauthenticated client learn something
-        // about the endpoint from the error response.
+        // about the endpoint from the error response. Reached unconditionally (not just
+        // when this executor has interceptors of its own): a denial raised by the
+        // REQUEST_BEFORE_AUTH invocation of this executor must still be observed and sent
+        // here even if zero WildcardInterceptors are registered for REQUEST_AFTER_AUTH.
         if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH && Exchange.isInError(exchange)) {
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
