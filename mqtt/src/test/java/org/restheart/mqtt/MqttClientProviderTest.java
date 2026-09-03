@@ -295,4 +295,58 @@ public class MqttClientProviderTest {
 
         assertEquals(30, getSingletonConfig().getConnectTimeoutSeconds());
     }
+
+    @Test
+    @DisplayName("Test client-id explicitly null generates a restheart- prefixed id")
+    public void testClientIdExplicitNullGeneratesDefault() throws Exception {
+        config.put("client-id", null);
+        callInitWithoutConnection();
+
+        assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
+    }
+
+    @Test
+    @DisplayName("Test client-id blank generates a restheart- prefixed id")
+    public void testClientIdBlankGeneratesDefault() throws Exception {
+        config.put("client-id", "   ");
+        callInitWithoutConnection();
+
+        assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
+    }
+
+    @Test
+    @DisplayName("Test client-id missing from config generates a restheart- prefixed id")
+    public void testClientIdMissingGeneratesDefault() throws Exception {
+        callInitWithoutConnection();
+
+        assertTrue(getSingletonConfig().getClientId().startsWith("restheart-"));
+    }
+
+    @Test
+    @DisplayName("Test TLS trust store configuration is parsed correctly")
+    public void testTlsTrustStoreConfiguration() throws Exception {
+        config.put("tls-trust-store", "/path/to/truststore.p12");
+        config.put("tls-trust-store-password", "secret");
+        callInitWithoutConnection();
+
+        assertEquals("/path/to/truststore.p12", getSingletonConfig().getTlsTrustStore());
+        assertEquals("secret", getSingletonConfig().getTlsTrustStorePassword());
+    }
+
+    @Test
+    @DisplayName("Test the JVM shutdown hook is registered exactly once across repeated init() calls")
+    public void testShutdownHookRegisteredOnce() throws Exception {
+        callInitWithoutConnection();
+        Thread firstHook = MqttClientProvider.mqttShutdownHookThread;
+        assertTrue(firstHook != null, "shutdown hook should be registered after init()");
+
+        // re-initialize the singleton (as tearDown/setUp of a fresh provider run would) and
+        // call init() again: the hook must not be registered a second time
+        resetMqttClientSingleton();
+        provider = new MqttClientProvider();
+        callInitWithoutConnection();
+        Thread secondHook = MqttClientProvider.mqttShutdownHookThread;
+
+        assertTrue(firstHook == secondHook, "shutdown hook must be registered only once per classloader");
+    }
 }

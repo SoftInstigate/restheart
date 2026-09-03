@@ -24,16 +24,25 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.TrustManagerFactory;
 
 import org.restheart.utils.BootstrapLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.MqttClientBuilderBase;
+import com.hivemq.client.mqtt.MqttClientSslConfig;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
@@ -56,8 +65,9 @@ import com.hivemq.client.util.TypeSwitch;
  * </p>
  * <p>
  * Thread-safety: {@link #init} must be called before any other method. After initialization,
- * the configuration is immutable. The {@code connected} flag is updated atomically via
- * the connection callback and read via {@link #isConnected()}.
+ * the configuration is immutable. {@link #connect()} and {@link #close()} are {@code synchronized}
+ * and idempotent. The {@code connected} flag is updated atomically from the connected/disconnected
+ * listeners and read via {@link #isConnected()}.
  * </p>
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
@@ -74,10 +84,16 @@ public class MqttClientSingleton {
     private static volatile MqttConfig config;
 
     /** The underlying HiveMQ MQTT client instance. */
-    private MqttClient mqttClient;
+    private volatile MqttClient mqttClient;
 
     /** Flag indicating whether the client is currently connected. */
     private volatile boolean connected = false;
+
+    /** Set by {@link #close()}; checked by the disconnected listener to cancel automatic reconnect. */
+    private volatile boolean shuttingDown = false;
+
+    /** Set once {@link #close()} has completed, to make repeated calls a no-op. */
+    private volatile boolean closed = false;
 
     /**
      * Initializes the MQTT client singleton with the specified configuration.
@@ -144,12 +160,22 @@ public class MqttClientSingleton {
     /**
      * Establishes a connection to the MQTT broker asynchronously, waiting for the connection
      * to be established up to the configured connection timeout limit.
+     * <p>
+     * Idempotent: calling this method while already connected is a no-op. A failed connection
+     * attempt is logged at ERROR level but does not throw: the automatic reconnect (if enabled)
+     * will keep retrying in the background and {@link #isConnected()} reports the true state.
+     * </p>
      *
      * @throws IllegalStateException if the singleton is not initialized
      */
-    public void connect() {
+    public synchronized void connect() {
         if (!initialized || config == null) {
             throw new IllegalStateException("MqttClientSingleton is not initialized");
+        }
+
+        if (closed) {
+            LOGGER.debug("MqttClientSingleton has been closed, ignoring connect() request");
+            return;
         }
 
         if (mqttClient != null && connected) {
@@ -160,18 +186,15 @@ public class MqttClientSingleton {
         BootstrapLogger.standalone(LOGGER, "Connecting to MQTT broker at {}...", config.getBrokerUrl());
 
         try {
-            URI uri = new URI(config.getBrokerUrl());
-            String host = uri.getHost();
-            int port = uri.getPort() > 0 ? uri.getPort() : (config.isTlsEnabled() ? 8883 : 1883);
+            MqttEndpoint endpoint = resolveEndpoint(config.getBrokerUrl(), config.isTlsEnabled());
 
-            if (config.getProtocolVersion() == 5) {
-                mqttClient = buildMqtt5Client(host, port);
-            } else {
-                mqttClient = buildMqtt3Client(host, port);
-            }
+            MqttClient client = config.getProtocolVersion() == 5
+                ? buildMqtt5Client(endpoint)
+                : buildMqtt3Client(endpoint);
+            mqttClient = client;
 
             CompletableFuture<Void> connectFuture;
-            if (mqttClient instanceof Mqtt5AsyncClient m5) {
+            if (client instanceof Mqtt5AsyncClient m5) {
                 connectFuture = m5.connectWith()
                     .keepAlive(config.getKeepAliveSeconds())
                     .cleanStart(config.isCleanSession())
@@ -182,7 +205,7 @@ public class MqttClientSingleton {
                         BootstrapLogger.standalone(LOGGER, "Connected to MQTT broker {} (MQTT 5.0)",
                             ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
                     });
-            } else if (mqttClient instanceof Mqtt3AsyncClient m3) {
+            } else if (client instanceof Mqtt3AsyncClient m3) {
                 connectFuture = m3.connectWith()
                     .cleanSession(config.isCleanSession())
                     .keepAlive(config.getKeepAliveSeconds())
@@ -193,7 +216,7 @@ public class MqttClientSingleton {
                             ansi().fg(GREEN).bold().a(config.getBrokerUrl()).reset().toString());
                     });
             } else {
-                throw new IllegalStateException("Unknown MQTT client type: " + mqttClient.getClass());
+                throw new IllegalStateException("Unknown MQTT client type: " + client.getClass());
             }
 
             connectFuture.get(config.getConnectTimeoutSeconds(), TimeUnit.SECONDS);
@@ -212,18 +235,154 @@ public class MqttClientSingleton {
     }
 
     /**
+     * Disconnects from the MQTT broker and releases the underlying client, cancelling any
+     * pending automatic reconnect first (see hivemq-mqtt-client issue #756: disconnecting while
+     * a reconnect is in-flight can leave resources unreleased).
+     * <p>
+     * Safe to call when the client was never connected and safe to call more than once.
+     * </p>
+     */
+    public synchronized void close() {
+        shuttingDown = true;
+
+        if (closed) {
+            LOGGER.debug("MqttClientSingleton already closed");
+            return;
+        }
+
+        final MqttClient client = mqttClient;
+        if (client == null) {
+            closed = true;
+            return;
+        }
+
+        try {
+            final CompletableFuture<Void> disconnectFuture;
+            if (client instanceof Mqtt5AsyncClient m5) {
+                disconnectFuture = m5.disconnect();
+            } else if (client instanceof Mqtt3AsyncClient m3) {
+                disconnectFuture = m3.disconnect();
+            } else {
+                disconnectFuture = CompletableFuture.completedFuture(null);
+            }
+
+            final int timeoutSeconds = (config != null && config.getConnectTimeoutSeconds() > 0)
+                ? config.getConnectTimeoutSeconds()
+                : 10;
+
+            disconnectFuture.get(timeoutSeconds, TimeUnit.SECONDS);
+            BootstrapLogger.standalone(LOGGER, "Disconnected from MQTT broker");
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Interrupted while disconnecting from MQTT broker", ie);
+        } catch (Exception e) {
+            LOGGER.warn("Error while disconnecting from MQTT broker", e);
+        } finally {
+            connected = false;
+            closed = true;
+        }
+    }
+
+    /**
+     * Resolves the connection endpoint (host, port, TLS, WebSocket) from the configured
+     * broker URL scheme.
+     * <p>
+     * Supported schemes: {@code tcp} (plain TCP, default port 1883), {@code ssl}/{@code mqtts}
+     * (TLS, default port 8883), {@code ws} (WebSocket, default port 80) and {@code wss}
+     * (WebSocket over TLS, default port 443). {@code tlsOverride} forces TLS regardless of scheme.
+     * </p>
+     *
+     * @param brokerUrl the configured broker URL
+     * @param tlsOverride whether the {@code tls} configuration key forces TLS
+     * @return the resolved endpoint
+     * @throws IllegalArgumentException if the URL is invalid, has no host or has an unsupported scheme
+     */
+    static MqttEndpoint resolveEndpoint(String brokerUrl, boolean tlsOverride) {
+        if (brokerUrl == null || brokerUrl.isBlank()) {
+            throw new IllegalArgumentException("'broker-url' must not be null or blank");
+        }
+
+        final URI uri;
+        try {
+            uri = new URI(brokerUrl);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("'broker-url' is not a valid URI: " + brokerUrl, e);
+        }
+
+        final String host = uri.getHost();
+        if (host == null) {
+            throw new IllegalArgumentException("'broker-url' must specify a host: " + brokerUrl);
+        }
+
+        final String scheme = uri.getScheme() == null ? null : uri.getScheme().toLowerCase(Locale.ROOT);
+        if (scheme == null || !MqttConfig.SUPPORTED_SCHEMES.contains(scheme)) {
+            throw new IllegalArgumentException("'broker-url' has an unsupported scheme '" + scheme
+                + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
+        }
+
+        final boolean schemeTls;
+        final boolean webSocket;
+        final int defaultPort;
+        switch (scheme) {
+            case "tcp" -> {
+                schemeTls = false;
+                webSocket = false;
+                defaultPort = 1883;
+            }
+            case "ssl", "mqtts" -> {
+                schemeTls = true;
+                webSocket = false;
+                defaultPort = 8883;
+            }
+            case "ws" -> {
+                schemeTls = false;
+                webSocket = true;
+                defaultPort = 80;
+            }
+            case "wss" -> {
+                schemeTls = true;
+                webSocket = true;
+                defaultPort = 443;
+            }
+            default -> throw new IllegalArgumentException("'broker-url' has an unsupported scheme '" + scheme
+                + "', supported schemes are: " + MqttConfig.SUPPORTED_SCHEMES);
+        }
+
+        final boolean tls = schemeTls || tlsOverride;
+
+        // when 'tls: true' upgrades a plaintext scheme and no port is given, the default port
+        // must follow the effective TLS state: tcp://host with tls:true means 8883, not 1883
+        final int defaultPortForTls = !schemeTls && tls
+            ? (webSocket ? 443 : 8883)
+            : defaultPort;
+
+        final int port = uri.getPort() > 0 ? uri.getPort() : defaultPortForTls;
+        return new MqttEndpoint(host, port, tls, webSocket);
+    }
+
+    /**
+     * The resolved transport parameters for a broker connection.
+     *
+     * @param host the broker host
+     * @param port the broker port
+     * @param tls whether the connection must be secured with TLS
+     * @param webSocket whether the connection must be tunneled over WebSocket
+     */
+    record MqttEndpoint(String host, int port, boolean tls, boolean webSocket) {
+    }
+
+    /**
      * Builds and configures an asynchronous MQTT 5.0 client.
      *
-     * @param host the broker host address
-     * @param port the broker port
+     * @param endpoint the resolved connection endpoint
      * @return the constructed {@link Mqtt5AsyncClient}
      */
-    private Mqtt5AsyncClient buildMqtt5Client(String host, int port) {
+    private Mqtt5AsyncClient buildMqtt5Client(MqttEndpoint endpoint) {
         Mqtt5ClientBuilder builder = MqttClient.builder()
             .useMqttVersion5()
             .identifier(config.getClientId())
-            .serverHost(host)
-            .serverPort(port);
+            .serverHost(endpoint.host())
+            .serverPort(endpoint.port());
 
         if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
@@ -254,7 +413,8 @@ public class MqttClientSingleton {
                 .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
                 .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
-                .addConnectedListener(context ->
+                .addConnectedListener(context -> {
+                    connected = true;
                     TypeSwitch.when(context)
                         .is(Mqtt5ClientConnectedContext.class, q -> {
                             if (!q.getConnAck().isSessionPresent()) {
@@ -263,13 +423,19 @@ public class MqttClientSingleton {
                             } else {
                                 LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
                             }
-                        })
-                );
+                        });
+                });
         }
 
-        if (config.isTlsEnabled()) {
-            builder.sslWithDefaultConfig();
-        }
+        builder.addDisconnectedListener(context -> {
+            connected = false;
+            if (shuttingDown) {
+                context.getReconnector().reconnect(false);
+            }
+            LOGGER.debug("MQTT client disconnected, source={}", context.getSource(), context.getCause());
+        });
+
+        applyTransportConfig(builder, endpoint);
 
         return builder.buildAsync();
     }
@@ -277,16 +443,15 @@ public class MqttClientSingleton {
     /**
      * Builds and configures an asynchronous MQTT 3.0 client.
      *
-     * @param host the broker host address
-     * @param port the broker port
+     * @param endpoint the resolved connection endpoint
      * @return the constructed {@link Mqtt3AsyncClient}
      */
-    private Mqtt3AsyncClient buildMqtt3Client(String host, int port) {
+    private Mqtt3AsyncClient buildMqtt3Client(MqttEndpoint endpoint) {
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
             .identifier(config.getClientId())
-            .serverHost(host)
-            .serverPort(port);
+            .serverHost(endpoint.host())
+            .serverPort(endpoint.port());
 
         if (config.getUsername() != null && config.getPassword() != null) {
             builder.simpleAuth()
@@ -311,7 +476,8 @@ public class MqttClientSingleton {
                 .initialDelay(reconnectConfig.getInitialDelayMs(), TimeUnit.MILLISECONDS)
                 .maxDelay(reconnectConfig.getMaxDelayMs(), TimeUnit.MILLISECONDS)
                 .applyAutomaticReconnect()
-                .addConnectedListener(context ->
+                .addConnectedListener(context -> {
+                    connected = true;
                     TypeSwitch.when(context)
                         .is(Mqtt3ClientConnectedContext.class, q -> {
                             if (!q.getConnAck().isSessionPresent()) {
@@ -320,34 +486,98 @@ public class MqttClientSingleton {
                             } else {
                                 LOGGER.info("Existing session detected (sessionPresent=true), skipping resubscription");
                             }
-                        })
-                );
+                        });
+                });
         }
 
-        if (config.isTlsEnabled()) {
-            builder.sslWithDefaultConfig();
-        }
+        builder.addDisconnectedListener(context -> {
+            connected = false;
+            if (shuttingDown) {
+                context.getReconnector().reconnect(false);
+            }
+            LOGGER.debug("MQTT client disconnected, source={}", context.getSource(), context.getCause());
+        });
+
+        applyTransportConfig(builder, endpoint);
 
         return builder.buildAsync();
     }
 
     /**
-     * Returns the underlying {@link MqttClient} instance.
-     * If the client is not yet created or connected, this method will trigger the connection.
+     * Applies WebSocket and TLS transport settings to the client builder, based on the
+     * resolved {@link MqttEndpoint}. When TLS is required and {@code tls-trust-store} is
+     * configured, a custom trust manager is loaded from it; otherwise the client's default
+     * TLS configuration is used.
+     *
+     * @param builder the MQTT 3 or MQTT 5 client builder
+     * @param endpoint the resolved connection endpoint
+     */
+    private void applyTransportConfig(MqttClientBuilderBase<?> builder, MqttEndpoint endpoint) {
+        if (endpoint.webSocket()) {
+            builder.webSocketWithDefaultConfig();
+        }
+
+        if (endpoint.tls()) {
+            final String trustStorePath = config.getTlsTrustStore();
+            if (trustStorePath != null && !trustStorePath.isBlank()) {
+                final TrustManagerFactory trustManagerFactory =
+                    loadTrustManagerFactory(trustStorePath, config.getTlsTrustStorePassword());
+                builder.sslConfig(MqttClientSslConfig.builder()
+                    .trustManagerFactory(trustManagerFactory)
+                    .build());
+            } else {
+                builder.sslWithDefaultConfig();
+            }
+        }
+    }
+
+    /**
+     * Loads a {@link TrustManagerFactory} from the configured {@code tls-trust-store}.
+     * The store type (PKCS12 or JKS) is inferred from the file extension.
+     *
+     * @param path the path to the trust store file
+     * @param password the trust store password, may be {@code null}
+     * @return the initialized trust manager factory
+     * @throws IllegalStateException if the trust store cannot be read or loaded
+     */
+    private static TrustManagerFactory loadTrustManagerFactory(String path, String password) {
+        try {
+            final String lowerPath = path.toLowerCase(Locale.ROOT);
+            final String type = (lowerPath.endsWith(".p12") || lowerPath.endsWith(".pfx")) ? "PKCS12" : "JKS";
+            final KeyStore trustStore = KeyStore.getInstance(type);
+            try (InputStream in = new FileInputStream(path)) {
+                trustStore.load(in, password != null ? password.toCharArray() : null);
+            }
+            final TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(trustStore);
+            return trustManagerFactory;
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                "Cannot load 'tls-trust-store' from '" + path + "': " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the underlying {@link MqttClient} instance built by {@link #connect()}.
+     * <p>
+     * This method never blocks and never triggers a connection attempt: the one blocking
+     * connect happens in {@code MqttClientProvider.init()}.
+     * </p>
      *
      * @return the underlying {@link MqttClient} instance
-     * @throws IllegalStateException if the singleton is not initialized
+     * @throws IllegalStateException if the {@code mqtt-client} plugin has not completed
+     *         initialization yet (i.e. {@link #connect()} has not been called or has not
+     *         built a client)
      */
     public MqttClient getClient() {
-        if (!initialized || config == null) {
-            throw new IllegalStateException("MqttClientSingleton is not initialized");
+        final MqttClient client = mqttClient;
+        if (!initialized || config == null || client == null) {
+            throw new IllegalStateException(
+                "MQTT client is not available yet: the 'mqtt-client' plugin has not completed initialization");
         }
 
-        if (mqttClient == null) {
-            connect();
-        }
-
-        return mqttClient;
+        return client;
     }
 
     /**
