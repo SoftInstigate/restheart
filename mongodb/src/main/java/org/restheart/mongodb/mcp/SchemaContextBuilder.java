@@ -20,10 +20,8 @@
  */
 package org.restheart.mongodb.mcp;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
 /**
@@ -44,30 +42,6 @@ public final class SchemaContextBuilder {
         if (jsonSchema == null || !jsonSchema.isDocument()) {
             return null;
         }
-        return toMap(jsonSchema.asDocument());
-    }
-
-    private static Map<String, Object> toMap(BsonDocument doc) {
-        var result = new LinkedHashMap<String, Object>();
-        doc.forEach((key, value) -> result.put(key, toJava(value)));
-        return result;
-    }
-
-    private static Object toJava(BsonValue value) {
-        if (value == null || value.isNull()) {
-            return null;
-        }
-        return switch (value.getBsonType()) {
-            case DOCUMENT -> toMap(value.asDocument());
-            case ARRAY -> value.asArray().stream().map(SchemaContextBuilder::toJava).toList();
-            case STRING -> value.asString().getValue();
-            case BOOLEAN -> value.asBoolean().getValue();
-            case INT32 -> value.asInt32().getValue();
-            case INT64 -> value.asInt64().getValue();
-            case DOUBLE -> value.asDouble().getValue();
-            // exotic BSON types (ObjectId, Date, ...) are not expected inside a JSON
-            // Schema document; fall back to a string rendering rather than throwing
-            default -> value.toString();
-        };
+        return BsonJavaConverter.toMap(jsonSchema.asDocument());
     }
 }

@@ -22,6 +22,7 @@ package org.restheart.plugins.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -102,5 +103,24 @@ public class McpResourceTest {
 
         assertEquals("first", resource.examples().get(0).description());
         assertEquals("second", resource.examples().get(1).description());
+    }
+
+    @Test
+    public void extra_appearsAtTopLevelOfJson() {
+        var resource = McpResource.builder()
+                .uri("https://host/x")
+                .extra("pipeline_summary", "$match → $group")
+                .extra("warnings", List.of("undeclared $var 'foo' falls back to type 'string'"))
+                .build();
+
+        var json = resource.toMap();
+        assertEquals("$match → $group", json.get("pipeline_summary"));
+        assertEquals(List.of("undeclared $var 'foo' falls back to type 'string'"), json.get("warnings"));
+    }
+
+    @Test
+    public void noExtra_noExtraKeysInJson() {
+        var resource = McpResource.builder().uri("https://host/x").build();
+        assertTrue(resource.extra().isEmpty());
     }
 }

@@ -45,12 +45,14 @@ public final class McpResource {
     private final Map<String, Action> actions;
     private final Map<String, Object> auth;
     private final List<Example> examples;
+    private final Map<String, Object> extra;
 
     private McpResource(Builder b) {
         this.uri = Objects.requireNonNull(b.uri, "uri is required");
         this.kind = b.kind == null ? "service" : b.kind;
         this.description = b.description;
         this.auth = b.auth;
+        this.extra = Map.copyOf(b.extra);
 
         this.actions = new LinkedHashMap<>(b.actions);
 
@@ -73,6 +75,8 @@ public final class McpResource {
     public String description() { return description; }
     public Map<String, Action> actions() { return actions; }
     public List<Example> examples() { return examples; }
+    /** Kind-specific top-level fields (e.g. Mongo's {@code pipeline_summary}, {@code warnings}) the generic framework doesn't model. */
+    public Map<String, Object> extra() { return extra; }
 
     /** Transports that carry the given action, in declaration order; empty if the action is unknown to every transport. */
     public List<Transport> transportsFor(String actionName) {
@@ -122,6 +126,11 @@ public final class McpResource {
         var examplesJson = new ArrayList<Object>();
         examples.forEach(e -> examplesJson.add(e.toMap()));
         m.put("examples", examplesJson);
+
+        // kind-specific fields (e.g. pipeline_summary, warnings) — callers must not use
+        // a key already set above; this deliberately doesn't guard against that, since
+        // extra() is only ever populated by trusted, in-framework McpResourceBuilder code
+        m.putAll(extra);
 
         return m;
     }
@@ -243,6 +252,7 @@ public final class McpResource {
         private final Map<String, Action> actions = new LinkedHashMap<>();
         private final Map<Transport, List<String>> transportActions = new LinkedHashMap<>();
         private final List<Example> examples = new ArrayList<>();
+        private final Map<String, Object> extra = new LinkedHashMap<>();
 
         public Builder uri(String uri) { this.uri = uri; return this; }
         public Builder kind(String kind) { this.kind = kind; return this; }
@@ -264,6 +274,12 @@ public final class McpResource {
 
         public Builder example(String description, String action, Map<String, Object> args) {
             examples.add(new Example(description, action, args));
+            return this;
+        }
+
+        /** Sets a kind-specific top-level field not modeled by the generic framework (see {@link McpResource#extra()}). */
+        public Builder extra(String key, Object value) {
+            extra.put(key, value);
             return this;
         }
 
