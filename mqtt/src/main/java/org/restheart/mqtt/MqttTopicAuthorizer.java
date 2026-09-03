@@ -23,6 +23,8 @@ package org.restheart.mqtt;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +68,13 @@ import org.slf4j.LoggerFactory;
  *   <li>{@code sensors/temp} — exact match</li>
  * </ul>
  * </p>
+ * <p>
+ * This interceptor fails closed: a request with no authenticated account is
+ * denied with {@link HttpStatus#SC_UNAUTHORIZED}, and a request whose account
+ * has no ACL entry matching the requested topic is denied with
+ * {@link HttpStatus#SC_FORBIDDEN}. There is no permissive default — a role
+ * with no {@code acl} entry, or an unconfigured {@code acl}, grants no access.
+ * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -81,7 +90,6 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
     @Inject("config")
     private Map<String, Object> config;
 
-    @SuppressWarnings("unchecked")
     private Map<String, List<String>> acl;
 
     @OnInit
@@ -89,13 +97,55 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         if (config != null) {
             Object aclConfig = config.get("acl");
             if (aclConfig instanceof Map<?, ?> map) {
-                acl = (Map<String, List<String>>) map;
+                acl = parseAcl(map);
             }
         }
         if (acl == null) {
             acl = Map.of();
         }
         LOGGER.info("MqttTopicAuthorizer initialized with {} ACL entries", acl.size());
+    }
+
+    /**
+     * Validates and converts the raw {@code acl} configuration map into a
+     * {@code Map<String, List<String>>}, failing fast with a descriptive
+     * {@link IllegalArgumentException} if any role key or topic pattern is not
+     * a {@code String}, rather than deferring the failure to a
+     * {@code ClassCastException} at request time.
+     *
+     * @param rawAcl the raw {@code acl} map read from the plugin configuration
+     * @return an immutable, validated {@code Map<String, List<String>>}
+     */
+    private static Map<String, List<String>> parseAcl(Map<?, ?> rawAcl) {
+        var result = new LinkedHashMap<String, List<String>>();
+
+        for (var entry : rawAcl.entrySet()) {
+            if (!(entry.getKey() instanceof String role)) {
+                throw new IllegalArgumentException(
+                    "Invalid mqtt-topic-authorizer 'acl' configuration: role key '" + entry.getKey()
+                        + "' must be a string");
+            }
+
+            if (!(entry.getValue() instanceof List<?> rawTopics)) {
+                throw new IllegalArgumentException(
+                    "Invalid mqtt-topic-authorizer 'acl' configuration: value of role '" + role
+                        + "' must be a list of topic patterns");
+            }
+
+            var topics = new ArrayList<String>(rawTopics.size());
+            for (var rawTopic : rawTopics) {
+                if (!(rawTopic instanceof String topic)) {
+                    throw new IllegalArgumentException(
+                        "Invalid mqtt-topic-authorizer 'acl' configuration: topic pattern '" + rawTopic
+                            + "' for role '" + role + "' must be a string");
+                }
+                topics.add(topic);
+            }
+
+            result.put(role, List.copyOf(topics));
+        }
+
+        return Map.copyOf(result);
     }
 
     @Override
@@ -113,10 +163,14 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
             return;
         }
 
-        // Check if any of the account's roles grant access to this topic
+        // With @RegisterPlugin(secure = true) an unauthenticated request should never
+        // reach REQUEST_AFTER_AUTH, so a null account here is anomalous and must fail
+        // closed rather than let the request through unchecked.
         var account = request.getAuthenticatedAccount();
         if (account == null) {
-            return; // no auth — let the auth pipeline handle it
+            LOGGER.debug("Denying unauthenticated request for topic '{}': no authenticated account", topicFilter);
+            response.setInError(HttpStatus.SC_UNAUTHORIZED, "Authentication required for topic: " + topicFilter);
+            return;
         }
 
         boolean allowed = false;

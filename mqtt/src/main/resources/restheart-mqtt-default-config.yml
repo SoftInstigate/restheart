@@ -64,6 +64,19 @@ plugins-args:
   mqtt-rest:
     enabled: true
 
+  # MQTT Topic Authorizer - checks MQTT topic access against ACL entries.
+  # Runs after authentication (mqtt-sse and mqtt-rest are secure: true) and
+  # denies any request whose authenticated account has no matching ACL entry
+  # for the requested topic. Uncomment and adjust to grant access per role:
+  # a role with no entry here has NO access to any topic.
+  # mqtt-topic-authorizer:
+  #   acl:
+  #     iot-reader:
+  #       - "sensors/#"
+  #       - "devices/+/status"
+  #     admin:
+  #       - "#"
+
   # MQTT MongoDB Writer - Persist MQTT messages to MongoDB
   mqtt-mongo-writer:
     enabled: false

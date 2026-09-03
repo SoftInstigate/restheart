@@ -87,7 +87,7 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
     name = "mqtt-sse",
     description = "Streams MQTT topic messages as Server-Sent Events",
     defaultURI = "/mqtt-sse",
-    secure = false
+    secure = true
 )
 public class MqttSseService implements SseService {
 
