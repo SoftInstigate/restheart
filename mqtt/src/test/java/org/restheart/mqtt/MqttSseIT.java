@@ -80,6 +80,7 @@ public class MqttSseIT {
         brokerProps.setProperty(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
         brokerProps.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
         brokerProps.setProperty(BrokerConstants.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
+        brokerProps.setProperty(BrokerConstants.ENABLE_TELEMETRY_NAME, "false");
 
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
