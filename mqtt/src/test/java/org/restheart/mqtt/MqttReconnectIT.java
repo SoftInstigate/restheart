@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Field;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -70,7 +71,7 @@ public class MqttReconnectIT {
     @BeforeAll
     static void startBroker() throws Exception {
         brokerProps = new Properties();
-        brokerProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, "1883");
+        brokerProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, "0"); // random port
         brokerProps.setProperty(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
         brokerProps.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
         brokerProps.setProperty(BrokerConstants.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
@@ -79,6 +80,7 @@ public class MqttReconnectIT {
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
         brokerPort = server.getPort();
+        LOGGER.info("Moquette started on port {}", brokerPort);
     }
 
     @AfterAll
@@ -105,7 +107,7 @@ public class MqttReconnectIT {
                 .clientId("restheart-reconnect-test")
                 .cleanSession(true)
                 .connectTimeoutSeconds(10)
-                .reconnectConfig(new MqttConfig.ReconnectConfig(true, 100L, 1000L))
+                .reconnectConfig(new MqttConfig.ReconnectConfig(true, 200L, 2000L))
                 .willConfig(new MqttConfig.WillConfig(null, null, 0, false, 0, null))
                 .build();
 
@@ -126,7 +128,6 @@ public class MqttReconnectIT {
     }
 
     private void resetSingletons() {
-        // Reset MqttClientSingleton
         try {
             Field initializedField = MqttClientSingleton.class.getDeclaredField("initialized");
             initializedField.setAccessible(true);
@@ -150,7 +151,6 @@ public class MqttReconnectIT {
             LOGGER.debug("Failed to reset MqttClientSingleton: {}", e.getMessage());
         }
 
-        // Reset MqttMessageRouter
         try {
             MqttMessageRouter routerInstance = (MqttMessageRouter) System.getProperties().get(MqttMessageRouter.class.getName());
             if (routerInstance != null) {
@@ -171,6 +171,21 @@ public class MqttReconnectIT {
         }
     }
 
+    /**
+     * Waits until the given port accepts TCP connections.
+     */
+    private void waitForPort(int port, int timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            try (var socket = new Socket("localhost", port)) {
+                return; // port is open
+            } catch (Exception e) {
+                Thread.sleep(100);
+            }
+        }
+        throw new InterruptedException("Port " + port + " not open after " + timeoutMs + "ms");
+    }
+
     @Test
     void testMqttReconnectResubscribe() throws Exception {
         MqttClient client = MqttClientSingleton.getInstance().getClient();
@@ -188,24 +203,39 @@ public class MqttReconnectIT {
         assertEquals("sensors/temp", msg1.getTopic());
         assertEquals("payload1", msg1.getPayload());
 
+        // Stop broker
         server.stopServer();
-        Thread.sleep(1000);
+        LOGGER.info("Broker stopped, waiting for client to detect disconnect...");
 
+        // Wait for client to detect disconnect
+        Thread.sleep(2000);
+
+        // Restart broker on same port
         Properties restartProps = new Properties(brokerProps);
         restartProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
         server = new Server();
         server.startServer(new MemoryConfig(restartProps));
 
+        // Wait for port to be actually open
+        waitForPort(brokerPort, 10000);
+        LOGGER.info("Broker restarted on port {}, waiting for client reconnect...", brokerPort);
+
+        // Wait for automatic reconnection
         boolean reconnected = false;
         for (int i = 0; i < 300; i++) {
-            if (MqttClientSingleton.getInstance().getClient().getState() == MqttClientState.CONNECTED) {
-                reconnected = true;
-                break;
+            try {
+                if (MqttClientSingleton.getInstance().getClient().getState() == MqttClientState.CONNECTED) {
+                    reconnected = true;
+                    break;
+                }
+            } catch (Exception e) {
+                // Client might throw during reconnect
             }
             Thread.sleep(100);
         }
         assertTrue(reconnected, "Client failed to reconnect after broker restart");
 
+        // Wait for resubscription
         Thread.sleep(2000);
 
         publishMessage("sensors/temp", "payload2");
