@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongoclient-provider
+ * restheart-mqtt
  * %%
  * Copyright (C) 2014 - 2026 SoftInstigate
  * %%
@@ -23,115 +23,75 @@ package org.restheart.mqtt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.restheart.mqtt.MqttMessageRouter.RouterStats;
 import org.restheart.mqtt.model.MqttMessage;
 
+import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 
 /**
- * Unit tests for MqttMessageRouter
- * Tests verify that the router correctly handles subscription and unsubscription logic.
+ * Unit tests for {@link MqttMessageRouter}.
+ * <p>
+ * {@code MqttMessageRouter} touches no statics: every test constructs it directly with a
+ * Mockito-mocked {@link MqttClient} and nothing else, so there is no shared state between tests.
+ * </p>
  *
  * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 public class MqttMessageRouterTest {
 
-    private MqttMessageRouter router;
-
-    @BeforeEach
-    @SuppressWarnings("unchecked")
-    void setUp() throws Exception {
-        router = MqttMessageRouter.getInstance();
-
-        // Clear listeners
-        Field listenersField = MqttMessageRouter.class.getDeclaredField("listeners");
-        listenersField.setAccessible(true);
-        ((Map<?, ?>) listenersField.get(router)).clear();
-
-        // Clear cache
-        Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
-        cacheField.setAccessible(true);
-        ((Map<?, ?>) cacheField.get(router)).clear();
-
-        // Reset rate limiter
-        Field messageCountField = MqttMessageRouter.class.getDeclaredField("messageCount");
-        messageCountField.setAccessible(true);
-        ((AtomicLong) messageCountField.get(router)).set(0);
-
-        Field droppedCountField = MqttMessageRouter.class.getDeclaredField("droppedCount");
-        droppedCountField.setAccessible(true);
-        ((AtomicLong) droppedCountField.get(router)).set(0);
-
-        // Re-init with defaults
-        Field initField = MqttMessageRouter.class.getDeclaredField("initialized");
-        initField.setAccessible(true);
-        ((AtomicBoolean) initField.get(router)).set(false);
-
-        router.init(5000, true, 1000);
-    }
-
     @Test
     void testSubscribeAndUnsubscribe() {
-        try (MockedStatic<MqttClientSingleton> singletonMock = mockStatic(MqttClientSingleton.class)) {
-            MqttClientSingleton mockInstance = mock(MqttClientSingleton.class);
-            Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class);
-            
-            when(mockClient.subscribeWith()).thenThrow(new RuntimeException("SubscribeCalled"));
-            when(mockClient.unsubscribeWith()).thenThrow(new RuntimeException("UnsubscribeCalled"));
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class);
+        when(mockClient.subscribeWith()).thenThrow(new RuntimeException("SubscribeCalled"));
+        when(mockClient.unsubscribeWith()).thenThrow(new RuntimeException("UnsubscribeCalled"));
 
-            when(mockInstance.getClient()).thenReturn(mockClient);
-            singletonMock.when(MqttClientSingleton::getInstance).thenReturn(mockInstance);
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
 
-            Consumer<MqttMessage> listener1 = msg -> {};
-            Consumer<MqttMessage> listener2 = msg -> {};
+        Consumer<MqttMessage> listener1 = msg -> {};
+        Consumer<MqttMessage> listener2 = msg -> {};
 
-            // 1st listener -> triggers subscribeOnBroker
-            RuntimeException ex1 = assertThrows(RuntimeException.class, 
-                () -> router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener1));
-            assertEquals("SubscribeCalled", ex1.getMessage());
+        // 1st listener -> triggers subscribeOnBroker
+        RuntimeException ex1 = assertThrows(RuntimeException.class,
+            () -> router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener1));
+        assertEquals("SubscribeCalled", ex1.getMessage());
 
-            // 2nd listener on same topic -> does NOT trigger subscribeOnBroker again
-            router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener2);
+        // 2nd listener on same topic -> does NOT trigger subscribeOnBroker again
+        router.subscribe("test/topic", MqttQos.AT_LEAST_ONCE, listener2);
 
-            // Unsubscribe listener1 -> does NOT trigger unsubscribeFromBroker
-            router.unsubscribe("test/topic", listener1);
+        // Unsubscribe listener1 -> does NOT trigger unsubscribeFromBroker
+        router.unsubscribe("test/topic", listener1);
 
-            // Unsubscribe listener2 -> last listener, triggers unsubscribeFromBroker
-            RuntimeException ex2 = assertThrows(RuntimeException.class, 
-                () -> router.unsubscribe("test/topic", listener2));
-            assertEquals("UnsubscribeCalled", ex2.getMessage());
-            
-            // Verify stats
-            RouterStats stats = router.getStats();
-            assertEquals(0, stats.getTopicFilters());
-            assertEquals(0, stats.getTotalListeners());
-        }
+        // Unsubscribe listener2 -> last listener, triggers unsubscribeFromBroker
+        RuntimeException ex2 = assertThrows(RuntimeException.class,
+            () -> router.unsubscribe("test/topic", listener2));
+        assertEquals("UnsubscribeCalled", ex2.getMessage());
+
+        // Verify stats
+        RouterStats stats = router.getStats();
+        assertEquals(0, stats.getTopicFilters());
+        assertEquals(0, stats.getTotalListeners());
     }
 
     @Test
     void testTopicMatching() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
+
         Method topicMatchesMethod = MqttMessageRouter.class.getDeclaredMethod("topicMatches", String.class, String.class);
         topicMatchesMethod.setAccessible(true);
 
@@ -148,18 +108,15 @@ public class MqttMessageRouterTest {
         assertTrue((Boolean) topicMatchesMethod.invoke(router, "sensors/temp", "sensors/#"));
         assertTrue((Boolean) topicMatchesMethod.invoke(router, "sensors/temp/1", "sensors/#"));
         assertFalse((Boolean) topicMatchesMethod.invoke(router, "system/temp", "sensors/#"));
-        
+
         // Single level wildcards embedded
         assertTrue((Boolean) topicMatchesMethod.invoke(router, "a/b", "+/+"));
     }
 
     @Test
     void testRateLimitEnforcement() throws Exception {
-        // Re-init with limit = 2 msgs per second
-        Field initField = MqttMessageRouter.class.getDeclaredField("initialized");
-        initField.setAccessible(true);
-        ((AtomicBoolean) initField.get(router)).set(false);
-        router.init(2, true, 1000);
+        // Router built with a limit of 2 messages per second
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 2, true, 1000);
 
         Method checkRateLimitMethod = MqttMessageRouter.class.getDeclaredMethod("checkRateLimit");
         checkRateLimitMethod.setAccessible(true);
@@ -167,7 +124,7 @@ public class MqttMessageRouterTest {
         // First 2 should pass
         assertTrue((Boolean) checkRateLimitMethod.invoke(router));
         assertTrue((Boolean) checkRateLimitMethod.invoke(router));
-        
+
         // 3rd should fail
         assertFalse((Boolean) checkRateLimitMethod.invoke(router));
         assertFalse((Boolean) checkRateLimitMethod.invoke(router));
@@ -188,19 +145,16 @@ public class MqttMessageRouterTest {
         Consumer<MqttMessage> listenerB = msg -> invocationOrder.add("B");
         Consumer<MqttMessage> listenerC = msg -> invocationOrder.add("C");
 
-        try (MockedStatic<MqttClientSingleton> singletonMock = mockStatic(MqttClientSingleton.class)) {
-            MqttClientSingleton mockInstance = mock(MqttClientSingleton.class);
-            Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class);
-            when(mockClient.subscribeWith()).thenThrow(new RuntimeException("Ignored"));
-            when(mockInstance.getClient()).thenReturn(mockClient);
-            singletonMock.when(MqttClientSingleton::getInstance).thenReturn(mockInstance);
+        Mqtt5AsyncClient mockClient = mock(Mqtt5AsyncClient.class);
+        when(mockClient.subscribeWith()).thenThrow(new RuntimeException("Ignored"));
 
-            try {
-                router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerA);
-            } catch (RuntimeException e) {}
-            router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerB);
-            router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerC);
-        }
+        MqttMessageRouter router = new MqttMessageRouter(mockClient, 5000, true, 1000);
+
+        try {
+            router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerA);
+        } catch (RuntimeException e) {}
+        router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerB);
+        router.subscribe("test/order", MqttQos.AT_LEAST_ONCE, listenerC);
 
         MqttMessage message = new MqttMessage("test/order", "payload", 1, Instant.now());
 
@@ -216,8 +170,10 @@ public class MqttMessageRouterTest {
 
     @Test
     void testLastMessageCache() throws Exception {
+        MqttMessageRouter router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
+
         MqttMessage message = new MqttMessage("test/cache", "payload", 1, Instant.now());
-        
+
         Method updateCacheMethod = MqttMessageRouter.class.getDeclaredMethod("updateCache", MqttMessage.class);
         updateCacheMethod.setAccessible(true);
         updateCacheMethod.invoke(router, message);
@@ -228,4 +184,3 @@ public class MqttMessageRouterTest {
         assertEquals("test/cache", cached.getTopic());
     }
 }
-

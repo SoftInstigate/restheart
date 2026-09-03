@@ -78,6 +78,9 @@ public class MqttSseService implements SseService {
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("mqtt-router")
+    private MqttMessageRouter router;
+
     private String defaultTopic;
     private int defaultQos;
     private int perConnectionQueueCapacity;
@@ -114,7 +117,7 @@ public class MqttSseService implements SseService {
 
         // Send cached message if available
         if (lastMessageCacheEnabled) {
-            MqttMessage cached = MqttMessageRouter.getInstance().getLastMessage(topicFilter);
+            MqttMessage cached = router.getLastMessage(topicFilter);
             if (cached != null) {
                 String payload = formatPayload(cached, true);
                 conn.send(payload, "mqtt-message", cached.getTopic() + "-" + cached.getReceivedAt().toEpochMilli(), null);
@@ -127,7 +130,7 @@ public class MqttSseService implements SseService {
                 LOGGER.warn("SSE client queue full for topic {}, dropping message", topicFilter);
             }
         };
-        MqttMessageRouter.getInstance().subscribe(topicFilter, MqttQos.fromCode(qos), listener);
+        router.subscribe(topicFilter, MqttQos.fromCode(qos), listener);
 
         // Drain queue on virtual thread
         Thread.ofVirtual().start(() -> {
@@ -152,7 +155,7 @@ public class MqttSseService implements SseService {
 
         // Cleanup on disconnect
         conn.addCloseTask(c -> {
-            MqttMessageRouter.getInstance().unsubscribe(topicFilter, listener);
+            router.unsubscribe(topicFilter, listener);
             LOGGER.debug("SSE client disconnected: topic={}", topicFilter);
         });
     }

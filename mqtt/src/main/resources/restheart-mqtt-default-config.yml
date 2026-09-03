@@ -14,7 +14,6 @@ plugins-args:
     tls: false
     tls-trust-store: ~                          # path to JKS/PKCS12
     tls-trust-store-password: ~
-    max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
     will:
       topic: ~
       payload: ~
@@ -31,6 +30,13 @@ plugins-args:
         qos: 1
       - topic: "traffic/#"
         qos: 0
+
+  # MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages
+  mqtt-router:
+    enabled: true
+    max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
+    last-message-cache: true
+    last-message-cache-size: 1000
 
   #MQTT SSE Service - Stream MQTT messages as Server-sent Events
   mqtt-sse:

@@ -33,13 +33,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.restheart.mqtt.model.MqttMessage;
 import org.restheart.mqtt.pipeline.FilterStage;
 import org.restheart.mqtt.pipeline.MqttEventPipeline;
+
+import com.hivemq.client.mqtt.MqttClient;
 
 import io.undertow.server.handlers.sse.ServerSentEventConnection;
 
@@ -52,8 +53,6 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  */
 public class MqttSseServiceTest {
 
-    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MqttSseServiceTest.class);
-
     private MqttSseService service;
     private Map<String, Object> config;
     private MqttMessageRouter router;
@@ -62,43 +61,17 @@ public class MqttSseServiceTest {
     void setUp() {
         service = new MqttSseService();
         config = new HashMap<>();
-        router = MqttMessageRouter.getInstance();
-
-        // Reset router state
-        try {
-            Field initializedField = MqttMessageRouter.class.getDeclaredField("initialized");
-            initializedField.setAccessible(true);
-            ((java.util.concurrent.atomic.AtomicBoolean) initializedField.get(router)).set(false);
-
-            Field listenersField = MqttMessageRouter.class.getDeclaredField("listeners");
-            listenersField.setAccessible(true);
-            ((Map<?, ?>) listenersField.get(router)).clear();
-
-            Field cacheField = MqttMessageRouter.class.getDeclaredField("lastMessageCache");
-            cacheField.setAccessible(true);
-            ((Map<?, ?>) cacheField.get(router)).clear();
-        } catch (Exception e) {
-            LOGGER.debug("Failed to reset MqttMessageRouter: {}", e.getMessage());
-        }
-
-        router.init(5000, true, 1000);
-    }
-
-    @AfterEach
-    void tearDown() {
-        try {
-            Field listenersField = MqttMessageRouter.class.getDeclaredField("listeners");
-            listenersField.setAccessible(true);
-            ((Map<?, ?>) listenersField.get(router)).clear();
-        } catch (Exception e) {
-            LOGGER.debug("Failed to clean MqttMessageRouter: {}", e.getMessage());
-        }
+        router = new MqttMessageRouter(mock(MqttClient.class), 5000, true, 1000);
     }
 
     private void injectConfig() throws Exception {
         Field configField = MqttSseService.class.getDeclaredField("config");
         configField.setAccessible(true);
         configField.set(service, config);
+
+        Field routerField = MqttSseService.class.getDeclaredField("router");
+        routerField.setAccessible(true);
+        routerField.set(service, router);
     }
 
     private void callInit() throws Exception {

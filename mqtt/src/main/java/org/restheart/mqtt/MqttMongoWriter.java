@@ -91,6 +91,9 @@ public class MqttMongoWriter {
     @Inject("config")
     private Map<String, Object> config;
 
+    @Inject("mqtt-router")
+    private MqttMessageRouter router;
+
     private MongoClient mongoClient;
     private MessageBuffer buffer;
     private int batchSize;
@@ -101,6 +104,22 @@ public class MqttMongoWriter {
     private String idField;
     private List<MongoSink> sinks;
     private volatile boolean running;
+
+    /**
+     * Default constructor used by RESTHeart plugin instantiation.
+     */
+    public MqttMongoWriter() {
+    }
+
+    /**
+     * Package-private constructor for unit tests, allowing a test double for the router to be
+     * supplied without going through {@link Inject} field injection.
+     *
+     * @param router the router to subscribe to configured topic filters
+     */
+    MqttMongoWriter(MqttMessageRouter router) {
+        this.router = router;
+    }
 
     @OnInit
     public void init() {
@@ -144,7 +163,7 @@ public class MqttMongoWriter {
 
         // Subscribe to topics
         for (MongoSink sink : sinks) {
-            MqttMessageRouter.getInstance().subscribe(sink.topic, MqttQos.AT_LEAST_ONCE, buffer::offer);
+            router.subscribe(sink.topic, MqttQos.AT_LEAST_ONCE, buffer::offer);
             LOGGER.info("Subscribed to topic {} → {}.{}", sink.topic, sink.database, sink.collection);
         }
 

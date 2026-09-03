@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.mqtt.model.MqttMessage;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
@@ -55,6 +56,9 @@ import com.google.gson.JsonObject;
 )
 public class MqttRestService implements JsonService {
 
+    @Inject("mqtt-router")
+    private MqttMessageRouter router;
+
     @Override
     public void handle(JsonRequest request, JsonResponse response) {
         switch (request.getMethod()) {
@@ -75,7 +79,7 @@ public class MqttRestService implements JsonService {
             return;
         }
 
-        MqttMessage cached = MqttMessageRouter.getInstance().getLastMessage(topic);
+        MqttMessage cached = router.getLastMessage(topic);
 
         if (cached == null) {
             response.setStatusCode(HttpStatus.SC_NOT_FOUND);
