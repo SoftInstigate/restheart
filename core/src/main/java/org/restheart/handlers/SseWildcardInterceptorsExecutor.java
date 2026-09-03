@@ -1,3 +1,24 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart
+ * %%
+ * Copyright (C) 2014 - 2026 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
+ */
+
 package org.restheart.handlers;
 
 import java.util.ArrayList;
@@ -22,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
  * Runs the enabled {@link WildcardInterceptor}s for a given {@link InterceptPoint}
@@ -44,9 +66,19 @@ import io.undertow.server.HttpServerExchange;
  * headers, query parameters and the authenticated account, and (on the response side) a
  * working {@code setInError}.
  *
- * <p>Denial only takes effect at {@code REQUEST_AFTER_AUTH}, mirroring
- * {@link RequestInterceptorsExecutor}: denying at {@code REQUEST_BEFORE_AUTH} would let an
- * unauthenticated request learn something about the endpoint from the error response.
+ * <p>The SSE pipeline runs this executor twice for the same exchange: once at
+ * {@code REQUEST_BEFORE_AUTH}, once at {@code REQUEST_AFTER_AUTH}. A denial raised via
+ * {@code response.setInError(...)} at {@code REQUEST_BEFORE_AUTH} is <strong>deferred, not
+ * ignored</strong>, mirroring {@link RequestInterceptorsExecutor} (see the comment above its
+ * {@code REQUEST_AFTER_AUTH} check): sending the error response before authentication would
+ * let an unauthenticated client learn something about the endpoint. The two invocations share
+ * a single {@code SseHandshakeRequest}/{@code SseHandshakeResponse} pair for the exchange,
+ * attached under an {@link AttachmentKey} owned by this class (deliberately not
+ * {@code ServiceRequest}/{@code ServiceResponse}'s own {@code REQUEST_KEY}/{@code RESPONSE_KEY},
+ * which other handlers on this pipeline rely on staying unpopulated): whichever invocation runs
+ * first creates the pair, the other reuses it. So a status code and body set on a
+ * {@code REQUEST_BEFORE_AUTH} denial are still the ones sent once {@code REQUEST_AFTER_AUTH}
+ * observes the exchange in error.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  * @see WildcardInterceptor
@@ -55,6 +87,22 @@ import io.undertow.server.HttpServerExchange;
  */
 public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SseWildcardInterceptorsExecutor.class);
+
+    /**
+     * Attachment key under which the {@code SseHandshakeRequest} shared by the
+     * {@code REQUEST_BEFORE_AUTH} and {@code REQUEST_AFTER_AUTH} invocations of this executor
+     * is stored, so a denial raised before auth carries its request context to the invocation
+     * that sends it.
+     */
+    private static final AttachmentKey<SseHandshakeRequest> SSE_HANDSHAKE_REQUEST_KEY = AttachmentKey.create(SseHandshakeRequest.class);
+
+    /**
+     * Attachment key under which the {@code SseHandshakeResponse} shared by the
+     * {@code REQUEST_BEFORE_AUTH} and {@code REQUEST_AFTER_AUTH} invocations of this executor
+     * is stored, so a denial raised before auth carries its status code and body to the
+     * invocation that sends it.
+     */
+    private static final AttachmentKey<SseHandshakeResponse> SSE_HANDSHAKE_RESPONSE_KEY = AttachmentKey.create(SseHandshakeResponse.class);
 
     private final InterceptPoint interceptPoint;
 
@@ -101,8 +149,17 @@ public class SseWildcardInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
-        var request = SseHandshakeRequest.of(exchange);
-        var response = SseHandshakeResponse.of(exchange);
+        var request = exchange.getAttachment(SSE_HANDSHAKE_REQUEST_KEY);
+        if (request == null) {
+            request = SseHandshakeRequest.of(exchange);
+            exchange.putAttachment(SSE_HANDSHAKE_REQUEST_KEY, request);
+        }
+
+        var response = exchange.getAttachment(SSE_HANDSHAKE_RESPONSE_KEY);
+        if (response == null) {
+            response = SseHandshakeResponse.of(exchange);
+            exchange.putAttachment(SSE_HANDSHAKE_RESPONSE_KEY, response);
+        }
 
         RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("{} SSE WILDCARD INTERCEPTORS for {} {}", interceptPoint, exchange.getRequestMethod(), exchange.getRequestPath());

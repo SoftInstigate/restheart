@@ -1,3 +1,23 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-commons
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+
 package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
@@ -15,10 +35,13 @@ import io.undertow.server.HttpServerExchange;
  * authenticated account) for a {@code WildcardInterceptor} to inspect and
  * modify, without pretending the SSE handshake has a parseable body.
  *
- * <p>The instance is never attached to the exchange, so several can be created
- * for the same exchange without conflict: the SSE pipeline runs interceptors at
- * both {@code REQUEST_BEFORE_AUTH} and {@code REQUEST_AFTER_AUTH}, each via its
- * own executor.
+ * <p>The instance is never attached to the exchange under {@code ServiceRequest}'s own
+ * {@code REQUEST_KEY}, so several can be created for the same exchange without conflicting
+ * with other handlers that look the request up that way. The SSE pipeline runs interceptors at
+ * both {@code REQUEST_BEFORE_AUTH} and {@code REQUEST_AFTER_AUTH}, via two invocations of
+ * {@code SseWildcardInterceptorsExecutor}, which itself keeps the two invocations on the same
+ * instance for a given exchange (under its own, dedicated attachment key) so that state set on
+ * the request before auth is still visible after auth.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  * @see org.restheart.plugins.WildcardInterceptor

@@ -1,3 +1,24 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart
+ * %%
+ * Copyright (C) 2014 - 2026 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
+ */
+
 package org.restheart.handlers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,13 +45,16 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 
 /**
  * Proves that {@link SseWildcardInterceptorsExecutor} wires {@link WildcardInterceptor}s
  * into the SSE handshake pipeline: it invokes them in the right place, honors {@code resolve()},
- * excludes non-wildcard interceptors, and lets a {@code REQUEST_AFTER_AUTH} denial short-circuit
- * the pipeline while a {@code REQUEST_BEFORE_AUTH} one does not.
+ * excludes non-wildcard interceptors, lets a {@code REQUEST_AFTER_AUTH} denial short-circuit the
+ * pipeline, and defers (rather than drops) a {@code REQUEST_BEFORE_AUTH} denial until the
+ * {@code REQUEST_AFTER_AUTH} invocation, at which point it is sent with its original status code
+ * and body.
  *
  * <p>{@code PluginsRegistryImpl} is a process-wide singleton reached via a static
  * {@code getInstance()} call, and {@link SseWildcardInterceptorsExecutor} reads it directly in
@@ -200,15 +224,21 @@ public class SseWildcardInterceptorsExecutorTest {
             assertEquals(403, exchange.getStatusCode(), "the denial status code must be written to the exchange");
             assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied by test interceptor"),
                     "the denial body must be sent to the client");
+            assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
+                            && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
+                    "the denial body must be sent with an application/json content type");
         }
     }
 
     @Test
-    public void beforeAuthWildcardInterceptorRunsBeforeTheNextHandlerAndDenialHasNoEffect() throws Exception {
+    public void beforeAuthWildcardInterceptorDenialIsDeferredNotSentImmediately() throws Exception {
         var calls = new ArrayList<String>();
-        // even though this interceptor calls setInError, REQUEST_BEFORE_AUTH denial must not
-        // short-circuit the pipeline (mirrors RequestInterceptorsExecutor: denying pre-auth would
-        // let an unauthenticated client learn something about the endpoint from the error body).
+        // this interceptor calls setInError, but REQUEST_BEFORE_AUTH denial must not
+        // short-circuit the pipeline nor be sent to the client yet (mirrors
+        // RequestInterceptorsExecutor: denying pre-auth would let an unauthenticated client
+        // learn something about the endpoint from the error body). The denial is deferred until
+        // the REQUEST_AFTER_AUTH invocation of this executor, not dropped: see
+        // beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBody below.
         var beforeAuth = new BeforeAuthWildcardInterceptor(calls, 403);
 
         try (var registryStatic = registryReturning(Set.of(record(beforeAuth)))) {
@@ -220,6 +250,47 @@ public class SseWildcardInterceptorsExecutorTest {
 
             assertEquals(List.of("beforeAuthWildcard", "securityHandler"), calls,
                     "the interceptor must run, then hand off to the next handler (the security handler)");
+            assertTrue(Exchange.isInError(exchange), "the denial must still flag the exchange as in error, for REQUEST_AFTER_AUTH to observe");
+            assertEquals(0, exchange.getStatusCode(), "the status code must not yet be written to the exchange: nothing has been sent");
+            assertEquals(null, exchange.getSentContent(), "the denial body must not be sent yet: it is deferred to REQUEST_AFTER_AUTH");
+        }
+    }
+
+    @Test
+    public void beforeAuthDenialIsDeferredAndSentAtAfterAuthWithStatusAndBody() throws Exception {
+        var calls = new ArrayList<String>();
+        // denies at REQUEST_BEFORE_AUTH
+        var beforeAuth = new BeforeAuthWildcardInterceptor(calls, 403);
+        // registered at REQUEST_AFTER_AUTH but does not resolve: only its presence matters here,
+        // so that the REQUEST_AFTER_AUTH executor's wildcardInterceptors list is non-empty and it
+        // reaches the in-error check below, exactly as it does in the real pipeline whenever at
+        // least one WildcardInterceptor is registered for REQUEST_AFTER_AUTH
+        var afterAuthNonResolving = new AfterAuthWildcardInterceptor(calls, false, null);
+
+        try (var registryStatic = registryReturning(Set.of(record(beforeAuth), record(afterAuthNonResolving)))) {
+            var nextHandlerStandIn = new RecordingHandler(calls, "next");
+            var afterAuthExecutor = new SseWildcardInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_AUTH);
+            var securityHandlerStandIn = new RecordingHandler(calls, "securityHandler");
+            var beforeAuthExecutor = new SseWildcardInterceptorsExecutor(InterceptPoint.REQUEST_BEFORE_AUTH);
+
+            // wires: beforeAuthExecutor -> securityHandlerStandIn -> afterAuthExecutor -> nextHandlerStandIn
+            var pipeline = PipelinedHandler.pipe(beforeAuthExecutor, securityHandlerStandIn, afterAuthExecutor, nextHandlerStandIn);
+
+            var exchange = fakeExchange();
+
+            pipeline.handleRequest(exchange);
+
+            assertEquals(List.of("beforeAuthWildcard", "securityHandler"), calls,
+                    "the before-auth interceptor and the security handler must run, but the pipeline must stop "
+                            + "at REQUEST_AFTER_AUTH once the deferred denial is observed: the final next handler must never run");
+            assertTrue(Exchange.isInError(exchange), "the exchange must be flagged in error");
+            assertEquals(403, exchange.getStatusCode(),
+                    "the status code set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth");
+            assertTrue(exchange.getSentContent() != null && exchange.getSentContent().contains("denied before auth"),
+                    "the body set by the REQUEST_BEFORE_AUTH denial must be the one sent after auth, not lost");
+            assertTrue(exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE) != null
+                            && exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE).contains("application/json"),
+                    "the deferred denial body must still be sent with an application/json content type");
         }
     }
 

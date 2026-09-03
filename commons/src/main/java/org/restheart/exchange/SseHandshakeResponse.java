@@ -1,3 +1,23 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-commons
+ * %%
+ * Copyright (C) 2019 - 2026 SoftInstigate
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+
 package org.restheart.exchange;
 
 import com.google.gson.JsonObject;
@@ -14,10 +34,16 @@ import io.undertow.server.HttpServerExchange;
  * real, working implementation: the SSE pipeline honors it at
  * {@code REQUEST_AFTER_AUTH} to reject a handshake (for instance, a
  * topic-authorization interceptor denying a subscription), following the same
- * JSON error body shape as {@link JsonResponse}.
+ * JSON error body shape as {@link JsonResponse}, and setting the same
+ * {@code application/json} content type.
  *
- * <p>The instance is never attached to the exchange, so several can be created
- * for the same exchange without conflict.
+ * <p>The instance is never attached to the exchange under {@code ServiceResponse}'s own
+ * {@code RESPONSE_KEY}, so several can be created for the same exchange without conflicting
+ * with other handlers that look the response up that way. {@code SseWildcardInterceptorsExecutor}
+ * keeps its two invocations (one at {@code REQUEST_BEFORE_AUTH}, one at
+ * {@code REQUEST_AFTER_AUTH}) on the same instance for a given exchange, under its own
+ * dedicated attachment key, so a denial raised before auth is still sent, with its status code
+ * and body, after auth.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  * @see org.restheart.plugins.WildcardInterceptor
@@ -55,7 +81,8 @@ public class SseHandshakeResponse extends ServiceResponse<Object> {
     /**
      * Sets the response in an error state, following the same JSON error body
      * shape as {@link JsonResponse#setInError(int, String, Throwable)}:
-     * {@code {"msg": "...", "exception": "..."}}.
+     * {@code {"msg": "...", "exception": "..."}}, and setting the
+     * {@code Content-Type} header to {@code application/json}.
      *
      * @param code the HTTP status code to set (e.g., 401, 403)
      * @param message the error message to include in the response, or null
@@ -65,6 +92,7 @@ public class SseHandshakeResponse extends ServiceResponse<Object> {
     public void setInError(int code, String message, Throwable t) {
         setInError(true);
         setStatusCode(code);
+        setContentTypeAsJson();
 
         var resp = new JsonObject();
 
