@@ -22,11 +22,9 @@
 package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.lang.reflect.Field;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -81,6 +79,8 @@ public class MqttReconnectIT {
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
         brokerPort = server.getPort();
+        // startServer() returns before the listener necessarily accepts connections
+        TestPorts.waitUntilOpen(brokerPort, 10000);
         LOGGER.info("Moquette started on port {}", brokerPort);
     }
 
@@ -173,24 +173,32 @@ public class MqttReconnectIT {
     }
 
     /**
-     * Waits until the given port accepts TCP connections.
+     * Waits until the client reaches the given state, or fails the test.
+     * <p>
+     * The client connects asynchronously and, on failure, enters
+     * {@code DISCONNECTED_RECONNECT} rather than reporting an error, so an
+     * instantaneous state assertion is inherently racy.
      */
-    private void waitForPort(int port, int timeoutMs) throws InterruptedException {
+    private void awaitClientState(MqttClientState expected, int timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
+        MqttClientState last = null;
         while (System.currentTimeMillis() < deadline) {
-            try (var socket = new Socket("localhost", port)) {
-                return; // port is open
+            try {
+                last = MqttClientSingleton.getInstance().getClient().getState();
+                if (last == expected) {
+                    return;
+                }
             } catch (Exception e) {
-                Thread.sleep(100);
+                // client may throw while reconnecting
             }
+            Thread.sleep(50);
         }
-        throw new InterruptedException("Port " + port + " not open after " + timeoutMs + "ms");
+        assertEquals(expected, last, "client did not reach " + expected + " within " + timeoutMs + "ms");
     }
 
     @Test
     void testMqttReconnectResubscribe() throws Exception {
-        MqttClient client = MqttClientSingleton.getInstance().getClient();
-        assertEquals(MqttClientState.CONNECTED, client.getState());
+        awaitClientState(MqttClientState.CONNECTED, 10000);
 
         LinkedBlockingQueue<MqttMessage> receivedMessages = new LinkedBlockingQueue<>();
         router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, receivedMessages::add);
@@ -218,23 +226,11 @@ public class MqttReconnectIT {
         server.startServer(new MemoryConfig(restartProps));
 
         // Wait for port to be actually open
-        waitForPort(brokerPort, 10000);
+        TestPorts.waitUntilOpen(brokerPort, 10000);
         LOGGER.info("Broker restarted on port {}, waiting for client reconnect...", brokerPort);
 
         // Wait for automatic reconnection
-        boolean reconnected = false;
-        for (int i = 0; i < 300; i++) {
-            try {
-                if (MqttClientSingleton.getInstance().getClient().getState() == MqttClientState.CONNECTED) {
-                    reconnected = true;
-                    break;
-                }
-            } catch (Exception e) {
-                // Client might throw during reconnect
-            }
-            Thread.sleep(100);
-        }
-        assertTrue(reconnected, "Client failed to reconnect after broker restart");
+        awaitClientState(MqttClientState.CONNECTED, 30000);
 
         // Wait for resubscription
         Thread.sleep(2000);
