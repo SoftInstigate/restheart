@@ -21,6 +21,7 @@
 package org.restheart.mqtt.model;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * POJO representing an MQTT message received from the broker.
@@ -90,5 +91,37 @@ public class MqttMessage {
     public String toString() {
         return String.format("MqttMessage{topic='%s', qos=%d, receivedAt=%s, payload='%s'}",
             topic, qos, receivedAt, payload);
+    }
+
+    /**
+     * Two {@code MqttMessage} instances are equal if and only if their topic, payload, QoS and
+     * receivedAt timestamp are all equal.
+     *
+     * @param o the object to compare against
+     * @return {@code true} if {@code o} is an {@code MqttMessage} with identical field values
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MqttMessage other)) {
+            return false;
+        }
+        return qos == other.qos
+            && Objects.equals(topic, other.topic)
+            && Objects.equals(payload, other.payload)
+            && Objects.equals(receivedAt, other.receivedAt);
+    }
+
+    /**
+     * Consistent with {@link #equals(Object)}: computed over topic, payload, QoS and
+     * receivedAt.
+     *
+     * @return the hash code
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(topic, payload, qos, receivedAt);
     }
 }

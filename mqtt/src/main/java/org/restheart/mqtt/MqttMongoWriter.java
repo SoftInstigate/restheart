@@ -206,7 +206,9 @@ public class MqttMongoWriter implements Initializer {
 
         // ID strategy
         idStrategy = configOrDefault(config, "id-strategy", "auto");
+        validateIdStrategy(idStrategy);
         idField = configOrDefault(config, "id-field", "messageId");
+        validateIdField(idStrategy, idField);
         deadLetterFile = configOrDefault(config, "dead-letter-file", "./mqtt-dead-letter.log");
 
         // Mongo sinks
@@ -421,6 +423,46 @@ public class MqttMongoWriter implements Initializer {
      */
     private boolean isDeduplicatingStrategy() {
         return "payload-field".equals(idStrategy) || "topic-timestamp-hash".equals(idStrategy);
+    }
+
+    /** The only accepted values for the {@code id-strategy} configuration key. */
+    private static final Set<String> VALID_ID_STRATEGIES = Set.of("auto", "payload-field", "topic-timestamp-hash");
+
+    /**
+     * Validates the {@code id-strategy} configuration key, failing fast at {@link #onInit()}
+     * rather than silently falling back to a default: an unrecognized value (e.g. a typo like
+     * {@code "paylod-field"}) would otherwise silently disable deduplication, which in a
+     * multi-node deployment means every node inserts its own copy of every message.
+     *
+     * @param value the configured {@code id-strategy} value
+     * @throws IllegalArgumentException if {@code value} is not one of {@link #VALID_ID_STRATEGIES}
+     */
+    private static void validateIdStrategy(String value) {
+        if (!VALID_ID_STRATEGIES.contains(value)) {
+            throw new IllegalArgumentException(
+                "Invalid value for id-strategy: \"" + value
+                    + "\". Accepted values are: auto, payload-field, topic-timestamp-hash");
+        }
+    }
+
+    /**
+     * Validates the {@code id-field} configuration key when {@code id-strategy} is
+     * {@code payload-field}: a blank or missing field name would silently fall back to
+     * {@code auto} behaviour for every message (see {@link #toDocument(MqttMessage)}), which is
+     * the same silent-deduplication-loss failure mode as an unrecognized {@code id-strategy}.
+     * The key is not otherwise inspected for the other id strategies, which do not use it.
+     *
+     * @param idStrategy the already-validated {@code id-strategy} value
+     * @param idField    the configured {@code id-field} value
+     * @throws IllegalArgumentException if {@code idStrategy} is {@code payload-field} and
+     *                                  {@code idField} is {@code null} or blank
+     */
+    private static void validateIdField(String idStrategy, String idField) {
+        if ("payload-field".equals(idStrategy) && (idField == null || idField.isBlank())) {
+            throw new IllegalArgumentException(
+                "Invalid value for id-field: \"" + idField
+                    + "\". It must not be null or blank when id-strategy is \"payload-field\"");
+        }
     }
 
     /**

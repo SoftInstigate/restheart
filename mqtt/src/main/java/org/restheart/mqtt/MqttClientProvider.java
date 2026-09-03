@@ -191,7 +191,7 @@ public class MqttClientProvider implements Provider<MqttClient>{
      */
     @Override
     public MqttClient get(final PluginRecord<?> caller) {
-        return MqttClientSingleton.get().getClient();
+        return MqttClientSingleton.getInstance().getClient();
     }
 
 }

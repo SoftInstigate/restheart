@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -69,18 +71,23 @@ public class MqttSseIT {
     private static Server server;
     private static int brokerPort;
     private static Properties brokerProps;
+    private static Path brokerDataPath;
 
     private MqttMessageRouter router;
 
     @BeforeAll
     static void startBroker() throws Exception {
         brokerPort = TestPorts.freePort();
+        // Even with persistence disabled, Moquette creates its data path regardless: point it at
+        // a per-test temporary directory so nothing is written under the mqtt module root.
+        brokerDataPath = Files.createTempDirectory("moquette-sse-it-data");
         brokerProps = new Properties();
         brokerProps.setProperty(IConfig.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
         brokerProps.setProperty(IConfig.HOST_PROPERTY_NAME, "localhost");
         brokerProps.setProperty(IConfig.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
         brokerProps.setProperty(IConfig.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
         brokerProps.setProperty(IConfig.ENABLE_TELEMETRY_NAME, "false");
+        brokerProps.setProperty(IConfig.DATA_PATH_PROPERTY_NAME, brokerDataPath.toString());
 
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
@@ -96,6 +103,31 @@ public class MqttSseIT {
             } catch (Exception e) {
                 LOGGER.debug("Error stopping broker: {}", e.getMessage());
             }
+        }
+        deleteRecursively(brokerDataPath);
+    }
+
+    /**
+     * Recursively deletes {@code path}, ignoring any failure: cleaning up the temporary
+     * broker data directory must never fail the test.
+     *
+     * @param path the directory to delete, may be {@code null}
+     */
+    private static void deleteRecursively(Path path) {
+        if (path == null) {
+            return;
+        }
+        try (var stream = Files.walk(path)) {
+            stream.sorted(java.util.Comparator.reverseOrder())
+                .forEach(p -> {
+                    try {
+                        Files.deleteIfExists(p);
+                    } catch (Exception e) {
+                        LOGGER.debug("Failed to delete {}: {}", p, e.getMessage());
+                    }
+                });
+        } catch (Exception e) {
+            LOGGER.debug("Failed to clean up broker data path {}: {}", path, e.getMessage());
         }
     }
 

@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -305,7 +304,7 @@ public class MqttSseService implements SseService {
             return true; // unlimited
         }
 
-        AtomicInteger counter = connectionsPerTopic.computeIfAbsent(topicFilter, k -> new AtomicInteger());
+        AtomicInteger counter = connectionsPerTopic.computeIfAbsent(topicFilter, _ -> new AtomicInteger());
         if (counter.incrementAndGet() > maxConnectionsPerTopic) {
             counter.decrementAndGet();
             return false;

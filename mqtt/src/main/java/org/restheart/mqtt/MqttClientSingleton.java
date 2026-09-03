@@ -62,7 +62,7 @@ import com.hivemq.client.util.TypeSwitch;
  * </p>
  * <p>
  * The singleton instance is initialized via the {@link #init} method and can be retrieved
- * using {@link #getInstance()} or {@link #get()}.
+ * using {@link #getInstance()}.
  * </p>
  * <p>
  * Thread-safety: {@link #init} must be called before any other method. After initialization,
@@ -133,15 +133,6 @@ public class MqttClientSingleton {
      */
     static MqttConfig getConfig() {
         return config;
-    }
-
-    /**
-     * Alias for {@link #getInstance()} to retrieve the singleton instance.
-     *
-     * @return the singleton {@link MqttClientSingleton} instance
-     */
-    public static MqttClientSingleton get() {
-        return getInstance();
     }
 
     /**
