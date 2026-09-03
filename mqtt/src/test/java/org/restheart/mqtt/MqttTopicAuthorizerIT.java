@@ -118,11 +118,26 @@ public class MqttTopicAuthorizerIT {
         assertFalse(MqttTopicAuthorizer.isTopicAllowed("", List.of("sensors/#")));
 
         // Topic with special characters
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/temp-001", "sensors/temp-001"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("sensors/temp_001", "sensors/+"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/temp-001", "sensors/temp-001"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors/temp_001"));
 
         // Deep nesting
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("a/b/c/d/e/f/g", "a/b/c/d/e/f/g"));
-        assertTrue(MqttTopicAuthorizer.topicMatchesPattern("a/b/c/d/e/f/g", "a/#"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("a/b/c/d/e/f/g", "a/b/c/d/e/f/g"));
+        assertTrue(MqttTopicAuthorizer.patternCovers("a/#", "a/b/c/d/e/f/g"));
+    }
+
+    // --- SECURITY: a client must not be able to widen its granted filter ---
+
+    @Test
+    @DisplayName("IoT: a sensor reader granted sensors/+ cannot escalate by requesting sensors/#")
+    void testCannotEscalateSingleLevelGrantToMultiLevelRequest() {
+        List<String> readerAcl = List.of("sensors/+", "devices/+/status");
+
+        // legitimately covered, same-depth requests
+        assertTrue(MqttTopicAuthorizer.isTopicAllowed("sensors/temperature", readerAcl));
+
+        // the escalation: requesting a broader filter than the one granted
+        assertFalse(MqttTopicAuthorizer.isTopicAllowed("sensors/#", readerAcl));
+        assertFalse(MqttTopicAuthorizer.isTopicAllowed("#", readerAcl));
     }
 }

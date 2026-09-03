@@ -60,13 +60,12 @@ import org.slf4j.LoggerFactory;
  * </pre>
  * </p>
  * <p>
- * ACL entries are matched against the topic filter using MQTT wildcard rules:
- * <ul>
- *   <li>{@code #} — matches all topics</li>
- *   <li>{@code sensors/#} — matches any topic starting with {@code sensors/}</li>
- *   <li>{@code sensors/+/temp} — matches {@code sensors/room1/temp} etc.</li>
- *   <li>{@code sensors/temp} — exact match</li>
- * </ul>
+ * The requested value is itself an MQTT topic <em>filter</em> (it may contain
+ * {@code +}/{@code #} wildcards), not a concrete topic. An ACL entry therefore
+ * does not match it the way a filter matches a topic; instead the ACL pattern
+ * must <em>cover</em> the requested filter, i.e. every concrete topic the
+ * requested filter could ever select must already be selected by the ACL
+ * pattern. See {@link #patternCovers(String, String)} for the precise rules.
  * </p>
  * <p>
  * This interceptor fails closed: a request with no authenticated account is
@@ -212,7 +211,7 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         }
 
         for (String pattern : allowedTopics) {
-            if (topicMatchesPattern(topicFilter, pattern)) {
+            if (patternCovers(pattern, topicFilter)) {
                 return true;
             }
         }
@@ -220,52 +219,99 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
     }
 
     /**
-     * Checks if a topic filter matches an ACL pattern using MQTT wildcard rules.
+     * Determines whether an ACL pattern <em>covers</em> a requested topic
+     * filter, i.e. whether every concrete topic the requested filter could
+     * ever select is already selected by the ACL pattern. This is filter
+     * <em>containment</em>, not topic matching.
+     * <p>
+     * The distinction matters because the value being authorized here is not
+     * a concrete topic — it is itself a filter that the client is about to
+     * subscribe with, and that filter may carry its own {@code +}/{@code #}
+     * wildcards. Matching it against the ACL pattern as if it were a plain
+     * topic (as {@link MqttTopicMatcher#matches(String, String)} does for the
+     * router) treats those wildcard characters as ordinary literal level
+     * names, which lets a client escalate its privileges simply by asking
+     * for a broader filter than the one it was granted: an ACL of
+     * {@code sensors/+} would wrongly appear to "match" a request for
+     * {@code sensors/#}, even though {@code sensors/#} selects topics (e.g.
+     * {@code sensors/a/b}) that {@code sensors/+} never grants.
+     * </p>
+     * <p>
+     * Containment is decided level by level, comparing the ACL pattern
+     * against the requested filter:
+     * </p>
+     * <ul>
+     *   <li>an ACL level of {@code #} covers the requested level and every
+     *       level below it — containment holds for the remainder,
+     *       regardless of what the requested filter still contains;</li>
+     *   <li>an ACL level of {@code +} covers a requested level that is a
+     *       literal, or {@code +}, but <strong>not</strong> {@code #}, since
+     *       {@code #} spans an unbounded number of levels that a single-level
+     *       wildcard cannot vouch for;</li>
+     *   <li>a literal ACL level covers only the identical literal requested
+     *       level; it does not cover {@code +} or {@code #};</li>
+     *   <li>if the ACL pattern runs out of levels while the requested filter
+     *       still has some, containment fails;</li>
+     *   <li>if the requested filter runs out while the ACL pattern still has
+     *       levels, containment fails unless the sole remaining ACL level is
+     *       {@code #};</li>
+     *   <li>an ACL pattern of {@code #} alone covers everything.</li>
+     * </ul>
      *
-     * @param topic   the topic filter to check
-     * @param pattern the ACL pattern (may contain + and # wildcards)
-     * @return {@code true} if the topic matches the pattern
+     * @param aclPattern     the ACL pattern granted to the account (may contain
+     *                       {@code +} and {@code #} wildcards)
+     * @param requestedFilter the topic filter the client is requesting to
+     *                       subscribe to (may also contain wildcards)
+     * @return {@code true} if {@code aclPattern} covers every topic that
+     *         {@code requestedFilter} could ever select
      */
-    static boolean topicMatchesPattern(String topic, String pattern) {
-        if (pattern.equals("#")) {
+    static boolean patternCovers(String aclPattern, String requestedFilter) {
+        if ("#".equals(aclPattern)) {
             return true;
         }
 
-        if (topic.equals(pattern)) {
+        if (aclPattern.equals(requestedFilter)) {
             return true;
         }
 
-        String[] topicLevels = topic.split("/");
-        String[] patternLevels = pattern.split("/");
+        String[] patternLevels = aclPattern.split("/");
+        String[] requestedLevels = requestedFilter.split("/");
 
-        // Multi-level wildcard: pattern ends with /#
-        boolean hasMultiLevel = pattern.endsWith("/#");
-        int effectivePatternLength = hasMultiLevel ? patternLevels.length - 1 : patternLevels.length;
-
-        // Topic must have at least as many levels as the pattern (excluding #)
-        if (topicLevels.length < effectivePatternLength) {
-            return false;
-        }
-
-        // If no multi-level wildcard, level count must match exactly
-        if (!hasMultiLevel && topicLevels.length != patternLevels.length) {
-            return false;
-        }
-
-        // Check each level up to the multi-level wildcard
-        for (int i = 0; i < effectivePatternLength; i++) {
+        int i = 0;
+        for (; i < patternLevels.length; i++) {
             String patternLevel = patternLevels[i];
-            String topicLevel = topicLevels[i];
 
-            if (patternLevel.equals("+")) {
-                continue; // single-level wildcard matches any level
+            if ("#".equals(patternLevel)) {
+                // covers the requested level and everything below it, no
+                // matter how many requested levels remain (including none)
+                return true;
             }
 
-            if (!patternLevel.equals(topicLevel)) {
+            if (i >= requestedLevels.length) {
+                // the requested filter ran out of levels; only a trailing
+                // '#' (handled above) could still cover it
+                return false;
+            }
+
+            String requestedLevel = requestedLevels[i];
+
+            if ("+".equals(patternLevel)) {
+                if ("#".equals(requestedLevel)) {
+                    // a single-level wildcard cannot cover an unbounded
+                    // multi-level wildcard
+                    return false;
+                }
+                continue; // + covers a literal level or a + at this level
+            }
+
+            // a literal ACL level covers only the identical literal level
+            if (!patternLevel.equals(requestedLevel)) {
                 return false;
             }
         }
 
-        return true;
+        // the ACL pattern is exhausted: containment holds only if the
+        // requested filter is exhausted too
+        return i == requestedLevels.length;
     }
 }
