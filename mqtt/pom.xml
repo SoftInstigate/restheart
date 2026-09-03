@@ -47,6 +47,16 @@
       <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -110,7 +120,7 @@
         <configuration>
           <verbose>true</verbose>
           <includes>
-            <includes>*/.java</includes>
+            <include>**/*.java</include>
           </includes>
         </configuration>
         <executions>
@@ -129,6 +139,7 @@
               <processEndTag>=========================LICENSE_END==================================</processEndTag>
               <roots>
                 <root>src/main/java</root>
+                <root>src/test</root>
               </roots>
             </configuration>
           </execution>
