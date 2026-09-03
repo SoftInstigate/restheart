@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -43,6 +44,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonDocument;
@@ -261,6 +263,74 @@ public class MqttMongoWriterTest {
         String hash2 = MqttMongoWriter.computeHash("sensors/humidity", "2026-01-01T00:00:00Z");
 
         assertFalse(hash1.equals(hash2), "Different topics should produce different hashes");
+    }
+
+    // --- id-strategy / id-field validation at onInit (an unknown id-strategy must not silently
+    // disable deduplication) ---
+
+    @Test
+    @DisplayName("onInit() rejects an unknown id-strategy value, naming the key, the offending value and the accepted set")
+    void testOnInitRejectsUnknownIdStrategy() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "paylod-field", // typo, must not be silently accepted
+            "mongo-sink", List.of());
+        setField(writer, "config", config);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
+        assertTrue(ex.getMessage().contains("id-strategy"), "message should name the offending key");
+        assertTrue(ex.getMessage().contains("paylod-field"), "message should name the offending value");
+        assertTrue(ex.getMessage().contains("payload-field") && ex.getMessage().contains("topic-timestamp-hash")
+            && ex.getMessage().contains("auto"), "message should list the accepted values");
+    }
+
+    @Test
+    @DisplayName("onInit() accepts each of the three documented id-strategy values and completes initialization")
+    void testOnInitAcceptsValidIdStrategies() throws Exception {
+        for (String value : List.of("auto", "payload-field", "topic-timestamp-hash")) {
+            MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+            Map<String, Object> config = Map.of(
+                "id-strategy", value,
+                "id-field", "messageId",
+                "mongo-sink", List.of());
+            setField(writer, "config", config);
+
+            writer.onInit();
+            try {
+                assertEquals(value, getField(writer, "idStrategy"));
+            } finally {
+                writer.close();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("onInit() rejects a blank id-field when id-strategy is payload-field")
+    void testOnInitRejectsBlankIdFieldForPayloadFieldStrategy() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "payload-field",
+            "id-field", "   ",
+            "mongo-sink", List.of());
+        setField(writer, "config", config);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
+        assertTrue(ex.getMessage().contains("id-field"), "message should name the offending key");
+        assertTrue(ex.getMessage().contains("payload-field"), "message should explain why it matters");
+    }
+
+    @Test
+    @DisplayName("A blank id-field is not validated when id-strategy does not use it")
+    void testBlankIdFieldAllowedWhenIdStrategyIsNotPayloadField() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "id-field", "",
+            "mongo-sink", List.of());
+        setField(writer, "config", config);
+
+        writer.onInit();
+        writer.close();
     }
 
     // --- topic matching ---
