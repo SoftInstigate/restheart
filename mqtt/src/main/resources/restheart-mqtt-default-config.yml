@@ -77,6 +77,7 @@ plugins-args:
       retry-delay-ms: 1000
     id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
     id-field: "messageId"                       # field name when id-strategy = "payload-field"
+    dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
     mongo-sink:
       - topic: "sensors/#"
         database: "iot"
