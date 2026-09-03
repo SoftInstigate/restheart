@@ -35,13 +35,14 @@ import org.restheart.plugins.mcp.McpResource;
  * (see #616): {@code enabled}, {@code description} (required), {@code examples}.
  *
  * <p>Unlike the MongoDB kinds, a GraphQL app exposes a single, fixed {@code execute} action —
- * every query and mutation goes through the same {@code POST} with a standard GraphQL-over-HTTP
- * body ({@code query}/{@code variables}/{@code operationName}, see {@code GraphQLRequest} in
- * commons) — so {@code body_schema} documents that fixed envelope, not any one operation. The
- * SDL-derived {@code Query}/{@code Mutation} field list (parsed via {@link SdlContextBuilder})
- * is documentation of what can go in the {@code query} string, not invocation params in the
- * REST sense, so it surfaces under {@code extra("operations", ...)} rather than {@code params} —
- * the same pattern MongoDB's builders use for pipeline-specific extras
+ * every query goes through the same {@code POST} with a standard GraphQL-over-HTTP body
+ * ({@code query}/{@code variables}/{@code operationName}, see {@code GraphQLRequest} in commons)
+ * — so {@code body_schema} documents that fixed envelope, not any one operation. RESTHeart's
+ * GraphQL API is read-only (no mutation execution path), so only {@code Query} fields are ever
+ * surfaced — see {@link SdlContextBuilder}. The SDL-derived field list is documentation of what
+ * can go in the {@code query} string, not invocation params in the REST sense, so it surfaces
+ * under {@code extra("operations", ...)} rather than {@code params} — the same pattern
+ * MongoDB's builders use for pipeline-specific extras
  * ({@code org.restheart.mongodb.mcp.AggregationMcpResourceBuilder}).
  */
 public final class GraphqlAppMcpResourceBuilder {
@@ -52,7 +53,7 @@ public final class GraphqlAppMcpResourceBuilder {
     /**
      * @param appUri the app's resource URI (e.g. {@code https://host/graphql/warehouse})
      * @param mcp    the app document's own top-level {@code mcp} block, or {@code null} if absent
-     * @param sdl    the app's raw SDL ({@code schema} field), used to list its queries/mutations
+     * @param sdl    the app's raw SDL ({@code schema} field), used to list its queries
      * @return the resource, or empty if not MCP-enabled: no {@code mcp} block,
      *         {@code mcp.enabled == false}, or a missing required {@code description}
      */
@@ -81,16 +82,10 @@ public final class GraphqlAppMcpResourceBuilder {
                 "execute",
                 ex.get("args") instanceof BsonDocument args ? BsonJavaConverter.toMap(args) : Map.of()));
 
-        var operations = new LinkedHashMap<String, Object>();
         var queries = SdlContextBuilder.queries(sdl);
-        var mutations = SdlContextBuilder.mutations(sdl);
         if (!queries.isEmpty()) {
+            var operations = new LinkedHashMap<String, Object>();
             operations.put("queries", queries.stream().map(GraphqlAppMcpResourceBuilder::toMap).toList());
-        }
-        if (!mutations.isEmpty()) {
-            operations.put("mutations", mutations.stream().map(GraphqlAppMcpResourceBuilder::toMap).toList());
-        }
-        if (!operations.isEmpty()) {
             builder.extra("operations", operations);
         }
 
@@ -99,7 +94,7 @@ public final class GraphqlAppMcpResourceBuilder {
 
     private static Map<String, Object> bodySchema() {
         var properties = new LinkedHashMap<String, Object>();
-        properties.put("query", Map.of("type", "string", "description", "GraphQL query or mutation document."));
+        properties.put("query", Map.of("type", "string", "description", "GraphQL query document (RESTHeart's GraphQL API is read-only; mutations are not supported)."));
         properties.put("variables", Map.of("type", "object", "description", "Variables referenced by the query."));
         properties.put("operationName", Map.of("type", "string", "description",
                 "Name of the operation to execute, if the document defines more than one."));

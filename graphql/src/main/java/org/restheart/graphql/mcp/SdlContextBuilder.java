@@ -35,11 +35,16 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import org.restheart.graphql.scalars.BsonScalars;
 
 /**
- * Parses a GraphQL app's SDL (schema) string into the {@code Query}/{@code Mutation} operations
- * it declares — one entry per field on those root types, with its argument names/types and
- * return type exactly as written in the SDL. Used by {@code GraphqlAppMcpResourceBuilder} to
- * document what an agent can put in a GraphQL request's {@code query} string; it does not
- * validate or execute anything, only reads the type declarations.
+ * Parses a GraphQL app's SDL (schema) string into the {@code Query} operations it declares —
+ * one entry per field on the {@code Query} root type, with its argument names/types and return
+ * type exactly as written in the SDL. Used by {@code GraphqlAppMcpResourceBuilder} to document
+ * what an agent can put in a GraphQL request's {@code query} string; it does not validate or
+ * execute anything, only reads the type declarations.
+ *
+ * <p>{@code Mutation} is deliberately not parsed: RESTHeart's GraphQL implementation is
+ * read-only and has no mutation execution path (confirmed against the {@code graphql} module's
+ * source — nothing anywhere resolves or executes a {@code Mutation} root type), so surfacing one
+ * via MCP would advertise an operation that fails whenever an agent actually tries it.
  *
  * <p>Mirrors {@code GraphQLApp.Builder.build()}: the app's raw SDL is prefixed with
  * {@link BsonScalars#getBsonScalarHeader()} before parsing, since app schemas routinely
@@ -52,7 +57,7 @@ public final class SdlContextBuilder {
     public record Arg(String name, String type, boolean required) {
     }
 
-    /** One field of the {@code Query} or {@code Mutation} root type. */
+    /** One field of the {@code Query} root type. */
     public record Operation(String name, List<Arg> args, String returnType) {
     }
 
@@ -61,15 +66,6 @@ public final class SdlContextBuilder {
 
     /** @return the {@code Query} type's fields, or an empty list if the SDL has none/fails to parse */
     public static List<Operation> queries(String sdl) {
-        return operations(sdl, "Query");
-    }
-
-    /** @return the {@code Mutation} type's fields, or an empty list if the SDL has none/fails to parse */
-    public static List<Operation> mutations(String sdl) {
-        return operations(sdl, "Mutation");
-    }
-
-    private static List<Operation> operations(String sdl, String rootTypeName) {
         if (sdl == null || sdl.isBlank()) {
             return List.of();
         }
@@ -81,14 +77,14 @@ public final class SdlContextBuilder {
             return List.of();
         }
 
-        Optional<ObjectTypeDefinition> rootType;
+        Optional<ObjectTypeDefinition> queryType;
         try {
-            rootType = registry.getType(rootTypeName, ObjectTypeDefinition.class);
+            queryType = registry.getType("Query", ObjectTypeDefinition.class);
         } catch (RuntimeException e) {
             return List.of();
         }
 
-        return rootType.map(t -> t.getFieldDefinitions().stream().map(SdlContextBuilder::toOperation).toList())
+        return queryType.map(t -> t.getFieldDefinitions().stream().map(SdlContextBuilder::toOperation).toList())
                 .orElseGet(List::of);
     }
 

@@ -41,7 +41,6 @@ public class SdlContextBuilderTest {
     @Test
     public void nullSdl_emptyOperations() {
         assertTrue(SdlContextBuilder.queries(null).isEmpty());
-        assertTrue(SdlContextBuilder.mutations(null).isEmpty());
     }
 
     @Test
@@ -55,9 +54,8 @@ public class SdlContextBuilderTest {
     }
 
     @Test
-    public void noQueryOrMutationType_emptyOperations() {
+    public void noQueryType_emptyOperations() {
         assertTrue(SdlContextBuilder.queries("type Item { sku: String }").isEmpty());
-        assertTrue(SdlContextBuilder.mutations("type Item { sku: String }").isEmpty());
     }
 
     @Test
@@ -90,12 +88,13 @@ public class SdlContextBuilderTest {
     }
 
     @Test
-    public void mutations_parsedSeparatelyFromQueries() {
-        var mutations = SdlContextBuilder.mutations(SDL);
+    public void mutationTypeInSdl_neverSurfacedByQueries() {
+        // RESTHeart's GraphQL API is read-only and has no mutation execution path; even when an
+        // app's SDL declares a Mutation type, queries() must not surface its fields as if they
+        // were callable — only Query fields are ever returned
+        var queries = SdlContextBuilder.queries(SDL);
 
-        assertEquals(1, mutations.size());
-        assertEquals("createOrder", mutations.get(0).name());
-        assertEquals("Order", mutations.get(0).returnType());
+        assertTrue(queries.stream().noneMatch(op -> op.name().equals("createOrder")));
     }
 
     @Test

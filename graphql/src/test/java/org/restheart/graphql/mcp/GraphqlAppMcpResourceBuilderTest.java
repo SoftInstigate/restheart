@@ -96,15 +96,22 @@ public class GraphqlAppMcpResourceBuilderTest {
         var operations = (Map<String, Object>) resource.extra().get("operations");
         @SuppressWarnings("unchecked")
         var queries = (List<Map<String, Object>>) operations.get("queries");
-        @SuppressWarnings("unchecked")
-        var mutations = (List<Map<String, Object>>) operations.get("mutations");
 
         assertEquals(1, queries.size());
         assertEquals("lowStock", queries.get(0).get("name"));
         assertEquals("[Item]", queries.get(0).get("return_type"));
+    }
 
-        assertEquals(1, mutations.size());
-        assertEquals("createOrder", mutations.get(0).get("name"));
+    @Test
+    public void mutationsInSdl_neverSurfaced() {
+        // RESTHeart's GraphQL API is read-only; the SDL's Mutation type (createOrder) must never
+        // appear anywhere in the resource, since RESTHeart has no way to execute it
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var resource = GraphqlAppMcpResourceBuilder.build(APP_URI, mcp, SDL).orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        var operations = (Map<String, Object>) resource.extra().get("operations");
+        assertNull(operations.get("mutations"));
     }
 
     @Test
