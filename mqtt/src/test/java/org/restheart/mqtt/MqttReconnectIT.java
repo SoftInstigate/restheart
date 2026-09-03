@@ -40,8 +40,8 @@ import org.restheart.mqtt.model.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
+import io.moquette.broker.config.IConfig;
 import io.moquette.broker.config.MemoryConfig;
 
 import com.hivemq.client.mqtt.MqttClient;
@@ -71,11 +71,11 @@ public class MqttReconnectIT {
     static void startBroker() throws Exception {
         brokerPort = TestPorts.freePort();
         brokerProps = new Properties();
-        brokerProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
-        brokerProps.setProperty(BrokerConstants.HOST_PROPERTY_NAME, "localhost");
-        brokerProps.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
-        brokerProps.setProperty(BrokerConstants.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
-        brokerProps.setProperty(BrokerConstants.ENABLE_TELEMETRY_NAME, "false");
+        brokerProps.setProperty(IConfig.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
+        brokerProps.setProperty(IConfig.HOST_PROPERTY_NAME, "localhost");
+        brokerProps.setProperty(IConfig.ALLOW_ANONYMOUS_PROPERTY_NAME, "true");
+        brokerProps.setProperty(IConfig.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
+        brokerProps.setProperty(IConfig.ENABLE_TELEMETRY_NAME, "false");
 
         server = new Server();
         server.startServer(new MemoryConfig(brokerProps));
@@ -211,7 +211,7 @@ public class MqttReconnectIT {
 
         // Restart broker on same port
         Properties restartProps = new Properties(brokerProps);
-        restartProps.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
+        restartProps.setProperty(IConfig.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
         server = new Server();
         server.startServer(new MemoryConfig(restartProps));
 
