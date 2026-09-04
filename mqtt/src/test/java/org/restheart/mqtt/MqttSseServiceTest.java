@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -155,6 +156,64 @@ public class MqttSseServiceTest {
 
         int qos = service.resolveQos(service.parseQueryString("topic=sensors/"));
         assertEquals(1, qos);
+    }
+
+    // --- Fix 1: an out-of-range ?qos= must fall back to default-qos, not reach MqttQos.fromCode(n)
+    // as null and blow up the router's "highest QoS wins" tracking for everyone subscribed to
+    // the same filter. ---
+
+    @Test
+    @DisplayName("Out-of-range QoS above 2 in query string falls back to default QoS")
+    void testAboveRangeQosFallsBackToDefault() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("default-qos", 1);
+        callInit();
+
+        int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=7"));
+        assertEquals(1, qos, "qos=7 is out of MqttQos's 0..2 range and must fall back to default-qos");
+    }
+
+    @Test
+    @DisplayName("Out-of-range QoS below 0 in query string falls back to default QoS")
+    void testBelowRangeQosFallsBackToDefault() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("default-qos", 2);
+        callInit();
+
+        int qos = service.resolveQos(service.parseQueryString("topic=sensors/&qos=-1"));
+        assertEquals(2, qos, "qos=-1 is out of MqttQos's 0..2 range and must fall back to default-qos");
+    }
+
+    // --- Fix 2: default-qos itself must be validated at init, since resolveQos() now falls back
+    // to it whenever the query string is missing, unparseable or out of range. ---
+
+    @Test
+    @DisplayName("An out-of-range default-qos fails fast at init, naming the key")
+    void testOutOfRangeDefaultQosFailsAtInit() {
+        config.put("default-topic", "sensors/#");
+        config.put("default-qos", 5);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, this::callInitUnchecked);
+        assertTrue(ex.getMessage().contains("default-qos"), "message should name the offending key");
+    }
+
+    @Test
+    @DisplayName("Each of the three valid default-qos values (0, 1, 2) is accepted at init")
+    void testValidDefaultQosValuesAcceptedAtInit() {
+        for (int value : List.of(0, 1, 2)) {
+            config.clear();
+            config.put("default-topic", "sensors/#");
+            config.put("default-qos", value);
+            assertDoesNotThrowUnchecked(this::callInitUnchecked, "default-qos=" + value + " must be accepted");
+        }
+    }
+
+    private void assertDoesNotThrowUnchecked(Runnable action, String message) {
+        try {
+            action.run();
+        } catch (RuntimeException e) {
+            throw new AssertionError(message + " (threw " + e + ")", e);
+        }
     }
 
     // --- Payload envelope format tests ---
@@ -361,6 +420,21 @@ public class MqttSseServiceTest {
         }
     }
 
+    // --- Fix 5: a pipeline entry missing a topic must fail fast, not silently build a spec that
+    // selectPipeline() can never select. ---
+
+    @Test
+    @DisplayName("A pipeline entry missing a topic fails fast at init")
+    void testPipelineEntryMissingTopicFailsAtInit() {
+        config.put("default-topic", "sensors/#");
+        config.put("pipeline", List.of(
+            Map.of("stages", List.of(Map.of("type", "throttle", "max-events-per-second", 10)))
+        ));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, this::callInitUnchecked);
+        assertTrue(ex.getMessage().contains("topic"), "message should mention the missing 'topic' key");
+    }
+
     // --- Filter stage built from topic-regex and min-qos (finding M9) ---
 
     @Test
@@ -562,6 +636,66 @@ public class MqttSseServiceTest {
             verify(mockRouter, times(2)).subscribe(anyString(), any(MqttQos.class), any());
         } finally {
             open3.set(false);
+        }
+    }
+
+    // --- Test gap: onConnect must actually send router.getLastMessages(topicFilter) when
+    // last-message-cache is enabled, and send nothing from the cache when it is disabled. ---
+
+    @Test
+    @DisplayName("onConnect sends cached messages from the router when last-message-cache is enabled")
+    void testOnConnectSendsCachedMessagesWhenCacheEnabled() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("payload-envelope", true);
+        config.put("last-message-cache", true);
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        MqttMessage cached1 = new MqttMessage("sensors/temp", "{\"v\":1}", 1, Instant.now());
+        MqttMessage cached2 = new MqttMessage("sensors/humidity", "{\"v\":2}", 0, Instant.now());
+        when(mockRouter.getLastMessages(anyString())).thenReturn(List.of(cached1, cached2));
+        injectMockRouter(mockRouter);
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+
+        try {
+            service.onConnect(conn, null);
+
+            verify(mockRouter).getLastMessages("sensors/#");
+
+            ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+            verify(conn, times(2)).send(payloadCaptor.capture(), anyString(), anyString(), any());
+            for (String payload : payloadCaptor.getAllValues()) {
+                assertTrue(payload.contains("\"cached\":true"), "cached messages must be flagged cached=true");
+            }
+        } finally {
+            open.set(false);
+        }
+    }
+
+    @Test
+    @DisplayName("onConnect sends nothing from the cache when last-message-cache is disabled")
+    void testOnConnectSendsNothingWhenCacheDisabled() throws Exception {
+        config.put("default-topic", "sensors/#");
+        config.put("last-message-cache", false);
+        callInit();
+
+        MqttMessageRouter mockRouter = mock(MqttMessageRouter.class);
+        when(mockRouter.getLastMessages(anyString()))
+            .thenReturn(List.of(new MqttMessage("sensors/temp", "{}", 1, Instant.now())));
+        injectMockRouter(mockRouter);
+
+        AtomicBoolean open = new AtomicBoolean(true);
+        ServerSentEventConnection conn = mockConnection("topic=sensors/%23", open);
+
+        try {
+            service.onConnect(conn, null);
+
+            verify(mockRouter, never()).getLastMessages(anyString());
+            verify(conn, never()).send(anyString(), anyString(), anyString(), any());
+        } finally {
+            open.set(false);
         }
     }
 

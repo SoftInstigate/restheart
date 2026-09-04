@@ -114,8 +114,15 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
     /**
      * Establishes, with no associated listener, the broker subscriptions listed under the
      * {@code subscriptions} configuration key, each shaped as {@code {topic: "...", qos: N}}.
-     * Entries missing a topic are skipped; a missing or non-numeric {@code qos} defaults to
-     * {@code 0}.
+     * Entries missing a topic, or whose topic is not a (non-blank) string, are skipped with a
+     * warning; the remaining entries are still subscribed. A missing {@code qos} defaults to
+     * {@code 0}, but a {@code qos} that is present and does not resolve to 0, 1 or 2 - whether
+     * an out-of-range integer (e.g. {@code 5}) or a value of the wrong type (e.g. a non-numeric
+     * string) - fails fast here, at {@link #init()}, naming the offending key and entry, rather
+     * than silently defaulting to 0 for a value the user actually wrote.
+     *
+     * @throws IllegalArgumentException if an entry's {@code qos} is present but does not resolve
+     *                                   to 0, 1 or 2
      */
     @SuppressWarnings("unchecked")
     private void subscribeConfiguredTopics() {
@@ -128,11 +135,47 @@ public class MqttRouterProvider implements Provider<MqttMessageRouter> {
                 continue;
             }
 
-            final Object qosValue = subscription.get("qos");
-            final int qosCode = qosValue instanceof Number number ? number.intValue() : 0;
+            final int qosCode = resolveConfiguredQos(subscription);
 
             router.subscribeFromConfig(topicFilter, MqttQos.fromCode(qosCode));
         }
+    }
+
+    /**
+     * Resolves the {@code qos} of a single {@code subscriptions} entry, accepting either a
+     * {@link Number} or a numeric {@link String} (e.g. a value quoted in YAML, a common slip).
+     * A missing {@code qos} defaults to {@code 0}; a {@code qos} that is present but does not
+     * resolve to 0, 1 or 2 fails fast, naming the offending entry, instead of silently yielding
+     * 0 for a value the user actually wrote.
+     *
+     * @param subscription a single {@code subscriptions} entry
+     * @return the resolved QoS code (0, 1 or 2)
+     * @throws IllegalArgumentException if {@code qos} is present but does not resolve to 0, 1 or 2
+     */
+    private static int resolveConfiguredQos(Map<String, Object> subscription) {
+        final Object qosValue = subscription.get("qos");
+        if (qosValue == null) {
+            return 0;
+        }
+
+        Integer qosCode = null;
+        if (qosValue instanceof Number number) {
+            qosCode = number.intValue();
+        } else if (qosValue instanceof String s) {
+            try {
+                qosCode = Integer.parseInt(s.trim());
+            } catch (NumberFormatException e) {
+                qosCode = null;
+            }
+        }
+
+        if (qosCode == null || MqttQos.fromCode(qosCode) == null) {
+            throw new IllegalArgumentException(
+                "Invalid value for subscriptions[].qos: " + qosValue + " in entry " + subscription
+                    + ". Accepted values are: 0, 1, 2");
+        }
+
+        return qosCode;
     }
 
     /**
