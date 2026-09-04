@@ -70,7 +70,7 @@ public final class CollectionMcpResourceBuilder {
                 .transport(McpResource.Transport.HTTP);
 
         builder.action("query", a -> {
-            a.method("GET").pathTemplate("");
+            a.method("GET").pathTemplate("").readable(true);
             a.param("filter", "object", false);
             a.param("sort", "string", false);
             a.param("keys", "object", false);
@@ -79,7 +79,7 @@ public final class CollectionMcpResourceBuilder {
         });
 
         builder.action("get", a -> {
-            a.method("GET").pathTemplate("/{id}");
+            a.method("GET").pathTemplate("/{id}").readable(true);
             a.param("id", "string", true);
         });
 

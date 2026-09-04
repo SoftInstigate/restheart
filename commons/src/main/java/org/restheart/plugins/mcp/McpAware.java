@@ -23,6 +23,7 @@ package org.restheart.plugins.mcp;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Implemented by a plugin that wants to be exposed to AI agents via MCP.
@@ -98,6 +99,31 @@ public interface McpAware {
      */
     default List<McpResourceTemplate> describeTemplates(McpContext ctx) {
         return List.of();
+    }
+
+    /**
+     * Implements {@code resources/read} "documents mode" (#617) for one action of a resource this
+     * plugin contributes — called only for an action the resource itself declared
+     * {@code readable: true} on (see {@link McpResource.Action#readable()}); the framework
+     * validates that before calling this, so an implementation never has to re-check eligibility.
+     *
+     * <p>Called in-process — no {@code HttpServerExchange} is created or required by the
+     * framework. The implementation talks directly to its own engine (a {@code MongoClient}, a
+     * GraphQL execution engine, ...), exactly as it already does inside its own {@code handle()}
+     * method, applying the exact same ACL/validation enforcement its normal REST path does.
+     *
+     * @param resource the resource URI being read (without any query string/extra path — the
+     *                 same URI {@link #describeMcp(McpContext)} produced for it)
+     * @param action   the {@code readable} action being invoked (e.g. {@code query}, {@code get})
+     * @param args     already-parsed arguments (query string for a collection, path segment for
+     *                 a single document, ...), validated against the action's declared
+     *                 {@code params}/{@code body_schema} before this is called
+     * @return the resource's actual content, or {@link Optional#empty()} to fall back to
+     *         context-mode (e.g. a plugin that marks no action readable never needs to override
+     *         this at all — the default already returns empty)
+     */
+    default Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
+        return Optional.empty();
     }
 
     private static Map<String, Object> castKeys(Map<?, ?> m) {

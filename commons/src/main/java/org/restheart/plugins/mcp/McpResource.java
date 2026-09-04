@@ -163,11 +163,21 @@ public final class McpResource {
         private final Map<String, Param> params = new LinkedHashMap<>();
         private Map<String, Object> bodySchema;
         private String description;
+        private boolean readable;
 
         public Action method(String method) { this.method = method; return this; }
         public Action pathTemplate(String pathTemplate) { this.pathTemplate = pathTemplate; return this; }
         public Action bodySchema(Map<String, Object> bodySchema) { this.bodySchema = bodySchema; return this; }
         public Action description(String description) { this.description = description; return this; }
+
+        /**
+         * Marks this action servable by {@code resources/read} documents-mode (#617) — the
+         * framework calls {@code McpAware.readResource(...)} for it instead of returning
+         * context. Only ever set on a safe/idempotent, GET-shaped action (e.g. {@code query},
+         * {@code get}); the framework doesn't enforce that, it's the plugin's own choice.
+         */
+        public Action readable(boolean readable) { this.readable = readable; return this; }
+        public boolean readable() { return readable; }
 
         public Action param(String name, String type, boolean required) {
             params.put(name, new Param(type, null, required, null, null));
@@ -203,6 +213,9 @@ public final class McpResource {
             }
             if (description != null) {
                 m.put("description", description);
+            }
+            if (readable) {
+                m.put("readable", true);
             }
             return m;
         }
