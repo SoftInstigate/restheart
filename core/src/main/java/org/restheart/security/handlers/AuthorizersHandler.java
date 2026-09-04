@@ -166,8 +166,6 @@ public class AuthorizersHandler extends PipelinedHandler {
             return false;
         }
 
-        var authorizersStartTime = System.currentTimeMillis();
-
         // Check VETOER authorizers first
         var vetoers = authorizers.stream()
                 .filter(a -> a.isEnabled())
@@ -182,7 +180,6 @@ public class AuthorizersHandler extends PipelinedHandler {
             LOGGER.debug("Checking {} VETOER authorizers", vetoers.size());
         }
 
-        var vetoerStartTime = System.currentTimeMillis();
         var vetoerResult = true;
 
         for (var vetoer : vetoers) {
@@ -210,12 +207,9 @@ public class AuthorizersHandler extends PipelinedHandler {
             }
         }
 
-        var vetoerDuration = System.currentTimeMillis() - vetoerStartTime;
-
         if (!vetoerResult) {
             return false;
         }
-
 
         // Check ALLOWER authorizers
         var allowers = authorizers.stream()
@@ -231,7 +225,6 @@ public class AuthorizersHandler extends PipelinedHandler {
             LOGGER.debug("Checking {} ALLOWER authorizers", allowers.size());
         }
 
-        var allowerStartTime = System.currentTimeMillis();
         var allowerResult = false;
 
         for (var allower : allowers) {
@@ -256,10 +249,6 @@ public class AuthorizersHandler extends PipelinedHandler {
                         allowerName, allowerClass, requestMethod, requestPath, userPrincipal, allowerCheckDuration, ex);
             }
         }
-
-        var allowerDuration = System.currentTimeMillis() - allowerStartTime;
-        var totalDuration = System.currentTimeMillis() - authorizersStartTime;
-
 
         return vetoerResult && allowerResult;
     }
