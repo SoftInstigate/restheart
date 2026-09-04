@@ -147,10 +147,38 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         return Map.copyOf(result);
     }
 
+    /**
+     * Matches on a path segment boundary rather than a plain
+     * {@code String.startsWith}, and deliberately does <strong>not</strong>
+     * collapse to an exact-match {@code path.equals("/mqtt")}. Both
+     * {@code MqttRestService} ({@code /mqtt}, via
+     * {@code RegisterPlugin.uriMatchPolicy()}'s default of
+     * {@code MATCH_POLICY.PREFIX}) and the SSE pipeline
+     * ({@code /mqtt-sse}, registered with {@code MATCH_POLICY.PREFIX}
+     * unconditionally by {@code plugSseService}) are mounted as URI
+     * <em>prefixes</em>, so requests such as {@code /mqtt/anything} or
+     * {@code /mqtt-sse/anything} genuinely reach these services and
+     * {@code MqttRestService.handleGet} reads the {@code topic} query
+     * parameter regardless of the sub-path. An exact match here would stop
+     * the ACL from ever applying to those sub-paths — a topic-authorization
+     * bypass. Every sub-path of {@code /mqtt} and {@code /mqtt-sse} must
+     * still be authorized, so segment-boundary matching (equal to the base,
+     * or starting with base + "/") is what's required, not equality.
+     */
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
         String path = request.getPath();
-        return path.startsWith("/mqtt-sse") || path.startsWith("/mqtt");
+        return matchesBase(path, "/mqtt-sse") || matchesBase(path, "/mqtt");
+    }
+
+    /**
+     * Returns {@code true} if {@code path} is exactly {@code base} or a
+     * sub-path of it (i.e. {@code base} followed by a {@code /} segment
+     * separator), never merely a string with {@code base} as a character
+     * prefix.
+     */
+    private static boolean matchesBase(String path, String base) {
+        return path.equals(base) || path.startsWith(base + "/");
     }
 
     @Override

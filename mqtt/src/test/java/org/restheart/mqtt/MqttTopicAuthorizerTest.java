@@ -463,6 +463,68 @@ public class MqttTopicAuthorizerTest {
     }
 
     @Test
+    @DisplayName("resolve() is true for /mqtt/, the plain MQTT endpoint with a trailing slash")
+    void testResolveTrueForMqttTrailingSlash() {
+        ServiceRequest<?> request = requestWithPath("/mqtt/");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertTrue(authorizer.resolve(request, response));
+    }
+
+    @Test
+    @DisplayName("resolve() is true for a sub-path of /mqtt, because MqttRestService is mounted "
+        + "as a URI prefix and every sub-path genuinely reaches it and must still be authorized")
+    void testResolveTrueForMqttSubPath() {
+        ServiceRequest<?> request = requestWithPath("/mqtt/sub/path");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertTrue(authorizer.resolve(request, response),
+            "/mqtt is registered with MATCH_POLICY.PREFIX, so /mqtt/sub/path reaches "
+                + "MqttRestService just like /mqtt does; an exact-match resolve() would let this "
+                + "request bypass the ACL entirely");
+    }
+
+    @Test
+    @DisplayName("resolve() is true for a sub-path of /mqtt-sse, because the SSE pipeline is "
+        + "mounted as a URI prefix and every sub-path genuinely reaches it")
+    void testResolveTrueForMqttSseSubPath() {
+        ServiceRequest<?> request = requestWithPath("/mqtt-sse/sub");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertTrue(authorizer.resolve(request, response),
+            "/mqtt-sse is registered with MATCH_POLICY.PREFIX, so /mqtt-sse/sub reaches the SSE "
+                + "pipeline just like /mqtt-sse does; an exact-match resolve() would let this "
+                + "request bypass the ACL entirely");
+    }
+
+    @Test
+    @DisplayName("resolve() is false for /mqttx, which merely shares a character prefix with /mqtt")
+    void testResolveFalseForMqttxLookalike() {
+        ServiceRequest<?> request = requestWithPath("/mqttx");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertFalse(authorizer.resolve(request, response));
+    }
+
+    @Test
+    @DisplayName("resolve() is false for /mqtt-foo, which merely shares a character prefix with /mqtt")
+    void testResolveFalseForMqttFooLookalike() {
+        ServiceRequest<?> request = requestWithPath("/mqtt-foo");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertFalse(authorizer.resolve(request, response));
+    }
+
+    @Test
+    @DisplayName("resolve() is false for /mqttsse, which merely shares a character prefix with /mqtt")
+    void testResolveFalseForMqttsseLookalike() {
+        ServiceRequest<?> request = requestWithPath("/mqttsse");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertFalse(authorizer.resolve(request, response));
+    }
+
+    @Test
     @DisplayName("resolve() is false for an unrelated path")
     void testResolveFalseForUnrelatedPath() {
         ServiceRequest<?> request = requestWithPath("/some-other-service");
