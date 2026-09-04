@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.plugins.mcp.McpResource;
 
 /**
  * Covers the pure, argument-parsing and tool-definition parts of {@link McpService}.
@@ -93,5 +94,23 @@ public class McpServiceTest {
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
         assertEquals(Set.of("resource", "action", "args", "transport", "token"), properties.keySet());
+    }
+
+    @Test
+    public void resourceName_isTheLastPathSegment() {
+        var resource = McpResource.builder().uri("https://host/warehouse/inventory").build();
+        assertEquals("inventory", McpService.resourceName(resource));
+    }
+
+    @Test
+    public void resourceName_nestedUri_isStillJustTheLastSegment() {
+        var resource = McpResource.builder().uri("https://host/warehouse/inventory/_aggrs/byStatus").build();
+        assertEquals("byStatus", McpService.resourceName(resource));
+    }
+
+    @Test
+    public void resourceName_rootUri_fallsBackToFullUri() {
+        var resource = McpResource.builder().uri("https://host/").build();
+        assertEquals("https://host/", McpService.resourceName(resource));
     }
 }

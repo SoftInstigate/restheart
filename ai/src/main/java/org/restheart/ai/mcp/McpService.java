@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
 import org.restheart.ai.mcp.tools.HowToCallTool;
@@ -40,6 +41,8 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -50,11 +53,14 @@ import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapperSupplier;
 import io.modelcontextprotocol.json.schema.jackson3.JacksonJsonSchemaValidatorSupplier;
 import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 
 /**
  * RESTHeart's MCP server: exposes exactly two tools, {@code list_apis} and
@@ -97,6 +103,22 @@ public class McpService implements ByteArrayService {
     private ListApisTool listApisTool;
     private HowToCallTool howToCallTool;
     private McpJsonMapper jsonMapper;
+    private CachedResourceLookup resourceLookup;
+    private McpSyncServer server;
+
+    /**
+     * Absolute base URL used for the MCP {@code resources} primitive (#617) — {@code null}
+     * disables it entirely. Unlike {@code list_apis}/{@code how_to_call}, which resolve
+     * {@code baseUrl} fresh per request (see {@link #resolveBaseUrl}), the official MCP SDK's
+     * resources API (verified against its bytecode: {@code McpSyncServer.addResource}/
+     * {@code removeResource}) is a single mutable registry for the whole server, not a
+     * per-request computation — so it needs one canonical, operator-configured URL rather than
+     * whatever a given request's {@code Host}/{@code X-Forwarded-*} headers happen to say.
+     */
+    private String publicBaseUrl;
+
+    /** Guards the one-time initial resource-registry population — see {@link #handle} and {@link #init()}'s comment on why it can't happen in {@code init()} itself. */
+    private final AtomicBoolean resourcesInitialized = new AtomicBoolean(false);
 
     @OnInit
     public void init() {
@@ -107,23 +129,34 @@ public class McpService implements ByteArrayService {
 
         provider = new UndertowStreamableServerTransportProvider(jsonMapper);
 
+        publicBaseUrl = config != null && config.get("public-base-url") instanceof String s && !s.isBlank() ? s : null;
+
         // Catalog data is cached for this TTL rather than invalidated by watching every
         // McpAware implementation's own data source (a MongoDB write, a config change, ...) —
         // one uniform mechanism for all of them, trading instant consistency for a bounded
         // staleness window. On expiry, connected agents are told to refetch.
         var catalogTtlSeconds = argOrDefault(config, "catalog-ttl-seconds", DEFAULT_CATALOG_TTL_SECONDS);
-        var resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::notifyToolsListChanged);
+        resourceLookup = new CachedResourceLookup(mcpAwareRegistry, Duration.ofSeconds(catalogTtlSeconds), this::onCatalogExpired);
         listApisTool = new ListApisTool(resourceLookup);
         howToCallTool = new HowToCallTool(resourceLookup);
 
-        McpServer.sync(provider)
+        var serverBuilder = McpServer.sync(provider)
                 .serverInfo("restheart-mcp", "1.0.0")
                 .jsonMapper(jsonMapper)
                 .jsonSchemaValidator(schemaValidator)
-                .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
+                .capabilities(capabilities())
                 .toolCall(listApisToolDefinition(), this::callListApis)
-                .toolCall(howToCallToolDefinition(), this::callHowToCall)
-                .build();
+                .toolCall(howToCallToolDefinition(), this::callHowToCall);
+
+        // Neither resources nor templates are registered here: both are built by calling
+        // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
+        // methods run in an unspecified cross-plugin order (see OnInit's own javadoc) — another
+        // plugin's own @OnInit (e.g. GraphQLService's) may not have run yet, leaving its internal
+        // state null and throwing (confirmed live). list_apis/how_to_call avoid this by only ever
+        // calling describeMcp() from an actual incoming request, which can't happen before every
+        // plugin's @OnInit has completed — resources and templates must be seeded the same way,
+        // in handle() on first real traffic, not here.
+        server = serverBuilder.build();
 
         // Without this, a client's open GET/SSE stream (or an in-flight tool-call's SSE
         // response) blocks its worker thread forever inside
@@ -139,12 +172,113 @@ public class McpService implements ByteArrayService {
         }));
 
         LOGGER.info("MCP service initialized on {} (Streamable HTTP transport)", "/mcp");
+        if (publicBaseUrl != null) {
+            LOGGER.info("MCP resources primitive enabled, public-base-url={}", publicBaseUrl);
+        }
     }
 
-    /** Runs once per catalog cache entry that expires (see {@link CachedResourceLookup}); tells already-connected agents to refetch. */
+    private McpSchema.ServerCapabilities capabilities() {
+        var builder = McpSchema.ServerCapabilities.builder().tools(true);
+        if (publicBaseUrl != null) {
+            // subscribe not yet implemented (#617 phase 5) — listChanged only for now
+            builder.resources(false, true);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Runs once per catalog cache entry that expires (see {@link CachedResourceLookup}): tells
+     * already-connected agents to refetch tools, and — if the resources primitive is enabled —
+     * re-syncs the MCP SDK's resource registry against the same fresh catalog.
+     */
+    private void onCatalogExpired() {
+        notifyToolsListChanged();
+        if (publicBaseUrl != null) {
+            syncResourceRegistry();
+        }
+    }
+
     private void notifyToolsListChanged() {
         provider.notifyClients("notifications/tools/list_changed", null)
                 .subscribe(v -> {}, err -> LOGGER.warn("Failed to notify clients of tools/list_changed: {}", err.getMessage()));
+    }
+
+    // -------------------------------------------------------------------------
+    // Resources primitive (#617) — phase 1: resources/list, resources/templates/list,
+    // and resources/read context-mode only. Documents-mode (readable actions,
+    // McpAware.readResource()) and resources/subscribe are later phases.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Full remove-then-readd, rather than diffing — simpler, and correct even when a resource's
+     * content (not just its existence) changed: each {@code SyncResourceSpecification}'s read
+     * handler closes over a specific {@code McpResource} snapshot, so an in-place content change
+     * still needs a fresh registration to be reflected. Also doubles as the very first
+     * population (called from {@code handle()} on first traffic, see {@link #init()}'s comment
+     * on why it can't happen any earlier) — {@code server.listResources()} is simply empty then,
+     * so "remove current" is a no-op and this just adds the initial set.
+     */
+    private void syncResourceRegistry() {
+        server.listResources().stream().map(McpSchema.Resource::uri).toList().forEach(server::removeResource);
+        resourceLookup.all(null, publicBaseUrl).forEach(r -> server.addResource(toResourceSpec(r)));
+
+        server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList().forEach(server::removeResourceTemplate);
+        resourceLookup.templates(publicBaseUrl).forEach(t -> server.addResourceTemplate(toTemplateSpec(t)));
+
+        server.notifyResourcesListChanged();
+    }
+
+    private McpServerFeatures.SyncResourceSpecification toResourceSpec(McpResource resource) {
+        var sdkResource = McpSchema.Resource.builder()
+                .uri(resource.uri())
+                .name(resourceName(resource))
+                .description(resource.description())
+                .mimeType("application/json")
+                .build();
+        return new McpServerFeatures.SyncResourceSpecification(sdkResource, (exchange, request) -> readContext(resource));
+    }
+
+    /** Context mode: identical content to {@code list_apis(resource)} — the same per-kind builders, just reached via {@code resources/read}. */
+    private McpSchema.ReadResourceResult readContext(McpResource resource) {
+        try {
+            var text = jsonMapper.writeValueAsString(resource.toMap());
+            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(resource.uri(), "application/json", text)));
+        } catch (Exception e) {
+            LOGGER.error("Failed to serialize resource {}", resource.uri(), e);
+            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(resource.uri(), "text/plain", "internal error: " + e.getMessage())));
+        }
+    }
+
+    /** Display label for a resource — the last path segment of its URI (e.g. {@code "inventory"}, {@code "byStatus"}); not required to be unique. */
+    static String resourceName(McpResource resource) {
+        var path = resource.uri().replaceFirst("^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+", "");
+        var lastSegment = path.substring(path.lastIndexOf('/') + 1);
+        return lastSegment.isBlank() ? resource.uri() : lastSegment;
+    }
+
+    /**
+     * Wraps a {@link McpResourceTemplate} contributed by a plugin's {@code describeTemplates(ctx)}
+     * (e.g. Mongo's, mount-aware via {@code MountUriResolver} — see #617) into the MCP SDK's own
+     * registry entry. A template only advertises URI *shape* — it never bypasses the opt-in
+     * requirement: its read handler looks up the requested URI in the same cached catalog as
+     * everything else, so a syntactically-matching URI for a resource that isn't {@code
+     * mcp.enabled} still fails, exactly as it would via {@code list_apis}/{@code how_to_call}.
+     */
+    private McpServerFeatures.SyncResourceTemplateSpecification toTemplateSpec(McpResourceTemplate resourceTemplate) {
+        var template = McpSchema.ResourceTemplate.builder(resourceTemplate.uriTemplate(), resourceTemplate.name())
+                .title(resourceTemplate.title())
+                .description(resourceTemplate.description())
+                .mimeType("application/json")
+                .build();
+        return new McpServerFeatures.SyncResourceTemplateSpecification(template, (exchange, request) -> readTemplateMatch(request.uri()));
+    }
+
+    /** A URI matching a template's shape still must be an actual, currently mcp-enabled resource — same lookup {@code how_to_call} uses. */
+    private McpSchema.ReadResourceResult readTemplateMatch(String uri) {
+        return resourceLookup.find(null, publicBaseUrl, uri)
+                .map(this::readContext)
+                .orElseGet(() -> new McpSchema.ReadResourceResult(
+                        List.of(new TextResourceContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri))));
     }
 
     // -------------------------------------------------------------------------
@@ -153,6 +287,15 @@ public class McpService implements ByteArrayService {
 
     @Override
     public void handle(ByteArrayRequest req, ByteArrayResponse res) throws Exception {
+        // First real request to /mcp — the earliest point every plugin's own @OnInit is
+        // guaranteed to have completed (the HTTP listener doesn't start serving until plugin
+        // init finishes), so it's the earliest SAFE point to call describeMcp() on other
+        // plugins. See init()'s comment: doing this inside mcpService's own @OnInit crashed on
+        // GraphQLService's not-yet-initialized state (cross-plugin @OnInit order is unspecified).
+        if (publicBaseUrl != null && resourcesInitialized.compareAndSet(false, true)) {
+            syncResourceRegistry();
+        }
+
         if (req.isOptions()) {
             handleOptions(req);
             return;

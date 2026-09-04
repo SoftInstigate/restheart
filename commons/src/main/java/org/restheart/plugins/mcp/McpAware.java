@@ -86,6 +86,20 @@ public interface McpAware {
     default void registerInvalidationHook(InvalidationHook hook) {
     }
 
+    /**
+     * Returns the URI-template shapes (RFC 6570) this plugin can produce concrete
+     * {@link McpResource}s for — e.g. one per {@code mongo-mounts} entry shape, rather than one
+     * per actual database/collection. Used only for the MCP {@code resources/templates/list}
+     * primitive; unrelated to {@link #describeMcp(McpContext)}, which still enumerates every
+     * concrete resource regardless of whether templates are also advertised.
+     *
+     * <p>Default returns no templates — most plugins expose a fixed, small resource set where a
+     * template adds nothing a client couldn't already see via {@code resources/list}.
+     */
+    default List<McpResourceTemplate> describeTemplates(McpContext ctx) {
+        return List.of();
+    }
+
     private static Map<String, Object> castKeys(Map<?, ?> m) {
         var result = new LinkedHashMap<String, Object>();
         m.forEach((k, v) -> result.put(String.valueOf(k), v));

@@ -206,6 +206,33 @@ public class MongoMcpAwareImplTest {
     }
 
     @Test
+    public void describeTemplates_defaultMount_hasNoDbSegment() {
+        // the actual default mongo-mounts: {what: "restheart", where: "/"}
+        var resolver = new MountUriResolver(List.of(new Mount("restheart", "/")));
+
+        var templates = new MongoMcpAwareImpl(new FakeMetadataSource(), resolver).describeTemplates(CTX).stream()
+                .map(t -> t.uriTemplate()).toList();
+
+        assertEquals(List.of(
+                "https://host/{collection}",
+                "https://host/{collection}/_aggrs/{name}",
+                "https://host/{collection}/_streams/{name}"), templates);
+    }
+
+    @Test
+    public void describeTemplates_wildcardMount_includesDbSegment() {
+        var resolver = new MountUriResolver(List.of(new Mount("*", "/")));
+
+        var templates = new MongoMcpAwareImpl(new FakeMetadataSource(), resolver).describeTemplates(CTX).stream()
+                .map(t -> t.uriTemplate()).toList();
+
+        assertTrue(templates.contains("https://host/{db}"));
+        assertTrue(templates.contains("https://host/{db}/{collection}"));
+        assertTrue(templates.contains("https://host/{db}/{collection}/_aggrs/{name}"));
+        assertTrue(templates.contains("https://host/{db}/{collection}/_streams/{name}"));
+    }
+
+    @Test
     public void databaseWithNoMcpBlock_producesNoDatabaseResourceButKeepsCollections() {
         var metadata = new FakeMetadataSource()
                 .withCollections("warehouse", "inventory")

@@ -95,4 +95,37 @@ public class MountUriResolverTest {
 
         assertEquals("/api/warehouse", resolver.databasePath("warehouse").orElseThrow());
     }
+
+    @Test
+    public void defaultMount_collectionTemplateHasNoDbSegment() {
+        // RESTHeart's actual default mongo-mounts: {what: "restheart", where: "/"}
+        var resolver = new MountUriResolver(List.of(new Mount("restheart", "/")));
+
+        assertEquals(List.of(), resolver.databasePathTemplates());
+        assertEquals(List.of("/{collection}"), resolver.collectionPathTemplates());
+    }
+
+    @Test
+    public void flattenedSingleDatabaseMount_collectionTemplateHasNoDbSegment() {
+        var resolver = new MountUriResolver(List.of(new Mount("restheart/{*}", "/")));
+
+        assertEquals(List.of(), resolver.databasePathTemplates());
+        assertEquals(List.of("/{collection}"), resolver.collectionPathTemplates());
+    }
+
+    @Test
+    public void wildcardMount_templatesIncludeDbSegment() {
+        var resolver = new MountUriResolver(List.of(new Mount("*", "/")));
+
+        assertEquals(List.of("/{db}"), resolver.databasePathTemplates());
+        assertEquals(List.of("/{db}/{collection}"), resolver.collectionPathTemplates());
+    }
+
+    @Test
+    public void fixedCollectionMount_contributesNoTemplate() {
+        var resolver = new MountUriResolver(List.of(new Mount("/restheart/users", "/api/v1/users")));
+
+        assertEquals(List.of(), resolver.databasePathTemplates());
+        assertEquals(List.of(), resolver.collectionPathTemplates());
+    }
 }

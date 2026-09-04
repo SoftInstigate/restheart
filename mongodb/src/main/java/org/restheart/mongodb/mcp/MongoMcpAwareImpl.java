@@ -34,6 +34,7 @@ import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.utils.BsonUtils;
 
 /**
@@ -164,6 +165,35 @@ public final class MongoMcpAwareImpl {
         }
 
         return resources;
+    }
+
+    /**
+     * URI templates (RFC 6570) for the context-mode shapes this implementation produces,
+     * derived from the actual {@code mongo-mounts} configuration via {@link MountUriResolver}
+     * rather than a hardcoded {@code /{db}/{collection}} shape — a default {@code mongo-mounts}
+     * (a single database mounted at {@code /}) exposes collections at {@code /{collection}}, with
+     * no {@code {db}} segment at all.
+     *
+     * <p>Multiple mounts of the same shape (e.g. two separate {@code *} wildcard mounts) each
+     * contribute their own template with the same {@code name} — harmless, since {@code name} is
+     * only a display label and dispatch is by {@code uriTemplate} match, not by name.
+     */
+    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
+        var baseUrl = ctx.baseUrl();
+        var templates = new ArrayList<McpResourceTemplate>();
+
+        for (var dbTemplate : mountResolver.databasePathTemplates()) {
+            templates.add(new McpResourceTemplate(baseUrl + dbTemplate, "database-context", "Database — context"));
+        }
+
+        for (var collTemplate : mountResolver.collectionPathTemplates()) {
+            var uri = baseUrl + collTemplate;
+            templates.add(new McpResourceTemplate(uri, "collection-context", "Collection — context"));
+            templates.add(new McpResourceTemplate(uri + "/_aggrs/{name}", "aggregation-context", "Aggregation — context"));
+            templates.add(new McpResourceTemplate(uri + "/_streams/{name}", "change-stream-context", "Change stream — context"));
+        }
+
+        return templates;
     }
 
     private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {

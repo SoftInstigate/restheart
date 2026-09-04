@@ -55,6 +55,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -129,6 +130,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     @Override
     public List<McpResource> describeMcp(McpContext ctx) {
         return mcpAware.describeMcp(ctx);
+    }
+
+    @Override
+    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
+        return mcpAware.describeTemplates(ctx);
     }
 
     @Override

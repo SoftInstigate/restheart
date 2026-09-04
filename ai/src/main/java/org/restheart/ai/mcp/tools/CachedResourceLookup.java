@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.BaseAccount;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -81,11 +82,22 @@ public final class CachedResourceLookup {
                 .build();
     }
 
-    List<McpResource> all(BaseAccount principal, String baseUrl) {
+    /** Public: also called by {@code McpService} (a different package) to sync the MCP SDK's resource registry — see #617. */
+    public List<McpResource> all(BaseAccount principal, String baseUrl) {
         return cache.get(baseUrl, k -> ResourceLookup.all(registry, principal, baseUrl));
     }
 
-    Optional<McpResource> find(BaseAccount principal, String baseUrl, String resourceUri) {
+    /** Public: also called by {@code McpService} (a different package) for resource-template read dispatch — see #617. */
+    public Optional<McpResource> find(BaseAccount principal, String baseUrl, String resourceUri) {
         return all(principal, baseUrl).stream().filter(r -> r.uri().equals(resourceUri)).findFirst();
+    }
+
+    /**
+     * Public: also called by {@code McpService} to sync the MCP SDK's resource-template registry
+     * — see #617. Not cached: unlike {@link #all}, only computed when the resource registry
+     * itself is (re)synced (boot, and on every catalog TTL expiry), never per MCP request.
+     */
+    public List<McpResourceTemplate> templates(String baseUrl) {
+        return ResourceLookup.templates(registry, baseUrl);
     }
 }

@@ -66,6 +66,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.WithProperties;
@@ -162,6 +163,11 @@ public class GraphQLService implements Service<GraphQLRequest, GraphQLResponse>,
     @Override
     public List<McpResource> describeMcp(McpContext ctx) {
         return mcpAware.describeMcp(ctx);
+    }
+
+    @Override
+    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
+        return mcpAware.describeTemplates(ctx);
     }
 
     private static final Parser GQL_PARSER = new Parser();

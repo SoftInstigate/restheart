@@ -26,6 +26,7 @@ import java.util.List;
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.BaseAccount;
 
 /**
@@ -47,6 +48,16 @@ final class ResourceLookup {
         for (var registered : registry.registered()) {
             var ctx = new McpContext(principal, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
             result.addAll(registered.instance().describeMcp(ctx));
+        }
+        return result;
+    }
+
+    /** Same per-plugin {@code McpContext} construction as {@link #all}, for {@code describeTemplates(ctx)} instead of {@code describeMcp(ctx)}. */
+    static List<McpResourceTemplate> templates(McpAwareRegistry registry, String baseUrl) {
+        var result = new ArrayList<McpResourceTemplate>();
+        for (var registered : registry.registered()) {
+            var ctx = new McpContext(null, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
+            result.addAll(registered.instance().describeTemplates(ctx));
         }
         return result;
     }

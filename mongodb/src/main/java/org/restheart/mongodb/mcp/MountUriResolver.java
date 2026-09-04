@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -109,6 +110,46 @@ final class MountUriResolver {
             // fixed-collection mounts ("db/coll") expose no distinct database-level URL
         }
         return Optional.empty();
+    }
+
+    /**
+     * @return the URI-template shape (e.g. {@code /{db}}) each mount that exposes a variable
+     *         database name contributes — a {@code *} wildcard mount only; a mount fixed to one
+     *         database (whether {@code "db"} or {@code "db/{*}"}) exposes that single database as
+     *         a concrete resource instead (see {@link #databasePath}), not a template, and a
+     *         fixed-collection mount ({@code "db/coll"}) exposes no database-level URL at all.
+     */
+    List<String> databasePathTemplates() {
+        var templates = new ArrayList<String>();
+        for (var mount : mounts) {
+            if ("*".equals(mount.what())) {
+                templates.add(join(mount.where(), "{db}"));
+            }
+        }
+        return templates;
+    }
+
+    /**
+     * @return the URI-template shape (e.g. {@code /{collection}} or {@code /{db}/{collection}})
+     *         each mount that exposes a variable collection name contributes; a fixed-collection
+     *         mount ({@code "db/coll"}) contributes nothing since it exposes exactly one, already
+     *         concrete, collection (see {@link #collectionPath}).
+     */
+    List<String> collectionPathTemplates() {
+        var templates = new ArrayList<String>();
+        for (var mount : mounts) {
+            if ("*".equals(mount.what())) {
+                templates.add(join(mount.where(), "{db}", "{collection}"));
+                continue;
+            }
+
+            var resource = stripLeadingSlash(mount.what());
+            if (resource.endsWith("/{*}") || !resource.contains("/")) {
+                templates.add(join(mount.where(), "{collection}"));
+            }
+            // fixed-collection mounts ("db/coll") contribute no template
+        }
+        return templates;
     }
 
     /** @return the collection's URL path (e.g. {@code /warehouse/inventory}), or empty if no mount exposes it */
