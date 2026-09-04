@@ -772,6 +772,12 @@ mongo:
   enabled: true
   uri: /
 
+  # Exposes MongoDB collections/aggregations/streams through the MCP server (see mcpService
+  # below), on top of each resource's own opt-in "mcp" metadata block. Set to false to hide
+  # every MongoDB resource from MCP regardless of that per-resource metadata.
+  # See https://restheart.org/docs/ai/mcp
+  mcp: true
+
   # Expose MongoDB resources at specific URIs.
   # 'what': MongoDB resource (/db[/coll[/docid]]) or '*' for all databases
   # 'where': URI binding (absolute path or template like /{foo}/bar/*)
@@ -863,6 +869,30 @@ graphql:
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false
+  # Exposes GraphQL apps through the MCP server (see mcpService below), on top of each app's own
+  # opt-in "mcp" metadata block. Set to false to hide every GraphQL app from MCP regardless of
+  # that per-app metadata. See https://restheart.org/docs/ai/mcp
+  mcp: true
+
+# MCP (Model Context Protocol) server — exposes MCP-enabled APIs (MongoDB, GraphQL, and any
+# other plugin implementing McpAware) to AI agents.
+# See https://restheart.org/docs/ai/mcp and https://restheart.org/docs/framework/mcp-aware
+mcpService:
+  enabled: true
+  uri: /mcp
+
+  # How long list_apis/how_to_call results are cached before refreshing. Trades instant
+  # consistency for a bounded staleness window — see the "catalog cache" section of the docs.
+  catalog-ttl-seconds: 300
+
+  # Enables the MCP "resources" primitive (resources/list, resources/read,
+  # resources/templates/list) in addition to the list_apis/how_to_call tools — the official MCP
+  # SDK manages resources as a single server-wide registry, not per-request, so it needs one
+  # canonical externally-visible URL rather than whatever a given request's Host header says.
+  # Defaults to the standard local setup; override to your real public URL for any other
+  # deployment (a reverse proxy, a custom host/port, ...). Comment out to disable the resources
+  # primitive entirely (list_apis/how_to_call keep working regardless).
+  public-base-url: http://localhost:8080
 
 # Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
 # for GraphQL applications to improve query performance when fetching app definitions

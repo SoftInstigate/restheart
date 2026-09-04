@@ -472,6 +472,11 @@ voyageContextualEmbeddingProvider:
   enabled: false
 ollamaEmbeddingProvider:
   enabled: false
+# McpService itself doesn't strictly require MongoDB (it can serve any McpAware plugin, e.g.
+# PingService), but it ships as part of restheart-ai like everything else above, so it's off
+# here too for consistency — enable it manually via an override if you want MCP without Mongo.
+mcpService:
+  enabled: false
 cohereRerankProvider:
   enabled: false
 voyageRerankProvider:
