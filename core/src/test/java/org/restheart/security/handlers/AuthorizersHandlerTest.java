@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -34,6 +35,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.security.RequestDescriptor;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /** Covers restheart#722's override-detection seam — the rest of {@link AuthorizersHandler} needs a real exchange to exercise. */
 public class AuthorizersHandlerTest {
@@ -60,5 +62,47 @@ public class AuthorizersHandlerTest {
     @Test
     public void serviceOverridingOperationsToAuthorize_isDetected() {
         assertTrue(AuthorizersHandler.overridesOperationsToAuthorize(new OverridingService()));
+    }
+
+    /**
+     * Regression test for a real bug: {@code McpService} overrides {@code operationsToAuthorize()}
+     * unconditionally, so every {@code /mcp} request reached {@code isAllowedByDescriptors()} —
+     * but for anything other than a documents-mode {@code resources/read}, the override just
+     * returns the identity descriptor (the real request, unchanged). Without this check, that
+     * identity descriptor got funneled into the fail-closed {@code DescriptorAwareAuthorizer}
+     * check anyway, denying every single {@code /mcp} call (e.g. a plain {@code initialize}) the
+     * moment no such authorizer was configured — which is the default.
+     */
+    @Test
+    public void isIdentity_trueWhenDescriptorMatchesTheRealExchange() {
+        var exchange = new HttpServerExchange();
+        exchange.setRequestMethod(HttpString.tryFromString("POST"));
+        exchange.setRequestPath("/mcp");
+
+        var descriptors = List.of(new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null));
+
+        assertTrue(AuthorizersHandler.isIdentity(descriptors, exchange));
+    }
+
+    @Test
+    public void isIdentity_falseWhenMethodOrPathDiffersFromTheRealExchange() {
+        var exchange = new HttpServerExchange();
+        exchange.setRequestMethod(HttpString.tryFromString("POST"));
+        exchange.setRequestPath("/mcp");
+
+        var descriptors = List.of(new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null));
+
+        assertFalse(AuthorizersHandler.isIdentity(descriptors, exchange));
+    }
+
+    @Test
+    public void isIdentity_falseWhenMoreThanOneDescriptorIsReturned() {
+        var exchange = new HttpServerExchange();
+        exchange.setRequestMethod(HttpString.tryFromString("POST"));
+        exchange.setRequestPath("/mcp");
+
+        var identity = new RequestDescriptor(null, "POST", "/mcp", Map.of(), Map.of(), Map.of(), null, null);
+
+        assertFalse(AuthorizersHandler.isIdentity(List.of(identity, identity), exchange));
     }
 }

@@ -21,6 +21,7 @@
 package org.restheart.security.handlers;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -255,8 +256,14 @@ public class AuthorizersHandler extends PipelinedHandler {
 
     /**
      * See restheart#722. A no-op (always {@code true}) unless {@link #service} actually overrides
-     * {@link Service#operationsToAuthorize(HttpServerExchange)} — an ordinary REST service never
-     * pays for or triggers this check at all.
+     * {@link Service#operationsToAuthorize(HttpServerExchange)} <b>and</b> the override actually
+     * returns something other than the identity descriptor for this specific request — e.g.
+     * {@code McpService} overrides the method (so every {@code /mcp} request reaches here), but
+     * only a documents-mode {@code resources/read} call produces a non-identity descriptor; every
+     * other JSON-RPC method (tools, {@code initialize}, context-mode reads, ...) must keep
+     * behaving exactly like an ordinary REST service, not get funneled into the fail-closed
+     * {@link DescriptorAwareAuthorizer} check below just because the method happens to be
+     * overridden on the class.
      */
     private boolean isAllowedByDescriptors(HttpServerExchange exchange) {
         if (service == null || !overridesOperationsToAuthorize(service)) {
@@ -264,6 +271,10 @@ public class AuthorizersHandler extends PipelinedHandler {
         }
 
         var descriptors = service.operationsToAuthorize(exchange);
+
+        if (isIdentity(descriptors, exchange)) {
+            return true;
+        }
 
         var descriptorAuthorizers = authorizers.stream()
                 .filter(PluginRecord::isEnabled)
@@ -326,5 +337,19 @@ public class AuthorizersHandler extends PipelinedHandler {
         } catch (NoSuchMethodException e) {
             return false;
         }
+    }
+
+    /**
+     * @return {@code true} if {@code descriptors} is exactly the identity case ({@link
+     *         RequestDescriptor#of(HttpServerExchange)} for the real exchange) — compared by
+     *         method + path only, not full record equality: {@code RequestDescriptor}'s query
+     *         parameters are backed by {@code Deque}s, which don't implement value-based {@code
+     *         equals()}, so two separately-built identity descriptors for the same exchange would
+     *         never compare equal as records.
+     */
+    static boolean isIdentity(List<RequestDescriptor> descriptors, HttpServerExchange exchange) {
+        return descriptors.size() == 1
+                && descriptors.get(0).method().equals(exchange.getRequestMethod().toString())
+                && descriptors.get(0).path().equals(exchange.getRequestPath());
     }
 }
