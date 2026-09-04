@@ -233,7 +233,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             // The stale session ID is typically caused by a server restart; since no application
             // state is lost (all state lives in the LLM context window), we can recreate the
             // transport session on the fly and continue processing the request normally.
-            LOGGER.warn("Stale MCP session {}, auto-recovering new session", sessionId);
+            LOGGER.info("Stale MCP session {}, auto-recovering new session", sessionId);
             try {
                 var fakeInitReq = new McpSchema.InitializeRequest(
                         ProtocolVersions.MCP_2025_03_26,
@@ -318,7 +318,7 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
         if (session == null) {
             // Stale session on GET (SSE listener): return 404 so the client re-opens the SSE
             // channel after the next successful POST (which will auto-recover the session).
-            LOGGER.warn("Stale MCP session (GET/SSE): {}", sessionId);
+            LOGGER.info("Stale MCP session (GET/SSE): {}", sessionId);
             res.setStatusCode(HttpStatus.SC_NOT_FOUND);
             res.setContent("Session expired. Reconnect after sending a new request.");
             return;
