@@ -115,6 +115,7 @@ public class MqttSseService implements SseService {
     public void init() {
         defaultTopic = argOrDefault(config, "default-topic", "sensors/#");
         defaultQos = argOrDefault(config, "default-qos", 1);
+        validateQos("default-qos", defaultQos);
         perConnectionQueueCapacity = argOrDefault(config, "per-connection-queue-capacity", 256);
         payloadEnvelope = argOrDefault(config, "payload-envelope", false);
         lastMessageCacheEnabled = argOrDefault(config, "last-message-cache", true);
@@ -229,7 +230,10 @@ public class MqttSseService implements SseService {
 
     /**
      * Resolves the QoS level from the parsed query string parameters.
-     * Falls back to the configured default QoS if not provided.
+     * Falls back to the configured, already-validated {@code default-qos} if
+     * {@code qos} is absent, unparseable, or out of the 0-2 range accepted by
+     * {@link MqttQos#fromCode(int)} - a typo in a query parameter is not worth
+     * killing an SSE connection over.
      *
      * @param params the query string parameters, already parsed and URL-decoded
      * @return the QoS level (0, 1, or 2)
@@ -239,13 +243,33 @@ public class MqttSseService implements SseService {
             String qosStr = params.get("qos");
             if (qosStr != null) {
                 try {
-                    return Integer.parseInt(qosStr);
+                    int qos = Integer.parseInt(qosStr);
+                    if (MqttQos.fromCode(qos) != null) {
+                        return qos;
+                    }
+                    LOGGER.warn("QoS value '{}' is out of range (must be 0, 1 or 2), using default", qosStr);
                 } catch (NumberFormatException e) {
                     LOGGER.warn("Invalid QoS value '{}', using default", qosStr);
                 }
             }
         }
         return defaultQos;
+    }
+
+    /**
+     * Validates a configured QoS value, failing fast at {@link #init()} rather than letting an
+     * out-of-range value reach {@link MqttQos#fromCode(int)} later, where it would resolve to
+     * {@code null} and blow up {@link MqttMessageRouter#subscribe} at connection time instead.
+     *
+     * @param key   the configuration key {@code value} was read from, used in the failure message
+     * @param value the configured QoS value
+     * @throws IllegalArgumentException if {@code value} is not 0, 1 or 2
+     */
+    private static void validateQos(String key, int value) {
+        if (MqttQos.fromCode(value) == null) {
+            throw new IllegalArgumentException(
+                "Invalid value for " + key + ": " + value + ". Accepted values are: 0, 1, 2");
+        }
     }
 
     /**
@@ -392,10 +416,13 @@ public class MqttSseService implements SseService {
      * {@link PipelineSpec specs}, once, at {@link #init()}. Each spec pairs a
      * topic pattern with an ordered list of stage factories: instantiating the
      * actual stages is deferred to {@link PipelineSpec#build()}, called fresh for
-     * every connection.
+     * every connection. An entry missing a {@code topic} key fails fast here, at
+     * {@link #init()}, rather than silently building a spec that can never be
+     * selected by {@link #selectPipeline(String)}.
      *
      * @return the parsed pipeline specs, in configuration order; empty if no
      *         {@code pipeline} configuration is present
+     * @throws IllegalArgumentException if an entry is missing a valid {@code topic} key
      */
     @SuppressWarnings("unchecked")
     private List<PipelineSpec> buildPipelineSpecs() {
@@ -406,7 +433,11 @@ public class MqttSseService implements SseService {
 
         List<PipelineSpec> specs = new ArrayList<>();
         for (Map<String, Object> entry : pipelineConfig) {
-            String topic = (String) entry.get("topic");
+            Object rawTopic = entry.get("topic");
+            if (!(rawTopic instanceof String topic)) {
+                throw new IllegalArgumentException(
+                    "Pipeline configuration entry is missing a valid 'topic' key: " + entry);
+            }
             List<Map<String, Object>> stageConfigs = (List<Map<String, Object>>) entry.get("stages");
 
             List<Supplier<MqttEventStage>> factories = new ArrayList<>();

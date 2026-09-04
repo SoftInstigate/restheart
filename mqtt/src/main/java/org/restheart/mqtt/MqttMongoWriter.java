@@ -216,12 +216,10 @@ public class MqttMongoWriter implements Initializer {
         List<Map<String, Object>> sinkConfigs = (List<Map<String, Object>>) config.getOrDefault("mongo-sink", List.of());
         sinks = new ArrayList<>();
         for (Map<String, Object> sinkConfig : sinkConfigs) {
-            String topic = (String) sinkConfig.get("topic");
-            String database = (String) sinkConfig.get("database");
-            String collection = (String) sinkConfig.get("collection");
-            if (topic != null && database != null && collection != null) {
-                sinks.add(new MongoSink(topic, database, collection));
-            }
+            String topic = requireSinkStringValue(sinkConfig, "topic");
+            String database = requireSinkStringValue(sinkConfig, "database");
+            String collection = requireSinkStringValue(sinkConfig, "collection");
+            sinks.add(new MongoSink(topic, database, collection));
         }
 
         // Subscribe to topics
@@ -463,6 +461,31 @@ public class MqttMongoWriter implements Initializer {
                 "Invalid value for id-field: \"" + idField
                     + "\". It must not be null or blank when id-strategy is \"payload-field\"");
         }
+    }
+
+    /**
+     * Reads a required {@code String} key from a single {@code mongo-sink} entry, failing fast
+     * at {@link #onInit()} rather than silently dropping the entry: a typo in {@code topic},
+     * {@code database} or {@code collection} would otherwise mean nothing is ever persisted for
+     * that entry, with nothing in the logs to say why - the same silent-configuration-loss
+     * failure mode that {@link #validateIdStrategy(String)} and
+     * {@link #validateIdField(String, String)} already guard against for {@code id-strategy} and
+     * {@code id-field}.
+     *
+     * @param sinkConfig the configuration map for a single {@code mongo-sink} entry
+     * @param key        the required key ({@code topic}, {@code database} or {@code collection})
+     * @return the key's value
+     * @throws IllegalArgumentException if {@code key} is missing from {@code sinkConfig} or its
+     *                                   value is not a {@link String}
+     */
+    private static String requireSinkStringValue(Map<String, Object> sinkConfig, String key) {
+        Object value = sinkConfig.get(key);
+        if (!(value instanceof String s)) {
+            throw new IllegalArgumentException(
+                "Invalid mongo-sink entry: missing or invalid \"" + key + "\": " + value
+                    + " in entry " + sinkConfig);
+        }
+        return s;
     }
 
     /**

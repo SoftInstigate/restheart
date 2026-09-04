@@ -333,6 +333,89 @@ public class MqttMongoWriterTest {
         writer.close();
     }
 
+    // --- mongo-sink validation at onInit (Fix 4: an incomplete or malformed entry must not be
+    // silently dropped - it must fail fast, naming the missing/invalid key and the offending
+    // entry, the same way an unrecognized id-strategy already does) ---
+
+    @Test
+    @DisplayName("onInit() rejects a mongo-sink entry missing the collection key, naming the key and the entry")
+    void testOnInitRejectsMongoSinkEntryMissingCollection() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", "iot")));
+        setField(writer, "config", config);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
+        assertTrue(ex.getMessage().contains("collection"), "message should name the missing key");
+    }
+
+    @Test
+    @DisplayName("onInit() rejects a mongo-sink entry missing the topic key")
+    void testOnInitRejectsMongoSinkEntryMissingTopic() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(Map.of("database", "iot", "collection", "sensor-events")));
+        setField(writer, "config", config);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
+        assertTrue(ex.getMessage().contains("topic"), "message should name the missing key");
+    }
+
+    @Test
+    @DisplayName("onInit() rejects a mongo-sink entry whose database is not a String")
+    void testOnInitRejectsMongoSinkEntryWithNonStringDatabase() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(Map.of("topic", "sensors/#", "database", 42, "collection", "events")));
+        setField(writer, "config", config);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, writer::onInit);
+        assertTrue(ex.getMessage().contains("database"), "message should name the offending key");
+    }
+
+    @Test
+    @DisplayName("onInit() builds a sink for each complete, well-typed mongo-sink entry")
+    void testOnInitBuildsSinksFromValidMongoSinkEntries() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of(
+            "id-strategy", "auto",
+            "mongo-sink", List.of(
+                Map.of("topic", "sensors/#", "database", "iot", "collection", "sensor-events"),
+                Map.of("topic", "traffic/#", "database", "iot", "collection", "traffic-events")));
+        setField(writer, "config", config);
+
+        writer.onInit();
+        try {
+            @SuppressWarnings("unchecked")
+            List<MqttMongoWriter.MongoSink> sinks = (List<MqttMongoWriter.MongoSink>) getField(writer, "sinks");
+            assertEquals(2, sinks.size());
+            assertEquals(new MqttMongoWriter.MongoSink("sensors/#", "iot", "sensor-events"), sinks.get(0));
+            assertEquals(new MqttMongoWriter.MongoSink("traffic/#", "iot", "traffic-events"), sinks.get(1));
+        } finally {
+            writer.close();
+        }
+    }
+
+    @Test
+    @DisplayName("An absent mongo-sink key stays legal: no sinks are built and onInit completes")
+    void testOnInitAllowsAbsentMongoSinkKey() throws Exception {
+        MqttMongoWriter writer = new MqttMongoWriter(mock(MqttMessageRouter.class));
+        Map<String, Object> config = Map.of("id-strategy", "auto");
+        setField(writer, "config", config);
+
+        writer.onInit();
+        try {
+            @SuppressWarnings("unchecked")
+            List<MqttMongoWriter.MongoSink> sinks = (List<MqttMongoWriter.MongoSink>) getField(writer, "sinks");
+            assertTrue(sinks.isEmpty());
+        } finally {
+            writer.close();
+        }
+    }
+
     // --- topic matching ---
     //
     // MqttMongoWriter no longer has its own topic-matching logic: it delegates to the shared

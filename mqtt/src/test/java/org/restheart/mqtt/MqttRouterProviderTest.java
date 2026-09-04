@@ -24,7 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -36,12 +39,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -188,5 +193,112 @@ public class MqttRouterProviderTest {
         invokeNotifyNewSessionListeners();
 
         assertTrue(secondListenerRan.get(), "a listener throwing must not prevent later listeners from running");
+    }
+
+    // --- subscribeConfiguredTopics() (Fix 3): 'subscriptions' config parsing ---
+    //
+    // This key was historically documented but never read by any code, so it previously had no
+    // test coverage: MqttMessageRouterTest exercises subscribeFromConfig() directly, skipping the
+    // parsing done here entirely.
+
+    /**
+     * A hand-wired (not {@code RETURNS_DEEP_STUBS}) mock of the HiveMQ subscribe builder chain,
+     * mirroring the fixture in {@code MqttMessageRouterTest} - deep stubs get confused by the
+     * builder API's sibling generic interfaces sharing bridge methods.
+     */
+    private static final class SubscribeFixture {
+        final Mqtt5AsyncClient client = mock(Mqtt5AsyncClient.class);
+        final Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete subscribeStage =
+            mock(Mqtt5AsyncClient.Mqtt5SubscribeAndCallbackBuilder.Start.Complete.class);
+
+        SubscribeFixture() {
+            when(client.subscribeWith()).thenReturn(subscribeStage);
+            when(subscribeStage.topicFilter(anyString())).thenReturn(subscribeStage);
+            when(subscribeStage.qos(any())).thenReturn(subscribeStage);
+            when(subscribeStage.send()).thenReturn(new CompletableFuture<>());
+        }
+    }
+
+    @Test
+    @DisplayName("subscribeConfiguredTopics(): each valid entry is subscribed at its QoS; a missing qos defaults to 0")
+    void testSubscribeConfiguredTopicsSubscribesEachEntryAtItsQos() throws Exception {
+        SubscribeFixture fixture = new SubscribeFixture();
+        injectField(provider, "mqttClient", fixture.client);
+
+        config.put("subscriptions", List.of(
+            Map.of("topic", "sensors/#", "qos", 0),
+            Map.of("topic", "devices/#", "qos", 2),
+            Map.of("topic", "traffic/#") // missing qos -> defaults to 0
+        ));
+
+        provider.init();
+
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MqttQos> qosCaptor = ArgumentCaptor.forClass(MqttQos.class);
+        verify(fixture.subscribeStage, times(3)).topicFilter(topicCaptor.capture());
+        verify(fixture.subscribeStage, times(3)).qos(qosCaptor.capture());
+
+        assertEquals(List.of("sensors/#", "devices/#", "traffic/#"), topicCaptor.getAllValues());
+        assertEquals(List.of(MqttQos.AT_MOST_ONCE, MqttQos.EXACTLY_ONCE, MqttQos.AT_MOST_ONCE), qosCaptor.getAllValues(),
+            "a missing qos must default to 0, and each entry must be subscribed at its own qos");
+    }
+
+    @Test
+    @DisplayName("subscribeConfiguredTopics(): entries with a missing, blank or non-String topic are skipped without aborting the others")
+    void testSubscribeConfiguredTopicsSkipsInvalidTopicEntries() throws Exception {
+        SubscribeFixture fixture = new SubscribeFixture();
+        injectField(provider, "mqttClient", fixture.client);
+
+        Map<String, Object> missingTopic = new HashMap<>();
+        missingTopic.put("qos", 1);
+        Map<String, Object> blankTopic = new HashMap<>();
+        blankTopic.put("topic", "   ");
+        Map<String, Object> nonStringTopic = new HashMap<>();
+        nonStringTopic.put("topic", 42);
+
+        config.put("subscriptions", List.of(
+            missingTopic,
+            blankTopic,
+            nonStringTopic,
+            Map.of("topic", "sensors/#", "qos", 1)
+        ));
+
+        provider.init();
+
+        verify(fixture.subscribeStage, times(1)).topicFilter("sensors/#");
+        verify(fixture.subscribeStage, times(1)).qos(MqttQos.AT_LEAST_ONCE);
+    }
+
+    @Test
+    @DisplayName("subscribeConfiguredTopics(): an out-of-range integer qos fails fast, naming the entry")
+    void testSubscribeConfiguredTopicsRejectsOutOfRangeQos() {
+        config.put("subscriptions", List.of(Map.of("topic", "sensors/#", "qos", 5)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, provider::init);
+        assertTrue(ex.getMessage().contains("qos"), "message should mention qos");
+        assertTrue(ex.getMessage().contains("sensors/#"), "message should name the offending entry");
+    }
+
+    @Test
+    @DisplayName("subscribeConfiguredTopics(): a quoted numeric qos string is accepted, not silently defaulted to 0")
+    void testSubscribeConfiguredTopicsAcceptsQuotedNumericQos() throws Exception {
+        SubscribeFixture fixture = new SubscribeFixture();
+        injectField(provider, "mqttClient", fixture.client);
+
+        config.put("subscriptions", List.of(Map.of("topic", "sensors/#", "qos", "1")));
+
+        provider.init();
+
+        verify(fixture.subscribeStage, times(1)).qos(MqttQos.AT_LEAST_ONCE);
+    }
+
+    @Test
+    @DisplayName("subscribeConfiguredTopics(): a non-numeric qos string fails fast, naming the entry")
+    void testSubscribeConfiguredTopicsRejectsNonNumericQosString() {
+        config.put("subscriptions", List.of(Map.of("topic", "sensors/#", "qos", "abc")));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, provider::init);
+        assertTrue(ex.getMessage().contains("qos"), "message should mention qos");
+        assertTrue(ex.getMessage().contains("sensors/#"), "message should name the offending entry");
     }
 }
