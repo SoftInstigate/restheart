@@ -109,83 +109,85 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         }
 
         if (interceptors.isEmpty()) {
+            // nothing of this executor's own to resolve/run, but a pending denial from the
+            // other invocation of this executor on the same exchange (REQUEST_BEFORE_AUTH's
+            // response is the very same request/response pair REQUEST_AFTER_AUTH reads above)
+            // must still reach the terminal check below: an empty list here must never bypass it.
             RequestPhaseContext.setPhase(Phase.INFO);
             LOGGER.debug("No interceptors found");
             RequestPhaseContext.setPhase(Phase.PHASE_END);
             LOGGER.debug("{} COMPLETED in 0ms", interceptPoint);
             RequestPhaseContext.reset();
-            next(exchange);
-            return;
-        }
-
-        // interceptors is already List<Interceptor<?,?>> - the instanceof/cast pair this
-        // replaced only stripped generics to the raw type so resolve()/handle() below can be
-        // called without a wildcard-capture mismatch against request/response (hence the
-        // rawtypes suppression on the method); it never filtered anything out. Stays null
-        // until the first match so the common "nothing resolves" case allocates nothing.
-        List<Interceptor> resolvedInterceptors = null;
-        for (var ri : interceptors) {
-            var interceptor = (Interceptor) ri;
-            try {
-                if (interceptor.resolve(request, response)) {
-                    if (resolvedInterceptors == null) {
-                        resolvedInterceptors = new ArrayList<>(interceptors.size());
+        } else {
+            // interceptors is already List<Interceptor<?,?>> - the instanceof/cast pair this
+            // replaced only stripped generics to the raw type so resolve()/handle() below can be
+            // called without a wildcard-capture mismatch against request/response (hence the
+            // rawtypes suppression on the method); it never filtered anything out. Stays null
+            // until the first match so the common "nothing resolves" case allocates nothing.
+            List<Interceptor> resolvedInterceptors = null;
+            for (var ri : interceptors) {
+                var interceptor = (Interceptor) ri;
+                try {
+                    if (interceptor.resolve(request, response)) {
+                        if (resolvedInterceptors == null) {
+                            resolvedInterceptors = new ArrayList<>(interceptors.size());
+                        }
+                        resolvedInterceptors.add(interceptor);
                     }
-                    resolvedInterceptors.add(interceptor);
-                }
-            } catch (Exception ex) {
-                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", interceptor.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
+                } catch (Exception ex) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", interceptor.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, ex);
 
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + interceptor.getClass().getSimpleName(), ex));
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error resolving interceptor " + interceptor.getClass().getSimpleName(), ex));
+                }
             }
-        }
-        if (resolvedInterceptors == null) {
-            resolvedInterceptors = List.of();
-        }
-
-        RequestPhaseContext.setPhase(Phase.INFO);
-        LOGGER.debug("Found {} interceptors", resolvedInterceptors.size());
-
-        // executionStartTime is only ever read by the debug log after the loop, so it's
-        // skipped entirely when debug is disabled instead of paying for a clock read that
-        // nothing will use. Per-interceptor timing below can't do the same: the error branch
-        // needs a duration unconditionally, so nanoTime() is used there for resolution instead
-        // (currentTimeMillis() is coarse enough to systematically show 0ms for fast interceptors).
-        var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
-        var totalInterceptors = resolvedInterceptors.size();
-
-        for (int i = 0;i < totalInterceptors;i++) {
-            var ri = resolvedInterceptors.get(i);
-            var interceptorStartTime = System.nanoTime();
-
-            try {
-                RequestPhaseContext.setPhase(Phase.ITEM);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
-                }
-
-                ri.handle(request, response);
-
-                RequestPhaseContext.setPhase(Phase.SUBITEM);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("✓ {}ms", (System.nanoTime() - interceptorStartTime) / 1_000_000);
-                }
-            } catch (Exception ex) {
-                var interceptorDurationMs = (System.nanoTime() - interceptorStartTime) / 1_000_000;
-                RequestPhaseContext.setPhase(Phase.SUBITEM);
-                LOGGER.error("✗ FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
-
-                Exchange.setInError(exchange);
-                LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
+            if (resolvedInterceptors == null) {
+                resolvedInterceptors = List.of();
             }
-        }
 
-        RequestPhaseContext.setPhase(Phase.PHASE_END);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("{} COMPLETED in {}ms", interceptPoint, (System.nanoTime() - executionStartTime) / 1_000_000);
+            RequestPhaseContext.setPhase(Phase.INFO);
+            LOGGER.debug("Found {} interceptors", resolvedInterceptors.size());
+
+            // executionStartTime is only ever read by the debug log after the loop, so it's
+            // skipped entirely when debug is disabled instead of paying for a clock read that
+            // nothing will use. Per-interceptor timing below can't do the same: the error branch
+            // needs a duration unconditionally, so nanoTime() is used there for resolution instead
+            // (currentTimeMillis() is coarse enough to systematically show 0ms for fast interceptors).
+            var executionStartTime = LOGGER.isDebugEnabled() ? System.nanoTime() : 0L;
+            var totalInterceptors = resolvedInterceptors.size();
+
+            for (int i = 0; i < totalInterceptors; i++) {
+                var ri = resolvedInterceptors.get(i);
+                var interceptorStartTime = System.nanoTime();
+
+                try {
+                    RequestPhaseContext.setPhase(Phase.ITEM);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("{} (priority: {})", PluginUtils.name(ri), PluginUtils.priority(ri));
+                    }
+
+                    ri.handle(request, response);
+
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("✓ {}ms", (System.nanoTime() - interceptorStartTime) / 1_000_000);
+                    }
+                } catch (Exception ex) {
+                    var interceptorDurationMs = (System.nanoTime() - interceptorStartTime) / 1_000_000;
+                    RequestPhaseContext.setPhase(Phase.SUBITEM);
+                    LOGGER.error("✗ FAILED after {}ms: {}", interceptorDurationMs, ex.getMessage());
+
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(new InterceptorException("Error executing interceptor " + ri.getClass().getSimpleName(), ex));
+                }
+            }
+
+            RequestPhaseContext.setPhase(Phase.PHASE_END);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} COMPLETED in {}ms", interceptPoint, (System.nanoTime() - executionStartTime) / 1_000_000);
+            }
+            RequestPhaseContext.reset();
         }
-        RequestPhaseContext.reset();
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response
