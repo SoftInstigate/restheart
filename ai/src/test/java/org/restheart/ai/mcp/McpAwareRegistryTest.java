@@ -93,6 +93,7 @@ public class McpAwareRegistryTest {
         return record;
     }
 
+    @SafeVarargs
     private static PluginsRegistry registryWith(PluginRecord<Service<?, ?>>... records) {
         var registry = mock(PluginsRegistry.class);
         when(registry.getServices()).thenReturn(Set.of(records));
