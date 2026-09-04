@@ -27,13 +27,25 @@ import java.util.Map;
  * ("documents mode" — see #617) — as opposed to {@link McpResource}, which describes how to call
  * a resource rather than carrying its content.
  *
- * @param content the resource's real content (e.g. a {@code List} of documents, or a single
- *                document as a {@code Map}), serialized as JSON by the MCP framework
+ * @param content the resource's real content — either a plain Java {@code Map}/{@code List}/
+ *                scalar (serialized as JSON by the MCP framework's own mapper), or a {@link
+ *                RawJson} when the implementation's native format needs to render its own JSON
+ *                (e.g. MongoDB Extended JSON for types a generic Java object graph can't
+ *                represent, such as {@code ObjectId})
  * @param meta optional metadata about the read (e.g. {@code total_count}, {@code page},
- *             {@code next} for a paginated collection query) — {@code null} if not applicable
+ *             {@code next} for a paginated collection query) — {@code null} if not applicable, and
+ *             ignored when {@code content} is a {@link RawJson} (bake it into that string instead)
  */
 public record McpReadResult(Object content, Map<String, Object> meta) {
     public McpReadResult(Object content) {
         this(content, null);
+    }
+
+    /**
+     * Marks {@code content} as already-valid JSON text to embed verbatim in the response, rather
+     * than a Java object for the framework's generic mapper to serialize — for an implementation
+     * whose own native format already renders correctly on its own (see this record's javadoc).
+     */
+    public record RawJson(String json) {
     }
 }

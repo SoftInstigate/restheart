@@ -217,7 +217,7 @@ public class MongoMcpAwareImplTest {
                 "https://host/{collection}",
                 "https://host/{collection}/_aggrs/{name}",
                 "https://host/{collection}/_streams/{name}",
-                "https://host/{collection}{?filter,sort,keys,page,pagesize}",
+                "https://host/{collection}{?filter,sort,keys,page,pagesize,jsonMode}",
                 "https://host/{collection}/{id}"), templates);
     }
 

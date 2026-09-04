@@ -76,11 +76,13 @@ public final class CollectionMcpResourceBuilder {
             a.param("keys", "object", false);
             a.param("page", "integer", false);
             a.param("pagesize", "integer", false);
+            a.param("jsonMode", "string", false);
         });
 
         builder.action("get", a -> {
             a.method("GET").pathTemplate("/{id}").readable(true);
             a.param("id", "string", true);
+            a.param("jsonMode", "string", false);
         });
 
         builder.action("create", a -> {

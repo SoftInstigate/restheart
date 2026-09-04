@@ -386,10 +386,21 @@ public class McpService implements ByteArrayService {
         }
     }
 
+    /**
+     * {@link McpReadResult.RawJson} content is embedded verbatim — it's already correctly
+     * rendered JSON from the plugin's own native format (e.g. {@code MongoMcpAwareImpl} uses
+     * MongoDB Extended JSON, which a generic Jackson mapper can't reproduce for types like {@code
+     * ObjectId}). Anything else is a plain Java object graph the framework's own mapper serializes.
+     */
     private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpReadResult result) {
         try {
-            Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
-            var text = jsonMapper.writeValueAsString(payload);
+            String text;
+            if (result.content() instanceof McpReadResult.RawJson raw) {
+                text = raw.json();
+            } else {
+                Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
+                text = jsonMapper.writeValueAsString(payload);
+            }
             return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(uri, "application/json", text)));
         } catch (Exception e) {
             LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);

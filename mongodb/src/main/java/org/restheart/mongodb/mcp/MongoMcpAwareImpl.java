@@ -22,7 +22,6 @@ package org.restheart.mongodb.mcp;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +31,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.json.JsonMode;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.db.Databases;
@@ -212,7 +212,7 @@ public final class MongoMcpAwareImpl {
             // MCP clients (e.g. MCP Inspector's "Resource Templates" tab) actually see and can
             // construct the query-bearing shape, instead of only ever reading the bare, context-only
             // URI from resources/list.
-            templates.add(new McpResourceTemplate(uri + "{?filter,sort,keys,page,pagesize}", "collection-documents", "Collection — documents"));
+            templates.add(new McpResourceTemplate(uri + "{?filter,sort,keys,page,pagesize,jsonMode}", "collection-documents", "Collection — documents"));
             templates.add(new McpResourceTemplate(uri + "/{id}", "document", "Document"));
         }
 
@@ -263,6 +263,16 @@ public final class MongoMcpAwareImpl {
         }
     }
 
+    /**
+     * Renders documents as MongoDB Extended JSON via {@link BsonUtils#toJson(BsonValue, JsonMode)}
+     * — not {@link BsonJavaConverter}, which is built for collection *metadata* (schemas, MCP
+     * resource descriptions) where exotic BSON types like {@code ObjectId} aren't expected and
+     * fall back to a plain {@code toString()}; real document data is full of them, and a generic
+     * Jackson mapper (which is what ends up serializing an {@code McpReadResult} that isn't a
+     * {@link McpReadResult.RawJson}) has no idea how to render an {@code ObjectId} either — hence
+     * pre-rendering the whole response text here, respecting the caller's optional {@code
+     * jsonMode} (the same query param RESTHeart's real REST API accepts).
+     */
     @SuppressWarnings("unchecked")
     private McpReadResult queryDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
         var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
@@ -270,39 +280,51 @@ public final class MongoMcpAwareImpl {
         var sort = args.get("sort") instanceof String s && !s.isBlank() ? BsonDocument.parse(s) : new BsonDocument();
         var page = args.get("page") instanceof Integer p ? p : DEFAULT_PAGE;
         var pagesize = args.get("pagesize") instanceof Integer ps ? ps : DEFAULT_PAGESIZE;
+        var jsonMode = jsonModeOf(args);
 
         var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
                 page, pagesize, sort, filter, null, keys, false);
         var total = databases.getCollectionSize(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(), filter);
 
-        var content = new ArrayList<Object>();
-        for (var doc : docs) {
-            content.add(BsonJavaConverter.toMap(doc.asDocument()));
-        }
-
-        var meta = new LinkedHashMap<String, Object>();
-        meta.put("total_count", total);
-        meta.put("page", page);
+        var text = new StringBuilder("{\"content\":")
+                .append(BsonUtils.toJson(docs, jsonMode))
+                .append(",\"meta\":{\"total_count\":").append(total)
+                .append(",\"page\":").append(page);
         if ((long) page * pagesize < total) {
-            meta.put("next", "?page=" + (page + 1));
+            text.append(",\"next\":\"?page=").append(page + 1).append('"');
         }
+        text.append("}}");
 
-        return new McpReadResult(content, meta);
+        return new McpReadResult(new McpReadResult.RawJson(text.toString()));
     }
 
     /** {@code id} is treated as an ObjectId when it looks like one, else as a plain string {@code _id} — not RESTHeart's full doc-id type-inference grammar (prefixed encodings for other BSON types), which is out of scope here. */
     private McpReadResult getSingleDocument(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
         var id = args.get("id") instanceof String s ? s : null;
         var filter = new BsonDocument("_id", idValue(id));
+        var jsonMode = jsonModeOf(args);
 
         var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
                 1, 1, new BsonDocument(), filter, null, null, false);
 
-        return docs.isEmpty() ? new McpReadResult(null) : new McpReadResult(BsonJavaConverter.toMap(docs.get(0).asDocument()));
+        var json = docs.isEmpty() ? "null" : BsonUtils.toJson(docs.get(0), jsonMode);
+        return new McpReadResult(new McpReadResult.RawJson(json));
     }
 
     private static BsonValue idValue(String id) {
         return id != null && ObjectId.isValid(id) ? new BsonObjectId(new ObjectId(id)) : new BsonString(id);
+    }
+
+    /** {@code jsonMode} mirrors the query param RESTHeart's real REST API accepts (e.g. {@code STRICT}/{@code RELAXED}/{@code SHELL}); an absent or unrecognized value falls back to {@link BsonUtils#toJson(BsonValue, JsonMode)}'s own default. */
+    private static JsonMode jsonModeOf(Map<String, Object> args) {
+        if (args.get("jsonMode") instanceof String s) {
+            try {
+                return JsonMode.valueOf(s.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // fall through to the default
+            }
+        }
+        return null;
     }
 
     private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {
