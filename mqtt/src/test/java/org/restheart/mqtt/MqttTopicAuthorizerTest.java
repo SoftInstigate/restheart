@@ -46,6 +46,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.WildcardInterceptor;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.security.idm.Account;
@@ -84,6 +87,13 @@ public class MqttTopicAuthorizerTest {
         doReturn(queryParams).when(request).getQueryParameters();
         when(request.getPath()).thenReturn("/mqtt-sse");
         when(request.getAuthenticatedAccount()).thenReturn(account);
+        return request;
+    }
+
+    @SuppressWarnings("unchecked")
+    private ServiceRequest<?> requestWithPath(String path) {
+        ServiceRequest<Object> request = mock(ServiceRequest.class);
+        when(request.getPath()).thenReturn(path);
         return request;
     }
 
@@ -399,5 +409,65 @@ public class MqttTopicAuthorizerTest {
         assertFalse(MqttTopicAuthorizer.patternCovers("sensors/temp", "sensors"));
         assertFalse(MqttTopicAuthorizer.patternCovers("sensors/+", "sensors"));
         assertTrue(MqttTopicAuthorizer.patternCovers("sensors/#", "sensors"));
+    }
+
+    // --- @RegisterPlugin wiring: what puts this interceptor into the set that
+    // core's SSE executor runs at REQUEST_AFTER_AUTH. Neither fact below is
+    // exercised by handle()/resolve() unit tests, so a change to either one
+    // (e.g. moving the intercept point, or dropping the interface) would leave
+    // /mqtt-sse silently unauthorized again while every other test stays green. ---
+
+    @Test
+    @DisplayName("@RegisterPlugin.interceptPoint() is REQUEST_AFTER_AUTH, "
+        + "which is the only point core's SSE pipeline runs WildcardInterceptors at")
+    void testRegisteredAtRequestAfterAuth() {
+        RegisterPlugin annotation = MqttTopicAuthorizer.class.getAnnotation(RegisterPlugin.class);
+        assertEquals(InterceptPoint.REQUEST_AFTER_AUTH, annotation.interceptPoint(),
+            "MqttTopicAuthorizer must be registered at REQUEST_AFTER_AUTH: that is the intercept "
+                + "point PlugSseServiceWiringTest proves core's assembled SSE pipeline actually runs "
+                + "WildcardInterceptors at. Registering it anywhere else means the pipeline never "
+                + "invokes it and /mqtt-sse subscriptions go unauthorized, even though this file's "
+                + "other tests (which call handle()/resolve() directly) would stay green.");
+    }
+
+    @Test
+    @DisplayName("MqttTopicAuthorizer implements WildcardInterceptor, "
+        + "the interceptor kind core's SSE pipeline collects and runs")
+    void testImplementsWildcardInterceptor() {
+        assertTrue(WildcardInterceptor.class.isAssignableFrom(MqttTopicAuthorizer.class),
+            "MqttTopicAuthorizer must implement WildcardInterceptor: that is the plugin type "
+                + "PlugSseServiceWiringTest proves core resolves and runs for the SSE handshake. "
+                + "If this class implemented a different interceptor interface it would keep "
+                + "compiling and its own unit tests would keep passing, but core's SSE executor "
+                + "would never select it and /mqtt-sse would again be reachable unauthorized.");
+    }
+
+    // --- resolve(): the paths this interceptor actually protects ---
+
+    @Test
+    @DisplayName("resolve() is true for /mqtt-sse, the SSE endpoint this whole effort protects")
+    void testResolveTrueForMqttSse() {
+        ServiceRequest<?> request = requestWithPath("/mqtt-sse");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertTrue(authorizer.resolve(request, response));
+    }
+
+    @Test
+    @DisplayName("resolve() is true for /mqtt, the plain MQTT endpoint")
+    void testResolveTrueForMqtt() {
+        ServiceRequest<?> request = requestWithPath("/mqtt");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertTrue(authorizer.resolve(request, response));
+    }
+
+    @Test
+    @DisplayName("resolve() is false for an unrelated path")
+    void testResolveFalseForUnrelatedPath() {
+        ServiceRequest<?> request = requestWithPath("/some-other-service");
+        ServiceResponse<?> response = mock(ServiceResponse.class);
+
+        assertFalse(authorizer.resolve(request, response));
     }
 }
