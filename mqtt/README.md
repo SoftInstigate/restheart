@@ -80,6 +80,8 @@ The port follows the scheme when you do not give one: 1883 for `tcp`, 8883 for `
 
 Subscriptions declared here survive a broker session reset: when the client reconnects with a new session, the router re-subscribes them.
 
+`qos` is optional and defaults to `0`. It accepts an integer or a numeric string — `qos: "1"` works, since quoting a number in YAML is easy to do by accident — but any other value, including an out-of-range one such as `5`, fails at startup naming the offending entry rather than quietly becoming `0`. An entry whose `topic` is missing or blank is skipped with a warning; the other entries are still subscribed.
+
 ### `mqtt-sse`
 
 | key | default | notes |
@@ -92,7 +94,7 @@ Subscriptions declared here survive a broker session reset: when the client reco
 | `max-connections-per-topic` | `0` | `0` = unlimited |
 | `pipeline` | none | see below |
 
-Query parameters: `?topic=<filter>&qos=<0-2>`.
+Query parameters: `?topic=<filter>&qos=<0-2>`. A `qos` that is unparseable or outside 0-2 falls back to `default-qos` with a warning rather than refusing the connection — by the time the service sees the request the SSE handshake has already been sent, so there is no status code left to return. `default-qos` itself is validated at startup, since it is that fallback.
 
 Each event carries an id of the form `<topic>-<epochMillis>-<n>`, where `n` is a per-connection sequence. **These ids are unique within one stream but are not globally meaningful and cannot be used to resume** — `Last-Event-ID` is currently ignored. Resumable replay is tracked in [#606](https://github.com/SoftInstigate/restheart/issues/606).
 
@@ -126,7 +128,7 @@ mqtt-sse:
 
 Aggregation functions: `count`, `sum`, `avg`, `min`, `max`. A window whose messages yield no numeric values emits nothing rather than a zero or a sentinel. Tumbling windows are flushed by the connection's drain loop even when no further message arrives, so the last window of a quiet stream is still emitted.
 
-Pipeline selection for a connection is: exact topic-filter match, then MQTT wildcard match, then no pipeline.
+Pipeline selection for a connection is: exact topic-filter match, then MQTT wildcard match, then no pipeline. Every entry must carry a `topic`; one without it could never be selected, so it fails at startup rather than sitting there doing nothing.
 
 ### `mqtt-rest`
 
@@ -136,7 +138,9 @@ Pipeline selection for a connection is: exact topic-filter match, then MQTT wild
 {"topic": "sensors/temp", "payload": "{\"temp\":25}", "receivedAt": "...", "qos": 1}
 ```
 
-400 when `topic` is missing or nothing is cached for it. Requires `last-message-cache: true` on `mqtt-router`.
+`400` when the `topic` parameter is missing, `404` when nothing is cached for that topic — both with an `{"error": "..."}` body naming the reason. `OPTIONS` is handled for CORS; any other method returns `405`.
+
+Requires `last-message-cache: true` on `mqtt-router`; with the cache disabled every topic returns `404`.
 
 ### `mqtt-topic-authorizer`
 
@@ -199,6 +203,8 @@ An unrecognised value fails at startup rather than silently falling back.
 | `topic-timestamp-hash` | hash of topic + timestamp + payload | upserting `bulkWrite` |
 
 The two deduplicating strategies write with upserts, so redelivery — or several RESTHeart nodes each receiving the same broker message — converges on one document instead of raising duplicate-key errors. Duplicate-key (11000) is counted as a success. `id-field` (default `messageId`) must be set and non-blank when `id-strategy` is `payload-field`; both keys are validated at startup, because a typo would otherwise disable deduplication silently.
+
+Every `mongo-sink` entry must carry all three of `topic`, `database` and `collection`, each a string; a missing or mistyped key fails at startup naming the entry. An absent or empty `mongo-sink` list is legal and simply means nothing is persisted.
 
 Batches that still fail after `max-retries` are appended to `dead-letter-file`, one JSON document per line. Failing to write that file is logged, never propagated.
 
