@@ -25,6 +25,9 @@
             mvn install -DskipUTs   : Skips Unit tests
             mvn install -DskipITs   : Skips Integration tests
             mvn install -DskipTests : Skips both Unit and Integration Tests
+            mvn install -Dquick     : Skips release-only packaging steps (license headers,
+                                      the .zip/.tar.gz dist archive) — combine with the flags
+                                      above to also skip tests; see the "quick" profile below.
         -->
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>
@@ -60,6 +63,19 @@
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
         -->
         <skipUpdateLicense>true</skipUpdateLicense>
+
+        <!--
+            mvn install -Dquick : skips build steps that exist for the release/packaging
+            process, not for the dev compile/test cycle — license header scanning
+            (license-maven-plugin, every module) and the .zip/.tar.gz distribution archive
+            (maven-assembly-plugin "with-deps", core module only). Does NOT skip tests —
+            combine with -DskipTests/-DskipUTs/-DskipITs for that, same as always. Does NOT
+            skip core's antrun "dist" step (copies built plugin jars + deps into
+            core/target/plugins/) — that's what makes a rebuilt jar actually runnable/
+            reloadable in a live instance, not release-only overhead.
+        -->
+        <license-header.phase>process-sources</license-header.phase>
+        <dist-package.phase>package</dist-package.phase>
 
         <!-- Build plugin versions -->
         <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
@@ -708,6 +724,19 @@
             <modules>
                 <module>examples</module>
             </modules>
+        </profile>
+        <profile>
+            <!-- mvn install -Dquick — see the license-header.phase/dist-package.phase properties above -->
+            <id>quick</id>
+            <activation>
+                <property>
+                    <name>quick</name>
+                </property>
+            </activation>
+            <properties>
+                <license-header.phase>none</license-header.phase>
+                <dist-package.phase>none</dist-package.phase>
+            </properties>
         </profile>
         <profile>
             <id>deploy</id>

@@ -75,6 +75,22 @@ All integration tests live in the `core` module.
 ./mvnw clean verify -DskipTests
 ```
 
+### Speed up dev builds
+
+```bash
+./mvnw clean install -Dquick
+```
+
+`-Dquick` skips build steps that only matter for release packaging — license-header
+processing and the `.zip`/`.tar.gz` distribution archive in `core` — while leaving
+everything needed for the dev/test cycle untouched (including copying built plugin jars
+into `core/target/plugins/` for a live RESTHeart to reload). It does not skip tests;
+combine it with `-DskipTests`/`-DskipUTs`/`-DskipITs` for that:
+
+```bash
+./mvnw clean install -Dquick -DskipTests
+```
+
 ### Run a single unit test class
 
 ```bash

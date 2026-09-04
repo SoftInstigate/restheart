@@ -88,7 +88,7 @@
             <goals>
               <goal>update-file-header</goal>
             </goals>
-            <phase>process-sources</phase>
+            <phase>${license-header.phase}</phase>
             <configuration>
               <licenseName>agpl_v3</licenseName>
               <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>

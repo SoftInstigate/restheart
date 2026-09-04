@@ -166,7 +166,7 @@
             <goals>
               <goal>update-file-header</goal>
             </goals>
-            <phase>process-sources</phase>
+            <phase>${license-header.phase}</phase>
             <configuration>
               <licenseName>agpl_v3</licenseName>
               <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
@@ -280,8 +280,9 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
+            <!-- .zip/.tar.gz distribution archive — release packaging, not needed for dev/test; see -Dquick (root pom) -->
             <id>with-deps</id>
-            <phase>package</phase>
+            <phase>${dist-package.phase}</phase>
             <goals>
               <goal>single</goal>
             </goals>
