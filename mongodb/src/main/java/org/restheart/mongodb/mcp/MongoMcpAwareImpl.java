@@ -20,19 +20,27 @@
  */
 package org.restheart.mongodb.mcp;
 
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.mongodb.utils.MongoMountResolver;
+import org.restheart.mongodb.utils.MongoMountResolverImpl;
 import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.utils.BsonUtils;
@@ -74,10 +82,17 @@ public final class MongoMcpAwareImpl {
 
     private final MetadataSource metadata;
     private final MountUriResolver mountResolver;
+    private final Databases databases;
 
     MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver) {
+        this(metadata, mountResolver, null);
+    }
+
+    /** {@code databases} is {@code null} only via the test-only 2-arg constructor above, which never exercises {@link #readResource}. */
+    MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver, Databases databases) {
         this.metadata = metadata;
         this.mountResolver = mountResolver;
+        this.databases = databases;
     }
 
     public static MongoMcpAwareImpl create() {
@@ -131,7 +146,7 @@ public final class MongoMcpAwareImpl {
                 return props == null ? null : BsonUtils.unescapeKeys(props).asDocument();
             }
         };
-        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig());
+        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig(), databases);
     }
 
     public List<McpResource> describeMcp(McpContext ctx) {
@@ -194,6 +209,92 @@ public final class MongoMcpAwareImpl {
         }
 
         return templates;
+    }
+
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGESIZE = 100;
+
+    /**
+     * Implements documents-mode {@code resources/read} (#617 Phase 2b) for the {@code query} and
+     * {@code get} actions {@link CollectionMcpResourceBuilder} marks {@code readable} — the same
+     * {@link Databases#getCollectionData} call {@code GetCollectionHandler} makes for a real
+     * {@code GET}, just invoked directly instead of through Undertow.
+     *
+     * <p><b>Known gap</b> (tracked against #617): does not yet apply any ACL-derived read filter
+     * or field projection on top of the caller-supplied {@code filter}/{@code keys} — only the
+     * base allow/deny decision from restheart#722's {@code DescriptorAwareAuthorizer} check is
+     * enforced today. The filter/projection handoff from that check to here is a follow-up.
+     */
+    @SuppressWarnings("unchecked")
+    public Optional<McpReadResult> readResource(McpContext ctx, String resourceUri, String action, Map<String, Object> args) {
+        if (databases == null) {
+            return Optional.empty();
+        }
+
+        var resolved = resolveMount(resourceUri);
+        if (resolved == null) {
+            return Optional.empty();
+        }
+
+        var effectiveArgs = args == null ? Map.<String, Object>of() : args;
+
+        return switch (action) {
+            case "query" -> Optional.of(queryDocuments(resolved, effectiveArgs));
+            case "get" -> Optional.of(getSingleDocument(resolved, effectiveArgs));
+            default -> Optional.empty();
+        };
+    }
+
+    private MongoMountResolver.ResolvedContext resolveMount(String resourceUri) {
+        try {
+            var path = new URI(resourceUri).getPath();
+            var resolved = MongoMountResolverImpl.getInstance().resolve(path);
+            return resolved.database() == null || resolved.collection() == null ? null : resolved;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private McpReadResult queryDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+        var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+        var keys = args.get("keys") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : null;
+        var sort = args.get("sort") instanceof String s && !s.isBlank() ? BsonDocument.parse(s) : new BsonDocument();
+        var page = args.get("page") instanceof Integer p ? p : DEFAULT_PAGE;
+        var pagesize = args.get("pagesize") instanceof Integer ps ? ps : DEFAULT_PAGESIZE;
+
+        var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
+                page, pagesize, sort, filter, null, keys, false);
+        var total = databases.getCollectionSize(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(), filter);
+
+        var content = new ArrayList<Object>();
+        for (var doc : docs) {
+            content.add(BsonJavaConverter.toMap(doc.asDocument()));
+        }
+
+        var meta = new LinkedHashMap<String, Object>();
+        meta.put("total_count", total);
+        meta.put("page", page);
+        if ((long) page * pagesize < total) {
+            meta.put("next", "?page=" + (page + 1));
+        }
+
+        return new McpReadResult(content, meta);
+    }
+
+    /** {@code id} is treated as an ObjectId when it looks like one, else as a plain string {@code _id} — not RESTHeart's full doc-id type-inference grammar (prefixed encodings for other BSON types), which is out of scope here. */
+    private McpReadResult getSingleDocument(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+        var id = args.get("id") instanceof String s ? s : null;
+        var filter = new BsonDocument("_id", idValue(id));
+
+        var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
+                1, 1, new BsonDocument(), filter, null, null, false);
+
+        return docs.isEmpty() ? new McpReadResult(null) : new McpReadResult(BsonJavaConverter.toMap(docs.get(0).asDocument()));
+    }
+
+    private static BsonValue idValue(String id) {
+        return id != null && ObjectId.isValid(id) ? new BsonObjectId(new ObjectId(id)) : new BsonString(id);
     }
 
     private void describeCollection(String dbName, String collUri, BsonDocument collProps, List<McpResource> resources, List<String> enabledCollectionUris) {

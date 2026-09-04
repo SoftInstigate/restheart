@@ -21,9 +21,12 @@
 package org.restheart.ai.mcp.tools;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
+import org.restheart.ai.mcp.RegisteredMcpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
@@ -43,13 +46,30 @@ final class ResourceLookup {
     private ResourceLookup() {
     }
 
+    /** The catalog's resources together with which registered plugin produced each one — see {@link #catalog}. */
+    record Catalog(List<McpResource> resources, Map<String, RegisteredMcpAware> owners) {
+    }
+
     static List<McpResource> all(McpAwareRegistry registry, BaseAccount principal, String baseUrl) {
-        var result = new ArrayList<McpResource>();
+        return catalog(registry, principal, baseUrl).resources();
+    }
+
+    /**
+     * Same computation as {@link #all}, additionally tracking which {@link RegisteredMcpAware}
+     * produced each {@link McpResource} — needed to dispatch a documents-mode {@code
+     * resources/read} to the right plugin's {@code readResource(...)} (see #617).
+     */
+    static Catalog catalog(McpAwareRegistry registry, BaseAccount principal, String baseUrl) {
+        var resources = new ArrayList<McpResource>();
+        var owners = new LinkedHashMap<String, RegisteredMcpAware>();
         for (var registered : registry.registered()) {
             var ctx = new McpContext(principal, baseUrl, registered.pluginName(), registered.pluginUri(), registered.pluginConfiguration());
-            result.addAll(registered.instance().describeMcp(ctx));
+            for (var resource : registered.instance().describeMcp(ctx)) {
+                resources.add(resource);
+                owners.put(resource.uri(), registered);
+            }
         }
-        return result;
+        return new Catalog(resources, owners);
     }
 
     /** Same per-plugin {@code McpContext} construction as {@link #all}, for {@code describeTemplates(ctx)} instead of {@code describeMcp(ctx)}. */

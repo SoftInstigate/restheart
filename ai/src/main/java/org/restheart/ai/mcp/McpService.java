@@ -20,11 +20,17 @@
  */
 package org.restheart.ai.mcp;
 
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
@@ -33,6 +39,7 @@ import org.restheart.ai.mcp.tools.ListApisTool;
 import org.restheart.ai.mcp.tools.UnknownActionException;
 import org.restheart.ai.mcp.tools.UnknownResourceException;
 import org.restheart.ai.mcp.tools.ValidationFailedException;
+import org.restheart.ai.mcp.validation.ParamValidator;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
@@ -41,8 +48,11 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -61,6 +71,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
+import io.undertow.server.HttpServerExchange;
 
 /**
  * RESTHeart's MCP server: exposes exactly two tools, {@code list_apis} and
@@ -270,15 +281,271 @@ public class McpService implements ByteArrayService {
                 .description(resourceTemplate.description())
                 .mimeType("application/json")
                 .build();
-        return new McpServerFeatures.SyncResourceTemplateSpecification(template, (exchange, request) -> readTemplateMatch(request.uri()));
+        return new McpServerFeatures.SyncResourceTemplateSpecification(template, (exchange, request) -> readTemplateMatch(exchange.transportContext(), request.uri()));
     }
 
-    /** A URI matching a template's shape still must be an actual, currently mcp-enabled resource — same lookup {@code how_to_call} uses. */
-    private McpSchema.ReadResourceResult readTemplateMatch(String uri) {
-        return resourceLookup.find(null, publicBaseUrl, uri)
-                .map(this::readContext)
-                .orElseGet(() -> new McpSchema.ReadResourceResult(
-                        List.of(new TextResourceContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri))));
+    /**
+     * A URI matching a template's shape still must be an actual, currently mcp-enabled resource —
+     * same lookup {@code how_to_call} uses. Also the sole entry point for documents-mode (#617
+     * Phase 2/2b): the MCP SDK's own URI-template matching (verified against its bytecode — its
+     * {@code McpUriTemplateManager} is a simplified regex substitution, not full RFC 6570 — a
+     * bare {@code {collection}} placeholder already matches a query-string-bearing URI, since its
+     * capture group is {@code [^/]+} with no anchoring against {@code ?}) routes a documents-mode
+     * URI here exactly like a context-mode one; an exact concrete-resource URI (never carrying a
+     * query string or extra path segment) is instead routed straight to {@link #readContext} by
+     * the SDK before this is ever called.
+     *
+     * <p>Mode detection purely from the URI shape:
+     * <ul>
+     *   <li>a query string ({@code ?...}) → collection documents mode, action {@code query}</li>
+     *   <li>no exact catalog match, but stripping the last path segment does match → single
+     *       document mode, action {@code get}, {@code id} = that segment</li>
+     *   <li>otherwise, an exact catalog match → context mode (unchanged from Phase 1)</li>
+     * </ul>
+     */
+    private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
+        var principal = principal(ctx);
+
+        var queryIdx = uri.indexOf('?');
+        if (queryIdx >= 0) {
+            var base = uri.substring(0, queryIdx);
+            var args = parseQueryArgs(uri.substring(queryIdx + 1));
+            return readOperation(principal, base, "query", args).orElseGet(() -> unknownResourceResult(uri));
+        }
+
+        var exact = resourceLookup.find(principal, publicBaseUrl, uri);
+        if (exact.isPresent()) {
+            return readContext(exact.get());
+        }
+
+        var lastSlash = uri.lastIndexOf('/');
+        if (lastSlash > 0) {
+            var base = uri.substring(0, lastSlash);
+            var id = uri.substring(lastSlash + 1);
+            var singleDoc = readOperation(principal, base, "get", Map.of("id", id));
+            if (singleDoc.isPresent()) {
+                return singleDoc.get();
+            }
+        }
+
+        return unknownResourceResult(uri);
+    }
+
+    private static McpSchema.ReadResourceResult unknownResourceResult(String uri) {
+        return new McpSchema.ReadResourceResult(
+                List.of(new TextResourceContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri)));
+    }
+
+    /**
+     * Documents-mode dispatch for one candidate base resource URI (#617 Phase 2/2b) — {@code
+     * Optional.empty()} only when {@code resourceUri} itself matches no catalog resource at all
+     * (so the caller can try a different URI-shape interpretation, or finally report "unknown
+     * resource"). Every other outcome — no such {@code readable} action, failed validation, the
+     * plugin declining, or the plugin actually returning content — is a definite result, most
+     * falling back to the resource's context (identical to what {@code resources/read} on the
+     * bare URI, or {@code list_apis}, would show) rather than a hard error, since the resource
+     * itself is real and MCP-enabled.
+     *
+     * <p><b>Known gap:</b> the actual ACL read-filter/projection a {@code DescriptorAwareAuthorizer}
+     * resolves while authorizing this operation (restheart#722) is not yet threaded through to
+     * the {@code readResource()} call below — only the base allow/deny decision is enforced
+     * end-to-end today. Tracked as a #617 follow-up.
+     */
+    private Optional<McpSchema.ReadResourceResult> readOperation(BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
+        var resourceOpt = resourceLookup.find(principal, publicBaseUrl, resourceUri);
+        if (resourceOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        var resource = resourceOpt.get();
+
+        var action = resource.actions().get(actionName);
+        if (action == null || !action.readable()) {
+            return Optional.of(readContext(resource));
+        }
+
+        var args = coerceArgs(rawArgs, action);
+        var errors = ParamValidator.validate(action, args);
+        if (!errors.isEmpty()) {
+            return Optional.of(errorResourceResult(resourceUri, String.join("; ", errors)));
+        }
+
+        var owner = resourceLookup.findOwner(principal, publicBaseUrl, resourceUri);
+        if (owner.isEmpty()) {
+            return Optional.of(readContext(resource));
+        }
+
+        var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(), owner.get().pluginConfiguration());
+
+        try {
+            return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
+                    .map(result -> toReadResourceResult(resourceUri, result))
+                    .orElseGet(() -> readContext(resource)));
+        } catch (Exception e) {
+            LOGGER.error("readResource failed for {} action {}", resourceUri, actionName, e);
+            return Optional.of(errorResourceResult(resourceUri, "internal error: " + e.getMessage()));
+        }
+    }
+
+    private McpSchema.ReadResourceResult toReadResourceResult(String uri, McpReadResult result) {
+        try {
+            Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
+            var text = jsonMapper.writeValueAsString(payload);
+            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(uri, "application/json", text)));
+        } catch (Exception e) {
+            LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);
+            return errorResourceResult(uri, "internal error: " + e.getMessage());
+        }
+    }
+
+    private static McpSchema.ReadResourceResult errorResourceResult(String uri, String message) {
+        return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(uri, "text/plain", "Error: " + message)));
+    }
+
+    /** Parses a raw {@code key=value&...} query string into string-valued args — types are coerced afterward, once the target action's declared param types are known. */
+    private static Map<String, Object> parseQueryArgs(String queryString) {
+        var args = new LinkedHashMap<String, Object>();
+        for (var pair : queryString.split("&")) {
+            if (pair.isEmpty()) {
+                continue;
+            }
+            var eq = pair.indexOf('=');
+            var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
+            var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
+            args.put(key, value);
+        }
+        return args;
+    }
+
+    /** Query-string args arrive as raw strings; coerces each to the type its action declares (e.g. {@code page} to an integer, {@code filter} to a parsed JSON object) so {@link ParamValidator} sees the right Java type. */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> coerceArgs(Map<String, Object> rawArgs, McpResource.Action action) {
+        var coerced = new LinkedHashMap<>(rawArgs);
+        action.params().forEach((name, param) -> {
+            if (param.type() == null || !(coerced.get(name) instanceof String raw)) {
+                return;
+            }
+            try {
+                coerced.put(name, switch (param.type()) {
+                    case "integer" -> Integer.parseInt(raw);
+                    case "number" -> Double.parseDouble(raw);
+                    case "boolean" -> Boolean.parseBoolean(raw);
+                    case "object" -> jsonMapper.readValue(raw, Map.class);
+                    case "array" -> jsonMapper.readValue(raw, List.class);
+                    default -> raw;
+                });
+            } catch (Exception e) {
+                // leave the raw string in place; ParamValidator reports the resulting type mismatch
+            }
+        });
+        return coerced;
+    }
+
+    // -------------------------------------------------------------------------
+    // Authorization for documents-mode reads (restheart#722)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Overrides the default (identity) — see {@code Service#operationsToAuthorize} — for exactly
+     * one case: a {@code resources/read} JSON-RPC call whose URI resolves to a documents-mode
+     * read (a {@code readable} action on a known resource). Every other request handled by
+     * {@code /mcp} (tools, context-mode reads, {@code initialize}, ...) returns the identity
+     * descriptor unchanged, since none of them execute a real, in-process data operation
+     * server-side that a REST-shaped ACL rule could meaningfully apply to.
+     *
+     * <p>Reads the request body via {@link ByteArrayRequest#getContent()} — safe to do this early
+     * (before {@code handle()} itself parses the same body): {@code ServiceRequest} caches the
+     * parsed content on the exchange after the first read, so this doesn't consume the channel a
+     * second time or interfere with the real dispatch that follows once authorization passes.
+     */
+    @Override
+    public List<RequestDescriptor> operationsToAuthorize(HttpServerExchange exchange) {
+        if (publicBaseUrl != null) {
+            try {
+                var descriptor = documentsModeDescriptor(exchange);
+                if (descriptor != null) {
+                    return List.of(descriptor);
+                }
+            } catch (Exception e) {
+                LOGGER.warn("operationsToAuthorize: failed to inspect /mcp request body, treating as non-documents-mode", e);
+            }
+        }
+        return List.of(RequestDescriptor.of(exchange));
+    }
+
+    /** @return a descriptor for the underlying REST-equivalent operation, or {@code null} if this request isn't a documents-mode-eligible {@code resources/read}. */
+    private RequestDescriptor documentsModeDescriptor(HttpServerExchange exchange) throws Exception {
+        var body = ByteArrayRequest.of(exchange).getContent();
+        if (body == null || body.length == 0) {
+            return null;
+        }
+
+        if (!(McpSchema.deserializeJsonRpcMessage(jsonMapper, new String(body, StandardCharsets.UTF_8))
+                instanceof McpSchema.JSONRPCRequest rpcReq) || !"resources/read".equals(rpcReq.method())) {
+            return null;
+        }
+
+        var params = rpcReq.params() instanceof Map<?, ?> m ? m : Map.of();
+        if (!(params.get("uri") instanceof String uri)) {
+            return null;
+        }
+
+        var identity = RequestDescriptor.of(exchange);
+        var principal = identity.principal();
+
+        var queryIdx = uri.indexOf('?');
+        if (queryIdx >= 0) {
+            var base = uri.substring(0, queryIdx);
+            if (!isReadableAction(principal, base, "query")) {
+                return null;
+            }
+            return withMethodPathAndQuery(identity, pathOf(base), parseQueryParameters(uri.substring(queryIdx + 1)));
+        }
+
+        if (resourceLookup.find(principal, publicBaseUrl, uri).isPresent()) {
+            return null; // exact context-mode match — no documents-mode operation to authorize
+        }
+
+        var lastSlash = uri.lastIndexOf('/');
+        if (lastSlash > 0 && isReadableAction(principal, uri.substring(0, lastSlash), "get")) {
+            return withMethodPathAndQuery(identity, pathOf(uri), Map.of());
+        }
+
+        return null;
+    }
+
+    private boolean isReadableAction(BaseAccount principal, String resourceUri, String actionName) {
+        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
+                .map(McpResource::actions)
+                .map(actions -> actions.get(actionName))
+                .map(McpResource.Action::readable)
+                .orElse(false);
+    }
+
+    private static RequestDescriptor withMethodPathAndQuery(RequestDescriptor identity, String path, Map<String, Deque<String>> queryParameters) {
+        return new RequestDescriptor(identity.principal(), "GET", path, queryParameters,
+                identity.headers(), identity.cookies(), identity.remoteAddress(), identity.scheme());
+    }
+
+    private static String pathOf(String absoluteUri) {
+        try {
+            return new URI(absoluteUri).getPath();
+        } catch (Exception e) {
+            return absoluteUri;
+        }
+    }
+
+    private static Map<String, Deque<String>> parseQueryParameters(String queryString) {
+        var result = new LinkedHashMap<String, Deque<String>>();
+        for (var pair : queryString.split("&")) {
+            if (pair.isEmpty()) {
+                continue;
+            }
+            var eq = pair.indexOf('=');
+            var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
+            var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
+            result.computeIfAbsent(key, k -> new ArrayDeque<>()).add(value);
+        }
+        return result;
     }
 
     // -------------------------------------------------------------------------

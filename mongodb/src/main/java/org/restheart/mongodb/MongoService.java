@@ -29,6 +29,8 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,6 +56,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
+import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.utils.BootstrapLogger;
@@ -135,6 +138,11 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
     @Override
     public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
         return mcpAware.describeTemplates(ctx);
+    }
+
+    @Override
+    public Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
+        return mcpAware.readResource(ctx, resource, action, args);
     }
 
     @Override

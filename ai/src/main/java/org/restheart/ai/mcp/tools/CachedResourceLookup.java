@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.Executor;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
+import org.restheart.ai.mcp.RegisteredMcpAware;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.BaseAccount;
@@ -59,7 +60,7 @@ import com.github.benmanes.caffeine.cache.Ticker;
 public final class CachedResourceLookup {
 
     private final McpAwareRegistry registry;
-    private final Cache<String, List<McpResource>> cache;
+    private final Cache<String, ResourceLookup.Catalog> cache;
 
     public CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire) {
         // Dispatched to the framework's shared virtual-threads executor (ThreadsUtils), not run
@@ -92,7 +93,7 @@ public final class CachedResourceLookup {
                 // without waiting on a background thread) — onExpire's own dispatch is handled
                 // separately via onExpireExecutor, see the public constructor's comment
                 .executor(Runnable::run)
-                .removalListener((String key, List<McpResource> value, RemovalCause cause) -> {
+                .removalListener((String key, ResourceLookup.Catalog value, RemovalCause cause) -> {
                     if (cause == RemovalCause.EXPIRED) {
                         onExpireExecutor.execute(onExpire);
                     }
@@ -102,12 +103,24 @@ public final class CachedResourceLookup {
 
     /** Public: also called by {@code McpService} (a different package) to sync the MCP SDK's resource registry — see #617. */
     public List<McpResource> all(BaseAccount principal, String baseUrl) {
-        return cache.get(baseUrl, k -> ResourceLookup.all(registry, principal, baseUrl));
+        return catalog(principal, baseUrl).resources();
     }
 
     /** Public: also called by {@code McpService} (a different package) for resource-template read dispatch — see #617. */
     public Optional<McpResource> find(BaseAccount principal, String baseUrl, String resourceUri) {
         return all(principal, baseUrl).stream().filter(r -> r.uri().equals(resourceUri)).findFirst();
+    }
+
+    /**
+     * Public: also called by {@code McpService} to resolve which plugin owns a resource, for
+     * documents-mode {@code resources/read} dispatch (its {@code readResource(...)}) — see #617.
+     */
+    public Optional<RegisteredMcpAware> findOwner(BaseAccount principal, String baseUrl, String resourceUri) {
+        return Optional.ofNullable(catalog(principal, baseUrl).owners().get(resourceUri));
+    }
+
+    private ResourceLookup.Catalog catalog(BaseAccount principal, String baseUrl) {
+        return cache.get(baseUrl, k -> ResourceLookup.catalog(registry, principal, baseUrl));
     }
 
     /**
