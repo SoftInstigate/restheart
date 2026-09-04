@@ -215,9 +215,10 @@ public class McpService implements ByteArrayService {
     }
 
     // -------------------------------------------------------------------------
-    // Resources primitive (#617) — phase 1: resources/list, resources/templates/list,
-    // and resources/read context-mode only. Documents-mode (readable actions,
-    // McpAware.readResource()) and resources/subscribe are later phases.
+    // Resources primitive (#617): resources/list, resources/templates/list,
+    // resources/read (documents-mode by default when the resource has a readable
+    // action, else context — see readBareResource) all live here.
+    // resources/subscribe is still a later phase.
     // -------------------------------------------------------------------------
 
     /**
@@ -246,13 +247,58 @@ public class McpService implements ByteArrayService {
                 .description(resource.description())
                 .mimeType("application/json")
                 .build();
-        return new McpServerFeatures.SyncResourceSpecification(sdkResource, (exchange, request) -> readContext(resource));
+        return new McpServerFeatures.SyncResourceSpecification(sdkResource,
+                (exchange, request) -> readBareResource(principal(exchange.transportContext()), resource));
     }
 
-    /** Context mode: identical content to {@code list_apis(resource)} — the same per-kind builders, just reached via {@code resources/read}. */
+    /**
+     * Reads the bare resource URI — the SDK's own exact-URI match (verified against its bytecode:
+     * it tries concrete {@link McpServerFeatures.SyncResourceSpecification}s registered via {@link
+     * #toResourceSpec} before ever falling back to a template) always routes here for a known
+     * resource's own URI, never through {@link #readTemplateMatch}.
+     *
+     * <p>Prefers documents-mode with no filter (default pagination) when the resource has one —
+     * matches what attaching this resource in a host UI (Claude Desktop, Cursor, ...) actually
+     * means: load its real content, not a description of how to query it. Falls back to context
+     * only for a resource with no {@code readable} action at all (aggregations, GraphQL apps,
+     * custom-plugin services, ...), which is the only thing {@code resources/read} can meaningfully
+     * return for those.
+     */
+    private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, McpResource resource) {
+        var actionName = defaultReadableAction(resource);
+        if (actionName == null) {
+            return readContext(resource);
+        }
+        return readOperation(principal, resource.uri(), actionName, Map.of()).orElseGet(() -> readContext(resource));
+    }
+
+    /** {@code query} is preferred (the natural "give me the collection" action) over any other {@code readable} action a future kind might declare. */
+    private static String defaultReadableAction(McpResource resource) {
+        if (resource.actions().get("query") instanceof McpResource.Action a && a.readable()) {
+            return "query";
+        }
+        return resource.actions().entrySet().stream()
+                .filter(e -> e.getValue().readable())
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Context mode: identical content to {@code list_apis(resource)} — the same per-kind builders
+     * — plus one extra field explaining what's being returned, since (unlike {@code list_apis},
+     * where an agent explicitly asked "describe this") a plain {@code resources/read} could
+     * otherwise look like this JSON blob IS the resource's data. Reached only for a resource with
+     * no {@code readable} action, or when a documents-mode attempt failed/was declined.
+     */
     private McpSchema.ReadResourceResult readContext(McpResource resource) {
         try {
-            var text = jsonMapper.writeValueAsString(resource.toMap());
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("mcp_note", "This describes the resource (see 'actions' for how to call it) — it is not the resource's "
+                    + "data. Either this resource has no direct-read action, or reading it that way failed or was declined; "
+                    + "use how_to_call to actually invoke it.");
+            payload.putAll(resource.toMap());
+            var text = jsonMapper.writeValueAsString(payload);
             return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(resource.uri(), "application/json", text)));
         } catch (Exception e) {
             LOGGER.error("Failed to serialize resource {}", resource.uri(), e);
@@ -292,15 +338,19 @@ public class McpService implements ByteArrayService {
      * bare {@code {collection}} placeholder already matches a query-string-bearing URI, since its
      * capture group is {@code [^/]+} with no anchoring against {@code ?}) routes a documents-mode
      * URI here exactly like a context-mode one; an exact concrete-resource URI (never carrying a
-     * query string or extra path segment) is instead routed straight to {@link #readContext} by
-     * the SDK before this is ever called.
+     * query string or extra path segment) is instead routed straight to {@link #readBareResource}
+     * by the SDK before this is ever called.
      *
      * <p>Mode detection purely from the URI shape:
      * <ul>
-     *   <li>a query string ({@code ?...}) → collection documents mode, action {@code query}</li>
+     *   <li>a query string ({@code ?...}) → documents mode, using whichever action {@link
+     *       #defaultReadableAction} picks for the matched resource (e.g. {@code query} for a
+     *       collection, {@code execute} for an aggregation — <b>not</b> hardcoded to {@code
+     *       query}, since an aggregation has no action by that name)</li>
      *   <li>no exact catalog match, but stripping the last path segment does match → single
      *       document mode, action {@code get}, {@code id} = that segment</li>
-     *   <li>otherwise, an exact catalog match → context mode (unchanged from Phase 1)</li>
+     *   <li>otherwise, an exact catalog match → {@link #readBareResource} (documents-mode default
+     *       action if the resource has one, else context)</li>
      * </ul>
      */
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
@@ -310,12 +360,25 @@ public class McpService implements ByteArrayService {
         if (queryIdx >= 0) {
             var base = uri.substring(0, queryIdx);
             var args = parseQueryArgs(uri.substring(queryIdx + 1));
-            return readOperation(principal, base, "query", args).orElseGet(() -> unknownResourceResult(uri));
+            var resource = resourceLookup.find(principal, publicBaseUrl, base);
+            if (resource.isEmpty()) {
+                return unknownResourceResult(uri);
+            }
+            var actionName = defaultReadableAction(resource.get());
+            if (actionName == null) {
+                // known resource, but nothing readable on it (e.g. an aggregation whose pipeline
+                // didn't clear the security checker) — context, not "unknown", it's a real resource
+                return readContext(resource.get());
+            }
+            return readOperation(principal, base, actionName, args).orElseGet(() -> unknownResourceResult(uri));
         }
 
+        // Defensive: in practice the SDK's own exact-match check (see readBareResource's javadoc)
+        // means this never actually fires for a bare URI, since that's always caught by the
+        // concrete SyncResourceSpecification's own handler first.
         var exact = resourceLookup.find(principal, publicBaseUrl, uri);
         if (exact.isPresent()) {
-            return readContext(exact.get());
+            return readBareResource(principal, exact.get());
         }
 
         var lastSlash = uri.lastIndexOf('/');
@@ -342,9 +405,9 @@ public class McpService implements ByteArrayService {
      * (so the caller can try a different URI-shape interpretation, or finally report "unknown
      * resource"). Every other outcome — no such {@code readable} action, failed validation, the
      * plugin declining, or the plugin actually returning content — is a definite result, most
-     * falling back to the resource's context (identical to what {@code resources/read} on the
-     * bare URI, or {@code list_apis}, would show) rather than a hard error, since the resource
-     * itself is real and MCP-enabled.
+     * falling back to the resource's context (via {@link #readContext}, which explains that's
+     * what it is — see its javadoc) rather than a hard error, since the resource itself is real
+     * and MCP-enabled.
      *
      * <p><b>Known gap:</b> the actual ACL read-filter/projection a {@code DescriptorAwareAuthorizer}
      * resolves while authorizing this operation (restheart#722) is not yet threaded through to
@@ -427,28 +490,67 @@ public class McpService implements ByteArrayService {
         return args;
     }
 
-    /** Query-string args arrive as raw strings; coerces each to the type its action declares (e.g. {@code page} to an integer, {@code filter} to a parsed JSON object) so {@link ParamValidator} sees the right Java type. */
-    @SuppressWarnings("unchecked")
+    /**
+     * Query-string args arrive as raw strings; coerces each to the type its action declares (e.g.
+     * {@code page} to an integer, {@code filter} to a parsed JSON object) so {@link ParamValidator}
+     * sees the right Java type.
+     *
+     * <p>Also synthesizes any declared object-typed param that has named sub-properties (e.g. an
+     * aggregation's {@code avars}, one property per {@code $var} it references) from flat
+     * top-level keys, when the object itself wasn't explicitly provided — so {@code
+     * ?status=A&limit=5} works exactly like {@code ?avars=\{"status":"A","limit":5\}}. Fully
+     * generic — not aggregation-specific: any resource kind whose schema declares an object param
+     * with {@code properties} benefits from this. {@code how_to_call}'s own composed URL still
+     * needs the nested form (real RESTHeart REST API requirement, unrelated to this in-process
+     * dispatch), so this only matters for {@code resources/read}.
+     */
     private Map<String, Object> coerceArgs(Map<String, Object> rawArgs, McpResource.Action action) {
         var coerced = new LinkedHashMap<>(rawArgs);
         action.params().forEach((name, param) -> {
-            if (param.type() == null || !(coerced.get(name) instanceof String raw)) {
-                return;
-            }
-            try {
-                coerced.put(name, switch (param.type()) {
-                    case "integer" -> Integer.parseInt(raw);
-                    case "number" -> Double.parseDouble(raw);
-                    case "boolean" -> Boolean.parseBoolean(raw);
-                    case "object" -> jsonMapper.readValue(raw, Map.class);
-                    case "array" -> jsonMapper.readValue(raw, List.class);
-                    default -> raw;
+            // Only when the object param is entirely absent — not when it's present but not yet
+            // coerced (e.g. a raw "?avars={...}" JSON string still awaiting the coercion step
+            // below): checking `instanceof Map` here instead would run synthesis before that
+            // string is parsed, clobbering an explicitly-provided nested value with the
+            // synthesized one.
+            if ("object".equals(param.type()) && param.properties() != null && !param.properties().isEmpty()
+                    && !coerced.containsKey(name)) {
+                var synthesized = new LinkedHashMap<String, Object>();
+                param.properties().forEach((propName, propParam) -> {
+                    if (coerced.containsKey(propName)) {
+                        synthesized.put(propName, coerceScalar(coerced.get(propName), propParam.type()));
+                    }
                 });
-            } catch (Exception e) {
-                // leave the raw string in place; ParamValidator reports the resulting type mismatch
+                if (!synthesized.isEmpty()) {
+                    coerced.put(name, synthesized);
+                }
+            }
+
+            if (coerced.get(name) instanceof String) {
+                coerced.put(name, coerceScalar(coerced.get(name), param.type()));
             }
         });
         return coerced;
+    }
+
+    /** Coerces a query-string-sourced raw {@link String} value to the declared param type; any non-{@code String} value (already the right shape, or absent/{@code null}) passes through unchanged. */
+    @SuppressWarnings("unchecked")
+    private Object coerceScalar(Object value, String type) {
+        if (type == null || !(value instanceof String raw)) {
+            return value;
+        }
+        try {
+            return switch (type) {
+                case "integer" -> Integer.parseInt(raw);
+                case "number" -> Double.parseDouble(raw);
+                case "boolean" -> Boolean.parseBoolean(raw);
+                case "object" -> jsonMapper.readValue(raw, Map.class);
+                case "array" -> jsonMapper.readValue(raw, List.class);
+                default -> raw;
+            };
+        } catch (Exception e) {
+            // leave the raw string in place; ParamValidator reports the resulting type mismatch
+            return raw;
+        }
     }
 
     // -------------------------------------------------------------------------
