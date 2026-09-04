@@ -216,7 +216,9 @@ public class MongoMcpAwareImplTest {
         assertEquals(List.of(
                 "https://host/{collection}",
                 "https://host/{collection}/_aggrs/{name}",
-                "https://host/{collection}/_streams/{name}"), templates);
+                "https://host/{collection}/_streams/{name}",
+                "https://host/{collection}{?filter,sort,keys,page,pagesize}",
+                "https://host/{collection}/{id}"), templates);
     }
 
     @Test

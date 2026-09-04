@@ -206,6 +206,14 @@ public final class MongoMcpAwareImpl {
             templates.add(new McpResourceTemplate(uri, "collection-context", "Collection — context"));
             templates.add(new McpResourceTemplate(uri + "/_aggrs/{name}", "aggregation-context", "Aggregation — context"));
             templates.add(new McpResourceTemplate(uri + "/_streams/{name}", "change-stream-context", "Change stream — context"));
+            // Discoverability only: McpService.readTemplateMatch() already detects a query string
+            // on ANY matching template's URI and dispatches documents-mode regardless of which
+            // template matched (confirmed live — restheart#617 Phase 2b) — this entry exists so
+            // MCP clients (e.g. MCP Inspector's "Resource Templates" tab) actually see and can
+            // construct the query-bearing shape, instead of only ever reading the bare, context-only
+            // URI from resources/list.
+            templates.add(new McpResourceTemplate(uri + "{?filter,sort,keys,page,pagesize}", "collection-documents", "Collection — documents"));
+            templates.add(new McpResourceTemplate(uri + "/{id}", "document", "Document"));
         }
 
         return templates;
