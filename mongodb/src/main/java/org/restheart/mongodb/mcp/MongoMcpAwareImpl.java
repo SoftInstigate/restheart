@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -32,18 +33,29 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
+import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
+import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.MongoMountResolver;
 import org.restheart.mongodb.utils.MongoMountResolverImpl;
+import org.restheart.mongodb.utils.StagesInterpolator;
+import org.restheart.mongodb.utils.StagesInterpolator.STAGE_OPERATOR;
+import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.utils.BsonUtils;
+
+import com.mongodb.MongoCommandException;
 
 /**
  * The {@code McpAware} logic backing {@code MongoService.describeMcp(ctx)} (see #616): walks
@@ -83,20 +95,23 @@ public final class MongoMcpAwareImpl {
     private final MetadataSource metadata;
     private final MountUriResolver mountResolver;
     private final Databases databases;
+    private final AggregationPipelineSecurityChecker securityChecker;
 
     MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver) {
-        this(metadata, mountResolver, null);
+        this(metadata, mountResolver, null, null);
     }
 
-    /** {@code databases} is {@code null} only via the test-only 2-arg constructor above, which never exercises {@link #readResource}. */
-    MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver, Databases databases) {
+    /** {@code databases}/{@code securityChecker} are {@code null} only via the test-only 2-arg constructor above, which never exercises {@link #readResource} or aggregation description. */
+    MongoMcpAwareImpl(MetadataSource metadata, MountUriResolver mountResolver, Databases databases, AggregationPipelineSecurityChecker securityChecker) {
         this.metadata = metadata;
         this.mountResolver = mountResolver;
         this.databases = databases;
+        this.securityChecker = securityChecker;
     }
 
     public static MongoMcpAwareImpl create() {
         var databases = Databases.get();
+        var securityChecker = new AggregationPipelineSecurityChecker(MongoServiceConfiguration.get().getAggregationSecurityConfiguration());
         MetadataSource source = new MetadataSource() {
             @Override
             public List<String> databaseNames() {
@@ -146,7 +161,7 @@ public final class MongoMcpAwareImpl {
                 return props == null ? null : BsonUtils.unescapeKeys(props).asDocument();
             }
         };
-        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig(), databases);
+        return new MongoMcpAwareImpl(source, MountUriResolver.fromConfig(), databases, securityChecker);
     }
 
     public List<McpResource> describeMcp(McpContext ctx) {
@@ -183,7 +198,9 @@ public final class MongoMcpAwareImpl {
     }
 
     /**
-     * URI templates (RFC 6570) for the context-mode shapes this implementation produces,
+     * URI templates (RFC 6570) for the shapes this implementation produces — context-only for
+     * database/aggregation/change-stream (they have no {@code readable} action), documents-mode
+     * for collections and single documents (see #617's bare-read-prefers-documents design) —
      * derived from the actual {@code mongo-mounts} configuration via {@link MountUriResolver}
      * rather than a hardcoded {@code /{db}/{collection}} shape — a default {@code mongo-mounts}
      * (a single database mounted at {@code /}) exposes collections at {@code /{collection}}, with
@@ -203,15 +220,14 @@ public final class MongoMcpAwareImpl {
 
         for (var collTemplate : mountResolver.collectionPathTemplates()) {
             var uri = baseUrl + collTemplate;
-            templates.add(new McpResourceTemplate(uri, "collection-context", "Collection — context"));
             templates.add(new McpResourceTemplate(uri + "/_aggrs/{name}", "aggregation-context", "Aggregation — context"));
             templates.add(new McpResourceTemplate(uri + "/_streams/{name}", "change-stream-context", "Change stream — context"));
-            // Discoverability only: McpService.readTemplateMatch() already detects a query string
-            // on ANY matching template's URI and dispatches documents-mode regardless of which
-            // template matched (confirmed live — restheart#617 Phase 2b) — this entry exists so
-            // MCP clients (e.g. MCP Inspector's "Resource Templates" tab) actually see and can
-            // construct the query-bearing shape, instead of only ever reading the bare, context-only
-            // URI from resources/list.
+            // No separate "collection-context" template: a bare collection read now returns
+            // documents-mode content by default (McpService.readBareResource(), #617) whenever the
+            // resource has a readable action, so a context-only template would misdescribe actual
+            // behavior. This one shape covers both the bare read (no query — default pagination)
+            // and a filtered one; the `{?...}` part just needs to be discoverable (e.g. MCP
+            // Inspector's "Resource Templates" tab) so clients know they *can* filter.
             templates.add(new McpResourceTemplate(uri + "{?filter,sort,keys,page,pagesize,jsonMode}", "collection-documents", "Collection — documents"));
             templates.add(new McpResourceTemplate(uri + "/{id}", "document", "Document"));
         }
@@ -233,10 +249,15 @@ public final class MongoMcpAwareImpl {
      * base allow/deny decision from restheart#722's {@code DescriptorAwareAuthorizer} check is
      * enforced today. The filter/projection handoff from that check to here is a follow-up.
      */
-    @SuppressWarnings("unchecked")
     public Optional<McpReadResult> readResource(McpContext ctx, String resourceUri, String action, Map<String, Object> args) {
         if (databases == null) {
             return Optional.empty();
+        }
+
+        var effectiveArgs = args == null ? Map.<String, Object>of() : args;
+
+        if ("execute".equals(action)) {
+            return executeAggregation(resourceUri, effectiveArgs);
         }
 
         var resolved = resolveMount(resourceUri);
@@ -244,13 +265,156 @@ public final class MongoMcpAwareImpl {
             return Optional.empty();
         }
 
-        var effectiveArgs = args == null ? Map.<String, Object>of() : args;
-
         return switch (action) {
             case "query" -> Optional.of(queryDocuments(resolved, effectiveArgs));
             case "get" -> Optional.of(getSingleDocument(resolved, effectiveArgs));
             default -> Optional.empty();
         };
+    }
+
+    /**
+     * Executes an aggregation's {@code execute} action (#617, per the operator's explicit request
+     * to allow this once {@code AggregationPipelineSecurityChecker} clears the pipeline) — the same
+     * pipeline resolution ({@link AbstractAggregationOperation#getFromJson}), {@code $var} binding
+     * ({@link StagesInterpolator}), and execution ({@code MongoCollection.aggregate}) {@code
+     * GetAggregationHandler} performs for a real {@code GET}. The security check re-runs here on
+     * the fully-bound pipeline (defense in depth — {@link AggregationMcpResourceBuilder} already
+     * checked the raw, un-interpolated one before ever marking this {@code readable}), so a
+     * blacklist change or an avars-influenced pipeline shape is still caught before execution.
+     *
+     * <p>Unlike {@link #injectAvars} in the real handler, {@code @page}/{@code @user}/{@code
+     * @mongoPermissions} built-in variables are not available here — there is no real request to
+     * derive them from. Only explicit {@code $var} bindings from the caller's own {@code avars}
+     * work.
+     */
+    @SuppressWarnings("unchecked")
+    private Optional<McpReadResult> executeAggregation(String resourceUri, Map<String, Object> args) {
+        var split = resourceUri.indexOf("/_aggrs/");
+        if (split < 0) {
+            return Optional.empty();
+        }
+        var collectionUri = resourceUri.substring(0, split);
+        var aggrName = resourceUri.substring(split + "/_aggrs/".length());
+
+        var resolved = resolveMount(collectionUri);
+        if (resolved == null) {
+            return Optional.empty();
+        }
+
+        var collProps = metadata.collectionProperties(resolved.database(), resolved.collection());
+        if (collProps == null) {
+            return Optional.empty();
+        }
+
+        List<AbstractAggregationOperation> aggregations;
+        try {
+            aggregations = AbstractAggregationOperation.getFromJson(collProps);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+
+        var pipeline = aggregations.stream()
+                .filter(a -> a.getUri().equals(aggrName))
+                .findFirst()
+                .filter(AggregationPipeline.class::isInstance)
+                .map(AggregationPipeline.class::cast);
+        if (pipeline.isEmpty()) {
+            return Optional.empty();
+        }
+        if (securityChecker == null) {
+            return Optional.of(errorReadResult("aggregation execution is unavailable"));
+        }
+
+        var avars = args.get("avars") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+
+        // mirror MongoRequestPropsInjector's real-endpoint behavior: any other flat arg is also
+        // bound as an avar (e.g. a bare "status" arg satisfies a pipeline's {"$var": "status"}, and
+        // a JSON-shaped one like "[1,2,3]" or "{\"a\":1}" is bound as the real array/document, not
+        // a literal string), so a caller need not wrap a single variable in an "avars" object; an
+        // explicit "avars" entry always wins over a same-named flat arg
+        args.forEach((key, value) -> {
+            if (!"avars".equals(key) && !"jsonMode".equals(key) && !avars.containsKey(key) && value != null) {
+                avars.put(key, toBsonValue(value));
+            }
+        });
+
+        List<BsonDocument> stages;
+        try {
+            stages = StagesInterpolator.interpolate(VAR_OPERATOR.$var, STAGE_OPERATOR.$ifvar, pipeline.get().getStages(), avars);
+        } catch (QueryVariableNotBoundException e) {
+            // A required (non-conditional) $var has no value. A hard, actionable error — never a
+            // silent switch to context: resources/read on a readable resource must consistently
+            // mean "here is the data" (or a clear reason it couldn't be produced), not sometimes
+            // data and sometimes a description depending on which args happened to be supplied
+            // (that inconsistency is exactly what collections' bare-read-prefers-documents design
+            // was fixing in the first place).
+            return Optional.of(errorReadResult(e.getMessage() + " — provide it as a query param, e.g. ?"
+                    + e.getMessage().replaceAll(".*variable (\\S+) not bound.*", "$1") + "=..."));
+        } catch (Exception e) {
+            return Optional.of(errorReadResult(e.getMessage()));
+        }
+
+        var stagesArray = new BsonArray();
+        stages.forEach(stagesArray::add);
+
+        try {
+            securityChecker.validatePipelineOrThrow(stagesArray, resolved.database());
+        } catch (SecurityException se) {
+            return Optional.of(errorReadResult("aggregation pipeline security violation: " + se.getMessage()));
+        }
+
+        var results = new ArrayList<BsonDocument>();
+        try {
+            var output = databases.collection(Optional.empty(), resolved.database(), resolved.collection())
+                    .aggregate(stages)
+                    .maxTime(MongoServiceConfiguration.get().getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
+                    .allowDiskUse(pipeline.get().getAllowDiskUse().getValue());
+
+            // matches GetAggregationHandler: a $merge/$out-suffixed pipeline writes to a
+            // collection rather than returning a result set — running it .into(results) would
+            // otherwise return the entire target view, in the worst case the whole collection
+            var writesToCollection = !stages.isEmpty() && stages.get(stages.size() - 1).keySet().stream()
+                    .anyMatch(k -> "$merge".equals(k) || "$out".equals(k));
+            if (writesToCollection) {
+                output.toCollection();
+            } else {
+                output.into(results);
+            }
+        } catch (MongoCommandException mce) {
+            return Optional.of(errorReadResult("error executing aggregation: " + mce.getErrorMessage()));
+        }
+
+        var data = new BsonArray();
+        results.forEach(data::add);
+
+        return Optional.of(new McpReadResult(new McpReadResult.RawJson("{\"content\":" + BsonUtils.toJson(data, jsonModeOf(args)) + "}")));
+    }
+
+    /**
+     * Converts an arbitrary MCP argument value to the BsonValue it should bind to as a {@code
+     * $var}: a JSON-shaped string (object, array, number, boolean, quoted string) parses to the
+     * real BsonValue it represents; a plain word like {@code A} — not valid JSON on its own — falls
+     * back to a literal BsonString, matching how a caller would type it in a URL without bothering
+     * to quote it; a non-string value (already a Map/List/Number/Boolean from a JSON-RPC call)
+     * converts via the same codec {@link #executeAggregation} uses for the {@code avars} map
+     * itself, so nested structures survive intact.
+     */
+    private static BsonValue toBsonValue(Object value) {
+        if (value instanceof String s) {
+            try {
+                var parsed = BsonUtils.parse(s);
+                return parsed != null ? parsed : new BsonString(s);
+            } catch (JsonParseException e) {
+                return new BsonString(s);
+            }
+        }
+        return BsonUtils.toBsonDocument(Map.of("v", value)).get("v");
+    }
+
+    private static McpReadResult errorReadResult(String message) {
+        var text = message == null ? "unknown error" : message;
+        var escaped = text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ");
+        return new McpReadResult(new McpReadResult.RawJson("{\"error\":\"" + escaped + "\"}"));
     }
 
     private MongoMountResolver.ResolvedContext resolveMount(String resourceUri) {
@@ -341,7 +505,7 @@ public final class MongoMcpAwareImpl {
         if (aggrs != null) {
             for (var entry : aggrs) {
                 describeEntry(entry, collUri, (uri, name, stages, entryMcp) -> AggregationMcpResourceBuilder
-                        .build(uri, name, stages, entryMcp).ifPresent(resources::add));
+                        .build(uri, name, stages, entryMcp, dbName, securityChecker).ifPresent(resources::add));
             }
         }
 

@@ -30,6 +30,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.plugins.mcp.McpResource;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 
 /**
  * Builds the {@code McpResource} for one aggregation pipeline declared in a collection's
@@ -51,14 +52,24 @@ public final class AggregationMcpResourceBuilder {
     }
 
     /**
-     * @param collectionUri the owning collection's resource URI (e.g. {@code https://host/db/coll})
-     * @param aggrUri       the aggregation's own {@code uri} ({@code aggrs[].uri})
-     * @param stages        the aggregation's pipeline ({@code aggrs[].stages})
-     * @param mcp           the aggregation entry's own {@code mcp} block, or {@code null} if absent
+     * @param collectionUri  the owning collection's resource URI (e.g. {@code https://host/db/coll})
+     * @param aggrUri        the aggregation's own {@code uri} ({@code aggrs[].uri})
+     * @param stages         the aggregation's pipeline ({@code aggrs[].stages})
+     * @param mcp            the aggregation entry's own {@code mcp} block, or {@code null} if absent
+     * @param dbName         the owning database's name, for {@code securityChecker}'s cross-database checks
+     * @param securityChecker the same {@link AggregationPipelineSecurityChecker} the real
+     *                       {@code GetAggregationHandler} enforces at execution time — used here
+     *                       to decide the {@code execute} action's {@code readable} flag: a
+     *                       pipeline the operator's own blacklist would reject (e.g. {@code $out},
+     *                       {@code $merge} — both blocked by default) is never marked {@code
+     *                       readable}, so {@code resources/read} can't trigger it. This is a
+     *                       pre-check against the raw, un-interpolated pipeline; the real check
+     *                       runs again on the bound pipeline at actual execution time.
      * @return the resource, or empty if not MCP-enabled: no {@code mcp} block,
      *         {@code mcp.enabled == false}, or a missing required {@code description}
      */
-    public static Optional<McpResource> build(String collectionUri, String aggrUri, BsonValue stages, BsonDocument mcp) {
+    public static Optional<McpResource> build(String collectionUri, String aggrUri, BsonValue stages, BsonDocument mcp,
+            String dbName, AggregationPipelineSecurityChecker securityChecker) {
         if (mcp == null || isExplicitlyDisabled(mcp) || description(mcp) == null) {
             return Optional.empty();
         }
@@ -95,6 +106,8 @@ public final class AggregationMcpResourceBuilder {
             // not repeat pathTemplate, or the rendered URL doubles up "/_aggrs/<uri>"
             a.pathTemplate("");
             a.description(description(mcp));
+            a.readable(isPipelineSafeToRead(stages, dbName, securityChecker));
+            a.param("jsonMode", "string", false);
 
             // RESTHeart binds $var references from a single JSON query param named "avars"
             // (e.g. ?avars={"status":"A"}), not one query param per variable name — declaring
@@ -117,6 +130,23 @@ public final class AggregationMcpResourceBuilder {
         }
 
         return Optional.of(builder.build());
+    }
+
+    /**
+     * The raw pipeline, before any {@code $var} binding, checked against the operator's own
+     * {@code aggregationSecurity} policy (stage/operator blacklists, cross-database restrictions —
+     * default blacklist blocks {@code $out}/{@code $merge}, among others; if the operator disables
+     * {@code aggregationSecurity} entirely, the checker itself treats everything as passing,
+     * consistent with how the real {@code GetAggregationHandler} would then run it unchecked too).
+     * A {@code null} checker (should not happen — {@link MongoMcpAwareImpl#create} always supplies
+     * one) or a pipeline that isn't a well-formed stage array defaults to {@code false} — never
+     * {@code readable} on anything we can't positively clear.
+     */
+    private static boolean isPipelineSafeToRead(BsonValue stages, String dbName, AggregationPipelineSecurityChecker securityChecker) {
+        if (securityChecker == null || !(stages instanceof BsonArray stagesArray)) {
+            return false;
+        }
+        return securityChecker.validatePipeline(stagesArray, dbName).isEmpty();
     }
 
     private static boolean isExplicitlyDisabled(BsonDocument mcp) {

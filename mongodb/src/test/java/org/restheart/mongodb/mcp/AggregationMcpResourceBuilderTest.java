@@ -31,6 +31,7 @@ import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.Test;
+import org.restheart.security.AggregationPipelineSecurityChecker;
 
 public class AggregationMcpResourceBuilderTest {
 
@@ -41,26 +42,26 @@ public class AggregationMcpResourceBuilderTest {
 
     @Test
     public void noMcpBlock_notBuilt() {
-        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, null).isEmpty());
+        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, null, "db", null).isEmpty());
     }
 
     @Test
     public void explicitlyDisabled_notBuilt() {
         var mcp = BsonDocument.parse("{\"enabled\": false, \"description\": \"By status\"}");
-        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).isEmpty());
+        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).isEmpty());
     }
 
     @Test
     public void missingDescription_notBuilt() {
         var mcp = new BsonDocument();
-        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).isEmpty());
+        assertTrue(AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).isEmpty());
     }
 
     @Test
     public void enabledWithDescription_buildsResourceWithUriAndAction() {
         var mcp = BsonDocument.parse("{\"description\": \"Orders grouped by status\"}");
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
         assertEquals(COLLECTION_URI + "/_aggrs/byStatus", resource.uri());
         assertEquals("aggregation", resource.kind());
@@ -75,7 +76,7 @@ public class AggregationMcpResourceBuilderTest {
     @Test
     public void noOperatorSummary_fallsBackToHeuristic() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
         assertEquals("$match → $group", resource.extra().get("pipeline_summary"));
     }
 
@@ -84,14 +85,14 @@ public class AggregationMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("""
                 {"description": "x", "pipeline_summary": "Orders whose stock covers less than the last quarter's demand"}
                 """);
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
         assertEquals("Orders whose stock covers less than the last quarter's demand", resource.extra().get("pipeline_summary"));
     }
 
     @Test
     public void avarsParam_bundlesAllVariablesAsAnObjectParam() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
         var avars = resource.actions().get("execute").params().get("avars");
         assertEquals("object", avars.type());
@@ -103,7 +104,7 @@ public class AggregationMcpResourceBuilderTest {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
         var stagesWithNoVars = BsonArray.parse("[{\"$match\": {\"status\": \"A\"}}]");
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp, "db", null).orElseThrow();
 
         assertTrue(resource.actions().get("execute").params().isEmpty());
     }
@@ -114,7 +115,7 @@ public class AggregationMcpResourceBuilderTest {
                 {"description": "x", "params": {"status": {"type": "string", "description": "Order status", "enum": ["open", "closed"]}}}
                 """);
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
         var param = resource.actions().get("execute").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
@@ -127,7 +128,7 @@ public class AggregationMcpResourceBuilderTest {
     public void referencedVarWithNoDeclaredParam_defaultsToOptionalStringWithWarning() {
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
         var param = resource.actions().get("execute").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
@@ -143,7 +144,7 @@ public class AggregationMcpResourceBuilderTest {
                 {"description": "x", "params": {"status": {"type": "string"}, "unused": {"type": "string"}}}
                 """);
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
         @SuppressWarnings("unchecked")
         var warnings = (List<String>) resource.extra().get("warnings");
@@ -156,11 +157,45 @@ public class AggregationMcpResourceBuilderTest {
                 {"description": "x", "examples": [{"description": "Open orders", "args": {"status": "open"}}]}
                 """);
 
-        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
 
         assertEquals(1, resource.examples().size());
         assertEquals("Open orders", resource.examples().get(0).description());
         assertEquals("execute", resource.examples().get(0).action());
         assertEquals(Map.of("status", "open"), resource.examples().get(0).args());
+    }
+
+    private static AggregationPipelineSecurityChecker defaultChecker() {
+        return new AggregationPipelineSecurityChecker(Map.of(
+                "enabled", true,
+                "stageBlacklist", List.of("$out", "$merge", "$lookup", "$graphLookup", "$unionWith")));
+    }
+
+    @Test
+    public void safePipeline_withSecurityCheckerClearingIt_isMarkedReadable() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", defaultChecker()).orElseThrow();
+
+        assertTrue(resource.actions().get("execute").readable());
+    }
+
+    @Test
+    public void pipelineWithBlacklistedStage_isNotMarkedReadable() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var stagesWithOut = BsonArray.parse("[{\"$match\": {\"status\": \"A\"}}, {\"$out\": \"copy\"}]");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithOut, mcp, "db", defaultChecker()).orElseThrow();
+
+        assertFalse(resource.actions().get("execute").readable());
+    }
+
+    @Test
+    public void noSecurityChecker_isNotMarkedReadable() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
+
+        assertFalse(resource.actions().get("execute").readable());
     }
 }

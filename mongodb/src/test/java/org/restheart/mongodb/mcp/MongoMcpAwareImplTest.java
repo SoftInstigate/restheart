@@ -214,7 +214,6 @@ public class MongoMcpAwareImplTest {
                 .map(t -> t.uriTemplate()).toList();
 
         assertEquals(List.of(
-                "https://host/{collection}",
                 "https://host/{collection}/_aggrs/{name}",
                 "https://host/{collection}/_streams/{name}",
                 "https://host/{collection}{?filter,sort,keys,page,pagesize,jsonMode}",
@@ -229,7 +228,7 @@ public class MongoMcpAwareImplTest {
                 .map(t -> t.uriTemplate()).toList();
 
         assertTrue(templates.contains("https://host/{db}"));
-        assertTrue(templates.contains("https://host/{db}/{collection}"));
+        assertTrue(templates.contains("https://host/{db}/{collection}{?filter,sort,keys,page,pagesize,jsonMode}"));
         assertTrue(templates.contains("https://host/{db}/{collection}/_aggrs/{name}"));
         assertTrue(templates.contains("https://host/{db}/{collection}/_streams/{name}"));
     }
