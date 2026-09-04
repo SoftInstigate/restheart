@@ -171,10 +171,13 @@ public final class McpResource {
         public Action description(String description) { this.description = description; return this; }
 
         /**
-         * Marks this action servable by {@code resources/read} documents-mode (#617) — the
-         * framework calls {@code McpAware.readResource(...)} for it instead of returning
-         * context. Only ever set on a safe/idempotent, GET-shaped action (e.g. {@code query},
-         * {@code get}); the framework doesn't enforce that, it's the plugin's own choice.
+         * Marks this action servable by {@code resources/read} (#617) — the framework calls
+         * {@code McpAware.readResource(...)} for it. Only a resource with at least one such
+         * action is ever registered with the MCP resources primitive at all (a resource with
+         * none stays reachable through {@code list_apis}/{@code how_to_call} only), since {@code
+         * resources/read} must always return real data. Only ever set on a safe/idempotent,
+         * GET-shaped action (e.g. {@code query}, {@code get}); the framework doesn't enforce
+         * that, it's the plugin's own choice.
          */
         public Action readable(boolean readable) { this.readable = readable; return this; }
         public boolean readable() { return readable; }

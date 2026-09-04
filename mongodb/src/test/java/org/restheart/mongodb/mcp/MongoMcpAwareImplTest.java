@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -214,8 +215,6 @@ public class MongoMcpAwareImplTest {
                 .map(t -> t.uriTemplate()).toList();
 
         assertEquals(List.of(
-                "https://host/{collection}/_aggrs/{name}",
-                "https://host/{collection}/_streams/{name}",
                 "https://host/{collection}{?filter,sort,keys,page,pagesize,jsonMode}",
                 "https://host/{collection}/{id}"), templates);
     }
@@ -227,10 +226,9 @@ public class MongoMcpAwareImplTest {
         var templates = new MongoMcpAwareImpl(new FakeMetadataSource(), resolver).describeTemplates(CTX).stream()
                 .map(t -> t.uriTemplate()).toList();
 
-        assertTrue(templates.contains("https://host/{db}"));
         assertTrue(templates.contains("https://host/{db}/{collection}{?filter,sort,keys,page,pagesize,jsonMode}"));
-        assertTrue(templates.contains("https://host/{db}/{collection}/_aggrs/{name}"));
-        assertTrue(templates.contains("https://host/{db}/{collection}/_streams/{name}"));
+        assertTrue(templates.contains("https://host/{db}/{collection}/{id}"));
+        assertFalse(templates.stream().anyMatch(t -> t.contains("_aggrs") || t.contains("_streams") || t.equals("https://host/{db}")));
     }
 
     @Test

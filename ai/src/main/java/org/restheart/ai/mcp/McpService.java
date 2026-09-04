@@ -25,6 +25,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -216,8 +217,13 @@ public class McpService implements ByteArrayService {
 
     // -------------------------------------------------------------------------
     // Resources primitive (#617): resources/list, resources/templates/list,
-    // resources/read (documents-mode by default when the resource has a readable
-    // action, else context — see readBareResource) all live here.
+    // resources/read. A resource is documents-only — reading it always returns
+    // real data, never a description of how to call it (that's list_apis/
+    // how_to_call's job, exclusively — one channel per concern, not two ways to
+    // say the same thing). A catalog entry with no readable action at all (a
+    // database container, a change stream, an aggregation a security check
+    // rejected, ...) is therefore never registered as an MCP resource — it
+    // stays reachable through list_apis/how_to_call only.
     // resources/subscribe is still a later phase.
     // -------------------------------------------------------------------------
 
@@ -229,15 +235,69 @@ public class McpService implements ByteArrayService {
      * population (called from {@code handle()} on first traffic, see {@link #init()}'s comment
      * on why it can't happen any earlier) — {@code server.listResources()} is simply empty then,
      * so "remove current" is a no-op and this just adds the initial set.
+     *
+     * <p>Only catalog entries with at least one {@code readable} action are registered — the rest
+     * (databases, change streams, a non-readable aggregation, ...) are real catalog entries for
+     * {@code list_apis}/{@code how_to_call}, just not MCP resources: {@code resources/read} must
+     * always return real data, and there's nothing document-shaped to return for those.
+     *
+     * <p>A readable resource whose default action has at least one genuinely required parameter
+     * (e.g. an aggregation's {@code $var} with no default, per {@link PipelineParamScanner}) is
+     * registered as a <em>template</em>, not a concrete resource: a concrete resource has no
+     * per-read arguments at all — reading its bare URI is exactly what {@link #readBareResource}
+     * does, with no parameters supplied — so offering one for an action that would just throw on
+     * missing arguments invites exactly that. A template's URI at least names the parameter the
+     * client needs to fill in (MCP resource templates carry no formal schema — no client-enforced
+     * "required" — but naming it beats a bare, guaranteed-to-fail concrete resource).
      */
     private void syncResourceRegistry() {
         server.listResources().stream().map(McpSchema.Resource::uri).toList().forEach(server::removeResource);
-        resourceLookup.all(null, publicBaseUrl).forEach(r -> server.addResource(toResourceSpec(r)));
-
         server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList().forEach(server::removeResourceTemplate);
+
+        resourceLookup.all(null, publicBaseUrl).forEach(r -> {
+            var actionName = defaultReadableAction(r);
+            if (actionName == null) {
+                return;
+            }
+            var requiredParams = requiredFlatParamNames(r.actions().get(actionName));
+            if (requiredParams.isEmpty()) {
+                server.addResource(toResourceSpec(r));
+            } else {
+                server.addResourceTemplate(toTemplateSpec(requiredParamsTemplate(r, requiredParams)));
+            }
+        });
+
         resourceLookup.templates(publicBaseUrl).forEach(t -> server.addResourceTemplate(toTemplateSpec(t)));
 
         server.notifyResourcesListChanged();
+    }
+
+    /**
+     * The flat query-param names a caller must supply for {@code action} to avoid a bound-variable
+     * error — an object param's (i.e. {@code avars}) required properties surface by their own
+     * name, since the flat-query-param shorthand (see {@code MongoRequestPropsInjector}) binds
+     * them individually, not nested under {@code avars}.
+     */
+    private static List<String> requiredFlatParamNames(McpResource.Action action) {
+        var names = new ArrayList<String>();
+        action.params().forEach((name, param) -> {
+            if ("object".equals(param.type()) && param.properties() != null) {
+                param.properties().forEach((propName, propParam) -> {
+                    if (propParam.required()) {
+                        names.add(propName);
+                    }
+                });
+            } else if (param.required()) {
+                names.add(name);
+            }
+        });
+        return names;
+    }
+
+    private static McpResourceTemplate requiredParamsTemplate(McpResource resource, List<String> requiredParams) {
+        var uriTemplate = resource.uri() + "{?" + String.join(",", requiredParams) + "}";
+        var description = resource.description() + " (requires: " + String.join(", ", requiredParams) + ")";
+        return new McpResourceTemplate(uriTemplate, resourceName(resource), resourceName(resource), description);
     }
 
     private McpServerFeatures.SyncResourceSpecification toResourceSpec(McpResource resource) {
@@ -257,19 +317,19 @@ public class McpService implements ByteArrayService {
      * #toResourceSpec} before ever falling back to a template) always routes here for a known
      * resource's own URI, never through {@link #readTemplateMatch}.
      *
-     * <p>Prefers documents-mode with no filter (default pagination) when the resource has one —
-     * matches what attaching this resource in a host UI (Claude Desktop, Cursor, ...) actually
-     * means: load its real content, not a description of how to query it. Falls back to context
-     * only for a resource with no {@code readable} action at all (aggregations, GraphQL apps,
-     * custom-plugin services, ...), which is the only thing {@code resources/read} can meaningfully
-     * return for those.
+     * <p>Documents-mode with no filter (default pagination) — matches what attaching this resource
+     * in a host UI (Claude Desktop, Cursor, ...) actually means: load its real content. {@code
+     * actionName} is null only defensively (a resource can reach here via {@link
+     * #readTemplateMatch}'s exact-match fallback without having gone through {@link
+     * #syncResourceRegistry}'s readable-only filter); in that case there's nothing to read.
      */
     private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, McpResource resource) {
         var actionName = defaultReadableAction(resource);
         if (actionName == null) {
-            return readContext(resource);
+            return errorResourceResult(resource.uri(), "resource has no readable data; use how_to_call to invoke its actions");
         }
-        return readOperation(principal, resource.uri(), actionName, Map.of()).orElseGet(() -> readContext(resource));
+        return readOperation(principal, resource.uri(), actionName, Map.of())
+                .orElseGet(() -> errorResourceResult(resource.uri(), "failed to read resource"));
     }
 
     /** {@code query} is preferred (the natural "give me the collection" action) over any other {@code readable} action a future kind might declare. */
@@ -282,28 +342,6 @@ public class McpService implements ByteArrayService {
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElse(null);
-    }
-
-    /**
-     * Context mode: identical content to {@code list_apis(resource)} — the same per-kind builders
-     * — plus one extra field explaining what's being returned, since (unlike {@code list_apis},
-     * where an agent explicitly asked "describe this") a plain {@code resources/read} could
-     * otherwise look like this JSON blob IS the resource's data. Reached only for a resource with
-     * no {@code readable} action, or when a documents-mode attempt failed/was declined.
-     */
-    private McpSchema.ReadResourceResult readContext(McpResource resource) {
-        try {
-            var payload = new LinkedHashMap<String, Object>();
-            payload.put("mcp_note", "This describes the resource (see 'actions' for how to call it) — it is not the resource's "
-                    + "data. Either this resource has no direct-read action, or reading it that way failed or was declined; "
-                    + "use how_to_call to actually invoke it.");
-            payload.putAll(resource.toMap());
-            var text = jsonMapper.writeValueAsString(payload);
-            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(resource.uri(), "application/json", text)));
-        } catch (Exception e) {
-            LOGGER.error("Failed to serialize resource {}", resource.uri(), e);
-            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(resource.uri(), "text/plain", "internal error: " + e.getMessage())));
-        }
     }
 
     /** Display label for a resource — the last path segment of its URI (e.g. {@code "inventory"}, {@code "byStatus"}); not required to be unique. */
@@ -337,9 +375,9 @@ public class McpService implements ByteArrayService {
      * {@code McpUriTemplateManager} is a simplified regex substitution, not full RFC 6570 — a
      * bare {@code {collection}} placeholder already matches a query-string-bearing URI, since its
      * capture group is {@code [^/]+} with no anchoring against {@code ?}) routes a documents-mode
-     * URI here exactly like a context-mode one; an exact concrete-resource URI (never carrying a
-     * query string or extra path segment) is instead routed straight to {@link #readBareResource}
-     * by the SDK before this is ever called.
+     * URI here; an exact concrete-resource URI (never carrying a query string or extra path
+     * segment) is instead routed straight to {@link #readBareResource} by the SDK before this is
+     * ever called.
      *
      * <p>Mode detection purely from the URI shape:
      * <ul>
@@ -350,7 +388,7 @@ public class McpService implements ByteArrayService {
      *   <li>no exact catalog match, but stripping the last path segment does match → single
      *       document mode, action {@code get}, {@code id} = that segment</li>
      *   <li>otherwise, an exact catalog match → {@link #readBareResource} (documents-mode default
-     *       action if the resource has one, else context)</li>
+     *       action)</li>
      * </ul>
      */
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
@@ -366,9 +404,10 @@ public class McpService implements ByteArrayService {
             }
             var actionName = defaultReadableAction(resource.get());
             if (actionName == null) {
-                // known resource, but nothing readable on it (e.g. an aggregation whose pipeline
-                // didn't clear the security checker) — context, not "unknown", it's a real resource
-                return readContext(resource.get());
+                // a real catalog entry (e.g. an aggregation whose pipeline didn't clear the
+                // security checker), but nothing document-shaped to read — resources/read must
+                // always mean "here is data", never a description; use how_to_call for this one
+                return errorResourceResult(base, "resource has no readable data; use how_to_call to invoke its actions");
             }
             return readOperation(principal, base, actionName, args).orElseGet(() -> unknownResourceResult(uri));
         }
@@ -404,10 +443,9 @@ public class McpService implements ByteArrayService {
      * Optional.empty()} only when {@code resourceUri} itself matches no catalog resource at all
      * (so the caller can try a different URI-shape interpretation, or finally report "unknown
      * resource"). Every other outcome — no such {@code readable} action, failed validation, the
-     * plugin declining, or the plugin actually returning content — is a definite result, most
-     * falling back to the resource's context (via {@link #readContext}, which explains that's
-     * what it is — see its javadoc) rather than a hard error, since the resource itself is real
-     * and MCP-enabled.
+     * plugin declining, or the plugin actually returning content — is a definite result: real
+     * data, or a hard error (never a description of the resource — that's never what {@code
+     * resources/read} returns; use {@code list_apis}/{@code how_to_call} for that).
      *
      * <p><b>Known gap:</b> the actual ACL read-filter/projection a {@code DescriptorAwareAuthorizer}
      * resolves while authorizing this operation (restheart#722) is not yet threaded through to
@@ -423,7 +461,7 @@ public class McpService implements ByteArrayService {
 
         var action = resource.actions().get(actionName);
         if (action == null || !action.readable()) {
-            return Optional.of(readContext(resource));
+            return Optional.of(errorResourceResult(resourceUri, "resource has no readable data; use how_to_call to invoke its actions"));
         }
 
         var args = coerceArgs(rawArgs, action);
@@ -434,7 +472,7 @@ public class McpService implements ByteArrayService {
 
         var owner = resourceLookup.findOwner(principal, publicBaseUrl, resourceUri);
         if (owner.isEmpty()) {
-            return Optional.of(readContext(resource));
+            return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
         }
 
         var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(), owner.get().pluginConfiguration());
@@ -442,7 +480,7 @@ public class McpService implements ByteArrayService {
         try {
             return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
                     .map(result -> toReadResourceResult(resourceUri, result))
-                    .orElseGet(() -> readContext(resource)));
+                    .orElseGet(() -> errorResourceResult(resourceUri, "failed to read resource")));
         } catch (Exception e) {
             LOGGER.error("readResource failed for {} action {}", resourceUri, actionName, e);
             return Optional.of(errorResourceResult(resourceUri, "internal error: " + e.getMessage()));
@@ -560,9 +598,10 @@ public class McpService implements ByteArrayService {
     /**
      * Overrides the default (identity) — see {@code Service#operationsToAuthorize} — for exactly
      * one case: a {@code resources/read} JSON-RPC call whose URI resolves to a documents-mode
-     * read (a {@code readable} action on a known resource). Every other request handled by
-     * {@code /mcp} (tools, context-mode reads, {@code initialize}, ...) returns the identity
-     * descriptor unchanged, since none of them execute a real, in-process data operation
+     * read (a {@code readable} action on a known resource — which, since only such resources are
+     * ever registered with the resources primitive, is every successful {@code resources/read}).
+     * Every other request handled by {@code /mcp} (tools, {@code initialize}, ...) returns the
+     * identity descriptor unchanged, since none of them execute a real, in-process data operation
      * server-side that a REST-shaped ACL rule could meaningfully apply to.
      *
      * <p>Reads the request body via {@link ByteArrayRequest#getContent()} — safe to do this early
@@ -614,8 +653,15 @@ public class McpService implements ByteArrayService {
             return withMethodPathAndQuery(identity, pathOf(base), parseQueryParameters(uri.substring(queryIdx + 1)));
         }
 
-        if (resourceLookup.find(principal, publicBaseUrl, uri).isPresent()) {
-            return null; // exact context-mode match — no documents-mode operation to authorize
+        var exact = resourceLookup.find(principal, publicBaseUrl, uri);
+        if (exact.isPresent()) {
+            // A bare resource read defaults to documents-mode whenever the resource has a
+            // readable action (McpService.readBareResource, #617) — a real backend read that
+            // must be authorized exactly like its REST-equivalent GET. A resource with no
+            // readable action has nothing to authorize (and, since it's never registered with
+            // the resources primitive, can't actually be reached this way by a normal client).
+            var actionName = defaultReadableAction(exact.get());
+            return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(uri), Map.of());
         }
 
         var lastSlash = uri.lastIndexOf('/');

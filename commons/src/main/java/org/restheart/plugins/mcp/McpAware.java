@@ -118,9 +118,12 @@ public interface McpAware {
      * @param args     already-parsed arguments (query string for a collection, path segment for
      *                 a single document, ...), validated against the action's declared
      *                 {@code params}/{@code body_schema} before this is called
-     * @return the resource's actual content, or {@link Optional#empty()} to fall back to
-     *         context-mode (e.g. a plugin that marks no action readable never needs to override
-     *         this at all — the default already returns empty)
+     * @return the resource's actual content, or {@link Optional#empty()} on failure to produce
+     *         it — a plugin that marks no action readable never needs to override this at all
+     *         (the default already returns empty), since the framework only ever registers a
+     *         resource with the MCP resources primitive when it has a {@code readable} action;
+     *         {@code resources/read} always means "here is data", never a description of the
+     *         resource — that's exclusively {@code list_apis}/{@code how_to_call}'s job
      */
     default Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {
         return Optional.empty();

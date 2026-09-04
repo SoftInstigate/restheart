@@ -198,13 +198,21 @@ public final class MongoMcpAwareImpl {
     }
 
     /**
-     * URI templates (RFC 6570) for the shapes this implementation produces — context-only for
-     * database/aggregation/change-stream (they have no {@code readable} action), documents-mode
-     * for collections and single documents (see #617's bare-read-prefers-documents design) —
-     * derived from the actual {@code mongo-mounts} configuration via {@link MountUriResolver}
-     * rather than a hardcoded {@code /{db}/{collection}} shape — a default {@code mongo-mounts}
-     * (a single database mounted at {@code /}) exposes collections at {@code /{collection}}, with
-     * no {@code {db}} segment at all.
+     * URI templates (RFC 6570) for the documents-mode shapes this implementation produces —
+     * collections and single documents (see #617's bare-read-prefers-documents design) — derived
+     * from the actual {@code mongo-mounts} configuration via {@link MountUriResolver} rather than
+     * a hardcoded {@code /{db}/{collection}} shape — a default {@code mongo-mounts} (a single
+     * database mounted at {@code /}) exposes collections at {@code /{collection}}, with no
+     * {@code {db}} segment at all.
+     *
+     * <p>No database or change-stream template, and no generic {@code /_aggrs/{name}} one:
+     * {@code resources/read} always means "here is data" (see {@code McpService}'s resources
+     * primitive doc) — there is no context mode to advertise a template for. A database is a
+     * container, not itself document-shaped; a change stream is a live WebSocket/SSE connection,
+     * not a single read; and an aggregation's own {@code resources/list} entry (readable only when
+     * {@code AggregationPipelineSecurityChecker} clears it, with its own declared {@code avars})
+     * can't be represented by one shared shape. All three stay reachable via {@code
+     * list_apis}/{@code how_to_call} — just not through the resources primitive.
      *
      * <p>Multiple mounts of the same shape (e.g. two separate {@code *} wildcard mounts) each
      * contribute their own template with the same {@code name} — harmless, since {@code name} is
@@ -214,14 +222,8 @@ public final class MongoMcpAwareImpl {
         var baseUrl = ctx.baseUrl();
         var templates = new ArrayList<McpResourceTemplate>();
 
-        for (var dbTemplate : mountResolver.databasePathTemplates()) {
-            templates.add(new McpResourceTemplate(baseUrl + dbTemplate, "database-context", "Database — context"));
-        }
-
         for (var collTemplate : mountResolver.collectionPathTemplates()) {
             var uri = baseUrl + collTemplate;
-            templates.add(new McpResourceTemplate(uri + "/_aggrs/{name}", "aggregation-context", "Aggregation — context"));
-            templates.add(new McpResourceTemplate(uri + "/_streams/{name}", "change-stream-context", "Change stream — context"));
             // No separate "collection-context" template: a bare collection read now returns
             // documents-mode content by default (McpService.readBareResource(), #617) whenever the
             // resource has a readable action, so a context-only template would misdescribe actual
