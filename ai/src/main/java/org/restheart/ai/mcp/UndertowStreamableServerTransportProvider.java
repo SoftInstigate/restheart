@@ -118,10 +118,31 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
                 try {
                     session.sendNotification(method, params).block();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
+                    if (isMissingStream(e)) {
+                        // Expected, not exceptional: a Streamable HTTP session can exist between
+                        // requests with no currently open GET/SSE stream (e.g. a client that only
+                        // opens one while a call is in flight) — the MCP SDK signals this by
+                        // routing the session through its internal MissingMcpTransportSession,
+                        // whose sendNotification/sendRequest always fail with a plain
+                        // IllegalStateException("Stream unavailable for session ...") (confirmed by
+                        // decompiling mcp-core's MissingMcpTransportSession — no dedicated exception
+                        // type exists for it, unlike McpTransportSessionNotFoundException/
+                        // McpTransportSessionClosedException for the other two session states).
+                        // list_changed notifications are best-effort per spec; the client simply
+                        // learns of the change on its next request instead. Logging this at ERROR
+                        // would spam the log on every catalog TTL expiry for every non-streaming
+                        // session — which is the common case.
+                        LOGGER.debug("Skipped notifying session {} (no active stream): {}", session.getId(), e.getMessage());
+                    } else {
+                        LOGGER.error("Failed to notify session {}: {}", session.getId(), e.getMessage());
+                    }
                 }
             })
         );
+    }
+
+    private static boolean isMissingStream(Exception e) {
+        return e instanceof IllegalStateException && e.getMessage() != null && e.getMessage().startsWith("Stream unavailable for session");
     }
 
     @Override
