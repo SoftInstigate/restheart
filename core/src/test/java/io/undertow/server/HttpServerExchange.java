@@ -245,8 +245,24 @@ public class HttpServerExchange extends AbstractAttachable {
         }
     }
 
+    private SecurityContext securityContext;
+
     public SecurityContext getSecurityContext() {
-        return null;
+        return securityContext;
+    }
+
+    public void setSecurityContext(SecurityContext securityContext) {
+        this.securityContext = securityContext;
+    }
+
+    private final String requestId = "test-request-id";
+
+    /**
+     * @return a fixed, test-only request id (the real Undertow implementation
+     *         generates a unique one per exchange; this fake does not need to)
+     */
+    public String getRequestId() {
+        return requestId;
     }
 
     /**
