@@ -278,4 +278,12 @@ public class HttpServerExchange extends AbstractAttachable {
     public void setRelativePath(String relativePath) {
         this.relativePath = relativePath;
     }
+
+    /**
+     * @return whether the response has already started being sent; this fake never starts one,
+     *         so it always returns {@code false}
+     */
+    public boolean isResponseStarted() {
+        return false;
+    }
 }
