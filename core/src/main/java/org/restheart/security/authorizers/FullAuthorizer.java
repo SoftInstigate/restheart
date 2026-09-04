@@ -25,7 +25,8 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.RequestDescriptor;
 
 /**
  *
@@ -35,7 +36,7 @@ import org.restheart.plugins.security.Authorizer;
         name = "fullAuthorizer",
         description = "authorizes all requests",
         enabledByDefault = false)
-public class FullAuthorizer implements Authorizer {
+public class FullAuthorizer implements DescriptorAwareAuthorizer {
 
     private boolean authenticationRequired;
 
@@ -68,6 +69,20 @@ public class FullAuthorizer implements Authorizer {
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAllowed(final Request request) {
+        return true;
+    }
+
+    /**
+     * Same "allow any operation to any user" contract as {@link #isAllowed(Request)} — see
+     * restheart#722. Without this, a service plugged as {@code secured = false} (which auto-adds
+     * this authorizer specifically so the ALLOWER side is trivially satisfied for it) would still
+     * fail closed on any {@code operationsToAuthorize()}-derived check, since {@code
+     * PluginsRegistryImpl.plugService()}'s unsecured branch only forwards VETOERs plus this
+     * authorizer to {@code AuthorizersHandler} — silently contradicting what {@code secured =
+     * false} is supposed to mean for that service.
+     */
+    @Override
+    public boolean isAllowed(RequestDescriptor descriptor) {
         return true;
     }
 
