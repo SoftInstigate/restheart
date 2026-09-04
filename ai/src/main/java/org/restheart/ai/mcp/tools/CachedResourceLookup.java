@@ -23,11 +23,13 @@ package org.restheart.ai.mcp.tools;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 import org.restheart.ai.mcp.McpAwareRegistry;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.BaseAccount;
+import org.restheart.utils.ThreadsUtils;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -60,23 +62,39 @@ public final class CachedResourceLookup {
     private final Cache<String, List<McpResource>> cache;
 
     public CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire) {
-        this(registry, ttl, onExpire, Ticker.systemTicker(), Scheduler.systemScheduler());
+        // Dispatched to the framework's shared virtual-threads executor (ThreadsUtils), not run
+        // on the shared, JVM-wide CompletableFuture/Caffeine delay-scheduler thread (named
+        // "ForkJoinPool.commonPool-delayScheduler" — confirmed by decompiling Caffeine's
+        // SystemScheduler, which is exactly what schedules this cache's proactive expiry): with
+        // .executor(Runnable::run) below, onExpire otherwise runs synchronously ON whichever
+        // thread the removal fires on, and for a scheduled (not lazily-triggered) expiry that IS
+        // that single JVM-wide thread. onExpire's own work now includes describeMcp()/
+        // describeTemplates() on every McpAware plugin plus notifyClients()'s per-session
+        // sendNotification().block() (real I/O), so it's no longer cheap enough to risk stalling
+        // every other JVM-wide user of CompletableFuture.delayedExecutor behind it.
+        this(registry, ttl, onExpire, Ticker.systemTicker(), Scheduler.systemScheduler(), ThreadsUtils.virtualThreadsExecutor());
     }
 
     /** Test seam: a controllable {@link Ticker} and no real {@link Scheduler}, so tests advance time deterministically without waiting. */
     CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire, Ticker ticker, Scheduler scheduler) {
+        // Runs onExpire synchronously (not on a virtual thread) so tests can assert its effect
+        // right after triggering expiry, with no race to wait out.
+        this(registry, ttl, onExpire, ticker, scheduler, Runnable::run);
+    }
+
+    private CachedResourceLookup(McpAwareRegistry registry, Duration ttl, Runnable onExpire, Ticker ticker, Scheduler scheduler, Executor onExpireExecutor) {
         this.registry = registry;
         this.cache = Caffeine.newBuilder()
                 .expireAfterWrite(ttl)
                 .ticker(ticker)
                 .scheduler(scheduler)
-                // synchronous: keeps behavior deterministic (and testable without waiting on a
-                // background thread) — onExpire's own work (a fire-and-forget notification) is
-                // cheap enough not to need offloading
+                // synchronous: keeps cache maintenance itself deterministic (and testable
+                // without waiting on a background thread) — onExpire's own dispatch is handled
+                // separately via onExpireExecutor, see the public constructor's comment
                 .executor(Runnable::run)
                 .removalListener((String key, List<McpResource> value, RemovalCause cause) -> {
                     if (cause == RemovalCause.EXPIRED) {
-                        onExpire.run();
+                        onExpireExecutor.execute(onExpire);
                     }
                 })
                 .build();
