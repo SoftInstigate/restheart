@@ -33,20 +33,37 @@ import org.bson.BsonValue;
  * {@code AggregationMcpResourceBuilder}/{@code ChangeStreamMcpResourceBuilder} can declare
  * accurate {@code params} without the operator having to name every variable twice (once in
  * the pipeline, once in the {@code mcp.params} block).
+ *
+ * <p>Also derives, purely from pipeline shape, which of those variables {@code
+ * StagesInterpolator} would actually reject as unbound ({@code QueryVariableNotBoundException})
+ * if the caller supplied nothing — i.e. which are genuinely required. A variable is required
+ * only if it appears, at least once, as a bare {@code {"$var": "name"}} reference (no default —
+ * the array form {@code {"$var": ["name", defaultValue]}} always has a fallback) outside any
+ * {@code $ifvar}/{@code $ifarg} conditional stage (whose own condition variable, and anything
+ * referenced only inside the stage it guards, is never bound-or-throw — the stage is simply
+ * skipped when the condition variable is absent).
  */
 public final class PipelineParamScanner {
 
     private PipelineParamScanner() {
     }
 
-    /** @return the distinct variable names referenced anywhere in {@code stages}, in first-seen order */
-    public static Set<String> scan(BsonValue stages) {
-        var names = new LinkedHashSet<String>();
-        scan(stages, names);
-        return names;
+    /** The distinct variable names referenced anywhere in a pipeline, and which of those are required. */
+    public record ScanResult(Set<String> names, Set<String> required) {
+        public boolean isRequired(String name) {
+            return required.contains(name);
+        }
     }
 
-    private static void scan(BsonValue value, Set<String> names) {
+    /** @return the variables referenced anywhere in {@code stages}, in first-seen order, with their required/optional status */
+    public static ScanResult scan(BsonValue stages) {
+        var names = new LinkedHashSet<String>();
+        var required = new LinkedHashSet<String>();
+        scan(stages, names, required, false);
+        return new ScanResult(names, required);
+    }
+
+    private static void scan(BsonValue value, Set<String> names, Set<String> required, boolean insideConditionalStage) {
         if (value == null) {
             return;
         }
@@ -55,15 +72,51 @@ public final class PipelineParamScanner {
             var doc = value.asDocument();
 
             if (doc.size() == 1 && doc.containsKey("$var")) {
-                varName(doc.get("$var")).ifPresent(names::add);
+                var varValue = doc.get("$var");
+                varName(varValue).ifPresent(name -> {
+                    names.add(name);
+                    var hasDefault = varValue.isArray();
+                    if (!hasDefault && !insideConditionalStage) {
+                        required.add(name);
+                    }
+                });
                 return;
             }
 
-            doc.forEach((key, v) -> scan(v, names));
+            if (doc.size() == 1 && (doc.containsKey("$ifvar") || doc.containsKey("$ifarg")) && doc.values().iterator().next().isArray()) {
+                var elements = doc.values().iterator().next().asArray();
+                // element 0: the condition variable name(s) — inherently optional, that's the
+                // whole point of $ifvar/$ifarg (the stage runs only when it's present)
+                conditionNames(elements.isEmpty() ? null : elements.get(0)).forEach(names::add);
+                // elements 1+ (then/else stage bodies): descend as conditional — nothing in here
+                // can throw QueryVariableNotBoundException, since the whole stage is skipped
+                // when the condition variable is missing
+                for (var i = 1; i < elements.size(); i++) {
+                    scan(elements.get(i), names, required, true);
+                }
+                return;
+            }
+
+            doc.forEach((key, v) -> scan(v, names, required, insideConditionalStage));
         } else if (value.isArray()) {
-            value.asArray().forEach(v -> scan(v, names));
+            value.asArray().forEach(v -> scan(v, names, required, insideConditionalStage));
         }
         // scalars carry no $var references
+    }
+
+    private static Set<String> conditionNames(BsonValue condition) {
+        if (condition == null) {
+            return Set.of();
+        }
+        if (condition.isString()) {
+            return Set.of(condition.asString().getValue());
+        }
+        if (condition.isArray()) {
+            var names = new LinkedHashSet<String>();
+            condition.asArray().stream().filter(BsonValue::isString).forEach(v -> names.add(v.asString().getValue()));
+            return names;
+        }
+        return Set.of();
     }
 
     private static Optional<String> varName(BsonValue varValue) {

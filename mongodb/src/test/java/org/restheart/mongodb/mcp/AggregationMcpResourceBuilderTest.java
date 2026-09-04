@@ -125,17 +125,58 @@ public class AggregationMcpResourceBuilderTest {
     }
 
     @Test
-    public void referencedVarWithNoDeclaredParam_defaultsToOptionalStringWithWarning() {
+    public void referencedVarWithNoDeclaredParam_defaultsToStringRequiredByPipelineShape() {
+        // STAGES references "status" as a bare {"$var": "status"} (no default, not inside
+        // $ifvar) -- StagesInterpolator would throw QueryVariableNotBoundException if it's not
+        // bound, so it must default to required even with no mcp.params override
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
         var param = resource.actions().get("execute").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
-        assertFalse(param.required());
+        assertTrue(param.required());
         @SuppressWarnings("unchecked")
         var warnings = (List<String>) resource.extra().get("warnings");
         assertTrue(warnings.get(0).contains("status"));
+    }
+
+    @Test
+    public void referencedVarWithDefaultAndNoDeclaredParam_defaultsToOptionalString() {
+        var mcp = BsonDocument.parse("{\"description\": \"x\"}");
+        var stagesWithDefault = BsonArray.parse("[{\"$match\": {\"status\": {\"$var\": [\"status\", \"A\"]}}}]");
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithDefault, mcp, "db", null).orElseThrow();
+        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+
+        assertFalse(param.required());
+    }
+
+    @Test
+    public void declaredParamWithNoExplicitRequiredField_fallsBackToPipelineShape() {
+        var mcp = BsonDocument.parse("""
+                {"description": "x", "params": {"status": {"type": "string", "description": "Order status"}}}
+                """);
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
+        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+
+        // mcp.params declares "status" but doesn't set its own "required" -- since the pipeline
+        // references it as a bare, non-defaulted, non-conditional $var, it's required
+        assertTrue(param.required());
+    }
+
+    @Test
+    public void declaredParamExplicitlyNotRequired_overridesPipelineShape() {
+        var mcp = BsonDocument.parse("""
+                {"description": "x", "params": {"status": {"type": "string", "required": false}}}
+                """);
+
+        var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp, "db", null).orElseThrow();
+        var param = resource.actions().get("execute").params().get("avars").properties().get("status");
+
+        // the pipeline shape says required, but the operator explicitly overrode it
+        assertFalse(param.required());
     }
 
     @Test

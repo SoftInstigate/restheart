@@ -138,14 +138,16 @@ public class ChangeStreamMcpResourceBuilderTest {
     }
 
     @Test
-    public void referencedVarWithNoDeclaredParam_defaultsToOptionalStringWithWarning() {
+    public void referencedVarWithNoDeclaredParam_defaultsToStringRequiredByPipelineShape() {
+        // STAGES references "status" as a bare {"$var": "status"} (no default, not inside
+        // $ifvar), so it must default to required even with no mcp.params override
         var mcp = BsonDocument.parse("{\"description\": \"x\"}");
 
         var resource = ChangeStreamMcpResourceBuilder.build(COLLECTION_URI, "byStatus", STAGES, mcp).orElseThrow();
         var param = resource.actions().get("subscribe").params().get("avars").properties().get("status");
 
         assertEquals("string", param.type());
-        assertFalse(param.required());
+        assertTrue(param.required());
         @SuppressWarnings("unchecked")
         var warnings = (List<String>) resource.extra().get("warnings");
         assertTrue(warnings.get(0).contains("status"));

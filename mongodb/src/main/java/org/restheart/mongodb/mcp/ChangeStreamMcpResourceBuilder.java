@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.plugins.mcp.McpResource;
@@ -69,7 +70,8 @@ public final class ChangeStreamMcpResourceBuilder {
 
         var pathTemplate = "/_streams/" + streamUri;
         var declaredParams = mcp.get("params") instanceof BsonDocument pd ? pd : new BsonDocument();
-        var referencedNames = PipelineParamScanner.scan(stages);
+        var scanResult = PipelineParamScanner.scan(stages);
+        var referencedNames = scanResult.names();
         var warnings = new ArrayList<String>();
 
         var builder = McpResource.builder()
@@ -81,11 +83,13 @@ public final class ChangeStreamMcpResourceBuilder {
 
         var avarsProperties = new LinkedHashMap<String, McpResource.Param>();
         referencedNames.forEach(name -> {
+            var requiredByShape = scanResult.isRequired(name);
             if (declaredParams.get(name) instanceof BsonDocument paramDef) {
-                avarsProperties.put(name, toParam(paramDef));
+                avarsProperties.put(name, toParam(paramDef, requiredByShape));
             } else {
-                avarsProperties.put(name, new McpResource.Param("string", null, false, null, null));
-                warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to an optional string");
+                avarsProperties.put(name, new McpResource.Param("string", null, requiredByShape, null, null));
+                warnings.add("$var '" + name + "' is not declared in mcp.params; defaulted to a "
+                        + (requiredByShape ? "required" : "optional") + " string");
             }
         });
 
@@ -150,10 +154,11 @@ public final class ChangeStreamMcpResourceBuilder {
         return v != null && v.isString() ? v.asString().getValue() : null;
     }
 
-    private static McpResource.Param toParam(BsonDocument def) {
+    /** @param defaultRequired required-ness derived from the pipeline's own shape (see {@link PipelineParamScanner}), used unless {@code def} explicitly overrides it with its own {@code required} field */
+    private static McpResource.Param toParam(BsonDocument def, boolean defaultRequired) {
         var type = stringOrNull(def, "type");
         var description = stringOrNull(def, "description");
-        var required = def.get("required") != null && def.get("required").isBoolean() && def.get("required").asBoolean().getValue();
+        var required = def.get("required") instanceof BsonBoolean b ? b.getValue() : defaultRequired;
         List<Object> enumValues = def.get("enum") instanceof BsonArray arr
                 ? arr.stream().map(BsonJavaConverter::toJava).toList()
                 : null;
