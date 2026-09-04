@@ -20,6 +20,7 @@
  */
 package org.restheart.security.handlers;
 
+import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,8 +35,11 @@ import org.restheart.logging.RequestPhaseContext;
 import org.restheart.logging.RequestPhaseContext.Phase;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -50,12 +54,21 @@ import io.undertow.util.Headers;
  * An Authorizer can be either a VETOER or an ALLOWER
  * A request is allowed when no VETOER denies it and any ALLOWER allows it
  *
+ * <p>Additionally — see restheart#722 — if the {@link Service} handling this request overrides
+ * {@link Service#operationsToAuthorize(HttpServerExchange)}, each {@link RequestDescriptor} it
+ * returns is independently checked against every registered {@link DescriptorAwareAuthorizer}
+ * with the same VETOER/ALLOWER semantics; a service that doesn't override it (the vast majority
+ * — every ordinary REST service) never triggers this additional check at all. If no
+ * {@link DescriptorAwareAuthorizer} is configured, a service that does override it fails closed
+ * (denied) rather than allowing an operation no authorizer actually evaluated.
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthorizersHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthorizersHandler.class);
 
     private final Set<PluginRecord<Authorizer>> authorizers;
+    private final Service<?, ?> service;
     private final RequestInterceptorsExecutor failedAuthInterceptorsExecutor;
 
     /**
@@ -65,8 +78,22 @@ public class AuthorizersHandler extends PipelinedHandler {
      * @param next
      */
     public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
+        this(authorizers, null, next);
+    }
+
+    /**
+     * Creates a new instance of AuthorizersHandler
+     *
+     * @param authorizers
+     * @param service the {@link Service} handling requests routed through this handler, or
+     *                {@code null} when not applicable (e.g. an SSE service, which never overrides
+     *                {@code operationsToAuthorize}) — see restheart#722
+     * @param next
+     */
+    public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, Service<?, ?> service, PipelinedHandler next) {
         super(next);
         this.authorizers = authorizers;
+        this.service = service;
         this.failedAuthInterceptorsExecutor = new RequestInterceptorsExecutor(InterceptPoint.REQUEST_AFTER_FAILED_AUTH);
     }
 
@@ -87,7 +114,7 @@ public class AuthorizersHandler extends PipelinedHandler {
         RequestPhaseContext.setPhase(Phase.PHASE_START);
         LOGGER.debug("AUTHORIZATION for {} {} - User: {}", requestMethod, requestPath, userPrincipal);
 
-        var isAllowedResult = isAllowed(request);
+        var isAllowedResult = isAllowed(request) && isAllowedByDescriptors(exchange);
         var authorizationDuration = System.currentTimeMillis() - authorizationStartTime;
 
         if (isAllowedResult) {
@@ -235,5 +262,80 @@ public class AuthorizersHandler extends PipelinedHandler {
 
 
         return vetoerResult && allowerResult;
+    }
+
+    /**
+     * See restheart#722. A no-op (always {@code true}) unless {@link #service} actually overrides
+     * {@link Service#operationsToAuthorize(HttpServerExchange)} — an ordinary REST service never
+     * pays for or triggers this check at all.
+     */
+    private boolean isAllowedByDescriptors(HttpServerExchange exchange) {
+        if (service == null || !overridesOperationsToAuthorize(service)) {
+            return true;
+        }
+
+        var descriptors = service.operationsToAuthorize(exchange);
+
+        var descriptorAuthorizers = authorizers.stream()
+                .filter(PluginRecord::isEnabled)
+                .map(PluginRecord::getInstance)
+                .filter(DescriptorAwareAuthorizer.class::isInstance)
+                .map(DescriptorAwareAuthorizer.class::cast)
+                .toList();
+
+        if (descriptorAuthorizers.isEmpty()) {
+            LOGGER.debug("No DescriptorAwareAuthorizer configured — denying {} operation(s) to authorize for service '{}'",
+                    descriptors.size(), PluginUtils.name(service));
+            return false;
+        }
+
+        var vetoers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER).toList();
+        var allowers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER).toList();
+
+        for (var descriptor : descriptors) {
+            for (var vetoer : vetoers) {
+                try {
+                    if (!vetoer.isAllowed(descriptor)) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LOGGER.error("Error in VETOER {} evaluating a RequestDescriptor for service '{}'",
+                            PluginUtils.name(vetoer), PluginUtils.name(service), ex);
+                    return false;
+                }
+            }
+
+            var descriptorAllowed = false;
+            for (var allower : allowers) {
+                try {
+                    if (allower.isAllowed(descriptor)) {
+                        descriptorAllowed = true;
+                        break;
+                    }
+                } catch (Exception ex) {
+                    LOGGER.error("Error in ALLOWER {} evaluating a RequestDescriptor for service '{}'",
+                            PluginUtils.name(allower), PluginUtils.name(service), ex);
+                }
+            }
+
+            if (!descriptorAllowed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Package-visible for testability.
+     * @return {@code true} if {@code service} overrides the default (identity) {@code operationsToAuthorize()}.
+     */
+    static boolean overridesOperationsToAuthorize(Service<?, ?> service) {
+        try {
+            Method m = service.getClass().getMethod("operationsToAuthorize", HttpServerExchange.class);
+            return m.getDeclaringClass() != Service.class;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 }

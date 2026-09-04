@@ -512,7 +512,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         var _tokenManager = getTokenManager();
 
         if (secured) {
-            securityHandler = new SecurityHandler(_mechanisms, _authorizers, _tokenManager);
+            securityHandler = new SecurityHandler(_mechanisms, _authorizers, _tokenManager, srv.getInstance());
         } else {
             var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
@@ -534,7 +534,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .filter(a -> PluginUtils.authorizerType(a.getInstance()) == Authorizer.TYPE.VETOER)
                     .forEach(_fauthorizers::add);
 
-            securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager);
+            securityHandler = new SecurityHandler(_mechanisms, _fauthorizers, _tokenManager, srv.getInstance());
         }
 
         var blockingSrv = PluginUtils.blocking(srv.getInstance());

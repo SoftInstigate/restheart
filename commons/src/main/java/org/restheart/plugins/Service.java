@@ -19,6 +19,7 @@
  */
 package org.restheart.plugins;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,6 +28,8 @@ import org.restheart.exchange.CORSHeaders;
 import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.server.HttpServerExchange;
@@ -283,5 +286,29 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
      */
     default BiConsumer<R, S> handleOptions() {
         return (r, s) -> handleOptions(r);
+    }
+
+    /**
+     * Returns the operations that actually need authorizing for this request to proceed — see
+     * restheart#722.
+     * <p>
+     * The default describes the real incoming exchange as-is, correct for every ordinary REST
+     * service, whose own incoming request already directly represents the operation being
+     * performed. A single-endpoint protocol service, whose own method/path never reveals the
+     * real underlying operation (e.g. a GraphQL query in a {@code POST /graphql/app} body, or
+     * an MCP {@code resources/read} call in a {@code POST /mcp} JSON-RPC payload), overrides
+     * this to describe that real operation instead.
+     * <p>
+     * Consumed by {@code core}'s {@code AuthorizersHandler}, evaluating each returned {@link
+     * RequestDescriptor} against every registered {@link DescriptorAwareAuthorizer} with the
+     * same VETOER/ALLOWER semantics used for a real request — only when this method is actually
+     * overridden; an ordinary service never triggers a {@link DescriptorAwareAuthorizer} check at
+     * all.
+     *
+     * @param exchange the real incoming exchange
+     * @return the operations to authorize
+     */
+    default List<RequestDescriptor> operationsToAuthorize(HttpServerExchange exchange) {
+        return List.of(RequestDescriptor.of(exchange));
     }
 }

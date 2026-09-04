@@ -49,6 +49,8 @@ import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.RequestDescriptor;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +62,7 @@ import org.slf4j.LoggerFactory;
         name = "fileAclAuthorizer",
         description = "authorizes requests according to acl defined in a configuration file",
         enabledByDefault = false)
-public class FileAclAuthorizer extends FileConfigurablePlugin implements Authorizer {
+public class FileAclAuthorizer extends FileConfigurablePlugin implements DescriptorAwareAuthorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileAclAuthorizer.class);
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
@@ -194,6 +196,17 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
             exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
             return true;
         }
+    }
+
+    /**
+     * See restheart#722. Delegates to the exact same {@link #isAllowed(Request)} above — this is
+     * purely an adapter at the boundary: {@link SyntheticRequestFactory} builds a {@link Request}
+     * whose predicate/role evaluation reads identically to a real one, so there is exactly one
+     * implementation of the actual authorization algorithm, never two.
+     */
+    @Override
+    public boolean isAllowed(RequestDescriptor descriptor) {
+        return isAllowed(SyntheticRequestFactory.from(descriptor));
     }
 
     @Override
