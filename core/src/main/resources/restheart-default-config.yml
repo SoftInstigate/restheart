@@ -49,6 +49,19 @@ jwtConfigProvider:
   issuer: restheart.org
   audience: null   # null or array of audience strings
 
+# Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
+# Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
+# minted here is the same JWT this deployment issues at login or on /token, and is verified by the
+# same jwtAuthenticationMechanism. This exists so that a plugin in a module that cannot see
+# restheart-security doesn't have to carry its own copy of the issuance logic and a second copy of
+# the signing key.
+# ttl is the default lifetime for callers that state none; each caller may ask for its own — the
+# MCP server, for instance, asks for 60 seconds for the token how_to_call embeds in the request it
+# composes, so that a leaked one is worthless within the minute.
+jwtIssuer:
+  enabled: true
+  ttl: 15 # in minutes
+
 # API Key Authentication
 # Authenticates long-lived, revocable keys sent as `Authorization: Bearer <prefix>...`.
 # Shares the Bearer scheme with jwtAuthenticationMechanism: it runs first (priority) and

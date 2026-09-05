@@ -21,6 +21,8 @@
 package org.restheart.security.tokens;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,6 +31,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonString;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.security.BaseAccount;
+import org.restheart.security.WithProperties;
+import org.restheart.security.authenticators.MongoRealmAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +42,11 @@ import com.auth0.jwt.JWTCreator.Builder;
 import com.auth0.jwt.algorithms.Algorithm;
 
 /**
- * The single implementation of RESTHeart's JWT issuance policy.
+ * The single implementation of RESTHeart's JWT issuance policy, and of the framework-level
+ * {@link org.restheart.plugins.security.JwtIssuer} capability that exposes it — see
+ * {@link JwtIssuerProvider}, which publishes one instance of this class as the {@code jwtIssuer}
+ * provider so that a plugin in any module can mint a token without a second copy of these rules
+ * or of the signing key.
  *
  * <p>A JWT issued by RESTHeart is one thing, regardless of <em>when</em> it is issued: at
  * login by {@code restheart-accounts}, on {@code /token} by {@link JwtTokenManager}, or as an
@@ -66,8 +76,8 @@ import com.auth0.jwt.algorithms.Algorithm;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @since 9.7.0
  */
-public class JwtIssuer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtIssuer.class);
+public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssuer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultJwtIssuer.class);
 
     private static final String ERROR_UNSUPPORTED_JWT_CLAIM_TYPE = "Cannot add claim {} to jwt because of unsupported type";
 
@@ -105,12 +115,16 @@ public class JwtIssuer {
         return v instanceof List<?> l && !l.isEmpty() ? (List<String>) l : null;
     }
 
+    /** Applied by {@link #issue(BaseAccount)} when a caller states no lifetime of its own. */
+    public static final Duration DEFAULT_TTL = Duration.ofMinutes(15);
+
     private final Algorithm algo;
     private final String issuer;
     private final String[] audience;
     private final List<String> defaultClaims;
     private final Set<String> requiredClaims;
     private final Set<String> denylist;
+    private final Duration defaultTtl;
 
     /**
      * @param algo          signing algorithm, already built from the shared key
@@ -122,7 +136,7 @@ public class JwtIssuer {
      *                      {@link #DEFAULT_DENYLIST}; {@code null} falls back to
      *                      {@value #DEFAULT_PASSWORD_PROPERTY}
      */
-    public JwtIssuer(Algorithm algo, String issuer, String[] audience,
+    public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
                      List<String> defaultClaims, String passwordProperty) {
         this(algo, issuer, audience, defaultClaims, null, passwordProperty);
     }
@@ -132,13 +146,25 @@ public class JwtIssuer {
      *                       claim list — see {@link #accountClaims(Map, List)}; {@code null} means
      *                       none
      */
-    public JwtIssuer(Algorithm algo, String issuer, String[] audience,
+    public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
                      List<String> defaultClaims, List<String> requiredClaims, String passwordProperty) {
+        this(algo, issuer, audience, defaultClaims, requiredClaims, passwordProperty, DEFAULT_TTL);
+    }
+
+    /**
+     * @param defaultTtl lifetime applied by {@link #issue(BaseAccount)}; {@code null} falls back to
+     *                   {@link #DEFAULT_TTL}. Only the no-lifetime overload reads it — every caller
+     *                   passing its own {@code ttl}, or its own {@code expires}, is unaffected.
+     */
+    public DefaultJwtIssuer(Algorithm algo, String issuer, String[] audience,
+                     List<String> defaultClaims, List<String> requiredClaims, String passwordProperty,
+                     Duration defaultTtl) {
         this.algo = algo;
         this.issuer = issuer;
         this.audience = audience;
         this.defaultClaims = defaultClaims;
         this.requiredClaims = requiredClaims == null ? Set.of() : Set.copyOf(requiredClaims);
+        this.defaultTtl = defaultTtl == null ? DEFAULT_TTL : defaultTtl;
 
         var pwd = passwordProperty == null || passwordProperty.isBlank()
                 ? DEFAULT_PASSWORD_PROPERTY
@@ -252,7 +278,25 @@ public class JwtIssuer {
                         Map<String, ? super Object> properties,
                         Map<String, ?> extraClaims,
                         List<String> claimsOverride) {
-        var builder = newBuilder(subject, roles, expires);
+        return issue(subject, roles, expires, properties, extraClaims, claimsOverride, null);
+    }
+
+    /**
+     * Same as {@link #issue(String, Set, Date, Map, Map, List)}, with an explicit {@code iss}.
+     *
+     * @param issuerOverride the {@code iss} claim to stamp instead of the configured one;
+     *                       {@code null} uses the configured one — see
+     *                       {@link org.restheart.plugins.security.JwtIssuer#issue(BaseAccount, Duration, String)}
+     *                       for when a token needs an issuer that isn't this deployment's
+     */
+    public String issue(String subject,
+                        Set<String> roles,
+                        Date expires,
+                        Map<String, ? super Object> properties,
+                        Map<String, ?> extraClaims,
+                        List<String> claimsOverride,
+                        String issuerOverride) {
+        var builder = newBuilder(subject, roles, expires, issuerOverride);
 
         builder = applyAccountClaims(builder, properties, claimsOverride);
 
@@ -270,14 +314,56 @@ public class JwtIssuer {
     }
 
     /**
+     * The {@link org.restheart.plugins.security.JwtIssuer} entry point: everything the account
+     * itself already carries — subject, roles, and whatever claims the configured policy selects
+     * from its properties — with the lifetime the caller asks for. Same policy, same denylist and
+     * same signature as a token issued at login or on {@code /token}: it is the identical JWT,
+     * differing only in how long it lasts.
+     */
+    @Override
+    public String issue(BaseAccount account, Duration ttl) {
+        return issue(account, ttl, null);
+    }
+
+    @Override
+    public String issue(BaseAccount account) {
+        return issue(account, defaultTtl, null);
+    }
+
+    @Override
+    public String issue(BaseAccount account, Duration ttl, String issuerOverride) {
+        var properties = account instanceof WithProperties<?> wp ? wp.propertiesAsMap() : null;
+
+        return issue(account.getPrincipal().getName(),
+                account.getRoles(),
+                Date.from(Instant.now().plus(ttl)),
+                properties,
+                null,
+                null,
+                issuerOverride);
+    }
+
+    /**
      * A JWT builder carrying the shared identity of this deployment ({@code iss}, {@code aud},
      * {@code jti}) plus {@code sub}, {@code roles} and {@code exp}. For callers that need to add
      * their own claims before signing.
      */
     public Builder newBuilder(String subject, Set<String> roles, Date expires) {
+        return newBuilder(subject, roles, expires, null);
+    }
+
+    /**
+     * Same as {@link #newBuilder(String, Set, Date)}, with an explicit {@code iss}.
+     *
+     * @param issuerOverride the {@code iss} claim to stamp instead of the configured one;
+     *                       {@code null} uses the configured one
+     */
+    public Builder newBuilder(String subject, Set<String> roles, Date expires, String issuerOverride) {
+        var iss = issuerOverride == null ? this.issuer : issuerOverride;
+
         var creator = audience != null
-                ? com.auth0.jwt.JWT.create().withIssuer(issuer).withAudience(audience)
-                : com.auth0.jwt.JWT.create().withIssuer(issuer);
+                ? com.auth0.jwt.JWT.create().withIssuer(iss).withAudience(audience)
+                : com.auth0.jwt.JWT.create().withIssuer(iss);
 
         return creator
                 .withSubject(subject)
@@ -394,6 +480,37 @@ public class JwtIssuer {
                 break;
             }
         }
+    }
+
+    /**
+     * The password property name from {@code mongoRealmAuthenticator/prop-password}, so that the
+     * denylist covers it even when the deployment renames it — {@value #DEFAULT_PASSWORD_PROPERTY}
+     * when that authenticator is absent, disabled, or not resolvable.
+     *
+     * <p>Shared by every issuance path ({@link JwtTokenManager}, {@link JwtIssuerProvider},
+     * {@code accounts}' {@code JwtHelper}): the denylist is only as good as its weakest issuer, so
+     * they must all resolve the property the same way rather than each keeping its own copy.
+     */
+    public static String resolvePasswordProperty(PluginsRegistry registry) {
+        if (registry == null) {
+            return DEFAULT_PASSWORD_PROPERTY;
+        }
+
+        try {
+            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
+
+            if (pr != null && pr.isEnabled() && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
+                var prop = mra.getPropPassword();
+
+                if (prop != null && !prop.isBlank()) {
+                    return prop;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
+        }
+
+        return DEFAULT_PASSWORD_PROPERTY;
     }
 
     /**
