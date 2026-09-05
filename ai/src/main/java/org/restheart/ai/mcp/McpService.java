@@ -28,11 +28,16 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import org.restheart.ai.mcp.tools.CachedResourceLookup;
 import org.restheart.ai.mcp.tools.HowToCallTool;
@@ -41,6 +46,7 @@ import org.restheart.ai.mcp.tools.UnknownActionException;
 import org.restheart.ai.mcp.tools.UnknownResourceException;
 import org.restheart.ai.mcp.tools.ValidationFailedException;
 import org.restheart.ai.mcp.validation.ParamValidator;
+import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Request;
@@ -53,6 +59,7 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.plugins.security.JwtIssuer;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
@@ -105,6 +112,15 @@ public class McpService implements ByteArrayService {
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
+    /**
+     * TTL for a JWT minted on the fly to fill in {@code how_to_call}'s {@code Authorization}
+     * header when the caller supplies no {@code token} of its own — see {@link
+     * #mintEphemeralToken}. Deliberately short and not operator-configurable: the whole point is
+     * bounding the blast radius of a leaked token by expiry, not by trusting the agent (or
+     * whatever it hands the token to next) to handle it carefully.
+     */
+    private static final Duration EPHEMERAL_TOKEN_TTL = Duration.ofSeconds(60);
+
     @Inject("registry")
     private PluginsRegistry pluginsRegistry;
 
@@ -117,6 +133,9 @@ public class McpService implements ByteArrayService {
     private McpJsonMapper jsonMapper;
     private CachedResourceLookup resourceLookup;
     private McpSyncServer server;
+
+    /** Resolved lazily via {@link PluginModelResolver}, not in {@code @OnInit} — see its own javadoc on plugin init ordering. */
+    private final Map<String, JwtIssuer> resolvedJwtIssuers = new ConcurrentHashMap<>();
 
     /**
      * Absolute base URL used for the MCP {@code resources} primitive (#617) — {@code null}
@@ -228,6 +247,15 @@ public class McpService implements ByteArrayService {
     // -------------------------------------------------------------------------
 
     /**
+     * A rendering-format toggle, not a data-shaping parameter — its mere presence on an action
+     * (e.g. every readable action gets a {@code jsonMode} param) shouldn't by itself force an
+     * otherwise argument-free resource into template-only registration below.
+     */
+    private static final Set<String> COSMETIC_PARAMS = Set.of("jsonMode");
+
+    private static final Pattern PATH_VARIABLE = Pattern.compile("\\{([^?][^}]*)\\}");
+
+    /**
      * Full remove-then-readd, rather than diffing — simpler, and correct even when a resource's
      * content (not just its existence) changed: each {@code SyncResourceSpecification}'s read
      * handler closes over a specific {@code McpResource} snapshot, so an in-place content change
@@ -236,68 +264,110 @@ public class McpService implements ByteArrayService {
      * on why it can't happen any earlier) — {@code server.listResources()} is simply empty then,
      * so "remove current" is a no-op and this just adds the initial set.
      *
-     * <p>Only catalog entries with at least one {@code readable} action are registered — the rest
-     * (databases, change streams, a non-readable aggregation, ...) are real catalog entries for
-     * {@code list_apis}/{@code how_to_call}, just not MCP resources: {@code resources/read} must
-     * always return real data, and there's nothing document-shaped to return for those.
+     * <p>Registers, independently, every {@code readable} action of every catalog entry (not just
+     * one "default" action per resource — a collection's {@code query} and {@code get} both
+     * register their own entry, at their own URI shape). A non-readable catalog entry (a database,
+     * a change stream, a non-readable aggregation, ...) is never registered here at all — it stays
+     * reachable through {@code list_apis}/{@code how_to_call} only, since {@code resources/read}
+     * must always return real data and there's nothing document-shaped to return for those.
      *
-     * <p>A readable resource whose default action has at least one genuinely required parameter
-     * (e.g. an aggregation's {@code $var} with no default, per {@link PipelineParamScanner}) is
-     * registered as a <em>template</em>, not a concrete resource: a concrete resource has no
-     * per-read arguments at all — reading its bare URI is exactly what {@link #readBareResource}
-     * does, with no parameters supplied — so offering one for an action that would just throw on
-     * missing arguments invites exactly that. A template's URI at least names the parameter the
-     * client needs to fill in (MCP resource templates carry no formal schema — no client-enforced
-     * "required" — but naming it beats a bare, guaranteed-to-fail concrete resource).
+     * <p>An action with no required parameter registers as a concrete <b>resource</b> at its bare
+     * URI — reading it with no arguments is exactly what {@link #readBareResource} does, and is
+     * guaranteed to succeed. An action with any parameter at all — required or optional, but
+     * excluding {@link #COSMETIC_PARAMS} — <em>also</em> (or, if it has a required one, instead;
+     * see below) registers as a <b>template</b> naming those parameters, so a client can construct
+     * a refined read.
+     *
+     * <p>An action with a required parameter never registers as a concrete resource — it would be
+     * guaranteed to fail with no arguments. This is also why {@code CollectionMcpResourceBuilder}
+     * deliberately declares its {@code query} action's {@code page} as required (with no default,
+     * even though the real REST endpoint defaults it) — a collection would otherwise register as
+     * both a resource and an all-optional template, and the MCP SDK's own template matcher (its
+     * {@code {?a,b,c}} query-expansion syntax requires at least one non-slash character after the
+     * base to route at all — verified directly against the SDK's matcher, it does not implement
+     * RFC 6570's "every variable omitted" case) would make that template unreachable with every
+     * field left blank anyway. Requiring one parameter sidesteps both problems in one move: a
+     * collection registers as a template only, and every real call necessarily satisfies the
+     * matcher.
      */
     private void syncResourceRegistry() {
         server.listResources().stream().map(McpSchema.Resource::uri).toList().forEach(server::removeResource);
         server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList().forEach(server::removeResourceTemplate);
 
-        resourceLookup.all(null, publicBaseUrl).forEach(r -> {
-            var actionName = defaultReadableAction(r);
-            if (actionName == null) {
+        var registeredResourceUris = new HashSet<String>();
+        var registeredTemplateUris = new HashSet<String>();
+
+        resourceLookup.all(null, publicBaseUrl).forEach(r -> r.actions().forEach((actionName, action) -> {
+            if (!action.readable()) {
                 return;
             }
-            var requiredParams = requiredFlatParamNames(r.actions().get(actionName));
-            if (requiredParams.isEmpty()) {
+
+            var pathVars = pathVariableNames(action.pathTemplate());
+            var allParams = flatParamNames(action, p -> true);
+            var queryParams = allParams.stream().filter(n -> !pathVars.contains(n)).toList();
+            var significantQueryParams = queryParams.stream().filter(n -> !COSMETIC_PARAMS.contains(n)).toList();
+            var requiredParams = flatParamNames(action, McpResource.Param::required);
+
+            var base = r.uri() + (action.pathTemplate() == null ? "" : action.pathTemplate());
+
+            if (requiredParams.isEmpty() && registeredResourceUris.add(base)) {
                 server.addResource(toResourceSpec(r));
-            } else {
-                server.addResourceTemplate(toTemplateSpec(requiredParamsTemplate(r, requiredParams)));
             }
-        });
+
+            if (!pathVars.isEmpty() || !significantQueryParams.isEmpty()) {
+                var uriTemplate = base + (queryParams.isEmpty() ? "" : "{?" + String.join(",", queryParams) + "}");
+                if (registeredTemplateUris.add(uriTemplate)) {
+                    server.addResourceTemplate(toTemplateSpec(paramsTemplate(r, uriTemplate, requiredParams)));
+                }
+            }
+        }));
 
         resourceLookup.templates(publicBaseUrl).forEach(t -> server.addResourceTemplate(toTemplateSpec(t)));
 
         server.notifyResourcesListChanged();
     }
 
+    /** {@code {name}} placeholders in a path template (e.g. {@code "/{id}"} -> {@code ["id"]}) — never the {@code {?a,b,c}} query-expansion group. */
+    static Set<String> pathVariableNames(String pathTemplate) {
+        if (pathTemplate == null || pathTemplate.isBlank()) {
+            return Set.of();
+        }
+        var names = new HashSet<String>();
+        var m = PATH_VARIABLE.matcher(pathTemplate);
+        while (m.find()) {
+            names.add(m.group(1));
+        }
+        return names;
+    }
+
     /**
-     * The flat query-param names a caller must supply for {@code action} to avoid a bound-variable
-     * error — an object param's (i.e. {@code avars}) required properties surface by their own
-     * name, since the flat-query-param shorthand (see {@code MongoRequestPropsInjector}) binds
-     * them individually, not nested under {@code avars}.
+     * The flat query-param names {@code action} declares, filtered by {@code filter} — an object
+     * param's (i.e. {@code avars}) properties surface by their own name, since the flat-query-param
+     * shorthand (see {@code MongoRequestPropsInjector}) binds them individually, not nested under
+     * {@code avars}.
      */
-    private static List<String> requiredFlatParamNames(McpResource.Action action) {
+    static List<String> flatParamNames(McpResource.Action action, Predicate<McpResource.Param> filter) {
         var names = new ArrayList<String>();
         action.params().forEach((name, param) -> {
             if ("object".equals(param.type()) && param.properties() != null) {
                 param.properties().forEach((propName, propParam) -> {
-                    if (propParam.required()) {
+                    if (filter.test(propParam)) {
                         names.add(propName);
                     }
                 });
-            } else if (param.required()) {
+            } else if (filter.test(param)) {
                 names.add(name);
             }
         });
         return names;
     }
 
-    private static McpResourceTemplate requiredParamsTemplate(McpResource resource, List<String> requiredParams) {
-        var uriTemplate = resource.uri() + "{?" + String.join(",", requiredParams) + "}";
-        var description = resource.description() + " (requires: " + String.join(", ", requiredParams) + ")";
-        return new McpResourceTemplate(uriTemplate, resourceName(resource), resourceName(resource), description);
+    static McpResourceTemplate paramsTemplate(McpResource resource, String uriTemplate, List<String> requiredParams) {
+        var name = resourceName(resource);
+        var description = requiredParams.isEmpty()
+                ? resource.description()
+                : resource.description() + " (requires: " + String.join(", ", requiredParams) + ")";
+        return new McpResourceTemplate(uriTemplate, name, name, description);
     }
 
     private McpServerFeatures.SyncResourceSpecification toResourceSpec(McpResource resource) {
@@ -315,13 +385,13 @@ public class McpService implements ByteArrayService {
      * Reads the bare resource URI — the SDK's own exact-URI match (verified against its bytecode:
      * it tries concrete {@link McpServerFeatures.SyncResourceSpecification}s registered via {@link
      * #toResourceSpec} before ever falling back to a template) always routes here for a known
-     * resource's own URI, never through {@link #readTemplateMatch}.
+     * resource's own URI, never through {@link #readTemplateMatch} (which has its own, independent
+     * resolution for a URI that isn't registered as a concrete resource).
      *
      * <p>Documents-mode with no filter (default pagination) — matches what attaching this resource
-     * in a host UI (Claude Desktop, Cursor, ...) actually means: load its real content. {@code
-     * actionName} is null only defensively (a resource can reach here via {@link
-     * #readTemplateMatch}'s exact-match fallback without having gone through {@link
-     * #syncResourceRegistry}'s readable-only filter); in that case there's nothing to read.
+     * in a host UI (Claude Desktop, Cursor, ...) actually means: load its real content.
+     * {@code actionName} is null only if a resource was somehow registered here without a readable
+     * action at all, which {@link #syncResourceRegistry} never does — purely defensive.
      */
     private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, McpResource resource) {
         var actionName = defaultReadableAction(resource);
@@ -377,31 +447,32 @@ public class McpService implements ByteArrayService {
      * capture group is {@code [^/]+} with no anchoring against {@code ?}) routes a documents-mode
      * URI here; an exact concrete-resource URI (never carrying a query string or extra path
      * segment) is instead routed straight to {@link #readBareResource} by the SDK before this is
-     * ever called.
+     * ever called — reachable today only for an action with no parameters at all (e.g. an
+     * aggregation with no {@code $var}s), since anything with a parameter registers as a template
+     * (see {@link #syncResourceRegistry}).
      *
-     * <p>Mode detection purely from the URI shape:
+     * <p>The query string, if any, is split off first and its args carried through either
+     * resolution below, so a single-document read can carry query args too (e.g.
+     * {@code .../inventory/<id>?jsonMode=RELAXED}) — the two are independent, not mutually
+     * exclusive URI shapes:
      * <ul>
-     *   <li>a query string ({@code ?...}) → documents mode, using whichever action {@link
-     *       #defaultReadableAction} picks for the matched resource (e.g. {@code query} for a
-     *       collection, {@code execute} for an aggregation — <b>not</b> hardcoded to {@code
+     *   <li>the part before the query string exactly matches a catalog resource → documents mode,
+     *       using whichever action {@link #defaultReadableAction} picks for it (e.g. {@code query}
+     *       for a collection, {@code execute} for an aggregation — <b>not</b> hardcoded to {@code
      *       query}, since an aggregation has no action by that name)</li>
-     *   <li>no exact catalog match, but stripping the last path segment does match → single
+     *   <li>otherwise, stripping its last path segment matches a catalog resource → single
      *       document mode, action {@code get}, {@code id} = that segment</li>
-     *   <li>otherwise, an exact catalog match → {@link #readBareResource} (documents-mode default
-     *       action)</li>
      * </ul>
      */
     private McpSchema.ReadResourceResult readTemplateMatch(McpTransportContext ctx, String uri) {
         var principal = principal(ctx);
 
         var queryIdx = uri.indexOf('?');
-        if (queryIdx >= 0) {
-            var base = uri.substring(0, queryIdx);
-            var args = parseQueryArgs(uri.substring(queryIdx + 1));
-            var resource = resourceLookup.find(principal, publicBaseUrl, base);
-            if (resource.isEmpty()) {
-                return unknownResourceResult(uri);
-            }
+        var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
+        var queryArgs = queryIdx >= 0 ? parseQueryArgs(uri.substring(queryIdx + 1)) : Map.<String, Object>of();
+
+        var resource = resourceLookup.find(principal, publicBaseUrl, base);
+        if (resource.isPresent()) {
             var actionName = defaultReadableAction(resource.get());
             if (actionName == null) {
                 // a real catalog entry (e.g. an aggregation whose pipeline didn't clear the
@@ -409,22 +480,16 @@ public class McpService implements ByteArrayService {
                 // always mean "here is data", never a description; use how_to_call for this one
                 return errorResourceResult(base, "resource has no readable data; use how_to_call to invoke its actions");
             }
-            return readOperation(principal, base, actionName, args).orElseGet(() -> unknownResourceResult(uri));
+            return readOperation(principal, base, actionName, queryArgs).orElseGet(() -> unknownResourceResult(uri));
         }
 
-        // Defensive: in practice the SDK's own exact-match check (see readBareResource's javadoc)
-        // means this never actually fires for a bare URI, since that's always caught by the
-        // concrete SyncResourceSpecification's own handler first.
-        var exact = resourceLookup.find(principal, publicBaseUrl, uri);
-        if (exact.isPresent()) {
-            return readBareResource(principal, exact.get());
-        }
-
-        var lastSlash = uri.lastIndexOf('/');
+        var lastSlash = base.lastIndexOf('/');
         if (lastSlash > 0) {
-            var base = uri.substring(0, lastSlash);
-            var id = uri.substring(lastSlash + 1);
-            var singleDoc = readOperation(principal, base, "get", Map.of("id", id));
+            var docBase = base.substring(0, lastSlash);
+            var id = base.substring(lastSlash + 1);
+            var args = new LinkedHashMap<String, Object>(queryArgs);
+            args.put("id", id);
+            var singleDoc = readOperation(principal, docBase, "get", args);
             if (singleDoc.isPresent()) {
                 return singleDoc.get();
             }
@@ -644,29 +709,29 @@ public class McpService implements ByteArrayService {
         var identity = RequestDescriptor.of(exchange);
         var principal = identity.principal();
 
+        // Mirrors readTemplateMatch's own resolution exactly (see its javadoc): split the query
+        // string off first, then try an exact resource match before a single-document fallback,
+        // so a combined shape (.../inventory/<id>?jsonMode=...) is still recognized as one
+        // documents-mode operation to authorize, not silently skipped.
         var queryIdx = uri.indexOf('?');
-        if (queryIdx >= 0) {
-            var base = uri.substring(0, queryIdx);
-            if (!isReadableAction(principal, base, "query")) {
-                return null;
-            }
-            return withMethodPathAndQuery(identity, pathOf(base), parseQueryParameters(uri.substring(queryIdx + 1)));
+        var base = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
+        var queryParameters = queryIdx >= 0 ? parseQueryParameters(uri.substring(queryIdx + 1)) : Map.<String, Deque<String>>of();
+
+        var resource = resourceLookup.find(principal, publicBaseUrl, base);
+        if (resource.isPresent()) {
+            // A bare or filtered resource read defaults to documents-mode whenever the resource
+            // has a readable action (McpService.readBareResource/readTemplateMatch, #617) — a
+            // real backend read that must be authorized exactly like its REST-equivalent GET.
+            // defaultReadableAction, not a hardcoded "query": an aggregation's readable action is
+            // "execute", not "query" — hardcoding it here previously meant an aggregation's
+            // documents-mode read skipped this check entirely, always falling back to identity.
+            var actionName = defaultReadableAction(resource.get());
+            return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(base), queryParameters);
         }
 
-        var exact = resourceLookup.find(principal, publicBaseUrl, uri);
-        if (exact.isPresent()) {
-            // A bare resource read defaults to documents-mode whenever the resource has a
-            // readable action (McpService.readBareResource, #617) — a real backend read that
-            // must be authorized exactly like its REST-equivalent GET. A resource with no
-            // readable action has nothing to authorize (and, since it's never registered with
-            // the resources primitive, can't actually be reached this way by a normal client).
-            var actionName = defaultReadableAction(exact.get());
-            return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(uri), Map.of());
-        }
-
-        var lastSlash = uri.lastIndexOf('/');
-        if (lastSlash > 0 && isReadableAction(principal, uri.substring(0, lastSlash), "get")) {
-            return withMethodPathAndQuery(identity, pathOf(uri), Map.of());
+        var lastSlash = base.lastIndexOf('/');
+        if (lastSlash > 0 && isReadableAction(principal, base.substring(0, lastSlash), "get")) {
+            return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
         }
 
         return null;
@@ -885,10 +950,15 @@ public class McpService implements ByteArrayService {
 
         try {
             var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
+            var principal = principal(ctx);
+            var token = stringArg(args, "token");
+            if (token == null) {
+                token = mintEphemeralToken(principal);
+            }
             var result = howToCallTool.call(
-                    principal(ctx), baseUrl(ctx),
+                    principal, baseUrl(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
-                    stringArg(args, "transport"), stringArg(args, "token"));
+                    stringArg(args, "transport"), token);
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
@@ -896,6 +966,27 @@ public class McpService implements ByteArrayService {
             LOGGER.error("how_to_call failed", e);
             return errorResult("internal error: " + e.getMessage());
         }
+    }
+
+    /**
+     * A real, short-lived credential for the caller's own {@code Authorization} header — never
+     * the placeholder-or-nothing choice alone. Filled in only when the caller supplies no
+     * {@code token} itself: a real explicit token always wins, this never overrides one.
+     *
+     * <p>Best-effort: no {@code jwtIssuer} provider available (the deployment disabled it, or
+     * {@code jwtConfigProvider} it builds on isn't configured) or no authenticated {@code
+     * principal} on this session means {@code null}, and {@code DescriptorRenderer} falls back to
+     * today's {@code <token>} placeholder — never a token from some other, possibly long-lived
+     * source (a configured {@code TokenManager}'s own token, say): that would silently reintroduce
+     * the exact long-lived-secret risk this exists to avoid.
+     */
+    private String mintEphemeralToken(BaseAccount principal) {
+        if (principal == null) {
+            return null;
+        }
+        return PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class)
+                .map(issuer -> issuer.issue(principal, EPHEMERAL_TOKEN_TTL))
+                .orElse(null);
     }
 
     private static CallToolResult textResult(String text) {

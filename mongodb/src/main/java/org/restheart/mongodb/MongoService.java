@@ -58,7 +58,6 @@ import org.restheart.plugins.mcp.McpAware;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.utils.BootstrapLogger;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -135,10 +134,10 @@ public class MongoService implements Service<MongoRequest, MongoResponse>, McpAw
         return mcpAware.describeMcp(ctx);
     }
 
-    @Override
-    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
-        return mcpAware.describeTemplates(ctx);
-    }
+    // No describeTemplates() override: McpService.syncResourceRegistry() now derives a
+    // resource-specific template directly from each readable action's own declared params, so
+    // there's no mount-wide shape left to contribute here — falls through to McpAware's own
+    // default (no templates). See MongoMcpAwareImpl's comment for the full reasoning.
 
     @Override
     public Optional<McpReadResult> readResource(McpContext ctx, String resource, String action, Map<String, Object> args) {

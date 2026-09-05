@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -106,7 +107,11 @@ public class AggregationMcpResourceBuilderTest {
 
         var resource = AggregationMcpResourceBuilder.build(COLLECTION_URI, "byStatus", stagesWithNoVars, mcp, "db", null).orElseThrow();
 
-        assertTrue(resource.actions().get("execute").params().isEmpty());
+        // "avars" is what a pipeline with no $var must not declare; "jsonMode" is declared by
+        // every execute action regardless, so the params map is not empty in either case
+        var params = resource.actions().get("execute").params();
+        assertFalse(params.containsKey("avars"));
+        assertEquals(Set.of("jsonMode"), params.keySet());
     }
 
     @Test

@@ -113,4 +113,70 @@ public class McpServiceTest {
         var resource = McpResource.builder().uri("https://host/").build();
         assertEquals("https://host/", McpService.resourceName(resource));
     }
+
+    @Test
+    public void pathVariableNames_extractsBraceNames() {
+        assertEquals(Set.of("id"), McpService.pathVariableNames("/{id}"));
+    }
+
+    @Test
+    public void pathVariableNames_blankOrNull_isEmpty() {
+        assertTrue(McpService.pathVariableNames("").isEmpty());
+        assertTrue(McpService.pathVariableNames(null).isEmpty());
+    }
+
+    @Test
+    public void pathVariableNames_ignoresTheQueryExpansionGroup() {
+        assertTrue(McpService.pathVariableNames("{?filter,sort}").isEmpty());
+    }
+
+    @Test
+    public void flatParamNames_flatScalarParams_returnTheirOwnNames() {
+        var resource = McpResource.builder()
+                .uri("https://host/x")
+                .action("query", a -> {
+                    a.param("filter", "object", false);
+                    a.param("page", "integer", true);
+                })
+                .build();
+        var action = resource.actions().get("query");
+
+        assertEquals(Set.of("filter", "page"), Set.copyOf(McpService.flatParamNames(action, p -> true)));
+        assertEquals(List.of("page"), McpService.flatParamNames(action, McpResource.Param::required));
+    }
+
+    @Test
+    public void flatParamNames_objectParam_expandsToItsPropertiesByTheirOwnNames() {
+        var properties = Map.of(
+                "status", new McpResource.Param("string", null, true, null, null),
+                "region", new McpResource.Param("string", null, false, null, null));
+        var resource = McpResource.builder()
+                .uri("https://host/x")
+                .action("execute", a -> a.param("avars", new McpResource.Param("object", null, true, null, null, properties)))
+                .build();
+        var action = resource.actions().get("execute");
+
+        assertEquals(Set.of("status", "region"), Set.copyOf(McpService.flatParamNames(action, p -> true)));
+        assertEquals(List.of("status"), McpService.flatParamNames(action, McpResource.Param::required));
+    }
+
+    @Test
+    public void paramsTemplate_noRequiredParams_descriptionUnchanged() {
+        var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
+
+        var template = McpService.paramsTemplate(resource, "https://host/inventory{?filter}", List.of());
+
+        assertEquals("inventory", template.name());
+        assertEquals("Product inventory.", template.description());
+    }
+
+    @Test
+    public void paramsTemplate_withRequiredParams_notesThemInDescription() {
+        var resource = McpResource.builder().uri("https://host/inventory/_aggrs/byStatus").description("Total by status.").build();
+
+        var template = McpService.paramsTemplate(resource, "https://host/inventory/_aggrs/byStatus{?status}", List.of("status"));
+
+        assertEquals("byStatus", template.name());
+        assertEquals("Total by status. (requires: status)", template.description());
+    }
 }

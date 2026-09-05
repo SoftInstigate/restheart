@@ -84,7 +84,7 @@ public class McpMongoCollectionIT extends AbstactIT {
                           "mcp": {
                             "enabled": true,
                             "description": "Product catalog (MCP IT).",
-                            "examples": [ { "description": "Find all products", "action": "query", "args": { "filter": {} } } ]
+                            "examples": [ { "description": "Find all products", "action": "query", "args": { "filter": {}, "page": 1 } } ]
                           }
                         }
                         """)
@@ -137,7 +137,7 @@ public class McpMongoCollectionIT extends AbstactIT {
                 .body("{\"sku\": \"widget-1\", \"qty\": 5}").asEmpty();
 
         var descriptor = mcp.callTool("how_to_call",
-                "{\"resource\": \"" + COLL_URI + "\", \"action\": \"query\", \"args\": {\"filter\": {\"sku\": \"widget-1\"}}}");
+                "{\"resource\": \"" + COLL_URI + "\", \"action\": \"query\", \"args\": {\"filter\": {\"sku\": \"widget-1\"}, \"page\": 1}}");
 
         assertEquals("http", descriptor.getString("transport").getValue());
         assertEquals("GET", descriptor.getString("method").getValue());

@@ -21,6 +21,7 @@
 package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,6 +84,11 @@ public class CollectionMcpResourceBuilderTest {
         assertEquals("object", params.get("keys").type());
         assertEquals("integer", params.get("page").type());
         assertEquals("integer", params.get("pagesize").type());
+        // deliberately required with no default, even though the real REST endpoint defaults it
+        // to 1 -- see CollectionMcpResourceBuilder's "query" action for why (guarantees every
+        // call carries at least one query param, which the MCP resource template needs to match)
+        assertTrue(params.get("page").required());
+        assertFalse(params.get("filter").required());
     }
 
     @Test

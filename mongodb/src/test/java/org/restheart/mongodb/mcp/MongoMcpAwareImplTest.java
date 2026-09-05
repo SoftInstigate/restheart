@@ -21,7 +21,6 @@
 package org.restheart.mongodb.mcp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -204,31 +203,6 @@ public class MongoMcpAwareImplTest {
 
         var collection = resources.stream().filter(r -> "collection".equals(r.kind())).findFirst().orElseThrow();
         assertNull(collection.actions().get("create").bodySchema());
-    }
-
-    @Test
-    public void describeTemplates_defaultMount_hasNoDbSegment() {
-        // the actual default mongo-mounts: {what: "restheart", where: "/"}
-        var resolver = new MountUriResolver(List.of(new Mount("restheart", "/")));
-
-        var templates = new MongoMcpAwareImpl(new FakeMetadataSource(), resolver).describeTemplates(CTX).stream()
-                .map(t -> t.uriTemplate()).toList();
-
-        assertEquals(List.of(
-                "https://host/{collection}{?filter,sort,keys,page,pagesize,jsonMode}",
-                "https://host/{collection}/{id}"), templates);
-    }
-
-    @Test
-    public void describeTemplates_wildcardMount_includesDbSegment() {
-        var resolver = new MountUriResolver(List.of(new Mount("*", "/")));
-
-        var templates = new MongoMcpAwareImpl(new FakeMetadataSource(), resolver).describeTemplates(CTX).stream()
-                .map(t -> t.uriTemplate()).toList();
-
-        assertTrue(templates.contains("https://host/{db}/{collection}{?filter,sort,keys,page,pagesize,jsonMode}"));
-        assertTrue(templates.contains("https://host/{db}/{collection}/{id}"));
-        assertFalse(templates.stream().anyMatch(t -> t.contains("_aggrs") || t.contains("_streams") || t.equals("https://host/{db}")));
     }
 
     @Test

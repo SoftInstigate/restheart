@@ -51,7 +51,6 @@ import org.restheart.mongodb.utils.VarsInterpolator.VAR_OPERATOR;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.mcp.McpResourceTemplate;
 import org.restheart.security.AggregationPipelineSecurityChecker;
 import org.restheart.utils.BsonUtils;
 
@@ -197,45 +196,13 @@ public final class MongoMcpAwareImpl {
         return resources;
     }
 
-    /**
-     * URI templates (RFC 6570) for the documents-mode shapes this implementation produces —
-     * collections and single documents (see #617's bare-read-prefers-documents design) — derived
-     * from the actual {@code mongo-mounts} configuration via {@link MountUriResolver} rather than
-     * a hardcoded {@code /{db}/{collection}} shape — a default {@code mongo-mounts} (a single
-     * database mounted at {@code /}) exposes collections at {@code /{collection}}, with no
-     * {@code {db}} segment at all.
-     *
-     * <p>No database or change-stream template, and no generic {@code /_aggrs/{name}} one:
-     * {@code resources/read} always means "here is data" (see {@code McpService}'s resources
-     * primitive doc) — there is no context mode to advertise a template for. A database is a
-     * container, not itself document-shaped; a change stream is a live WebSocket/SSE connection,
-     * not a single read; and an aggregation's own {@code resources/list} entry (readable only when
-     * {@code AggregationPipelineSecurityChecker} clears it, with its own declared {@code avars})
-     * can't be represented by one shared shape. All three stay reachable via {@code
-     * list_apis}/{@code how_to_call} — just not through the resources primitive.
-     *
-     * <p>Multiple mounts of the same shape (e.g. two separate {@code *} wildcard mounts) each
-     * contribute their own template with the same {@code name} — harmless, since {@code name} is
-     * only a display label and dispatch is by {@code uriTemplate} match, not by name.
-     */
-    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
-        var baseUrl = ctx.baseUrl();
-        var templates = new ArrayList<McpResourceTemplate>();
-
-        for (var collTemplate : mountResolver.collectionPathTemplates()) {
-            var uri = baseUrl + collTemplate;
-            // No separate "collection-context" template: a bare collection read now returns
-            // documents-mode content by default (McpService.readBareResource(), #617) whenever the
-            // resource has a readable action, so a context-only template would misdescribe actual
-            // behavior. This one shape covers both the bare read (no query — default pagination)
-            // and a filtered one; the `{?...}` part just needs to be discoverable (e.g. MCP
-            // Inspector's "Resource Templates" tab) so clients know they *can* filter.
-            templates.add(new McpResourceTemplate(uri + "{?filter,sort,keys,page,pagesize,jsonMode}", "collection-documents", "Collection — documents"));
-            templates.add(new McpResourceTemplate(uri + "/{id}", "document", "Document"));
-        }
-
-        return templates;
-    }
+    // No describeTemplates() override: McpService.syncResourceRegistry() now derives a
+    // resource-specific template directly from each readable action's own declared params
+    // (generic across every McpAware implementation, not just Mongo's) — there's no longer a
+    // shared, mount-wide shape for this implementation to contribute on top of that. See its
+    // javadoc for why a database, a change stream, and a non-readable aggregation still have no
+    // template at all (they stay list_apis/how_to_call-only), and why a readable one derives its
+    // own template per-resource rather than a generic mount-wide shape.
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGESIZE = 100;
