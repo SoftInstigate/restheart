@@ -74,6 +74,18 @@ import org.slf4j.LoggerFactory;
  * {@link HttpStatus#SC_FORBIDDEN}. There is no permissive default — a role
  * with no {@code acl} entry, or an unconfigured {@code acl}, grants no access.
  * </p>
+ * <p>
+ * <strong>Not gated by the module's two-tier dormancy scheme - deliberately left enabled.</strong>
+ * Unlike {@link MqttClientProvider} (Tier 1) and the {@code mqtt-sse} / {@code mqtt-rest}
+ * plugins it protects (Tier 2), this interceptor keeps {@code @RegisterPlugin}'s default
+ * {@code enabledByDefault = true}. This is a security decision, not an oversight: while the
+ * Tier 2 endpoints are disabled (the default), {@link #resolve(ServiceRequest, ServiceResponse)}
+ * never matches anything, so this interceptor is simply never invoked - leaving it enabled costs
+ * nothing. Once an operator opts a Tier 2 endpoint back in, this interceptor is already active and
+ * fails closed with no ACL configured, so the endpoint can never be armed in a fail-open state
+ * where topic access is unchecked, not even momentarily. Do not disable this by default "for
+ * consistency" with the other five plugins - doing so would reopen exactly that window.
+ * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */

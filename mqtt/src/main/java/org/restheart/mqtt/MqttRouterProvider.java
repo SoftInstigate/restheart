@@ -42,6 +42,17 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
  * underlying {@link MqttClient}; RESTHeart's {@code ProvidersChecker} builds and validates the
  * provider dependency graph, so a provider depending on another provider is supported.
  * </p>
+ * <p>
+ * <strong>Not gated by the module's two-tier dormancy scheme.</strong> Unlike
+ * {@link MqttClientProvider} (Tier 1) and the {@code mqtt-sse} / {@code mqtt-rest} /
+ * {@code mqtt-mongo-writer} plugins (Tier 2), this provider keeps {@code @RegisterPlugin}'s
+ * default {@code enabledByDefault = true}. It exposes no HTTP surface of its own and injects
+ * {@code mqtt-client}, so when the client is disabled (the default), {@code ProvidersChecker}
+ * disables this provider too, following the client through the graph; there is nothing here for a
+ * separate switch to gate. Leaving it enabled by default also lets a consumer such as
+ * {@code examples/mqtt-logger} obtain the injectable router - once {@code mqtt-client} is armed -
+ * without pulling in any of the Tier 2 HTTP endpoints.
+ * </p>
  *
  * @see Provider
  * @see MqttMessageRouter

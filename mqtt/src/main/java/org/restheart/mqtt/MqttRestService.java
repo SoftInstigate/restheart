@@ -45,6 +45,15 @@ import com.google.gson.JsonObject;
  * if a cached message exists. Returns 404 if no message has been received for
  * the requested topic, or 400 if the topic parameter is missing.
  * </p>
+ * <p>
+ * <strong>Tier 2 of 2 - opt-in surface.</strong> Registered with {@code enabledByDefault = false}
+ * so that arming the module (enabling {@code mqtt-client}, Tier 1) does not, by itself, expose
+ * this HTTP endpoint: an operator who only wants the injectable {@code mqtt-router} - as
+ * {@code examples/mqtt-logger} does - gets it without {@code /mqtt} appearing. Exposing this
+ * service is therefore a second, separate opt-in, made once the module is armed. Note that
+ * {@link MqttTopicAuthorizer} stays enabled regardless of this switch, so once this service is
+ * enabled it is already gated by ACL - there is no fail-open window in between.
+ * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -52,7 +61,8 @@ import com.google.gson.JsonObject;
     name = "mqtt-rest",
     description = "REST endpoint for polling last MQTT message per topic",
     defaultURI = "/mqtt",
-    secure = true
+    secure = true,
+    enabledByDefault = false
 )
 public class MqttRestService implements JsonService {
 

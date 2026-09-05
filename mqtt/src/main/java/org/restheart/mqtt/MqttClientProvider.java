@@ -42,6 +42,18 @@ import com.hivemq.client.mqtt.MqttClient;
  * (once) that closes the {@link MqttClientSingleton}, cancelling any pending automatic
  * reconnect before disconnecting.
  * </p>
+ * <p>
+ * <strong>Tier 1 of 2 - the module switch.</strong> This is the root of the {@code mqtt} module's
+ * injection graph ({@code mqtt-client} &larr; {@code mqtt-router} &larr; {@code mqtt-sse} /
+ * {@code mqtt-rest} / {@code mqtt-mongo-writer}), so it is registered with
+ * {@code enabledByDefault = false}: dropping the {@code mqtt} jar into {@code plugins/} must not,
+ * by itself, open a connection to an MQTT broker. Disabling this provider cascades - silently, at
+ * DEBUG - to every plugin that (transitively) requires it, so this single switch is enough to make
+ * the whole module dormant on installation. An operator who wants MQTT must explicitly enable this
+ * plugin in configuration; every other class in the module then follows from there (see Tier 2 on
+ * {@link org.restheart.mqtt.MqttSseService}, {@link org.restheart.mqtt.MqttRestService} and
+ * {@link org.restheart.mqtt.MqttMongoWriter}).
+ * </p>
  *
  * @see Provider
  * @see MqttClient
@@ -53,7 +65,8 @@ import com.hivemq.client.mqtt.MqttClient;
 @RegisterPlugin(
     name = "mqtt-client",
     description = "Provides a connected MQTT client",
-    priority = 10
+    priority = 10,
+    enabledByDefault = false
 )
 public class MqttClientProvider implements Provider<MqttClient>{
 

@@ -79,6 +79,15 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
  * connections would let one client's messages throttle or pollute another's
  * aggregate.
  * </p>
+ * <p>
+ * <strong>Tier 2 of 2 - opt-in surface.</strong> Registered with {@code enabledByDefault = false}
+ * so that arming the module (enabling {@code mqtt-client}, Tier 1) does not, by itself, expose
+ * this HTTP endpoint: an operator who only wants the injectable {@code mqtt-router} - as
+ * {@code examples/mqtt-logger} does - gets it without {@code /mqtt-sse} appearing. Exposing this
+ * service is therefore a second, separate opt-in, made once the module is armed. Note that
+ * {@link MqttTopicAuthorizer} stays enabled regardless of this switch, so once this service is
+ * enabled it is already gated by ACL - there is no fail-open window in between.
+ * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
@@ -86,7 +95,8 @@ import io.undertow.server.handlers.sse.ServerSentEventConnection;
     name = "mqtt-sse",
     description = "Streams MQTT topic messages as Server-Sent Events",
     defaultURI = "/mqtt-sse",
-    secure = true
+    secure = true,
+    enabledByDefault = false
 )
 public class MqttSseService implements SseService {
 

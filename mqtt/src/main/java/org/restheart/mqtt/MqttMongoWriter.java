@@ -109,13 +109,22 @@ import com.mongodb.client.model.WriteModel;
  *         collection: "sensor-events"
  * </pre>
  * </p>
+ * <p>
+ * <strong>Tier 2 of 2 - opt-in surface.</strong> Registered with {@code enabledByDefault = false}
+ * so that arming the module (enabling {@code mqtt-client}, Tier 1) does not, by itself, start
+ * writing MQTT traffic into MongoDB: an operator who only wants the injectable
+ * {@code mqtt-router} - as {@code examples/mqtt-logger} does - gets it without this writer
+ * running. Persisting messages to MongoDB is therefore a second, separate opt-in, made once the
+ * module is armed.
+ * </p>
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
 @RegisterPlugin(
     name = "mqtt-mongo-writer",
     description = "Persists MQTT messages to MongoDB with buffered async writes",
-    initPoint = InitPoint.AFTER_STARTUP
+    initPoint = InitPoint.AFTER_STARTUP,
+    enabledByDefault = false
 )
 public class MqttMongoWriter implements Initializer {
 
