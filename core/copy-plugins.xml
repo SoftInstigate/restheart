@@ -2,6 +2,13 @@
     <target name="copy">
         <echo message="***** Copying plugins to target/plugins" level="info" />
         <mkdir dir="./target/plugins" />
+        <!-- restheart-mqtt is deliberately excluded from this list. It is an optional
+             add-on: its hivemq-mqtt-client dependency brings 13 transitive JARs including
+             RxJava and five Netty modules — a second network stack and reactive runtime
+             not used elsewhere in RESTHeart (which runs on Undertow/XNIO). Bundling would
+             add all that to every installation. Users needing MQTT can install from
+             Maven Central as org.restheart:restheart-mqtt, or use mqtt/assembly.xml's
+             pre-built zip, copying it into plugins/. See mqtt/README.md. -->
         <copy file="../mongoclient/target/restheart-mongoclient-provider.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
         <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
