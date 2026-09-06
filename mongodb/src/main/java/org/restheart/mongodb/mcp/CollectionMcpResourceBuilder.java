@@ -74,15 +74,7 @@ public final class CollectionMcpResourceBuilder {
             a.param("filter", "object", false);
             a.param("sort", "string", false);
             a.param("keys", "object", false);
-            // "page" is optional at the real REST endpoint (defaults to 1) but declared required
-            // here, deliberately, with no defaultValue: MCP resource templates carry no formal
-            // schema, so a client can submit one with every variable left blank — but the MCP
-            // SDK's own template matcher requires at least one query-string character to route
-            // the request at all (a template with only optional vars never matches a truly bare
-            // URI). Requiring "page" guarantees every resources/read/how_to_call call on this
-            // action carries at least one query param, and ParamValidator enforces it up front
-            // with a clear "missing required param" error instead of a confusing "not found".
-            a.param("page", "integer", true);
+            a.param("page", "integer", false);
             a.param("pagesize", "integer", false);
             a.param("jsonMode", "string", false);
         });

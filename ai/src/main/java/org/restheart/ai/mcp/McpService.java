@@ -295,11 +295,14 @@ public class McpService implements ByteArrayService {
      * matcher.
      */
     private void syncResourceRegistry() {
-        server.listResources().stream().map(McpSchema.Resource::uri).toList().forEach(server::removeResource);
-        server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList().forEach(server::removeResourceTemplate);
-
-        var registeredResourceUris = new HashSet<String>();
-        var registeredTemplateUris = new HashSet<String>();
+        // The desired state is computed first, before anything is touched. Rebuilding it is the
+        // slow part — this runs on catalog expiry, so resourceLookup is always a miss here and
+        // goes out to every McpAware plugin (a MongoDB round trip for Mongo's). Clearing the
+        // registry up front and repopulating afterwards left that whole span as a window in which
+        // resources/list answered with an empty or half-built catalog. Found by McpResourcesIT,
+        // which intermittently saw no templates at all.
+        var desiredResources = new LinkedHashMap<String, McpResource>();
+        var desiredTemplates = new LinkedHashMap<String, McpResourceTemplate>();
 
         resourceLookup.all(null, publicBaseUrl).forEach(r -> r.actions().forEach((actionName, action) -> {
             if (!action.readable()) {
@@ -314,21 +317,71 @@ public class McpService implements ByteArrayService {
 
             var base = r.uri() + (action.pathTemplate() == null ? "" : action.pathTemplate());
 
-            if (requiredParams.isEmpty() && registeredResourceUris.add(base)) {
-                server.addResource(toResourceSpec(r));
+            // A concrete resource only where there is nothing to fill in. Where there is, the
+            // template alone covers every shape a client can produce from it — including a form
+            // left entirely blank, which expands to either the bare URI or `?a=&b=` and works
+            // both ways (see McpResourcesIT). Registering both would put two entries under the
+            // same name in front of the agent, and the second would add nothing.
+            if (requiredParams.isEmpty() && significantQueryParams.isEmpty() && pathVars.isEmpty()) {
+                desiredResources.putIfAbsent(base, r);
             }
 
             if (!pathVars.isEmpty() || !significantQueryParams.isEmpty()) {
-                var uriTemplate = base + (queryParams.isEmpty() ? "" : "{?" + String.join(",", queryParams) + "}");
-                if (registeredTemplateUris.add(uriTemplate)) {
-                    server.addResourceTemplate(toTemplateSpec(paramsTemplate(r, uriTemplate, requiredParams)));
-                }
+                // The query-expansion suffix is emitted only when there is something worth
+                // filling in. A template carrying nothing but a cosmetic param would read
+                // ".../{id}{?jsonMode}", two adjacent capture groups over one path segment —
+                // matched by the SDK, but a misleading thing to advertise.
+                var uriTemplate = significantQueryParams.isEmpty()
+                        ? base
+                        : base + "{?" + String.join(",", queryParams) + "}";
+                desiredTemplates.putIfAbsent(uriTemplate, paramsTemplate(r, uriTemplate, requiredParams));
             }
         }));
 
-        resourceLookup.templates(publicBaseUrl).forEach(t -> server.addResourceTemplate(toTemplateSpec(t)));
+        resourceLookup.templates(publicBaseUrl).forEach(t -> desiredTemplates.putIfAbsent(t.uriTemplate(), t));
 
-        server.notifyResourcesListChanged();
+        var currentResourceUris = server.listResources().stream().map(McpSchema.Resource::uri).toList();
+        var currentTemplateUris = server.listResourceTemplates().stream().map(McpSchema.ResourceTemplate::uriTemplate).toList();
+
+        var changed = false;
+
+        for (var uri : currentResourceUris) {
+            if (!desiredResources.containsKey(uri)) {
+                server.removeResource(uri);
+                changed = true;
+            }
+        }
+
+        for (var uriTemplate : currentTemplateUris) {
+            if (!desiredTemplates.containsKey(uriTemplate)) {
+                server.removeResourceTemplate(uriTemplate);
+                changed = true;
+            }
+        }
+
+        // An entry already registered under the same URI is left alone rather than replaced: its
+        // read handler closes over an McpResource only for the URI and the action name it
+        // resolves — the data itself is looked up afresh on every read — so an existing
+        // registration cannot go stale in a way a re-add would fix.
+        for (var e : desiredResources.entrySet()) {
+            if (!currentResourceUris.contains(e.getKey())) {
+                server.addResource(toResourceSpec(e.getValue()));
+                changed = true;
+            }
+        }
+
+        for (var e : desiredTemplates.entrySet()) {
+            if (!currentTemplateUris.contains(e.getKey())) {
+                server.addResourceTemplate(toTemplateSpec(e.getValue()));
+                changed = true;
+            }
+        }
+
+        // Only when something actually moved: this runs every catalog TTL, and notifying on an
+        // unchanged catalog wakes every connected client for nothing.
+        if (changed) {
+            server.notifyResourcesListChanged();
+        }
     }
 
     /** {@code {name}} placeholders in a path template (e.g. {@code "/{id}"} -> {@code ["id"]}) — never the {@code {?a,b,c}} query-expansion group. */
@@ -592,7 +645,15 @@ public class McpService implements ByteArrayService {
             var eq = pair.indexOf('=');
             var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
             var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
-            args.put(key, value);
+
+            // A valueless parameter means "not supplied", not "supplied as an empty string".
+            // This is what a client sends when it expands a resource template whose fields the
+            // user left blank — `?filter=&page=` — and reading it any other way turns the most
+            // ordinary request there is (give me this resource, unfiltered) into a wall of type
+            // errors: '' is not an object, '' is not an integer.
+            if (!value.isEmpty()) {
+                args.put(key, value);
+            }
         }
         return args;
     }
@@ -771,7 +832,14 @@ public class McpService implements ByteArrayService {
             var eq = pair.indexOf('=');
             var key = URLDecoder.decode(eq >= 0 ? pair.substring(0, eq) : pair, StandardCharsets.UTF_8);
             var value = URLDecoder.decode(eq >= 0 ? pair.substring(eq + 1) : "", StandardCharsets.UTF_8);
-            result.computeIfAbsent(key, k -> new ArrayDeque<>()).add(value);
+
+            // Dropped for the same reason as in parseQueryArgs, and it has to be the same reason:
+            // this builds the descriptor an ACL is evaluated against, so it must describe the
+            // operation that will actually run. A parameter ignored at execution but present here
+            // would let a predicate match on something the request does not really carry.
+            if (!value.isEmpty()) {
+                result.computeIfAbsent(key, k -> new ArrayDeque<>()).add(value);
+            }
         }
         return result;
     }

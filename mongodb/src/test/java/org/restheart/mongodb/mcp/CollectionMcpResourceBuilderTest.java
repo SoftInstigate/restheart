@@ -84,10 +84,10 @@ public class CollectionMcpResourceBuilderTest {
         assertEquals("object", params.get("keys").type());
         assertEquals("integer", params.get("page").type());
         assertEquals("integer", params.get("pagesize").type());
-        // deliberately required with no default, even though the real REST endpoint defaults it
-        // to 1 -- see CollectionMcpResourceBuilder's "query" action for why (guarantees every
-        // call carries at least one query param, which the MCP resource template needs to match)
-        assertTrue(params.get("page").required());
+        // every query param is optional: a bare read is a legitimate request (first page, no
+        // filter), which is what lets a collection be offered as a concrete resource as well as
+        // a template -- see McpService.syncResourceRegistry
+        assertFalse(params.get("page").required());
         assertFalse(params.get("filter").required());
     }
 
