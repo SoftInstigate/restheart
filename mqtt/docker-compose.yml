@@ -1,0 +1,99 @@
+# RESTHeart MQTT plugin - try it in two minutes.
+#
+# Requires the plugin to have been built first, since it bind-mounts mqtt/target:
+#
+#   ../mvnw -pl mqtt package
+#   docker compose up
+#
+# Then, in another shell:
+#
+#   # start listening for events on the "sensors/#" topic filter
+#   curl -N -u admin:secret 'http://localhost:8080/mqtt-sse?topic=sensors/temp'
+#
+#   # in a third shell, publish a message
+#   docker compose exec mosquitto mosquitto_pub -t sensors/temp -m '{"value": 21.5}'
+#
+# Only two containers: RESTHeart and the Mosquitto broker. No MongoDB - the
+# only mqtt plugin that needs one (mqtt-mongo-writer) is left disabled here,
+# so RESTHeart runs in standalone mode (command: --standalone), which makes
+# Bootstrapper load restheart-default-config-no-mongodb.yml instead of the
+# MongoDB-backed default. That file enables fileRealmAuthenticator with a
+# built-in "admin" user whose password is null (disabled) until set below,
+# which is where admin/secret comes from.
+#
+# This file follows the conventions of ../docker-compose.yml (RHO-based
+# configuration) where they still apply; it intentionally does not copy the
+# MongoDB service, since this module's demo does not need one.
+name: restheart-mqtt
+
+services:
+  # RESTHeart API server, with the mqtt plugin mounted and enabled
+  restheart:
+    # softinstigate/restheart-snapshot:latest, not softinstigate/restheart:latest.
+    # Per-topic ACL enforcement on /mqtt-sse needs the mqtt-topic-authorizer /
+    # SseWildcardInterceptorsExecutor fix, which is on unreleased master and not
+    # yet in any released restheart:* image; restheart-snapshot:latest is built
+    # from master on every push to it (.github/workflows/branch.yml), so it has
+    # the fix. Against restheart:latest, a topic outside the ACL is silently
+    # accepted on /mqtt-sse instead of rejected with 403 - do not "tidy" this
+    # back to restheart:latest, that would quietly reopen that hole. Once a
+    # release contains the fix, this can move back to the released image.
+    image: softinstigate/restheart-snapshot:latest
+    # No CMD in core/Dockerfile's ENTRYPOINT, so this is appended as an
+    # argument to `java -jar restheart.jar`. --standalone (-s) makes
+    # Bootstrapper load restheart-default-config-no-mongodb.yml, which needs
+    # no MongoDB and enables fileRealmAuthenticator instead.
+    command: ["--standalone"]
+    environment:
+      # RHO (RESTHeart Overrides) - see ../docker-compose.yml for the general
+      # syntax. The overrides below solve exactly the obstacles described in
+      # mqtt/README.md's quick start and in the standalone default config:
+      #  - http-listener defaults to host "localhost", unreachable from
+      #    outside this container, so it must be rebound to 0.0.0.0;
+      #  - fileRealmAuthenticator's built-in "admin" user ships with
+      #    password: null (disabled), so a password must be set - the XPath
+      #    predicate form below is the one RESTHeart's own FileRealmAuthenticator
+      #    suggests in its "null password" warning, rather than a positional
+      #    users[1] index;
+      #  - mqtt-client/mqtt-sse are enabledByDefault=false (the module is
+      #    dormant on installation), so both must be switched on explicitly;
+      #  - broker-url defaults to tcp://localhost:1883, which from inside
+      #    this container is the restheart container itself, not the broker
+      #    - it must point at the "mosquitto" service instead;
+      #  - mqtt-topic-authorizer stays enabled and denies every request with
+      #    403 until an acl is configured, so the "admin" role (the role of
+      #    the fileRealmAuthenticator user above) is granted "sensors/#".
+      RHO: >
+        /http-listener/host->"0.0.0.0";
+        /fileRealmAuthenticator/users[userid='admin']/password->"secret";
+        /mqtt-client/enabled->true;
+        /mqtt-client/broker-url->"tcp://mosquitto:1883";
+        /mqtt-sse/enabled->true;
+        /mqtt-topic-authorizer/acl->{"admin":["sensors/#"]};
+    volumes:
+      # Built by `../mvnw -pl mqtt package`: restheart-mqtt.jar plus lib/ (its
+      # runtime dependencies, which must not themselves be scanned for
+      # plugins - hence the "lib" directory name, per RESTHeart's plugin
+      # loading convention).
+      - ./target:/opt/restheart/plugins/custom
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    ports:
+      - "8080:8080" # RESTHeart API, including GET /mqtt-sse
+
+  # MQTT broker. Mosquitto 2.x refuses anonymous connections by default, so
+  # mosquitto.conf (allow_anonymous true, a listener bound to 0.0.0.0) is
+  # mounted in to make the container reachable at all.
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - "1883:1883" # lets `mosquitto_pub`/`mosquitto_sub` on the host reach the broker directly
