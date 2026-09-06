@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bson.BsonString;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.BaseAccount;
 import org.restheart.security.WithProperties;
@@ -322,16 +323,25 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
      */
     @Override
     public String issue(BaseAccount account, Duration ttl) {
-        return issue(account, ttl, null);
+        return issue(account, ttl, (String) null);
     }
 
     @Override
     public String issue(BaseAccount account) {
-        return issue(account, defaultTtl, null);
+        return issue(account, defaultTtl, (String) null);
     }
 
     @Override
     public String issue(BaseAccount account, Duration ttl, String issuerOverride) {
+        return issue(account, ttl, issuerOverride, null);
+    }
+
+    @Override
+    public String issue(BaseAccount account, Duration ttl, Request<?> request) {
+        return issue(account, ttl, null, request);
+    }
+
+    private String issue(BaseAccount account, Duration ttl, String issuerOverride, Request<?> request) {
         var properties = account instanceof WithProperties<?> wp ? wp.propertiesAsMap() : null;
 
         return issue(account.getPrincipal().getName(),
@@ -339,14 +349,18 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
                 Date.from(Instant.now().plus(ttl)),
                 properties,
                 null,
-                null,
+                claimsOverride(request),
                 issuerOverride);
     }
 
     /**
      * A JWT builder carrying the shared identity of this deployment ({@code iss}, {@code aud},
-     * {@code jti}) plus {@code sub}, {@code roles} and {@code exp}. For callers that need to add
-     * their own claims before signing.
+     * {@code jti}) plus {@code sub}, {@code roles}, {@code iat} and {@code exp}. For callers that
+     * need to add their own claims before signing.
+     *
+     * <p>{@code iat} matters most for a short-lived token: without it a holder sees an imminent
+     * {@code exp} but cannot tell whether the window was a minute or a day, which is exactly what
+     * it needs to know to decide whether the token is still worth using.
      */
     public Builder newBuilder(String subject, Set<String> roles, Date expires) {
         return newBuilder(subject, roles, expires, null);
@@ -367,6 +381,7 @@ public class DefaultJwtIssuer implements org.restheart.plugins.security.JwtIssue
 
         return creator
                 .withSubject(subject)
+                .withIssuedAt(Instant.now())
                 .withExpiresAt(expires)
                 .withJWTId(java.util.UUID.randomUUID().toString())
                 .withArrayClaim("roles", roles == null ? new String[0] : roles.toArray(String[]::new));

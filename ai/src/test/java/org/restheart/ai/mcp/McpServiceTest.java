@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.plugins.mcp.McpResource;
 
 /**
@@ -93,7 +94,40 @@ public class McpServiceTest {
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>) tool.inputSchema().get("properties");
-        assertEquals(Set.of("resource", "action", "args", "transport", "token"), properties.keySet());
+        // no "token": the descriptor never carries a credential, so it stays stable and reusable —
+        // get_token issues one separately, when the caller is about to send the request
+        assertEquals(Set.of("resource", "action", "args", "transport"), properties.keySet());
+    }
+
+    @Test
+    public void howToCallToolDefinition_descriptionPointsAtGetToken() {
+        var description = McpService.howToCallToolDefinition().description();
+
+        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
+                "must quote the placeholder it actually emits, so the agent can match the two");
+        assertTrue(description.contains("get_token"), "must name the tool that fills the placeholder in");
+    }
+
+    @Test
+    public void getTokenToolDefinition_takesNoArguments() {
+        var tool = McpService.getTokenToolDefinition();
+
+        assertEquals("get_token", tool.name());
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) tool.inputSchema().get("properties");
+        assertTrue(properties.isEmpty(), "the token is for the current session — there is nothing to parameterize");
+        assertNull(tool.inputSchema().get("required"));
+    }
+
+    @Test
+    public void getTokenToolDefinition_statesTheTokenIsShortLived() {
+        var description = McpService.getTokenToolDefinition().description();
+
+        assertTrue(description.contains(DescriptorRenderer.TOKEN_PLACEHOLDER),
+                "must quote the placeholder it fills in");
+        assertTrue(description.contains("expires_in"),
+                "must point at the field telling the agent how long the token lasts");
     }
 
     @Test

@@ -45,6 +45,7 @@ import org.restheart.ai.mcp.tools.ListApisTool;
 import org.restheart.ai.mcp.tools.UnknownActionException;
 import org.restheart.ai.mcp.tools.UnknownResourceException;
 import org.restheart.ai.mcp.tools.ValidationFailedException;
+import org.restheart.ai.mcp.transport.DescriptorRenderer;
 import org.restheart.ai.mcp.validation.ParamValidator;
 import org.restheart.ai.util.PluginModelResolver;
 import org.restheart.exchange.ByteArrayRequest;
@@ -82,9 +83,10 @@ import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import io.undertow.server.HttpServerExchange;
 
 /**
- * RESTHeart's MCP server: exposes exactly two tools, {@code list_apis} and
- * {@code how_to_call}, over the MCP Streamable HTTP transport (restheart#615
- * design principles — "one tool, one model", no per-resource tools).
+ * RESTHeart's MCP server: exposes exactly three tools — {@code list_apis} (what exists),
+ * {@code how_to_call} (how to invoke it) and {@code get_token} (a short-lived credential to
+ * invoke it with) — over the MCP Streamable HTTP transport (restheart#615 design principles —
+ * "one tool, one model", no per-resource tools: three concerns, not three per resource).
  *
  * <p>Transport is {@link UndertowStreamableServerTransportProvider}, ported from
  * Sophia (already running there in production) — session lifecycle, SSE for
@@ -109,15 +111,16 @@ public class McpService implements ByteArrayService {
 
     private static final String CTX_PRINCIPAL = "principal";
     private static final String CTX_BASE_URL = "baseUrl";
+    private static final String CTX_REQUEST = "request";
 
     private static final int DEFAULT_CATALOG_TTL_SECONDS = 300;
 
     /**
-     * TTL for a JWT minted on the fly to fill in {@code how_to_call}'s {@code Authorization}
-     * header when the caller supplies no {@code token} of its own — see {@link
-     * #mintEphemeralToken}. Deliberately short and not operator-configurable: the whole point is
-     * bounding the blast radius of a leaked token by expiry, not by trusting the agent (or
-     * whatever it hands the token to next) to handle it carefully.
+     * Lifetime of a token issued by {@code get_token} — see {@link #callGetToken}. Deliberately
+     * short and not operator-configurable: the whole point is bounding the blast radius of a
+     * leaked token by expiry, not by trusting the agent (or whatever it hands the token to next)
+     * to handle it carefully. It is short enough that it must be fetched right before use, which
+     * is why it is a tool of its own rather than something baked into a descriptor.
      */
     private static final Duration EPHEMERAL_TOKEN_TTL = Duration.ofSeconds(60);
 
@@ -177,7 +180,8 @@ public class McpService implements ByteArrayService {
                 .jsonSchemaValidator(schemaValidator)
                 .capabilities(capabilities())
                 .toolCall(listApisToolDefinition(), this::callListApis)
-                .toolCall(howToCallToolDefinition(), this::callHowToCall);
+                .toolCall(howToCallToolDefinition(), this::callHowToCall)
+                .toolCall(getTokenToolDefinition(), this::callGetToken);
 
         // Neither resources nor templates are registered here: both are built by calling
         // describeMcp()/describeTemplates() on every registered McpAware plugin, and @OnInit
@@ -827,6 +831,7 @@ public class McpService implements ByteArrayService {
     private McpTransportContext buildContext(ByteArrayRequest req) {
         var ctx = new HashMap<String, Object>();
         ctx.put(CTX_BASE_URL, resolveBaseUrl(req));
+        ctx.put(CTX_REQUEST, req);
         if (req.getAuthenticatedAccount() instanceof BaseAccount principal) {
             ctx.put(CTX_PRINCIPAL, principal);
         }
@@ -854,6 +859,17 @@ public class McpService implements ByteArrayService {
 
     private static BaseAccount principal(McpTransportContext ctx) {
         return ctx.get(CTX_PRINCIPAL) instanceof BaseAccount ba ? ba : null;
+    }
+
+    /**
+     * The {@code /mcp} request being served, for the one thing that needs it: resolving the
+     * per-request {@code account-properties-claims} override (attached by an interceptor, which
+     * runs on {@code /mcp} like on any other request) when {@code get_token} mints a token. A
+     * multi-tenant deployment selects a different claim set per tenant that way, and a token
+     * missing those claims would fail ACL rules written against them.
+     */
+    private static Request<?> request(McpTransportContext ctx) {
+        return ctx.get(CTX_REQUEST) instanceof Request<?> r ? r : null;
     }
 
     private static String baseUrl(McpTransportContext ctx) {
@@ -893,7 +909,6 @@ public class McpService implements ByteArrayService {
         properties.put("args", schemaProp("object", "Action arguments — values for params and body declared by the resource."));
         properties.put("transport", schemaProp("string",
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
-        properties.put("token", schemaProp("string", "Optional access token. If omitted, a `<token>` placeholder is embedded."));
 
         return McpSchema.Tool.builder("how_to_call")
                 .description("Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP resource. "
@@ -902,8 +917,24 @@ public class McpService implements ByteArrayService {
                         + "(HTTP libraries, WebSocket libraries, OS shells with curl/httpie/wscat, generated code in "
                         + "any language). The MCP server does not prescribe the tool.\n\nDispatch by action — the "
                         + "set of valid actions for a given resource is declared in the resource's list_apis output. "
-                        + "Validate args against the declared params and body_schema before calling.")
+                        + "Validate args against the declared params and body_schema before calling.\n\nThe descriptor "
+                        + "is stable and safe to reuse: it carries no credential. Its Authorization header holds the "
+                        + "placeholder `" + DescriptorRenderer.TOKEN_PLACEHOLDER + "` — call get_token to obtain a token and substitute "
+                        + "it just before sending the request, not when you receive this descriptor.")
                 .inputSchema(inputSchema(properties, List.of("resource", "action")))
+                .build();
+    }
+
+    static McpSchema.Tool getTokenToolDefinition() {
+        return McpSchema.Tool.builder("get_token")
+                .description("Issues a short-lived access token for the current session, to fill in the `"
+                        + DescriptorRenderer.TOKEN_PLACEHOLDER + "` placeholder of a descriptor returned by how_to_call.\n\nThe token "
+                        + "expires within seconds (see `expires_in` in the response), so call this immediately before "
+                        + "sending the request — not in advance, and do not store it. Getting a fresh one costs "
+                        + "nothing; reusing a stale one fails with 401. One token can serve several requests made "
+                        + "within its window.\n\nIt carries the identity and roles of the current session and no more, "
+                        + "so it can do exactly what this session can do. Requires an authenticated session.")
+                .inputSchema(inputSchema(new LinkedHashMap<>(), null))
                 .build();
     }
 
@@ -950,15 +981,10 @@ public class McpService implements ByteArrayService {
 
         try {
             var actionArgs = args.get("args") instanceof Map<?, ?> m ? (Map<String, Object>) m : null;
-            var principal = principal(ctx);
-            var token = stringArg(args, "token");
-            if (token == null) {
-                token = mintEphemeralToken(principal);
-            }
             var result = howToCallTool.call(
-                    principal, baseUrl(ctx),
+                    principal(ctx), baseUrl(ctx),
                     stringArg(args, "resource"), stringArg(args, "action"), actionArgs,
-                    stringArg(args, "transport"), token);
+                    stringArg(args, "transport"));
             return textResult(jsonMapper.writeValueAsString(result));
         } catch (UnknownResourceException | UnknownActionException | ValidationFailedException e) {
             return errorResult(e.getMessage());
@@ -969,24 +995,58 @@ public class McpService implements ByteArrayService {
     }
 
     /**
-     * A real, short-lived credential for the caller's own {@code Authorization} header — never
-     * the placeholder-or-nothing choice alone. Filled in only when the caller supplies no
-     * {@code token} itself: a real explicit token always wins, this never overrides one.
+     * Issues the short-lived credential that fills in {@code how_to_call}'s
+     * {@link DescriptorRenderer#TOKEN_PLACEHOLDER}.
      *
-     * <p>Best-effort: no {@code jwtIssuer} provider available (the deployment disabled it, or
-     * {@code jwtConfigProvider} it builds on isn't configured) or no authenticated {@code
-     * principal} on this session means {@code null}, and {@code DescriptorRenderer} falls back to
-     * today's {@code <token>} placeholder — never a token from some other, possibly long-lived
-     * source (a configured {@code TokenManager}'s own token, say): that would silently reintroduce
-     * the exact long-lived-secret risk this exists to avoid.
+     * <p>A tool of its own rather than something embedded in the descriptor, because the two are
+     * needed at different moments: a descriptor answers "how do I call this", is stable, and is
+     * worth reusing; a token is worth seconds. Minting it with the descriptor started the clock at
+     * the wrong time — an agent that reasoned, or asked its user, between receiving the descriptor
+     * and sending the request could find the token already dead. Here the window opens when the
+     * caller is about to use it.
+     *
+     * <p>Deliberately never falls back to a token from another source (the configured {@code
+     * TokenManager}'s own, say): those are session-length by design, and quietly handing one over
+     * would reintroduce exactly the long-lived-secret risk this exists to avoid. No issuer or no
+     * authenticated session is an error the caller is told about, not a weaker credential.
      */
-    private String mintEphemeralToken(BaseAccount principal) {
+    private CallToolResult callGetToken(McpSyncServerExchange exchange, CallToolRequest request) {
+        var ctx = exchange.transportContext();
+        var principal = principal(ctx);
+
         if (principal == null) {
-            return null;
+            return errorResult("no authenticated session: get_token issues a token for the caller's own identity, "
+                    + "so the MCP session must itself be authenticated");
         }
-        return PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class)
-                .map(issuer -> issuer.issue(principal, EPHEMERAL_TOKEN_TTL))
-                .orElse(null);
+
+        var issuer = PluginModelResolver.resolve(pluginsRegistry, resolvedJwtIssuers, "jwtIssuer", JwtIssuer.class);
+
+        if (issuer.isEmpty()) {
+            return errorResult("token issuance is not available on this deployment: the 'jwtIssuer' provider is "
+                    + "disabled, or the 'jwtConfigProvider' it builds on is not configured");
+        }
+
+        try {
+            // request(ctx), not the bare overload: it carries the per-request claim-set override a
+            // multi-tenant deployment attaches, without which the token would miss the very claims
+            // that deployment's ACL rules match on
+            var token = issuer.get().issue(principal, EPHEMERAL_TOKEN_TTL, request(ctx));
+
+            var result = new LinkedHashMap<String, Object>();
+            // same field names as RESTHeart's own /token endpoint (and OAuth): an agent that has
+            // seen either recognizes this without being told, and expires_in is what tells it
+            // whether the token it holds is still worth sending
+            result.put("access_token", token);
+            result.put("token_type", "Bearer");
+            result.put("expires_in", EPHEMERAL_TOKEN_TTL.toSeconds());
+            result.put("username", principal.getPrincipal().getName());
+            result.put("roles", principal.getRoles());
+
+            return textResult(jsonMapper.writeValueAsString(result));
+        } catch (Exception e) {
+            LOGGER.error("get_token failed", e);
+            return errorResult("internal error: " + e.getMessage());
+        }
     }
 
     private static CallToolResult textResult(String text) {

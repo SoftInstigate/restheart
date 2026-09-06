@@ -45,20 +45,36 @@ import org.restheart.utils.BsonUtils;
 public final class DescriptorRenderer {
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)\\}");
-    private static final String TOKEN_PLACEHOLDER = "<token>";
+
+    /**
+     * What the descriptor's {@code Authorization} header carries in place of a credential.
+     *
+     * <p>Names the tool that produces the real value, because the two are used minutes apart and by
+     * different reasoning steps: the agent asks <em>how</em> to call something once, then fetches a
+     * token when it is actually about to call it. A bare {@code <token>} left the second half of
+     * that to be guessed.
+     *
+     * <p>Public because it is a contract between {@code how_to_call} and {@code get_token} — the
+     * placeholder the first emits is what the second exists to replace, and both tool descriptions
+     * quote it.
+     */
+    public static final String TOKEN_PLACEHOLDER = "<token_from_get_token>";
 
     private DescriptorRenderer() {
     }
 
     /**
+     * <p>The descriptor never carries a credential: its {@code Authorization} header always holds
+     * {@link #TOKEN_PLACEHOLDER}. That is what makes it stable — an agent can ask how to call a
+     * resource once and reuse the answer, instead of holding something that silently expires.
+     *
      * @param resource   the resource being invoked
      * @param actionName an action known to exist in {@code resource.actions()}
      * @param args       action arguments — values for declared params, plus an optional {@code body} entry
      * @param transportPreference optional; must be one of {@code resource.transportsFor(actionName)} to take effect
-     * @param token      optional bearer token; a placeholder is embedded when omitted
      */
     public static Map<String, Object> render(McpResource resource, String actionName, Map<String, Object> args,
-            String transportPreference, String token) {
+            String transportPreference) {
         var action = resource.actions().get(actionName);
         if (action == null) {
             throw new IllegalArgumentException("unknown action '" + actionName + "' for resource " + resource.uri());
@@ -83,12 +99,12 @@ public final class DescriptorRenderer {
         var url = baseUrl + path + queryString;
 
         return switch (transport) {
-            case HTTP -> renderHttp(action, url, body, token);
-            case WEBSOCKET, SSE -> renderStreaming(transport, action, url, token);
+            case HTTP -> renderHttp(action, url, body);
+            case WEBSOCKET, SSE -> renderStreaming(transport, action, url);
         };
     }
 
-    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body, String token) {
+    private static Map<String, Object> renderHttp(McpResource.Action action, String url, Object body) {
         var descriptor = new LinkedHashMap<String, Object>();
         descriptor.put("transport", Transport.HTTP.wireName());
         if (action.method() != null) {
@@ -97,7 +113,7 @@ public final class DescriptorRenderer {
         descriptor.put("url", url);
 
         var headers = new LinkedHashMap<String, Object>();
-        headers.put("Authorization", "Bearer " + (token != null ? token : TOKEN_PLACEHOLDER));
+        headers.put("Authorization", "Bearer " + TOKEN_PLACEHOLDER);
         if (body != null) {
             headers.put("Content-Type", "application/json");
         }
@@ -110,7 +126,7 @@ public final class DescriptorRenderer {
         return descriptor;
     }
 
-    private static Map<String, Object> renderStreaming(Transport transport, McpResource.Action action, String url, String token) {
+    private static Map<String, Object> renderStreaming(Transport transport, McpResource.Action action, String url) {
         var descriptor = new LinkedHashMap<String, Object>();
         descriptor.put("transport", transport.wireName());
         if (transport == Transport.SSE) {
@@ -119,7 +135,7 @@ public final class DescriptorRenderer {
         descriptor.put("url", url);
 
         var headers = new LinkedHashMap<String, Object>();
-        headers.put("Authorization", "Bearer " + (token != null ? token : TOKEN_PLACEHOLDER));
+        headers.put("Authorization", "Bearer " + TOKEN_PLACEHOLDER);
         if (transport == Transport.SSE) {
             headers.put("Accept", transport.mediaType());
         }

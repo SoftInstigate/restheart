@@ -58,7 +58,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         assertThrows(UnknownResourceException.class,
-                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null, null));
+                () -> tool.call(null, "https://host", "https://host/does-not-exist", "query", Map.of(), null));
     }
 
     @Test
@@ -67,7 +67,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(UnknownActionException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null, null));
+                () -> tool.call(null, "https://host", "https://host/a", "delete", Map.of(), null));
         assertTrue(ex.validActions().contains("query"));
     }
 
@@ -80,7 +80,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null, null));
+                () -> tool.call(null, "https://host", "https://host/a", "get", Map.of(), null));
         assertEquals(1, ex.errors().size());
     }
 
@@ -95,7 +95,7 @@ public class HowToCallToolTest {
         var tool = toolFor(resource);
 
         var ex = assertThrows(ValidationFailedException.class,
-                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null, null));
+                () -> tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("other", "x")), null));
         assertTrue(!ex.errors().isEmpty());
     }
 
@@ -107,7 +107,7 @@ public class HowToCallToolTest {
                 .build();
         var tool = toolFor(resource);
 
-        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null, null);
+        var descriptor = tool.call(null, "https://host", "https://host/echo", "echo", Map.of("body", Map.of("message", "hi")), null);
 
         assertEquals("http", descriptor.get("transport"));
         assertEquals(Map.of("message", "hi"), descriptor.get("body"));

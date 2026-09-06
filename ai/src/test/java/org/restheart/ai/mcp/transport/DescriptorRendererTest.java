@@ -40,7 +40,7 @@ public class DescriptorRendererTest {
                 .action("query", a -> a.method("GET"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "query", Map.of("filter", Map.of("quantity", 5)), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "query", Map.of("filter", Map.of("quantity", 5)), null);
 
         assertEquals("http", descriptor.get("transport"));
         assertEquals("GET", descriptor.get("method"));
@@ -55,7 +55,7 @@ public class DescriptorRendererTest {
                 .action("echo", a -> a.method("POST"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "echo", Map.of("body", Map.of("message", "hello")), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "echo", Map.of("body", Map.of("message", "hello")), null);
 
         assertEquals("https://cloud.restheart.com/echo", descriptor.get("url"));
         assertEquals(Map.of("message", "hello"), descriptor.get("body"));
@@ -71,35 +71,46 @@ public class DescriptorRendererTest {
                 .action("cancel", a -> a.method("DELETE").pathTemplate("/{orderId}"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "cancel", Map.of("orderId", "abc123"), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "cancel", Map.of("orderId", "abc123"), null);
 
         assertEquals("https://host/orders/abc123", descriptor.get("url"));
     }
 
     @Test
-    public void noToken_embedsPlaceholder() {
+    public void httpDescriptor_carriesThePlaceholderNeverACredential() {
         var resource = McpResource.builder().uri("https://host/x").action("a", a -> a.method("GET")).build();
-        var descriptor = DescriptorRenderer.render(resource, "a", Map.of(), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "a", Map.of(), null);
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer <token>", headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
     }
 
     @Test
-    public void tokenProvided_usedVerbatim() {
-        var resource = McpResource.builder().uri("https://host/x").action("a", a -> a.method("GET")).build();
-        var descriptor = DescriptorRenderer.render(resource, "a", Map.of(), null, "real-token");
+    public void streamingDescriptor_carriesThePlaceholderToo() {
+        var resource = McpResource.builder()
+                .uri("https://host/x")
+                .transport(McpResource.Transport.SSE, "subscribe")
+                .action("subscribe", a -> a.method("GET"))
+                .build();
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of(), null);
 
         @SuppressWarnings("unchecked")
         var headers = (Map<String, Object>) descriptor.get("headers");
-        assertEquals("Bearer real-token", headers.get("Authorization"));
+        assertEquals("Bearer " + DescriptorRenderer.TOKEN_PLACEHOLDER, headers.get("Authorization"));
+    }
+
+    @Test
+    public void placeholder_namesTheToolThatFillsItIn() {
+        // the descriptor and the token are fetched by different reasoning steps, minutes apart —
+        // a bare "<token>" left the agent to guess where the value comes from
+        assertTrue(DescriptorRenderer.TOKEN_PLACEHOLDER.contains("get_token"));
     }
 
     @Test
     public void unknownAction_throws() {
         var resource = McpResource.builder().uri("https://host/x").build();
-        assertThrows(IllegalArgumentException.class, () -> DescriptorRenderer.render(resource, "nope", Map.of(), null, null));
+        assertThrows(IllegalArgumentException.class, () -> DescriptorRenderer.render(resource, "nope", Map.of(), null));
     }
 
     @Test
@@ -110,7 +121,7 @@ public class DescriptorRendererTest {
                 .action("subscribe", a -> a.method("GET").description("Low-stock alerts."))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of(), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of(), null);
 
         assertEquals("websocket", descriptor.get("transport"));
         assertEquals("wss://host/db/coll/_streams/low-stock", descriptor.get("url"));
@@ -126,7 +137,7 @@ public class DescriptorRendererTest {
                 .action("subscribe", a -> a.method("GET"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of(), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of(), null);
 
         assertEquals("sse", descriptor.get("transport"));
         assertEquals("https://host/db/coll/_streams/low-stock", descriptor.get("url"));
@@ -146,7 +157,7 @@ public class DescriptorRendererTest {
                 .action("subscribe", a -> a.method("GET"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null);
 
         var url = (String) descriptor.get("url");
         assertTrue(url.startsWith("https://host/db/coll/_streams/low-stock?avars="));
@@ -161,7 +172,7 @@ public class DescriptorRendererTest {
                 .action("subscribe", a -> a.method("GET"))
                 .build();
 
-        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "subscribe", Map.of("avars", Map.of("minAmount", 100)), null);
 
         var url = (String) descriptor.get("url");
         assertTrue(url.startsWith("wss://host/db/coll/_streams/low-stock?avars="));
@@ -177,17 +188,17 @@ public class DescriptorRendererTest {
                 .action("subscribe", a -> a.method("GET"))
                 .build();
 
-        var sse = DescriptorRenderer.render(resource, "subscribe", Map.of(), "sse", null);
+        var sse = DescriptorRenderer.render(resource, "subscribe", Map.of(), "sse");
         assertEquals("sse", sse.get("transport"));
 
-        var ws = DescriptorRenderer.render(resource, "subscribe", Map.of(), "websocket", null);
+        var ws = DescriptorRenderer.render(resource, "subscribe", Map.of(), "websocket");
         assertEquals("websocket", ws.get("transport"));
     }
 
     @Test
     public void noBodyArg_noBodyOrContentTypeInDescriptor() {
         var resource = McpResource.builder().uri("https://host/x").action("get", a -> a.method("GET")).build();
-        var descriptor = DescriptorRenderer.render(resource, "get", Map.of(), null, null);
+        var descriptor = DescriptorRenderer.render(resource, "get", Map.of(), null);
 
         assertFalse(descriptor.containsKey("body"));
         @SuppressWarnings("unchecked")

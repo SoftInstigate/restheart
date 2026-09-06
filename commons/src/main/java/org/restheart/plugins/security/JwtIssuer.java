@@ -21,6 +21,7 @@ package org.restheart.plugins.security;
 
 import java.time.Duration;
 
+import org.restheart.exchange.Request;
 import org.restheart.security.BaseAccount;
 
 /**
@@ -69,6 +70,24 @@ public interface JwtIssuer {
      * @return the signed, encoded JWT
      */
     String issue(BaseAccount account);
+
+    /**
+     * Mints a signed JWT for {@code account} in the context of {@code request}.
+     *
+     * <p>Same as {@link #issue(BaseAccount, Duration)}, plus the request that occasioned the
+     * issuance — which a deployment may need in order to resolve <em>which</em> account properties
+     * become claims: a multi-tenant setup selects a different set per tenant, attached to the
+     * request by an interceptor. Without the request that per-request choice is invisible and the
+     * configured default applies, which in such a deployment yields a token missing the claims its
+     * own ACL rules are written against.
+     *
+     * @param account the already-authenticated principal to issue the token for
+     * @param ttl     how long the token stays valid, from now
+     * @param request the request being served; {@code null} means "no request in scope", and the
+     *                configured default claim list applies
+     * @return the signed, encoded JWT
+     */
+    String issue(BaseAccount account, Duration ttl, Request<?> request);
 
     /**
      * Mints a signed JWT carrying an explicit {@code iss} instead of this deployment's own.
