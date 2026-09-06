@@ -62,9 +62,7 @@ final class McpTestClient {
 
     /** Performs the {@code initialize}/{@code notifications/initialized} handshake; must be called before {@link #callTool}. */
     void initialize() throws Exception {
-        var initResponse = send("""
-                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"it-test","version":"1.0"}}}
-                """.formatted(nextId.getAndIncrement()), null);
+        var initResponse = tryInitialize();
 
         sessionId = initResponse.headers().firstValue("Mcp-Session-Id")
                 .orElseThrow(() -> new IllegalStateException("initialize response carried no Mcp-Session-Id header: " + initResponse.body()));
@@ -72,6 +70,107 @@ final class McpTestClient {
         send("""
                 {"jsonrpc":"2.0","method":"notifications/initialized"}
                 """, sessionId);
+    }
+
+    /**
+     * The raw {@code initialize} exchange, without requiring it to have succeeded — for asserting
+     * on the status code itself (an unauthenticated or unauthorized client never gets as far as a
+     * session id, and {@link #initialize()} would throw before the test could look at the 401).
+     */
+    HttpResponse<String> tryInitialize() throws Exception {
+        return send("""
+                {"jsonrpc":"2.0","id":%d,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"it-test","version":"1.0"}}}
+                """.formatted(nextId.getAndIncrement()), null);
+    }
+
+    /**
+     * Any JSON-RPC method, returning the envelope as-is — {@code tools/list},
+     * {@code resources/list}, {@code resources/read}, {@code resources/templates/list}. Unlike
+     * {@link #callTool}, nothing is unwrapped and nothing throws: a test asserting on a protocol
+     * error needs to see {@code error}, not have it turned into an {@code AssertionError}.
+     *
+     * @param paramsJson a JSON object literal, or {@code null} for no params
+     */
+    BsonDocument rpc(String method, String paramsJson) throws Exception {
+        var response = rawRpc(method, paramsJson);
+
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException(
+                    "JSON-RPC call was refused at the HTTP level with " + response.statusCode()
+                            + " — use rawRpc() when that is the expected outcome. Body: " + response.body());
+        }
+
+        return extractJsonRpcEnvelope(response.body());
+    }
+
+    /**
+     * The unparsed HTTP exchange for a JSON-RPC call.
+     *
+     * <p>Needed because authorization happens <em>before</em> the JSON-RPC layer: a refused
+     * {@code resources/read} comes back as a plain HTTP 403 with an empty body, not as a JSON-RPC
+     * error, so there is nothing for {@link #rpc} to parse. A test asserting a denial has to look
+     * at the status code.
+     */
+    HttpResponse<String> rawRpc(String method, String paramsJson) throws Exception {
+        if (sessionId == null) {
+            throw new IllegalStateException("call initialize() first");
+        }
+
+        var body = paramsJson == null
+                ? """
+                        {"jsonrpc":"2.0","id":%d,"method":"%s"}
+                        """.formatted(nextId.getAndIncrement(), method)
+                : """
+                        {"jsonrpc":"2.0","id":%d,"method":"%s","params":%s}
+                        """.formatted(nextId.getAndIncrement(), method, paramsJson);
+
+        return send(body, sessionId);
+    }
+
+    /**
+     * Reads one MCP resource and returns the text of its single content entry — for
+     * documents-mode reads (#617), where that text is the JSON the resource actually produced.
+     */
+    String readResource(String uri) throws Exception {
+        var contents = rpc("resources/read", """
+                {"uri":"%s"}
+                """.formatted(uri)).getDocument("result").getArray("contents");
+
+        if (contents.isEmpty()) {
+            throw new AssertionError("resources/read returned no contents for " + uri);
+        }
+
+        return contents.get(0).asDocument().getString("text").getValue();
+    }
+
+    /**
+     * The error message of a tool call expected to fail, instead of {@link #callTool}'s thrown
+     * {@code AssertionError} — an error is the assertion in a test covering a failure path.
+     *
+     * @throws AssertionError if the call unexpectedly <em>succeeded</em>
+     */
+    String callToolExpectingError(String toolName, String argumentsJson) throws Exception {
+        if (sessionId == null) {
+            throw new IllegalStateException("call initialize() first");
+        }
+
+        var body = """
+                {"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"%s","arguments":%s}}
+                """.formatted(nextId.getAndIncrement(), toolName, argumentsJson);
+        var envelope = extractJsonRpcEnvelope(send(body, sessionId).body());
+
+        if (envelope.containsKey("error")) {
+            return envelope.getDocument("error").toJson();
+        }
+
+        var result = envelope.getDocument("result");
+        var text = result.getArray("content").get(0).asDocument().getString("text").getValue();
+
+        if (!result.containsKey("isError") || !result.getBoolean("isError").getValue()) {
+            throw new AssertionError(toolName + " was expected to fail but succeeded with: " + text);
+        }
+
+        return text;
     }
 
     /**

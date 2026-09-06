@@ -96,6 +96,14 @@
       password: secret
       roles: []
 
+    # McpAuthorizationIT: a caller that may reach /mcp and read exactly one database over REST.
+    # The suite asserts resources/read grants and denies precisely what the equivalent REST GET
+    # does — the point of restheart#722 — so it needs a role that is allowed somewhere and
+    # denied somewhere else, rather than admin's blanket path-prefix "/".
+    - userid: mcpuser
+      password: secret
+      roles: [ mcpuser ]
+
     - userid: full
       password: secret
       roles: [ full ]
@@ -180,6 +188,20 @@
           allowBulkPatch: true          # default false
           allowBulkDelete: true         # default false
           allowWriteMode: true          # default false
+
+    # McpAuthorizationIT (restheart#722). Reaching /mcp is one permission; reading data through
+    # it is another — deliberately kept separate so the suite can prove a caller that is welcome
+    # at the MCP endpoint is still refused the data its ACL does not grant. GET-only, because a
+    # documents-mode resources/read is authorized as the GET it is equivalent to.
+    - role: mcpuser
+      predicate: path-prefix[path="/mcp"]
+      priority: 0
+
+    - role: mcpuser
+      predicate: path-prefix[path="/test-mcp-authz-allowed"] and method[value="GET"]
+      priority: 0
+      mongo:
+          allowManagementRequests: true # default false
 
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]
