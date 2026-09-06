@@ -24,6 +24,12 @@
       <distribution>repo</distribution>
       <comments>Core components license</comments>
     </license>
+    <license>
+      <name>RESTHeart COMMERCIAL LICENSE</name>
+      <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+      <distribution>manual</distribution>
+      <comments>Optional commercial license</comments>
+    </license>
   </licenses>
 
   <dependencies>
@@ -100,6 +106,42 @@
                 <includeScope>runtime</includeScope>
             </configuration>
             </execution>
+        </executions>
+      </plugin>
+      <!--
+        This produces mqtt/target/restheart-mqtt-<version>.{zip,tar.gz}: a release asset bundling
+        restheart-mqtt.jar, lib/ (hivemq-mqtt-client and its transitives), the sample config and
+        both licence files. attach=false keeps it out of the artifacts published to Maven Central.
+
+        Nothing uploads this today: no workflow references it, because nothing is ever released
+        from master - 10.0.0 will be released by branching 10.x, the same way 9.x is released, and
+        tags.yml (the release workflow) exists only on the 9.x branch, not on master. Whoever cuts
+        the 10.x branch must add this archive to tags.yml in two places:
+          - the "build" job's actions/upload-artifact "path:" list
+          - the "release" job's softprops/action-gh-release@v3 "files:" list
+        Until then this comment is the only record of that step; do not delete it without moving
+        the reminder into tags.yml first.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>with-deps</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <finalName>restheart-mqtt-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>assembly.xml</descriptor>
+              </descriptors>
+              <attach>false</attach>
+              <tarLongFileMode>posix</tarLongFileMode>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>

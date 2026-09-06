@@ -1,100 +1,133 @@
-plugins-args:
-  mqtt-client:
+# Sample configuration for the restheart-mqtt module.
+#
+# Use as an override file:
+#   java -jar restheart.jar -o restheart-mqtt-default-config.yml
+#
+# All plugin configuration keys must be top-level (there is no "plugins-args:"
+# wrapper - PluginsFactory looks up each plugin's arguments by its own name
+# directly at the root of the configuration map).
+#
+# mqtt-client is the root of the module's injection graph and ships with
+# enabledByDefault = false in code, so the module is dormant when the jar is
+# simply dropped into plugins/. Setting "enabled: true" below arms it.
+# mqtt-sse, mqtt-rest and mqtt-mongo-writer are separate, second-tier opt-ins
+# on top of that; enabling mqtt-client alone does not expose any of them.
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
+  protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
+  client-id: ~                                # ~ (null/blank) generates "restheart-" + random UUID;
+                                               # leave unset so multiple instances don't collide on the same id
+  username: ~
+  password: ~
+  clean-session: false
+  keep-alive-seconds: 60
+  session-expiry-seconds: 4294967295          # MQTT 5 only (0xFFFFFFFF = never expires)
+  connect-timeout-seconds: 10
+  tls: false
+  tls-trust-store: ~                          # path to JKS/PKCS12
+  tls-trust-store-password: ~
+  will:
+    topic: ~
+    payload: ~
+    qos: 0
+    retain: false
+    delay-seconds: 0
+    message-expiry-seconds: ~
+  reconnect:
     enabled: true
-    broker-url: "tcp://localhost:1883"          # tcp:// (default), ssl:// or mqtts://, ws://, wss://
-    protocol-version: 3                         # 3 = MQTT 3.1.1 (default), 5 = MQTT 5.0
-    client-id: ~                                # ~ (null/blank) generates "restheart-" + random UUID;
-                                                 # leave unset so multiple instances don't collide on the same id
-    username: ~
-    password: ~
-    clean-session: false
-    keep-alive-seconds: 60
-    session-expiry-seconds: 4294967295          # MQTT 5 only (0xFFFFFFFF = never expires)
-    connect-timeout-seconds: 10
-    tls: false
-    tls-trust-store: ~                          # path to JKS/PKCS12
-    tls-trust-store-password: ~
-    will:
-      topic: ~
-      payload: ~
+    initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
+    max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
+
+# MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages.
+# Not gated by the two-tier enablement (enabledByDefault = true in code): it
+# has no HTTP surface of its own and simply follows mqtt-client through the
+# provider dependency graph, so it goes dormant automatically when
+# mqtt-client is disabled. last-message-cache and subscriptions below are
+# what let mqtt-rest answer immediately once it is enabled (see below).
+mqtt-router:
+  enabled: true
+  max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
+  last-message-cache: true
+  last-message-cache-size: 1000
+  subscriptions:                              # subscribed at startup with no listener, purely to
+                                               # populate the last-message cache for mqtt-rest
+                                               # polling with no SSE client connected; these
+                                               # survive listener churn
+    - topic: "sensors/#"
+      qos: 1
+    - topic: "traffic/#"
       qos: 0
-      retain: false
-      delay-seconds: 0
-      message-expiry-seconds: ~
-    reconnect:
-      enabled: true
-      initial-delay-ms: 1000                    # exponential backoff: 1s, 2s, 4s, 8s, 16...
-      max-delay-ms: 30000                       # max delay cap (HiveMQ client uses fixed 2.0 multiplier)
 
-  # MQTT Router - shared in-process fanout/rate-limit/cache for MQTT messages
-  mqtt-router:
-    enabled: true
-    max-inflight-messages-per-second: 5000      # global router rate limit (0 = unlimited)
-    last-message-cache: true
-    last-message-cache-size: 1000
-    subscriptions:                              # subscribed at startup with no listener, purely to
-                                                 # populate the last-message cache for mqtt-rest
-                                                 # polling with no SSE client connected; these
-                                                 # survive listener churn
-      - topic: "sensors/#"
-        qos: 1
-      - topic: "traffic/#"
-        qos: 0
+# MQTT SSE Service - Stream MQTT messages as Server-sent Events.
+# Tier 2 opt-in: enabledByDefault = false in code, enabled here explicitly.
+mqtt-sse:
+  enabled: true
+  default-topic: "sensors/#"
+  default-qos: 1
+  max-connections-per-topic: 100
+  per-connection-queue-capacity: 256          # per-client bounded queue; overflow = drop
+  last-message-cache: true
+  payload-envelope: false                     # true = wrap in {topic, payload, receivedAt, qos}
+  pipeline:                                   # optional per-topic pipeline overrides
+    - topic: "sensors/#"
+      stages:
+        - type: throttle
+          max-events-per-second: 10
+        - type: tumbling-window
+          window-ms: 1000
+          function: avg                       # avg | min | max | count | last
+          field: "$.value"                    # JSONPath to numeric field to aggregate
 
-  #MQTT SSE Service - Stream MQTT messages as Server-sent Events
-  mqtt-sse:
-    enabled: true
-    default-topic: "sensors/#"
-    default-qos: 1
-    max-connections-per-topic: 100
-    per-connection-queue-capacity: 256          # per-client bounded queue; overflow = drop
-    last-message-cache: true
-    payload-envelope: false                     # true = wrap in {topic, payload, receivedAt, qos}
-    pipeline:                                   # optional per-topic pipeline overrides
-      - topic: "sensors/#"
-        stages:
-          - type: throttle
-            max-events-per-second: 10
-          - type: tumbling-window
-            window-ms: 1000
-            function: avg                       # avg | min | max | count | last
-            field: "$.value"                    # JSONPath to numeric field to aggregate
+# MQTT REST Service - Poll last message per topic.
+# Tier 2 opt-in: enabledByDefault = false in code, left disabled here too.
+# Before enabling: it only ever answers from the mqtt-router last-message
+# cache, so mqtt-router above must have "last-message-cache: true" and a
+# "subscriptions" entry for every topic you intend to poll - otherwise this
+# service returns 404 forever, for every topic, since nothing ever primes
+# the cache.
+# mqtt-rest:
+#   enabled: true
 
-  # MQTT REST Service - Poll last message per topic
-  mqtt-rest:
-    enabled: true
+# MQTT Topic Authorizer - checks MQTT topic access against ACL entries.
+# Runs after authentication (mqtt-sse and mqtt-rest are secure: true) and
+# denies any request whose authenticated account has no matching ACL entry
+# for the requested topic, with HTTP 403. This interceptor is enabled by
+# default in code (deliberately not gated with mqtt-sse/mqtt-rest) and fails
+# closed: with no "acl" configured, every request to a Tier 2 endpoint is
+# denied 403, even before you enable one. Uncomment and adjust to grant
+# access per role - a role with no entry here has NO access to any topic.
+# mqtt-topic-authorizer:
+#   acl:
+#     iot-reader:
+#       - "sensors/#"
+#       - "devices/+/status"
+#     admin:
+#       - "#"
 
-  # MQTT Topic Authorizer - checks MQTT topic access against ACL entries.
-  # Runs after authentication (mqtt-sse and mqtt-rest are secure: true) and
-  # denies any request whose authenticated account has no matching ACL entry
-  # for the requested topic. Uncomment and adjust to grant access per role:
-  # a role with no entry here has NO access to any topic.
-  # mqtt-topic-authorizer:
-  #   acl:
-  #     iot-reader:
-  #       - "sensors/#"
-  #       - "devices/+/status"
-  #     admin:
-  #       - "#"
-
-  # MQTT MongoDB Writer - Persist MQTT messages to MongoDB
-  mqtt-mongo-writer:
-    enabled: false
-    buffer:
-      strategy: "ring-buffer"                   # "ring-buffer" | "drop-incoming" | "blocking-queue"
-      capacity: 10000
-    drain:
-      batch-size: 200
-      flush-interval-ms: 500
-      max-retries: 3
-      retry-delay-ms: 1000
-    id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
-    id-field: "messageId"                       # field name when id-strategy = "payload-field"
-    dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
-    mongo-sink:
-      - topic: "sensors/#"
-        database: "iot"
-        collection: "sensor-events"
-      - topic: "traffic/#"
-        database: "iot"
-        collection: "traffic-events"
+# MQTT MongoDB Writer - Persist MQTT messages to MongoDB.
+# Tier 2 opt-in: enabledByDefault = false in code, left disabled here too.
+# Before enabling: it needs a running MongoDB (restheart-mongodb configured
+# and connected) and a non-empty "mongo-sink" list below - with an empty or
+# absent mongo-sink there is nothing to route incoming messages to and no
+# document is ever written.
+# mqtt-mongo-writer:
+#   enabled: true
+#   buffer:
+#     strategy: "ring-buffer"                   # "ring-buffer" | "drop-incoming" | "blocking-queue"
+#     capacity: 10000
+#   drain:
+#     batch-size: 200
+#     flush-interval-ms: 500
+#     max-retries: 3
+#     retry-delay-ms: 1000
+#   id-strategy: "auto"                         # "auto" | "payload-field" | "topic-timestamp-hash"
+#   id-field: "messageId"                       # field name when id-strategy = "payload-field"
+#   dead-letter-file: "./mqtt-dead-letter.log"  # documents dropped after exhausting max-retries, one JSON per line
+#   mongo-sink:
+#     - topic: "sensors/#"
+#       database: "iot"
+#       collection: "sensor-events"
+#     - topic: "traffic/#"
+#       database: "iot"
+#       collection: "traffic-events"
