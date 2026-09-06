@@ -4,23 +4,136 @@ Bridges an external MQTT broker into RESTHeart: incoming topic messages become S
 
 The module connects to any MQTT 3.1.1 or 5.0 broker (Mosquitto, HiveMQ, EMQX, AWS IoT Core) using [hivemq-mqtt-client](https://github.com/hivemq/hivemq-mqtt-client) 1.4.0, and exposes what it receives through ordinary RESTHeart plugins.
 
+## Not bundled
+
+`restheart-mqtt` does not ship with RESTHeart: it is not in the distribution zip and not in the Docker image. It has to be installed separately. This is deliberate — `hivemq-mqtt-client` brings 13 transitive jars including RxJava and five Netty modules, a second network stack and reactive runtime that exists nowhere else in a product built on Undertow/XNIO. Bundling it would add all of that to every RESTHeart installation, including the ones that never touch MQTT.
+
 ## What you get
 
-| Plugin | Kind | Default URI |
-|---|---|---|
-| `mqtt-client` | `Provider<MqttClient>` | — |
-| `mqtt-router` | `Provider<MqttMessageRouter>` | — |
-| `mqtt-sse` | `SseService` | `/mqtt-sse` |
-| `mqtt-rest` | `JsonService` | `/mqtt` |
-| `mqtt-topic-authorizer` | `WildcardInterceptor` | — |
-| `mqtt-mongo-writer` | `Initializer` (`AFTER_STARTUP`) | — |
+| Plugin | Kind | Default URI | Enabled by default |
+|---|---|---|---|
+| `mqtt-client` | `Provider<MqttClient>` | — | No (Tier 1, the module switch) |
+| `mqtt-router` | `Provider<MqttMessageRouter>` | — | Yes (follows `mqtt-client`, no HTTP surface) |
+| `mqtt-sse` | `SseService` | `/mqtt-sse` | No (Tier 2) |
+| `mqtt-rest` | `JsonService` | `/mqtt` | No (Tier 2) |
+| `mqtt-topic-authorizer` | `WildcardInterceptor` | — | Yes (deliberately, fails closed) |
+| `mqtt-mongo-writer` | `Initializer` (`AFTER_STARTUP`) | — | No (Tier 2) |
+| `mqtt-status` | `Initializer` (`AFTER_STARTUP`) | — | Yes (diagnostic sentinel) |
 
-`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication.
+`mqtt-sse` and `mqtt-rest` are both registered with `secure = true`: they require authentication. See "Enablement" below for what the "Enabled by default" column means in practice.
+
+## Enablement
+
+The module is dormant on installation, in two tiers.
+
+**Tier 1 (the module switch).** `mqtt-client` is registered with `enabledByDefault = false`. Nothing else in the module can do anything until it is armed:
+
+```yaml
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker:1883"
+```
+
+`mqtt-router` has no separate flag: it follows `mqtt-client` through RESTHeart's provider dependency graph (`ProvidersChecker`), so it is dormant whenever `mqtt-client` is, and active as soon as `mqtt-client` is enabled. It has no HTTP surface of its own, so there is nothing for a second switch to gate.
+
+**Tier 2 (opt-in surfaces).** Arming Tier 1 alone exposes no HTTP endpoint. `mqtt-sse`, `mqtt-rest` and `mqtt-mongo-writer` are each independently registered with `enabledByDefault = false`, and are switched on one at a time as needed:
+
+```yaml
+mqtt-sse:
+  enabled: true
+
+mqtt-rest:
+  enabled: true
+
+mqtt-mongo-writer:
+  enabled: true
+```
+
+**`mqtt-topic-authorizer` stays enabled by default**, regardless of the two tiers above, deliberately, not as an oversight. While every Tier 2 endpoint is off, the authorizer is simply never invoked and costs nothing. The moment one is turned on, the authorizer is already active and fails closed with no ACL configured, so a Tier 2 endpoint can never be reachable without topic authorization already in force, not even for a moment, and not even because an operator forgot a flag.
+
+### Four realistic configurations
+
+**Provider only.** Inject `mqtt-router` from your own plugin, as [`examples/mqtt-logger`](../examples/mqtt-logger) does, with no HTTP endpoint exposed at all:
+
+```yaml
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker:1883"
+```
+
+**Live SSE:**
+
+```yaml
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker:1883"
+
+mqtt-sse:
+  enabled: true
+  default-topic: "sensors/#"
+
+mqtt-topic-authorizer:
+  acl:
+    iot-reader:
+      - "sensors/#"
+```
+
+**REST polling.** `mqtt-rest` only ever answers from the router's last-message cache, so something has to prime it:
+
+```yaml
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker:1883"
+
+mqtt-router:
+  last-message-cache: true
+  subscriptions:
+    - topic: "sensors/#"
+      qos: 1
+
+mqtt-rest:
+  enabled: true
+
+mqtt-topic-authorizer:
+  acl:
+    iot-reader:
+      - "sensors/#"
+```
+
+**MongoDB persistence:**
+
+```yaml
+mqtt-client:
+  enabled: true
+  broker-url: "tcp://broker:1883"
+
+mqtt-mongo-writer:
+  enabled: true
+  mongo-sink:
+    - topic: "sensors/#"
+      database: "iot"
+      collection: "sensor-events"
+```
+
+This last one also needs the `mongoclient` module configured and connected: `mqtt-mongo-writer` injects `mclient` rather than opening its own connection.
+
+## The traps
+
+Every one of these is silent: nothing refuses to start, and nothing complains unless you go looking.
+
+- **A config block present without `enabled: true` leaves the plugin off.** The block looks complete and correct; it just isn't read, because `PluginRecord.isEnabled` falls back to the plugin's compiled default (`false` for every Tier 1/2 plugin) whenever the `enabled` key is absent.
+- **Plugin config blocks are top-level keys named after the plugin.** There is no `plugins-args:` wrapper: `PluginsFactory` looks up each plugin's arguments by name directly at the root of the configuration map. That wrapper form is not handled at all, so every setting nested under it is silently ignored and the plugin runs entirely on defaults.
+- **`mqtt-rest` answers `404` forever** unless something populates the router's last-message cache (`mqtt-router.subscriptions`, a live SSE client, or the writer's `mongo-sink`) **and** `mqtt-router.last-message-cache` is `true`.
+- **`mqtt-mongo-writer` with an empty `mongo-sink` runs and writes nothing.** The buffer fills and the drain loop drains it, but there is no sink to route messages to, so no document is ever written.
+- **`mqtt-topic-authorizer` with no `acl` denies everything with `403`.** There is no permissive default.
+
+`mqtt-status` reports all of these at startup by comparing the configuration against what the plugin registry actually instantiated. Check the log for it before assuming a misconfiguration is a bug.
 
 ## Quick start
 
 ```yaml
 mqtt-client:
+  enabled: true
   broker-url: "tcp://localhost:1883"
   protocol-version: 5
 
@@ -30,7 +143,13 @@ mqtt-router:
       qos: 1
 
 mqtt-sse:
+  enabled: true
   default-topic: "sensors/#"
+
+mqtt-topic-authorizer:
+  acl:
+    admin:
+      - "sensors/#"
 ```
 
 Then:
@@ -40,7 +159,32 @@ curl -N -u admin:secret 'http://localhost:8080/mqtt-sse?topic=sensors/temp'
 curl -u admin:secret 'http://localhost:8080/mqtt?topic=sensors/temp'
 ```
 
+## Try it in two minutes
+
+[`mqtt/docker-compose.yml`](./docker-compose.yml) runs a self-contained two-container demo (RESTHeart plus a Mosquitto broker, no MongoDB) with the module already armed and a working ACL, so there is no broker or config to set up by hand. From the `mqtt` directory:
+
+```
+../mvnw -pl mqtt package
+docker compose up
+```
+
+Then, in another shell:
+
+```
+curl -N -u admin:secret 'http://localhost:8080/mqtt-sse?topic=sensors/temp'
+```
+
+And in a third shell, publish a message:
+
+```
+docker compose exec mosquitto mosquitto_pub -t sensors/temp -m '{"value": 21.5}'
+```
+
+It runs `softinstigate/restheart-snapshot:latest` rather than a released image, because per-topic ACL enforcement on `/mqtt-sse` needs a fix that is currently only on unreleased `master`; against a released image the same demo would silently accept a topic outside the ACL instead of rejecting it with `403`.
+
 ## Configuration
+
+See "Enablement" above for each plugin's `enabled` default; the tables below cover the other keys only.
 
 ### `mqtt-client`
 
@@ -240,13 +384,14 @@ Note that `subscribe` currently takes HiveMQ's `MqttQos` in the listener signatu
 
 **Clustering.** On MQTT 3.1.1 there are no shared subscriptions, so every RESTHeart node receives every message. For MongoDB persistence, use `payload-field` or `topic-timestamp-hash` so the nodes converge instead of duplicating. On MQTT 5.0, shared subscriptions are the cleaner answer — tracked in [#602](https://github.com/SoftInstigate/restheart/issues/602).
 
-**Topic authorization on `/mqtt-sse`** requires the fix in [#718](https://github.com/SoftInstigate/restheart/pull/718): before it, SSE handshake requests passed through no interceptor at all, so `mqtt-topic-authorizer` resolved but was never invoked on that path. On earlier RESTHeart releases, `/mqtt-sse` is authenticated but not authorized per topic.
+**Topic authorization on `/mqtt-sse`** is enforced end to end: a request for a topic filter granted by the ACL subscribes normally, and a request for an ungranted filter is rejected with `403` and a body of `{"msg":"Not authorized for topic: <filter>"}` before it ever reaches the router. This depends on RESTHeart running the SSE handshake through `WildcardInterceptor`s (`SseWildcardInterceptorsExecutor`, wired into `plugSseService`) — without it, SSE handshake requests pass through no interceptor at all, so `mqtt-topic-authorizer` resolves but is never invoked on that path, and `/mqtt-sse` ends up authenticated but not authorized per topic. Make sure the RESTHeart build this module is deployed against includes that fix.
 
 ## Building
 
 ```
 ./mvnw -pl mqtt test          # unit tests
 ./mvnw -pl mqtt verify        # plus integration tests against an embedded Moquette broker
+./mvnw -pl mqtt package       # also produces the installable restheart-mqtt-<version>.zip/.tar.gz (see "Installing")
 ```
 
 `MqttMongoWriterIT` needs a MongoDB on `localhost:27017` and skips itself when there is none.
@@ -257,4 +402,4 @@ Post-v1 work is tracked under [#601](https://github.com/SoftInstigate/restheart/
 
 ## License
 
-AGPL-3.0, as the rest of RESTHeart. See [LICENSE.txt](../LICENSE.txt).
+Dual-licensed, like every other RESTHeart module: AGPL-3.0 (see [LICENSE.txt](../LICENSE.txt)), or the RESTHeart COMMERCIAL LICENSE (see [COMM-LICENSE.txt](../COMM-LICENSE.txt)) for those who need it.
