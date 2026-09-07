@@ -40,12 +40,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -341,6 +343,31 @@ public abstract class MqttITBase {
      * @throws Exception if sending the request itself fails
      */
     protected List<String> readSseLines(HttpRequest req, int count, int timeoutSec) throws Exception {
+        return readSseLinesUntil(req, line -> false, count, timeoutSec);
+    }
+
+    /**
+     * Reads SSE lines until one satisfies {@code done}, until {@code maxLines} have been
+     * collected, or until the deadline expires - whichever comes first - and returns everything
+     * collected.
+     * <p>
+     * Prefer this over {@link #readSseLines(HttpRequest, int, int)} whenever a connection is held
+     * open across several publishes. A line count is the wrong stopping condition there: it has
+     * to be padded to absorb a possible duplicate event, and a padded count that the connection
+     * never reaches costs the caller the entire timeout on every run, whether the test passes or
+     * fails. Stopping on the content the test is actually waiting for returns as soon as the
+     * assertion could succeed, and leaves the timeout to do its real job of failing a hang.
+     * </p>
+     *
+     * @param req the SSE request to send
+     * @param done predicate on each non-blank line; the first line satisfying it ends the read
+     * @param maxLines an upper bound on lines collected, so a never-satisfied predicate still ends
+     * @param timeoutSec the deadline, in seconds, after which partial results are returned
+     * @return the non-blank lines read, in order
+     * @throws Exception if sending the request itself fails
+     */
+    protected List<String> readSseLinesUntil(HttpRequest req, Predicate<String> done, int maxLines,
+            int timeoutSec) throws Exception {
         var resp = HTTP_CLIENT.send(req, BodyHandlers.ofInputStream());
         InputStream is = resp.body();
 
@@ -350,9 +377,12 @@ public abstract class MqttITBase {
         Thread.ofVirtual().start(() -> {
             try (var reader = new BufferedReader(new InputStreamReader(is))) {
                 String line;
-                while ((line = reader.readLine()) != null && lines.size() < count) {
+                while ((line = reader.readLine()) != null && lines.size() < maxLines) {
                     if (!line.isBlank()) {
                         lines.add(line);
+                        if (done.test(line)) {
+                            break;
+                        }
                     }
                 }
                 future.complete(lines);
@@ -392,6 +422,34 @@ public abstract class MqttITBase {
                 "mosquitto_pub -t " + topic + " -m " + payload + " exited with " + result.getExitCode()
                     + ": " + result.getStderr());
         }
+    }
+
+    /**
+     * Stops the Mosquitto broker container without destroying it, via the Docker API's
+     * {@code stopContainerCmd} rather than {@link GenericContainer#stop()}. {@code stop()} removes
+     * the container outright; restarting from a freshly created container would get it a new
+     * Docker-assigned network alias binding, and {@code mosquitto} - the alias the RESTHeart
+     * container's {@code broker-url} resolves against on the shared network - is only guaranteed
+     * to still mean anything if it is the very same container that comes back. Pair with
+     * {@link #startBroker()}.
+     */
+    protected void stopBroker() {
+        DockerClientFactory.instance().client()
+            .stopContainerCmd(mosquitto.getContainerId())
+            .exec();
+    }
+
+    /**
+     * Restarts the same Mosquitto broker container {@link #stopBroker()} stopped, via the Docker
+     * API's {@code startContainerCmd} rather than creating a new container, for the same reason
+     * {@link #stopBroker()} does not use {@link GenericContainer#stop()}: keeping the same
+     * container keeps its {@code mosquitto} network alias, which is what the RESTHeart container's
+     * {@code broker-url} resolves against.
+     */
+    protected void startBroker() {
+        DockerClientFactory.instance().client()
+            .startContainerCmd(mosquitto.getContainerId())
+            .exec();
     }
 
     /**

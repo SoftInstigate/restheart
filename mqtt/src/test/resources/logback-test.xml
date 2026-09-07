@@ -1,7 +1,4 @@
 <configuration>
-    <!-- Suppress Moquette telemetry noise during tests -->
-    <logger name="io.moquette.broker.Server" level="WARN" />
-
     <!-- Keep RESTHeart MQTT logs at DEBUG for test visibility -->
     <logger name="org.restheart.mqtt" level="DEBUG" />
 

@@ -126,13 +126,14 @@ public class MqttSseStreamIT extends MqttITBase {
         // A without reaching into MqttMessageRouter's internals (which an IT must not touch).
         var linesA = subscribeAsync(() -> readSseLines(reqA, 3, 15));
 
-        // Client B stays connected for both events published below. Budgeted for up to three
-        // events (nine lines), not two: MqttSseService replays a topic's cached last message to a
-        // connection that finishes subscribing just as that message is dispatched, so a
-        // still-settling connection can legitimately see one extra copy of the first message; the
-        // assertion below is on content ("n": 2 must appear), not on the exact line count, so the
-        // extra headroom does not weaken what is actually being verified.
-        var linesB = subscribeAsync(() -> readSseLines(reqB, 9, 30));
+        // Client B stays connected for both events published below, and stops reading on the
+        // second payload rather than on a line count. MqttSseService replays a topic's cached
+        // last message to a connection that finishes subscribing just as that message is
+        // dispatched, so a still-settling connection can legitimately see one extra copy of the
+        // first message - which is why the stopping condition is the content the assertion needs
+        // rather than a padded count that the usual six-line run would never reach.
+        var linesB = subscribeAsync(
+            () -> readSseLinesUntil(reqB, line -> line.contains("\"n\": 2"), 12, 30));
 
         // A longer settle than the 1500 ms MqttTopologyIT used for its single-connection case:
         // this test opens two SSE connections that must each finish the full request pipeline

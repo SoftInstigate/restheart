@@ -75,25 +75,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.moquette</groupId>
-      <artifactId>moquette-broker</artifactId>
-      <version>0.17</version>
-      <scope>test</scope>
-      <!--
-        Moquette pulls metrics-librato, whose own jackson-annotations 2.8.8 wins Maven's
-        nearest-wins resolution over the modern one docker-java needs, so Testcontainers dies
-        at startup with NoClassDefFoundError: com/fasterxml/jackson/annotation/JsonMerge.
-        Nothing here uses Librato metrics. Both this exclusion and the Moquette dependency
-        itself go away once the last embedded-broker test is replaced by a real IT.
-      -->
-      <exclusions>
-        <exclusion>
-          <groupId>com.librato.metrics</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
