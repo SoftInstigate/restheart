@@ -31,12 +31,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration test for MqttTopicAuthorizer.
+ * Test for {@link MqttTopicAuthorizer} with realistic IoT ACL scenarios.
  * Tests topic matching with realistic IoT topic patterns and ACL configurations.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttTopicAuthorizerIT {
+public class MqttTopicAuthorizerAclScenariosTest {
 
     // --- Realistic IoT scenarios ---
 

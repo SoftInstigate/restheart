@@ -48,14 +48,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Integration test for MQTT event processing pipeline.
+ * Test for the MQTT event processing pipeline.
  * Tests filter, throttle, and tumbling window stages with real MQTT messages.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttPipelineIT {
+public class MqttPipelineTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttPipelineIT.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttPipelineTest.class);
 
     @Test
     void testThrottleStageLimitsEvents() throws Exception {

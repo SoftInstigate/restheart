@@ -37,15 +37,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Integration test for MQTT queue overflow handling.
+ * Test for MQTT queue overflow handling.
  * Verifies that when a client cannot keep up with message rate,
  * the process remains responsive and overflow is handled gracefully.
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttOverflowIT {
+public class MqttOverflowTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttOverflowIT.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttOverflowTest.class);
 
     @Test
     void testQueueOverflowDoesNotCrashProcess() throws Exception {

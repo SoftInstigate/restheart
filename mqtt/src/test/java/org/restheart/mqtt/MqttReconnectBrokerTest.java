@@ -23,19 +23,13 @@ package org.restheart.mqtt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -58,15 +52,16 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 
 /**
- * Integration test for MqttSseService.
- * Starts Moquette as an embedded broker, publishes MQTT messages,
- * and verifies they are received as SSE events via the router.
+ * Test for MQTT client automatic reconnection, using a real embedded broker.
+ * Starts Moquette as an embedded broker, connects, stops and restarts the broker,
+ * and asserts that the connection is restored and subscriptions are active.
  *
+ * @author Harshit Sharma {@literal <harshitsharma635@gmail.com>}
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class MqttSseIT {
+public class MqttReconnectBrokerTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MqttSseIT.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttReconnectBrokerTest.class);
 
     private static Server server;
     private static int brokerPort;
@@ -80,7 +75,7 @@ public class MqttSseIT {
         brokerPort = TestPorts.freePort();
         // Even with persistence disabled, Moquette creates its data path regardless: point it at
         // a per-test temporary directory so nothing is written under the mqtt module root.
-        brokerDataPath = Files.createTempDirectory("moquette-sse-it-data");
+        brokerDataPath = Files.createTempDirectory("moquette-reconnect-broker-test-data");
         brokerProps = new Properties();
         brokerProps.setProperty(IConfig.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
         brokerProps.setProperty(IConfig.HOST_PROPERTY_NAME, "localhost");
@@ -93,6 +88,7 @@ public class MqttSseIT {
         server.startServer(new MemoryConfig(brokerProps));
         // startServer() returns before the listener necessarily accepts connections
         TestPorts.waitUntilOpen(brokerPort, 10000);
+        LOGGER.info("Moquette started on port {}", brokerPort);
     }
 
     @AfterAll
@@ -138,10 +134,10 @@ public class MqttSseIT {
         MqttConfig config = new MqttConfig.Builder()
                 .brokerUrl("tcp://localhost:" + brokerPort)
                 .protocolVersion(3)
-                .clientId("restheart-sse-test-" + System.nanoTime())
+                .clientId("restheart-reconnect-test")
                 .cleanSession(true)
                 .connectTimeoutSeconds(10)
-                .reconnectConfig(new MqttConfig.ReconnectConfig(false, 1000L, 30000L))
+                .reconnectConfig(new MqttConfig.ReconnectConfig(true, 200L, 2000L))
                 .willConfig(new MqttConfig.WillConfig(null, null, 0, false, 0, null))
                 .build();
 
@@ -160,11 +156,11 @@ public class MqttSseIT {
     void tearDown() {
         try {
             MqttClient client = MqttClientSingleton.getInstance().getClient();
-            if (client instanceof Mqtt3AsyncClient m3) {
-                m3.disconnect();
+            if (client instanceof Mqtt3AsyncClient) {
+                ((Mqtt3AsyncClient) client).disconnect();
             }
         } catch (Exception e) {
-            LOGGER.debug("Error disconnecting: {}", e.getMessage());
+            LOGGER.debug("Error disconnecting client: {}", e.getMessage());
         }
         resetSingletons();
     }
@@ -198,85 +194,93 @@ public class MqttSseIT {
         }
     }
 
-    @Test
-    void testPublishMessageReceivedByRouter() throws Exception {
-        LinkedBlockingQueue<MqttMessage> received = new LinkedBlockingQueue<>();
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, received::add);
-
-        Thread.sleep(200); // Wait for subscription
-
-        publishMessage("sensors/temp", "{\"temp\":25}");
-
-        MqttMessage msg = received.poll(3, TimeUnit.SECONDS);
-        assertNotNull(msg, "Should receive message via router");
-        assertEquals("sensors/temp", msg.getTopic());
-        assertEquals("{\"temp\":25}", msg.getPayload());
+    /**
+     * Waits until the client reaches the given state, or fails the test.
+     * <p>
+     * The client connects asynchronously and, on failure, enters
+     * {@code DISCONNECTED_RECONNECT} rather than reporting an error, so an
+     * instantaneous state assertion is inherently racy.
+     */
+    private void awaitClientState(MqttClientState expected, int timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        MqttClientState last = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                last = MqttClientSingleton.getInstance().getClient().getState();
+                if (last == expected) {
+                    return;
+                }
+            } catch (Exception e) {
+                // client may throw while reconnecting
+            }
+            Thread.sleep(50);
+        }
+        assertEquals(expected, last, "client did not reach " + expected + " within " + timeoutMs + "ms");
     }
 
     @Test
-    void testMultipleClientsReceiveSameMessage() throws Exception {
-        LinkedBlockingQueue<MqttMessage> client1 = new LinkedBlockingQueue<>();
-        LinkedBlockingQueue<MqttMessage> client2 = new LinkedBlockingQueue<>();
+    void testMqttReconnectResubscribe() throws Exception {
+        awaitClientState(MqttClientState.CONNECTED, 10000);
 
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, client1::add);
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, client2::add);
-
-        Thread.sleep(200);
-
-        publishMessage("sensors/temp", "{\"temp\":25}");
-
-        assertNotNull(client1.poll(3, TimeUnit.SECONDS), "Client 1 should receive message");
-        assertNotNull(client2.poll(3, TimeUnit.SECONDS), "Client 2 should receive message");
-    }
-
-    @Test
-    void testWildcardTopicFilter() throws Exception {
-        LinkedBlockingQueue<MqttMessage> tempReceived = new LinkedBlockingQueue<>();
-        router.subscribe("sensors/+/temp", MqttQos.AT_LEAST_ONCE, tempReceived::add);
-
-        LinkedBlockingQueue<MqttMessage> humidityReceived = new LinkedBlockingQueue<>();
-        router.subscribe("sensors/+/humidity", MqttQos.AT_LEAST_ONCE, humidityReceived::add);
+        LinkedBlockingQueue<MqttMessage> receivedMessages = new LinkedBlockingQueue<>();
+        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, receivedMessages::add);
 
         Thread.sleep(200);
 
-        publishMessage("sensors/room1/temp", "25");
-        publishMessage("sensors/room1/humidity", "60");
+        publishMessage("sensors/temp", "payload1");
 
-        assertNotNull(tempReceived.poll(3, TimeUnit.SECONDS), "Should receive temp message");
-        assertNotNull(humidityReceived.poll(3, TimeUnit.SECONDS), "Should receive humidity message");
-    }
+        MqttMessage msg1 = receivedMessages.poll(3, TimeUnit.SECONDS);
+        assertNotNull(msg1, "Failed to receive message 1");
+        assertEquals("sensors/temp", msg1.getTopic());
+        assertEquals("payload1", msg1.getPayload());
 
-    @Test
-    void testClientDisconnectRemovesListener() throws Exception {
-        LinkedBlockingQueue<MqttMessage> received = new LinkedBlockingQueue<>();
-        java.util.function.Consumer<MqttMessage> listener = received::add;
-        router.subscribe("sensors/#", MqttQos.AT_LEAST_ONCE, listener);
+        // Stop broker
+        server.stopServer();
+        LOGGER.info("Broker stopped, waiting for client to detect disconnect...");
 
-        Thread.sleep(200);
+        // Wait for client to detect disconnect
+        Thread.sleep(2000);
 
-        // Verify subscription is active by receiving a message
-        publishMessage("sensors/temp", "10");
-        assertNotNull(received.poll(2, TimeUnit.SECONDS), "Should receive before unsubscribe");
+        // Restart broker on same port. Deliberately not "new Properties(brokerProps)": that
+        // constructor only wires brokerProps in as a *defaults* fallback, and MemoryConfig's
+        // constructor copies its argument's entrySet() only — which never includes inherited
+        // defaults. That silently dropped every brokerProps setting except the one explicitly
+        // re-set below (including persistence-enabled=false and the data path), letting Moquette
+        // fall back to its own defaults (persistence enabled, "data/" relative to the module
+        // root). putAll() copies real entries, so entrySet() sees them all.
+        Properties restartProps = new Properties();
+        restartProps.putAll(brokerProps);
+        restartProps.setProperty(IConfig.PORT_PROPERTY_NAME, String.valueOf(brokerPort));
+        server = new Server();
+        server.startServer(new MemoryConfig(restartProps));
 
-        // Unsubscribe
-        router.unsubscribe("sensors/#", listener);
+        // Wait for port to be actually open
+        TestPorts.waitUntilOpen(brokerPort, 10000);
+        LOGGER.info("Broker restarted on port {}, waiting for client reconnect...", brokerPort);
 
-        publishMessage("sensors/temp", "20");
+        // Wait for automatic reconnection
+        awaitClientState(MqttClientState.CONNECTED, 30000);
 
-        // Should not receive since we unsubscribed
-        MqttMessage msg = received.poll(500, TimeUnit.MILLISECONDS);
-        assertEquals(null, msg, "Should not receive after unsubscribe");
+        // Wait for resubscription
+        Thread.sleep(2000);
+
+        publishMessage("sensors/temp", "payload2");
+
+        MqttMessage msg2 = receivedMessages.poll(10, TimeUnit.SECONDS);
+        assertNotNull(msg2, "Failed to receive message after reconnect");
+        assertEquals("sensors/temp", msg2.getTopic());
+        assertEquals("payload2", msg2.getPayload());
     }
 
     private void publishMessage(String topic, String payload) {
         MqttClient client = MqttClientSingleton.getInstance().getClient();
-        if (client instanceof Mqtt3AsyncClient m3) {
-            m3.publishWith()
-                .topic(topic)
-                .payload(payload.getBytes(StandardCharsets.UTF_8))
-                .qos(MqttQos.AT_LEAST_ONCE)
-                .send()
-                .join();
+        if (client instanceof Mqtt3AsyncClient) {
+            ((Mqtt3AsyncClient) client).publishWith()
+                    .topic(topic)
+                    .payload(payload.getBytes(StandardCharsets.UTF_8))
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .send()
+                    .join();
         }
     }
 }
