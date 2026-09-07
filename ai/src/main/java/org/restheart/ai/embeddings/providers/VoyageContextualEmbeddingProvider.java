@@ -64,13 +64,12 @@ import org.slf4j.LoggerFactory;
  * which is the actual point of this provider.
  *
  * <pre>{@code
- * plugins-args:
- *   voyageContextualEmbeddingProvider:
- *     enabled: true
- *     api-key: <key>
- *     model: voyage-context-4     # optional, only supported model, also the default
- *     input-type: document        # optional: "query" or "document"; omitted by default
- *     output-dimension: 1024      # optional: 256, 512, 1024 (default) or 2048
+ * voyageContextualEmbeddingProvider:
+ *   enabled: true
+ *   api-key: <key>
+ *   model: voyage-context-4     # optional, only supported model, also the default
+ *   input-type: document        # optional: "query" or "document"; omitted by default
+ *   output-dimension: 1024      # optional: 256, 512, 1024 (default) or 2048
  * }</pre>
  *
  * <h2>Multi-tenant</h2>

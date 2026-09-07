@@ -124,13 +124,12 @@ import com.mongodb.client.MongoClient;
  * through. Deployments relying on that check should be aware {@code $vectorScan}
  * pipelines are not currently covered by it.
  *
- * <h2>Configuration (plugins-args)</h2>
+ * <h2>Configuration</h2>
  * <pre>{@code
- * plugins-args:
- *   vectorScanInterceptor:
- *     enabled: false                 # must be explicitly enabled
- *     default-max-candidates: 10000  # used when a stage omits maxCandidates
- *     default-limit: 10              # used when a stage omits limit
+ * vectorScanInterceptor:
+ *   enabled: false                 # must be explicitly enabled
+ *   default-max-candidates: 10000  # used when a stage omits maxCandidates
+ *   default-limit: 10              # used when a stage omits limit
  * }</pre>
  */
 @RegisterPlugin(

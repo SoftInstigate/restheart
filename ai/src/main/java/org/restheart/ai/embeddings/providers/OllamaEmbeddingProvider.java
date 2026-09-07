@@ -50,11 +50,10 @@ import org.slf4j.LoggerFactory;
  * per-item {@code index} to re-sort by).
  *
  * <pre>{@code
- * plugins-args:
- *   ollamaEmbeddingProvider:
- *     enabled: true
- *     base-url: http://localhost:11434   # optional, this is the default
- *     model: nomic-embed-text            # optional, this is the default
+ * ollamaEmbeddingProvider:
+ *   enabled: true
+ *   base-url: http://localhost:11434   # optional, this is the default
+ *   model: nomic-embed-text            # optional, this is the default
  * }</pre>
  *
  * <h2>Multi-tenant</h2>

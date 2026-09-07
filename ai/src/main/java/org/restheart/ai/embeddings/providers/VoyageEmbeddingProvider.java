@@ -49,12 +49,11 @@ import org.slf4j.LoggerFactory;
  * {@link OpenAIEmbeddingProvider} via {@link OpenAiWireEmbeddings}.
  *
  * <pre>{@code
- * plugins-args:
- *   voyageEmbeddingProvider:
- *     enabled: true
- *     api-key: <key>
- *     model: voyage-3.5        # optional, this is the default
- *     input-type: document     # optional: "query" or "document"; omitted by default
+ * voyageEmbeddingProvider:
+ *   enabled: true
+ *   api-key: <key>
+ *   model: voyage-3.5        # optional, this is the default
+ *   input-type: document     # optional: "query" or "document"; omitted by default
  * }</pre>
  *
  * <h2>Multi-tenant</h2>

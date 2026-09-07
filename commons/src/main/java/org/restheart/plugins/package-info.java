@@ -134,11 +134,10 @@
  * </p>
  * <pre>
  * # restheart.yml
- * plugins-args:
- *   myPlugin:
- *     enabled: true
- *     apiKey: "secret-key"
- *     timeout: 30
+ * myPlugin:
+ *   enabled: true
+ *   apiKey: "secret-key"
+ *   timeout: 30
  * </pre>
  * 
  * <h2>Dependency Injection</h2>

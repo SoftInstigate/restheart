@@ -57,12 +57,11 @@ import org.slf4j.LoggerFactory;
  * deployments that don't have {@code autoEmbed} available or want a specific
  * embedding model/vendor.
  *
- * <h2>Configuration (plugins-args)</h2>
+ * <h2>Configuration</h2>
  * <pre>{@code
- * plugins-args:
- *   autoEmbeddingInterceptor:
- *     enabled: false                          # must be explicitly enabled
- *     embedding-provider: openAIEmbeddingProvider   # name of a configured Provider<EmbeddingModel>
+ * autoEmbeddingInterceptor:
+ *   enabled: false                          # must be explicitly enabled
+ *   embedding-provider: openAIEmbeddingProvider   # name of a configured Provider<EmbeddingModel>
  * }</pre>
  *
  * <h2>Enable on a collection</h2>

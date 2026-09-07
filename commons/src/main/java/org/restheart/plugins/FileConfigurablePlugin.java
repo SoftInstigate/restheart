@@ -61,9 +61,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Plugins extending this class must specify a 'conf-file' argument in their plugin configuration
  * that points to a YAML file containing the detailed plugin configuration:
  * <pre>
- * plugins-args:
- *   myPlugin:
- *     conf-file: "config/my-plugin-config.yml"
+ * myPlugin:
+ *   conf-file: "config/my-plugin-config.yml"
  * </pre>
  * </p>
  * <p>

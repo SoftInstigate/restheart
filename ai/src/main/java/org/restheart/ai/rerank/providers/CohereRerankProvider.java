@@ -47,11 +47,10 @@ import org.slf4j.LoggerFactory;
  * {@code {"results": [{"index": ..., "relevance_score": ...}]}}.
  *
  * <pre>{@code
- * plugins-args:
- *   cohereRerankProvider:
- *     enabled: true
- *     api-key: <key>
- *     model: rerank-v3.5      # optional, this is the default
+ * cohereRerankProvider:
+ *   enabled: true
+ *   api-key: <key>
+ *   model: rerank-v3.5      # optional, this is the default
  * }</pre>
  *
  * <h2>Multi-tenant</h2>

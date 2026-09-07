@@ -37,12 +37,11 @@ import org.slf4j.LoggerFactory;
  * (the aggregation-pipeline counterpart to {@code restheart-stripe}'s use of
  * {@code AclVarsRegistry} to register {@code @subscription}).
  *
- * <h2>Configuration (plugins-args)</h2>
+ * <h2>Configuration</h2>
  * <pre>{@code
- * plugins-args:
- *   vectorizeOperator:
- *     enabled: false                          # must be explicitly enabled
- *     embedding-provider: openAIEmbeddingProvider   # name of a configured Provider<EmbeddingModel>
+ * vectorizeOperator:
+ *   enabled: false                          # must be explicitly enabled
+ *   embedding-provider: openAIEmbeddingProvider   # name of a configured Provider<EmbeddingModel>
  * }</pre>
  *
  * <p>{@code embedding-provider} is this plugin's own static default — per request, a

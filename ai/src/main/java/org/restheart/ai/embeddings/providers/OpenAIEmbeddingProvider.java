@@ -51,12 +51,11 @@ import org.slf4j.LoggerFactory;
  * provider implementation.
  *
  * <pre>{@code
- * plugins-args:
- *   openAIEmbeddingProvider:
- *     enabled: true
- *     api-key: <key>
- *     model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
- *     base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
+ * openAIEmbeddingProvider:
+ *   enabled: true
+ *   api-key: <key>
+ *   model: text-embedding-3-small           # or e.g. openai/text-embedding-3-small on OpenRouter
+ *   base-url: https://api.openai.com/v1     # optional; e.g. https://openrouter.ai/api/v1
  * }</pre>
  *
  * <h2>Multi-tenant</h2>

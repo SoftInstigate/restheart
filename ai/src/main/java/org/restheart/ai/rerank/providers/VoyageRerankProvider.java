@@ -51,11 +51,10 @@ import org.slf4j.LoggerFactory;
  * ({@code top_k} vs Cohere's {@code top_n}) differ.
  *
  * <pre>{@code
- * plugins-args:
- *   voyageRerankProvider:
- *     enabled: true
- *     api-key: <key>
- *     model: rerank-2.5        # optional, this is the default
+ * voyageRerankProvider:
+ *   enabled: true
+ *   api-key: <key>
+ *   model: rerank-2.5        # optional, this is the default
  * }</pre>
  *
  * <h2>Multi-tenant</h2>
