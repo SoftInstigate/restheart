@@ -141,17 +141,19 @@ public class McpResourcesIT extends AbstactIT {
     }
 
     @Test
-    public void count_isItsOwnResource() throws Exception {
+    public void count_isItsOwnEntry_bareAndFiltered() throws Exception {
         // The count is a separate endpoint in the REST API and a separate entry here — not a flag
-        // on the read. It takes no parameters, so it is a concrete resource, never a template.
+        // on the read. It takes a filter, so it gets the same pair as the collection: a template
+        // for the parameterised count, and the bare URI behind it for the empty submission.
         var resources = resourceUris();
+        var templates = templateUris();
 
         assertTrue(resources.contains(TEST_COLL + "/_size"),
-                "the collection count must be its own resource; got " + resources);
-        assertFalse(templateUris().stream().anyMatch(t -> t.startsWith(TEST_COLL + "/_size")),
-                "the count takes no parameters, so it must not be advertised as a template");
-        // both entries are derived from the same collection, so the count carries the suffix that
-        // tells them apart — without it an agent sees two things called "inventory"
+                "the bare count must be reachable; got " + resources);
+        assertTrue(templates.stream().anyMatch(t -> t.startsWith(TEST_COLL + "/_size{?")),
+                "the count takes a filter, so it must be advertised as a template; got " + templates);
+        // every entry derives from the same collection, so each carries what tells it apart —
+        // without it an agent sees several things called "inventory"
         assertEquals("test-mcp-resources/inventory", resourceNamed(TEST_COLL));
         assertEquals("test-mcp-resources/inventory-size", resourceNamed(TEST_COLL + "/_size"));
     }
@@ -162,6 +164,26 @@ public class McpResourcesIT extends AbstactIT {
 
         assertEquals(2, BsonDocument.parse(text).getNumber("size").intValue(),
                 "expected the fixture's two documents: " + text);
+    }
+
+    @Test
+    public void readingTheCount_countsOnlyWhatTheFilterMatches() throws Exception {
+        // "how many are in status A" — the question an agent actually asks. A count that ignored
+        // the filter would answer it with a plausible, wrong number.
+        var text = mcp.readResource(TEST_COLL + "/_size?filter=" + urlEncode("{\"status\":\"A\"}"));
+
+        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+                "only the notebook is in status A: " + text);
+    }
+
+    @Test
+    public void readingTheCount_withAFilter_ignoresTheEstimateOptIn() throws Exception {
+        // estimatedDocumentCount cannot apply a filter, so asking for both must fall back to the
+        // exact count rather than silently answering for the whole collection — same as REST.
+        var text = mcp.readResource(TEST_COLL + "/_size?count=estimated&filter=" + urlEncode("{\"status\":\"A\"}"));
+
+        assertEquals(1, BsonDocument.parse(text).getNumber("size").intValue(),
+                "the estimate opt-in swallowed the filter: " + text);
     }
 
     @Test

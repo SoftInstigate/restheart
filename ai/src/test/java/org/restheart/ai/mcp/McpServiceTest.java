@@ -206,7 +206,7 @@ public class McpServiceTest {
     public void paramsTemplate_titleSpellsOutEveryParameterTheReadAccepts() {
         var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
 
-        var template = McpService.paramsTemplate(resource, "inventory-documents",
+        var template = McpService.paramsTemplate(resource, "", "inventory-documents",
                 "https://host/inventory{?filter,page}", List.of("filter", "page"), Set.of(), List.of());
 
         assertEquals("inventory-documents", template.name());
@@ -219,7 +219,7 @@ public class McpServiceTest {
     public void paramsTemplate_pathVariable_titleSaysOneDocument() {
         var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
 
-        var template = McpService.paramsTemplate(resource, "inventory-by-id",
+        var template = McpService.paramsTemplate(resource, "", "inventory-by-id",
                 "https://host/inventory/{id}", List.of(), Set.of("id"), List.of("id"));
 
         assertEquals("inventory-by-id", template.name());
@@ -227,10 +227,23 @@ public class McpServiceTest {
     }
 
     @Test
+    public void paramsTemplate_actionWithItsOwnPath_isNamedAndTitledAfterIt() {
+        // /_size answers with a number, not with documents: without its own path in the name it
+        // and the collection's template would both be called "inventory-documents"
+        var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
+
+        var template = McpService.paramsTemplate(resource, "-size", "inventory-size-filtered",
+                "https://host/inventory/_size{?filter,count}", List.of("filter", "count"), Set.of(), List.of());
+
+        assertEquals("inventory-size-filtered", template.name());
+        assertEquals("inventory size — by filter, count", template.title());
+    }
+
+    @Test
     public void paramsTemplate_withRequiredParams_notesThemInDescription() {
         var resource = McpResource.builder().uri("https://host/inventory/_aggrs/byStatus").description("Total by status.").build();
 
-        var template = McpService.paramsTemplate(resource, "byStatus-documents",
+        var template = McpService.paramsTemplate(resource, "", "byStatus-documents",
                 "https://host/inventory/_aggrs/byStatus{?status}", List.of("status"), Set.of(), List.of("status"));
 
         assertEquals("byStatus-documents", template.name());

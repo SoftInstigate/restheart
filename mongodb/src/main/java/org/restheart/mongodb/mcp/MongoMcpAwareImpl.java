@@ -237,7 +237,7 @@ public final class MongoMcpAwareImpl {
         return switch (action) {
             case "query" -> Optional.of(queryDocuments(resolved, effectiveArgs));
             case "get" -> Optional.of(getSingleDocument(resolved, effectiveArgs));
-            case "size" -> Optional.of(countDocuments(resolved));
+            case "size" -> Optional.of(countDocuments(resolved, effectiveArgs));
             default -> Optional.empty();
         };
     }
@@ -407,17 +407,20 @@ public final class MongoMcpAwareImpl {
      * pre-rendering the whole response text here, respecting the caller's optional {@code
      * jsonMode} (the same query param RESTHeart's real REST API accepts).
      */
-    @SuppressWarnings("unchecked")
     /**
-     * The collection's document count — the {@code _size} endpoint's answer, as its own resource.
-     *
-     * <p>Uses the estimating overload: with no filter the count comes from collection metadata in
-     * constant time instead of walking every document. An exact figure would be false precision
-     * anyway, since the collection can change between counting it and acting on the number.
+     * The {@code _size} endpoint's answer: how many documents match, exactly as {@code GET
+     * /<coll>/_size} would report it — including the same choice of strategy. {@code
+     * count=estimated} reads the figure from collection metadata in constant time, and applies
+     * only when there is no filter, since {@code estimatedDocumentCount} cannot apply one; asking
+     * for both silently falls back to the exact count, which is what the REST endpoint does too.
      */
-    private McpReadResult countDocuments(MongoMountResolver.ResolvedContext resolved) {
+    @SuppressWarnings("unchecked")
+    private McpReadResult countDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+        var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+        var estimate = "estimated".equals(args.get("count")) && filter.isEmpty();
+
         var size = databases.getCollectionSize(Optional.empty(), Optional.empty(),
-                resolved.database(), resolved.collection(), new BsonDocument(), true);
+                resolved.database(), resolved.collection(), filter, estimate);
 
         return new McpReadResult(new McpReadResult.RawJson("{\"size\":" + size + "}"));
     }

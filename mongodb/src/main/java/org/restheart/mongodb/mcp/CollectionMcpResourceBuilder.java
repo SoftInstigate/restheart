@@ -85,12 +85,17 @@ public final class CollectionMcpResourceBuilder {
             a.param("jsonMode", "string", false);
         });
 
-        // The count is its own resource, exactly as it is its own endpoint in the REST API —
-        // not a flag on the read. Declared with no parameters, so it registers as one plain
-        // entry: a filtered count is still composable through how_to_call.
+        // The count is its own entry, exactly as it is its own endpoint in the REST API — not a
+        // flag on the read. It takes the same filter the read does: GET /<coll>/_size?filter={...}
+        // counts that query, which is the count an agent usually wants.
         builder.action("size", a -> {
             a.method("GET").pathTemplate("/_size").readable(true);
-            a.description("Number of documents in the collection.");
+            a.description("Number of documents matching the filter, or in the whole collection if no filter is given.");
+            a.param("filter", "object", false);
+            a.param("count", new McpResource.Param("string",
+                    "Optional. 'estimated' counts from collection metadata in constant time instead of scanning; "
+                            + "ignored when a filter is given, since only an exact count can apply one.",
+                    false, List.of("estimated"), null));
         });
 
         builder.action("create", a -> {

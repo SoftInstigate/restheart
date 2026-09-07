@@ -346,12 +346,17 @@ public class McpService implements ByteArrayService {
                 // identical "inventory" templates. This is also the convention the MCP spec's own
                 // examples use: the template behind file:///{path} is "Project Files", not the
                 // name of any one file.
-                var name = pathId(r.uri()) + (pathVars.isEmpty()
-                        ? "-documents"
-                        : "-by-" + String.join("-", new java.util.TreeSet<>(pathVars)));
+                // An action with a literal path of its own addresses a different thing than the
+                // resource it hangs off — /_size answers with a number, not with documents — so
+                // that path is part of the name, or the collection's template and its count's
+                // would both be called "inventory-documents".
+                var literal = literalSuffix(action.pathTemplate());
+                var name = pathId(r.uri()) + literal + (!pathVars.isEmpty()
+                        ? "-by-" + String.join("-", new java.util.TreeSet<>(pathVars))
+                        : literal.isEmpty() ? "-documents" : "-filtered");
 
                 desiredTemplates.putIfAbsent(uriTemplate,
-                        paramsTemplate(r, name, uriTemplate, queryParams, pathVars, requiredParams));
+                        paramsTemplate(r, literal, name, uriTemplate, queryParams, pathVars, requiredParams));
             }
         }));
 
@@ -448,21 +453,21 @@ public class McpService implements ByteArrayService {
      * prose, in the description, rather than folded into the name where more than one variable
      * would make it unreadable.
      */
-    static McpResourceTemplate paramsTemplate(McpResource resource, String name, String uriTemplate,
+    static McpResourceTemplate paramsTemplate(McpResource resource, String literalSuffix, String name, String uriTemplate,
             List<String> queryParams, Set<String> pathVars, List<String> requiredParams) {
-        var subject = resourceName(resource);
+        // "inventory", or "inventory size" for an action that addresses something of its own —
+        // whose name then already says what it yields, so the title goes straight to the params
+        var subject = resourceName(resource) + literalSuffix.replace("-", " ");
 
         var title = new StringBuilder(subject).append(" — ");
-        if (pathVars.isEmpty()) {
-            title.append("documents");
-        } else {
-            title.append("one document");
-        }
         if (!pathVars.isEmpty()) {
-            title.append(" by ").append(String.join(", ", pathVars));
+            title.append("one document by ").append(String.join(", ", pathVars));
+        } else if (literalSuffix.isEmpty()) {
+            title.append("documents");
         }
         if (!queryParams.isEmpty()) {
-            title.append(pathVars.isEmpty() ? " by " : ", ").append(String.join(", ", queryParams));
+            title.append(pathVars.isEmpty() && !literalSuffix.isEmpty() ? "by " : pathVars.isEmpty() ? " by " : ", ")
+                    .append(String.join(", ", queryParams));
         }
 
         var description = requiredParams.isEmpty()
@@ -491,9 +496,13 @@ public class McpService implements ByteArrayService {
         return pathId(entry.resource().uri()) + literalSuffix(entry.action().pathTemplate());
     }
 
-    /** {@code "/_size"} -> {@code "-size"}; blank for an action that adds no path of its own. */
+    /**
+     * {@code "/_size"} -> {@code "-size"}; blank for an action that adds no path of its own, and
+     * blank for one whose path is a variable ({@code "/{id}"}) — that is not a name, it is a slot,
+     * and it is already accounted for by the {@code -by-<var>} suffix.
+     */
     private static String literalSuffix(String pathTemplate) {
-        if (pathTemplate == null || pathTemplate.isBlank()) {
+        if (pathTemplate == null || pathTemplate.isBlank() || pathTemplate.contains("{")) {
             return "";
         }
         return "-" + pathTemplate.replace("/", "-").replace("_", "").replaceAll("^-+", "");
