@@ -235,10 +235,10 @@ public class UndertowStreamableServerTransportProvider implements McpStreamableS
             // transport session on the fly and continue processing the request normally.
             LOGGER.info("Stale MCP session {}, auto-recovering new session", sessionId);
             try {
-                var fakeInitReq = new McpSchema.InitializeRequest(
+                var fakeInitReq = McpSchema.InitializeRequest.builder(
                         ProtocolVersions.MCP_2025_03_26,
                         new McpSchema.ClientCapabilities(null, null, null, null),
-                        new McpSchema.Implementation("auto-recovered", "0.0.0"));
+                        McpSchema.Implementation.builder("auto-recovered", "0.0.0").build()).build();
                 var init = sessionFactory.startSession(fakeInitReq);
                 init.initResult().contextWrite(c -> c.put(McpTransportContext.KEY, ctx)).block();
                 session = init.session();

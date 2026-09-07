@@ -516,9 +516,7 @@ public class McpService implements ByteArrayService {
     }
 
     private McpServerFeatures.SyncResourceSpecification toResourceSpec(String uri, ConcreteEntry entry, String name, String title) {
-        var sdkResource = McpSchema.Resource.builder()
-                .uri(uri)
-                .name(name)
+        var sdkResource = McpSchema.Resource.builder(uri, name)
                 .title(title)
                 .description(entry.action().description() != null
                         ? entry.action().description()
@@ -653,9 +651,15 @@ public class McpService implements ByteArrayService {
         return unknownResourceResult(uri);
     }
 
+    /** {@code TextResourceContents.builder} takes only the two required fields, {@code (uri, text)} — the mime type is optional and set separately. */
+    private static TextResourceContents textContents(String uri, String mimeType, String text) {
+        return TextResourceContents.builder(uri, text).mimeType(mimeType).build();
+    }
+
     private static McpSchema.ReadResourceResult unknownResourceResult(String uri) {
-        return new McpSchema.ReadResourceResult(
-                List.of(new TextResourceContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri)));
+        return McpSchema.ReadResourceResult
+                .builder(List.of(textContents(uri, "text/plain", "Error: unknown or not MCP-enabled resource: " + uri)))
+                .build();
     }
 
     /**
@@ -722,7 +726,7 @@ public class McpService implements ByteArrayService {
                 Object payload = result.meta() == null ? result.content() : Map.of("content", result.content(), "meta", result.meta());
                 text = jsonMapper.writeValueAsString(payload);
             }
-            return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(uri, "application/json", text)));
+            return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "application/json", text))).build();
         } catch (Exception e) {
             LOGGER.error("Failed to serialize documents-mode read result for {}", uri, e);
             return errorResourceResult(uri, "internal error: " + e.getMessage());
@@ -730,7 +734,7 @@ public class McpService implements ByteArrayService {
     }
 
     private static McpSchema.ReadResourceResult errorResourceResult(String uri, String message) {
-        return new McpSchema.ReadResourceResult(List.of(new TextResourceContents(uri, "text/plain", "Error: " + message)));
+        return McpSchema.ReadResourceResult.builder(List.of(textContents(uri, "text/plain", "Error: " + message))).build();
     }
 
     /** Parses a raw {@code key=value&...} query string into string-valued args — types are coerced afterward, once the target action's declared param types are known. */
@@ -1057,8 +1061,7 @@ public class McpService implements ByteArrayService {
                 "Optional. Max catalog entries to return (default: framework-configured page size). Ignored if `resource` is given."));
         properties.put("cursor", schemaProp("string", "Optional. Continues a previous paged catalog call."));
 
-        return McpSchema.Tool.builder("list_apis")
-                .inputSchema(inputSchema(properties, null))
+        return McpSchema.Tool.builder("list_apis", inputSchema(properties, null))
                 .description("Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the "
                         + "catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and "
                         + "paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported "
@@ -1076,8 +1079,7 @@ public class McpService implements ByteArrayService {
         properties.put("transport", schemaProp("string",
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
 
-        return McpSchema.Tool.builder("how_to_call")
-                .inputSchema(inputSchema(properties, List.of("resource", "action")))
+        return McpSchema.Tool.builder("how_to_call", inputSchema(properties, List.of("resource", "action")))
                 .description("Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP resource. "
                         + "The tool COMPOSES the request — it does NOT execute it. After receiving the response, "
                         + "choose any client appropriate to the descriptor's transport and your host environment "
@@ -1092,8 +1094,7 @@ public class McpService implements ByteArrayService {
     }
 
     static McpSchema.Tool getTokenToolDefinition() {
-        return McpSchema.Tool.builder("get_token")
-                .inputSchema(inputSchema(new LinkedHashMap<>(), null))
+        return McpSchema.Tool.builder("get_token", inputSchema(new LinkedHashMap<>(), null))
                 .description("Issues a short-lived access token for the current session, to fill in the `"
                         + DescriptorRenderer.TOKEN_PLACEHOLDER + "` placeholder of a descriptor returned by how_to_call.\n\nThe token "
                         + "expires within seconds (see `expires_in` in the response), so call this immediately before "
@@ -1216,11 +1217,11 @@ public class McpService implements ByteArrayService {
     }
 
     private static CallToolResult textResult(String text) {
-        return new CallToolResult(List.of(new TextContent(text)), false, null, null);
+        return new CallToolResult(List.of(TextContent.builder(text).build()), false, null, null);
     }
 
     private static CallToolResult errorResult(String message) {
-        return new CallToolResult(List.of(new TextContent("Error: " + message)), true, null, null);
+        return new CallToolResult(List.of(TextContent.builder("Error: " + message).build()), true, null, null);
     }
 
     static String stringArg(Map<String, Object> args, String key) {
