@@ -647,17 +647,36 @@ public class McpService implements ByteArrayService {
 
         var lastSlash = base.lastIndexOf('/');
         if (lastSlash > 0) {
-            var docBase = base.substring(0, lastSlash);
-            var id = base.substring(lastSlash + 1);
+            var parent = base.substring(0, lastSlash);
+            var segment = base.substring(lastSlash + 1);
+
+            // An action with a literal path of its own — /_size — addresses something else on the
+            // same resource, and has to be recognized before the single-document reading, or
+            // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
+            var byPath = readableActionAtPath(principal, parent, "/" + segment);
+            if (byPath != null) {
+                return readOperation(principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+            }
+
             var args = new LinkedHashMap<String, Object>(queryArgs);
-            args.put("id", id);
-            var singleDoc = readOperation(principal, docBase, "get", args);
+            args.put("id", segment);
+            var singleDoc = readOperation(principal, parent, "get", args);
             if (singleDoc.isPresent()) {
                 return singleDoc.get();
             }
         }
 
         return unknownResourceResult(uri);
+    }
+
+    /** The name of {@code resourceUri}'s readable action whose {@code pathTemplate} is exactly {@code path}, or {@code null} if it has none. */
+    private String readableActionAtPath(BaseAccount principal, String resourceUri, String path) {
+        return resourceLookup.find(principal, publicBaseUrl, resourceUri)
+                .flatMap(r -> r.actions().entrySet().stream()
+                        .filter(e -> e.getValue().readable() && path.equals(e.getValue().pathTemplate()))
+                        .map(Map.Entry::getKey)
+                        .findFirst())
+                .orElse(null);
     }
 
     /** {@code TextResourceContents.builder} takes only the two required fields, {@code (uri, text)} — the mime type is optional and set separately. */
@@ -905,9 +924,16 @@ public class McpService implements ByteArrayService {
             return actionName == null ? null : withMethodPathAndQuery(identity, pathOf(base), queryParameters);
         }
 
+        // Same two fallbacks readTemplateMatch uses, in the same order — this descriptor must
+        // describe the operation that will actually run, so what counts as reachable here and
+        // what counts as reachable there cannot drift apart.
         var lastSlash = base.lastIndexOf('/');
-        if (lastSlash > 0 && isReadableAction(principal, base.substring(0, lastSlash), "get")) {
-            return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
+        if (lastSlash > 0) {
+            var parent = base.substring(0, lastSlash);
+            if (readableActionAtPath(principal, parent, base.substring(lastSlash)) != null
+                    || isReadableAction(principal, parent, "get")) {
+                return withMethodPathAndQuery(identity, pathOf(base), queryParameters);
+            }
         }
 
         return null;
