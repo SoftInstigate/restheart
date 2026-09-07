@@ -114,7 +114,15 @@ public class MqttTopicAuthorizer implements WildcardInterceptor {
         if (acl == null) {
             acl = Map.of();
         }
-        LOGGER.info("MqttTopicAuthorizer initialized with {} ACL entries", acl.size());
+        // An empty ACL is the resting state of a RESTHeart that ships this module and never
+        // arms it, so announcing it at INFO would greet every operator with a line about a
+        // feature they are not using. With entries configured, someone is using it and the
+        // count is worth confirming.
+        if (acl.isEmpty()) {
+            LOGGER.debug("MqttTopicAuthorizer initialized with no ACL entries; every mqtt request would be denied");
+        } else {
+            LOGGER.info("MqttTopicAuthorizer initialized with {} ACL entries", acl.size());
+        }
     }
 
     /**

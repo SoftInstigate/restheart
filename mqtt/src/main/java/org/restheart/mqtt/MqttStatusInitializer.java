@@ -157,7 +157,13 @@ public class MqttStatusInitializer implements Initializer {
         var findings = new ArrayList<Finding>();
 
         var clientActive = isActive(registry, "mqtt-client");
-        if (!clientActive) {
+        // Say nothing at all when nobody has expressed any intent to use the module. Since the
+        // module ships with RESTHeart, an unconditional "installed but inactive" line would greet
+        // every installation at every startup - including the majority that will never use MQTT -
+        // inviting a question the operator never asked. The advice is worth printing only once
+        // some mqtt-* configuration exists and has not taken effect, which is the trap this
+        // sentinel was written for.
+        if (!clientActive && anyMqttBlockPresent(confMap)) {
             findings.add(new Finding(Level.INFO,
                 "mqtt module is installed but inactive: mqtt-client is the root of its injection graph and is "
                     + "disabled, so mqtt-router, mqtt-sse, mqtt-rest, mqtt-mongo-writer and mqtt-topic-authorizer "
@@ -207,7 +213,10 @@ public class MqttStatusInitializer implements Initializer {
                     + "will be denied with 403"));
         }
 
-        if (findings.isEmpty()) {
+        // The summary is worth a line only once someone is using the module. Since it ships with
+        // RESTHeart, printing it unconditionally would put an mqtt line in front of every
+        // operator at every startup, most of whom never asked for MQTT.
+        if (findings.isEmpty() && anyMqttBlockPresent(confMap)) {
             var active = MQTT_PLUGIN_NAMES.stream().filter(name -> isActive(registry, name)).toList();
             var inactive = MQTT_PLUGIN_NAMES.stream().filter(name -> !isActive(registry, name)).toList();
             findings.add(new Finding(Level.INFO,
@@ -239,6 +248,17 @@ public class MqttStatusInitializer implements Initializer {
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * Whether the configuration carries any {@code mqtt-*} block at all, i.e. whether anyone has
+     * touched this module's configuration.
+     *
+     * @param confMap the full configuration as a map
+     * @return {@code true} if at least one {@code mqtt-*} plugin has a configuration block
+     */
+    private static boolean anyMqttBlockPresent(Map<String, Object> confMap) {
+        return MQTT_PLUGIN_NAMES.stream().anyMatch(confMap::containsKey);
+    }
+
     private static Map<String, Object> asMap(Object o) {
         return (o instanceof Map<?, ?> m) ? (Map<String, Object>) m : null;
     }

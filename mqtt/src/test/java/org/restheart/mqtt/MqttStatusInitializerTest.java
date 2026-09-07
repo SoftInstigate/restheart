@@ -129,17 +129,35 @@ public class MqttStatusInitializerTest {
     // --- Case 1: module installed but off ---
 
     @Test
-    @DisplayName("Case 1: mqtt-client absent from the registry's providers produces one INFO naming /mqtt-client/enabled")
+    @DisplayName("Case 1: with an mqtt block configured but the module off, one INFO names /mqtt-client/enabled")
     void testModuleInstalledButOff() {
+        // Some mqtt configuration exists, so the operator has shown intent to use the module -
+        // which is what makes the advice worth printing. The block carries an explicit "enabled"
+        // key so it does not also trip the missing-enabled-key trap, which is Case 2's subject.
+        var config = configOf(Map.of("mqtt-client", Map.of("enabled", false)));
+        var registry = registryWithActive(); // nothing active
+
+        var findings = MqttStatusInitializer.findings(config, registry);
+
+        assertEquals(1, findings.size(), "only the module-off INFO should fire");
+        assertEquals(Level.INFO, findings.get(0).level());
+        assertTrue(findings.get(0).message().contains("/mqtt-client/enabled"),
+            "the message must name the switch that would activate the module");
+    }
+
+    @Test
+    @DisplayName("Case 1b: with no mqtt configuration at all the sentinel is silent, because the "
+        + "module ships with RESTHeart and most installations never use it")
+    void testUntouchedModuleIsSilent() {
         var config = configOf(Map.of());
         var registry = registryWithActive(); // nothing active
 
         var findings = MqttStatusInitializer.findings(config, registry);
 
-        assertEquals(1, findings.size(), "with no configuration at all, only the module-off INFO should fire");
-        assertEquals(Level.INFO, findings.get(0).level());
-        assertTrue(findings.get(0).message().contains("/mqtt-client/enabled"),
-            "the message must name the switch that would activate the module");
+        assertTrue(findings.isEmpty(),
+            "nobody has configured anything under mqtt-*, so there is no misconfiguration to warn "
+                + "about and no reason to put an mqtt line in front of an operator who never asked "
+                + "for MQTT; got: " + findings);
     }
 
     // --- Case 2: the enablement trap (negative control) ---
@@ -356,9 +374,10 @@ public class MqttStatusInitializerTest {
     }
 
     @Test
-    @DisplayName("Case 6: with no configuration and no active plugins, the module-off INFO is the only finding (no separate summary line)")
-    void testEmptyConfigurationProducesOnlyModuleOffInfo() {
-        var config = configOf(Map.of());
+    @DisplayName("Case 6: with an mqtt block configured and nothing active, the module-off INFO is "
+        + "the only finding - no separate summary line")
+    void testConfiguredButInactiveProducesOnlyModuleOffInfo() {
+        var config = configOf(Map.of("mqtt-client", Map.of("enabled", false)));
         var registry = registryWithActive();
 
         var findings = MqttStatusInitializer.findings(config, registry);

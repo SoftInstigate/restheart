@@ -53,15 +53,18 @@ public class MqttPluginGatingTest {
     }
 
     @Test
-    @DisplayName("mqtt-router is NOT gated: it follows mqtt-client through the injection graph "
-        + "and exposes no HTTP surface of its own, so there is nothing here to gate separately")
-    void testMqttRouterNotGated() {
+    @DisplayName("Tier 1: mqtt-router is gated with the client, rather than relying on the "
+        + "injection graph to disable it")
+    void testMqttRouterGatedWithTheClient() {
         RegisterPlugin annotation = MqttRouterProvider.class.getAnnotation(RegisterPlugin.class);
-        assertTrue(annotation.enabledByDefault(),
-            "mqtt-router must keep @RegisterPlugin's default enabledByDefault = true: when "
-                + "mqtt-client is disabled (the default), ProvidersChecker disables mqtt-router too "
-                + "because it requires mqtt-client, so a separate switch on mqtt-router would be "
-                + "redundant and would not change what is reachable");
+        assertFalse(annotation.enabledByDefault(),
+            "mqtt-router must be enabledByDefault = false. It used to keep the annotation default "
+                + "of true, on the reasoning that ProvidersChecker would follow mqtt-client through "
+                + "the injection graph and disable this provider with it. That does not hold: a "
+                + "disabled provider is never instantiated, so mqtt-client is absent from the "
+                + "provider registry entirely and the injection lands on PluginsFactory's "
+                + "'no provider found' branch - three ERROR lines on every startup. Since the "
+                + "module ships with RESTHeart, every installation would print them");
     }
 
     @Test

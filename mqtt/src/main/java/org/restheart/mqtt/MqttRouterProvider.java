@@ -43,15 +43,20 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
  * provider dependency graph, so a provider depending on another provider is supported.
  * </p>
  * <p>
- * <strong>Not gated by the module's two-tier dormancy scheme.</strong> Unlike
- * {@link MqttClientProvider} (Tier 1) and the {@code mqtt-sse} / {@code mqtt-rest} /
- * {@code mqtt-mongo-writer} plugins (Tier 2), this provider keeps {@code @RegisterPlugin}'s
- * default {@code enabledByDefault = true}. It exposes no HTTP surface of its own and injects
- * {@code mqtt-client}, so when the client is disabled (the default), {@code ProvidersChecker}
- * disables this provider too, following the client through the graph; there is nothing here for a
- * separate switch to gate. Leaving it enabled by default also lets a consumer such as
- * {@code examples/mqtt-logger} obtain the injectable router - once {@code mqtt-client} is armed -
- * without pulling in any of the Tier 2 HTTP endpoints.
+ * <strong>Tier 1, with the client.</strong> Registered {@code enabledByDefault = false}, so it
+ * is dormant unless the module is armed, and it exposes no HTTP surface either way - arming
+ * {@code mqtt-client} and {@code mqtt-router} gives a consumer such as
+ * {@code examples/mqtt-logger} the injectable router without any of the Tier 2 endpoints.
+ * </p>
+ * <p>
+ * It used to keep the annotation default of {@code true}, on the reasoning that
+ * {@code ProvidersChecker} would follow {@code mqtt-client} through the injection graph and
+ * disable this provider along with it. That does not hold: with the client disabled it is never
+ * instantiated, so it is absent from the provider registry entirely, and the injection lands on
+ * {@code PluginsFactory}'s "no provider found" branch - three ERROR lines on every startup rather
+ * than the quiet cascade the design assumed. Harmless when only an operator who installed the
+ * module saw them; not acceptable now that the module ships with RESTHeart. Being explicit here
+ * costs nothing and does not depend on how the graph resolves.
  * </p>
  *
  * @see Provider
@@ -63,7 +68,8 @@ import com.hivemq.client.mqtt.datatypes.MqttQos;
 @RegisterPlugin(
     name = "mqtt-router",
     description = "Provides the MQTT message router",
-    priority = 11
+    priority = 11,
+    enabledByDefault = false
 )
 public class MqttRouterProvider implements Provider<MqttMessageRouter> {
 
