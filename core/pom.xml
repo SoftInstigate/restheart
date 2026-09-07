@@ -261,6 +261,27 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
+          <!-- Create GraalVM polyglot cache dir so truffleattach can install its
+               optimized runtime without printing a warning on every test run. -->
+          <execution>
+            <id>ensure-polyglot-cache</id>
+            <phase>initialize</phase>
+            <configuration>
+              <target>
+                <exec executable="mkdir" osfamily="mac">
+                  <arg value="-p" />
+                  <arg value="${user.home}/Library/Caches/org.graalvm.polyglot" />
+                </exec>
+                <exec executable="mkdir" osfamily="unix" failonerror="false">
+                  <arg value="-p" />
+                  <arg value="${user.home}/.cache/org.graalvm.polyglot" />
+                </exec>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
           <execution>
             <id>dist</id>
             <phase>package</phase>
