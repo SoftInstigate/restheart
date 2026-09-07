@@ -503,6 +503,23 @@
                 <artifactId>unirest-java</artifactId>
                 <version>3.14.5</version>
             </dependency>
+            <!--
+                Testcontainers 2.x renamed the JUnit 5 integration artifact from
+                "junit-jupiter" to "testcontainers-junit-jupiter"; the 1.x coordinates
+                do not exist for 2.x and resolve to a 404.
+            -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>2.0.5</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-junit-jupiter</artifactId>
+                <version>2.0.5</version>
+                <scope>test</scope>
+            </dependency>
             <!-- END Test dependencies -->
         </dependencies>
     </dependencyManagement>
