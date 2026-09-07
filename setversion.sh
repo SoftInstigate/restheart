@@ -181,6 +181,7 @@ fi
 if [ "$DRY_RUN" = true ]; then
   echo "Dry-run: The following actions would be performed:"
   echo "  - Run: $MVN_CMD versions:set -DnewVersion=$VERSION -DprocessAllModules=true -DgenerateBackupPoms=false"
+  echo "  - Update examples/pom.xml: restheart.version property to $VERSION"
   if [[ "$VERSION" == *SNAPSHOT ]]; then
     echo "  - Commit with message: 'Bump version to $VERSION [skip ci]'"
   else
@@ -197,6 +198,17 @@ fi
 
 echo "Setting Maven version to $VERSION..."
 $MVN_CMD versions:set -DnewVersion="$VERSION" -DprocessAllModules=true -DgenerateBackupPoms=false
+
+# versions:set rewrites project and parent coordinates, never a plain property. The examples
+# build against RESTHeart as an external dependency, pinning it with the restheart.version
+# property, so nothing above updates it: left alone it stays at whatever release was current
+# the last time somebody noticed, and the examples keep silently compiling against that one.
+EXAMPLES_POM="examples/pom.xml"
+if [ -f "$EXAMPLES_POM" ]; then
+  echo "Updating $EXAMPLES_POM restheart.version to $VERSION..."
+  sed -i.bak -E "s|<restheart\.version>[^<]*</restheart\.version>|<restheart.version>$VERSION</restheart.version>|" "$EXAMPLES_POM"
+  rm -f "${EXAMPLES_POM}.bak"
+fi
 
 # Update Helm chart version and appVersion (only for release versions, not SNAPSHOT)
 CHART_FILE="chart/Chart.yaml"
