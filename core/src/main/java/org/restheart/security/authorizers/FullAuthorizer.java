@@ -26,6 +26,7 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.RequestDescriptor;
 
 /**
@@ -82,8 +83,10 @@ public class FullAuthorizer implements DescriptorAwareAuthorizer {
      * false} is supposed to mean for that service.
      */
     @Override
-    public boolean isAllowed(RequestDescriptor descriptor) {
-        return true;
+    public Decision decide(RequestDescriptor descriptor) {
+        // Allows everything and resolves no permission — there is no ACL entry behind this
+        // decision, so there is no readFilter or projection to carry.
+        return Decision.allowed(null, null);
     }
 
     @Override

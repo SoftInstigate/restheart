@@ -50,6 +50,8 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.RequestDescriptor;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import org.slf4j.Logger;
@@ -205,8 +207,14 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Descrip
      * implementation of the actual authorization algorithm, never two.
      */
     @Override
-    public boolean isAllowed(RequestDescriptor descriptor) {
-        return isAllowed(SyntheticRequestFactory.from(descriptor));
+    public Decision decide(RequestDescriptor descriptor) {
+        // The synthetic request is kept, not discarded: isAllowed() attaches the permission it
+        // matched to that request's exchange, and an ACL readFilter/projectResponse has to be
+        // interpolated against the very request it was matched against (see Decision).
+        var request = SyntheticRequestFactory.from(descriptor);
+        return isAllowed(request)
+                ? Decision.allowed(BaseAclPermission.of(request), request)
+                : Decision.DENIED;
     }
 
     @Override

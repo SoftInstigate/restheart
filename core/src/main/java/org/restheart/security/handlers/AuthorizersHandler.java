@@ -21,6 +21,7 @@
 package org.restheart.security.handlers;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,6 +41,7 @@ import org.restheart.plugins.Service;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
@@ -292,10 +294,12 @@ public class AuthorizersHandler extends PipelinedHandler {
         var vetoers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER).toList();
         var allowers = descriptorAuthorizers.stream().filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER).toList();
 
+        var decisions = new ArrayList<Decision>(descriptors.size());
+
         for (var descriptor : descriptors) {
             for (var vetoer : vetoers) {
                 try {
-                    if (!vetoer.isAllowed(descriptor)) {
+                    if (!vetoer.decide(descriptor).allowed()) {
                         return false;
                     }
                 } catch (Exception ex) {
@@ -305,11 +309,12 @@ public class AuthorizersHandler extends PipelinedHandler {
                 }
             }
 
-            var descriptorAllowed = false;
+            Decision granted = null;
             for (var allower : allowers) {
                 try {
-                    if (allower.isAllowed(descriptor)) {
-                        descriptorAllowed = true;
+                    var decision = allower.decide(descriptor);
+                    if (decision.allowed()) {
+                        granted = decision;
                         break;
                     }
                 } catch (Exception ex) {
@@ -318,10 +323,18 @@ public class AuthorizersHandler extends PipelinedHandler {
                 }
             }
 
-            if (!descriptorAllowed) {
+            if (granted == null) {
                 return false;
             }
+
+            decisions.add(granted);
         }
+
+        // Attached only once every descriptor is allowed, so a service can never read a decision
+        // for an operation that was ultimately denied. This is the handoff of restheart#722 point
+        // 5: whatever readFilter or projection the ACL resolved travels with the decision to
+        // whoever executes the operation in-process.
+        exchange.putAttachment(DescriptorAwareAuthorizer.AUTHORIZED_OPERATIONS, List.copyOf(decisions));
 
         return true;
     }

@@ -20,6 +20,7 @@
  */
 package org.restheart.security.authorizers;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -47,6 +48,10 @@ public class FullAuthorizerTest {
         var authorizer = new FullAuthorizer(false);
         var descriptor = new RequestDescriptor(null, "GET", "/warehouse/inventory", Map.of(), Map.of(), Map.of(), null, null);
 
-        assertTrue(authorizer.isAllowed(descriptor));
+        var decision = authorizer.decide(descriptor);
+
+        assertTrue(decision.allowed());
+        // allows everything without matching an ACL entry, so there is no filter to carry
+        assertNull(decision.permission());
     }
 }
