@@ -66,11 +66,10 @@ import java.lang.annotation.Target;
  * When injecting "config", the field receives a Map containing the plugin's
  * configuration arguments as specified in the RESTHeart configuration file:
  * <pre>
- * plugins-args:
- *   myPlugin:
- *     apiKey: "secret"
- *     timeout: 30
- *     enabled: true
+ * myPlugin:
+ *   apiKey: "secret"
+ *   timeout: 30
+ *   enabled: true
  * </pre>
  * </p>
  * <p>

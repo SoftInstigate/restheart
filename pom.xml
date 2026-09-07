@@ -25,15 +25,35 @@
             mvn install -DskipUTs   : Skips Unit tests
             mvn install -DskipITs   : Skips Integration tests
             mvn install -DskipTests : Skips both Unit and Integration Tests
+            mvn install -Dquick     : Skips release-only packaging steps (license headers,
+                                      the .zip/.tar.gz dist archive) — combine with the flags
+                                      above to also skip tests; see the "quick" profile below.
         -->
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>
         <skipUTs>${skipTests}</skipUTs>
         <!--
-            MongoDB default version to test with
-            mvn clean verify -Dmongodb.version="8.3"  (to test with mongo:8.3 container)
+            Docker image + tag used to start MongoDB for `mvn clean verify`, via
+            core/pom.xml's "mongodb" profile (fabric8 docker-maven-plugin, active by
+            default). Default is mongodb/mongodb-atlas-local (mongod + mongot bundled
+            as a self-initializing single-node replica set), so restheart-ai's
+            $vectorSearch/createSearchIndexes karate tests (karate/ai/*.feature) work
+            locally with zero extra setup:
+                mvn clean verify -Dmongodb.version="8.0"   (a specific atlas-local tag)
+
+            CI's release/PR/branch compatibility matrices test against the OFFICIAL
+            mongo image on most legs instead (verifying compatibility across supported
+            MongoDB releases, including versions with no atlas-local equivalent tag,
+            e.g. 8.3) via core/pom.xml's "mongodb-classic" profile, which must be
+            explicitly selected (it needs its own bind-ip-all/replSet command flags —
+            the classic image doesn't self-initialize like atlas-local does):
+                mvn clean verify -P-mongodb,mongodb-classic \
+                    -Dmongodb.image=mongo -Dmongodb.version="8.3" -Dkarate.vectorSearch=false
+            One CI matrix leg still uses the default atlas-local image (no profile
+            override needed) specifically to run karate/ai/*.feature.
         -->
-        <mongodb.version>8.3</mongodb.version>
+        <mongodb.image>mongodb/mongodb-atlas-local</mongodb.image>
+        <mongodb.version>preview</mongodb.version>
         <jdk.version>25</jdk.version>
         <graalvm.version>25.1.3</graalvm.version>
         <truffle.version>25.1.3</truffle.version> <!-- Truffle and Graal languages are compatible
@@ -43,6 +63,19 @@
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
         -->
         <skipUpdateLicense>true</skipUpdateLicense>
+
+        <!--
+            mvn install -Dquick : skips build steps that exist for the release/packaging
+            process, not for the dev compile/test cycle — license header scanning
+            (license-maven-plugin, every module) and the .zip/.tar.gz distribution archive
+            (maven-assembly-plugin "with-deps", core module only). Does NOT skip tests —
+            combine with -DskipTests/-DskipUTs/-DskipITs for that, same as always. Does NOT
+            skip core's antrun "dist" step (copies built plugin jars + deps into
+            core/target/plugins/) — that's what makes a rebuilt jar actually runnable/
+            reloadable in a live instance, not release-only overhead.
+        -->
+        <license-header.phase>process-sources</license-header.phase>
+        <dist-package.phase>package</dist-package.phase>
 
         <!-- Build plugin versions -->
         <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
@@ -54,10 +87,10 @@
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
         <maven-antrun-plugin.version>3.2.0</maven-antrun-plugin.version>
-        <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
         <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
-        <native-maven-plugin.version>1.1.11</native-maven-plugin.version>
-        <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
+        <native-maven-plugin.version>1.1.8</native-maven-plugin.version>
+        <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
@@ -77,6 +110,7 @@
         <module>accounts</module>
         <module>emails</module>
         <module>stripe</module>
+        <module>ai</module>
         <module>core</module>
     </modules>
 
@@ -235,12 +269,12 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
-                <version>5.9.2</version>
+                <version>5.7.1</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.4.3.Final</version>
+                <version>2.4.2.Final</version>
             </dependency>
             <!-- Update transitive dependency of undertow-core required for the native image build -->
             <dependency>
@@ -283,12 +317,12 @@
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20260522</version>
+                <version>20251224</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.21.6</version>
+                <version>2.21.5</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -377,19 +411,29 @@
                 <version>1.14.6</version>
             </dependency>
             <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp</artifactId>
+                <version>2.0.1</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
                 <version>3.3.2</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-parsers-standard-package</artifactId>
+                <version>3.3.2</version>
+            </dependency>
+            <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.40</version>
+                <version>4.2.39</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-jvm</artifactId>
-                <version>4.2.40</version>
+                <version>4.2.39</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -409,7 +453,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.194</version>
+                <version>4.8.189</version>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
@@ -680,6 +724,19 @@
             <modules>
                 <module>examples</module>
             </modules>
+        </profile>
+        <profile>
+            <!-- mvn install -Dquick — see the license-header.phase/dist-package.phase properties above -->
+            <id>quick</id>
+            <activation>
+                <property>
+                    <name>quick</name>
+                </property>
+            </activation>
+            <properties>
+                <license-header.phase>none</license-header.phase>
+                <dist-package.phase>none</dist-package.phase>
+            </properties>
         </profile>
         <profile>
             <id>deploy</id>

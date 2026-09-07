@@ -34,6 +34,25 @@ import com.intuit.karate.Runner;
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove 'ignore' tag from streams.feature
  *
+ * The default MongoDB (started by core/pom.xml's docker-maven-plugin binding, "mongodb"
+ * profile) is {@code mongodb/mongodb-atlas-local} — bundles mongod + mongot as a
+ * self-initializing single-node replica set — so {@code karate/ai/*.feature}
+ * ({@code @requires-vector-search}) run by default, no separate setup needed. CI's
+ * compatibility-matrix legs that instead start the official {@code mongo} image (no
+ * {@code $vectorSearch}/{@code createSearchIndexes} support — see the
+ * {@code mongodb-classic} profile) pass {@code -Dkarate.vectorSearch=false} to exclude
+ * them on those legs specifically.
+ *
+ * {@code karate/ai/embedding-provider.feature} ({@code @requires-embedding-provider})
+ * additionally needs a real embedding-provider API key (a live HTTP call, not just a
+ * running MongoDB) and is opt-in via {@code -Dkarate.embeddingProvider=true} — off by
+ * default so a plain {@code mvn clean verify} never requires a secret. The key itself
+ * is read from the {@code VOYAGE_API_KEY} environment variable directly, per request,
+ * by test-plugins' {@code aiEmbeddingProviderOverrideInterceptor} — see
+ * {@code karate/ai/embedding-provider.feature} and {@code conf-overrides.yml}. CI's
+ * atlas-local leg sets both only when a {@code VOYAGE_API_KEY} secret is configured
+ * on the repository.
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RunnerIT extends AbstactIT {
@@ -44,6 +63,19 @@ public class RunnerIT extends AbstactIT {
         if (!isGraalVM25_1_OrLater()) {
             // Skip polyglot tests on non-GraalVM or GraalVM < 25.1 (JS plugins won't load)
             tags.add("~@requires-graalvm");
+        }
+
+        // true unless a caller explicitly says the running MongoDB lacks $vectorSearch/
+        // createSearchIndexes support (CI's official-mongo compatibility-matrix legs) —
+        // matches the default MongoDB (mongodb-atlas-local) actually supporting them.
+        if (!Boolean.parseBoolean(System.getProperty("karate.vectorSearch", "true"))) {
+            tags.add("~@requires-vector-search");
+        }
+
+        // false unless a caller explicitly opts in AND has set VOYAGE_API_KEY (see
+        // karate/ai/embedding-provider.feature) — never required for a plain local run.
+        if (!Boolean.parseBoolean(System.getProperty("karate.embeddingProvider", "false"))) {
+            tags.add("~@requires-embedding-provider");
         }
 
         // Defaults to the whole suite. Narrow it while debugging with a comma-separated list:

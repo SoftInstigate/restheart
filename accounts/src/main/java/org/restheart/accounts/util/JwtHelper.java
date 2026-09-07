@@ -5,12 +5,10 @@ import com.auth0.jwt.algorithms.Algorithm;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.configuration.ConfigurationException;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.security.AuthCookie;
-import org.restheart.security.authenticators.MongoRealmAuthenticator;
 import org.restheart.security.tokens.JwtConfigProvider;
-import org.restheart.security.tokens.JwtIssuer;
+import org.restheart.security.tokens.DefaultJwtIssuer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +33,7 @@ import java.util.Set;
  *
  * <h2>There is one issuance logic</h2>
  * <p>What ends up in a JWT — which account properties become claims, the denylist, the nested
- * path syntax — is decided by {@link JwtIssuer}, the same class {@code jwtTokenManager} uses on
+ * path syntax — is decided by {@link DefaultJwtIssuer}, the same class {@code jwtTokenManager} uses on
  * {@code /token}. A RESTHeart JWT is one thing: these are different moments of issuance, not
  * different tokens. This class only supplies the data (the re-read user document, attached
  * params, extra claims) and signs through the issuer.
@@ -60,7 +58,7 @@ public class JwtHelper {
     private final List<String> accountPropertiesClaims;
 
     /** The issuance logic shared with {@code jwtTokenManager}. */
-    private final JwtIssuer jwtIssuer;
+    private final DefaultJwtIssuer jwtIssuer;
 
     /**
      * Builds a helper without attached-param propagation (backward compatible).
@@ -72,7 +70,7 @@ public class JwtHelper {
     /**
      * Builds a helper supporting {@code account-properties-claims}, without resolving the
      * password property name from {@code mongoRealmAuthenticator} (uses the default
-     * {@value JwtIssuer#DEFAULT_PASSWORD_PROPERTY}).
+     * {@value DefaultJwtIssuer#DEFAULT_PASSWORD_PROPERTY}).
      *
      * @param accountPropertiesClaims names of the attached params to include as JWT claims;
      *                                {@code null} = no additional propagation
@@ -102,13 +100,13 @@ public class JwtHelper {
         this.issuer = issuer;
         this.ttlMinutes = ttlMinutes;
         this.accountPropertiesClaims = accountPropertiesClaims;
-        this.jwtIssuer = new JwtIssuer(
+        this.jwtIssuer = new DefaultJwtIssuer(
                 Algorithm.HMAC256(key),
                 issuer,
                 null,
                 accountPropertiesClaims,
                 resolveRequiredClaims(registry),
-                resolvePasswordPropertyName(registry));
+                DefaultJwtIssuer.resolvePasswordProperty(registry));
     }
 
     /**
@@ -138,32 +136,13 @@ public class JwtHelper {
         return null;
     }
 
-    /** Risolve il nome della proprietà password da {@code mongoRealmAuthenticator}, se disponibile. */
-    private static String resolvePasswordPropertyName(PluginsRegistry registry) {
-        if (registry == null) {
-            return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
-        }
-
-        try {
-            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
-            if (pr != null && pr.isEnabled() && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
-                var prop = mra.getPropPassword();
-                return prop != null && !prop.isBlank() ? prop : JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
-            }
-        } catch (ConfigurationException ce) {
-            // mongoRealmAuthenticator not configured — fall back to the default
-        }
-
-        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
-    }
-
     /** Whether {@code claim} must never be copied from the user document into a JWT claim. */
     private boolean isDenylisted(String claim) {
         return jwtIssuer.isDenylisted(claim);
     }
 
     /**
-     * Issues a JWT through {@link JwtIssuer}, the same issuance logic {@code jwtTokenManager}
+     * Issues a JWT through {@link DefaultJwtIssuer}, the same issuance logic {@code jwtTokenManager}
      * applies, without depending on the configured token manager (which may be absent, or may
      * not issue JWTs at all).
      *
@@ -213,7 +192,7 @@ public class JwtHelper {
                 ? accountPropertiesClaimsOverride
                 : accountPropertiesClaims;
 
-        // The properties JwtIssuer selects claims from: the re-read user document, plus the
+        // The properties DefaultJwtIssuer selects claims from: the re-read user document, plus the
         // attached params, which win (they are fresher — e.g. srvNode set by SrvNodeEnricher).
         var properties = new java.util.HashMap<String, Object>();
 
@@ -241,7 +220,7 @@ public class JwtHelper {
             }
         }
 
-        // Claim selection, denylist and nested paths all live in JwtIssuer — the same logic
+        // Claim selection, denylist and nested paths all live in DefaultJwtIssuer — the same logic
         // jwtTokenManager applies on /token.
         var builder = jwtIssuer.newBuilder(email, roles, Date.from(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES)))
                 .withIssuedAt(Instant.now());

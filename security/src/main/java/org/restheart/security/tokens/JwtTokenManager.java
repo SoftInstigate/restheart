@@ -95,7 +95,7 @@ public class JwtTokenManager implements TokenManager {
     private String[] audience;
     private boolean enabled = false;
     private List<String> accountPropertiesClaims;
-    private volatile JwtIssuer issuerImpl;
+    private volatile DefaultJwtIssuer issuerImpl;
 
     @Inject("config")
     Map<String, Object> config;
@@ -137,7 +137,7 @@ public class JwtTokenManager implements TokenManager {
         this.audience = jwtConfig.audience();
 
         // The claim policy is shared with every other JWT issuer via jwtConfigProvider — see
-        // JwtIssuer. The legacy per-plugin setting still wins when set, to not break existing
+        // DefaultJwtIssuer. The legacy per-plugin setting still wins when set, to not break existing
         // deployments, but it is deprecated exactly like jwt-key was.
         var legacyClaims = this.<List<String>>argOrDefaultNullable("account-properties-claims");
 
@@ -179,46 +179,22 @@ public class JwtTokenManager implements TokenManager {
      * {@code mongoRealmAuthenticator}, which may not be initialized when this plugin's
      * {@code @OnInit} runs.
      */
-    JwtIssuer issuer() {
+    DefaultJwtIssuer issuer() {
         var local = this.issuerImpl;
 
         if (local == null) {
             synchronized (this) {
                 local = this.issuerImpl;
                 if (local == null) {
-                    local = new JwtIssuer(algo, issuer, audience, accountPropertiesClaims,
-                            jwtConfig.requiredAccountPropertiesClaims(), passwordProperty());
+                    local = new DefaultJwtIssuer(algo, issuer, audience, accountPropertiesClaims,
+                            jwtConfig.requiredAccountPropertiesClaims(),
+                            DefaultJwtIssuer.resolvePasswordProperty(registry));
                     this.issuerImpl = local;
                 }
             }
         }
 
         return local;
-    }
-
-    /**
-     * The password property name from {@code mongoRealmAuthenticator/prop-password}, so that the
-     * denylist covers it even when the deployment renames it.
-     */
-    private String passwordProperty() {
-        if (registry == null) {
-            return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
-        }
-
-        try {
-            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
-            if (pr != null && pr.isEnabled()
-                    && pr.getInstance() instanceof MongoRealmAuthenticator mra) {
-                var prop = mra.getPropPassword();
-                if (prop != null && !prop.isBlank()) {
-                    return prop;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
-        }
-
-        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
     }
 
     private Algorithm getAlgorithm(final String name, final String key) {
@@ -372,7 +348,7 @@ public class JwtTokenManager implements TokenManager {
             var cacheStartTime = System.currentTimeMillis();
             // The effective claim list is part of the cache key: on a multi-tenant node the same
             // principal can be served with different lists, producing different tokens.
-            final var claims = JwtIssuer.claimsOverride(request);
+            final var claims = DefaultJwtIssuer.claimsOverride(request);
             final var ca = new ComparableAccount(account, claims);
             final var token = this.jwtCache.getLoading(ca).get();
             var cacheDuration = System.currentTimeMillis() - cacheStartTime;
@@ -540,7 +516,7 @@ public class JwtTokenManager implements TokenManager {
     }
 
     private String getAuthDb(Account account) {
-        return account instanceof WithProperties<?> wp ? JwtIssuer.authDb(wp.propertiesAsMap()) : null;
+        return account instanceof WithProperties<?> wp ? DefaultJwtIssuer.authDb(wp.propertiesAsMap()) : null;
     }
 
     /**
@@ -557,7 +533,7 @@ public class JwtTokenManager implements TokenManager {
 
     /**
      * As {@link #withAccountPropertiesClaims(Builder, Account)}, resolving the effective claim
-     * list from {@code request} — see {@link JwtIssuer#CLAIMS_OVERRIDE_PARAM}.
+     * list from {@code request} — see {@link DefaultJwtIssuer#CLAIMS_OVERRIDE_PARAM}.
      *
      * <p>Callers that hold a request should prefer this overload. An authorization code that
      * omits a claim cannot have it reappear in the access token minted from it: the access token
@@ -565,7 +541,7 @@ public class JwtTokenManager implements TokenManager {
      */
     public Builder withAccountPropertiesClaims(Builder builder, final Account account, final Request<?> request) {
         if (!(account instanceof WithProperties<?> awp)) return builder;
-        return issuer().applyAccountClaims(builder, awp.propertiesAsMap(), JwtIssuer.claimsOverride(request));
+        return issuer().applyAccountClaims(builder, awp.propertiesAsMap(), DefaultJwtIssuer.claimsOverride(request));
     }
 
     @Override
@@ -597,7 +573,7 @@ public class JwtTokenManager implements TokenManager {
                 && request.getAuthenticatedAccount().getPrincipal().getName() != null) {
             final var account = request.getAuthenticatedAccount();
             // Same key get() uses: the effective claim list is part of the token's identity
-            final var claims = JwtIssuer.claimsOverride(request);
+            final var claims = DefaultJwtIssuer.claimsOverride(request);
             final var ca = new ComparableAccount(account, claims);
 
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
@@ -696,7 +672,7 @@ record Token(char[] raw, Date expires, String[] roles, Map<String, ? super Objec
  * <p>{@code claims} is the effective {@code account-properties-claims} list the token was built
  * with — part of the identity of the cached token, not incidental. On a multi-tenant node two
  * requests for the same principal can carry different lists (see
- * {@link JwtIssuer#CLAIMS_OVERRIDE_PARAM}), and the resulting tokens differ in content; keying on
+ * {@link DefaultJwtIssuer#CLAIMS_OVERRIDE_PARAM}), and the resulting tokens differ in content; keying on
  * the principal alone would serve one tenant's token to another. {@code null} means "the
  * configured default was used".
  */
@@ -742,6 +718,6 @@ record ComparableAccount(Account wrapped, List<String> claims) {
     }
 
     private String getAuthDb(Account account) {
-        return account instanceof WithProperties<?> wp ? JwtIssuer.authDb(wp.propertiesAsMap()) : null;
+        return account instanceof WithProperties<?> wp ? DefaultJwtIssuer.authDb(wp.propertiesAsMap()) : null;
     }
 }

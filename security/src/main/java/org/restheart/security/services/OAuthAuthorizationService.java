@@ -41,7 +41,7 @@ import org.restheart.security.ACLRegistry;
 import org.restheart.security.WithProperties;
 import org.restheart.security.interceptors.FormDataToBasicAuthInterceptor;
 import org.restheart.security.tokens.JwtConfigProvider;
-import org.restheart.security.tokens.JwtIssuer;
+import org.restheart.security.tokens.DefaultJwtIssuer;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +83,7 @@ import io.undertow.util.HttpString;
  *   <li>{@code ccm} — code_challenge_method</li>
  *   <li>{@code ruri} — redirect_uri</li>
  *   <li>{@code cid} — client_id</li>
- *   <li>account-properties-claims (from {@link JwtIssuer})</li>
+ *   <li>account-properties-claims (from {@link DefaultJwtIssuer})</li>
  * </ul>
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -123,7 +123,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
 
     private String loginUrl;
     private List<String> allowedRedirectUris;
-    private volatile JwtIssuer jwtIssuer;
+    private volatile DefaultJwtIssuer jwtIssuer;
 
     @OnInit
     public void init() {
@@ -139,7 +139,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
      * needs {@code mongoRealmAuthenticator}, which may not be initialized when this plugin's
      * {@code @OnInit} runs.
      */
-    private JwtIssuer issuer() {
+    private DefaultJwtIssuer issuer() {
         var local = this.jwtIssuer;
 
         if (local == null) {
@@ -147,32 +147,16 @@ public class OAuthAuthorizationService implements ByteArrayService {
                 local = this.jwtIssuer;
                 if (local == null) {
                     var algo = buildAlgorithm(jwtConfig);
-                    local = new JwtIssuer(algo, jwtConfig.issuer(), jwtConfig.audience(),
+                    local = new DefaultJwtIssuer(algo, jwtConfig.issuer(), jwtConfig.audience(),
                             jwtConfig.accountPropertiesClaims(),
-                            jwtConfig.requiredAccountPropertiesClaims(), resolvePasswordPropertyName());
+                            jwtConfig.requiredAccountPropertiesClaims(),
+                            DefaultJwtIssuer.resolvePasswordProperty(registry));
                     this.jwtIssuer = local;
                 }
             }
         }
 
         return local;
-    }
-
-    private String resolvePasswordPropertyName() {
-        try {
-            var pr = registry.getAuthenticator("mongoRealmAuthenticator");
-            if (pr != null && pr.isEnabled()
-                    && pr.getInstance() instanceof org.restheart.security.authenticators.MongoRealmAuthenticator mra) {
-                var prop = mra.getPropPassword();
-                if (prop != null && !prop.isBlank()) {
-                    return prop;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Could not resolve mongoRealmAuthenticator/prop-password, using default", e);
-        }
-
-        return JwtIssuer.DEFAULT_PASSWORD_PROPERTY;
     }
 
     @Override
@@ -330,7 +314,7 @@ public class OAuthAuthorizationService implements ByteArrayService {
         // list on a multi-tenant deployment.
         if (account instanceof WithProperties<?> awp) {
             codeBuilder = jwtIssuer.applyAccountClaims(codeBuilder, awp.propertiesAsMap(),
-                    JwtIssuer.claimsOverride(request));
+                    DefaultJwtIssuer.claimsOverride(request));
         }
 
         var code = jwtIssuer.sign(codeBuilder);

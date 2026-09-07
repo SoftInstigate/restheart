@@ -173,15 +173,14 @@
  * </p>
  * <pre>
  * # restheart.yml
- * plugins-args:
- *   myAuthenticator:
- *     enabled: true
- *     database: "userdb"
- *     collection: "users"
- *   
- *   myAuthorizer:
- *     enabled: true
- *     adminRoles: ["admin", "superuser"]
+ * myAuthenticator:
+ *   enabled: true
+ *   database: "userdb"
+ *   collection: "users"
+ * 
+ * myAuthorizer:
+ *   enabled: true
+ *   adminRoles: ["admin", "superuser"]
  * </pre>
  * 
  * <h2>Multiple Plugins</h2>

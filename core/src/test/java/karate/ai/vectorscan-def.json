@@ -1,0 +1,51 @@
+{
+    "aggrs": [
+        {
+            "uri": "scanAll",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": {
+                    "path": "vector",
+                    "queryVector": { "$var": "q" },
+                    "similarity": "cosine",
+                    "limit": { "$var": ["k", 10] }
+                }}
+            ]
+        },
+        {
+            "uri": "scanFiltered",
+            "type": "pipeline",
+            "stages": [
+                { "$match": { "category": "x" } },
+                { "$vectorScan": {
+                    "path": "vector",
+                    "queryVector": { "$var": "q" },
+                    "similarity": "cosine",
+                    "limit": { "$var": ["k", 10] }
+                }}
+            ]
+        },
+        {
+            "uri": "scanProjected",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": {
+                    "path": "vector",
+                    "queryVector": { "$var": "q" },
+                    "similarity": "cosine",
+                    "limit": { "$var": ["k", 10] }
+                }},
+                { "$project": { "_id": 0, "category": 1, "score": 1 } }
+            ]
+        },
+        {
+            "uri": "scanMissingPath",
+            "type": "pipeline",
+            "stages": [
+                { "$vectorScan": {
+                    "queryVector": { "$var": "q" }
+                }}
+            ]
+        }
+    ]
+}

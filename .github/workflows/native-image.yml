@@ -85,6 +85,7 @@ jobs:
         if: inputs.version != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           SRC=${{ matrix.arch == 'windows-amd64' && 'core/target/restheart.exe' || 'core/target/restheart' }}
           DST="restheart-${{ matrix.arch }}${{ matrix.arch == 'windows-amd64' && '.exe' || '' }}"

@@ -51,11 +51,10 @@ import java.util.Map;
  * <p>
  * Example configuration override in restheart.yml:
  * <pre>
- * plugins-args:
- *   myPlugin:
- *     enabled: false        # Override enabledByDefault from annotation
- *     secured: true         # Override secure from annotation
- *     customParam: "value"  # Plugin-specific configuration
+ * myPlugin:
+ *   enabled: false        # Override enabledByDefault from annotation
+ *   secured: true         # Override secure from annotation
+ *   customParam: "value"  # Plugin-specific configuration
  * </pre>
  * </p>
  * <p>

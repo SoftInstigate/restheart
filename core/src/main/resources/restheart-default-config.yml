@@ -49,6 +49,19 @@ jwtConfigProvider:
   issuer: restheart.org
   audience: null   # null or array of audience strings
 
+# Issues signed JWTs on behalf of other plugins, which inject it as @Inject("jwtIssuer").
+# Key, algorithm, issuer, audience and claim policy all come from jwtConfigProvider above: a token
+# minted here is the same JWT this deployment issues at login or on /token, and is verified by the
+# same jwtAuthenticationMechanism. This exists so that a plugin in a module that cannot see
+# restheart-security doesn't have to carry its own copy of the issuance logic and a second copy of
+# the signing key.
+# ttl is the default lifetime for callers that state none; each caller may ask for its own — the
+# MCP server, for instance, asks for 60 seconds for the token how_to_call embeds in the request it
+# composes, so that a leaked one is worthless within the minute.
+jwtIssuer:
+  enabled: true
+  ttl: 15 # in minutes
+
 # API Key Authentication
 # Authenticates long-lived, revocable keys sent as `Authorization: Bearer <prefix>...`.
 # Shares the Bearer scheme with jwtAuthenticationMechanism: it runs first (priority) and
@@ -654,6 +667,113 @@ stripePlansService:
 stripeCatalogCache:
   enabled: false
 
+# restheart-ai: vector search index management, document chunking for RAG, pluggable
+# embedding/reranking providers, and $vectorScan brute-force search (no mongot/index
+# needed). See https://restheart.org/docs/ai
+
+# Vector search index CRUD via PUT/GET/DELETE /_indexes/{name} with a
+# {"type": "vectorSearch", ...} body. Enabled by default - works out of the box on any
+# MongoDB with mongot (Atlas, or Community/Enterprise 8.2+).
+vectorSearchIndexCreateInterceptor:
+  enabled: true
+
+vectorSearchIndexListInterceptor:
+  enabled: true
+
+vectorSearchIndexDeleteInterceptor:
+  enabled: true
+
+# Extracts text (Apache Tika) from every file uploaded to any GridFS bucket, splits it
+# into overlapping chunks and stores them in target-collection. embedding-provider is
+# optional: leave blank to rely on MongoDB's own autoEmbed index type on the chunks
+# collection instead of restheart-ai embedding them itself. A filename with a recognized
+# source code extension (.java, .py, .go, ...) is chunked at function/class boundaries
+# instead, with no overlap between chunks -- see CodeAwareSplitter.
+documentChunkingInterceptor:
+  enabled: false
+  chunk-size: 1000
+  chunk-overlap: 200
+  target-collection: _chunks
+  embedding-provider: ""
+
+# Embeds a text field automatically on write. Also requires the target collection to
+# declare { "vectorSearch": { "textField": "...", "embeddingField": "..." } } metadata.
+autoEmbeddingInterceptor:
+  enabled: false
+  embedding-provider: ""
+
+# Registers the $vectorize aggregation operator (embeds text to a vector inline, at
+# query time, anywhere in a pipeline).
+vectorizeOperator:
+  enabled: false
+  embedding-provider: ""
+
+# Re-ranks $vectorSearch results when the queried aggregation declares a "rerank"
+# attribute. rerank-provider blank (default) calls the Atlas Reranking API directly via
+# atlas-api-key; set it to a configured Provider<RerankModel> (voyageRerankProvider,
+# cohereRerankProvider) to use that instead.
+rerankingInterceptor:
+  enabled: false
+  # Never commit to version control - inject via environment variable substitution.
+  atlas-api-key: $(ATLAS_API_KEY)
+  rerank-api-url: https://api.atlas.mongodb.com/api/v1/vectorSearch/rerank
+  rerank-provider: ""
+
+# $vectorScan: brute-force vector similarity search requiring no mongot, no Atlas, and
+# no vector search index of any kind. See https://github.com/SoftInstigate/restheart/issues/712
+vectorScanInterceptor:
+  enabled: false
+  # Caps how many documents get scored per query, enforced via an injected $limit.
+  default-max-candidates: 10000
+  default-limit: 10
+
+# Embedding providers (Provider<EmbeddingModel>) - enable the ones you use.
+openAIEmbeddingProvider:
+  enabled: false
+  api-key: $(OPENAI_API_KEY)
+  model: text-embedding-3-small
+  base-url: https://api.openai.com/v1
+
+voyageEmbeddingProvider:
+  enabled: false
+  api-key: $(VOYAGE_API_KEY)
+  model: voyage-3.5
+  base-url: https://api.voyageai.com/v1
+  # Optional: "query" or "document" - omitted entirely (not sent as "") when blank.
+  # input-type: document
+
+# Voyage's contextualized chunk embeddings (voyage-context-4): when set as
+# documentChunkingInterceptor's embedding-provider, all of a file's chunks are embedded
+# together so each vector is aware of its neighbors, instead of in isolation.
+voyageContextualEmbeddingProvider:
+  enabled: false
+  api-key: $(VOYAGE_API_KEY)
+  model: voyage-context-4
+  # input-type: document
+  # Optional: 256, 512, 1024 (default) or 2048.
+  # output-dimension: 1024
+
+# Local embeddings via Ollama - no API key needed.
+ollamaEmbeddingProvider:
+  enabled: false
+  base-url: http://localhost:11434
+  model: nomic-embed-text
+
+# Rerank providers (Provider<RerankModel>) - alternatives to the Atlas Reranking API.
+cohereRerankProvider:
+  enabled: false
+  api-key: $(COHERE_API_KEY)
+  model: rerank-v3.5
+  base-url: https://api.cohere.com/v2
+
+# Kept distinct from voyageEmbeddingProvider's own api-key: a deployment may use a
+# different Voyage key/model for reranking than for embeddings.
+voyageRerankProvider:
+  enabled: false
+  api-key: $(VOYAGE_API_KEY)
+  model: rerank-2.5
+  base-url: https://api.voyageai.com/v1
+
 # Provider the MongoClient via @Inject('mclient')
 mclient:
   # See https://docs.mongodb.com/manual/reference/connection-string/
@@ -664,6 +784,12 @@ mclient:
 mongo:
   enabled: true
   uri: /
+
+  # Exposes MongoDB collections/aggregations/streams through the MCP server (see mcpService
+  # below), on top of each resource's own opt-in "mcp" metadata block. Set to false to hide
+  # every MongoDB resource from MCP regardless of that per-resource metadata.
+  # See https://restheart.org/docs/ai/mcp
+  mcp: true
 
   # Expose MongoDB resources at specific URIs.
   # 'what': MongoDB resource (/db[/coll[/docid]]) or '*' for all databases
@@ -756,6 +882,30 @@ graphql:
   verbose: false
   # restrict-mapping-db: when enabled, all mappings must use the same db as the GraphQL app definition
   restrict-mapping-db: false
+  # Exposes GraphQL apps through the MCP server (see mcpService below), on top of each app's own
+  # opt-in "mcp" metadata block. Set to false to hide every GraphQL app from MCP regardless of
+  # that per-app metadata. See https://restheart.org/docs/ai/mcp
+  mcp: true
+
+# MCP (Model Context Protocol) server — exposes MCP-enabled APIs (MongoDB, GraphQL, and any
+# other plugin implementing McpAware) to AI agents.
+# See https://restheart.org/docs/ai/mcp and https://restheart.org/docs/framework/mcp-aware
+mcpService:
+  enabled: true
+  uri: /mcp
+
+  # How long list_apis/how_to_call results are cached before refreshing. Trades instant
+  # consistency for a bounded staleness window — see the "catalog cache" section of the docs.
+  catalog-ttl-seconds: 300
+
+  # Enables the MCP "resources" primitive (resources/list, resources/read,
+  # resources/templates/list) in addition to the list_apis/how_to_call tools — the official MCP
+  # SDK manages resources as a single server-wide registry, not per-request, so it needs one
+  # canonical externally-visible URL rather than whatever a given request's Host header says.
+  # Defaults to the standard local setup; override to your real public URL for any other
+  # deployment (a reverse proxy, a custom host/port, ...). Comment out to disable the resources
+  # primitive entirely (list_apis/how_to_call keep working regardless).
+  public-base-url: http://localhost:8080
 
 # Automatically creates indexes on {"descriptor.uri":1} and {"descriptor.name":1}
 # for GraphQL applications to improve query performance when fetching app definitions

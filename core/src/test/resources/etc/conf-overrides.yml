@@ -96,6 +96,14 @@
       password: secret
       roles: []
 
+    # McpAuthorizationIT: a caller that may reach /mcp and read exactly one database over REST.
+    # The suite asserts resources/read grants and denies precisely what the equivalent REST GET
+    # does — the point of restheart#722 — so it needs a role that is allowed somewhere and
+    # denied somewhere else, rather than admin's blanket path-prefix "/".
+    - userid: mcpuser
+      password: secret
+      roles: [ mcpuser ]
+
     - userid: full
       password: secret
       roles: [ full ]
@@ -107,6 +115,17 @@
     - userid: both
       password: secret
       roles: [ filtered, full ]
+
+    # McpAclEnforcementIT: two principals under one ACL entry whose mongo section carries a
+    # readFilter and a projectResponse, so a read through /mcp can be compared against the
+    # equivalent REST GET row by row and field by field (restheart#722).
+    - userid: aclowner1
+      password: secret
+      roles: [ aclreader ]
+
+    - userid: aclowner2
+      password: secret
+      roles: [ aclreader ]
 
 /mongoRealmAuthenticator/users-db: restheart-test
 
@@ -180,6 +199,35 @@
           allowBulkPatch: true          # default false
           allowBulkDelete: true         # default false
           allowWriteMode: true          # default false
+
+    # McpAuthorizationIT (restheart#722). Reaching /mcp is one permission; reading data through
+    # it is another — deliberately kept separate so the suite can prove a caller that is welcome
+    # at the MCP endpoint is still refused the data its ACL does not grant. GET-only, because a
+    # documents-mode resources/read is authorized as the GET it is equivalent to.
+    - role: mcpuser
+      predicate: path-prefix[path="/mcp"]
+      priority: 0
+
+    - role: mcpuser
+      predicate: path-prefix[path="/test-mcp-authz-allowed"] and method[value="GET"]
+      priority: 0
+      mongo:
+          allowManagementRequests: true # default false
+
+    # McpAclEnforcementIT — see the users above. Reading is restricted to the caller's own rows
+    # and hides "secret"; both must hold identically through REST and through /mcp.
+    - role: aclreader
+      predicate: path-prefix[path="/mcp"]
+      priority: 0
+
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-mcp-acl"]
+      priority: 0
+      mongo:
+        readFilter: >
+          {"owner": "@user.userid"}
+        projectResponse: >
+          {"secret": 0}
 
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]
@@ -390,6 +438,11 @@
 /graphql/db: test-graphql
 /graphql/verbose: true
 
+# MCP: catalog data is cached for this TTL (CachedResourceLookup, see #616) — production
+# default is 300s, far too long for ITs that create a resource and immediately expect
+# list_apis/how_to_call to see it. A 1s TTL keeps McpMongo*IT/McpGraphqlAppIT deterministic.
+/mcpService/catalog-ttl-seconds: 1
+
 /proxies:
  - location: /pecho
    proxy-pass: http://127.0.0.1:8080/echo
@@ -589,3 +642,54 @@
 /stripeCatalogCache/enabled: true
 /ordersCheckoutInterceptor/enabled: true
 /ordersCheckoutResponseInterceptor/enabled: true
+
+# restheart-ai. Safe to leave enabled for the whole suite: vectorSearchIndexList/Delete
+# Interceptors catch-and-log when Atlas Search isn't available (any GET/DELETE
+# /_indexes elsewhere in the suite just no-ops), and documentChunkingInterceptor
+# catches Tika/GridFS errors the same way — neither affects tests that don't target
+# them. karate/ai/*.feature actually exercises these; the suite's MongoDB is now
+# mongodb/mongodb-atlas-local (see core/pom.xml's docker-maven-plugin config and
+# RunnerIT's class javadoc), so those scenarios need no separate setup.
+/vectorSearchIndexCreateInterceptor/enabled: true
+/vectorSearchIndexListInterceptor/enabled: true
+/vectorSearchIndexDeleteInterceptor/enabled: true
+/documentChunkingInterceptor/enabled: true
+
+# voyageEmbeddingProvider / voyageContextualEmbeddingProvider / autoEmbeddingInterceptor /
+# vectorizeOperator are enabled but given NO static api-key or default embedding-provider:
+# every value comes entirely from the per-request override attached by
+# aiEmbeddingProviderOverrideInterceptor below (only when a request carries
+# ?_ai-embedding-override=<name>), so no secret is ever written to this file and no
+# other test is affected — documentChunkingInterceptor's own default embedding-provider
+# stays blank, autoEmbeddingInterceptor only fires on collections with vectorSearch.*
+# metadata (only karate/ai/embedding-provider.feature sets that), and vectorizeOperator
+# only fires on pipelines that actually use $vectorize (same). See
+# karate/ai/embedding-provider.feature.
+/voyageEmbeddingProvider/enabled: true
+/voyageContextualEmbeddingProvider/enabled: true
+/autoEmbeddingInterceptor/enabled: true
+/vectorizeOperator/enabled: true
+
+# rerankingInterceptor / voyageRerankProvider: same story as the embedding plugins
+# above -- enabled, but with no static atlas-api-key/rerank-provider/api-key, so
+# reranking only ever happens on a request that explicitly overrides it (only
+# karate/ai/live-semantic-search.feature does). rerankingInterceptor itself only fires
+# when the queried aggregation declares a "rerank" attribute, so leaving it enabled
+# with no static config has no effect on any other test.
+/rerankingInterceptor/enabled: true
+/voyageRerankProvider/enabled: true
+
+# Test interceptor: attaches override-ai-embedding-provider=<name> and/or
+# override-ai-rerank-provider=<name> (plus the API key from the VOYAGE_API_KEY env var)
+# when ?_ai-embedding-override=<name> and/or ?_ai-rerank-override=<name> is present.
+# Used by karate/ai/embedding-provider.feature and karate/ai/live-semantic-search.
+# feature to exercise restheart-ai's providers per-request without affecting any other
+# test.
+/aiEmbeddingProviderOverrideInterceptor/enabled: true
+
+# vectorScanInterceptor: brute-force vector search, no mongot/index required (#712).
+# Safe to leave enabled for the whole suite -- it only ever fires on an aggregation
+# whose stored pipeline actually contains a $vectorScan stage (karate/ai/vector-scan.
+# feature is the only one that does), and needs no MongoDB capability the official-mongo
+# CI legs lack, unlike the rest of restheart-ai's *.feature files.
+/vectorScanInterceptor/enabled: true

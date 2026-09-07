@@ -42,7 +42,10 @@ import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
+import org.restheart.plugins.security.RequestDescriptor;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
 import org.restheart.security.utils.MongoUtils;
@@ -65,7 +68,7 @@ import io.undertow.server.HttpServerExchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoAclAuthorizer", description = "authorizes requests against acl stored in mongodb")
-public class MongoAclAuthorizer implements Authorizer {
+public class MongoAclAuthorizer implements DescriptorAwareAuthorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclAuthorizer.class);
 
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
@@ -233,6 +236,23 @@ public class MongoAclAuthorizer implements Authorizer {
             exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
             return true;
         }
+    }
+
+    /**
+     * See restheart#722. Delegates to the exact same {@link #isAllowed(Request)} above — this is
+     * purely an adapter at the boundary: {@link SyntheticRequestFactory} builds a {@link Request}
+     * whose predicate/role evaluation reads identically to a real one, so there is exactly one
+     * implementation of the actual authorization algorithm, never two.
+     */
+    @Override
+    public Decision decide(RequestDescriptor descriptor) {
+        // The synthetic request is kept, not discarded: isAllowed() attaches the permission it
+        // matched to that request's exchange, and an ACL readFilter/projectResponse has to be
+        // interpolated against the very request it was matched against (see Decision).
+        var request = SyntheticRequestFactory.from(descriptor);
+        return isAllowed(request)
+                ? Decision.allowed(BaseAclPermission.of(request), request)
+                : Decision.DENIED;
     }
 
     @Override

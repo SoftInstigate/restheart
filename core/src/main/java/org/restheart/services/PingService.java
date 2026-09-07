@@ -29,6 +29,7 @@ import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mcp.McpAware;
 import org.restheart.utils.HttpStatus;
 
 import io.undertow.server.HttpServerExchange;
@@ -48,7 +49,7 @@ import io.undertow.server.HttpServerExchange;
         description = "Ping service returning a greeting message along with RESTHeart version and build time.",
         secure = false,
         blocking = false)
-public class PingService implements ByteArrayService {
+public class PingService implements ByteArrayService, McpAware {
     private static final String VERSION = Version.getInstance().getVersionNumber().orElse("unknown");
     private static final String BUILD_TIME = Version.getInstance().getBuildTime().toString();
 
@@ -62,6 +63,22 @@ public class PingService implements ByteArrayService {
     public void setup() {
         this.msg = argOrDefault(this.config, "msg", "Greetings from RESTHeart!");
         this.isExtendedResponseEnabled = argOrDefault(this.config, "enable-extended-response", true);
+    }
+
+    /**
+     * Mode A (code-baked default, see {@link McpAware}): no {@code mcp-config} is
+     * required for this resource to appear in the MCP catalog with a useful
+     * description — an operator can still override it via {@code mcp-config} in
+     * {@code ping}'s own configuration.
+     */
+    @Override
+    public Map<String, Object> defaultMcpConfig() {
+        return Map.of(
+                "description", "Liveness probe. Returns a greeting message along with RESTHeart version and build time.",
+                "actions", Map.of(
+                        "ping", Map.of(
+                                "method", "GET",
+                                "description", "Returns a greeting message, client IP, host, RESTHeart version and build time.")));
     }
 
     @Override

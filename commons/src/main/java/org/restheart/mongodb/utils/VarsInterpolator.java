@@ -20,11 +20,14 @@
 
 package org.restheart.mongodb.utils;
 
+import java.util.Optional;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
 
 /**
@@ -118,6 +121,23 @@ public class VarsInterpolator {
      *         in the values document
      */
     public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values) throws InvalidMetadataException, QueryVariableNotBoundException {
+        return interpolate(operator, bson, values, null);
+    }
+
+    /**
+     * Same as {@link #interpolate(VAR_OPERATOR, BsonValue, BsonDocument)}, additionally
+     * dispatching any registered {@link CustomOperator} (e.g. {@code $vectorize}) found
+     * while walking the structure, and passing {@code request} through to it — needed
+     * for a multi-tenant operator implementation to resolve its own per-request
+     * overrides. See {@link CustomOperator} for the resolution order and failure
+     * semantics of custom operators.
+     *
+     * @param request the current request, passed through to any registered
+     *        {@link CustomOperator}; may be {@code null} for contexts without one (e.g.
+     *        GraphQL mapping interpolation)
+     * @since 9.10.0
+     */
+    public static BsonValue interpolate(VAR_OPERATOR operator, BsonValue bson, BsonDocument values, Request<?> request) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (bson == null) {
             return null;
         }
@@ -156,23 +176,36 @@ public class VarsInterpolator {
                 } else {
                     throw new InvalidMetadataException("wrong variable name " + v.toString());
                 }
-            } else {
-                var ret = new BsonDocument();
-
-                for (var key : _obj.keySet()) {
-                    ret.put(key, interpolate(operator, _obj.get(key), values));
-                }
-
-                return ret;
             }
+
+            if (_obj.size() == 1) {
+                var custom = customOperator(_obj);
+                if (custom.isPresent()) {
+                    var op = custom.get();
+                    var rawArg = _obj.get("$" + op.name());
+                    var resolvedArg = interpolate(operator, rawArg, values, request);
+                    return op.resolve(request, resolvedArg);
+                }
+            }
+
+            // multi-key documents, and single-key documents matching neither the
+            // $var/$arg operator nor a registered custom operator (e.g. a genuine
+            // MongoDB operator document like {"$gt": 5})
+            var ret = new BsonDocument();
+
+            for (var key : _obj.keySet()) {
+                ret.put(key, interpolate(operator, _obj.get(key), values, request));
+            }
+
+            return ret;
         } else if (bson.isArray()) {
             var ret = new BsonArray();
 
             for (var el : bson.asArray().getValues()) {
                 if (el.isDocument()) {
-                    ret.add(interpolate(operator, el, values));
+                    ret.add(interpolate(operator, el, values, request));
                 } else if (el.isArray()) {
-                    ret.add(interpolate(operator, el, values));
+                    ret.add(interpolate(operator, el, values, request));
                 } else {
                     ret.add(el);
                 }
@@ -182,5 +215,21 @@ public class VarsInterpolator {
         } else {
             return bson;
         }
+    }
+
+    /**
+     * @param obj a single-key document
+     * @return the registered {@link CustomOperator} if {@code obj}'s sole key is a
+     *         {@code $}-prefixed key matching one, else empty — including when the sole
+     *         key isn't {@code $}-prefixed at all, or is but matches no registered
+     *         operator (e.g. a genuine single-key MongoDB operator document like
+     *         {@code {"$gt": 5}}).
+     */
+    private static Optional<CustomOperator> customOperator(BsonDocument obj) {
+        var soleKey = obj.keySet().iterator().next();
+        if (!soleKey.startsWith("$")) {
+            return Optional.empty();
+        }
+        return CustomOperatorRegistryImpl.getInstance().operator(soleKey.substring(1));
     }
 }
