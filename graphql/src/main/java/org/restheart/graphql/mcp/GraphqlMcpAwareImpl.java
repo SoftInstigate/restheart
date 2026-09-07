@@ -27,7 +27,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpResource;
-import org.restheart.plugins.mcp.McpResourceTemplate;
 
 import com.mongodb.client.MongoClient;
 
@@ -87,18 +86,6 @@ public final class GraphqlMcpAwareImpl {
         }
 
         return resources;
-    }
-
-    /**
-     * A GraphQL app's URL is always {@code ctx.baseUrl() + ctx.pluginUri() + "/" + descriptor.uri}
-     * — wherever this {@code GraphQLService} plugin itself is mounted, not a hardcoded
-     * {@code /graphql} — so the template must be derived from {@code ctx.pluginUri()} the same way
-     * {@link #describeMcp(McpContext)} derives each concrete app's URL, rather than assuming the
-     * default mount path.
-     */
-    public List<McpResourceTemplate> describeTemplates(McpContext ctx) {
-        var uriTemplate = ctx.baseUrl() + ctx.pluginUri() + "/{app}";
-        return List.of(new McpResourceTemplate(uriTemplate, "graphql-app-context", "GraphQL app — context"));
     }
 
     private static boolean isEnabled(BsonDocument descriptor) {
