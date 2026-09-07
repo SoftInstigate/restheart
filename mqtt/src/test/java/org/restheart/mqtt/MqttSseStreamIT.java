@@ -24,7 +24,6 @@ package org.restheart.mqtt;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -159,29 +158,4 @@ public class MqttSseStreamIT extends MqttITBase {
                 + "client on the same filter disconnected; got: " + allB);
     }
 
-    /**
-     * Runs {@code task} on its own dedicated virtual thread and returns a future for its result,
-     * completing with an empty list instead of failing the future if {@code task} throws.
-     * <p>
-     * Deliberately not {@link CompletableFuture#supplyAsync(java.util.function.Supplier)}, which
-     * defaults to the shared {@code ForkJoinPool.commonPool()}: that pool is shared with every
-     * other test in the whole Maven JVM, and a test opening two or more concurrent SSE
-     * connections needs each one to start reading immediately, not whenever a commonPool worker
-     * happens to become free.
-     * </p>
-     *
-     * @param task the blocking SSE read to run
-     * @return a future for the lines {@code task} collected
-     */
-    private static CompletableFuture<List<String>> subscribeAsync(Callable<List<String>> task) {
-        var future = new CompletableFuture<List<String>>();
-        Thread.ofVirtual().start(() -> {
-            try {
-                future.complete(task.call());
-            } catch (Exception e) {
-                future.complete(List.of());
-            }
-        });
-        return future;
-    }
 }

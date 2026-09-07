@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -207,13 +208,9 @@ public abstract class MqttITBase {
         // mqtt/docker-compose.yml gives for pinning the same image.
         var image = System.getProperty("restheart.image", "softinstigate/restheart-snapshot:latest");
 
-        return new GenericContainer<>(image)
+        var container = new GenericContainer<>(image)
             .withNetwork(network)
             .withNetworkAliases("restheart")
-            // No CMD in core/Dockerfile's ENTRYPOINT, so this is appended to `java -jar
-            // restheart.jar`; --standalone loads restheart-default-config-no-mongodb.yml, which
-            // needs no MongoDB and enables fileRealmAuthenticator instead.
-            .withCommand("--standalone")
             // Never a fixed host port, for the same reason as Mosquitto's 1883 above.
             .withExposedPorts(8080)
             // The layout PluginsScanner expects: the plugin jar plus a "lib" directory (its
@@ -232,6 +229,35 @@ public abstract class MqttITBase {
             // core/build.xml waits on too.
             .waitingFor(Wait.forHttp("/ping").forStatusCode(200)
                 .withStartupTimeout(Duration.ofSeconds(90)));
+
+        var command = restheartCommand();
+        if (!command.isEmpty()) {
+            container.withCommand(command.toArray(String[]::new));
+        }
+
+        return container;
+    }
+
+    /**
+     * The arguments appended to the container's {@code java -jar restheart.jar} entrypoint, which
+     * has no CMD of its own.
+     * <p>
+     * Defaults to {@code --standalone}, which makes Bootstrapper load
+     * {@code restheart-default-config-no-mongodb.yml}: no MongoDB is needed, and
+     * {@code fileRealmAuthenticator} provides the {@code admin} user whose password
+     * {@link #rho()} sets. That default is deliberate rather than incidental. Of this module's
+     * six plugins only {@code mqtt-mongo-writer} needs MongoDB, so running every other IT without
+     * one keeps proving something users actually rely on - that the streaming and REST surfaces
+     * work in a RESTHeart with no database behind it. An IT that does need MongoDB overrides this
+     * to return an empty list and supplies {@code /mclient/connection-string} through
+     * {@link #rho()}, remembering that authentication then goes through
+     * {@code mongoRealmAuthenticator} rather than the file realm.
+     * </p>
+     *
+     * @return the command arguments, or an empty list to leave the image's own default
+     */
+    protected List<String> restheartCommand() {
+        return List.of("--standalone");
     }
 
     /**
@@ -366,6 +392,32 @@ public abstract class MqttITBase {
                 "mosquitto_pub -t " + topic + " -m " + payload + " exited with " + result.getExitCode()
                     + ": " + result.getStderr());
         }
+    }
+
+    /**
+     * Runs {@code task} on its own dedicated virtual thread and returns a future for its result,
+     * completing with an empty list instead of failing the future if {@code task} throws.
+     * <p>
+     * Deliberately not {@link CompletableFuture#supplyAsync(java.util.function.Supplier)}, which
+     * defaults to the shared {@code ForkJoinPool.commonPool()}: that pool is shared with every
+     * other test in the whole Maven JVM, and a test opening two or more concurrent SSE
+     * connections needs each one to start reading immediately, not whenever a commonPool worker
+     * happens to become free.
+     * </p>
+     *
+     * @param task the blocking SSE read to run
+     * @return a future for the lines {@code task} collected
+     */
+    protected static CompletableFuture<List<String>> subscribeAsync(Callable<List<String>> task) {
+        var future = new CompletableFuture<List<String>>();
+        Thread.ofVirtual().start(() -> {
+            try {
+                future.complete(task.call());
+            } catch (Exception e) {
+                future.complete(List.of());
+            }
+        });
+        return future;
     }
 
     /**
