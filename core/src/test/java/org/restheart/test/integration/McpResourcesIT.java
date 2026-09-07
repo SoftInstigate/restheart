@@ -150,6 +150,10 @@ public class McpResourcesIT extends AbstactIT {
                 "the collection count must be its own resource; got " + resources);
         assertFalse(templateUris().stream().anyMatch(t -> t.startsWith(TEST_COLL + "/_size")),
                 "the count takes no parameters, so it must not be advertised as a template");
+        // both entries are derived from the same collection, so the count carries the suffix that
+        // tells them apart — without it an agent sees two things called "inventory"
+        assertEquals("test-mcp-resources/inventory", resourceNamed(TEST_COLL));
+        assertEquals("test-mcp-resources/inventory-size", resourceNamed(TEST_COLL + "/_size"));
     }
 
     @Test
@@ -310,6 +314,16 @@ public class McpResourcesIT extends AbstactIT {
         return mcp.rpc("resources/list", null).getDocument("result").getArray("resources").stream()
                 .map(r -> r.asDocument().getString("uri").getValue())
                 .toList();
+    }
+
+    /** The name advertised for the concrete resource with exactly this uri. */
+    private String resourceNamed(String uri) throws Exception {
+        return mcp.rpc("resources/list", null).getDocument("result").getArray("resources").stream()
+                .map(org.bson.BsonValue::asDocument)
+                .filter(r -> uri.equals(r.getString("uri").getValue()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no resource with uri " + uri))
+                .getString("name").getValue();
     }
 
     /** The name advertised for the template with exactly this uriTemplate. */

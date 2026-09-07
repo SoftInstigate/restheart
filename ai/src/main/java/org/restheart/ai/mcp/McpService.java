@@ -340,14 +340,15 @@ public class McpService implements ByteArrayService {
                         ? base
                         : base + "{?" + String.join(",", queryParams) + "}";
 
-                // Named after the URI it addresses, not after the McpResource it was derived
-                // from — several entries share one resource (the collection, its single-document
-                // reader, its count), and naming them all after it published two identical
-                // "inventory" templates. The URI already tells them apart, except for the
-                // query-parameter template, which shares its base with the concrete resource:
-                // "documents" names what that one returns, rather than picking one of the six
-                // parameters that merely shape the result.
-                var name = pathId(base) + (pathVars.isEmpty() ? "-documents" : "");
+                // Named after the set of things the entry addresses, not after the McpResource it
+                // was derived from — several entries share one resource (the collection, its
+                // single-document reader, its count), and naming them all after it published two
+                // identical "inventory" templates. This is also the convention the MCP spec's own
+                // examples use: the template behind file:///{path} is "Project Files", not the
+                // name of any one file.
+                var name = pathId(r.uri()) + (pathVars.isEmpty()
+                        ? "-documents"
+                        : "-by-" + String.join("-", new java.util.TreeSet<>(pathVars)));
 
                 desiredTemplates.putIfAbsent(uriTemplate,
                         paramsTemplate(r, name, uriTemplate, queryParams, pathVars, requiredParams));
@@ -382,7 +383,7 @@ public class McpService implements ByteArrayService {
         for (var e : desiredResources.entrySet()) {
             if (!currentResourceUris.contains(e.getKey())) {
                 var hasTemplate = desiredTemplates.keySet().stream().anyMatch(t -> t.startsWith(e.getKey() + "{?"));
-                server.addResource(toResourceSpec(e.getKey(), e.getValue(), pathId(e.getKey()),
+                server.addResource(toResourceSpec(e.getKey(), e.getValue(), concreteName(e.getValue()),
                         concreteTitle(e.getValue(), hasTemplate)));
                 changed = true;
             }
@@ -481,6 +482,24 @@ public class McpService implements ByteArrayService {
     }
 
     /**
+     * The identifier for a no-argument entry: the resource's own path, plus the literal path the
+     * action appends — {@code inventory} for the collection's documents, {@code inventory-size}
+     * for its count. Without that suffix both would be called {@code inventory}, since both are
+     * derived from the same collection.
+     */
+    private static String concreteName(ConcreteEntry entry) {
+        return pathId(entry.resource().uri()) + literalSuffix(entry.action().pathTemplate());
+    }
+
+    /** {@code "/_size"} -> {@code "-size"}; blank for an action that adds no path of its own. */
+    private static String literalSuffix(String pathTemplate) {
+        if (pathTemplate == null || pathTemplate.isBlank()) {
+            return "";
+        }
+        return "-" + pathTemplate.replace("/", "-").replace("_", "").replaceAll("^-+", "");
+    }
+
+    /**
      * What a picker shows for a no-argument entry. Two entries can be derived from the same
      * collection — its documents and its {@code /_size} — so the label has to say which, and it
      * says it with the literal path the action appends, stripped of the leading underscore that
@@ -493,7 +512,7 @@ public class McpService implements ByteArrayService {
         if (path == null || path.isBlank()) {
             return hasTemplate ? subject + " — first page" : subject;
         }
-        return subject + " — " + path.replace("/", " ").replace("_", "").trim();
+        return subject + " — " + literalSuffix(path).substring(1).replace("-", " ");
     }
 
     private McpServerFeatures.SyncResourceSpecification toResourceSpec(String uri, ConcreteEntry entry, String name, String title) {
@@ -1039,13 +1058,13 @@ public class McpService implements ByteArrayService {
         properties.put("cursor", schemaProp("string", "Optional. Continues a previous paged catalog call."));
 
         return McpSchema.Tool.builder("list_apis")
+                .inputSchema(inputSchema(properties, null))
                 .description("Lists or describes MCP-enabled APIs exposed by RESTHeart. Without arguments, returns the "
                         + "catalog (URIs, kinds, short descriptions) — optionally narrowed with `query`/`kind` and "
                         + "paged with `limit`/`cursor`. With a resource URI, returns full context: kind, supported "
                         + "transports, actions with parameter types, auth requirements, examples. On a deployment "
                         + "with many resources, prefer a filtered call over an unfiltered one. Call this before "
                         + "how_to_call to learn what you can do with a resource.")
-                .inputSchema(inputSchema(properties, null))
                 .build();
     }
 
@@ -1058,6 +1077,7 @@ public class McpService implements ByteArrayService {
                 "Optional transport preference (e.g. websocket vs sse for streams). If omitted, the resource's default transport is used."));
 
         return McpSchema.Tool.builder("how_to_call")
+                .inputSchema(inputSchema(properties, List.of("resource", "action")))
                 .description("Returns a request descriptor (transport, URL, headers, body) for invoking a known MCP resource. "
                         + "The tool COMPOSES the request — it does NOT execute it. After receiving the response, "
                         + "choose any client appropriate to the descriptor's transport and your host environment "
@@ -1068,12 +1088,12 @@ public class McpService implements ByteArrayService {
                         + "is stable and safe to reuse: it carries no credential. Its Authorization header holds the "
                         + "placeholder `" + DescriptorRenderer.TOKEN_PLACEHOLDER + "` — call get_token to obtain a token and substitute "
                         + "it just before sending the request, not when you receive this descriptor.")
-                .inputSchema(inputSchema(properties, List.of("resource", "action")))
                 .build();
     }
 
     static McpSchema.Tool getTokenToolDefinition() {
         return McpSchema.Tool.builder("get_token")
+                .inputSchema(inputSchema(new LinkedHashMap<>(), null))
                 .description("Issues a short-lived access token for the current session, to fill in the `"
                         + DescriptorRenderer.TOKEN_PLACEHOLDER + "` placeholder of a descriptor returned by how_to_call.\n\nThe token "
                         + "expires within seconds (see `expires_in` in the response), so call this immediately before "
@@ -1081,7 +1101,6 @@ public class McpService implements ByteArrayService {
                         + "nothing; reusing a stale one fails with 401. One token can serve several requests made "
                         + "within its window.\n\nIt carries the identity and roles of the current session and no more, "
                         + "so it can do exactly what this session can do. Requires an authenticated session.")
-                .inputSchema(inputSchema(new LinkedHashMap<>(), null))
                 .build();
     }
 
