@@ -149,11 +149,20 @@ public class McpAclEnforcementIT extends AbstactIT {
     }
 
     @Test
-    public void aggregationRead_hidesWhatProjectResponseHides() throws Exception {
-        var text = mcp.readResource(TEST_COLL + "/_aggrs/everything");
+    public void aggregationRead_matchesTheEquivalentRestGet() throws Exception {
+        // The asymmetry here is deliberate and mirrored from REST: projectResponse applies to an
+        // aggregation (its GET reaches the RESPONSE interceptor that enforces it), the readFilter
+        // does not (no aggregation handler consults request.getFilter()), so both readers return
+        // every owner's rows with "secret" removed. Asserted as an equivalence rather than as a
+        // fixed expectation, so if REST's behaviour ever changes this fails instead of drifting.
+        var viaMcp = mcp.readResource(TEST_COLL + "/_aggrs/everything");
+        var viaRest = restGet(TEST_COLL + "/_aggrs/everything");
 
-        assertFalse(text.contains("\"secret\""),
-                "projectResponse was not applied to the aggregation result: " + text);
+        assertEquals(itemsIn(viaRest), itemsIn(viaMcp),
+                "MCP and REST disagree on an aggregation's rows");
+        assertFalse(viaRest.contains("\"secret\""), "precondition: REST must hide it too");
+        assertFalse(viaMcp.contains("\"secret\""),
+                "projectResponse was not applied to the aggregation result: " + viaMcp);
     }
 
     // ----------------------------------------------------------------- helpers

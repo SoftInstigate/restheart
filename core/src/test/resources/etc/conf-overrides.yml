@@ -210,22 +210,24 @@
 
     - role: mcpuser
       predicate: path-prefix[path="/test-mcp-authz-allowed"] and method[value="GET"]
+      priority: 0
+      mongo:
+          allowManagementRequests: true # default false
 
     # McpAclEnforcementIT — see the users above. Reading is restricted to the caller's own rows
     # and hides "secret"; both must hold identically through REST and through /mcp.
     - role: aclreader
       predicate: path-prefix[path="/mcp"]
+      priority: 0
 
     - role: aclreader
       predicate: method(GET) and path-prefix[path="/test-mcp-acl"]
+      priority: 0
       mongo:
         readFilter: >
           {"owner": "@user.userid"}
         projectResponse: >
           {"secret": 0}
-      priority: 0
-      mongo:
-          allowManagementRequests: true # default false
 
     - role: poweruser
       predicate: path-prefix[path="/testmytmpdb"]
