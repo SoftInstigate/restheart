@@ -116,6 +116,17 @@
       password: secret
       roles: [ filtered, full ]
 
+    # McpAclEnforcementIT: two principals under one ACL entry whose mongo section carries a
+    # readFilter and a projectResponse, so a read through /mcp can be compared against the
+    # equivalent REST GET row by row and field by field (restheart#722).
+    - userid: aclowner1
+      password: secret
+      roles: [ aclreader ]
+
+    - userid: aclowner2
+      password: secret
+      roles: [ aclreader ]
+
 /mongoRealmAuthenticator/users-db: restheart-test
 
 /fileAclAuthorizer:
@@ -199,6 +210,19 @@
 
     - role: mcpuser
       predicate: path-prefix[path="/test-mcp-authz-allowed"] and method[value="GET"]
+
+    # McpAclEnforcementIT — see the users above. Reading is restricted to the caller's own rows
+    # and hides "secret"; both must hold identically through REST and through /mcp.
+    - role: aclreader
+      predicate: path-prefix[path="/mcp"]
+
+    - role: aclreader
+      predicate: method(GET) and path-prefix[path="/test-mcp-acl"]
+      mongo:
+        readFilter: >
+          {"owner": "@user.userid"}
+        projectResponse: >
+          {"secret": 0}
       priority: 0
       mongo:
           allowManagementRequests: true # default false

@@ -60,6 +60,8 @@ import org.restheart.plugins.mcp.McpContext;
 import org.restheart.plugins.mcp.McpReadResult;
 import org.restheart.plugins.mcp.McpResource;
 import org.restheart.plugins.mcp.McpResourceTemplate;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer;
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.plugins.security.JwtIssuer;
 import org.restheart.plugins.security.RequestDescriptor;
 import org.restheart.security.BaseAccount;
@@ -533,7 +535,7 @@ public class McpService implements ByteArrayService {
                 .mimeType("application/json")
                 .build();
         return new McpServerFeatures.SyncResourceSpecification(sdkResource,
-                (exchange, request) -> readBareResource(principal(exchange.transportContext()), uri, entry));
+                (exchange, request) -> readBareResource(exchange.transportContext(), uri, entry));
     }
 
     /**
@@ -546,8 +548,9 @@ public class McpService implements ByteArrayService {
      * <p>Documents-mode with no arguments — matches what attaching this resource in a host UI
      * (Claude Desktop, Cursor, ...) actually means: load its real content.
      */
-    private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, String uri, ConcreteEntry entry) {
-        return readOperation(principal, entry.resource().uri(), entry.actionName(), Map.of())
+    private McpSchema.ReadResourceResult readBareResource(McpTransportContext ctx, String uri, ConcreteEntry entry) {
+        var principal = principal(ctx);
+        return readOperation(ctx, principal, entry.resource().uri(), entry.actionName(), Map.of())
                 .orElseGet(() -> errorResourceResult(uri, "failed to read resource"));
     }
 
@@ -642,7 +645,7 @@ public class McpService implements ByteArrayService {
                 // always mean "here is data", never a description; use how_to_call for this one
                 return errorResourceResult(base, "resource has no readable data; use how_to_call to invoke its actions");
             }
-            return readOperation(principal, base, actionName, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+            return readOperation(ctx, principal, base, actionName, queryArgs).orElseGet(() -> unknownResourceResult(uri));
         }
 
         var lastSlash = base.lastIndexOf('/');
@@ -655,12 +658,12 @@ public class McpService implements ByteArrayService {
             // ".../inventory/_size?filter={...}" looks for a document whose _id is "_size".
             var byPath = readableActionAtPath(principal, parent, "/" + segment);
             if (byPath != null) {
-                return readOperation(principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
+                return readOperation(ctx, principal, parent, byPath, queryArgs).orElseGet(() -> unknownResourceResult(uri));
             }
 
             var args = new LinkedHashMap<String, Object>(queryArgs);
             args.put("id", segment);
-            var singleDoc = readOperation(principal, parent, "get", args);
+            var singleDoc = readOperation(ctx, principal, parent, "get", args);
             if (singleDoc.isPresent()) {
                 return singleDoc.get();
             }
@@ -699,12 +702,12 @@ public class McpService implements ByteArrayService {
      * data, or a hard error (never a description of the resource — that's never what {@code
      * resources/read} returns; use {@code list_apis}/{@code how_to_call} for that).
      *
-     * <p><b>Known gap:</b> the actual ACL read-filter/projection a {@code DescriptorAwareAuthorizer}
-     * resolves while authorizing this operation (restheart#722) is not yet threaded through to
-     * the {@code readResource()} call below — only the base allow/deny decision is enforced
-     * end-to-end today. Tracked as a #617 follow-up.
+     * <p>The decision that authorized this very operation travels into {@link McpContext}, so the
+     * executing plugin applies the same ACL {@code readFilter}/{@code projectResponse} the REST
+     * path would (restheart#722): this read never touches the HTTP interceptor chain, so nothing
+     * else would apply them.
      */
-    private Optional<McpSchema.ReadResourceResult> readOperation(BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
+    private Optional<McpSchema.ReadResourceResult> readOperation(McpTransportContext ctx, BaseAccount principal, String resourceUri, String actionName, Map<String, Object> rawArgs) {
         var resourceOpt = resourceLookup.find(principal, publicBaseUrl, resourceUri);
         if (resourceOpt.isEmpty()) {
             return Optional.empty();
@@ -727,7 +730,8 @@ public class McpService implements ByteArrayService {
             return Optional.of(errorResourceResult(resourceUri, "internal error: resource owner not found"));
         }
 
-        var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(), owner.get().pluginConfiguration());
+        var readCtx = new McpContext(principal, publicBaseUrl, owner.get().pluginName(), owner.get().pluginUri(),
+                owner.get().pluginConfiguration(), authorization(ctx));
 
         try {
             return Optional.of(owner.get().instance().readResource(readCtx, resourceUri, actionName, args)
@@ -1075,6 +1079,24 @@ public class McpService implements ByteArrayService {
      */
     private static Request<?> request(McpTransportContext ctx) {
         return ctx.get(CTX_REQUEST) instanceof Request<?> r ? r : null;
+    }
+
+    /**
+     * The decision {@code AuthorizersHandler} took for this request's documents-mode operation.
+     *
+     * <p>{@code null} whenever the request wasn't authorized through a descriptor — a {@code
+     * secured: false} deployment, or an authorizer that resolves no permissions. That is not a
+     * gap: there is no ACL entry behind such a request, so there is no filter to apply either.
+     */
+    private static Decision authorization(McpTransportContext ctx) {
+        var request = request(ctx);
+        if (request == null) {
+            return null;
+        }
+        var decisions = request.getExchange().getAttachment(DescriptorAwareAuthorizer.AUTHORIZED_OPERATIONS);
+        // exactly one, since operationsToAuthorize() returns a single descriptor for the single
+        // documents-mode read this request performs
+        return decisions != null && decisions.size() == 1 ? decisions.get(0) : null;
     }
 
     private static String baseUrl(McpTransportContext ctx) {

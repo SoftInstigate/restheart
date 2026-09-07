@@ -22,6 +22,7 @@ package org.restheart.plugins.mcp;
 
 import java.util.Map;
 
+import org.restheart.plugins.security.DescriptorAwareAuthorizer.Decision;
 import org.restheart.security.BaseAccount;
 
 /**
@@ -49,11 +50,18 @@ public record McpContext(
         String baseUrl,
         String pluginName,
         String pluginUri,
-        Map<String, Object> pluginConfiguration) {
+        Map<String, Object> pluginConfiguration,
+        Decision authorization) {
 
     public McpContext {
         if (pluginConfiguration == null) {
             pluginConfiguration = Map.of();
         }
+    }
+
+    /** Without an authorization decision — for describing a resource, which reads no data. */
+    public McpContext(BaseAccount principal, String baseUrl, String pluginName, String pluginUri,
+            Map<String, Object> pluginConfiguration) {
+        this(principal, baseUrl, pluginName, pluginUri, pluginConfiguration, null);
     }
 }

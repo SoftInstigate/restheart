@@ -32,6 +32,11 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.restheart.mongodb.security.ProjectResponse;
+import org.restheart.security.AclVarsInterpolator;
+import org.restheart.security.MongoPermissions;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
@@ -71,6 +76,8 @@ import com.mongodb.MongoCommandException;
  * {@code DatabaseMcpResourceBuilder}) is verifiable without a real MongoDB.
  */
 public final class MongoMcpAwareImpl {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoMcpAwareImpl.class);
 
     /** Narrow read seam over {@link Databases}, so this class's orchestration is unit-testable without a real MongoDB. */
     interface MetadataSource {
@@ -226,7 +233,7 @@ public final class MongoMcpAwareImpl {
         var effectiveArgs = args == null ? Map.<String, Object>of() : args;
 
         if ("execute".equals(action)) {
-            return executeAggregation(resourceUri, effectiveArgs);
+            return executeAggregation(ctx, resourceUri, effectiveArgs);
         }
 
         var resolved = resolveMount(resourceUri);
@@ -235,9 +242,9 @@ public final class MongoMcpAwareImpl {
         }
 
         return switch (action) {
-            case "query" -> Optional.of(queryDocuments(resolved, effectiveArgs));
-            case "get" -> Optional.of(getSingleDocument(resolved, effectiveArgs));
-            case "size" -> Optional.of(countDocuments(resolved, effectiveArgs));
+            case "query" -> Optional.of(queryDocuments(ctx, resolved, effectiveArgs));
+            case "get" -> Optional.of(getSingleDocument(ctx, resolved, effectiveArgs));
+            case "size" -> Optional.of(countDocuments(ctx, resolved, effectiveArgs));
             default -> Optional.empty();
         };
     }
@@ -258,7 +265,7 @@ public final class MongoMcpAwareImpl {
      * work.
      */
     @SuppressWarnings("unchecked")
-    private Optional<McpReadResult> executeAggregation(String resourceUri, Map<String, Object> args) {
+    private Optional<McpReadResult> executeAggregation(McpContext ctx, String resourceUri, Map<String, Object> args) {
         var split = resourceUri.indexOf("/_aggrs/");
         if (split < 0) {
             return Optional.empty();
@@ -357,7 +364,11 @@ public final class MongoMcpAwareImpl {
         var data = new BsonArray();
         results.forEach(data::add);
 
-        return Optional.of(new McpReadResult(new McpReadResult.RawJson("{\"content\":" + BsonUtils.toJson(data, jsonModeOf(args)) + "}")));
+        // projectResponse applies (an aggregation GET reaches the RESPONSE interceptor that
+        // enforces it); readFilter does not — no aggregation handler consults request.getFilter(),
+        // so applying it here would make MCP stricter than the REST endpoint it mirrors
+        return Optional.of(new McpReadResult(new McpReadResult.RawJson(
+                "{\"content\":" + BsonUtils.toJson(project(ctx, data), jsonModeOf(args)) + "}")));
     }
 
     /**
@@ -415,8 +426,11 @@ public final class MongoMcpAwareImpl {
      * for both silently falls back to the exact count, which is what the REST endpoint does too.
      */
     @SuppressWarnings("unchecked")
-    private McpReadResult countDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
-        var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+    private McpReadResult countDocuments(McpContext ctx, MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+        var requested = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+        var filter = and(requested, aclReadFilter(ctx));
+        // an ACL read filter makes the estimate wrong for the same reason a requested one does:
+        // estimatedDocumentCount counts the whole collection, filter or no filter
         var estimate = "estimated".equals(args.get("count")) && filter.isEmpty();
 
         var size = databases.getCollectionSize(Optional.empty(), Optional.empty(),
@@ -425,8 +439,9 @@ public final class MongoMcpAwareImpl {
         return new McpReadResult(new McpReadResult.RawJson("{\"size\":" + size + "}"));
     }
 
-    private McpReadResult queryDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
-        var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+    private McpReadResult queryDocuments(McpContext ctx, MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+        var requested = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
+        var filter = and(requested, aclReadFilter(ctx));
         var keys = args.get("keys") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : null;
         var sort = args.get("sort") instanceof String s && !s.isBlank() ? BsonDocument.parse(s) : new BsonDocument();
         var page = args.get("page") instanceof Integer p ? p : DEFAULT_PAGE;
@@ -446,7 +461,7 @@ public final class MongoMcpAwareImpl {
         // means there may be more, a short one means there is not. That is all a caller needs to
         // keep paging, and it costs nothing.
         var text = new StringBuilder("{\"content\":")
-                .append(BsonUtils.toJson(docs, jsonMode))
+                .append(BsonUtils.toJson(project(ctx, docs), jsonMode))
                 .append(",\"meta\":{\"page\":").append(page)
                 .append(",\"returned\":").append(docs.size());
         if (docs.size() == pagesize) {
@@ -458,16 +473,69 @@ public final class MongoMcpAwareImpl {
     }
 
     /** {@code id} is treated as an ObjectId when it looks like one, else as a plain string {@code _id} — not RESTHeart's full doc-id type-inference grammar (prefixed encodings for other BSON types), which is out of scope here. */
-    private McpReadResult getSingleDocument(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
+    private McpReadResult getSingleDocument(McpContext ctx, MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
         var id = args.get("id") instanceof String s ? s : null;
-        var filter = new BsonDocument("_id", idValue(id));
+        var filter = and(new BsonDocument("_id", idValue(id)), aclReadFilter(ctx));
         var jsonMode = jsonModeOf(args);
 
         var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
                 1, 1, new BsonDocument(), filter, null, null, false);
 
-        var json = docs.isEmpty() ? "null" : BsonUtils.toJson(docs.get(0), jsonMode);
+        // A document the read filter excludes must be indistinguishable from one that does not
+        // exist — anything else turns the filter into an existence oracle.
+        var json = docs.isEmpty() ? "null" : BsonUtils.toJson(project(ctx, docs.get(0)), jsonMode);
         return new McpReadResult(new McpReadResult.RawJson(json));
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // ACL enforcement for reads performed in-process (restheart#722)
+    //
+    // A documents-mode resources/read never travels the HTTP pipeline, so neither
+    // mongoPermissionFilters nor mongoPermissionProjectResponse — the two interceptors that apply
+    // mongo.readFilter and mongo.projectResponse on the REST path — ever runs for it. The
+    // permission that authorized this very operation is carried on the McpContext instead, and
+    // applied here, against the same request it was matched against so its @user/%ROLES variables
+    // resolve to the same values a real GET would resolve them to.
+    // ---------------------------------------------------------------------------------------
+
+    /** The ACL read filter for this operation, interpolated, or {@code null} if the permission declares none. */
+    private static BsonDocument aclReadFilter(McpContext ctx) {
+        var permissions = mongoPermissions(ctx);
+        if (permissions == null || permissions.getReadFilter() == null) {
+            return null;
+        }
+        return AclVarsInterpolator.interpolateBson(ctx.authorization().request(), permissions.getReadFilter()).asDocument();
+    }
+
+    /** Hides whatever {@code mongo.projectResponse} hides, using the interceptor's own implementation. */
+    private static BsonValue project(McpContext ctx, BsonValue content) {
+        var permissions = mongoPermissions(ctx);
+        return permissions == null ? content : ProjectResponse.project(content, permissions.getProjectResponse());
+    }
+
+    private static MongoPermissions mongoPermissions(McpContext ctx) {
+        if (ctx == null || ctx.authorization() == null || ctx.authorization().permission() == null) {
+            return null;
+        }
+        try {
+            return MongoPermissions.from(ctx.authorization().permission());
+        } catch (Exception e) {
+            // A permission whose mongo section cannot be read must not widen the read: treat it as
+            // no permission at all, which leaves the caller with whatever the base allow granted.
+            LOGGER.warn("cannot read the mongo permissions of the ACL entry that authorized this read", e);
+            return null;
+        }
+    }
+
+    /** {@code $and} of the two, skipping the wrapper when either side is empty — a filter of {@code {}} matches everything. */
+    private static BsonDocument and(BsonDocument requested, BsonDocument acl) {
+        if (acl == null || acl.isEmpty()) {
+            return requested;
+        }
+        if (requested == null || requested.isEmpty()) {
+            return acl;
+        }
+        return new BsonDocument("$and", new BsonArray(List.of(requested, acl)));
     }
 
     private static BsonValue idValue(String id) {

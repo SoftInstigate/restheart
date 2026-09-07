@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -42,34 +43,50 @@ public class ProjectResponse implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var projection = MongoPermissions.of(request).getProjectResponse();
-
-        boolean inclusions = projection.get(projection.keySet().stream().findAny().get()).asInt32().getValue() == 1;
-
-        if (response.getContent().isDocument()) {
-            if (inclusions) {
-                var projected = projectInclusions(response.getContent().asDocument(), projection);
-                response.setContent(projected);
-            } else {
-                projectExclusions(response.getContent().asDocument(), projection);
-            }
-        } else if (response.getContent().isArray()) {
-            var array = new BsonArray();
-            if (inclusions) {
-                response.getContent().asArray().forEach(doc ->
-                        array.add(projectInclusions(doc.asDocument(), projection)));
-                response.setContent(array);
-            } else {
-                response.getContent().asArray().forEach(doc -> projectExclusions(doc.asDocument(), projection));
-            }
-        }
+        response.setContent(project(response.getContent(), MongoPermissions.of(request).getProjectResponse()));
     }
 
-    private void projectExclusions(BsonDocument doc, BsonDocument projection) {
+    /**
+     * Applies a {@code mongo.projectResponse} ACL projection to a document or an array of them.
+     *
+     * <p>Public and static so that a read performed outside the HTTP pipeline — an MCP
+     * documents-mode {@code resources/read} (restheart#722), which never reaches this interceptor
+     * — hides exactly the same properties this interceptor hides, rather than a second
+     * implementation of the same rule that can drift from it.
+     *
+     * @return the projected content ({@code content} itself when there is nothing to project)
+     */
+    public static BsonValue project(BsonValue content, BsonDocument projection) {
+        if (content == null || projection == null || projection.isEmpty()) {
+            return content;
+        }
+
+        var inclusions = projection.get(projection.keySet().stream().findAny().get()).asInt32().getValue() == 1;
+
+        if (content.isDocument()) {
+            if (inclusions) {
+                return projectInclusions(content.asDocument(), projection);
+            }
+            projectExclusions(content.asDocument(), projection);
+            return content;
+        } else if (content.isArray()) {
+            if (inclusions) {
+                var array = new BsonArray();
+                content.asArray().forEach(doc -> array.add(projectInclusions(doc.asDocument(), projection)));
+                return array;
+            }
+            content.asArray().forEach(doc -> projectExclusions(doc.asDocument(), projection));
+            return content;
+        }
+
+        return content;
+    }
+
+    private static void projectExclusions(BsonDocument doc, BsonDocument projection) {
         projection.keySet().stream().forEachOrdered(projectedProp -> projectExlcusions(doc, projectedProp));
     }
 
-    private void projectExlcusions(BsonDocument doc, String projectedProperty) {
+    private static void projectExlcusions(BsonDocument doc, String projectedProperty) {
         if (projectedProperty.contains(".")) {
             var first = projectedProperty.substring(0, projectedProperty.indexOf("."));
             if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
@@ -80,13 +97,13 @@ public class ProjectResponse implements MongoInterceptor {
         }
     }
 
-    private BsonDocument projectInclusions(BsonDocument doc, BsonDocument projection) {
+    private static BsonDocument projectInclusions(BsonDocument doc, BsonDocument projection) {
         var includedKeys = projection.keySet();
 
         return projectInclusions(doc, includedKeys);
     }
 
-    private BsonDocument projectInclusions(BsonDocument doc, Set<String> includedKeys) {
+    private static BsonDocument projectInclusions(BsonDocument doc, Set<String> includedKeys) {
         var ret = new BsonDocument();
         includedKeys.stream().forEachOrdered(includedKey -> {
             if (includedKey.contains(".")) {
