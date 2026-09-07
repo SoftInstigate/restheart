@@ -301,7 +301,7 @@ public class McpService implements ByteArrayService {
         // registry up front and repopulating afterwards left that whole span as a window in which
         // resources/list answered with an empty or half-built catalog. Found by McpResourcesIT,
         // which intermittently saw no templates at all.
-        var desiredResources = new LinkedHashMap<String, McpResource>();
+        var desiredResources = new LinkedHashMap<String, ConcreteEntry>();
         var desiredTemplates = new LinkedHashMap<String, McpResourceTemplate>();
 
         resourceLookup.all(null, publicBaseUrl).forEach(r -> r.actions().forEach((actionName, action) -> {
@@ -317,13 +317,18 @@ public class McpService implements ByteArrayService {
 
             var base = r.uri() + (action.pathTemplate() == null ? "" : action.pathTemplate());
 
-            // A concrete resource only where there is nothing to fill in. Where there is, the
-            // template alone covers every shape a client can produce from it — including a form
-            // left entirely blank, which expands to either the bare URI or `?a=&b=` and works
-            // both ways (see McpResourcesIT). Registering both would put two entries under the
-            // same name in front of the agent, and the second would add nothing.
-            if (requiredParams.isEmpty() && significantQueryParams.isEmpty() && pathVars.isEmpty()) {
-                desiredResources.putIfAbsent(base, r);
+            // Whenever a bare read would succeed, the bare URI is registered as a concrete
+            // resource — even when a template exists for the same base.
+            //
+            // Not a duplicate for its own sake: it is what stops the failure this design would
+            // otherwise guarantee. A template advertises parameters and has no way to mark any of
+            // them required (an MCP ResourceTemplate carries no schema at all), so an agent quite
+            // reasonably submits it with nothing filled in. That expands to the bare URI, and the
+            // SDK's matcher compiles every {...} to a group needing at least one character — so
+            // the template cannot match it, and the agent gets "resource not found" for a request
+            // the server itself invited. Confirmed against MCP Inspector.
+            if (requiredParams.isEmpty() && pathVars.isEmpty()) {
+                desiredResources.putIfAbsent(base, new ConcreteEntry(r, actionName, action));
             }
 
             if (!pathVars.isEmpty() || !significantQueryParams.isEmpty()) {
@@ -334,7 +339,18 @@ public class McpService implements ByteArrayService {
                 var uriTemplate = significantQueryParams.isEmpty()
                         ? base
                         : base + "{?" + String.join(",", queryParams) + "}";
-                desiredTemplates.putIfAbsent(uriTemplate, paramsTemplate(r, uriTemplate, requiredParams));
+
+                // Named after the URI it addresses, not after the McpResource it was derived
+                // from — several entries share one resource (the collection, its single-document
+                // reader, its count), and naming them all after it published two identical
+                // "inventory" templates. The URI already tells them apart, except for the
+                // query-parameter template, which shares its base with the concrete resource:
+                // "documents" names what that one returns, rather than picking one of the six
+                // parameters that merely shape the result.
+                var name = pathId(base) + (pathVars.isEmpty() ? "-documents" : "");
+
+                desiredTemplates.putIfAbsent(uriTemplate,
+                        paramsTemplate(r, name, uriTemplate, queryParams, pathVars, requiredParams));
             }
         }));
 
@@ -365,7 +381,9 @@ public class McpService implements ByteArrayService {
         // registration cannot go stale in a way a re-add would fix.
         for (var e : desiredResources.entrySet()) {
             if (!currentResourceUris.contains(e.getKey())) {
-                server.addResource(toResourceSpec(e.getValue()));
+                var hasTemplate = desiredTemplates.keySet().stream().anyMatch(t -> t.startsWith(e.getKey() + "{?"));
+                server.addResource(toResourceSpec(e.getKey(), e.getValue(), pathId(e.getKey()),
+                        concreteTitle(e.getValue(), hasTemplate)));
                 changed = true;
             }
         }
@@ -419,23 +437,77 @@ public class McpService implements ByteArrayService {
         return names;
     }
 
-    static McpResourceTemplate paramsTemplate(McpResource resource, String uriTemplate, List<String> requiredParams) {
-        var name = resourceName(resource);
+    /**
+     * The template entry for one readable action.
+     *
+     * <p>{@code name} is the identifier; {@code title} is what a picker shows, and it spells out
+     * every parameter the read accepts — built from the same lists that produced the URI template,
+     * so the label cannot drift from what the template actually takes. A template can mark nothing
+     * as required (it carries no schema at all), which is why required-ness has to be stated in
+     * prose, in the description, rather than folded into the name where more than one variable
+     * would make it unreadable.
+     */
+    static McpResourceTemplate paramsTemplate(McpResource resource, String name, String uriTemplate,
+            List<String> queryParams, Set<String> pathVars, List<String> requiredParams) {
+        var subject = resourceName(resource);
+
+        var title = new StringBuilder(subject).append(" — ");
+        if (pathVars.isEmpty()) {
+            title.append("documents");
+        } else {
+            title.append("one document");
+        }
+        if (!pathVars.isEmpty()) {
+            title.append(" by ").append(String.join(", ", pathVars));
+        }
+        if (!queryParams.isEmpty()) {
+            title.append(pathVars.isEmpty() ? " by " : ", ").append(String.join(", ", queryParams));
+        }
+
         var description = requiredParams.isEmpty()
                 ? resource.description()
                 : resource.description() + " (requires: " + String.join(", ", requiredParams) + ")";
-        return new McpResourceTemplate(uriTemplate, name, name, description);
+
+        return new McpResourceTemplate(uriTemplate, name, title.toString(), description);
     }
 
-    private McpServerFeatures.SyncResourceSpecification toResourceSpec(McpResource resource) {
+    /**
+     * One readable action reachable with no arguments at all, and the URI that reaches it. An
+     * action may add a literal path of its own ({@code /_size}), so the entry's URI is not
+     * necessarily the resource's own — which is why the action travels with it rather than being
+     * re-derived from the resource at read time.
+     */
+    private record ConcreteEntry(McpResource resource, String actionName, McpResource.Action action) {
+    }
+
+    /**
+     * What a picker shows for a no-argument entry. Two entries can be derived from the same
+     * collection — its documents and its {@code /_size} — so the label has to say which, and it
+     * says it with the literal path the action appends, stripped of the leading underscore that
+     * marks RESTHeart's reserved resources. {@code first page} is added only when a template
+     * beside it offers the paging and filtering this bare read does not.
+     */
+    private static String concreteTitle(ConcreteEntry entry, boolean hasTemplate) {
+        var subject = resourceName(entry.resource());
+        var path = entry.action().pathTemplate();
+        if (path == null || path.isBlank()) {
+            return hasTemplate ? subject + " — first page" : subject;
+        }
+        return subject + " — " + path.replace("/", " ").replace("_", "").trim();
+    }
+
+    private McpServerFeatures.SyncResourceSpecification toResourceSpec(String uri, ConcreteEntry entry, String name, String title) {
         var sdkResource = McpSchema.Resource.builder()
-                .uri(resource.uri())
-                .name(resourceName(resource))
-                .description(resource.description())
+                .uri(uri)
+                .name(name)
+                .title(title)
+                .description(entry.action().description() != null
+                        ? entry.action().description()
+                        : entry.resource().description())
                 .mimeType("application/json")
                 .build();
         return new McpServerFeatures.SyncResourceSpecification(sdkResource,
-                (exchange, request) -> readBareResource(principal(exchange.transportContext()), resource));
+                (exchange, request) -> readBareResource(principal(exchange.transportContext()), uri, entry));
     }
 
     /**
@@ -445,18 +517,12 @@ public class McpService implements ByteArrayService {
      * resource's own URI, never through {@link #readTemplateMatch} (which has its own, independent
      * resolution for a URI that isn't registered as a concrete resource).
      *
-     * <p>Documents-mode with no filter (default pagination) — matches what attaching this resource
-     * in a host UI (Claude Desktop, Cursor, ...) actually means: load its real content.
-     * {@code actionName} is null only if a resource was somehow registered here without a readable
-     * action at all, which {@link #syncResourceRegistry} never does — purely defensive.
+     * <p>Documents-mode with no arguments — matches what attaching this resource in a host UI
+     * (Claude Desktop, Cursor, ...) actually means: load its real content.
      */
-    private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, McpResource resource) {
-        var actionName = defaultReadableAction(resource);
-        if (actionName == null) {
-            return errorResourceResult(resource.uri(), "resource has no readable data; use how_to_call to invoke its actions");
-        }
-        return readOperation(principal, resource.uri(), actionName, Map.of())
-                .orElseGet(() -> errorResourceResult(resource.uri(), "failed to read resource"));
+    private McpSchema.ReadResourceResult readBareResource(BaseAccount principal, String uri, ConcreteEntry entry) {
+        return readOperation(principal, entry.resource().uri(), entry.actionName(), Map.of())
+                .orElseGet(() -> errorResourceResult(uri, "failed to read resource"));
     }
 
     /** {@code query} is preferred (the natural "give me the collection" action) over any other {@code readable} action a future kind might declare. */
@@ -469,6 +535,19 @@ public class McpService implements ByteArrayService {
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Identifier for an entry, unique across the catalog: the addressed URI's whole path, since
+     * the last segment alone is not enough — two databases may each hold a collection called
+     * {@code inventory}, and under a wildcard mount both are exposed at once. Uniqueness is
+     * required of the URI, not the name, but names that collide leave an agent unable to tell two
+     * entries apart, which is the whole reason they carry names.
+     */
+    static String pathId(String uri) {
+        var path = uri.replaceFirst("^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+", "");
+        var trimmed = path.startsWith("/") ? path.substring(1) : path;
+        return trimmed.isBlank() ? uri : trimmed;
     }
 
     /** Display label for a resource — the last path segment of its URI (e.g. {@code "inventory"}, {@code "byStatus"}); not required to be unique. */

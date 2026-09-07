@@ -85,6 +85,14 @@ public final class CollectionMcpResourceBuilder {
             a.param("jsonMode", "string", false);
         });
 
+        // The count is its own resource, exactly as it is its own endpoint in the REST API —
+        // not a flag on the read. Declared with no parameters, so it registers as one plain
+        // entry: a filtered count is still composable through how_to_call.
+        builder.action("size", a -> {
+            a.method("GET").pathTemplate("/_size").readable(true);
+            a.description("Number of documents in the collection.");
+        });
+
         builder.action("create", a -> {
             a.method("POST");
             if (bodySchema != null) {

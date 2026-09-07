@@ -195,22 +195,45 @@ public class McpServiceTest {
     }
 
     @Test
-    public void paramsTemplate_noRequiredParams_descriptionUnchanged() {
+    public void pathId_keepsTheWholePath_soSameNamedCollectionsInTwoDatabasesDoNotCollide() {
+        assertEquals("db1/inventory", McpService.pathId("https://host/db1/inventory"));
+        assertEquals("db2/inventory", McpService.pathId("https://host/db2/inventory"));
+        // an action's own literal path is part of what the entry addresses, so it is part of the id
+        assertEquals("db1/inventory/_size", McpService.pathId("https://host/db1/inventory/_size"));
+    }
+
+    @Test
+    public void paramsTemplate_titleSpellsOutEveryParameterTheReadAccepts() {
         var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
 
-        var template = McpService.paramsTemplate(resource, "https://host/inventory{?filter}", List.of());
+        var template = McpService.paramsTemplate(resource, "inventory-documents",
+                "https://host/inventory{?filter,page}", List.of("filter", "page"), Set.of(), List.of());
 
-        assertEquals("inventory", template.name());
+        assertEquals("inventory-documents", template.name());
+        // built from the same list that produced the URI template, so the label cannot drift
+        assertEquals("inventory — documents by filter, page", template.title());
         assertEquals("Product inventory.", template.description());
+    }
+
+    @Test
+    public void paramsTemplate_pathVariable_titleSaysOneDocument() {
+        var resource = McpResource.builder().uri("https://host/inventory").description("Product inventory.").build();
+
+        var template = McpService.paramsTemplate(resource, "inventory-by-id",
+                "https://host/inventory/{id}", List.of(), Set.of("id"), List.of("id"));
+
+        assertEquals("inventory-by-id", template.name());
+        assertEquals("inventory — one document by id", template.title());
     }
 
     @Test
     public void paramsTemplate_withRequiredParams_notesThemInDescription() {
         var resource = McpResource.builder().uri("https://host/inventory/_aggrs/byStatus").description("Total by status.").build();
 
-        var template = McpService.paramsTemplate(resource, "https://host/inventory/_aggrs/byStatus{?status}", List.of("status"));
+        var template = McpService.paramsTemplate(resource, "byStatus-documents",
+                "https://host/inventory/_aggrs/byStatus{?status}", List.of("status"), Set.of(), List.of("status"));
 
-        assertEquals("byStatus", template.name());
+        assertEquals("byStatus-documents", template.name());
         assertEquals("Total by status. (requires: status)", template.description());
     }
 }

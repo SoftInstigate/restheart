@@ -237,6 +237,7 @@ public final class MongoMcpAwareImpl {
         return switch (action) {
             case "query" -> Optional.of(queryDocuments(resolved, effectiveArgs));
             case "get" -> Optional.of(getSingleDocument(resolved, effectiveArgs));
+            case "size" -> Optional.of(countDocuments(resolved));
             default -> Optional.empty();
         };
     }
@@ -407,6 +408,20 @@ public final class MongoMcpAwareImpl {
      * jsonMode} (the same query param RESTHeart's real REST API accepts).
      */
     @SuppressWarnings("unchecked")
+    /**
+     * The collection's document count — the {@code _size} endpoint's answer, as its own resource.
+     *
+     * <p>Uses the estimating overload: with no filter the count comes from collection metadata in
+     * constant time instead of walking every document. An exact figure would be false precision
+     * anyway, since the collection can change between counting it and acting on the number.
+     */
+    private McpReadResult countDocuments(MongoMountResolver.ResolvedContext resolved) {
+        var size = databases.getCollectionSize(Optional.empty(), Optional.empty(),
+                resolved.database(), resolved.collection(), new BsonDocument(), true);
+
+        return new McpReadResult(new McpReadResult.RawJson("{\"size\":" + size + "}"));
+    }
+
     private McpReadResult queryDocuments(MongoMountResolver.ResolvedContext resolved, Map<String, Object> args) {
         var filter = args.get("filter") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : new BsonDocument();
         var keys = args.get("keys") instanceof Map<?, ?> m ? BsonUtils.toBsonDocument((Map<String, Object>) m) : null;
@@ -417,13 +432,21 @@ public final class MongoMcpAwareImpl {
 
         var docs = databases.getCollectionData(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(),
                 page, pagesize, sort, filter, null, keys, false);
-        var total = databases.getCollectionSize(Optional.empty(), Optional.empty(), resolved.database(), resolved.collection(), filter);
 
+        // No count. Reading a page must cost one query, as the equivalent GET does: RESTHeart's
+        // REST API makes counting opt-in (?count, or the dedicated _size endpoint) precisely
+        // because countDocuments() walks the collection, and a read that silently paid for it
+        // every time would be slower here than through the API it mirrors. The count has its own
+        // resource — see the "size" action in CollectionMcpResourceBuilder.
+        //
+        // "next" is derived from the page actually returned rather than from a total: a full page
+        // means there may be more, a short one means there is not. That is all a caller needs to
+        // keep paging, and it costs nothing.
         var text = new StringBuilder("{\"content\":")
                 .append(BsonUtils.toJson(docs, jsonMode))
-                .append(",\"meta\":{\"total_count\":").append(total)
-                .append(",\"page\":").append(page);
-        if ((long) page * pagesize < total) {
+                .append(",\"meta\":{\"page\":").append(page)
+                .append(",\"returned\":").append(docs.size());
+        if (docs.size() == pagesize) {
             text.append(",\"next\":\"?page=").append(page + 1).append('"');
         }
         text.append("}}");

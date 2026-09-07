@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,19 +101,73 @@ public class McpResourcesIT extends AbstactIT {
     // ---------------------------------------------------------------- listing
 
     @Test
-    public void collection_isAdvertisedOnlyAsATemplate() throws Exception {
+    public void collection_isReachableBothBareAndParameterised() throws Exception {
         // one snapshot each, reused: the catalog TTL is 1s in tests, so two calls could otherwise
         // observe different states and produce a self-contradicting failure message
         var templates = templateUris();
         var resources = resourceUris();
 
-        // One entry per resource. Registering the bare URI as a concrete resource as well would
-        // put two things with the same name in front of the agent, and the template already
-        // covers every shape a client builds from it — including a form left blank.
         assertTrue(templates.stream().anyMatch(t -> t.startsWith(TEST_COLL + "{?")),
                 "no parameterised template for the collection; got " + templates);
-        assertFalse(resources.contains(TEST_COLL),
-                "the collection must not also be a concrete resource; got " + resources);
+        assertTrue(resources.contains(TEST_COLL),
+                "the bare URI must be reachable, or submitting the template with nothing filled "
+                        + "in answers 'resource not found'; got " + resources);
+    }
+
+    @Test
+    public void submittingTheTemplateWithNothingFilledIn_reads() throws Exception {
+        // The failure this whole arrangement exists to prevent. A template can mark no parameter
+        // required — an MCP ResourceTemplate has no schema — so an agent submits it empty, which
+        // expands to the bare URI. Without a concrete resource behind that URI the server answers
+        // "resource not found" to a request it advertised itself.
+        var text = mcp.readResource(TEST_COLL);
+
+        assertTrue(text.contains("notebook"), "a bare read must return data: " + text);
+    }
+
+    @Test
+    public void entriesAddressingDifferentThings_haveDifferentNames() throws Exception {
+        // Several entries are derived from the same McpResource — the collection, its
+        // single-document reader, its count — so naming them after it published duplicates.
+        // Checked across both lists at once: an agent sees one catalog, not two.
+        var names = new java.util.ArrayList<String>();
+        mcp.rpc("resources/templates/list", null).getDocument("result").getArray("resourceTemplates")
+                .forEach(t -> names.add(t.asDocument().getString("name").getValue()));
+        mcp.rpc("resources/list", null).getDocument("result").getArray("resources")
+                .forEach(r -> names.add(r.asDocument().getString("name").getValue()));
+
+        assertEquals(names.size(), Set.copyOf(names).size(),
+                "two entries share a name, so an agent cannot tell them apart: " + names);
+    }
+
+    @Test
+    public void count_isItsOwnResource() throws Exception {
+        // The count is a separate endpoint in the REST API and a separate entry here — not a flag
+        // on the read. It takes no parameters, so it is a concrete resource, never a template.
+        var resources = resourceUris();
+
+        assertTrue(resources.contains(TEST_COLL + "/_size"),
+                "the collection count must be its own resource; got " + resources);
+        assertFalse(templateUris().stream().anyMatch(t -> t.startsWith(TEST_COLL + "/_size")),
+                "the count takes no parameters, so it must not be advertised as a template");
+    }
+
+    @Test
+    public void readingTheCount_returnsTheNumberOfDocuments() throws Exception {
+        var text = mcp.readResource(TEST_COLL + "/_size");
+
+        assertEquals(2, BsonDocument.parse(text).getNumber("size").intValue(),
+                "expected the fixture's two documents: " + text);
+    }
+
+    @Test
+    public void readingACollection_doesNotCount() throws Exception {
+        // Reading a page must cost one query, as the equivalent GET does. A total in the payload
+        // is proof the read paid for a full collection scan it was never asked for.
+        var text = mcp.readResource(TEST_COLL);
+
+        assertFalse(text.contains("total_count"),
+                "the read counted the collection; the count has its own resource: " + text);
     }
 
     @Test
@@ -148,6 +203,9 @@ public class McpResourcesIT extends AbstactIT {
         // misleading thing to publish
         assertTrue(templates.contains(TEST_COLL + "/{id}"),
                 "no single-document template; got " + templates);
+        // the whole path, not just the last segment: two databases may each hold an "inventory"
+        assertEquals("test-mcp-resources/inventory-by-id", templateNamed(TEST_COLL + "/{id}"),
+                "named after the set it addresses, and unique across databases");
     }
 
     @Test
@@ -252,6 +310,16 @@ public class McpResourcesIT extends AbstactIT {
         return mcp.rpc("resources/list", null).getDocument("result").getArray("resources").stream()
                 .map(r -> r.asDocument().getString("uri").getValue())
                 .toList();
+    }
+
+    /** The name advertised for the template with exactly this uriTemplate. */
+    private String templateNamed(String uriTemplate) throws Exception {
+        return mcp.rpc("resources/templates/list", null).getDocument("result").getArray("resourceTemplates").stream()
+                .map(org.bson.BsonValue::asDocument)
+                .filter(t -> uriTemplate.equals(t.getString("uriTemplate").getValue()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no template with uriTemplate " + uriTemplate))
+                .getString("name").getValue();
     }
 
     private List<String> templateUris() throws Exception {
